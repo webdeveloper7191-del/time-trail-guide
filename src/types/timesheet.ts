@@ -1,14 +1,24 @@
 export type TimesheetStatus = 'pending' | 'approved' | 'rejected';
 
+export interface BreakEntry {
+  id: string;
+  startTime: string;
+  endTime: string | null;
+  duration: number; // in minutes
+  type: 'lunch' | 'short' | 'other';
+}
+
 export interface ClockEntry {
   id: string;
   date: string;
   clockIn: string;
   clockOut: string | null;
-  breakStart?: string;
-  breakEnd?: string;
-  totalHours: number;
+  breaks: BreakEntry[];
+  totalBreakMinutes: number;
+  grossHours: number; // before break deduction
+  netHours: number; // after break deduction
   overtime: number;
+  notes?: string;
 }
 
 export interface Employee {
@@ -18,6 +28,7 @@ export interface Employee {
   avatar?: string;
   department: string;
   position: string;
+  hourlyRate?: number;
 }
 
 export interface Location {
@@ -37,6 +48,7 @@ export interface Timesheet {
   totalHours: number;
   regularHours: number;
   overtimeHours: number;
+  totalBreakMinutes: number;
   submittedAt: string;
   reviewedAt?: string;
   reviewedBy?: string;

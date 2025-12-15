@@ -1,8 +1,9 @@
 import { Timesheet } from '@/types/timesheet';
 import { StatusBadge } from './StatusBadge';
 import { format } from 'date-fns';
-import { Eye, Edit2, MapPin } from 'lucide-react';
+import { Eye, Edit2, MapPin, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -12,6 +13,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface TimesheetTableProps {
   timesheets: Timesheet[];
@@ -41,6 +47,15 @@ export function TimesheetTable({ timesheets, onView, onEdit }: TimesheetTablePro
     return colors[index];
   };
 
+  const formatBreakTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+  };
+
   return (
     <div className="bg-card rounded-lg card-shadow overflow-hidden">
       <Table>
@@ -50,6 +65,7 @@ export function TimesheetTable({ timesheets, onView, onEdit }: TimesheetTablePro
             <TableHead className="font-semibold">Location</TableHead>
             <TableHead className="font-semibold">Week</TableHead>
             <TableHead className="font-semibold text-center">Hours</TableHead>
+            <TableHead className="font-semibold text-center">Breaks</TableHead>
             <TableHead className="font-semibold text-center">Overtime</TableHead>
             <TableHead className="font-semibold text-center">Status</TableHead>
             <TableHead className="font-semibold text-right">Actions</TableHead>
@@ -97,6 +113,19 @@ export function TimesheetTable({ timesheets, onView, onEdit }: TimesheetTablePro
                 </span>
               </TableCell>
               <TableCell className="text-center">
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="outline" className="gap-1">
+                      <Coffee className="h-3 w-3" />
+                      {formatBreakTime(timesheet.totalBreakMinutes)}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Total break time this week
+                  </TooltipContent>
+                </Tooltip>
+              </TableCell>
+              <TableCell className="text-center">
                 <span
                   className={
                     timesheet.overtimeHours > 0
@@ -104,7 +133,7 @@ export function TimesheetTable({ timesheets, onView, onEdit }: TimesheetTablePro
                       : 'text-muted-foreground'
                   }
                 >
-                  {timesheet.overtimeHours}h
+                  {timesheet.overtimeHours > 0 ? `+${timesheet.overtimeHours}h` : '0h'}
                 </span>
               </TableCell>
               <TableCell className="text-center">
@@ -112,22 +141,32 @@ export function TimesheetTable({ timesheets, onView, onEdit }: TimesheetTablePro
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onView(timesheet)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEdit(timesheet)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onView(timesheet)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>View details</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(timesheet)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Edit timesheet</TooltipContent>
+                  </Tooltip>
                 </div>
               </TableCell>
             </TableRow>
