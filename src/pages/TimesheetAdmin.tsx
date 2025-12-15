@@ -6,7 +6,6 @@ import { StatCard } from '@/components/timesheet/StatCard';
 import { TimesheetTable } from '@/components/timesheet/TimesheetTable';
 import { TimesheetDetailModal } from '@/components/timesheet/TimesheetDetailModal';
 import { TimesheetEditModal } from '@/components/timesheet/TimesheetEditModal';
-import { StatusBadge } from '@/components/timesheet/StatusBadge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +24,7 @@ import {
   Search,
   Filter,
   Download,
+  Coffee,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -41,12 +41,14 @@ export default function TimesheetAdmin() {
 
   // Calculate stats
   const stats = useMemo(() => {
+    const totalBreakMinutes = timesheets.reduce((sum, t) => sum + t.totalBreakMinutes, 0);
     return {
       total: timesheets.length,
       pending: timesheets.filter((t) => t.status === 'pending').length,
       approved: timesheets.filter((t) => t.status === 'approved').length,
       rejected: timesheets.filter((t) => t.status === 'rejected').length,
       totalHours: timesheets.reduce((sum, t) => sum + t.totalHours, 0),
+      totalBreakHours: Math.round((totalBreakMinutes / 60) * 10) / 10,
     };
   }, [timesheets]);
 
@@ -140,7 +142,7 @@ export default function TimesheetAdmin() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <StatCard
               title="Total Timesheets"
               value={stats.total}
@@ -161,9 +163,15 @@ export default function TimesheetAdmin() {
             />
             <StatCard
               title="Total Hours"
-              value={`${stats.totalHours}h`}
+              value={`${stats.totalHours.toFixed(1)}h`}
               icon={Users}
-              subtitle="Across all employees"
+              subtitle="Net working hours"
+            />
+            <StatCard
+              title="Break Hours"
+              value={`${stats.totalBreakHours}h`}
+              icon={Coffee}
+              subtitle="Total break time"
             />
           </div>
 
