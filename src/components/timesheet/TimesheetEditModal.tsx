@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Timesheet, ClockEntry, BreakEntry } from '@/types/timesheet';
+import { AppliedAllowance, AwardType } from '@/types/allowances';
+import { AllowanceEditor } from './AllowanceEditor';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -56,11 +58,15 @@ export function TimesheetEditModal({
   const [entries, setEntries] = useState<ClockEntry[]>([]);
   const [notes, setNotes] = useState('');
   const [expandedDays, setExpandedDays] = useState<string[]>([]);
+  const [appliedAllowances, setAppliedAllowances] = useState<AppliedAllowance[]>([]);
+  const [awardType, setAwardType] = useState<AwardType>('children_services');
 
   useEffect(() => {
     if (timesheet) {
       setEntries(JSON.parse(JSON.stringify(timesheet.entries)));
       setNotes(timesheet.notes || '');
+      setAppliedAllowances(timesheet.appliedAllowances || []);
+      setAwardType(timesheet.awardType || 'children_services');
       // Expand all days by default
       setExpandedDays(timesheet.entries.map((e) => e.id));
     }
@@ -231,6 +237,8 @@ export function TimesheetEditModal({
       overtimeHours: Math.round(overtimeHours * 100) / 100,
       totalBreakMinutes,
       notes,
+      appliedAllowances,
+      awardType,
     };
 
     onSave(updatedTimesheet);
@@ -486,6 +494,17 @@ export function TimesheetEditModal({
                 );
               })}
             </div>
+
+            <Separator />
+
+            {/* Allowances Editor */}
+            <AllowanceEditor
+              allowances={appliedAllowances}
+              entries={entries}
+              awardType={awardType}
+              onAwardTypeChange={setAwardType}
+              onAllowancesChange={setAppliedAllowances}
+            />
 
             <Separator />
 

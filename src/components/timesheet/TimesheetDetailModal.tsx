@@ -3,7 +3,9 @@ import { StatusBadge } from './StatusBadge';
 import { CompliancePanel } from './CompliancePanel';
 import { ApprovalWorkflow } from './ApprovalWorkflow';
 import { OvertimeBreakdown } from './OvertimeBreakdown';
+import { AllowancesPanel } from './AllowancesPanel';
 import { validateCompliance, calculateOvertime, determineApprovalChain, defaultJurisdiction } from '@/lib/complianceEngine';
+import { calculateAllowanceTotal } from '@/types/allowances';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -477,6 +479,57 @@ const [expandedDays, setExpandedDays] = useState<string[]>([]);
                   <div className="flex justify-between font-medium">
                     <span>Total</span>
                     <span>{timesheet.totalHours}h</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Allowances Section */}
+              <div className="bg-muted rounded-lg p-4">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Allowances & Entitlements
+                </h4>
+                <AllowancesPanel 
+                  allowances={timesheet.appliedAllowances || []} 
+                  awardType={timesheet.awardType}
+                />
+              </div>
+
+              {/* Pay Summary */}
+              <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Total Pay Summary
+                </h4>
+                <div className="space-y-2 text-sm">
+                  {overtimeCalc && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Regular Pay</span>
+                        <span>${overtimeCalc.regularPay.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Overtime Pay</span>
+                        <span>${overtimeCalc.overtimePay.toFixed(2)}</span>
+                      </div>
+                      {overtimeCalc.doubleTimePay > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Double Time Pay</span>
+                          <span>${overtimeCalc.doubleTimePay.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Allowances</span>
+                    <span>${calculateAllowanceTotal(timesheet.appliedAllowances || []).toFixed(2)}</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between font-semibold text-base">
+                    <span>Estimated Total</span>
+                    <span className="text-primary">
+                      ${((overtimeCalc?.totalPay || 0) + calculateAllowanceTotal(timesheet.appliedAllowances || [])).toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>
