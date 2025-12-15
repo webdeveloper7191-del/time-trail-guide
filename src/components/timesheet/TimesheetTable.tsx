@@ -1,7 +1,8 @@
 import { Timesheet } from '@/types/timesheet';
 import { StatusBadge } from './StatusBadge';
+import { validateCompliance } from '@/lib/complianceEngine';
 import { format } from 'date-fns';
-import { Eye, Edit2, MapPin, Coffee } from 'lucide-react';
+import { Eye, Edit2, MapPin, Coffee, AlertTriangle, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,6 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useMemo } from 'react';
 
 interface TimesheetTableProps {
   timesheets: Timesheet[];
@@ -56,6 +58,14 @@ export function TimesheetTable({ timesheets, onView, onEdit }: TimesheetTablePro
     return `${mins}m`;
   };
 
+  // Pre-compute compliance for all timesheets
+  const timesheetCompliance = useMemo(() => {
+    return timesheets.reduce((acc, ts) => {
+      acc[ts.id] = validateCompliance(ts);
+      return acc;
+    }, {} as Record<string, ReturnType<typeof validateCompliance>>);
+  }, [timesheets]);
+
   return (
     <div className="bg-card rounded-lg card-shadow overflow-hidden">
       <Table>
@@ -67,12 +77,18 @@ export function TimesheetTable({ timesheets, onView, onEdit }: TimesheetTablePro
             <TableHead className="font-semibold text-center">Hours</TableHead>
             <TableHead className="font-semibold text-center">Breaks</TableHead>
             <TableHead className="font-semibold text-center">Overtime</TableHead>
+            <TableHead className="font-semibold text-center">Flags</TableHead>
             <TableHead className="font-semibold text-center">Status</TableHead>
             <TableHead className="font-semibold text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {timesheets.map((timesheet, index) => (
+          {timesheets.map((timesheet, index) => {
+            const compliance = timesheetCompliance[timesheet.id];
+            const criticalCount = compliance?.flags.filter(f => f.severity === 'critical').length || 0;
+            const warningCount = compliance?.flags.filter(f => f.severity === 'warning').length || 0;
+            
+            return (
             <TableRow
               key={timesheet.id}
               className="hover:bg-muted/50 transition-colors animate-fade-in"
@@ -137,6 +153,38 @@ export function TimesheetTable({ timesheets, onView, onEdit }: TimesheetTablePro
                 </span>
               </TableCell>
               <TableCell className="text-center">
+                {criticalCount > 0 || warningCount > 0 ? (
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="flex items-center justify-center gap-1">
+                        {criticalCount > 0 && (
+                          <Badge variant="destructive" className="text-xs h-5 px-1.5">
+                            <ShieldAlert className="h-3 w-3 mr-0.5" />
+                            {criticalCount}
+                          </Badge>
+                        )}
+                        {warningCount > 0 && (
+                          <Badge className="bg-status-pending/10 text-status-pending border-status-pending/20 text-xs h-5 px-1.5">
+                            <AlertTriangle className="h-3 w-3 mr-0.5" />
+                            {warningCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {criticalCount} critical, {warningCount} warnings
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <ShieldCheck className="h-4 w-4 text-status-approved mx-auto" />
+                    </TooltipTrigger>
+                    <TooltipContent>No compliance issues</TooltipContent>
+                  </Tooltip>
+                )}
+              </TableCell>
+              <TableCell className="text-center">
                 <StatusBadge status={timesheet.status} />
               </TableCell>
               <TableCell className="text-right">
@@ -170,7 +218,8 @@ export function TimesheetTable({ timesheets, onView, onEdit }: TimesheetTablePro
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
       {timesheets.length === 0 && (
