@@ -53,4 +53,6 @@ export interface Timesheet {
   reviewedAt?: string;
   reviewedBy?: string;
   notes?: string;
+  appliedAllowances?: import('./allowances').AppliedAllowance[];
+  awardType?: import('./allowances').AwardType;
 }
