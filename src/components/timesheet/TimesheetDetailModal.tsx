@@ -1,5 +1,9 @@
 import { Timesheet, ClockEntry, BreakEntry } from '@/types/timesheet';
 import { StatusBadge } from './StatusBadge';
+import { CompliancePanel } from './CompliancePanel';
+import { ApprovalWorkflow } from './ApprovalWorkflow';
+import { OvertimeBreakdown } from './OvertimeBreakdown';
+import { validateCompliance, calculateOvertime, determineApprovalChain, defaultJurisdiction } from '@/lib/complianceEngine';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -28,8 +32,10 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  ShieldCheck,
+  GitBranch,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TimesheetDetailModalProps {
@@ -47,7 +53,27 @@ export function TimesheetDetailModal({
   onApprove,
   onReject,
 }: TimesheetDetailModalProps) {
-  const [expandedDays, setExpandedDays] = useState<string[]>([]);
+const [expandedDays, setExpandedDays] = useState<string[]>([]);
+
+  // Compliance validation
+  const compliance = useMemo(() => 
+    timesheet ? validateCompliance(timesheet) : null, 
+    [timesheet]
+  );
+
+  // Overtime calculation
+  const overtimeCalc = useMemo(() => 
+    timesheet && timesheet.employee.hourlyRate 
+      ? calculateOvertime(timesheet, timesheet.employee.hourlyRate)
+      : null,
+    [timesheet]
+  );
+
+  // Approval chain
+  const approvalChain = useMemo(() => 
+    timesheet && compliance ? determineApprovalChain(timesheet, compliance) : null,
+    [timesheet, compliance]
+  );
 
   if (!timesheet) return null;
 
@@ -122,9 +148,17 @@ export function TimesheetDetailModal({
 
         <ScrollArea className="flex-1 -mx-6 px-6">
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 mb-4">
+            <TabsList className="w-full grid grid-cols-5 mb-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="entries">Daily Entries</TabsTrigger>
+              <TabsTrigger value="entries">Entries</TabsTrigger>
+              <TabsTrigger value="compliance" className="flex items-center gap-1">
+                <ShieldCheck className="h-3 w-3" />
+                Compliance
+              </TabsTrigger>
+              <TabsTrigger value="workflow" className="flex items-center gap-1">
+                <GitBranch className="h-3 w-3" />
+                Workflow
+              </TabsTrigger>
               <TabsTrigger value="summary">Summary</TabsTrigger>
             </TabsList>
 
@@ -195,21 +229,17 @@ export function TimesheetDetailModal({
                 </div>
               </div>
 
-              {/* Estimated Pay */}
-              {estimatedPay && (
-                <div className="bg-accent/50 rounded-lg p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <DollarSign className="h-5 w-5 text-status-approved" />
-                    <div>
-                      <p className="font-medium">Estimated Pay</p>
-                      <p className="text-xs text-muted-foreground">
-                        Regular: ${(timesheet.regularHours * timesheet.employee.hourlyRate!).toFixed(2)} + 
-                        OT: ${(timesheet.overtimeHours * timesheet.employee.hourlyRate! * 1.5).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold text-status-approved">${estimatedPay.toFixed(2)}</p>
-                </div>
+              {/* Compliance Summary */}
+              {compliance && (
+                <CompliancePanel validation={compliance} compact />
+              )}
+
+              {/* Estimated Pay with Advanced Breakdown */}
+              {overtimeCalc && timesheet.employee.hourlyRate && (
+                <OvertimeBreakdown 
+                  calculation={overtimeCalc} 
+                  hourlyRate={timesheet.employee.hourlyRate} 
+                />
               )}
             </TabsContent>
 
@@ -341,6 +371,65 @@ export function TimesheetDetailModal({
                   </div>
                 );
               })}
+            </TabsContent>
+
+            {/* Compliance Tab */}
+            <TabsContent value="compliance" className="space-y-4">
+              {compliance && (
+                <CompliancePanel validation={compliance} />
+              )}
+
+              {/* Jurisdiction Info */}
+              <div className="rounded-lg border border-border p-4">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  Active Compliance Rules
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Jurisdiction</p>
+                    <p className="font-medium">{defaultJurisdiction.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Max Daily Hours</p>
+                    <p className="font-medium">{defaultJurisdiction.maxDailyHours}h</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Max Weekly Hours</p>
+                    <p className="font-medium">{defaultJurisdiction.maxWeeklyHours}h</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">OT Threshold</p>
+                    <p className="font-medium">&gt;{defaultJurisdiction.overtimeThresholdDaily}h/day or &gt;{defaultJurisdiction.overtimeThresholdWeekly}h/week</p>
+                  </div>
+                </div>
+                <Separator className="my-3" />
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Required Breaks</p>
+                  <div className="space-y-1">
+                    {defaultJurisdiction.breakRules.map((rule) => (
+                      <div key={rule.id} className="flex items-center justify-between text-sm">
+                        <span>{rule.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {rule.breakDurationMinutes}m after {rule.minWorkHoursRequired}h • {rule.type}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Workflow Tab */}
+            <TabsContent value="workflow" className="space-y-4">
+              {approvalChain && (
+                <ApprovalWorkflow 
+                  chain={approvalChain}
+                  isAdmin={true}
+                  onApprove={() => onApprove?.(timesheet.id)}
+                  onReject={() => onReject?.(timesheet.id)}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="summary" className="space-y-4">

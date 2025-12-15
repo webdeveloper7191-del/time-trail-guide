@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { mockTimesheets, locations } from '@/data/mockTimesheets';
 import { Timesheet, TimesheetStatus } from '@/types/timesheet';
+import { validateCompliance } from '@/lib/complianceEngine';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { StatCard } from '@/components/timesheet/StatCard';
 import { TimesheetTable } from '@/components/timesheet/TimesheetTable';
@@ -25,10 +26,12 @@ import {
   Filter,
   Download,
   Coffee,
+  ShieldAlert,
+  Zap,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-type TabValue = 'all' | TimesheetStatus;
+type TabValue = 'all' | 'exceptions' | TimesheetStatus;
 
 export default function TimesheetAdmin() {
   const [timesheets, setTimesheets] = useState<Timesheet[]>(mockTimesheets);
@@ -39,9 +42,24 @@ export default function TimesheetAdmin() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Calculate stats
+  // Calculate stats with compliance
   const stats = useMemo(() => {
     const totalBreakMinutes = timesheets.reduce((sum, t) => sum + t.totalBreakMinutes, 0);
+    
+    // Count exceptions (timesheets with compliance issues)
+    let exceptionsCount = 0;
+    let autoApproveEligible = 0;
+    
+    timesheets.forEach(t => {
+      const validation = validateCompliance(t);
+      if (!validation.isCompliant || validation.flags.length > 0) {
+        exceptionsCount++;
+      }
+      if (validation.isCompliant && t.overtimeHours <= 2) {
+        autoApproveEligible++;
+      }
+    });
+
     return {
       total: timesheets.length,
       pending: timesheets.filter((t) => t.status === 'pending').length,
@@ -49,6 +67,8 @@ export default function TimesheetAdmin() {
       rejected: timesheets.filter((t) => t.status === 'rejected').length,
       totalHours: timesheets.reduce((sum, t) => sum + t.totalHours, 0),
       totalBreakHours: Math.round((totalBreakMinutes / 60) * 10) / 10,
+      exceptions: exceptionsCount,
+      autoApproveEligible,
     };
   }, [timesheets]);
 
@@ -56,7 +76,12 @@ export default function TimesheetAdmin() {
   const filteredTimesheets = useMemo(() => {
     return timesheets.filter((timesheet) => {
       // Tab filter
-      if (activeTab !== 'all' && timesheet.status !== activeTab) {
+      if (activeTab === 'exceptions') {
+        const validation = validateCompliance(timesheet);
+        if (validation.isCompliant && validation.flags.length === 0) {
+          return false;
+        }
+      } else if (activeTab !== 'all' && timesheet.status !== activeTab) {
         return false;
       }
 
@@ -142,7 +167,7 @@ export default function TimesheetAdmin() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
             <StatCard
               title="Total Timesheets"
               value={stats.total}
@@ -154,6 +179,18 @@ export default function TimesheetAdmin() {
               value={stats.pending}
               icon={AlertCircle}
               trend={{ value: 12, positive: false }}
+            />
+            <StatCard
+              title="Exceptions"
+              value={stats.exceptions}
+              icon={ShieldAlert}
+              subtitle="Need attention"
+            />
+            <StatCard
+              title="Auto-Approve Ready"
+              value={stats.autoApproveEligible}
+              icon={Zap}
+              subtitle="No issues detected"
             />
             <StatCard
               title="Approved"
@@ -217,6 +254,13 @@ export default function TimesheetAdmin() {
                 All
                 <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">
                   {stats.total}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="exceptions" className="data-[state=active]:bg-status-rejected data-[state=active]:text-white">
+                <ShieldAlert className="h-3 w-3 mr-1" />
+                Exceptions
+                <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">
+                  {stats.exceptions}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="pending" className="data-[state=active]:bg-status-pending data-[state=active]:text-white">
