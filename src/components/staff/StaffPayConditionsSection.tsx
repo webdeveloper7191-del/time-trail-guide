@@ -14,12 +14,16 @@ import {
   History,
   Award,
   Tag,
+  CalendarPlus,
+  Scale,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { StaffPayConfigurationSection } from './StaffPayConfigurationSection';
 import { StaffAwardRuleSection } from './StaffAwardRuleSection';
 import { EditPayConditionsSheet } from './EditPayConditionsSheet';
 import { PayConditionsHistorySheet } from './PayConditionsHistorySheet';
+import { SchedulePayChangeSheet } from './SchedulePayChangeSheet';
+import { PayRateComparisonSheet } from './PayRateComparisonSheet';
 
 interface StaffPayConditionsSectionProps {
   staff: StaffMember;
@@ -29,6 +33,8 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
   const [activeTab, setActiveTab] = useState('pay-conditions');
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [historySheetOpen, setHistorySheetOpen] = useState(false);
+  const [scheduleSheetOpen, setScheduleSheetOpen] = useState(false);
+  const [comparisonSheetOpen, setComparisonSheetOpen] = useState(false);
   const payCondition = staff.currentPayCondition;
 
   const payPeriodLabel = {
@@ -56,14 +62,22 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
           {/* Header with Actions */}
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Current Pay Conditions & Hours</h2>
-            <div className="flex gap-3">
+            <div className="flex gap-2 flex-wrap justify-end">
+              <Button variant="outline" size="sm" onClick={() => setComparisonSheetOpen(true)}>
+                <Scale className="h-4 w-4 mr-2" />
+                Compare Rates
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setHistorySheetOpen(true)}>
                 <History className="h-4 w-4 mr-2" />
-                View Upcoming & Past Conditions
+                View History
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setScheduleSheetOpen(true)}>
+                <CalendarPlus className="h-4 w-4 mr-2" />
+                Schedule Change
               </Button>
               <Button size="sm" className="bg-primary" onClick={() => setEditSheetOpen(true)}>
                 <Edit className="h-4 w-4 mr-2" />
-                Edit Current Pay Conditions
+                Edit Current
               </Button>
             </div>
           </div>
@@ -225,6 +239,16 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
       <PayConditionsHistorySheet
         open={historySheetOpen}
         onOpenChange={setHistorySheetOpen}
+        staff={staff}
+      />
+      <SchedulePayChangeSheet
+        open={scheduleSheetOpen}
+        onOpenChange={setScheduleSheetOpen}
+        staff={staff}
+      />
+      <PayRateComparisonSheet
+        open={comparisonSheetOpen}
+        onOpenChange={setComparisonSheetOpen}
         staff={staff}
       />
     </div>

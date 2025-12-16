@@ -44,11 +44,15 @@ import { StaffPayConfigurationSection } from '@/components/staff/StaffPayConfigu
 import { StaffAwardRuleSection } from '@/components/staff/StaffAwardRuleSection';
 import { StaffAvailabilitySection } from '@/components/staff/StaffAvailabilitySection';
 import { StaffBankDetailsSection } from '@/components/staff/StaffBankDetailsSection';
+import { StaffQualificationsSection } from '@/components/staff/StaffQualificationsSection';
+
+import { Award } from 'lucide-react';
 
 const sidebarSections = [
   { id: 'personal', label: 'Personal', icon: User },
   { id: 'bank', label: 'Bank Details & Super Fund', icon: Building2 },
   { id: 'pay-conditions', label: 'Pay Conditions', icon: CreditCard },
+  { id: 'qualifications', label: 'Qualifications', icon: Award },
   { id: 'time-attendance', label: 'Time & Attendance', icon: Clock },
   { id: 'leave', label: 'Leave & Unavailability', icon: CalendarDays },
   { id: 'hr', label: 'HR', icon: Briefcase },
@@ -232,6 +236,9 @@ export default function StaffDetail() {
             )}
             {activeSection === 'time-attendance' && (
               <StaffAvailabilitySection staff={staff} />
+            )}
+            {activeSection === 'qualifications' && (
+              <StaffQualificationsSection staff={staff} />
             )}
             {activeSection === 'leave' && (
               <Card>
