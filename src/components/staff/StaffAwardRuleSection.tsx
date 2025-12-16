@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StaffMember } from '@/types/staff';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,12 +23,14 @@ import {
   Settings,
 } from 'lucide-react';
 import { mockAwardRules } from '@/data/mockStaffData';
+import { EditAwardConfigurationSheet } from './EditAwardConfigurationSheet';
 
 interface StaffAwardRuleSectionProps {
   staff: StaffMember;
 }
 
 export function StaffAwardRuleSection({ staff }: StaffAwardRuleSectionProps) {
+  const [editAwardOpen, setEditAwardOpen] = useState(false);
   const awardRule = staff.applicableAward || mockAwardRules[0];
 
   return (
@@ -39,11 +42,17 @@ export function StaffAwardRuleSection({ staff }: StaffAwardRuleSectionProps) {
             Configure industry award compliance and pay rates
           </p>
         </div>
-        <Button size="sm" className="bg-primary">
+        <Button size="sm" className="bg-primary" onClick={() => setEditAwardOpen(true)}>
           <Edit className="h-4 w-4 mr-2" />
           Edit Award Configuration
         </Button>
       </div>
+
+      <EditAwardConfigurationSheet
+        open={editAwardOpen}
+        onOpenChange={setEditAwardOpen}
+        staff={staff}
+      />
 
       {/* Current Award */}
       <Card>
