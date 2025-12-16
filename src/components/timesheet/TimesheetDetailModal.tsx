@@ -35,6 +35,8 @@ import {
   ShieldCheck,
   GitBranch,
   Briefcase,
+  Pencil,
+  History,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -205,6 +207,7 @@ export function TimesheetDetailModal({
               {timesheet.entries.map((entry) => {
                 const isExpanded = expandedDays.includes(entry.id);
                 const hasIssue = !entry.clockOut || entry.netHours === 0;
+                const wasEdited = entry.wasEdited;
                 
                 return (
                   <Collapsible key={entry.id} open={isExpanded} onOpenChange={() => toggleDayExpanded(entry.id)}>
@@ -212,11 +215,17 @@ export function TimesheetDetailModal({
                       "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
                       "hover:bg-muted/50",
                       hasIssue ? "border-amber-500/50 bg-amber-500/5" : "border-border",
+                      wasEdited && !hasIssue && "border-blue-500/30 bg-blue-500/5",
                       isExpanded && "rounded-b-none border-b-0"
                     )}>
-                      <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-muted">
+                      <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-muted relative">
                         <span className="text-[10px] uppercase text-muted-foreground font-medium">{getDayName(entry.date)}</span>
                         <span className="text-sm font-bold -mt-0.5">{getDayDate(entry.date)}</span>
+                        {wasEdited && (
+                          <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
+                            <Pencil className="h-2.5 w-2.5 text-white" />
+                          </div>
+                        )}
                       </div>
                       
                       <div className="flex-1 text-left">
@@ -227,6 +236,11 @@ export function TimesheetDetailModal({
                           <span className={cn("font-medium", !entry.clockOut && "text-amber-600")}>
                             {entry.clockOut || '--:--'}
                           </span>
+                          {wasEdited && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1 ml-1 border-blue-500/30 text-blue-600 bg-blue-500/10">
+                              Edited
+                            </Badge>
+                          )}
                           {hasIssue && <AlertCircle className="h-3.5 w-3.5 text-amber-500 ml-1" />}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
@@ -249,8 +263,61 @@ export function TimesheetDetailModal({
                     <CollapsibleContent>
                       <div className={cn(
                         "px-3 pb-3 pt-3 space-y-3 border border-t-0 rounded-b-lg",
-                        hasIssue ? "border-amber-500/50 bg-amber-500/5" : "border-border bg-muted/20"
+                        hasIssue ? "border-amber-500/50 bg-amber-500/5" : wasEdited ? "border-blue-500/30 bg-blue-500/5" : "border-border bg-muted/20"
                       )}>
+                        {/* Audit Trail - Original Values */}
+                        {wasEdited && (entry.originalClockIn || entry.originalClockOut !== undefined) && (
+                          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-medium text-blue-700">
+                              <History className="h-3.5 w-3.5" />
+                              Original Clock Times (Audit)
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <p className="text-[10px] uppercase text-muted-foreground mb-0.5">Original Clock In</p>
+                                <p className="font-mono text-blue-700 bg-blue-500/10 rounded px-2 py-1 text-center">
+                                  {entry.originalClockIn || entry.clockIn}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] uppercase text-muted-foreground mb-0.5">Original Clock Out</p>
+                                <p className="font-mono text-blue-700 bg-blue-500/10 rounded px-2 py-1 text-center">
+                                  {entry.originalClockOut !== undefined ? (entry.originalClockOut || '--:--') : (entry.clockOut || '--:--')}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <p className="text-[10px] uppercase text-muted-foreground mb-0.5">Edited Clock In</p>
+                                <p className={cn(
+                                  "font-mono rounded px-2 py-1 text-center",
+                                  entry.originalClockIn && entry.originalClockIn !== entry.clockIn 
+                                    ? "text-green-700 bg-green-500/10" 
+                                    : "text-muted-foreground bg-muted"
+                                )}>
+                                  {entry.clockIn}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] uppercase text-muted-foreground mb-0.5">Edited Clock Out</p>
+                                <p className={cn(
+                                  "font-mono rounded px-2 py-1 text-center",
+                                  entry.originalClockOut !== undefined && entry.originalClockOut !== entry.clockOut 
+                                    ? "text-green-700 bg-green-500/10" 
+                                    : "text-muted-foreground bg-muted"
+                                )}>
+                                  {entry.clockOut || '--:--'}
+                                </p>
+                              </div>
+                            </div>
+                            {entry.editedAt && (
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                Edited {entry.editedBy ? `by ${entry.editedBy}` : ''} on {format(new Date(entry.editedAt), 'MMM d, yyyy h:mm a')}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
                         {/* Hours detail */}
                         <div className="flex items-center justify-between text-xs bg-background rounded-md px-3 py-2">
                           <span className="text-muted-foreground">Gross: <span className="text-foreground font-medium">{entry.grossHours}h</span></span>

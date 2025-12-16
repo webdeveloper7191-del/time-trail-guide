@@ -220,14 +220,35 @@ export function TimesheetEditModal({
   };
 
   const handleSave = () => {
-    const totalHours = entries.reduce((sum, e) => sum + e.netHours, 0);
-    const totalBreakMinutes = entries.reduce((sum, e) => sum + e.totalBreakMinutes, 0);
+    // Mark entries as edited and store original values if changed
+    const updatedEntries = entries.map((entry, index) => {
+      const originalEntry = timesheet.entries[index];
+      const clockInChanged = entry.clockIn !== originalEntry.clockIn;
+      const clockOutChanged = entry.clockOut !== originalEntry.clockOut;
+      const breaksChanged = JSON.stringify(entry.breaks) !== JSON.stringify(originalEntry.breaks);
+      
+      if (clockInChanged || clockOutChanged || breaksChanged) {
+        return {
+          ...entry,
+          wasEdited: true,
+          editedAt: new Date().toISOString(),
+          editedBy: 'Admin', // In real app, get from auth context
+          originalClockIn: entry.originalClockIn || originalEntry.clockIn,
+          originalClockOut: entry.originalClockOut !== undefined ? entry.originalClockOut : originalEntry.clockOut,
+          originalBreaks: entry.originalBreaks || originalEntry.breaks,
+        };
+      }
+      return entry;
+    });
+
+    const totalHours = updatedEntries.reduce((sum, e) => sum + e.netHours, 0);
+    const totalBreakMinutes = updatedEntries.reduce((sum, e) => sum + e.totalBreakMinutes, 0);
     const regularHours = Math.min(totalHours, 40);
-    const overtimeHours = entries.reduce((sum, e) => sum + e.overtime, 0);
+    const overtimeHours = updatedEntries.reduce((sum, e) => sum + e.overtime, 0);
 
     const updatedTimesheet: Timesheet = {
       ...timesheet,
-      entries,
+      entries: updatedEntries,
       totalHours: Math.round(totalHours * 100) / 100,
       regularHours: Math.round(regularHours * 100) / 100,
       overtimeHours: Math.round(overtimeHours * 100) / 100,
