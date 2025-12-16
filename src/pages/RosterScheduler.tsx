@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
-import { format, addDays, startOfWeek, subWeeks } from 'date-fns';
+import { format, addDays, startOfWeek, subWeeks, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
 import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff, SchedulingPreferences } from '@/types/roster';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags, mockAgencyStaff } from '@/data/mockRosterData';
 import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel';
@@ -29,6 +29,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
 import { 
   Calendar, 
   ChevronLeft, 
@@ -52,7 +53,9 @@ import {
   Printer,
   Shield,
   UserCog,
-  Mail
+  Mail,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 // Default budget configuration per centre
@@ -63,6 +66,7 @@ const defaultCentreBudgets: Record<string, number> = {
 };
 
 export default function RosterScheduler() {
+  const { theme, setTheme } = useTheme();
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [selectedCentreId, setSelectedCentreId] = useState<string>(mockCentres[0].id);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -99,8 +103,13 @@ export default function RosterScheduler() {
   const weeklyBudget = centreBudgets[selectedCentreId] || 7000;
   
   const dates = useMemo(() => {
+    if (viewMode === 'month') {
+      const monthStart = startOfMonth(currentDate);
+      const daysInMonth = getDaysInMonth(currentDate);
+      return Array.from({ length: daysInMonth }, (_, i) => addDays(monthStart, i));
+    }
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-    const dayCount = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : viewMode === 'fortnight' ? 14 : 28;
+    const dayCount = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : 14;
     return Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i));
   }, [currentDate, viewMode]);
 
@@ -703,6 +712,16 @@ export default function RosterScheduler() {
               className="h-8 w-8"
             >
               <Mail className="h-4 w-4" />
+            </Button>
+
+            {/* Theme Toggle */}
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="h-8 w-8"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
 
             {/* Settings */}

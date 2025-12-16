@@ -183,12 +183,12 @@ export function StaffTimelineGrid({
               <div 
                 key={date.toISOString()} 
                 className={cn(
-                  "flex-1 min-w-[120px] p-2 text-center border-r border-border bg-muted/50",
-                  isCompact && "min-w-[80px]"
+                  "flex-1 p-2 text-center border-r border-border bg-muted/50",
+                  viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]"
                 )}
               >
-                <div className="text-sm font-medium text-foreground">{format(date, 'EEE')}</div>
-                <div className="text-xs text-muted-foreground">{format(date, 'd MMM')}</div>
+                <div className={cn("font-medium text-foreground", viewMode === 'month' ? "text-xs" : "text-sm")}>{format(date, viewMode === 'month' ? 'EEE' : 'EEE')}</div>
+                <div className={cn("text-muted-foreground", viewMode === 'month' ? "text-[10px]" : "text-xs")}>{format(date, viewMode === 'month' ? 'd' : 'd MMM')}</div>
               </div>
             ))}
             <div className="w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground bg-muted/50 border-r border-border">
@@ -278,10 +278,10 @@ export function StaffTimelineGrid({
                           <div
                             key={cellKey}
                             className={cn(
-                              "flex-1 min-w-[120px] p-1 border-r border-border relative",
+                              "flex-1 p-1 border-r border-border relative",
                               "transition-colors duration-150",
                               isDragOver && "bg-primary/10",
-                              isCompact && "min-w-[80px]",
+                              viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
                               timeOff && "bg-amber-500/10"
                             )}
                             onDragOver={(e) => !timeOff && handleDragOver(e, cellKey)}
@@ -467,12 +467,35 @@ function StaffShiftCard({ shift, onEdit, onDelete, onDragStart, isCompact = fals
   onDragStart: (e: React.DragEvent, shift: Shift) => void;
   isCompact?: boolean;
 }) {
-  const statusColors = {
-    draft: 'bg-amber-500/15 border-amber-500/50 text-amber-700',
-    published: 'bg-primary/15 border-primary/50 text-primary',
-    confirmed: 'bg-emerald-500/15 border-emerald-500/50 text-emerald-700',
-    completed: 'bg-muted border-muted-foreground/30 text-muted-foreground',
+  // Material-style soft color palettes
+  const statusStyles = {
+    draft: {
+      bg: 'bg-amber-50 dark:bg-amber-950/40',
+      border: 'border-amber-200 dark:border-amber-800',
+      text: 'text-amber-800 dark:text-amber-200',
+      accent: 'bg-amber-400',
+    },
+    published: {
+      bg: 'bg-sky-50 dark:bg-sky-950/40',
+      border: 'border-sky-200 dark:border-sky-800',
+      text: 'text-sky-800 dark:text-sky-200',
+      accent: 'bg-sky-500',
+    },
+    confirmed: {
+      bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+      border: 'border-emerald-200 dark:border-emerald-800',
+      text: 'text-emerald-800 dark:text-emerald-200',
+      accent: 'bg-emerald-500',
+    },
+    completed: {
+      bg: 'bg-slate-50 dark:bg-slate-900/40',
+      border: 'border-slate-200 dark:border-slate-700',
+      text: 'text-slate-600 dark:text-slate-300',
+      accent: 'bg-slate-400',
+    },
   };
+
+  const style = statusStyles[shift.status];
 
   return (
     <TooltipProvider>
@@ -483,26 +506,34 @@ function StaffShiftCard({ shift, onEdit, onDelete, onDragStart, isCompact = fals
             onDragStart={(e) => onDragStart(e, shift)}
             onClick={onEdit}
             className={cn(
-              "rounded-md border px-2 py-1.5 cursor-pointer transition-all",
-              "hover:shadow-sm hover:scale-[1.02] active:cursor-grabbing",
-              statusColors[shift.status],
+              "relative rounded-lg border overflow-hidden cursor-pointer transition-all duration-200",
+              "hover:shadow-md hover:-translate-y-0.5 active:cursor-grabbing",
+              style.bg,
+              style.border,
               shift.status === 'draft' && "border-dashed"
             )}
           >
-            <div className="text-xs font-semibold">{shift.startTime}-{shift.endTime}</div>
-            {!isCompact && (
-              <div className="text-[10px] opacity-70 flex items-center gap-1">
-                <Clock className="h-2.5 w-2.5" />
-                {shift.breakMinutes}m
+            {/* Left accent bar */}
+            <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
+            
+            <div className="pl-3 pr-2 py-1.5">
+              <div className={cn("text-xs font-semibold", style.text)}>
+                {shift.startTime}-{shift.endTime}
               </div>
-            )}
+              {!isCompact && (
+                <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <Clock className="h-2.5 w-2.5" />
+                  <span>{shift.breakMinutes}m break</span>
+                </div>
+              )}
+            </div>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="right">
+        <TooltipContent side="right" className="bg-popover border-border">
           <div className="space-y-1">
-            <p className="font-medium">{shift.startTime} - {shift.endTime}</p>
+            <p className="font-medium text-foreground">{shift.startTime} - {shift.endTime}</p>
             <p className="text-xs text-muted-foreground">Break: {shift.breakMinutes}m</p>
-            <p className="text-xs capitalize">{shift.status}</p>
+            <p className="text-xs capitalize text-muted-foreground">{shift.status}</p>
           </div>
         </TooltipContent>
       </Tooltip>
@@ -511,31 +542,53 @@ function StaffShiftCard({ shift, onEdit, onDelete, onDragStart, isCompact = fals
 }
 
 function OpenShiftCard({ openShift, isCompact, isDragOver }: { openShift: OpenShift; isCompact?: boolean; isDragOver?: boolean; }) {
-  const urgencyColors = {
-    low: 'border-muted-foreground/40 bg-muted/50',
-    medium: 'border-amber-500/50 bg-amber-500/10',
-    high: 'border-orange-500/50 bg-orange-500/15',
-    critical: 'border-destructive/50 bg-destructive/10',
+  const urgencyStyles = {
+    low: {
+      bg: 'bg-slate-50 dark:bg-slate-900/50',
+      border: 'border-slate-300 dark:border-slate-700',
+      accent: 'bg-slate-400',
+    },
+    medium: {
+      bg: 'bg-amber-50 dark:bg-amber-950/40',
+      border: 'border-amber-300 dark:border-amber-800',
+      accent: 'bg-amber-500',
+    },
+    high: {
+      bg: 'bg-orange-50 dark:bg-orange-950/40',
+      border: 'border-orange-300 dark:border-orange-800',
+      accent: 'bg-orange-500',
+    },
+    critical: {
+      bg: 'bg-red-50 dark:bg-red-950/40',
+      border: 'border-red-300 dark:border-red-800',
+      accent: 'bg-red-500',
+    },
   };
+
+  const style = urgencyStyles[openShift.urgency];
 
   return (
     <div className={cn(
-      "rounded-md border-2 border-dashed px-2 py-1.5 transition-all",
-      urgencyColors[openShift.urgency],
+      "relative rounded-lg border-2 border-dashed overflow-hidden transition-all duration-200",
+      style.bg,
+      style.border,
       isDragOver && "border-primary bg-primary/10 scale-[1.02]",
       openShift.urgency === 'critical' && "animate-pulse"
     )}>
-      <div className="text-xs font-semibold text-foreground">{openShift.startTime}-{openShift.endTime}</div>
-      {!isCompact && (
-        <>
-          <div className="flex flex-wrap gap-0.5 mt-1">
-            {openShift.requiredQualifications.slice(0, 2).map((qual) => (
-              <Badge key={qual} variant="outline" className="text-[8px] px-1 py-0 h-3.5">{qualificationLabels[qual].slice(0, 6)}</Badge>
-            ))}
-          </div>
-          <Badge variant={openShift.urgency === 'critical' ? 'destructive' : 'outline'} className="text-[8px] mt-1 capitalize">{openShift.urgency}</Badge>
-        </>
-      )}
+      <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
+      <div className="pl-3 pr-2 py-1.5">
+        <div className="text-xs font-semibold text-foreground">{openShift.startTime}-{openShift.endTime}</div>
+        {!isCompact && (
+          <>
+            <div className="flex flex-wrap gap-0.5 mt-1">
+              {openShift.requiredQualifications.slice(0, 2).map((qual) => (
+                <Badge key={qual} variant="outline" className="text-[8px] px-1 py-0 h-3.5">{qualificationLabels[qual].slice(0, 6)}</Badge>
+              ))}
+            </div>
+            <Badge variant={openShift.urgency === 'critical' ? 'destructive' : 'outline'} className="text-[8px] mt-1 capitalize">{openShift.urgency}</Badge>
+          </>
+        )}
+      </div>
     </div>
   );
 }
