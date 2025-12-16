@@ -12,6 +12,8 @@ import { TimesheetCalendarView, OvertimeHeatmap } from '@/components/timesheet/T
 import { TimesheetAuditTrail } from '@/components/timesheet/TimesheetAuditTrail';
 import { ComplianceScorecard } from '@/components/timesheet/ComplianceScorecard';
 import { ExportDialog } from '@/components/timesheet/ExportDialog';
+import { NotificationCenter, generateMockNotifications, Notification } from '@/components/timesheet/NotificationCenter';
+import { ApprovalDelegationModal, generateMockDelegations } from '@/components/timesheet/ApprovalDelegationModal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Clock,
   Users,
@@ -39,9 +41,12 @@ import {
   Shield,
   CheckSquare,
   XCircle,
+  UserCheck,
+  User,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { addDays } from 'date-fns';
 
 type TabValue = 'all' | 'exceptions' | TimesheetStatus;
 type ViewMode = 'table' | 'analytics' | 'calendar' | 'audit' | 'compliance';
@@ -56,10 +61,13 @@ export default function TimesheetAdmin() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isDelegationOpen, setIsDelegationOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showSelection, setShowSelection] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>(generateMockNotifications());
+  const [delegations, setDelegations] = useState(generateMockDelegations());
 
-  // Calculate stats with compliance
+  // Calculate stats
   const stats = useMemo(() => {
     const totalBreakMinutes = timesheets.reduce((sum, t) => sum + t.totalBreakMinutes, 0);
     let exceptionsCount = 0;
@@ -125,7 +133,18 @@ export default function TimesheetAdmin() {
     );
   };
 
+  const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+    const newNotification: Notification = {
+      ...notification,
+      id: `notif-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
   const handleApprove = (id: string) => {
+    const ts = timesheets.find(t => t.id === id);
     setTimesheets((prev) =>
       prev.map((t) =>
         t.id === id ? { ...t, status: 'approved' as TimesheetStatus, reviewedAt: new Date().toISOString() } : t
@@ -133,9 +152,16 @@ export default function TimesheetAdmin() {
     );
     setIsViewModalOpen(false);
     toast({ title: 'Timesheet Approved', description: 'The timesheet has been approved successfully.' });
+    addNotification({
+      type: 'approval',
+      title: 'Timesheet Approved',
+      message: `${ts?.employee.name}'s timesheet has been approved`,
+      employeeName: ts?.employee.name,
+    });
   };
 
   const handleReject = (id: string) => {
+    const ts = timesheets.find(t => t.id === id);
     setTimesheets((prev) =>
       prev.map((t) =>
         t.id === id ? { ...t, status: 'rejected' as TimesheetStatus, reviewedAt: new Date().toISOString() } : t
@@ -143,6 +169,12 @@ export default function TimesheetAdmin() {
     );
     setIsViewModalOpen(false);
     toast({ title: 'Timesheet Rejected', description: 'The timesheet has been rejected.', variant: 'destructive' });
+    addNotification({
+      type: 'rejection',
+      title: 'Timesheet Rejected',
+      message: `${ts?.employee.name}'s timesheet has been rejected`,
+      employeeName: ts?.employee.name,
+    });
   };
 
   const handleBulkApprove = () => {
@@ -152,6 +184,11 @@ export default function TimesheetAdmin() {
       )
     );
     toast({ title: 'Bulk Approved', description: `${selectedIds.size} timesheets approved.` });
+    addNotification({
+      type: 'approval',
+      title: 'Bulk Approval Complete',
+      message: `${selectedIds.size} timesheets have been approved`,
+    });
     setSelectedIds(new Set());
     setShowSelection(false);
   };
@@ -167,6 +204,44 @@ export default function TimesheetAdmin() {
     setShowSelection(false);
   };
 
+  // Notification handlers
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleDeleteNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleClearAllNotifications = () => {
+    setNotifications([]);
+  };
+
+  // Delegation handlers
+  const handleCreateDelegation = (delegation: any) => {
+    const newDelegation = {
+      ...delegation,
+      id: `del-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      status: 'active' as const,
+    };
+    setDelegations(prev => [...prev, newDelegation]);
+    addNotification({
+      type: 'delegation',
+      title: 'Delegation Created',
+      message: `Approval authority delegated to ${delegation.delegateToName}`,
+    });
+  };
+
+  const handleRevokeDelegation = (id: string) => {
+    setDelegations(prev => prev.filter(d => d.id !== id));
+    toast({ title: 'Delegation Revoked', description: 'The delegation has been revoked.' });
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-background">
       <AdminSidebar />
@@ -179,7 +254,8 @@ export default function TimesheetAdmin() {
               <h1 className="text-3xl font-bold text-foreground">Timesheet Management</h1>
               <p className="text-muted-foreground mt-1">Review and manage employee timesheets</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              {/* View Mode Buttons */}
               {['table', 'analytics', 'calendar', 'audit', 'compliance'].map((mode) => (
                 <Button
                   key={mode}
@@ -196,6 +272,29 @@ export default function TimesheetAdmin() {
                   {mode}
                 </Button>
               ))}
+
+              <div className="w-px h-8 bg-border mx-2" />
+
+              {/* Delegation Button */}
+              <Button variant="outline" size="sm" onClick={() => setIsDelegationOpen(true)}>
+                <UserCheck className="h-4 w-4 mr-1.5" />
+                Delegate
+              </Button>
+
+              {/* Employee Portal Link */}
+              <Button variant="outline" size="sm" onClick={() => window.location.href = '/employee-portal'}>
+                <User className="h-4 w-4 mr-1.5" />
+                Employee View
+              </Button>
+
+              {/* Notifications */}
+              <NotificationCenter
+                notifications={notifications}
+                onMarkAsRead={handleMarkAsRead}
+                onMarkAllAsRead={handleMarkAllAsRead}
+                onDelete={handleDeleteNotification}
+                onClearAll={handleClearAllNotifications}
+              />
             </div>
           </div>
 
@@ -296,9 +395,18 @@ export default function TimesheetAdmin() {
         </div>
       </main>
 
+      {/* Modals */}
       <TimesheetDetailModal timesheet={selectedTimesheet} open={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} onApprove={handleApprove} onReject={handleReject} />
       <TimesheetEditModal timesheet={selectedTimesheet} open={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSave={handleSave} />
       <ExportDialog open={isExportOpen} onClose={() => setIsExportOpen(false)} timesheets={filteredTimesheets} />
+      <ApprovalDelegationModal
+        open={isDelegationOpen}
+        onClose={() => setIsDelegationOpen(false)}
+        currentUser="current-user"
+        delegations={delegations}
+        onCreateDelegation={handleCreateDelegation}
+        onRevokeDelegation={handleRevokeDelegation}
+      />
     </div>
   );
 }
