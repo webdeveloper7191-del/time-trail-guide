@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { format, addDays, startOfWeek, subWeeks } from 'date-fns';
 import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff } from '@/types/roster';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags, mockAgencyStaff } from '@/data/mockRosterData';
@@ -11,6 +11,9 @@ import { ShiftSwapModal } from '@/components/roster/ShiftSwapModal';
 import { BudgetTrackerBar } from '@/components/roster/BudgetTrackerBar';
 import { AddOpenShiftModal } from '@/components/roster/AddOpenShiftModal';
 import { AvailabilityCalendarModal } from '@/components/roster/AvailabilityCalendarModal';
+import { BudgetSettingsModal } from '@/components/roster/BudgetSettingsModal';
+import { AlertNotificationsPanel } from '@/components/roster/AlertNotificationsPanel';
+import { RosterPrintView } from '@/components/roster/RosterPrintView';
 import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,11 +46,13 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
-  CalendarCheck
+  CalendarCheck,
+  Bell,
+  Printer
 } from 'lucide-react';
 
-// Budget configuration per centre
-const centreBudgets: Record<string, number> = {
+// Default budget configuration per centre
+const defaultCentreBudgets: Record<string, number> = {
   'centre-1': 8000,
   'centre-2': 6500,
   'centre-3': 7500,
@@ -69,6 +74,11 @@ export default function RosterScheduler() {
   const [showAddOpenShiftModal, setShowAddOpenShiftModal] = useState(false);
   const [showBudgetBar, setShowBudgetBar] = useState(false);
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [showBudgetSettings, setShowBudgetSettings] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [centreBudgets, setCentreBudgets] = useState<Record<string, number>>(defaultCentreBudgets);
+  
+  const printRef = useRef<HTMLDivElement>(null);
   
   const [roleFilter, setRoleFilter] = useState<string>('all');
   
@@ -372,6 +382,56 @@ export default function RosterScheduler() {
     toast.success('Leave request submitted');
   };
 
+  const handleSaveBudgetSettings = (settings: { weeklyBudget: number }) => {
+    setCentreBudgets(prev => ({
+      ...prev,
+      [selectedCentreId]: settings.weeklyBudget
+    }));
+    toast.success('Budget settings saved');
+  };
+
+  const handlePrint = () => {
+    const printContent = printRef.current;
+    if (!printContent) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow popups to use print view');
+      return;
+    }
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${selectedCentre.name} - Weekly Roster</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+            @media print { @page { size: landscape; margin: 1cm; } }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+    toast.success('Print view opened');
+  };
+
+  const alertCount = useMemo(() => {
+    let count = 0;
+    const budgetPercent = (costSummary.totalCost / weeklyBudget) * 100;
+    if (budgetPercent >= 90) count++;
+    count += criticalFlags.length;
+    return count;
+  }, [costSummary, weeklyBudget, criticalFlags]);
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
@@ -473,7 +533,26 @@ export default function RosterScheduler() {
               Leave
             </Button>
 
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handlePrint}>
+              <Printer className="h-4 w-4 mr-1" />
+              Print
+            </Button>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowAlerts(true)}
+              className="relative"
+            >
+              <Bell className="h-4 w-4" />
+              {alertCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                  {alertCount}
+                </span>
+              )}
+            </Button>
+
+            <Button variant="outline" size="sm" onClick={() => setShowBudgetSettings(true)}>
               <Settings className="h-4 w-4" />
             </Button>
             
@@ -632,6 +711,39 @@ export default function RosterScheduler() {
         staff={allStaff}
         currentDate={currentDate}
       />
+
+      <BudgetSettingsModal
+        open={showBudgetSettings}
+        onClose={() => setShowBudgetSettings(false)}
+        centre={selectedCentre}
+        currentBudget={weeklyBudget}
+        onSave={handleSaveBudgetSettings}
+      />
+
+      <AlertNotificationsPanel
+        open={showAlerts}
+        onClose={() => setShowAlerts(false)}
+        shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+        staff={allStaff}
+        complianceFlags={complianceFlags}
+        weeklyBudget={weeklyBudget}
+        totalCost={costSummary.totalCost}
+        centreId={selectedCentreId}
+      />
+
+      {/* Hidden Print View */}
+      <div className="hidden">
+        <RosterPrintView
+          ref={printRef}
+          shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+          openShifts={openShifts.filter(os => os.centreId === selectedCentreId)}
+          staff={allStaff}
+          centre={selectedCentre}
+          dates={dates}
+          weeklyBudget={weeklyBudget}
+          costSummary={costSummary}
+        />
+      </div>
     </div>
   );
 }
