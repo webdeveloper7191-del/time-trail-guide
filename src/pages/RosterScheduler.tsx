@@ -797,6 +797,7 @@ export default function RosterScheduler() {
           onDragStart={handleDragStart}
           onOpenShiftDrop={handleOpenShiftDrop}
           onShiftMove={handleShiftMove}
+          onStaffClick={openStaffProfile}
         />
 
         <UnscheduledStaffPanel
