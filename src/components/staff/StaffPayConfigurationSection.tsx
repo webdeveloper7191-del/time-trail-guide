@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StaffMember, employmentTypeLabels } from '@/types/staff';
+import { useState, useMemo } from 'react';
+import { StaffMember, employmentTypeLabels, PayRateType, EmploymentType } from '@/types/staff';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +21,19 @@ import {
   Info,
   Clock,
   DollarSign,
+  Award,
+  AlertCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { locations } from '@/data/mockStaffData';
+import { australianAwards, getAwardById, calculateRates, AustralianAward, AwardClassification } from '@/data/australianAwards';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface StaffPayConfigurationSectionProps {
   staff: StaffMember;
@@ -32,6 +42,48 @@ interface StaffPayConfigurationSectionProps {
 export function StaffPayConfigurationSection({ staff }: StaffPayConfigurationSectionProps) {
   const [effectiveOption, setEffectiveOption] = useState('current');
   const [availabilityPattern, setAvailabilityPattern] = useState(staff.availabilityPattern);
+  
+  // Pay configuration state
+  const [payRateType, setPayRateType] = useState<PayRateType>(staff.currentPayCondition?.payRateType || 'award');
+  const [selectedAwardId, setSelectedAwardId] = useState<string>(
+    staff.currentPayCondition?.industryAward 
+      ? australianAwards.find(a => a.name === staff.currentPayCondition?.industryAward)?.id || ''
+      : ''
+  );
+  const [selectedClassificationId, setSelectedClassificationId] = useState<string>(
+    staff.currentPayCondition?.classification || ''
+  );
+  const [employmentType, setEmploymentType] = useState<EmploymentType>(
+    staff.currentPayCondition?.employmentType || 'full_time'
+  );
+  const [hourlyRate, setHourlyRate] = useState<number>(staff.currentPayCondition?.hourlyRate || 0);
+  const [annualSalary, setAnnualSalary] = useState<number>(staff.currentPayCondition?.annualSalary || 0);
+
+  // Derived values
+  const selectedAward = useMemo(() => getAwardById(selectedAwardId), [selectedAwardId]);
+  const selectedClassification = useMemo(() => 
+    selectedAward?.classifications.find(c => c.id === selectedClassificationId),
+    [selectedAward, selectedClassificationId]
+  );
+
+  const calculatedRates = useMemo(() => {
+    if (payRateType === 'award' && selectedAward && selectedClassification) {
+      return calculateRates(selectedAward, selectedClassification, employmentType);
+    }
+    return null;
+  }, [payRateType, selectedAward, selectedClassification, employmentType]);
+
+  // Update hourly rate when classification changes
+  const effectiveHourlyRate = useMemo(() => {
+    if (payRateType === 'award' && calculatedRates) {
+      return calculatedRates.effectiveRate;
+    }
+    if (payRateType === 'salary' && annualSalary > 0) {
+      // Calculate hourly from annual (assuming 38hr week, 52 weeks)
+      return annualSalary / (38 * 52);
+    }
+    return hourlyRate;
+  }, [payRateType, calculatedRates, hourlyRate, annualSalary]);
 
   const daysOfWeek = [
     { key: 'monday', label: 'Monday' },
@@ -54,26 +106,77 @@ export function StaffPayConfigurationSection({ staff }: StaffPayConfigurationSec
         </div>
         
         {/* Applicable Pay Rates Card */}
-        <Card className="w-72 bg-slate-800 text-white border-0">
+        <Card className="w-80 bg-slate-800 text-white border-0">
           <CardContent className="p-4">
-            <p className="text-sm font-medium text-cyan-400 mb-2">Applicable Pay Rates</p>
-            <p className="text-xs text-slate-300 mb-3">
-              {staff.currentPayCondition?.industryAward || 'Fast Food Industry Award 2020'}
-            </p>
-            <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Base hourly rate:</span>
-                <span>${staff.currentPayCondition?.hourlyRate.toFixed(2) || '28.12'}/hour</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Every Day:</span>
-                <span>${staff.currentPayCondition?.hourlyRate.toFixed(2) || '28.12'}/hour</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Sundays:</span>
-                <span>${((staff.currentPayCondition?.hourlyRate || 28.12) * 1.5).toFixed(2)}/hour</span>
-              </div>
+            <div className="flex items-center gap-2 mb-2">
+              <Award className="h-4 w-4 text-cyan-400" />
+              <p className="text-sm font-medium text-cyan-400">Applicable Pay Rates</p>
             </div>
+            {payRateType === 'award' && selectedAward ? (
+              <>
+                <p className="text-xs text-slate-300 mb-1">{selectedAward.name}</p>
+                {selectedClassification && (
+                  <p className="text-xs text-slate-400 mb-3">
+                    {selectedClassification.level} - {selectedClassification.description}
+                  </p>
+                )}
+                {calculatedRates && (
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Base rate:</span>
+                      <span>${calculatedRates.baseRate.toFixed(2)}/hr</span>
+                    </div>
+                    {employmentType === 'casual' && calculatedRates.casualLoadedRate && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">+ Casual loading ({selectedAward.casualLoading}%):</span>
+                        <span className="text-green-400">${calculatedRates.casualLoadedRate.toFixed(2)}/hr</span>
+                      </div>
+                    )}
+                    <Separator className="bg-slate-600 my-2" />
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Saturday ({selectedAward.saturdayPenalty}%):</span>
+                      <span>${calculatedRates.saturdayRate.toFixed(2)}/hr</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Sunday ({selectedAward.sundayPenalty}%):</span>
+                      <span>${calculatedRates.sundayRate.toFixed(2)}/hr</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Public Holiday:</span>
+                      <span>${calculatedRates.publicHolidayRate.toFixed(2)}/hr</span>
+                    </div>
+                    {calculatedRates.eveningRate && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Evening:</span>
+                        <span>${calculatedRates.eveningRate.toFixed(2)}/hr</span>
+                      </div>
+                    )}
+                    <Separator className="bg-slate-600 my-2" />
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">OT (first 2hrs):</span>
+                      <span>${calculatedRates.overtime.first2Hours.toFixed(2)}/hr</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">OT (after 2hrs):</span>
+                      <span>${calculatedRates.overtime.after2Hours.toFixed(2)}/hr</span>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="space-y-1.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Hourly rate:</span>
+                  <span>${effectiveHourlyRate.toFixed(2)}/hr</span>
+                </div>
+                {payRateType === 'salary' && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Annual salary:</span>
+                    <span>${annualSalary.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -94,7 +197,7 @@ export function StaffPayConfigurationSection({ staff }: StaffPayConfigurationSec
                   From start of previous pay cycle ({format(new Date(), 'dd MMM yyyy')})
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Select this option if 23Digital's pay conditions changed last pay cycle
+                  Select this option if {staff.firstName}'s pay conditions changed last pay cycle
                 </p>
               </div>
             </div>
@@ -102,21 +205,21 @@ export function StaffPayConfigurationSection({ staff }: StaffPayConfigurationSec
               <RadioGroupItem value="current" id="current" className="mt-0.5" />
               <div className="flex-1">
                 <Label htmlFor="current" className="font-medium cursor-pointer">
-                  From start of pay conditions ({format(new Date(), 'dd MMM yyyy')})
+                  From start of current pay period ({format(new Date(), 'dd MMM yyyy')})
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Select this option to fix an error with 23Digital's current pay conditions
+                  Select this option to fix an error with {staff.firstName}'s current pay conditions
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-              <RadioGroupItem value="date_only" id="date_only" className="mt-0.5" />
+              <RadioGroupItem value="future" id="future" className="mt-0.5" />
               <div className="flex-1">
-                <Label htmlFor="date_only" className="font-medium cursor-pointer">
-                  Date change only
+                <Label htmlFor="future" className="font-medium cursor-pointer">
+                  Schedule for future date
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Select this option if you just want to change the start date of 23Digital's current pay conditions
+                  Select this option to schedule pay condition changes for a future date
                 </p>
               </div>
             </div>
@@ -124,21 +227,252 @@ export function StaffPayConfigurationSection({ staff }: StaffPayConfigurationSec
         </CardContent>
       </Card>
 
-      {/* Contract Hours & Position */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="pt-6 space-y-4">
+      {/* Pay Rate Type Selection */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Pay Rate Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Pay Rate Type */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Pay Rate Type</Label>
+            <RadioGroup 
+              value={payRateType} 
+              onValueChange={(v) => setPayRateType(v as PayRateType)} 
+              className="grid grid-cols-3 gap-4"
+            >
+              <div className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${payRateType === 'award' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/50'}`}>
+                <RadioGroupItem value="award" id="award" />
+                <div>
+                  <Label htmlFor="award" className="font-medium cursor-pointer">Award Rate</Label>
+                  <p className="text-xs text-muted-foreground">Based on Modern Award</p>
+                </div>
+              </div>
+              <div className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${payRateType === 'hourly' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/50'}`}>
+                <RadioGroupItem value="hourly" id="hourly_rate" />
+                <div>
+                  <Label htmlFor="hourly_rate" className="font-medium cursor-pointer">Hourly Rate</Label>
+                  <p className="text-xs text-muted-foreground">Custom hourly rate</p>
+                </div>
+              </div>
+              <div className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${payRateType === 'salary' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/50'}`}>
+                <RadioGroupItem value="salary" id="salary" />
+                <div>
+                  <Label htmlFor="salary" className="font-medium cursor-pointer">Annual Salary</Label>
+                  <p className="text-xs text-muted-foreground">Fixed annual salary</p>
+                </div>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Award Selection (shown when award type selected) */}
+          {payRateType === 'award' && (
+            <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                <Award className="h-4 w-4" />
+                Australian Modern Award Configuration
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm flex items-center gap-1">
+                    Select Award
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Select the applicable Modern Award that covers this employee's role</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </Label>
+                  <Select value={selectedAwardId} onValueChange={(value) => {
+                    setSelectedAwardId(value);
+                    setSelectedClassificationId(''); // Reset classification when award changes
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an Award" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border z-50">
+                      {australianAwards.map((award) => (
+                        <SelectItem key={award.id} value={award.id}>
+                          <div className="flex flex-col">
+                            <span>{award.shortName}</span>
+                            <span className="text-xs text-muted-foreground">{award.code}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedAward && (
+                    <p className="text-xs text-muted-foreground">
+                      {selectedAward.name} • Effective {selectedAward.effectiveDate}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm flex items-center gap-1">
+                    Classification Level
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Select the classification level based on the employee's qualifications and experience</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </Label>
+                  <Select 
+                    value={selectedClassificationId} 
+                    onValueChange={setSelectedClassificationId}
+                    disabled={!selectedAward}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={selectedAward ? "Select Classification" : "Select Award first"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border z-50 max-h-[300px]">
+                      {selectedAward?.classifications.map((classification) => (
+                        <SelectItem key={classification.id} value={classification.id}>
+                          <div className="flex items-center justify-between gap-4 w-full">
+                            <div>
+                              <span className="font-medium">{classification.level}</span>
+                              <span className="text-muted-foreground ml-2">- {classification.description}</span>
+                            </div>
+                            <span className="text-sm text-green-600 font-medium">
+                              ${classification.baseHourlyRate.toFixed(2)}/hr
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedClassification?.qualificationRequired && (
+                    <div className="flex items-center gap-1 text-xs text-amber-600">
+                      <AlertCircle className="h-3 w-3" />
+                      Requires: {selectedClassification.qualificationRequired}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Award Allowances */}
+              {selectedAward && selectedAward.allowances.length > 0 && (
+                <div className="space-y-2 pt-4 border-t">
+                  <Label className="text-sm font-medium">Available Award Allowances</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedAward.allowances.map((allowance) => (
+                      <div key={allowance.id} className="flex items-center justify-between p-2 bg-background rounded border text-sm">
+                        <div className="flex items-center gap-2">
+                          <input type="checkbox" className="rounded" />
+                          <span>{allowance.name}</span>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          ${allowance.amount.toFixed(2)}/{allowance.type.replace('per_', '')}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Hourly Rate Input (shown when hourly type selected) */}
+          {payRateType === 'hourly' && (
+            <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm">Custom Hourly Rate</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      type="number" 
+                      value={hourlyRate}
+                      onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)}
+                      className="pl-8"
+                      placeholder="Enter hourly rate"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Annual Salary Input (shown when salary type selected) */}
+          {payRateType === 'salary' && (
+            <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm">Annual Salary</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      type="number" 
+                      value={annualSalary}
+                      onChange={(e) => setAnnualSalary(parseFloat(e.target.value) || 0)}
+                      className="pl-8"
+                      placeholder="Enter annual salary"
+                    />
+                  </div>
+                  {annualSalary > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Equivalent to ${(annualSalary / (38 * 52)).toFixed(2)}/hr (based on 38hr week)
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Employment Type & Hours */}
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label className="text-sm flex items-center gap-1">
-                Contracted weekly hours
+                Employment Type
+                <Info className="h-3 w-3 text-muted-foreground" />
+              </Label>
+              <Select value={employmentType} onValueChange={(v) => setEmploymentType(v as EmploymentType)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border z-50">
+                  <SelectItem value="full_time">Full Time</SelectItem>
+                  <SelectItem value="part_time">Part Time</SelectItem>
+                  <SelectItem value="casual">Casual</SelectItem>
+                  <SelectItem value="contractor">Contractor</SelectItem>
+                </SelectContent>
+              </Select>
+              {employmentType === 'casual' && payRateType === 'award' && selectedAward && (
+                <div className="flex items-center gap-1 text-xs text-green-600">
+                  <CheckCircle2 className="h-3 w-3" />
+                  +{selectedAward.casualLoading}% casual loading applied
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm flex items-center gap-1">
+                Contracted Hours/Week
                 <Info className="h-3 w-3 text-muted-foreground" />
               </Label>
               <Input 
                 type="number" 
-                defaultValue={staff.currentPayCondition?.contractedHours || 0} 
+                defaultValue={staff.currentPayCondition?.contractedHours || 38} 
                 className="bg-background"
               />
             </div>
+
             <div className="space-y-2">
               <Label className="text-sm flex items-center gap-1">
                 Position
@@ -146,79 +480,21 @@ export function StaffPayConfigurationSection({ staff }: StaffPayConfigurationSec
               </Label>
               <Select defaultValue={staff.position}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Positions" />
+                  <SelectValue placeholder="Select Position" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border z-50">
                   <SelectItem value="Senior Educator">Senior Educator</SelectItem>
                   <SelectItem value="Lead Educator">Lead Educator</SelectItem>
                   <SelectItem value="Assistant Educator">Assistant Educator</SelectItem>
                   <SelectItem value="Trainee Educator">Trainee Educator</SelectItem>
+                  <SelectItem value="Director">Director</SelectItem>
+                  <SelectItem value="Educational Leader">Educational Leader</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium">Pay Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm flex items-center gap-1">
-                Payrate Type
-                <Info className="h-3 w-3 text-muted-foreground" />
-              </Label>
-              <Input value="Base Hourly Rate" readOnly className="bg-muted/30" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm flex items-center gap-1">
-                  Employment Type
-                  <Info className="h-3 w-3 text-muted-foreground" />
-                </Label>
-                <Select defaultValue={staff.currentPayCondition?.employmentType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Employment Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="full_time">Full Time</SelectItem>
-                    <SelectItem value="part_time">Part Time</SelectItem>
-                    <SelectItem value="casual">Casual</SelectItem>
-                    <SelectItem value="contractor">Contractor</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Hourly Rate</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    type="number" 
-                    defaultValue={staff.currentPayCondition?.hourlyRate} 
-                    className="pl-8"
-                    placeholder="Enter Your Hourly Rate"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm flex items-center gap-1">
-                Annual Salary
-                <Info className="h-3 w-3 text-muted-foreground" />
-              </Label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  type="number"
-                  className="pl-8"
-                  placeholder="Enter Your Annual Salary"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Weekly Availability Settings */}
       <Card>
