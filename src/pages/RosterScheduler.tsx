@@ -1,11 +1,10 @@
 import { useState, useMemo } from 'react';
 import { format, addDays, startOfWeek } from 'date-fns';
-import { ViewMode, Shift, StaffMember, Centre, RosterComplianceFlag, OpenShift, roleLabels, QualificationType } from '@/types/roster';
+import { ViewMode, Shift, StaffMember, OpenShift, roleLabels } from '@/types/roster';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags } from '@/data/mockRosterData';
-import { ScheduledStaffPanel } from '@/components/roster/ScheduledStaffPanel';
 import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel';
 import { OpenShiftsPool } from '@/components/roster/OpenShiftsPool';
-import { TimelineGrid } from '@/components/roster/TimelineGrid';
+import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
 import { ShiftDetailPanel } from '@/components/roster/ShiftDetailPanel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { 
   Calendar, 
@@ -26,10 +24,9 @@ import {
   EyeOff,
   Settings,
   Building2,
-  Search,
   Filter,
   BarChart3,
-  X
+  Users
 } from 'lucide-react';
 
 export default function RosterScheduler() {
@@ -43,9 +40,7 @@ export default function RosterScheduler() {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   
   // Filters
-  const [areaFilter, setAreaFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
   
   const demandData = useMemo(() => generateMockDemandData(), []);
   const complianceFlags = useMemo(() => generateMockComplianceFlags(), []);
@@ -58,11 +53,11 @@ export default function RosterScheduler() {
     return Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i));
   }, [currentDate, viewMode]);
 
-  // Filter rooms based on area filter
-  const filteredRooms = useMemo(() => {
-    if (areaFilter === 'all') return selectedCentre.rooms;
-    return selectedCentre.rooms.filter(r => r.ageGroup === areaFilter);
-  }, [selectedCentre, areaFilter]);
+  // Filter staff based on role
+  const filteredStaff = useMemo(() => {
+    if (roleFilter === 'all') return mockStaff;
+    return mockStaff.filter(s => s.role === roleFilter);
+  }, [roleFilter]);
 
   const centreFlags = complianceFlags.filter(f => f.centreId === selectedCentreId);
   const criticalFlags = centreFlags.filter(f => f.severity === 'critical');
@@ -87,22 +82,6 @@ export default function RosterScheduler() {
     return { totalHours: Math.round(totalHours * 10) / 10, totalCost: Math.round(totalCost) };
   }, [shifts, selectedCentreId]);
 
-  // Low demand days (for demand-aware mode)
-  const lowDemandDays = useMemo(() => {
-    if (!demandAwareMode) return new Set<string>();
-    
-    const lowDays = new Set<string>();
-    dates.forEach(date => {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      const dayDemand = demandData.filter(d => d.date === dateStr && d.centreId === selectedCentreId);
-      const avgUtil = dayDemand.length > 0 
-        ? dayDemand.reduce((sum, d) => sum + d.utilisationPercent, 0) / dayDemand.length
-        : 0;
-      if (avgUtil < 50) lowDays.add(dateStr);
-    });
-    return lowDays;
-  }, [demandAwareMode, dates, demandData, selectedCentreId]);
-
   const handleDragStart = (e: React.DragEvent, staff: StaffMember) => {
     e.dataTransfer.setData('staffId', staff.id);
     e.dataTransfer.setData('dragType', 'staff');
@@ -126,14 +105,13 @@ export default function RosterScheduler() {
     };
 
     setShifts(prev => [...prev, newShift]);
-    toast.success(`Added ${staff.name} to shift`);
+    toast.success(`Added shift for ${staff.name}`);
   };
 
   const handleDropStaffOnOpenShift = (staffId: string, openShift: OpenShift) => {
     const staff = mockStaff.find(s => s.id === staffId);
     if (!staff) return;
 
-    // Create new shift from open shift
     const newShift: Shift = {
       id: `shift-${Date.now()}`,
       staffId,
@@ -150,28 +128,6 @@ export default function RosterScheduler() {
     setShifts(prev => [...prev, newShift]);
     setOpenShifts(prev => prev.filter(os => os.id !== openShift.id));
     toast.success(`Assigned ${staff.name} to open shift`);
-  };
-
-  const handleUnassignStaff = (shiftId: string) => {
-    const shift = shifts.find(s => s.id === shiftId);
-    if (!shift) return;
-
-    // Convert to open shift
-    const newOpenShift: OpenShift = {
-      id: `open-${Date.now()}`,
-      centreId: shift.centreId,
-      roomId: shift.roomId,
-      date: shift.date,
-      startTime: shift.startTime,
-      endTime: shift.endTime,
-      requiredQualifications: [],
-      urgency: 'medium',
-      applicants: [],
-    };
-
-    setShifts(prev => prev.filter(s => s.id !== shiftId));
-    setOpenShifts(prev => [...prev, newOpenShift]);
-    toast.info('Staff unassigned - shift moved to open shifts');
   };
 
   const handlePublish = () => {
@@ -215,6 +171,28 @@ export default function RosterScheduler() {
     toast.success('Shift duplicated');
   };
 
+  const handleAddShift = (staffId: string, date: string) => {
+    const staff = mockStaff.find(s => s.id === staffId);
+    if (!staff) return;
+
+    const newShift: Shift = {
+      id: `shift-${Date.now()}`,
+      staffId,
+      centreId: selectedCentreId,
+      roomId: selectedCentre.rooms[0]?.id || '',
+      date,
+      startTime: '09:00',
+      endTime: '17:00',
+      breakMinutes: 30,
+      status: 'draft',
+      isOpenShift: false,
+    };
+
+    setShifts(prev => [...prev, newShift]);
+    setSelectedShift(newShift);
+    toast.success(`Created shift for ${staff.name}`);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
@@ -240,24 +218,10 @@ export default function RosterScheduler() {
               </SelectContent>
             </Select>
 
-            {/* Area/Room Filter */}
-            <Select value={areaFilter} onValueChange={setAreaFilter}>
-              <SelectTrigger className="w-[140px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="All Areas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Areas</SelectItem>
-                <SelectItem value="nursery">Nursery (0-2)</SelectItem>
-                <SelectItem value="toddler">Toddler (2-3)</SelectItem>
-                <SelectItem value="preschool">Preschool (3-4)</SelectItem>
-                <SelectItem value="kindy">Kindy (4-5)</SelectItem>
-              </SelectContent>
-            </Select>
-
             {/* Role Filter */}
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-[150px]">
+                <Users className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
               <SelectContent>
@@ -327,14 +291,6 @@ export default function RosterScheduler() {
               </Label>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Switch id="demandAware" checked={demandAwareMode} onCheckedChange={setDemandAwareMode} />
-              <Label htmlFor="demandAware" className="text-sm flex items-center gap-1">
-                <BarChart3 className="h-3.5 w-3.5" />
-                Low-demand Filter
-              </Label>
-            </div>
-
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
               <TabsList>
                 <TabsTrigger value="day">Day</TabsTrigger>
@@ -349,37 +305,28 @@ export default function RosterScheduler() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Scheduled Staff */}
-        <ScheduledStaffPanel
-          staff={mockStaff}
-          shifts={shifts}
-          selectedCentreId={selectedCentreId}
-          onDragStart={handleDragStart}
-        />
-
-        {/* Center - Timeline Grid */}
-        <TimelineGrid
-          centre={{ ...selectedCentre, rooms: filteredRooms }}
+        {/* Center - Staff Timeline Grid */}
+        <StaffTimelineGrid
+          centre={selectedCentre}
           shifts={shifts.filter(s => s.centreId === selectedCentreId)}
           openShifts={openShifts.filter(os => os.centreId === selectedCentreId)}
-          staff={mockStaff}
+          staff={filteredStaff}
           demandData={demandData}
           complianceFlags={complianceFlags}
           dates={dates}
           viewMode={viewMode}
           showDemandOverlay={showDemandOverlay}
-          lowDemandDays={lowDemandDays}
           onDropStaff={handleDropStaff}
           onShiftEdit={setSelectedShift}
           onShiftDelete={handleShiftDelete}
           onOpenShiftFill={(os) => toast.info('Select a staff member to fill this shift')}
-          onAddShift={(roomId, date) => toast.info(`Add shift for ${date}`)}
-          onUnassignStaff={handleUnassignStaff}
+          onAddShift={handleAddShift}
+          onDragStart={handleDragStart}
         />
 
         {/* Right Panel - Available Staff */}
         <UnscheduledStaffPanel
-          staff={mockStaff}
+          staff={filteredStaff}
           shifts={shifts}
           selectedCentreId={selectedCentreId}
           onDragStart={handleDragStart}
