@@ -43,6 +43,16 @@
     --status-approved-bg: 142 71% 95%;
     --status-rejected: 0 84% 60%;
     --status-rejected-bg: 0 84% 95%;
+    
+    /* Info colors */
+    --info: 199 89% 48%;
+    --info-bg: 199 89% 95%;
+    --warning: 38 92% 50%;
+    --warning-bg: 38 92% 95%;
+    --success: 142 71% 45%;
+    --success-bg: 142 71% 95%;
+    --error: 0 84% 60%;
+    --error-bg: 0 84% 95%;
 
     /* Sidebar */
     --sidebar-background: 222 47% 11%;
@@ -56,8 +66,9 @@
 
     /* Custom shadows - Material style */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
   }
 
   .dark {
@@ -89,10 +100,21 @@
     --input: 215 28% 17%;
     --ring: 199 89% 55%;
 
+    /* Dark status colors */
+    --info: 199 89% 55%;
+    --info-bg: 199 89% 15%;
+    --warning: 38 92% 50%;
+    --warning-bg: 38 92% 15%;
+    --success: 142 71% 45%;
+    --success-bg: 142 71% 15%;
+    --error: 0 62% 50%;
+    --error-bg: 0 62% 15%;
+
     /* Dark shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4);
   }
 }
 
@@ -120,11 +142,59 @@
     @apply bg-[hsl(var(--status-rejected-bg))] text-[hsl(var(--status-rejected))];
   }
 
+  .card-material {
+    @apply bg-card rounded-lg border border-border/50;
+    box-shadow: var(--shadow-md);
+  }
+  
+  .card-material-elevated {
+    @apply bg-card rounded-lg border border-border/30;
+    box-shadow: var(--shadow-lg);
+  }
+
   .card-shadow {
     box-shadow: var(--shadow-md);
   }
 
   .card-shadow-lg {
     box-shadow: var(--shadow-lg);
+  }
+  
+  .stat-card {
+    @apply relative overflow-hidden rounded-xl border border-border/50 bg-card p-4;
+    box-shadow: var(--shadow-md);
+  }
+  
+  .stat-card::before {
+    content: '';
+    @apply absolute left-0 top-0 h-full w-1 bg-primary;
+  }
+  
+  .stat-card-success::before {
+    @apply bg-[hsl(var(--success))];
+  }
+  
+  .stat-card-warning::before {
+    @apply bg-[hsl(var(--warning))];
+  }
+  
+  .stat-card-error::before {
+    @apply bg-[hsl(var(--error))];
+  }
+
+  .section-header {
+    @apply text-lg font-semibold tracking-tight text-foreground;
+  }
+
+  .data-row {
+    @apply flex items-center justify-between py-3 border-b border-border/50 last:border-0;
+  }
+
+  .data-label {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .data-value {
+    @apply text-sm font-medium text-foreground;
   }
 }
