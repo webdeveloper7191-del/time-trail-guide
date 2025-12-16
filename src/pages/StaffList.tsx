@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -31,7 +32,6 @@ import {
 import {
   Search,
   Plus,
-  Filter,
   MoreHorizontal,
   Eye,
   Edit,
@@ -44,10 +44,14 @@ import {
   UserPlus,
   Download,
   Upload,
+  Trash2,
+  UserMinus,
+  Send,
 } from 'lucide-react';
 import { mockStaff, departments, locations } from '@/data/mockStaffData';
 import { StaffMember, employmentStatusLabels, employmentTypeLabels, EmploymentStatus, EmploymentType } from '@/types/staff';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function StaffList() {
   const navigate = useNavigate();
@@ -56,6 +60,44 @@ export default function StaffList() {
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState<EmploymentType | 'all'>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
+
+  const toggleStaffSelection = (staffId: string) => {
+    const newSelection = new Set(selectedStaff);
+    if (newSelection.has(staffId)) {
+      newSelection.delete(staffId);
+    } else {
+      newSelection.add(staffId);
+    }
+    setSelectedStaff(newSelection);
+  };
+
+  const toggleAllSelection = () => {
+    if (selectedStaff.size === filteredStaff.length) {
+      setSelectedStaff(new Set());
+    } else {
+      setSelectedStaff(new Set(filteredStaff.map(s => s.id)));
+    }
+  };
+
+  const handleBulkAction = (action: string) => {
+    const count = selectedStaff.size;
+    switch (action) {
+      case 'email':
+        toast.success(`Sending email to ${count} staff members`);
+        break;
+      case 'deactivate':
+        toast.success(`Deactivating ${count} staff members`);
+        break;
+      case 'export':
+        toast.success(`Exporting ${count} staff records`);
+        break;
+      case 'delete':
+        toast.error(`Deleting ${count} staff members`);
+        break;
+    }
+    setSelectedStaff(new Set());
+  };
 
   const filteredStaff = useMemo(() => {
     return mockStaff.filter((staff) => {
@@ -260,6 +302,45 @@ export default function StaffList() {
             </CardContent>
           </Card>
 
+          {/* Bulk Actions Bar */}
+          {selectedStaff.size > 0 && (
+            <Card className="border-primary bg-primary/5">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="default" className="px-3 py-1">
+                      {selectedStaff.size} selected
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      Select action to apply to selected staff
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('email')}>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Email
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('export')}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('deactivate')}>
+                      <UserMinus className="h-4 w-4 mr-2" />
+                      Deactivate
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleBulkAction('delete')}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedStaff(new Set())}>
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Staff Table */}
           <Card>
             <CardHeader className="pb-3">
@@ -276,7 +357,13 @@ export default function StaffList() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="w-[300px]">Employee</TableHead>
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                        checked={selectedStaff.size === filteredStaff.length && filteredStaff.length > 0}
+                        onCheckedChange={toggleAllSelection}
+                      />
+                    </TableHead>
+                    <TableHead className="w-[280px]">Employee</TableHead>
                     <TableHead>Position</TableHead>
                     <TableHead>Employment Type</TableHead>
                     <TableHead>Location</TableHead>
@@ -289,9 +376,18 @@ export default function StaffList() {
                   {filteredStaff.map((staff) => (
                     <TableRow
                       key={staff.id}
-                      className="cursor-pointer hover:bg-muted/30"
+                      className={cn(
+                        "cursor-pointer hover:bg-muted/30",
+                        selectedStaff.has(staff.id) && "bg-primary/5"
+                      )}
                       onClick={() => navigate(`/workforce/${staff.id}`)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedStaff.has(staff.id)}
+                          onCheckedChange={() => toggleStaffSelection(staff.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
