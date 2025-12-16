@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format, addDays, startOfWeek } from 'date-fns';
-import { ViewMode, Shift, StaffMember, OpenShift, roleLabels } from '@/types/roster';
+import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates } from '@/types/roster';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags } from '@/data/mockRosterData';
 import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel';
 import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
@@ -23,7 +23,9 @@ import {
   EyeOff,
   Settings,
   Building2,
-  Users
+  Users,
+  Sparkles,
+  Clock
 } from 'lucide-react';
 
 export default function RosterScheduler() {
@@ -34,8 +36,9 @@ export default function RosterScheduler() {
   const [openShifts, setOpenShifts] = useState<OpenShift[]>(mockOpenShifts);
   const [showDemandOverlay, setShowDemandOverlay] = useState(true);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [shiftTemplates] = useState<ShiftTemplate[]>(defaultShiftTemplates);
   
-  // Filters
   const [roleFilter, setRoleFilter] = useState<string>('all');
   
   const demandData = useMemo(() => generateMockDemandData(), []);
@@ -49,7 +52,6 @@ export default function RosterScheduler() {
     return Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i));
   }, [currentDate, viewMode]);
 
-  // Filter staff based on role
   const filteredStaff = useMemo(() => {
     if (roleFilter === 'all') return mockStaff;
     return mockStaff.filter(s => s.role === roleFilter);
@@ -58,27 +60,41 @@ export default function RosterScheduler() {
   const centreFlags = complianceFlags.filter(f => f.centreId === selectedCentreId);
   const criticalFlags = centreFlags.filter(f => f.severity === 'critical');
   const warningFlags = centreFlags.filter(f => f.severity === 'warning');
-
-  // Count open shifts for this centre
   const centreOpenShifts = openShifts.filter(os => os.centreId === selectedCentreId);
 
+  // Cost calculation
   const costSummary = useMemo(() => {
     const centreShifts = shifts.filter(s => s.centreId === selectedCentreId);
+    let regularCost = 0;
+    let overtimeCost = 0;
     let totalHours = 0;
-    let totalCost = 0;
     
+    // Group by staff
+    const staffHours: Record<string, number> = {};
     centreShifts.forEach(shift => {
-      const staff = mockStaff.find(s => s.id === shift.staffId);
-      if (staff) {
-        const [startH, startM] = shift.startTime.split(':').map(Number);
-        const [endH, endM] = shift.endTime.split(':').map(Number);
-        const hours = ((endH * 60 + endM) - (startH * 60 + startM) - shift.breakMinutes) / 60;
-        totalHours += hours;
-        totalCost += hours * staff.hourlyRate;
+      const [startH, startM] = shift.startTime.split(':').map(Number);
+      const [endH, endM] = shift.endTime.split(':').map(Number);
+      const hours = ((endH * 60 + endM) - (startH * 60 + startM) - shift.breakMinutes) / 60;
+      staffHours[shift.staffId] = (staffHours[shift.staffId] || 0) + hours;
+      totalHours += hours;
+    });
+
+    Object.entries(staffHours).forEach(([staffId, hours]) => {
+      const member = mockStaff.find(s => s.id === staffId);
+      if (member) {
+        const regularHours = Math.min(hours, member.maxHoursPerWeek);
+        const overtimeHours = Math.max(0, hours - member.maxHoursPerWeek);
+        regularCost += regularHours * member.hourlyRate;
+        overtimeCost += overtimeHours * member.overtimeRate;
       }
     });
     
-    return { totalHours: Math.round(totalHours * 10) / 10, totalCost: Math.round(totalCost) };
+    return { 
+      regularCost: Math.round(regularCost), 
+      overtimeCost: Math.round(overtimeCost), 
+      totalCost: Math.round(regularCost + overtimeCost),
+      totalHours: Math.round(totalHours * 10) / 10 
+    };
   }, [shifts, selectedCentreId]);
 
   const handleDragStart = (e: React.DragEvent, staff: StaffMember) => {
@@ -144,6 +160,44 @@ export default function RosterScheduler() {
     toast.success(`Published ${draftShifts.length} shifts`);
   };
 
+  const handleGenerateAIShifts = async () => {
+    setIsGenerating(true);
+    toast.info('AI is generating optimized shifts...');
+    
+    // Simulate AI generation (in production, this would call an edge function)
+    setTimeout(() => {
+      // Generate sample AI shifts for open positions
+      const newShifts: Shift[] = [];
+      const availableStaff = mockStaff.filter(s => 
+        s.currentWeeklyHours < s.maxHoursPerWeek &&
+        (s.preferredCentres.includes(selectedCentreId) || s.preferredCentres.length === 0)
+      );
+
+      centreOpenShifts.forEach((openShift, idx) => {
+        const staff = availableStaff[idx % availableStaff.length];
+        if (staff) {
+          newShifts.push({
+            id: `shift-ai-${Date.now()}-${idx}`,
+            staffId: staff.id,
+            centreId: openShift.centreId,
+            roomId: openShift.roomId,
+            date: openShift.date,
+            startTime: openShift.startTime,
+            endTime: openShift.endTime,
+            breakMinutes: 30,
+            status: 'draft',
+            isOpenShift: false,
+          });
+        }
+      });
+
+      setShifts(prev => [...prev, ...newShifts]);
+      setOpenShifts(prev => prev.filter(os => os.centreId !== selectedCentreId));
+      setIsGenerating(false);
+      toast.success(`Generated ${newShifts.length} AI-optimized shifts`);
+    }, 2000);
+  };
+
   const navigateDate = (direction: 'prev' | 'next') => {
     const days = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : viewMode === 'fortnight' ? 14 : 28;
     setCurrentDate(prev => addDays(prev, direction === 'next' ? days : -days));
@@ -161,16 +215,12 @@ export default function RosterScheduler() {
   };
 
   const handleShiftDuplicate = (shift: Shift) => {
-    const newShift = {
-      ...shift,
-      id: `shift-${Date.now()}`,
-      status: 'draft' as const,
-    };
+    const newShift = { ...shift, id: `shift-${Date.now()}`, status: 'draft' as const };
     setShifts(prev => [...prev, newShift]);
     toast.success('Shift duplicated');
   };
 
-  const handleAddShift = (staffId: string, date: string, roomId: string) => {
+  const handleAddShift = (staffId: string, date: string, roomId: string, template?: ShiftTemplate) => {
     const staff = mockStaff.find(s => s.id === staffId);
     if (!staff) return;
 
@@ -180,16 +230,18 @@ export default function RosterScheduler() {
       centreId: selectedCentreId,
       roomId,
       date,
-      startTime: '09:00',
-      endTime: '17:00',
-      breakMinutes: 30,
+      startTime: template?.startTime || '09:00',
+      endTime: template?.endTime || '17:00',
+      breakMinutes: template?.breakMinutes ?? 30,
       status: 'draft',
       isOpenShift: false,
     };
 
     setShifts(prev => [...prev, newShift]);
-    setSelectedShift(newShift);
-    toast.success(`Created shift for ${staff.name}`);
+    if (!template) {
+      setSelectedShift(newShift);
+    }
+    toast.success(`Created ${template?.name || 'custom'} shift for ${staff.name}`);
   };
 
   return (
@@ -210,14 +262,11 @@ export default function RosterScheduler() {
               </SelectTrigger>
               <SelectContent>
                 {mockCentres.map(centre => (
-                  <SelectItem key={centre.id} value={centre.id}>
-                    {centre.name}
-                  </SelectItem>
+                  <SelectItem key={centre.id} value={centre.id}>{centre.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {/* Role Filter */}
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-[150px]">
                 <Users className="h-4 w-4 mr-2" />
@@ -236,7 +285,7 @@ export default function RosterScheduler() {
             {centreOpenShifts.length > 0 && (
               <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
                 <AlertTriangle className="h-3 w-3" />
-                {centreOpenShifts.length} Open Shifts
+                {centreOpenShifts.length} Open
               </Badge>
             )}
             {criticalFlags.length > 0 && (
@@ -245,18 +294,31 @@ export default function RosterScheduler() {
                 {criticalFlags.length} Critical
               </Badge>
             )}
-            {warningFlags.length > 0 && (
-              <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
-                <AlertTriangle className="h-3 w-3" />
-                {warningFlags.length} Warnings
-              </Badge>
-            )}
             
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md">
+            {/* Cost summary */}
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-muted rounded-md">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">${costSummary.totalCost.toLocaleString()}</span>
-              <span className="text-xs text-muted-foreground">({costSummary.totalHours}h)</span>
+              <div className="text-sm">
+                <span className="font-medium">${costSummary.totalCost.toLocaleString()}</span>
+                {costSummary.overtimeCost > 0 && (
+                  <span className="text-amber-600 text-xs ml-1">(+${costSummary.overtimeCost} OT)</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground ml-2 border-l border-border pl-2">
+                <Clock className="h-3 w-3" />
+                {costSummary.totalHours}h
+              </div>
             </div>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleGenerateAIShifts}
+              disabled={isGenerating || centreOpenShifts.length === 0}
+            >
+              <Sparkles className={cn("h-4 w-4 mr-2", isGenerating && "animate-spin")} />
+              {isGenerating ? 'Generating...' : 'AI Generate'}
+            </Button>
 
             <Button variant="outline" size="sm">
               <Settings className="h-4 w-4 mr-2" />
@@ -270,7 +332,7 @@ export default function RosterScheduler() {
           </div>
         </div>
 
-        {/* Navigation & View Controls */}
+        {/* Navigation */}
         <div className="flex items-center justify-between mt-3">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => navigateDate('prev')}>
@@ -279,9 +341,7 @@ export default function RosterScheduler() {
             <Button variant="outline" size="icon" onClick={() => navigateDate('next')}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-              Today
-            </Button>
+            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Today</Button>
             <span className="text-sm font-medium ml-2">
               {format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d, yyyy')}
             </span>
@@ -310,7 +370,6 @@ export default function RosterScheduler() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Center - Staff Timeline Grid */}
         <StaffTimelineGrid
           centre={selectedCentre}
           shifts={shifts.filter(s => s.centreId === selectedCentreId)}
@@ -321,6 +380,7 @@ export default function RosterScheduler() {
           dates={dates}
           viewMode={viewMode}
           showDemandOverlay={showDemandOverlay}
+          shiftTemplates={shiftTemplates}
           onDropStaff={handleDropStaff}
           onShiftEdit={setSelectedShift}
           onShiftDelete={handleShiftDelete}
@@ -330,7 +390,6 @@ export default function RosterScheduler() {
           onOpenShiftDrop={handleOpenShiftDrop}
         />
 
-        {/* Right Panel - Available Staff */}
         <UnscheduledStaffPanel
           staff={filteredStaff}
           shifts={shifts}
@@ -339,7 +398,6 @@ export default function RosterScheduler() {
         />
       </div>
 
-      {/* Shift Detail Panel */}
       {selectedShift && (
         <ShiftDetailPanel
           shift={selectedShift}
@@ -356,4 +414,8 @@ export default function RosterScheduler() {
       )}
     </div>
   );
+}
+
+function cn(...classes: (string | boolean | undefined)[]) {
+  return classes.filter(Boolean).join(' ');
 }
