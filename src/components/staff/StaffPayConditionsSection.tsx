@@ -18,6 +18,8 @@ import {
 import { format } from 'date-fns';
 import { StaffPayConfigurationSection } from './StaffPayConfigurationSection';
 import { StaffAwardRuleSection } from './StaffAwardRuleSection';
+import { EditPayConditionsSheet } from './EditPayConditionsSheet';
+import { PayConditionsHistorySheet } from './PayConditionsHistorySheet';
 
 interface StaffPayConditionsSectionProps {
   staff: StaffMember;
@@ -25,6 +27,8 @@ interface StaffPayConditionsSectionProps {
 
 export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionProps) {
   const [activeTab, setActiveTab] = useState('pay-conditions');
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [historySheetOpen, setHistorySheetOpen] = useState(false);
   const payCondition = staff.currentPayCondition;
 
   const payPeriodLabel = {
@@ -53,11 +57,11 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Current Pay Conditions & Hours</h2>
             <div className="flex gap-3">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setHistorySheetOpen(true)}>
                 <History className="h-4 w-4 mr-2" />
                 View Upcoming & Past Conditions
               </Button>
-              <Button size="sm" className="bg-primary">
+              <Button size="sm" className="bg-primary" onClick={() => setEditSheetOpen(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Current Pay Conditions
               </Button>
@@ -211,6 +215,18 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
           <StaffAwardRuleSection staff={staff} />
         </TabsContent>
       </Tabs>
+
+      {/* Sheet Panels */}
+      <EditPayConditionsSheet
+        open={editSheetOpen}
+        onOpenChange={setEditSheetOpen}
+        staff={staff}
+      />
+      <PayConditionsHistorySheet
+        open={historySheetOpen}
+        onOpenChange={setHistorySheetOpen}
+        staff={staff}
+      />
     </div>
   );
 }
