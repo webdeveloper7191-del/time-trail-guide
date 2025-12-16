@@ -40,6 +40,19 @@ export interface ShiftTemplate {
   color: string;
 }
 
+export interface SchedulingPreferences {
+  preferredRooms: string[];
+  avoidRooms: string[];
+  maxConsecutiveDays: number;
+  minRestHoursBetweenShifts: number;
+  preferEarlyShifts: boolean;
+  preferLateShifts: boolean;
+  maxShiftsPerWeek: number;
+  notifyOnPublish: boolean;
+  notifyOnSwap: boolean;
+  notifyOnOpenShifts: boolean;
+}
+
 export interface StaffMember {
   id: string;
   name: string;
@@ -56,6 +69,42 @@ export interface StaffMember {
   availability: DayAvailability[];
   color: string;
   timeOff?: TimeOff[];
+  email?: string;
+  phone?: string;
+  schedulingPreferences?: SchedulingPreferences;
+}
+
+export type ShiftConflictType = 
+  | 'overlap'
+  | 'outside_availability'
+  | 'overtime_exceeded'
+  | 'insufficient_rest'
+  | 'max_consecutive_days'
+  | 'on_leave'
+  | 'qualification_missing'
+  | 'preferred_room_violated';
+
+export interface ShiftConflict {
+  id: string;
+  type: ShiftConflictType;
+  severity: 'warning' | 'error';
+  shiftId: string;
+  staffId: string;
+  message: string;
+  details?: string;
+  canOverride: boolean;
+}
+
+export interface ShiftNotification {
+  id: string;
+  type: 'shift_published' | 'shift_swapped' | 'open_shift_available' | 'shift_reminder' | 'leave_approved' | 'leave_rejected';
+  recipientId: string;
+  recipientName: string;
+  title: string;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+  sentVia: ('email' | 'sms' | 'push')[];
 }
 
 export interface DayAvailability {
