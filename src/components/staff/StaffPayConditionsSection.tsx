@@ -46,36 +46,36 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-muted/50 p-1">
-          <TabsTrigger value="pay-conditions" className="data-[state=active]:bg-background">
+        <TabsList className="bg-muted/30 p-1 h-auto rounded-lg border border-border/50">
+          <TabsTrigger value="pay-conditions" className="data-[state=active]:bg-card data-[state=active]:shadow-sm rounded-md px-4 py-2 text-sm font-medium">
             Pay Conditions
           </TabsTrigger>
-          <TabsTrigger value="pay-configuration" className="data-[state=active]:bg-background">
+          <TabsTrigger value="pay-configuration" className="data-[state=active]:bg-card data-[state=active]:shadow-sm rounded-md px-4 py-2 text-sm font-medium">
             Pay Configuration
           </TabsTrigger>
-          <TabsTrigger value="award-rule" className="data-[state=active]:bg-background">
+          <TabsTrigger value="award-rule" className="data-[state=active]:bg-card data-[state=active]:shadow-sm rounded-md px-4 py-2 text-sm font-medium">
             Award Rule
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pay-conditions" className="mt-6 space-y-6">
+        <TabsContent value="pay-conditions" className="mt-6 space-y-5">
           {/* Header with Actions */}
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Current Pay Conditions & Hours</h2>
+            <h2 className="text-xl font-bold tracking-tight">Current Pay Conditions & Hours</h2>
             <div className="flex gap-2 flex-wrap justify-end">
-              <Button variant="outline" size="sm" onClick={() => setComparisonSheetOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => setComparisonSheetOpen(true)} className="shadow-sm">
                 <Scale className="h-4 w-4 mr-2" />
                 Compare Rates
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setHistorySheetOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => setHistorySheetOpen(true)} className="shadow-sm">
                 <History className="h-4 w-4 mr-2" />
                 View History
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setScheduleSheetOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => setScheduleSheetOpen(true)} className="shadow-sm">
                 <CalendarPlus className="h-4 w-4 mr-2" />
                 Schedule Change
               </Button>
-              <Button size="sm" className="bg-primary" onClick={() => setEditSheetOpen(true)}>
+              <Button size="sm" onClick={() => setEditSheetOpen(true)} className="shadow-md">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Current
               </Button>
@@ -83,141 +83,125 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
           </div>
 
           {/* Main Pay Conditions Card */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base font-medium flex items-center gap-2">
+          <div className="card-material-elevated p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="p-2 rounded-lg bg-primary/10">
                 <DollarSign className="h-4 w-4 text-primary" />
-                Overriding Hourly Rate
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {payCondition ? (
-                <>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div className="flex justify-between py-2 border-b border-muted">
-                        <span className="text-sm text-muted-foreground">Effective Period:</span>
-                        <span className="text-sm font-medium">
-                          {payCondition.effectiveFrom 
-                            ? format(new Date(payCondition.effectiveFrom), 'dd MMM yyyy')
-                            : 'Not Set'
-                          }
-                          {payCondition.effectiveTo && ` - ${format(new Date(payCondition.effectiveTo), 'dd MMM yyyy')}`}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b border-muted">
-                        <span className="text-sm text-muted-foreground">Position:</span>
-                        <span className="text-sm font-medium">{payCondition.position || 'None assigned'}</span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b border-muted">
-                        <span className="text-sm text-muted-foreground">Payrate Type:</span>
-                        <span className="text-sm font-medium">
-                          {payRateTypeLabels[payCondition.payRateType] || 'None assigned'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b border-muted">
-                        <span className="text-sm text-muted-foreground">Industry Award:</span>
-                        <span className="text-sm font-medium">{payCondition.industryAward || 'None assigned'}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex justify-between py-2 border-b border-muted">
-                        <span className="text-sm text-muted-foreground">Employment Type:</span>
-                        <span className="text-sm font-medium">
-                          {employmentTypeLabels[payCondition.employmentType] || 'None assigned'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b border-muted">
-                        <span className="text-sm text-muted-foreground">Classification:</span>
-                        <span className="text-sm font-medium">{payCondition.classification || 'None assigned'}</span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b border-muted">
-                        <span className="text-sm text-muted-foreground">Pay Period:</span>
-                        <span className="text-sm font-medium">
-                          {payPeriodLabel[payCondition.payPeriod]} – ({format(new Date(), 'dd MMMM yyyy')} - {format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy')})
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b border-muted">
-                        <span className="text-sm text-muted-foreground">Contracted Hours:</span>
-                        <span className="text-sm font-medium">{payCondition.contractedHours || 0} hrs/week</span>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <p className="text-muted-foreground">No pay conditions configured</p>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+              <h3 className="section-header">Pay Overview</h3>
+            </div>
+            {payCondition ? (
+              <div className="grid grid-cols-2 gap-x-8 gap-y-1">
+                <div className="data-row">
+                  <span className="data-label">Effective Period</span>
+                  <span className="data-value">
+                    {payCondition.effectiveFrom 
+                      ? format(new Date(payCondition.effectiveFrom), 'dd MMM yyyy')
+                      : 'Not Set'
+                    }
+                    {payCondition.effectiveTo && ` - ${format(new Date(payCondition.effectiveTo), 'dd MMM yyyy')}`}
+                  </span>
+                </div>
+                <div className="data-row">
+                  <span className="data-label">Employment Type</span>
+                  <span className="data-value">
+                    {employmentTypeLabels[payCondition.employmentType] || 'None assigned'}
+                  </span>
+                </div>
+                <div className="data-row">
+                  <span className="data-label">Position</span>
+                  <span className="data-value">{payCondition.position || 'None assigned'}</span>
+                </div>
+                <div className="data-row">
+                  <span className="data-label">Classification</span>
+                  <span className="data-value">{payCondition.classification || 'None assigned'}</span>
+                </div>
+                <div className="data-row">
+                  <span className="data-label">Payrate Type</span>
+                  <span className="data-value">
+                    {payRateTypeLabels[payCondition.payRateType] || 'None assigned'}
+                  </span>
+                </div>
+                <div className="data-row">
+                  <span className="data-label">Pay Period</span>
+                  <span className="data-value">
+                    {payPeriodLabel[payCondition.payPeriod]}
+                  </span>
+                </div>
+                <div className="data-row">
+                  <span className="data-label">Industry Award</span>
+                  <span className="data-value">{payCondition.industryAward || 'None assigned'}</span>
+                </div>
+                <div className="data-row">
+                  <span className="data-label">Contracted Hours</span>
+                  <span className="data-value">{payCondition.contractedHours || 0} hrs/week</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No pay conditions configured</p>
+            )}
+          </div>
 
           {/* Summary Cards */}
           <div className="grid grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground mb-2">Overriding Hourly Rate</p>
-                <p className="text-3xl font-bold text-foreground">
-                  ${payCondition?.hourlyRate.toFixed(2) || '00.00'}
-                  <span className="text-base font-normal text-muted-foreground">/hr</span>
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground mb-2">Total Allowances</p>
-                {staff.customAllowances.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {staff.customAllowances.map((allowance) => (
-                      <Badge key={allowance.id} variant="secondary" className="text-xs">
-                        {allowance.name}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No allowances assigned</p>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground mb-2">Classification Tags</p>
-                {payCondition?.classification ? (
-                  <Badge variant="outline">{payCondition.classification}</Badge>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No additional tags assigned</p>
-                )}
-              </CardContent>
-            </Card>
+            <div className="stat-card">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Hourly Rate</p>
+              <p className="text-3xl font-bold text-foreground">
+                ${payCondition?.hourlyRate.toFixed(2) || '00.00'}
+                <span className="text-sm font-normal text-muted-foreground ml-1">/hr</span>
+              </p>
+            </div>
+            <div className="stat-card stat-card-success">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Total Allowances</p>
+              {staff.customAllowances.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {staff.customAllowances.map((allowance) => (
+                    <Badge key={allowance.id} variant="secondary" className="text-xs font-medium">
+                      {allowance.name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No allowances assigned</p>
+              )}
+            </div>
+            <div className="stat-card stat-card-warning">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Classification</p>
+              {payCondition?.classification ? (
+                <Badge variant="outline" className="font-medium">{payCondition.classification}</Badge>
+              ) : (
+                <p className="text-sm text-muted-foreground">No classification</p>
+              )}
+            </div>
           </div>
 
           {/* Pay History */}
           {staff.payConditionHistory.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-medium flex items-center gap-2">
+            <div className="card-material-elevated p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <div className="p-2 rounded-lg bg-muted">
                   <History className="h-4 w-4 text-muted-foreground" />
-                  Pay Condition History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {staff.payConditionHistory.map((condition) => (
-                    <div key={condition.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div>
-                        <p className="font-medium">{condition.position}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(condition.effectiveFrom), 'dd MMM yyyy')} - 
-                          {condition.effectiveTo ? format(new Date(condition.effectiveTo), 'dd MMM yyyy') : 'Present'}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">${condition.hourlyRate.toFixed(2)}/hr</p>
-                        <p className="text-sm text-muted-foreground">{condition.classification}</p>
-                      </div>
-                    </div>
-                  ))}
                 </div>
-              </CardContent>
-            </Card>
+                <h3 className="section-header">Pay Condition History</h3>
+              </div>
+              <div className="space-y-3">
+                {staff.payConditionHistory.map((condition) => (
+                  <div key={condition.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/20 border border-border/50 hover:bg-muted/30 transition-colors">
+                    <div>
+                      <p className="font-semibold">{condition.position}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(condition.effectiveFrom), 'dd MMM yyyy')} - 
+                        {condition.effectiveTo ? format(new Date(condition.effectiveTo), 'dd MMM yyyy') : 'Present'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-lg">${condition.hourlyRate.toFixed(2)}<span className="text-sm font-normal text-muted-foreground">/hr</span></p>
+                      <p className="text-sm text-muted-foreground">{condition.classification}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </TabsContent>
 

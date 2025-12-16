@@ -116,53 +116,55 @@ export default function StaffDetail() {
       <AdminSidebar />
       <main className="flex-1 overflow-auto">
         {/* Breadcrumb & Header */}
-        <div className="border-b bg-card">
+        <div className="border-b border-border/50 bg-card">
           <div className="px-6 py-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <button
                 onClick={() => navigate('/workforce')}
-                className="hover:text-foreground transition-colors"
+                className="hover:text-foreground transition-colors font-medium"
               >
                 Staff
               </button>
               <ChevronRight className="h-4 w-4" />
-              <span className="text-foreground">{staff.firstName} {staff.lastName}</span>
+              <span className="text-foreground font-medium">{staff.firstName} {staff.lastName}</span>
             </div>
           </div>
         </div>
 
         {/* Profile Header Banner */}
         <div className="relative">
-          <div className="h-24 bg-gradient-to-r from-cyan-400 via-cyan-500 to-teal-500" />
-          <div className="px-6 pb-4">
-            <div className="flex items-end gap-6 -mt-12">
+          <div className="h-28 bg-gradient-to-r from-primary via-primary/90 to-primary/70" />
+          <div className="px-6 pb-6">
+            <div className="flex items-end gap-6 -mt-14">
               <div className="relative">
-                <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                <Avatar className="h-28 w-28 border-4 border-card shadow-xl ring-4 ring-primary/20">
                   <AvatarImage src={staff.avatar} alt={`${staff.firstName} ${staff.lastName}`} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-semibold">
                     {getInitials(staff.firstName, staff.lastName)}
                   </AvatarFallback>
                 </Avatar>
                 <div className={cn(
-                  "absolute bottom-1 right-1 h-5 w-5 rounded-full border-2 border-background",
+                  "absolute bottom-2 right-2 h-5 w-5 rounded-full border-2 border-card shadow-md",
                   getStatusColor(staff.status)
                 )} />
               </div>
-              <div className="flex-1 pb-2">
-                <h1 className="text-2xl font-semibold text-foreground">
+              <div className="flex-1 pb-3">
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">
                   {staff.firstName} {staff.lastName}
                 </h1>
-                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                  <span>{staff.position}</span>
-                  <span>•</span>
-                  <span>{staff.employeeId}</span>
+                <div className="flex items-center gap-3 mt-1.5 text-sm text-muted-foreground">
+                  <span className="font-medium">{staff.position}</span>
+                  <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{staff.employeeId}</span>
                 </div>
               </div>
-              <div className="pb-2 flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">Switch Employee</span>
-                <Select defaultValue={staff.id}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
+              <div className="pb-3 flex items-center gap-3">
+                <Select 
+                  value={staff.id}
+                  onValueChange={(value) => navigate(`/workforce/${value}`)}
+                >
+                  <SelectTrigger className="w-[200px] h-9 bg-card border-border/50 shadow-sm">
+                    <SelectValue placeholder="Switch Employee" />
                   </SelectTrigger>
                   <SelectContent>
                     {mockStaff.filter(s => s.status === 'active').map((s) => (
@@ -170,11 +172,11 @@ export default function StaffDetail() {
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
                             <AvatarImage src={s.avatar} />
-                            <AvatarFallback className="text-xs">
+                            <AvatarFallback className="text-xs bg-muted">
                               {getInitials(s.firstName, s.lastName)}
                             </AvatarFallback>
                           </Avatar>
-                          <span>{s.firstName} {s.lastName}</span>
+                          <span className="font-medium">{s.firstName} {s.lastName}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -186,41 +188,32 @@ export default function StaffDetail() {
         </div>
 
         {/* Main Content */}
-        <div className="flex gap-6 p-6">
+        <div className="flex gap-6 p-6 pt-0">
           {/* Left Sidebar Navigation */}
-          <div className="w-72 shrink-0">
-            <Card>
-              <CardContent className="p-2">
-                <nav className="space-y-1">
-                  {sidebarSections.map((section) => {
-                    const isActive = activeSection === section.id;
-                    const isExpanded = expandedSections.includes(section.id);
-                    
-                    return (
-                      <button
-                        key={section.id}
-                        onClick={() => toggleSection(section.id)}
-                        className={cn(
-                          "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all",
-                          isActive
-                            ? "bg-primary/10 text-primary border-l-2 border-primary"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <section.icon className="h-4 w-4" />
-                          <span className="font-medium">{section.label}</span>
-                        </div>
-                        <ChevronDown className={cn(
-                          "h-4 w-4 transition-transform",
-                          isExpanded && "rotate-180"
-                        )} />
-                      </button>
-                    );
-                  })}
-                </nav>
-              </CardContent>
-            </Card>
+          <div className="w-64 shrink-0">
+            <div className="card-material-elevated p-2 sticky top-6">
+              <nav className="space-y-0.5">
+                {sidebarSections.map((section) => {
+                  const isActive = activeSection === section.id;
+                  
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => toggleSection(section.id)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all duration-200",
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <section.icon className={cn("h-4 w-4", isActive && "text-primary-foreground")} />
+                      <span className="font-medium">{section.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
           </div>
 
           {/* Right Content Area */}
@@ -241,34 +234,22 @@ export default function StaffDetail() {
               <StaffQualificationsSection staff={staff} />
             )}
             {activeSection === 'leave' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Leave & Unavailability</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Leave management coming soon...</p>
-                </CardContent>
-              </Card>
+              <div className="card-material-elevated p-6">
+                <h3 className="section-header mb-4">Leave & Unavailability</h3>
+                <p className="text-muted-foreground">Leave management coming soon...</p>
+              </div>
             )}
             {activeSection === 'hr' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>HR Documents</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">HR documents and records coming soon...</p>
-                </CardContent>
-              </Card>
+              <div className="card-material-elevated p-6">
+                <h3 className="section-header mb-4">HR Documents</h3>
+                <p className="text-muted-foreground">HR documents and records coming soon...</p>
+              </div>
             )}
             {activeSection === 'audit' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Employee Audit History</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Audit history coming soon...</p>
-                </CardContent>
-              </Card>
+              <div className="card-material-elevated p-6">
+                <h3 className="section-header mb-4">Employee Audit History</h3>
+                <p className="text-muted-foreground">Audit history coming soon...</p>
+              </div>
             )}
           </div>
         </div>
