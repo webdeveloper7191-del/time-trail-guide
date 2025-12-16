@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { 
   Plus, 
   Clock,
@@ -13,7 +14,8 @@ import {
   AlertCircle,
   DollarSign,
   Palmtree,
-  ChevronDown
+  ChevronDown,
+  Search
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -58,7 +60,18 @@ export function StaffTimelineGrid({
   onStaffClick,
 }: StaffTimelineGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  const [staffSearch, setStaffSearch] = useState('');
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
+
+  // Filter staff by search
+  const filteredStaff = useMemo(() => {
+    if (!staffSearch.trim()) return staff;
+    const search = staffSearch.toLowerCase();
+    return staff.filter(s => 
+      s.name.toLowerCase().includes(search) ||
+      s.role.toLowerCase().includes(search)
+    );
+  }, [staff, staffSearch]);
 
   // Group shifts by room
   const staffByRoom = useMemo(() => {
@@ -175,10 +188,16 @@ export function StaffTimelineGrid({
         <div className="min-w-max">
           {/* Header */}
           <div className="flex sticky top-0 z-20 bg-card border-b border-border">
-            <div className="w-64 shrink-0 p-3 font-medium text-sm text-muted-foreground border-r border-border bg-muted/50">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span>Employee</span>
+            <div className="w-64 shrink-0 p-2 font-medium text-sm text-muted-foreground border-r border-border bg-muted/50">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search staff..."
+                  value={staffSearch}
+                  onChange={(e) => setStaffSearch(e.target.value)}
+                  className="h-8 pl-7 pr-2 text-xs bg-background border-border"
+                />
               </div>
             </div>
             {dates.map((date) => (
@@ -204,7 +223,7 @@ export function StaffTimelineGrid({
           {/* Room sections */}
           {centre.rooms.map((room) => {
             const roomStaffIds = staffByRoom[room.id] || new Set();
-            const roomStaff = staff.filter(s => roomStaffIds.has(s.id));
+            const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
             const roomOpenShifts = openShiftsByRoomDate[room.id] || [];
 
             return (
