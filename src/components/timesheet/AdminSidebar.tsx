@@ -17,7 +17,7 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
   { icon: Clock, label: 'Timesheet Admin', to: '/timesheet-admin' },
   { icon: Calendar, label: 'Roster', to: '/roster' },
-  { icon: Users, label: 'Employee Portal', to: '/employee-portal' },
+  { icon: Users, label: 'Workforce', to: '/workforce' },
   { icon: Settings, label: 'Settings', to: '/settings' },
 ];
 
