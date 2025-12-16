@@ -19,6 +19,13 @@ export interface ClockEntry {
   netHours: number; // after break deduction
   overtime: number;
   notes?: string;
+  // Original values for audit trail
+  originalClockIn?: string;
+  originalClockOut?: string | null;
+  originalBreaks?: BreakEntry[];
+  wasEdited?: boolean;
+  editedAt?: string;
+  editedBy?: string;
 }
 
 export interface Employee {
