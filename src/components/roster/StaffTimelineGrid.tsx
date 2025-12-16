@@ -36,6 +36,7 @@ interface StaffTimelineGridProps {
   onAddShift: (staffId: string, date: string, roomId: string, template?: ShiftTemplate) => void;
   onDragStart: (e: React.DragEvent, staff: StaffMember) => void;
   onOpenShiftDrop: (staffId: string, openShift: OpenShift) => void;
+  onShiftMove?: (shiftId: string, newDate: string, newRoomId: string) => void;
 }
 
 export function StaffTimelineGrid({
@@ -52,6 +53,7 @@ export function StaffTimelineGrid({
   onAddShift,
   onDragStart,
   onOpenShiftDrop,
+  onShiftMove,
 }: StaffTimelineGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
@@ -140,6 +142,14 @@ export function StaffTimelineGrid({
   const handleDrop = (e: React.DragEvent, staffId: string, date: string, roomId: string) => {
     e.preventDefault();
     setDragOverCell(null);
+    
+    // Check if this is a shift being moved
+    const shiftId = e.dataTransfer.getData('shiftId');
+    if (shiftId && onShiftMove) {
+      onShiftMove(shiftId, date, roomId);
+      return;
+    }
+    
     onDropStaff(staffId, roomId, date);
   };
 
@@ -153,6 +163,8 @@ export function StaffTimelineGrid({
   const handleShiftDragStart = (e: React.DragEvent, shift: Shift) => {
     e.dataTransfer.setData('staffId', shift.staffId);
     e.dataTransfer.setData('shiftId', shift.id);
+    e.dataTransfer.setData('dragType', 'shift');
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   return (
