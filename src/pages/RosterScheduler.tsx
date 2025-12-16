@@ -8,14 +8,18 @@ import { ShiftDetailPanel } from '@/components/roster/ShiftDetailPanel';
 import { RosterSummaryBar } from '@/components/roster/RosterSummaryBar';
 import { LeaveRequestModal } from '@/components/roster/LeaveRequestModal';
 import { ShiftSwapModal } from '@/components/roster/ShiftSwapModal';
-import { BudgetTracker } from '@/components/roster/BudgetTracker';
+import { BudgetTrackerBar } from '@/components/roster/BudgetTrackerBar';
 import { AddOpenShiftModal } from '@/components/roster/AddOpenShiftModal';
+import { AvailabilityCalendarModal } from '@/components/roster/AvailabilityCalendarModal';
+import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { 
@@ -33,10 +37,16 @@ import {
   Clock,
   Copy,
   CalendarDays,
-  Plus
+  Plus,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  CalendarCheck
 } from 'lucide-react';
 
-// Budget configuration per centre (in production, this would come from settings)
+// Budget configuration per centre
 const centreBudgets: Record<string, number> = {
   'centre-1': 8000,
   'centre-2': 6500,
@@ -57,7 +67,8 @@ export default function RosterScheduler() {
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [shiftToSwap, setShiftToSwap] = useState<Shift | null>(null);
   const [showAddOpenShiftModal, setShowAddOpenShiftModal] = useState(false);
-  const [showBudgetPanel, setShowBudgetPanel] = useState(true);
+  const [showBudgetBar, setShowBudgetBar] = useState(false);
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   
   const [roleFilter, setRoleFilter] = useState<string>('all');
   
@@ -83,7 +94,6 @@ export default function RosterScheduler() {
   const criticalFlags = centreFlags.filter(f => f.severity === 'critical');
   const centreOpenShifts = openShifts.filter(os => os.centreId === selectedCentreId);
 
-  // Leave requests from staff
   const leaveRequests = useMemo(() => {
     const requests: (TimeOff & { staffName: string; requestedDate: string })[] = [];
     allStaff.forEach(staff => {
@@ -94,7 +104,6 @@ export default function RosterScheduler() {
     return requests;
   }, [allStaff]);
 
-  // Cost calculation
   const costSummary = useMemo(() => {
     const centreShifts = shifts.filter(s => s.centreId === selectedCentreId);
     let regularCost = 0;
@@ -152,6 +161,15 @@ export default function RosterScheduler() {
 
     setShifts(prev => [...prev, newShift]);
     toast.success(`Added shift for ${staff.name}`);
+  };
+
+  const handleShiftMove = (shiftId: string, newDate: string, newRoomId: string) => {
+    setShifts(prev => prev.map(s => 
+      s.id === shiftId 
+        ? { ...s, date: newDate, roomId: newRoomId, status: 'draft' as const }
+        : s
+    ));
+    toast.success('Shift moved');
   };
 
   const handleOpenShiftDrop = (staffId: string, openShift: OpenShift) => {
@@ -258,6 +276,16 @@ export default function RosterScheduler() {
 
     setShifts(prev => [...prev, ...newShifts]);
     toast.success(`Copied ${newShifts.length} shifts from previous week`);
+  };
+
+  const handleExportPDF = () => {
+    exportToPDF({ shifts, staff: allStaff, centre: selectedCentre, dates, weeklyBudget });
+    toast.success('PDF exported successfully');
+  };
+
+  const handleExportExcel = () => {
+    exportToExcel({ shifts, staff: allStaff, centre: selectedCentre, dates, weeklyBudget });
+    toast.success('Excel exported successfully');
   };
 
   const navigateDate = (direction: 'prev' | 'next') => {
@@ -381,7 +409,7 @@ export default function RosterScheduler() {
             </Select>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {centreOpenShifts.length > 0 && (
               <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
                 <AlertTriangle className="h-3 w-3" />
@@ -395,19 +423,11 @@ export default function RosterScheduler() {
               </Badge>
             )}
             
-            {/* Cost summary */}
-            <div className="flex items-center gap-1 px-3 py-1.5 bg-muted rounded-md">
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <div className="text-sm">
-                <span className="font-medium">${costSummary.totalCost.toLocaleString()}</span>
-                {costSummary.overtimeCost > 0 && (
-                  <span className="text-amber-600 text-xs ml-1">(+${costSummary.overtimeCost} OT)</span>
-                )}
-              </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground ml-2 border-l border-border pl-2">
-                <Clock className="h-3 w-3" />
-                {costSummary.totalHours}h
-              </div>
+            {/* Cost summary mini */}
+            <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded-md text-sm">
+              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium">${costSummary.totalCost.toLocaleString()}</span>
+              <span className="text-xs text-muted-foreground">/ ${weeklyBudget.toLocaleString()}</span>
             </div>
 
             <Button 
@@ -415,35 +435,50 @@ export default function RosterScheduler() {
               size="sm" 
               onClick={() => setShowAddOpenShiftModal(true)}
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-1" />
               Open Shift
             </Button>
 
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleCopyWeek}
-            >
-              <Copy className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={handleCopyWeek}>
+              <Copy className="h-4 w-4 mr-1" />
               Copy Week
             </Button>
 
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowLeaveModal(true)}
-            >
-              <CalendarDays className="h-4 w-4 mr-2" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-1" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleExportPDF}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Export to PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export to Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button variant="outline" size="sm" onClick={() => setShowAvailabilityModal(true)}>
+              <CalendarCheck className="h-4 w-4 mr-1" />
+              Availability
+            </Button>
+
+            <Button variant="outline" size="sm" onClick={() => setShowLeaveModal(true)}>
+              <CalendarDays className="h-4 w-4 mr-1" />
               Leave
             </Button>
 
             <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
+              <Settings className="h-4 w-4" />
             </Button>
             
             <Button size="sm" onClick={handlePublish}>
-              <Send className="h-4 w-4 mr-2" />
+              <Send className="h-4 w-4 mr-1" />
               Publish
             </Button>
           </div>
@@ -466,14 +501,6 @@ export default function RosterScheduler() {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Switch id="budget" checked={showBudgetPanel} onCheckedChange={setShowBudgetPanel} />
-              <Label htmlFor="budget" className="text-sm flex items-center gap-1">
-                <DollarSign className="h-3.5 w-3.5" />
-                Budget
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-2">
               <Switch id="demand" checked={showDemandOverlay} onCheckedChange={setShowDemandOverlay} />
               <Label htmlFor="demand" className="text-sm flex items-center gap-1">
                 {showDemandOverlay ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
@@ -493,20 +520,27 @@ export default function RosterScheduler() {
         </div>
       </header>
 
+      {/* Collapsible Budget Tracker Bar */}
+      <Collapsible open={showBudgetBar} onOpenChange={setShowBudgetBar}>
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-center gap-2 py-1.5 bg-muted/50 border-b border-border hover:bg-muted transition-colors text-xs text-muted-foreground">
+            <DollarSign className="h-3.5 w-3.5" />
+            <span>Budget Tracker</span>
+            {showBudgetBar ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <BudgetTrackerBar
+            shifts={shifts}
+            staff={allStaff}
+            centreId={selectedCentreId}
+            weeklyBudget={weeklyBudget}
+          />
+        </CollapsibleContent>
+      </Collapsible>
+
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Budget Panel */}
-        {showBudgetPanel && (
-          <div className="w-72 border-r border-border p-3 overflow-auto bg-muted/30">
-            <BudgetTracker
-              shifts={shifts}
-              staff={allStaff}
-              centreId={selectedCentreId}
-              weeklyBudget={weeklyBudget}
-            />
-          </div>
-        )}
-
         <StaffTimelineGrid
           centre={selectedCentre}
           shifts={shifts.filter(s => s.centreId === selectedCentreId)}
@@ -525,6 +559,7 @@ export default function RosterScheduler() {
           onAddShift={handleAddShift}
           onDragStart={handleDragStart}
           onOpenShiftDrop={handleOpenShiftDrop}
+          onShiftMove={handleShiftMove}
         />
 
         <UnscheduledStaffPanel
@@ -589,6 +624,13 @@ export default function RosterScheduler() {
         rooms={selectedCentre.rooms}
         centreId={selectedCentreId}
         onAdd={handleAddOpenShift}
+      />
+
+      <AvailabilityCalendarModal
+        open={showAvailabilityModal}
+        onClose={() => setShowAvailabilityModal(false)}
+        staff={allStaff}
+        currentDate={currentDate}
       />
     </div>
   );
