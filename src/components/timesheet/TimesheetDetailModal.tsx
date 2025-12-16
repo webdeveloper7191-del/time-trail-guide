@@ -8,14 +8,13 @@ import { validateCompliance, calculateOvertime, determineApprovalChain, defaultJ
 import { calculateAllowanceTotal } from '@/types/allowances';
 import { format } from 'date-fns';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,12 +32,17 @@ import {
   Timer,
   FileText,
   ChevronDown,
-  ChevronUp,
   ShieldCheck,
   GitBranch,
+  Briefcase,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface TimesheetDetailModalProps {
   timesheet: Timesheet | null;
@@ -55,15 +59,13 @@ export function TimesheetDetailModal({
   onApprove,
   onReject,
 }: TimesheetDetailModalProps) {
-const [expandedDays, setExpandedDays] = useState<string[]>([]);
+  const [expandedDays, setExpandedDays] = useState<string[]>([]);
 
-  // Compliance validation
   const compliance = useMemo(() => 
     timesheet ? validateCompliance(timesheet) : null, 
     [timesheet]
   );
 
-  // Overtime calculation
   const overtimeCalc = useMemo(() => 
     timesheet && timesheet.employee.hourlyRate 
       ? calculateOvertime(timesheet, timesheet.employee.hourlyRate)
@@ -71,7 +73,6 @@ const [expandedDays, setExpandedDays] = useState<string[]>([]);
     [timesheet]
   );
 
-  // Approval chain
   const approvalChain = useMemo(() => 
     timesheet && compliance ? determineApprovalChain(timesheet, compliance) : null,
     [timesheet, compliance]
@@ -80,274 +81,203 @@ const [expandedDays, setExpandedDays] = useState<string[]>([]);
   if (!timesheet) return null;
 
   const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase();
   };
 
-  const getAvatarColor = (name: string) => {
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500',
-      'bg-purple-500',
-      'bg-orange-500',
-      'bg-pink-500',
-      'bg-teal-500',
-    ];
-    const index = name.charCodeAt(0) % colors.length;
-    return colors[index];
-  };
-
-  const getDayName = (dateStr: string) => {
-    return format(new Date(dateStr), 'EEEE');
-  };
+  const getDayName = (dateStr: string) => format(new Date(dateStr), 'EEE');
+  const getDayDate = (dateStr: string) => format(new Date(dateStr), 'd');
 
   const formatMinutesToTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
-    return `${mins}m`;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
   const getBreakTypeBadge = (type: BreakEntry['type']) => {
     const config = {
-      lunch: { label: 'Lunch', className: 'bg-orange-100 text-orange-700' },
-      short: { label: 'Short', className: 'bg-blue-100 text-blue-700' },
-      other: { label: 'Other', className: 'bg-gray-100 text-gray-700' },
+      lunch: { label: 'Lunch', className: 'bg-orange-500/10 text-orange-600 border-orange-500/20' },
+      short: { label: 'Short', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+      other: { label: 'Other', className: 'bg-muted text-muted-foreground' },
     };
     return config[type];
   };
 
   const toggleDayExpanded = (entryId: string) => {
     setExpandedDays((prev) =>
-      prev.includes(entryId)
-        ? prev.filter((id) => id !== entryId)
-        : [...prev, entryId]
+      prev.includes(entryId) ? prev.filter((id) => id !== entryId) : [...prev, entryId]
     );
   };
 
-  const estimatedPay = timesheet.employee.hourlyRate
-    ? (timesheet.regularHours * timesheet.employee.hourlyRate) +
-      (timesheet.overtimeHours * timesheet.employee.hourlyRate * 1.5)
-    : null;
-
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>Timesheet Details</span>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col gap-0">
+        {/* Header */}
+        <SheetHeader className="px-6 py-4 border-b border-border">
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-lg font-semibold">Timesheet Details</SheetTitle>
             <StatusBadge status={timesheet.status} />
-          </DialogTitle>
-          <DialogDescription>
-            Review timesheet for {timesheet.employee.name} - Week of {format(new Date(timesheet.weekStartDate), 'MMM d, yyyy')}
-          </DialogDescription>
-        </DialogHeader>
+          </div>
+          <SheetDescription className="sr-only">
+            Timesheet for {timesheet.employee.name}
+          </SheetDescription>
+        </SheetHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="w-full grid grid-cols-5 mb-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="entries">Entries</TabsTrigger>
-              <TabsTrigger value="compliance" className="flex items-center gap-1">
-                <ShieldCheck className="h-3 w-3" />
-                Compliance
-              </TabsTrigger>
-              <TabsTrigger value="workflow" className="flex items-center gap-1">
-                <GitBranch className="h-3 w-3" />
-                Workflow
-              </TabsTrigger>
-              <TabsTrigger value="summary">Summary</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-6">
-              {/* Employee Info */}
-              <div className="flex items-center gap-4">
-                <Avatar className={`h-14 w-14 ${getAvatarColor(timesheet.employee.name)}`}>
-                  <AvatarFallback className="text-white text-lg font-medium">
-                    {getInitials(timesheet.employee.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">{timesheet.employee.name}</h3>
-                  <p className="text-sm text-muted-foreground">{timesheet.employee.email}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {timesheet.employee.position} • {timesheet.employee.department}
-                  </p>
-                </div>
+        {/* Employee Card */}
+        <div className="px-6 py-4 border-b border-border bg-gradient-to-br from-primary/5 to-transparent">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-14 w-14 ring-2 ring-primary/20">
+              <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
+                {getInitials(timesheet.employee.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-lg truncate">{timesheet.employee.name}</h3>
+              <p className="text-sm text-muted-foreground truncate">{timesheet.employee.email}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="secondary" className="text-xs font-normal">
+                  <Briefcase className="h-3 w-3 mr-1" />
+                  {timesheet.employee.position}
+                </Badge>
                 {timesheet.employee.hourlyRate && (
-                  <Badge variant="secondary" className="text-sm">
+                  <Badge variant="outline" className="text-xs font-normal">
                     ${timesheet.employee.hourlyRate}/hr
                   </Badge>
                 )}
               </div>
+            </div>
+          </div>
+          
+          {/* Quick Stats */}
+          <div className="grid grid-cols-4 gap-2 mt-4">
+            <div className="text-center p-2 rounded-lg bg-background/60">
+              <p className="text-xl font-bold">{timesheet.totalHours}h</p>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Total</p>
+            </div>
+            <div className="text-center p-2 rounded-lg bg-background/60">
+              <p className="text-xl font-bold">{timesheet.regularHours}h</p>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Regular</p>
+            </div>
+            <div className="text-center p-2 rounded-lg bg-background/60">
+              <p className="text-xl font-bold text-amber-600">{timesheet.overtimeHours}h</p>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Overtime</p>
+            </div>
+            <div className="text-center p-2 rounded-lg bg-background/60">
+              <p className="text-xl font-bold">{formatMinutesToTime(timesheet.totalBreakMinutes)}</p>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Breaks</p>
+            </div>
+          </div>
+        </div>
 
-              <Separator />
+        {/* Tabs Content */}
+        <Tabs defaultValue="entries" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="w-full justify-start px-6 pt-2 pb-0 h-auto bg-transparent border-b border-border rounded-none gap-0">
+            <TabsTrigger value="entries" className="rounded-b-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              Entries
+            </TabsTrigger>
+            <TabsTrigger value="compliance" className="rounded-b-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
+              Compliance
+            </TabsTrigger>
+            <TabsTrigger value="workflow" className="rounded-b-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              <GitBranch className="h-3.5 w-3.5 mr-1.5" />
+              Workflow
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="rounded-b-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              <DollarSign className="h-3.5 w-3.5 mr-1.5" />
+              Pay
+            </TabsTrigger>
+          </TabsList>
 
-              {/* Week Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Week:</span>
-                  <span className="font-medium">
-                    {format(new Date(timesheet.weekStartDate), 'MMM d')} -{' '}
-                    {format(new Date(timesheet.weekEndDate), 'MMM d, yyyy')}
-                  </span>
+          <ScrollArea className="flex-1">
+            <TabsContent value="entries" className="m-0 p-4 space-y-2">
+              {/* Week info */}
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3 px-1">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {format(new Date(timesheet.weekStartDate), 'MMM d')} - {format(new Date(timesheet.weekEndDate), 'MMM d')}
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Location:</span>
-                  <span className="font-medium">{timesheet.location.name}</span>
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {timesheet.location.name}
                 </div>
               </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <Timer className="h-5 w-5 mx-auto mb-2 text-primary" />
-                  <p className="text-2xl font-bold text-card-foreground">{timesheet.totalHours}h</p>
-                  <p className="text-xs text-muted-foreground">Net Hours</p>
-                </div>
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <Clock className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-2xl font-bold text-card-foreground">{timesheet.regularHours}h</p>
-                  <p className="text-xs text-muted-foreground">Regular</p>
-                </div>
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <TrendingUp className="h-5 w-5 mx-auto mb-2 text-status-pending" />
-                  <p className="text-2xl font-bold text-status-pending">{timesheet.overtimeHours}h</p>
-                  <p className="text-xs text-muted-foreground">Overtime</p>
-                </div>
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <Coffee className="h-5 w-5 mx-auto mb-2 text-orange-500" />
-                  <p className="text-2xl font-bold text-card-foreground">
-                    {formatMinutesToTime(timesheet.totalBreakMinutes)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Breaks</p>
-                </div>
-              </div>
-
-              {/* Compliance Summary */}
-              {compliance && (
-                <CompliancePanel validation={compliance} compact />
-              )}
-
-              {/* Estimated Pay with Advanced Breakdown */}
-              {overtimeCalc && timesheet.employee.hourlyRate && (
-                <OvertimeBreakdown 
-                  calculation={overtimeCalc} 
-                  hourlyRate={timesheet.employee.hourlyRate} 
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="entries" className="space-y-3">
               {timesheet.entries.map((entry) => {
                 const isExpanded = expandedDays.includes(entry.id);
                 const hasIssue = !entry.clockOut || entry.netHours === 0;
                 
                 return (
-                  <div
-                    key={entry.id}
-                    className={cn(
-                      'rounded-lg border border-border overflow-hidden transition-all',
-                      hasIssue && 'border-status-rejected/50 bg-status-rejected-bg/30'
-                    )}
-                  >
-                    <button
-                      onClick={() => toggleDayExpanded(entry.id)}
-                      className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="font-medium">{getDayName(entry.date)}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(entry.date), 'MMM d, yyyy')}
-                          </p>
-                        </div>
-                        {hasIssue && (
-                          <Badge variant="destructive" className="text-xs">
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                            Issue
-                          </Badge>
-                        )}
+                  <Collapsible key={entry.id} open={isExpanded} onOpenChange={() => toggleDayExpanded(entry.id)}>
+                    <CollapsibleTrigger className={cn(
+                      "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
+                      "hover:bg-muted/50",
+                      hasIssue ? "border-amber-500/50 bg-amber-500/5" : "border-border",
+                      isExpanded && "rounded-b-none border-b-0"
+                    )}>
+                      <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-muted">
+                        <span className="text-[10px] uppercase text-muted-foreground font-medium">{getDayName(entry.date)}</span>
+                        <span className="text-sm font-bold -mt-0.5">{getDayDate(entry.date)}</span>
                       </div>
-                      <div className="flex items-center gap-6 text-sm">
-                        <div className="text-center">
-                          <p className="text-muted-foreground text-xs">Clock In</p>
-                          <p className="font-medium">{entry.clockIn}</p>
+                      
+                      <div className="flex-1 text-left">
+                        <div className="flex items-center gap-1.5 text-sm">
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="font-medium">{entry.clockIn}</span>
+                          <span className="text-muted-foreground">→</span>
+                          <span className={cn("font-medium", !entry.clockOut && "text-amber-600")}>
+                            {entry.clockOut || '--:--'}
+                          </span>
+                          {hasIssue && <AlertCircle className="h-3.5 w-3.5 text-amber-500 ml-1" />}
                         </div>
-                        <div className="text-center">
-                          <p className="text-muted-foreground text-xs">Clock Out</p>
-                          <p className={cn('font-medium', !entry.clockOut && 'text-status-rejected')}>
-                            {entry.clockOut || 'Missing'}
-                          </p>
-                        </div>
-                        <div className="text-center min-w-[50px]">
-                          <p className="text-muted-foreground text-xs">Net</p>
-                          <p className="font-medium">{entry.netHours}h</p>
-                        </div>
-                        {isExpanded ? (
-                          <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {entry.breaks.length} break{entry.breaks.length !== 1 ? 's' : ''} · {formatMinutesToTime(entry.totalBreakMinutes)}
+                        </p>
                       </div>
-                    </button>
 
-                    {isExpanded && (
-                      <div className="px-4 pb-4 pt-0 border-t border-border bg-muted/30">
-                        {/* Time Details */}
-                        <div className="grid grid-cols-4 gap-4 py-3 text-sm">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Gross Hours</p>
-                            <p className="font-medium">{entry.grossHours}h</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Break Time</p>
-                            <p className="font-medium">{formatMinutesToTime(entry.totalBreakMinutes)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Net Hours</p>
-                            <p className="font-medium">{entry.netHours}h</p>
-                          </div>
-                          {entry.overtime > 0 && (
-                            <div>
-                              <p className="text-xs text-muted-foreground">Overtime</p>
-                              <p className="font-medium text-status-pending">+{entry.overtime}h</p>
-                            </div>
-                          )}
+                      <div className="text-right">
+                        <p className="font-semibold">{entry.netHours}h</p>
+                        {entry.overtime > 0 && (
+                          <p className="text-xs text-amber-600">+{entry.overtime} OT</p>
+                        )}
+                      </div>
+                      <ChevronDown className={cn(
+                        "h-4 w-4 text-muted-foreground transition-transform",
+                        isExpanded && "rotate-180"
+                      )} />
+                    </CollapsibleTrigger>
+
+                    <CollapsibleContent>
+                      <div className={cn(
+                        "px-3 pb-3 pt-3 space-y-3 border border-t-0 rounded-b-lg",
+                        hasIssue ? "border-amber-500/50 bg-amber-500/5" : "border-border bg-muted/20"
+                      )}>
+                        {/* Hours detail */}
+                        <div className="flex items-center justify-between text-xs bg-background rounded-md px-3 py-2">
+                          <span className="text-muted-foreground">Gross: <span className="text-foreground font-medium">{entry.grossHours}h</span></span>
+                          <span className="text-muted-foreground">Breaks: <span className="text-foreground font-medium">{formatMinutesToTime(entry.totalBreakMinutes)}</span></span>
+                          <span className="text-muted-foreground">Net: <span className="text-foreground font-medium">{entry.netHours}h</span></span>
                         </div>
 
                         {/* Breaks */}
                         {entry.breaks.length > 0 && (
-                          <div className="mt-2">
-                            <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                              <Coffee className="h-3 w-3" /> Breaks
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                              <Coffee className="h-3.5 w-3.5" /> Breaks
                             </p>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               {entry.breaks.map((breakEntry) => {
                                 const badgeConfig = getBreakTypeBadge(breakEntry.type);
                                 return (
-                                  <div
-                                    key={breakEntry.id}
-                                    className="flex items-center justify-between bg-background rounded-md px-3 py-2 text-sm"
-                                  >
+                                  <div key={breakEntry.id} className="flex items-center justify-between bg-background rounded-md px-3 py-2 text-sm">
                                     <div className="flex items-center gap-2">
-                                      <Badge className={cn('text-xs', badgeConfig.className)}>
+                                      <Badge variant="outline" className={cn('text-xs', badgeConfig.className)}>
                                         {badgeConfig.label}
                                       </Badge>
-                                      <span>
+                                      <span className="text-muted-foreground">
                                         {breakEntry.startTime} - {breakEntry.endTime || 'Ongoing'}
                                       </span>
                                     </div>
-                                    <span className="font-medium">
-                                      {formatMinutesToTime(breakEntry.duration)}
-                                    </span>
+                                    <span className="font-medium">{formatMinutesToTime(breakEntry.duration)}</span>
                                   </div>
                                 );
                               })}
@@ -356,74 +286,52 @@ const [expandedDays, setExpandedDays] = useState<string[]>([]);
                         )}
 
                         {entry.breaks.length === 0 && (
-                          <p className="text-sm text-muted-foreground italic mt-2">
-                            No breaks recorded
-                          </p>
+                          <p className="text-xs text-muted-foreground italic text-center py-1">No breaks recorded</p>
                         )}
 
-                        {/* Notes */}
                         {entry.notes && (
-                          <div className="mt-3 flex items-start gap-2 text-sm">
-                            <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-                            <p className="text-muted-foreground">{entry.notes}</p>
+                          <div className="flex items-start gap-2 text-sm bg-background rounded-md px-3 py-2">
+                            <FileText className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
+                            <p className="text-muted-foreground text-xs">{entry.notes}</p>
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 );
               })}
             </TabsContent>
 
-            {/* Compliance Tab */}
-            <TabsContent value="compliance" className="space-y-4">
-              {compliance && (
-                <CompliancePanel validation={compliance} />
-              )}
-
-              {/* Jurisdiction Info */}
+            <TabsContent value="compliance" className="m-0 p-4 space-y-4">
+              {compliance && <CompliancePanel validation={compliance} />}
+              
               <div className="rounded-lg border border-border p-4">
-                <h4 className="font-medium mb-3 flex items-center gap-2">
+                <h4 className="font-medium mb-3 flex items-center gap-2 text-sm">
                   <ShieldCheck className="h-4 w-4 text-primary" />
                   Active Compliance Rules
                 </h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Jurisdiction</p>
-                    <p className="font-medium">{defaultJurisdiction.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Max Daily Hours</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="p-2 rounded bg-muted/50">
+                    <p className="text-xs text-muted-foreground">Max Daily</p>
                     <p className="font-medium">{defaultJurisdiction.maxDailyHours}h</p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Max Weekly Hours</p>
+                  <div className="p-2 rounded bg-muted/50">
+                    <p className="text-xs text-muted-foreground">Max Weekly</p>
                     <p className="font-medium">{defaultJurisdiction.maxWeeklyHours}h</p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">OT Threshold</p>
-                    <p className="font-medium">&gt;{defaultJurisdiction.overtimeThresholdDaily}h/day or &gt;{defaultJurisdiction.overtimeThresholdWeekly}h/week</p>
+                  <div className="p-2 rounded bg-muted/50">
+                    <p className="text-xs text-muted-foreground">OT Daily</p>
+                    <p className="font-medium">&gt;{defaultJurisdiction.overtimeThresholdDaily}h</p>
                   </div>
-                </div>
-                <Separator className="my-3" />
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Required Breaks</p>
-                  <div className="space-y-1">
-                    {defaultJurisdiction.breakRules.map((rule) => (
-                      <div key={rule.id} className="flex items-center justify-between text-sm">
-                        <span>{rule.name}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {rule.breakDurationMinutes}m after {rule.minWorkHoursRequired}h • {rule.type}
-                        </Badge>
-                      </div>
-                    ))}
+                  <div className="p-2 rounded bg-muted/50">
+                    <p className="text-xs text-muted-foreground">OT Weekly</p>
+                    <p className="font-medium">&gt;{defaultJurisdiction.overtimeThresholdWeekly}h</p>
                   </div>
                 </div>
               </div>
             </TabsContent>
 
-            {/* Workflow Tab */}
-            <TabsContent value="workflow" className="space-y-4">
+            <TabsContent value="workflow" className="m-0 p-4 space-y-4">
               {approvalChain && (
                 <ApprovalWorkflow 
                   chain={approvalChain}
@@ -434,24 +342,24 @@ const [expandedDays, setExpandedDays] = useState<string[]>([]);
               )}
             </TabsContent>
 
-            <TabsContent value="summary" className="space-y-4">
+            <TabsContent value="summary" className="m-0 p-4 space-y-4">
               {/* Submission Info */}
-              <div className="bg-muted rounded-lg p-4">
-                <h4 className="font-medium mb-3">Submission Details</h4>
+              <div className="rounded-lg border border-border p-4">
+                <h4 className="font-medium mb-3 text-sm">Submission Details</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Submitted At:</span>
+                    <span className="text-muted-foreground">Submitted</span>
                     <span>{format(new Date(timesheet.submittedAt), 'MMM d, yyyy h:mm a')}</span>
                   </div>
                   {timesheet.reviewedAt && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Reviewed At:</span>
+                      <span className="text-muted-foreground">Reviewed</span>
                       <span>{format(new Date(timesheet.reviewedAt), 'MMM d, yyyy h:mm a')}</span>
                     </div>
                   )}
                   {timesheet.reviewedBy && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Reviewed By:</span>
+                      <span className="text-muted-foreground">Reviewed By</span>
                       <span>{timesheet.reviewedBy}</span>
                     </div>
                   )}
@@ -459,35 +367,32 @@ const [expandedDays, setExpandedDays] = useState<string[]>([]);
               </div>
 
               {/* Hours Breakdown */}
-              <div className="bg-muted rounded-lg p-4">
-                <h4 className="font-medium mb-3">Hours Breakdown</h4>
-                <div className="space-y-2">
+              <div className="rounded-lg border border-border p-4">
+                <h4 className="font-medium mb-3 text-sm">Hours Breakdown</h4>
+                <div className="space-y-1.5">
                   {timesheet.entries.map((entry) => (
-                    <div key={entry.id} className="flex justify-between text-sm">
+                    <div key={entry.id} className="flex justify-between text-sm py-1">
                       <span className="text-muted-foreground">
                         {format(new Date(entry.date), 'EEE, MMM d')}
                       </span>
-                      <div className="flex items-center gap-4">
-                        <span>{entry.netHours}h</span>
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium">{entry.netHours}h</span>
                         {entry.overtime > 0 && (
-                          <span className="text-status-pending text-xs">+{entry.overtime}h OT</span>
+                          <Badge variant="outline" className="text-xs text-amber-600 border-amber-600/30">
+                            +{entry.overtime}h OT
+                          </Badge>
                         )}
                       </div>
                     </div>
                   ))}
-                  <Separator className="my-2" />
-                  <div className="flex justify-between font-medium">
-                    <span>Total</span>
-                    <span>{timesheet.totalHours}h</span>
-                  </div>
                 </div>
               </div>
 
-              {/* Allowances Section */}
-              <div className="bg-muted rounded-lg p-4">
-                <h4 className="font-medium mb-3 flex items-center gap-2">
+              {/* Allowances */}
+              <div className="rounded-lg border border-border p-4">
+                <h4 className="font-medium mb-3 text-sm flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
-                  Allowances & Entitlements
+                  Allowances
                 </h4>
                 <AllowancesPanel 
                   allowances={timesheet.appliedAllowances || []} 
@@ -496,25 +401,25 @@ const [expandedDays, setExpandedDays] = useState<string[]>([]);
               </div>
 
               {/* Pay Summary */}
-              <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
-                <h4 className="font-medium mb-3 flex items-center gap-2">
+              <div className="rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 p-4">
+                <h4 className="font-medium mb-3 text-sm flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-primary" />
-                  Total Pay Summary
+                  Estimated Pay
                 </h4>
                 <div className="space-y-2 text-sm">
                   {overtimeCalc && (
                     <>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Regular Pay</span>
+                        <span className="text-muted-foreground">Regular</span>
                         <span>${overtimeCalc.regularPay.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Overtime Pay</span>
+                        <span className="text-muted-foreground">Overtime</span>
                         <span>${overtimeCalc.overtimePay.toFixed(2)}</span>
                       </div>
                       {overtimeCalc.doubleTimePay > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Double Time Pay</span>
+                          <span className="text-muted-foreground">Double Time</span>
                           <span>${overtimeCalc.doubleTimePay.toFixed(2)}</span>
                         </div>
                       )}
@@ -524,9 +429,9 @@ const [expandedDays, setExpandedDays] = useState<string[]>([]);
                     <span className="text-muted-foreground">Allowances</span>
                     <span>${calculateAllowanceTotal(timesheet.appliedAllowances || []).toFixed(2)}</span>
                   </div>
-                  <Separator className="my-2" />
+                  <div className="h-px bg-border my-2" />
                   <div className="flex justify-between font-semibold text-base">
-                    <span>Estimated Total</span>
+                    <span>Total</span>
                     <span className="text-primary">
                       ${((overtimeCalc?.totalPay || 0) + calculateAllowanceTotal(timesheet.appliedAllowances || [])).toFixed(2)}
                     </span>
@@ -534,44 +439,40 @@ const [expandedDays, setExpandedDays] = useState<string[]>([]);
                 </div>
               </div>
 
-              {/* Notes */}
               {timesheet.notes && (
-                <div className="flex items-start gap-2 p-4 rounded-lg bg-status-rejected-bg">
-                  <AlertCircle className="h-5 w-5 text-status-rejected mt-0.5" />
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
                   <div>
-                    <p className="font-medium text-status-rejected">Review Notes</p>
-                    <p className="text-sm text-foreground mt-1">{timesheet.notes}</p>
+                    <p className="font-medium text-amber-600 text-sm">Notes</p>
+                    <p className="text-sm text-foreground mt-0.5">{timesheet.notes}</p>
                   </div>
                 </div>
               )}
             </TabsContent>
-          </Tabs>
-        </ScrollArea>
+          </ScrollArea>
+        </Tabs>
 
-        {/* Actions for Pending */}
+        {/* Footer Actions */}
         {timesheet.status === 'pending' && (
-          <>
-            <Separator />
-            <div className="flex justify-end gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => onReject?.(timesheet.id)}
-                className="text-status-rejected border-status-rejected hover:bg-status-rejected-bg"
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Reject
-              </Button>
-              <Button
-                onClick={() => onApprove?.(timesheet.id)}
-                className="bg-status-approved hover:bg-status-approved/90"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Approve
-              </Button>
-            </div>
-          </>
+          <div className="px-6 py-4 border-t border-border bg-muted/30 flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => onReject?.(timesheet.id)}
+              className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Reject
+            </Button>
+            <Button
+              onClick={() => onApprove?.(timesheet.id)}
+              className="flex-1 bg-green-600 hover:bg-green-700"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Approve
+            </Button>
+          </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

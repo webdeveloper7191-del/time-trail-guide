@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Select,
   SelectContent,
@@ -36,8 +37,8 @@ import {
   Clock,
   Coffee,
   AlertCircle,
-  User,
   Calendar,
+  Briefcase,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -72,6 +73,10 @@ export function TimesheetEditModal({
   }, [timesheet]);
 
   if (!timesheet) return null;
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase();
+  };
 
   const handleEntryChange = (
     index: number,
@@ -203,10 +208,7 @@ export function TimesheetEditModal({
   const formatMinutesToTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
-    return `${mins}m`;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
   const toggleDay = (entryId: string) => {
@@ -243,39 +245,35 @@ export function TimesheetEditModal({
     onClose();
   };
 
-  const getDayName = (dateStr: string) => {
-    return format(new Date(dateStr), 'EEE');
-  };
+  const getDayName = (dateStr: string) => format(new Date(dateStr), 'EEE');
+  const getDayDate = (dateStr: string) => format(new Date(dateStr), 'd');
 
-  const getDayDate = (dateStr: string) => {
-    return format(new Date(dateStr), 'd');
-  };
-
-  const hasIssues = (entry: ClockEntry) => {
-    return !entry.clockOut || entry.netHours === 0;
-  };
+  const hasIssues = (entry: ClockEntry) => !entry.clockOut || entry.netHours === 0;
 
   const totalNetHours = entries.reduce((sum, e) => sum + e.netHours, 0);
   const totalOvertime = entries.reduce((sum, e) => sum + e.overtime, 0);
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-lg p-0 flex flex-col">
-        <SheetHeader className="px-6 py-4 border-b border-border bg-muted/30">
+      <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col gap-0">
+        {/* Header */}
+        <SheetHeader className="px-6 py-4 border-b border-border">
           <SheetTitle className="text-lg font-semibold">Edit Timesheet</SheetTitle>
           <SheetDescription className="sr-only">
             Edit timesheet entries for {timesheet.employee.name}
           </SheetDescription>
         </SheetHeader>
 
-        {/* Employee Summary Card */}
-        <div className="px-6 py-4 border-b border-border">
+        {/* Employee Card */}
+        <div className="px-6 py-4 border-b border-border bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-6 w-6 text-primary" />
-            </div>
+            <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+              <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                {getInitials(timesheet.employee.name)}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{timesheet.employee.name}</p>
+              <h3 className="font-semibold truncate">{timesheet.employee.name}</h3>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-3.5 w-3.5" />
                 <span>
@@ -293,35 +291,30 @@ export function TimesheetEditModal({
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="px-6 py-4 space-y-4">
-            {/* Daily Entries - Compact Cards */}
+          <div className="p-4 space-y-4">
+            {/* Daily Entries */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Daily Entries</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">Daily Entries</Label>
               {entries.map((entry, entryIndex) => {
                 const isExpanded = expandedDays.includes(entry.id);
                 const hasIssue = hasIssues(entry);
 
                 return (
-                  <Collapsible
-                    key={entry.id}
-                    open={isExpanded}
-                    onOpenChange={() => toggleDay(entry.id)}
-                  >
+                  <Collapsible key={entry.id} open={isExpanded} onOpenChange={() => toggleDay(entry.id)}>
                     <CollapsibleTrigger className={cn(
                       "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
                       "hover:bg-muted/50",
                       hasIssue ? "border-amber-500/50 bg-amber-500/5" : "border-border",
                       isExpanded && "rounded-b-none border-b-0"
                     )}>
-                      {/* Day indicator */}
                       <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-muted">
                         <span className="text-[10px] uppercase text-muted-foreground font-medium">{getDayName(entry.date)}</span>
                         <span className="text-sm font-bold -mt-0.5">{getDayDate(entry.date)}</span>
                       </div>
                       
-                      {/* Time info */}
                       <div className="flex-1 text-left">
                         <div className="flex items-center gap-1.5 text-sm">
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                           <span className="font-medium">{entry.clockIn}</span>
                           <span className="text-muted-foreground">→</span>
                           <span className={cn("font-medium", !entry.clockOut && "text-amber-600")}>
@@ -329,15 +322,17 @@ export function TimesheetEditModal({
                           </span>
                           {hasIssue && <AlertCircle className="h-3.5 w-3.5 text-amber-500 ml-1" />}
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           {entry.breaks.length} break{entry.breaks.length !== 1 ? 's' : ''} · {formatMinutesToTime(entry.totalBreakMinutes)}
                         </p>
                       </div>
 
-                      {/* Hours badge */}
-                      <Badge variant="secondary" className="font-semibold">
-                        {entry.netHours}h
-                      </Badge>
+                      <div className="text-right">
+                        <p className="font-semibold">{entry.netHours}h</p>
+                        {entry.overtime > 0 && (
+                          <p className="text-xs text-amber-600">+{entry.overtime} OT</p>
+                        )}
+                      </div>
                       <ChevronDown className={cn(
                         "h-4 w-4 text-muted-foreground transition-transform",
                         isExpanded && "rotate-180"
@@ -346,7 +341,7 @@ export function TimesheetEditModal({
 
                     <CollapsibleContent>
                       <div className={cn(
-                        "px-3 pb-3 pt-3 space-y-4 border border-t-0 rounded-b-lg",
+                        "px-4 pb-4 pt-4 space-y-4 border border-t-0 rounded-b-lg",
                         hasIssue ? "border-amber-500/50 bg-amber-500/5" : "border-border bg-muted/20"
                       )}>
                         {/* Time inputs */}
@@ -357,7 +352,7 @@ export function TimesheetEditModal({
                               type="time"
                               value={entry.clockIn}
                               onChange={(e) => handleEntryChange(entryIndex, 'clockIn', e.target.value)}
-                              className="h-9"
+                              className="h-10"
                             />
                           </div>
                           <div>
@@ -366,36 +361,41 @@ export function TimesheetEditModal({
                               type="time"
                               value={entry.clockOut || ''}
                               onChange={(e) => handleEntryChange(entryIndex, 'clockOut', e.target.value)}
-                              className="h-9"
+                              className="h-10"
                             />
                           </div>
                         </div>
 
-                        {/* Hours summary - inline */}
-                        <div className="flex items-center justify-between text-xs bg-background rounded-md px-3 py-2">
-                          <div className="flex items-center gap-4">
-                            <span className="text-muted-foreground">Gross: <span className="text-foreground font-medium">{entry.grossHours}h</span></span>
-                            <span className="text-muted-foreground">Net: <span className="text-foreground font-medium">{entry.netHours}h</span></span>
+                        {/* Hours summary */}
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="p-2 rounded-lg bg-background">
+                            <p className="text-lg font-bold">{entry.grossHours}h</p>
+                            <p className="text-[10px] uppercase text-muted-foreground">Gross</p>
                           </div>
-                          {entry.overtime > 0 && (
-                            <Badge variant="outline" className="text-amber-600 border-amber-600/30 bg-amber-500/10 text-xs">
-                              +{entry.overtime}h OT
-                            </Badge>
-                          )}
+                          <div className="p-2 rounded-lg bg-background">
+                            <p className="text-lg font-bold">{entry.netHours}h</p>
+                            <p className="text-[10px] uppercase text-muted-foreground">Net</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-background">
+                            <p className={cn("text-lg font-bold", entry.overtime > 0 && "text-amber-600")}>
+                              {entry.overtime > 0 ? `+${entry.overtime}h` : '0h'}
+                            </p>
+                            <p className="text-[10px] uppercase text-muted-foreground">Overtime</p>
+                          </div>
                         </div>
 
                         {/* Breaks */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                              <Coffee className="h-3.5 w-3.5" /> Breaks
+                              <Coffee className="h-3.5 w-3.5" /> Breaks ({formatMinutesToTime(entry.totalBreakMinutes)})
                             </span>
                             <Button
                               type="button"
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
                               onClick={() => addBreak(entryIndex)}
-                              className="h-7 text-xs px-2"
+                              className="h-7 text-xs"
                             >
                               <Plus className="h-3 w-3 mr-1" />
                               Add
@@ -403,18 +403,18 @@ export function TimesheetEditModal({
                           </div>
 
                           {entry.breaks.length === 0 ? (
-                            <p className="text-xs text-muted-foreground italic text-center py-2">No breaks</p>
+                            <p className="text-xs text-muted-foreground italic text-center py-3 bg-background rounded-lg">No breaks recorded</p>
                           ) : (
-                            <div className="space-y-1.5">
+                            <div className="space-y-2">
                               {entry.breaks.map((breakEntry, breakIndex) => (
-                                <div key={breakEntry.id} className="flex items-center gap-2 bg-background rounded-md p-2">
+                                <div key={breakEntry.id} className="flex items-center gap-2 bg-background rounded-lg p-2.5">
                                   <Select
                                     value={breakEntry.type}
                                     onValueChange={(value) =>
                                       handleBreakChange(entryIndex, breakIndex, 'type', value as BreakEntry['type'])
                                     }
                                   >
-                                    <SelectTrigger className="w-20 h-7 text-xs">
+                                    <SelectTrigger className="w-20 h-8 text-xs">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -429,26 +429,26 @@ export function TimesheetEditModal({
                                     onChange={(e) =>
                                       handleBreakChange(entryIndex, breakIndex, 'startTime', e.target.value)
                                     }
-                                    className="w-[85px] h-7 text-xs"
+                                    className="w-[90px] h-8 text-xs"
                                   />
-                                  <span className="text-muted-foreground text-xs">-</span>
+                                  <span className="text-muted-foreground text-xs">→</span>
                                   <Input
                                     type="time"
                                     value={breakEntry.endTime || ''}
                                     onChange={(e) =>
                                       handleBreakChange(entryIndex, breakIndex, 'endTime', e.target.value)
                                     }
-                                    className="w-[85px] h-7 text-xs"
+                                    className="w-[90px] h-8 text-xs"
                                   />
-                                  <span className="text-xs text-muted-foreground w-10 text-center">
+                                  <Badge variant="secondary" className="text-xs min-w-[50px] justify-center">
                                     {formatMinutesToTime(breakEntry.duration)}
-                                  </span>
+                                  </Badge>
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeBreak(entryIndex, breakIndex)}
-                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
@@ -464,10 +464,10 @@ export function TimesheetEditModal({
               })}
             </div>
 
-            {/* Allowances - Collapsible */}
+            {/* Allowances */}
             <Collapsible>
-              <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
-                <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Allowances</Label>
+              <CollapsibleTrigger className="flex items-center justify-between w-full py-2 px-1">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Allowances</Label>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-2">
@@ -483,7 +483,7 @@ export function TimesheetEditModal({
 
             {/* Admin Notes */}
             <div>
-              <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2 block">Notes</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 block px-1">Admin Notes</Label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -502,7 +502,7 @@ export function TimesheetEditModal({
           </Button>
           <Button onClick={handleSave} className="flex-1">
             <Save className="h-4 w-4 mr-2" />
-            Save
+            Save Changes
           </Button>
         </div>
       </SheetContent>
