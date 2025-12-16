@@ -2,6 +2,8 @@ export type ViewMode = 'day' | 'week' | 'fortnight' | 'month';
 
 export type EmploymentType = 'permanent' | 'casual';
 
+export type AgencyType = 'anzuk' | 'randstad' | 'quickcare' | 'hays' | 'internal';
+
 export type QualificationType = 
   | 'diploma_ece' 
   | 'certificate_iii' 
@@ -44,6 +46,7 @@ export interface StaffMember {
   avatar?: string;
   role: 'lead_educator' | 'educator' | 'assistant' | 'cook' | 'admin';
   employmentType: EmploymentType;
+  agency?: AgencyType;
   qualifications: Qualification[];
   hourlyRate: number;
   overtimeRate: number;
@@ -195,6 +198,22 @@ export const ageGroupRatios: Record<Room['ageGroup'], number> = {
 export const employmentTypeLabels: Record<EmploymentType, string> = {
   permanent: 'Permanent',
   casual: 'Casual',
+};
+
+export const agencyLabels: Record<AgencyType, string> = {
+  anzuk: 'Anzuk',
+  randstad: 'Randstad',
+  quickcare: 'Quick Care',
+  hays: 'Hays',
+  internal: 'Internal',
+};
+
+export const agencyColors: Record<AgencyType, string> = {
+  anzuk: 'hsl(220, 70%, 50%)',
+  randstad: 'hsl(340, 75%, 50%)',
+  quickcare: 'hsl(150, 65%, 40%)',
+  hays: 'hsl(30, 80%, 50%)',
+  internal: 'hsl(0, 0%, 50%)',
 };
 
 export const timeOffTypeLabels: Record<TimeOff['type'], string> = {

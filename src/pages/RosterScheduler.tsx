@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
-import { format, addDays, startOfWeek } from 'date-fns';
-import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates } from '@/types/roster';
-import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags } from '@/data/mockRosterData';
+import { format, addDays, startOfWeek, subWeeks } from 'date-fns';
+import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff } from '@/types/roster';
+import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags, mockAgencyStaff } from '@/data/mockRosterData';
 import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel';
 import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
 import { ShiftDetailPanel } from '@/components/roster/ShiftDetailPanel';
+import { RosterSummaryBar } from '@/components/roster/RosterSummaryBar';
+import { LeaveRequestModal } from '@/components/roster/LeaveRequestModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { 
   Calendar, 
   ChevronLeft, 
@@ -25,7 +28,9 @@ import {
   Building2,
   Users,
   Sparkles,
-  Clock
+  Clock,
+  Copy,
+  CalendarDays
 } from 'lucide-react';
 
 export default function RosterScheduler() {
@@ -38,6 +43,7 @@ export default function RosterScheduler() {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [shiftTemplates] = useState<ShiftTemplate[]>(defaultShiftTemplates);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
   
   const [roleFilter, setRoleFilter] = useState<string>('all');
   
@@ -45,6 +51,7 @@ export default function RosterScheduler() {
   const complianceFlags = useMemo(() => generateMockComplianceFlags(), []);
   
   const selectedCentre = mockCentres.find(c => c.id === selectedCentreId)!;
+  const allStaff = [...mockStaff, ...mockAgencyStaff];
   
   const dates = useMemo(() => {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -59,8 +66,18 @@ export default function RosterScheduler() {
 
   const centreFlags = complianceFlags.filter(f => f.centreId === selectedCentreId);
   const criticalFlags = centreFlags.filter(f => f.severity === 'critical');
-  const warningFlags = centreFlags.filter(f => f.severity === 'warning');
   const centreOpenShifts = openShifts.filter(os => os.centreId === selectedCentreId);
+
+  // Leave requests from staff
+  const leaveRequests = useMemo(() => {
+    const requests: (TimeOff & { staffName: string; requestedDate: string })[] = [];
+    allStaff.forEach(staff => {
+      staff.timeOff?.forEach(to => {
+        requests.push({ ...to, staffName: staff.name, requestedDate: to.startDate });
+      });
+    });
+    return requests;
+  }, [allStaff]);
 
   // Cost calculation
   const costSummary = useMemo(() => {
@@ -80,7 +97,7 @@ export default function RosterScheduler() {
     });
 
     Object.entries(staffHours).forEach(([staffId, hours]) => {
-      const member = mockStaff.find(s => s.id === staffId);
+      const member = allStaff.find(s => s.id === staffId);
       if (member) {
         const regularHours = Math.min(hours, member.maxHoursPerWeek);
         const overtimeHours = Math.max(0, hours - member.maxHoursPerWeek);
@@ -95,7 +112,7 @@ export default function RosterScheduler() {
       totalCost: Math.round(regularCost + overtimeCost),
       totalHours: Math.round(totalHours * 10) / 10 
     };
-  }, [shifts, selectedCentreId]);
+  }, [shifts, selectedCentreId, allStaff]);
 
   const handleDragStart = (e: React.DragEvent, staff: StaffMember) => {
     e.dataTransfer.setData('staffId', staff.id);
@@ -103,7 +120,7 @@ export default function RosterScheduler() {
   };
 
   const handleDropStaff = (staffId: string, roomId: string, date: string) => {
-    const staff = mockStaff.find(s => s.id === staffId);
+    const staff = allStaff.find(s => s.id === staffId);
     if (!staff) return;
 
     const newShift: Shift = {
@@ -124,7 +141,7 @@ export default function RosterScheduler() {
   };
 
   const handleOpenShiftDrop = (staffId: string, openShift: OpenShift) => {
-    const staff = mockStaff.find(s => s.id === staffId);
+    const staff = allStaff.find(s => s.id === staffId);
     if (!staff) return;
 
     const newShift: Shift = {
@@ -168,7 +185,7 @@ export default function RosterScheduler() {
     setTimeout(() => {
       // Generate sample AI shifts for open positions
       const newShifts: Shift[] = [];
-      const availableStaff = mockStaff.filter(s => 
+      const availableStaff = allStaff.filter(s => 
         s.currentWeeklyHours < s.maxHoursPerWeek &&
         (s.preferredCentres.includes(selectedCentreId) || s.preferredCentres.length === 0)
       );
@@ -198,6 +215,41 @@ export default function RosterScheduler() {
     }, 2000);
   };
 
+  const handleCopyWeek = () => {
+    const previousWeekStart = startOfWeek(subWeeks(currentDate, 1), { weekStartsOn: 1 });
+    const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+    
+    // Get shifts from previous week for this centre
+    const previousWeekShifts = shifts.filter(s => {
+      const shiftDate = new Date(s.date);
+      return s.centreId === selectedCentreId && 
+        shiftDate >= previousWeekStart && 
+        shiftDate < currentWeekStart;
+    });
+
+    if (previousWeekShifts.length === 0) {
+      toast.info('No shifts found in previous week to copy');
+      return;
+    }
+
+    // Copy shifts to current week
+    const newShifts = previousWeekShifts.map((shift, idx) => {
+      const originalDate = new Date(shift.date);
+      const dayOfWeek = originalDate.getDay();
+      const newDate = addDays(currentWeekStart, dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+      
+      return {
+        ...shift,
+        id: `shift-copy-${Date.now()}-${idx}`,
+        date: format(newDate, 'yyyy-MM-dd'),
+        status: 'draft' as const,
+      };
+    });
+
+    setShifts(prev => [...prev, ...newShifts]);
+    toast.success(`Copied ${newShifts.length} shifts from previous week`);
+  };
+
   const navigateDate = (direction: 'prev' | 'next') => {
     const days = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : viewMode === 'fortnight' ? 14 : 28;
     setCurrentDate(prev => addDays(prev, direction === 'next' ? days : -days));
@@ -221,7 +273,7 @@ export default function RosterScheduler() {
   };
 
   const handleAddShift = (staffId: string, date: string, roomId: string, template?: ShiftTemplate) => {
-    const staff = mockStaff.find(s => s.id === staffId);
+    const staff = allStaff.find(s => s.id === staffId);
     if (!staff) return;
 
     const newShift: Shift = {
@@ -242,6 +294,18 @@ export default function RosterScheduler() {
       setSelectedShift(newShift);
     }
     toast.success(`Created ${template?.name || 'custom'} shift for ${staff.name}`);
+  };
+
+  const handleLeaveApprove = (id: string) => {
+    toast.success('Leave request approved');
+  };
+
+  const handleLeaveReject = (id: string) => {
+    toast.success('Leave request rejected');
+  };
+
+  const handleCreateLeaveRequest = (request: Omit<TimeOff, 'id'>) => {
+    toast.success('Leave request submitted');
   };
 
   return (
@@ -313,11 +377,19 @@ export default function RosterScheduler() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={handleGenerateAIShifts}
-              disabled={isGenerating || centreOpenShifts.length === 0}
+              onClick={handleCopyWeek}
             >
-              <Sparkles className={cn("h-4 w-4 mr-2", isGenerating && "animate-spin")} />
-              {isGenerating ? 'Generating...' : 'AI Generate'}
+              <Copy className="h-4 w-4 mr-2" />
+              Copy Week
+            </Button>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowLeaveModal(true)}
+            >
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Leave
             </Button>
 
             <Button variant="outline" size="sm">
@@ -392,16 +464,28 @@ export default function RosterScheduler() {
 
         <UnscheduledStaffPanel
           staff={filteredStaff}
+          agencyStaff={mockAgencyStaff}
           shifts={shifts}
           selectedCentreId={selectedCentreId}
           onDragStart={handleDragStart}
+          onGenerateAI={handleGenerateAIShifts}
+          isGenerating={isGenerating}
         />
       </div>
+
+      {/* Summary Bar */}
+      <RosterSummaryBar
+        shifts={shifts}
+        openShifts={openShifts}
+        staff={allStaff}
+        dates={dates}
+        centreId={selectedCentreId}
+      />
 
       {selectedShift && (
         <ShiftDetailPanel
           shift={selectedShift}
-          staff={mockStaff}
+          staff={allStaff}
           centre={selectedCentre}
           demandData={demandData}
           complianceFlags={complianceFlags}
@@ -412,10 +496,16 @@ export default function RosterScheduler() {
           onSwapStaff={(shift) => toast.info('Staff swap feature coming soon')}
         />
       )}
+
+      <LeaveRequestModal
+        open={showLeaveModal}
+        onClose={() => setShowLeaveModal(false)}
+        staff={allStaff}
+        leaveRequests={leaveRequests}
+        onApprove={handleLeaveApprove}
+        onReject={handleLeaveReject}
+        onCreateRequest={handleCreateLeaveRequest}
+      />
     </div>
   );
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ');
 }
