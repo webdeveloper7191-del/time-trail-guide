@@ -17,16 +17,16 @@ import { RosterPrintView } from '@/components/roster/RosterPrintView';
 import { ShiftConflictPanel } from '@/components/roster/ShiftConflictPanel';
 import { SchedulingPreferencesModal } from '@/components/roster/SchedulingPreferencesModal';
 import { ShiftNotificationsModal } from '@/components/roster/ShiftNotificationsModal';
+import { StaffProfileModal } from '@/components/roster/StaffProfileModal';
+import { WeeklySummaryDashboard } from '@/components/roster/WeeklySummaryDashboard';
 import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
 import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
@@ -55,7 +55,9 @@ import {
   UserCog,
   Mail,
   Moon,
-  Sun
+  Sun,
+  BarChart3,
+  MoreHorizontal
 } from 'lucide-react';
 
 // Default budget configuration per centre
@@ -87,6 +89,9 @@ export default function RosterScheduler() {
   const [showConflicts, setShowConflicts] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showStaffProfile, setShowStaffProfile] = useState(false);
+  const [showWeeklySummary, setShowWeeklySummary] = useState(false);
+  const [selectedStaffForProfile, setSelectedStaffForProfile] = useState<StaffMember | null>(null);
   const [selectedStaffForPrefs, setSelectedStaffForPrefs] = useState<StaffMember | null>(null);
   const [centreBudgets, setCentreBudgets] = useState<Record<string, number>>(defaultCentreBudgets);
   const [staffList, setStaffList] = useState<StaffMember[]>([...mockStaff, ...mockAgencyStaff]);
@@ -473,6 +478,11 @@ export default function RosterScheduler() {
     setShowPreferences(true);
   };
 
+  const openStaffProfile = (staff: StaffMember) => {
+    setSelectedStaffForProfile(staff);
+    setShowStaffProfile(true);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header - Material Style */}
@@ -532,6 +542,12 @@ export default function RosterScheduler() {
               )}
             </div>
 
+            {/* Summary Dashboard */}
+            <Button variant="outline" size="sm" onClick={() => setShowWeeklySummary(true)} className="h-9">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Summary
+            </Button>
+
             {/* Budget indicator */}
             <button 
               onClick={() => setShowBudgetBar(prev => !prev)}
@@ -539,8 +555,7 @@ export default function RosterScheduler() {
             >
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium text-foreground">${costSummary.totalCost.toLocaleString()}</span>
-              <span className="text-muted-foreground">/</span>
-              <span className="text-muted-foreground">${weeklyBudget.toLocaleString()}</span>
+              <span className="text-muted-foreground">/ ${weeklyBudget.toLocaleString()}</span>
             </button>
 
             {/* Publish Button - Primary */}
@@ -898,6 +913,23 @@ export default function RosterScheduler() {
         shifts={shifts}
         staff={allStaff}
         centreId={selectedCentreId}
+      />
+
+      <StaffProfileModal
+        staff={selectedStaffForProfile}
+        shifts={shifts}
+        isOpen={showStaffProfile}
+        onClose={() => { setShowStaffProfile(false); setSelectedStaffForProfile(null); }}
+      />
+
+      <WeeklySummaryDashboard
+        shifts={shifts}
+        staff={allStaff}
+        centre={selectedCentre}
+        dates={dates}
+        weeklyBudget={weeklyBudget}
+        isOpen={showWeeklySummary}
+        onClose={() => setShowWeeklySummary(false)}
       />
 
       {/* Hidden Print View */}
