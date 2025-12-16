@@ -39,9 +39,6 @@ import {
   Eye,
   EyeOff,
   Settings,
-  Building2,
-  Users,
-  Clock,
   Copy,
   CalendarDays,
   Plus,
@@ -469,33 +466,37 @@ export default function RosterScheduler() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="border-b border-border px-4 py-3 bg-card shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-foreground flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              Roster Scheduler
-            </h1>
-            
+      {/* Header - Material Style */}
+      <header className="bg-card border-b border-border shrink-0 shadow-sm">
+        {/* Top Bar - Navigation & Primary Actions */}
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            {/* Logo/Brand */}
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-primary" />
+              </div>
+              <span className="text-lg font-semibold text-foreground">Rosters</span>
+            </div>
+
+            {/* Centre Selector - Clean dropdown */}
             <Select value={selectedCentreId} onValueChange={setSelectedCentreId}>
-              <SelectTrigger className="w-[220px]">
-                <Building2 className="h-4 w-4 mr-2" />
+              <SelectTrigger className="w-[200px] bg-background border-border h-9">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover">
                 {mockCentres.map(centre => (
                   <SelectItem key={centre.id} value={centre.id}>{centre.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
+            {/* Role Filter */}
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-[150px]">
-                <Users className="h-4 w-4 mr-2" />
+              <SelectTrigger className="w-[140px] bg-background border-border h-9">
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover">
                 <SelectItem value="all">All Roles</SelectItem>
                 {Object.entries(roleLabels).map(([key, label]) => (
                   <SelectItem key={key} value={key}>{label}</SelectItem>
@@ -504,49 +505,123 @@ export default function RosterScheduler() {
             </Select>
           </div>
 
-          <div className="flex items-center gap-2">
-            {centreOpenShifts.length > 0 && (
-              <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
-                <AlertTriangle className="h-3 w-3" />
-                {centreOpenShifts.length} Open
-              </Badge>
-            )}
-            {criticalFlags.length > 0 && (
-              <Badge variant="destructive" className="gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                {criticalFlags.length} Critical
-              </Badge>
-            )}
-            
-            {/* Cost summary mini */}
-            <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded-md text-sm">
-              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="font-medium">${costSummary.totalCost.toLocaleString()}</span>
-              <span className="text-xs text-muted-foreground">/ ${weeklyBudget.toLocaleString()}</span>
+          {/* Status Badges & Primary Actions */}
+          <div className="flex items-center gap-3">
+            {/* Status indicators */}
+            <div className="flex items-center gap-2 mr-2">
+              {centreOpenShifts.length > 0 && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  {centreOpenShifts.length} Open
+                </div>
+              )}
+              {criticalFlags.length > 0 && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-destructive/10 text-destructive rounded-full text-xs font-medium">
+                  <AlertTriangle className="h-3 w-3" />
+                  {criticalFlags.length} Critical
+                </div>
+              )}
             </div>
 
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowAddOpenShiftModal(true)}
+            {/* Budget indicator */}
+            <button 
+              onClick={() => setShowBudgetBar(prev => !prev)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-lg text-sm transition-colors"
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium text-foreground">${costSummary.totalCost.toLocaleString()}</span>
+              <span className="text-muted-foreground">/</span>
+              <span className="text-muted-foreground">${weeklyBudget.toLocaleString()}</span>
+            </button>
+
+            {/* Publish Button - Primary */}
+            <Button onClick={handlePublish} className="h-9 px-4">
+              <Send className="h-4 w-4 mr-2" />
+              Publish
+            </Button>
+          </div>
+        </div>
+
+        {/* Toolbar Row - Compact */}
+        <div className="px-4 py-2 bg-muted/30 border-t border-border/50 flex items-center justify-between">
+          {/* Left: Date Navigation */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center bg-background rounded-lg border border-border overflow-hidden">
+              <button 
+                onClick={() => navigateDate('prev')}
+                className="p-2 hover:bg-muted transition-colors border-r border-border"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => setCurrentDate(new Date())}
+                className="px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Today
+              </button>
+              <button 
+                onClick={() => navigateDate('next')}
+                className="p-2 hover:bg-muted transition-colors border-l border-border"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <span className="text-sm font-medium text-foreground">
+              {format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d, yyyy')}
+            </span>
+
+            {/* View Mode Tabs */}
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+              <TabsList className="h-8 bg-background border border-border">
+                <TabsTrigger value="day" className="text-xs px-3 h-6">Day</TabsTrigger>
+                <TabsTrigger value="week" className="text-xs px-3 h-6">Week</TabsTrigger>
+                <TabsTrigger value="fortnight" className="text-xs px-3 h-6">Fortnight</TabsTrigger>
+                <TabsTrigger value="month" className="text-xs px-3 h-6">Month</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {/* Right: Action Buttons */}
+          <div className="flex items-center gap-1">
+            {/* Demand Toggle */}
+            <button 
+              onClick={() => setShowDemandOverlay(prev => !prev)}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors",
+                showDemandOverlay 
+                  ? "bg-primary/10 text-primary" 
+                  : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {showDemandOverlay ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+              Demand
+            </button>
+
+            <div className="w-px h-5 bg-border mx-1" />
+
+            {/* Quick Actions */}
+            <Button variant="ghost" size="sm" onClick={() => setShowAddOpenShiftModal(true)} className="h-8 text-xs">
+              <Plus className="h-3.5 w-3.5 mr-1" />
               Open Shift
             </Button>
 
-            <Button variant="outline" size="sm" onClick={handleCopyWeek}>
-              <Copy className="h-4 w-4 mr-1" />
+            <Button variant="ghost" size="sm" onClick={handleCopyWeek} className="h-8 text-xs">
+              <Copy className="h-3.5 w-3.5 mr-1" />
               Copy Week
             </Button>
 
+            <div className="w-px h-5 bg-border mx-1" />
+
+            {/* Export Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-1" />
+                <Button variant="ghost" size="sm" className="h-8 text-xs">
+                  <Download className="h-3.5 w-3.5 mr-1" />
                   Export
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent className="bg-popover">
                 <DropdownMenuItem onClick={handleExportPDF}>
                   <FileText className="h-4 w-4 mr-2" />
                   Export to PDF
@@ -555,74 +630,33 @@ export default function RosterScheduler() {
                   <FileSpreadsheet className="h-4 w-4 mr-2" />
                   Export to Excel
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handlePrint}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print View
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline" size="sm" onClick={() => setShowAvailabilityModal(true)}>
-              <CalendarCheck className="h-4 w-4 mr-1" />
-              Availability
-            </Button>
-
-            <Button variant="outline" size="sm" onClick={() => setShowLeaveModal(true)}>
-              <CalendarDays className="h-4 w-4 mr-1" />
-              Leave
-            </Button>
-
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-1" />
-              Print
-            </Button>
-
-            {/* Conflicts button */}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowConflicts(true)}
-              className="relative"
-            >
-              <Shield className="h-4 w-4" />
-              {conflictCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
-                  {conflictCount}
-                </span>
-              )}
-            </Button>
-
-            {/* Alerts button */}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowAlerts(true)}
-              className="relative"
-            >
-              <Bell className="h-4 w-4" />
-              {alertCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
-                  {alertCount}
-                </span>
-              )}
-            </Button>
-
-            {/* Notifications dropdown */}
-            <Button variant="outline" size="sm" onClick={() => setShowNotifications(true)}>
-              <Mail className="h-4 w-4" />
-            </Button>
-
-            {/* Settings dropdown */}
+            {/* More Actions Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4" />
+                <Button variant="ghost" size="sm" className="h-8 text-xs">
+                  <CalendarDays className="h-3.5 w-3.5 mr-1" />
+                  Schedule
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setShowBudgetSettings(true)}>
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Budget Settings
+              <DropdownMenuContent className="bg-popover">
+                <DropdownMenuItem onClick={() => setShowAvailabilityModal(true)}>
+                  <CalendarCheck className="h-4 w-4 mr-2" />
+                  Staff Availability
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowLeaveModal(true)}>
+                  <CalendarDays className="h-4 w-4 mr-2" />
+                  Leave Requests
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => {
-                  // Open preferences for first staff member as example
                   if (allStaff.length > 0) openPreferencesForStaff(allStaff[0]);
                 }}>
                   <UserCog className="h-4 w-4 mr-2" />
@@ -630,46 +664,61 @@ export default function RosterScheduler() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
-            <Button size="sm" onClick={handlePublish}>
-              <Send className="h-4 w-4 mr-1" />
-              Publish
-            </Button>
-          </div>
-        </div>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-3">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => navigateDate('prev')}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => navigateDate('next')}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Today</Button>
-            <span className="text-sm font-medium ml-2">
-              {format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d, yyyy')}
-            </span>
-          </div>
+            <div className="w-px h-5 bg-border mx-1" />
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Switch id="demand" checked={showDemandOverlay} onCheckedChange={setShowDemandOverlay} />
-              <Label htmlFor="demand" className="text-sm flex items-center gap-1">
-                {showDemandOverlay ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                Demand
-              </Label>
-            </div>
+            {/* Icon Buttons - Compact */}
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setShowConflicts(true)}
+              className="h-8 w-8 relative"
+            >
+              <Shield className="h-4 w-4" />
+              {conflictCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center font-medium">
+                  {conflictCount}
+                </span>
+              )}
+            </Button>
 
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-              <TabsList>
-                <TabsTrigger value="day">Day</TabsTrigger>
-                <TabsTrigger value="week">Week</TabsTrigger>
-                <TabsTrigger value="fortnight">Fortnight</TabsTrigger>
-                <TabsTrigger value="month">Month</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setShowAlerts(true)}
+              className="h-8 w-8 relative"
+            >
+              <Bell className="h-4 w-4" />
+              {alertCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center font-medium">
+                  {alertCount}
+                </span>
+              )}
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setShowNotifications(true)}
+              className="h-8 w-8"
+            >
+              <Mail className="h-4 w-4" />
+            </Button>
+
+            {/* Settings */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                <DropdownMenuItem onClick={() => setShowBudgetSettings(true)}>
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Budget Settings
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
