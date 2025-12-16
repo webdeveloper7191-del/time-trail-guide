@@ -7,6 +7,9 @@ import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
 import { ShiftDetailPanel } from '@/components/roster/ShiftDetailPanel';
 import { RosterSummaryBar } from '@/components/roster/RosterSummaryBar';
 import { LeaveRequestModal } from '@/components/roster/LeaveRequestModal';
+import { ShiftSwapModal } from '@/components/roster/ShiftSwapModal';
+import { BudgetTracker } from '@/components/roster/BudgetTracker';
+import { AddOpenShiftModal } from '@/components/roster/AddOpenShiftModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,11 +30,18 @@ import {
   Settings,
   Building2,
   Users,
-  Sparkles,
   Clock,
   Copy,
-  CalendarDays
+  CalendarDays,
+  Plus
 } from 'lucide-react';
+
+// Budget configuration per centre (in production, this would come from settings)
+const centreBudgets: Record<string, number> = {
+  'centre-1': 8000,
+  'centre-2': 6500,
+  'centre-3': 7500,
+};
 
 export default function RosterScheduler() {
   const [viewMode, setViewMode] = useState<ViewMode>('week');
@@ -44,6 +54,10 @@ export default function RosterScheduler() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [shiftTemplates] = useState<ShiftTemplate[]>(defaultShiftTemplates);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [shiftToSwap, setShiftToSwap] = useState<Shift | null>(null);
+  const [showAddOpenShiftModal, setShowAddOpenShiftModal] = useState(false);
+  const [showBudgetPanel, setShowBudgetPanel] = useState(true);
   
   const [roleFilter, setRoleFilter] = useState<string>('all');
   
@@ -52,6 +66,7 @@ export default function RosterScheduler() {
   
   const selectedCentre = mockCentres.find(c => c.id === selectedCentreId)!;
   const allStaff = [...mockStaff, ...mockAgencyStaff];
+  const weeklyBudget = centreBudgets[selectedCentreId] || 7000;
   
   const dates = useMemo(() => {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -86,7 +101,6 @@ export default function RosterScheduler() {
     let overtimeCost = 0;
     let totalHours = 0;
     
-    // Group by staff
     const staffHours: Record<string, number> = {};
     centreShifts.forEach(shift => {
       const [startH, startM] = shift.startTime.split(':').map(Number);
@@ -181,9 +195,7 @@ export default function RosterScheduler() {
     setIsGenerating(true);
     toast.info('AI is generating optimized shifts...');
     
-    // Simulate AI generation (in production, this would call an edge function)
     setTimeout(() => {
-      // Generate sample AI shifts for open positions
       const newShifts: Shift[] = [];
       const availableStaff = allStaff.filter(s => 
         s.currentWeeklyHours < s.maxHoursPerWeek &&
@@ -219,7 +231,6 @@ export default function RosterScheduler() {
     const previousWeekStart = startOfWeek(subWeeks(currentDate, 1), { weekStartsOn: 1 });
     const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
     
-    // Get shifts from previous week for this centre
     const previousWeekShifts = shifts.filter(s => {
       const shiftDate = new Date(s.date);
       return s.centreId === selectedCentreId && 
@@ -232,7 +243,6 @@ export default function RosterScheduler() {
       return;
     }
 
-    // Copy shifts to current week
     const newShifts = previousWeekShifts.map((shift, idx) => {
       const originalDate = new Date(shift.date);
       const dayOfWeek = originalDate.getDay();
@@ -294,6 +304,32 @@ export default function RosterScheduler() {
       setSelectedShift(newShift);
     }
     toast.success(`Created ${template?.name || 'custom'} shift for ${staff.name}`);
+  };
+
+  const handleSwapStaff = (shift: Shift) => {
+    setShiftToSwap(shift);
+    setShowSwapModal(true);
+    setSelectedShift(null);
+  };
+
+  const handleConfirmSwap = (fromShift: Shift, toStaffId: string) => {
+    const newStaff = allStaff.find(s => s.id === toStaffId);
+    setShifts(prev => prev.map(s => 
+      s.id === fromShift.id 
+        ? { ...s, staffId: toStaffId, status: 'draft' as const }
+        : s
+    ));
+    toast.success(`Shift swapped to ${newStaff?.name}`);
+    setShiftToSwap(null);
+  };
+
+  const handleAddOpenShift = (openShift: Omit<OpenShift, 'id'>) => {
+    const newOpenShift: OpenShift = {
+      ...openShift,
+      id: `open-${Date.now()}`,
+    };
+    setOpenShifts(prev => [...prev, newOpenShift]);
+    toast.success('Open shift added');
   };
 
   const handleLeaveApprove = (id: string) => {
@@ -377,6 +413,15 @@ export default function RosterScheduler() {
             <Button 
               variant="outline" 
               size="sm" 
+              onClick={() => setShowAddOpenShiftModal(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Open Shift
+            </Button>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
               onClick={handleCopyWeek}
             >
               <Copy className="h-4 w-4 mr-2" />
@@ -421,6 +466,14 @@ export default function RosterScheduler() {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
+              <Switch id="budget" checked={showBudgetPanel} onCheckedChange={setShowBudgetPanel} />
+              <Label htmlFor="budget" className="text-sm flex items-center gap-1">
+                <DollarSign className="h-3.5 w-3.5" />
+                Budget
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
               <Switch id="demand" checked={showDemandOverlay} onCheckedChange={setShowDemandOverlay} />
               <Label htmlFor="demand" className="text-sm flex items-center gap-1">
                 {showDemandOverlay ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
@@ -442,6 +495,18 @@ export default function RosterScheduler() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
+        {/* Budget Panel */}
+        {showBudgetPanel && (
+          <div className="w-72 border-r border-border p-3 overflow-auto bg-muted/30">
+            <BudgetTracker
+              shifts={shifts}
+              staff={allStaff}
+              centreId={selectedCentreId}
+              weeklyBudget={weeklyBudget}
+            />
+          </div>
+        )}
+
         <StaffTimelineGrid
           centre={selectedCentre}
           shifts={shifts.filter(s => s.centreId === selectedCentreId)}
@@ -493,7 +558,7 @@ export default function RosterScheduler() {
           onSave={handleShiftSave}
           onDelete={handleShiftDelete}
           onDuplicate={handleShiftDuplicate}
-          onSwapStaff={(shift) => toast.info('Staff swap feature coming soon')}
+          onSwapStaff={handleSwapStaff}
         />
       )}
 
@@ -505,6 +570,25 @@ export default function RosterScheduler() {
         onApprove={handleLeaveApprove}
         onReject={handleLeaveReject}
         onCreateRequest={handleCreateLeaveRequest}
+      />
+
+      {shiftToSwap && (
+        <ShiftSwapModal
+          open={showSwapModal}
+          onClose={() => { setShowSwapModal(false); setShiftToSwap(null); }}
+          shift={shiftToSwap}
+          staff={allStaff}
+          allShifts={shifts}
+          onSwap={handleConfirmSwap}
+        />
+      )}
+
+      <AddOpenShiftModal
+        open={showAddOpenShiftModal}
+        onClose={() => setShowAddOpenShiftModal(false)}
+        rooms={selectedCentre.rooms}
+        centreId={selectedCentreId}
+        onAdd={handleAddOpenShift}
       />
     </div>
   );
