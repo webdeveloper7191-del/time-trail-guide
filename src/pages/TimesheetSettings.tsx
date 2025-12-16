@@ -42,8 +42,10 @@ import {
   Fingerprint,
   Eye,
   HelpCircle,
+  Award,
 } from 'lucide-react';
 import { ApprovalTier, BreakRule, ApprovalRule } from '@/types/compliance';
+import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
 
 interface AutoApprovalCondition {
   id: string;
@@ -293,7 +295,7 @@ export default function TimesheetSettings() {
 
         <div className="p-6">
           <Tabs defaultValue="auto-approval" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
+            <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-flex">
               <TabsTrigger value="auto-approval" className="gap-2">
                 <Zap className="h-4 w-4" />
                 <span className="hidden sm:inline">Auto-Approval</span>
@@ -317,6 +319,10 @@ export default function TimesheetSettings() {
               <TabsTrigger value="notifications" className="gap-2">
                 <Bell className="h-4 w-4" />
                 <span className="hidden sm:inline">Alerts</span>
+              </TabsTrigger>
+              <TabsTrigger value="awards" className="gap-2">
+                <Award className="h-4 w-4" />
+                <span className="hidden sm:inline">Awards</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1207,6 +1213,11 @@ export default function TimesheetSettings() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Awards Tab */}
+            <TabsContent value="awards" className="space-y-6">
+              <AwardsConfigurationTab />
             </TabsContent>
           </Tabs>
         </div>
