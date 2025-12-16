@@ -37,6 +37,7 @@ interface StaffTimelineGridProps {
   onDragStart: (e: React.DragEvent, staff: StaffMember) => void;
   onOpenShiftDrop: (staffId: string, openShift: OpenShift) => void;
   onShiftMove?: (shiftId: string, newDate: string, newRoomId: string) => void;
+  onStaffClick?: (staff: StaffMember) => void;
 }
 
 export function StaffTimelineGrid({
@@ -54,6 +55,7 @@ export function StaffTimelineGrid({
   onDragStart,
   onOpenShiftDrop,
   onShiftMove,
+  onStaffClick,
 }: StaffTimelineGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
@@ -226,19 +228,31 @@ export function StaffTimelineGrid({
                     <div key={`${room.id}-${member.id}`} className="flex border-b border-border hover:bg-muted/20 transition-colors">
                       {/* Staff info cell */}
                       <div 
-                        className="w-64 shrink-0 p-2 border-r border-border bg-card flex items-start gap-2 cursor-grab"
+                        className="w-64 shrink-0 p-2 border-r border-border bg-card flex items-start gap-2 cursor-grab group"
                         draggable
                         onDragStart={(e) => onDragStart(e, member)}
                       >
                         <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-1" />
                         <div 
-                          className="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+                          className="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0 cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-2 transition-all"
                           style={{ backgroundColor: member.color }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onStaffClick?.(member);
+                          }}
                         >
                           {member.name.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{member.name}</p>
+                          <p 
+                            className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary hover:underline transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStaffClick?.(member);
+                            }}
+                          >
+                            {member.name}
+                          </p>
                           <p className="text-[10px] text-muted-foreground">{roleLabels[member.role]}</p>
                           <div className="flex flex-wrap gap-0.5 mt-0.5">
                             {topQualifications.map((q, idx) => (
