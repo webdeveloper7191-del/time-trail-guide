@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import TimesheetSettings from "./pages/TimesheetSettings";
+import TimesheetAdmin from "./pages/TimesheetAdmin";
+import EmployeePortal from "./pages/EmployeePortal";
 import RosterScheduler from "./pages/RosterScheduler";
 import NotFound from "./pages/NotFound";
 
@@ -21,6 +23,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/settings" element={<TimesheetSettings />} />
+            <Route path="/timesheet-admin" element={<TimesheetAdmin />} />
+            <Route path="/employee-portal" element={<EmployeePortal />} />
             <Route path="/roster" element={<RosterScheduler />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
