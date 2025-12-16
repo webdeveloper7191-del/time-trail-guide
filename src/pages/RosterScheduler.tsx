@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { format, addDays, startOfWeek, subWeeks } from 'date-fns';
-import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff } from '@/types/roster';
+import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff, SchedulingPreferences } from '@/types/roster';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags, mockAgencyStaff } from '@/data/mockRosterData';
 import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel';
 import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
@@ -14,6 +14,10 @@ import { AvailabilityCalendarModal } from '@/components/roster/AvailabilityCalen
 import { BudgetSettingsModal } from '@/components/roster/BudgetSettingsModal';
 import { AlertNotificationsPanel } from '@/components/roster/AlertNotificationsPanel';
 import { RosterPrintView } from '@/components/roster/RosterPrintView';
+import { ShiftConflictPanel } from '@/components/roster/ShiftConflictPanel';
+import { SchedulingPreferencesModal } from '@/components/roster/SchedulingPreferencesModal';
+import { ShiftNotificationsModal } from '@/components/roster/ShiftNotificationsModal';
+import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
 import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -48,7 +52,10 @@ import {
   ChevronUp,
   CalendarCheck,
   Bell,
-  Printer
+  Printer,
+  Shield,
+  UserCog,
+  Mail
 } from 'lucide-react';
 
 // Default budget configuration per centre
@@ -76,7 +83,12 @@ export default function RosterScheduler() {
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
+  const [showConflicts, setShowConflicts] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedStaffForPrefs, setSelectedStaffForPrefs] = useState<StaffMember | null>(null);
   const [centreBudgets, setCentreBudgets] = useState<Record<string, number>>(defaultCentreBudgets);
+  const [staffList, setStaffList] = useState<StaffMember[]>([...mockStaff, ...mockAgencyStaff]);
   
   const printRef = useRef<HTMLDivElement>(null);
   
@@ -86,7 +98,7 @@ export default function RosterScheduler() {
   const complianceFlags = useMemo(() => generateMockComplianceFlags(), []);
   
   const selectedCentre = mockCentres.find(c => c.id === selectedCentreId)!;
-  const allStaff = [...mockStaff, ...mockAgencyStaff];
+  const allStaff = staffList;
   const weeklyBudget = centreBudgets[selectedCentreId] || 7000;
   
   const dates = useMemo(() => {
@@ -432,6 +444,29 @@ export default function RosterScheduler() {
     return count;
   }, [costSummary, weeklyBudget, criticalFlags]);
 
+  // Count shift conflicts
+  const conflictCount = useMemo(() => {
+    const centreShifts = shifts.filter(s => s.centreId === selectedCentreId);
+    let totalConflicts = 0;
+    centreShifts.forEach(shift => {
+      const conflicts = detectShiftConflicts(shift, centreShifts, allStaff, selectedCentre.rooms);
+      totalConflicts += conflicts.filter(c => c.severity === 'error').length;
+    });
+    return totalConflicts;
+  }, [shifts, selectedCentreId, allStaff, selectedCentre.rooms]);
+
+  const handleSavePreferences = (staffId: string, preferences: SchedulingPreferences) => {
+    setStaffList(prev => prev.map(s => 
+      s.id === staffId ? { ...s, schedulingPreferences: preferences } : s
+    ));
+    toast.success('Scheduling preferences saved');
+  };
+
+  const openPreferencesForStaff = (staff: StaffMember) => {
+    setSelectedStaffForPrefs(staff);
+    setShowPreferences(true);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
@@ -538,6 +573,22 @@ export default function RosterScheduler() {
               Print
             </Button>
 
+            {/* Conflicts button */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowConflicts(true)}
+              className="relative"
+            >
+              <Shield className="h-4 w-4" />
+              {conflictCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                  {conflictCount}
+                </span>
+              )}
+            </Button>
+
+            {/* Alerts button */}
             <Button 
               variant="outline" 
               size="sm" 
@@ -552,9 +603,33 @@ export default function RosterScheduler() {
               )}
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowBudgetSettings(true)}>
-              <Settings className="h-4 w-4" />
+            {/* Notifications dropdown */}
+            <Button variant="outline" size="sm" onClick={() => setShowNotifications(true)}>
+              <Mail className="h-4 w-4" />
             </Button>
+
+            {/* Settings dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowBudgetSettings(true)}>
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Budget Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => {
+                  // Open preferences for first staff member as example
+                  if (allStaff.length > 0) openPreferencesForStaff(allStaff[0]);
+                }}>
+                  <UserCog className="h-4 w-4 mr-2" />
+                  Staff Preferences
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             <Button size="sm" onClick={handlePublish}>
               <Send className="h-4 w-4 mr-1" />
@@ -728,6 +803,32 @@ export default function RosterScheduler() {
         complianceFlags={complianceFlags}
         weeklyBudget={weeklyBudget}
         totalCost={costSummary.totalCost}
+        centreId={selectedCentreId}
+      />
+
+      <ShiftConflictPanel
+        open={showConflicts}
+        onClose={() => setShowConflicts(false)}
+        shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+        staff={allStaff}
+        rooms={selectedCentre.rooms}
+      />
+
+      {selectedStaffForPrefs && (
+        <SchedulingPreferencesModal
+          open={showPreferences}
+          onClose={() => { setShowPreferences(false); setSelectedStaffForPrefs(null); }}
+          staff={selectedStaffForPrefs}
+          allRooms={selectedCentre.rooms}
+          onSave={handleSavePreferences}
+        />
+      )}
+
+      <ShiftNotificationsModal
+        open={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        shifts={shifts}
+        staff={allStaff}
         centreId={selectedCentreId}
       />
 
