@@ -3,7 +3,7 @@ import {
   LayoutDashboard,
   Clock,
   Users,
-  MapPin,
+  Calendar,
   Settings,
   LogOut,
   ChevronLeft,
@@ -15,9 +15,9 @@ import { useState } from 'react';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
-  { icon: Clock, label: 'Timesheets', to: '/timesheets' },
-  { icon: Users, label: 'Employees', to: '/employees' },
-  { icon: MapPin, label: 'Locations', to: '/locations' },
+  { icon: Clock, label: 'Timesheet Admin', to: '/timesheet-admin' },
+  { icon: Calendar, label: 'Roster', to: '/roster' },
+  { icon: Users, label: 'Employee Portal', to: '/employee-portal' },
   { icon: Settings, label: 'Settings', to: '/settings' },
 ];
 
