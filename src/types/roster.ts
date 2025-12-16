@@ -1,5 +1,7 @@
 export type ViewMode = 'day' | 'week' | 'fortnight' | 'month';
 
+export type EmploymentType = 'permanent' | 'casual';
+
 export type QualificationType = 
   | 'diploma_ece' 
   | 'certificate_iii' 
@@ -17,18 +19,40 @@ export interface Qualification {
   isExpiringSoon?: boolean;
 }
 
+export interface TimeOff {
+  id: string;
+  staffId: string;
+  startDate: string;
+  endDate: string;
+  type: 'annual_leave' | 'sick_leave' | 'personal_leave' | 'unpaid_leave';
+  status: 'approved' | 'pending' | 'rejected';
+  notes?: string;
+}
+
+export interface ShiftTemplate {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  breakMinutes: number;
+  color: string;
+}
+
 export interface StaffMember {
   id: string;
   name: string;
   avatar?: string;
   role: 'lead_educator' | 'educator' | 'assistant' | 'cook' | 'admin';
+  employmentType: EmploymentType;
   qualifications: Qualification[];
   hourlyRate: number;
+  overtimeRate: number;
   maxHoursPerWeek: number;
   currentWeeklyHours: number;
   preferredCentres: string[];
   availability: DayAvailability[];
   color: string;
+  timeOff?: TimeOff[];
 }
 
 export interface DayAvailability {
@@ -162,8 +186,28 @@ export const ageGroupLabels: Record<Room['ageGroup'], string> = {
 };
 
 export const ageGroupRatios: Record<Room['ageGroup'], number> = {
-  nursery: 4,    // 1:4 ratio
-  toddler: 5,    // 1:5 ratio
-  preschool: 10, // 1:10 ratio
-  kindy: 11,     // 1:11 ratio
+  nursery: 4,
+  toddler: 5,
+  preschool: 10,
+  kindy: 11,
 };
+
+export const employmentTypeLabels: Record<EmploymentType, string> = {
+  permanent: 'Permanent',
+  casual: 'Casual',
+};
+
+export const timeOffTypeLabels: Record<TimeOff['type'], string> = {
+  annual_leave: 'Annual Leave',
+  sick_leave: 'Sick Leave',
+  personal_leave: 'Personal Leave',
+  unpaid_leave: 'Unpaid Leave',
+};
+
+export const defaultShiftTemplates: ShiftTemplate[] = [
+  { id: 'early', name: 'Early', startTime: '06:30', endTime: '14:30', breakMinutes: 30, color: 'hsl(200, 70%, 50%)' },
+  { id: 'mid', name: 'Mid', startTime: '09:00', endTime: '17:00', breakMinutes: 30, color: 'hsl(150, 60%, 45%)' },
+  { id: 'late', name: 'Late', startTime: '10:30', endTime: '18:30', breakMinutes: 30, color: 'hsl(280, 60%, 50%)' },
+  { id: 'short', name: 'Short', startTime: '09:00', endTime: '15:00', breakMinutes: 0, color: 'hsl(30, 70%, 50%)' },
+  { id: 'full', name: 'Full Day', startTime: '07:00', endTime: '18:00', breakMinutes: 60, color: 'hsl(340, 65%, 50%)' },
+];
