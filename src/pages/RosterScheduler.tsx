@@ -3,7 +3,6 @@ import { format, addDays, startOfWeek } from 'date-fns';
 import { ViewMode, Shift, StaffMember, OpenShift, roleLabels } from '@/types/roster';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags } from '@/data/mockRosterData';
 import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel';
-import { OpenShiftsPool } from '@/components/roster/OpenShiftsPool';
 import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
 import { ShiftDetailPanel } from '@/components/roster/ShiftDetailPanel';
 import { Button } from '@/components/ui/button';
@@ -24,8 +23,6 @@ import {
   EyeOff,
   Settings,
   Building2,
-  Filter,
-  BarChart3,
   Users
 } from 'lucide-react';
 
@@ -36,7 +33,6 @@ export default function RosterScheduler() {
   const [shifts, setShifts] = useState<Shift[]>(generateMockShifts());
   const [openShifts, setOpenShifts] = useState<OpenShift[]>(mockOpenShifts);
   const [showDemandOverlay, setShowDemandOverlay] = useState(true);
-  const [demandAwareMode, setDemandAwareMode] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   
   // Filters
@@ -62,6 +58,9 @@ export default function RosterScheduler() {
   const centreFlags = complianceFlags.filter(f => f.centreId === selectedCentreId);
   const criticalFlags = centreFlags.filter(f => f.severity === 'critical');
   const warningFlags = centreFlags.filter(f => f.severity === 'warning');
+
+  // Count open shifts for this centre
+  const centreOpenShifts = openShifts.filter(os => os.centreId === selectedCentreId);
 
   const costSummary = useMemo(() => {
     const centreShifts = shifts.filter(s => s.centreId === selectedCentreId);
@@ -108,7 +107,7 @@ export default function RosterScheduler() {
     toast.success(`Added shift for ${staff.name}`);
   };
 
-  const handleDropStaffOnOpenShift = (staffId: string, openShift: OpenShift) => {
+  const handleOpenShiftDrop = (staffId: string, openShift: OpenShift) => {
     const staff = mockStaff.find(s => s.id === staffId);
     if (!staff) return;
 
@@ -171,7 +170,7 @@ export default function RosterScheduler() {
     toast.success('Shift duplicated');
   };
 
-  const handleAddShift = (staffId: string, date: string) => {
+  const handleAddShift = (staffId: string, date: string, roomId: string) => {
     const staff = mockStaff.find(s => s.id === staffId);
     if (!staff) return;
 
@@ -179,7 +178,7 @@ export default function RosterScheduler() {
       id: `shift-${Date.now()}`,
       staffId,
       centreId: selectedCentreId,
-      roomId: selectedCentre.rooms[0]?.id || '',
+      roomId,
       date,
       startTime: '09:00',
       endTime: '17:00',
@@ -234,6 +233,12 @@ export default function RosterScheduler() {
           </div>
 
           <div className="flex items-center gap-3">
+            {centreOpenShifts.length > 0 && (
+              <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
+                <AlertTriangle className="h-3 w-3" />
+                {centreOpenShifts.length} Open Shifts
+              </Badge>
+            )}
             {criticalFlags.length > 0 && (
               <Badge variant="destructive" className="gap-1">
                 <AlertTriangle className="h-3 w-3" />
@@ -319,9 +324,10 @@ export default function RosterScheduler() {
           onDropStaff={handleDropStaff}
           onShiftEdit={setSelectedShift}
           onShiftDelete={handleShiftDelete}
-          onOpenShiftFill={(os) => toast.info('Select a staff member to fill this shift')}
+          onOpenShiftFill={(os) => toast.info('Drag a staff member to fill this shift')}
           onAddShift={handleAddShift}
           onDragStart={handleDragStart}
+          onOpenShiftDrop={handleOpenShiftDrop}
         />
 
         {/* Right Panel - Available Staff */}
@@ -330,15 +336,6 @@ export default function RosterScheduler() {
           shifts={shifts}
           selectedCentreId={selectedCentreId}
           onDragStart={handleDragStart}
-        />
-
-        {/* Far Right - Open Shifts Pool */}
-        <OpenShiftsPool
-          openShifts={openShifts}
-          centres={mockCentres}
-          staff={mockStaff}
-          onAssign={(os) => toast.info('Drag a staff member onto this shift to assign')}
-          onDropStaff={handleDropStaffOnOpenShift}
         />
       </div>
 
