@@ -9,6 +9,8 @@ import TimesheetSettings from "./pages/TimesheetSettings";
 import TimesheetAdmin from "./pages/TimesheetAdmin";
 import EmployeePortal from "./pages/EmployeePortal";
 import RosterScheduler from "./pages/RosterScheduler";
+import StaffList from "./pages/StaffList";
+import StaffDetail from "./pages/StaffDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ const App = () => (
             <Route path="/timesheet-admin" element={<TimesheetAdmin />} />
             <Route path="/employee-portal" element={<EmployeePortal />} />
             <Route path="/roster" element={<RosterScheduler />} />
+            <Route path="/workforce" element={<StaffList />} />
+            <Route path="/workforce/:id" element={<StaffDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
