@@ -39,6 +39,8 @@ import {
   Layers,
   Percent,
   Code2,
+  GitCompare,
+  Sun,
 } from 'lucide-react';
 import { australianAwards, AustralianAward, AwardClassification, calculateRates } from '@/data/australianAwards';
 import { CustomRateOverridesPanel } from './awards/CustomRateOverridesPanel';
@@ -48,6 +50,8 @@ import { CustomRuleBuilderPanel } from './awards/CustomRuleBuilderPanel';
 import { AllowanceRatesEditorPanel } from './awards/AllowanceRatesEditorPanel';
 import { CustomOvertimeRatesPanel } from './awards/CustomOvertimeRatesPanel';
 import { CustomLeaveLoadingPanel } from './awards/CustomLeaveLoadingPanel';
+import { PenaltyRatesEditorPanel } from './awards/PenaltyRatesEditorPanel';
+import { AwardComparisonPanel } from './awards/AwardComparisonPanel';
 
 interface EnabledAward {
   awardId: string;
@@ -554,60 +558,74 @@ export function AwardsConfigurationTab() {
     <div className="space-y-6">
       {/* Main Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="bg-card border rounded-lg p-1 mb-6">
-          <TabsList className="w-full grid grid-cols-4 lg:grid-cols-8 h-auto gap-1 bg-transparent p-0">
+        <div className="bg-card border rounded-lg p-1 mb-6 overflow-x-auto">
+          <TabsList className="w-full flex flex-nowrap h-auto gap-1 bg-transparent p-0 min-w-max">
             <TabsTrigger 
               value="awards" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Award className="h-4 w-4" />
               <span className="hidden sm:inline">Awards</span>
             </TabsTrigger>
             <TabsTrigger 
+              value="comparison" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <GitCompare className="h-4 w-4" />
+              <span className="hidden sm:inline">Compare</span>
+            </TabsTrigger>
+            <TabsTrigger 
               value="rate-overrides" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Layers className="h-4 w-4" />
               <span className="hidden sm:inline">Overrides</span>
             </TabsTrigger>
             <TabsTrigger 
+              value="penalties" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Sun className="h-4 w-4" />
+              <span className="hidden sm:inline">Penalties</span>
+            </TabsTrigger>
+            <TabsTrigger 
               value="rule-builder" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Code2 className="h-4 w-4" />
               <span className="hidden sm:inline">Rules</span>
             </TabsTrigger>
             <TabsTrigger 
               value="allowances" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <DollarSign className="h-4 w-4" />
               <span className="hidden sm:inline">Allowances</span>
             </TabsTrigger>
             <TabsTrigger 
               value="overtime" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">Overtime</span>
             </TabsTrigger>
             <TabsTrigger 
               value="leave-loading" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Percent className="h-4 w-4" />
               <span className="hidden sm:inline">Leave</span>
             </TabsTrigger>
             <TabsTrigger 
               value="history" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <History className="h-4 w-4" />
               <span className="hidden sm:inline">History</span>
             </TabsTrigger>
             <TabsTrigger 
               value="import-export" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">Import/Export</span>
@@ -619,8 +637,16 @@ export function AwardsConfigurationTab() {
           <AwardsOverviewContent />
         </TabsContent>
 
+        <TabsContent value="comparison" className="mt-0">
+          <AwardComparisonPanel />
+        </TabsContent>
+
         <TabsContent value="rate-overrides" className="mt-0">
           <CustomRateOverridesPanel />
+        </TabsContent>
+
+        <TabsContent value="penalties" className="mt-0">
+          <PenaltyRatesEditorPanel />
         </TabsContent>
 
         <TabsContent value="rule-builder" className="mt-0">
