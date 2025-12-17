@@ -74,7 +74,7 @@ export function CustomOvertimeRatesPanel() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newRule, setNewRule] = useState({
     name: '',
-    awardId: '',
+    awardId: 'all',
     dailyHours: 8,
     weeklyHours: 38,
     first2Hours: 150,
@@ -91,7 +91,7 @@ export function CustomOvertimeRatesPanel() {
     const rule: OvertimeRule = {
       id: Date.now().toString(),
       name: newRule.name,
-      awardId: newRule.awardId || undefined,
+      awardId: newRule.awardId === 'all' ? undefined : newRule.awardId,
       triggers: newRule.triggerType === 'daily' 
         ? { dailyHours: newRule.dailyHours }
         : { weeklyHours: newRule.weeklyHours },
@@ -108,7 +108,7 @@ export function CustomOvertimeRatesPanel() {
     setIsAddDialogOpen(false);
     setNewRule({
       name: '',
-      awardId: '',
+      awardId: 'all',
       dailyHours: 8,
       weeklyHours: 38,
       first2Hours: 150,
@@ -178,7 +178,7 @@ export function CustomOvertimeRatesPanel() {
                     <SelectValue placeholder="All Awards" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Awards</SelectItem>
+                    <SelectItem value="all">All Awards</SelectItem>
                     {australianAwards.map(award => (
                       <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
                     ))}

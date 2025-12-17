@@ -84,7 +84,7 @@ export function CustomLeaveLoadingPanel() {
     loadingPercentage: 17.5,
     applicableTo: 'all' as LeaveLoadingRule['applicableTo'],
     minServiceMonths: 0,
-    awardId: '',
+    awardId: 'all',
   });
 
   const handleAddRule = () => {
@@ -100,7 +100,7 @@ export function CustomLeaveLoadingPanel() {
       loadingPercentage: newRule.loadingPercentage,
       applicableTo: newRule.applicableTo,
       minServiceMonths: newRule.minServiceMonths || undefined,
-      awardId: newRule.awardId || undefined,
+      awardId: newRule.awardId === 'all' ? undefined : newRule.awardId,
       isActive: true,
       isCustom: true,
     };
@@ -114,7 +114,7 @@ export function CustomLeaveLoadingPanel() {
       loadingPercentage: 17.5,
       applicableTo: 'all',
       minServiceMonths: 0,
-      awardId: '',
+      awardId: 'all',
     });
   };
 
@@ -245,7 +245,7 @@ export function CustomLeaveLoadingPanel() {
                     <SelectValue placeholder="All Awards" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Awards</SelectItem>
+                    <SelectItem value="all">All Awards</SelectItem>
                     {australianAwards.map(award => (
                       <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
                     ))}
