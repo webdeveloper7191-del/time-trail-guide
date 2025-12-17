@@ -120,7 +120,9 @@ export function AwardsConfigurationTab() {
   const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
   const formatPercentage = (value: number) => `${value}%`;
 
-  return (
+  const [activeTab, setActiveTab] = useState('awards');
+
+  const AwardsOverviewContent = () => (
     <div className="space-y-6">
       {/* Header Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -545,6 +547,106 @@ export function AwardsConfigurationTab() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Main Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="bg-card border rounded-lg p-1 mb-6">
+          <TabsList className="w-full grid grid-cols-4 lg:grid-cols-8 h-auto gap-1 bg-transparent p-0">
+            <TabsTrigger 
+              value="awards" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+            >
+              <Award className="h-4 w-4" />
+              <span className="hidden sm:inline">Awards</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="rate-overrides" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+            >
+              <Layers className="h-4 w-4" />
+              <span className="hidden sm:inline">Overrides</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="rule-builder" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+            >
+              <Code2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Rules</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="allowances" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+            >
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">Allowances</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="overtime" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+            >
+              <Clock className="h-4 w-4" />
+              <span className="hidden sm:inline">Overtime</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="leave-loading" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+            >
+              <Percent className="h-4 w-4" />
+              <span className="hidden sm:inline">Leave</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="history" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+            >
+              <History className="h-4 w-4" />
+              <span className="hidden sm:inline">History</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="import-export" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm"
+            >
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline">Import/Export</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="awards" className="mt-0">
+          <AwardsOverviewContent />
+        </TabsContent>
+
+        <TabsContent value="rate-overrides" className="mt-0">
+          <CustomRateOverridesPanel />
+        </TabsContent>
+
+        <TabsContent value="rule-builder" className="mt-0">
+          <CustomRuleBuilderPanel />
+        </TabsContent>
+
+        <TabsContent value="allowances" className="mt-0">
+          <AllowanceRatesEditorPanel />
+        </TabsContent>
+
+        <TabsContent value="overtime" className="mt-0">
+          <CustomOvertimeRatesPanel />
+        </TabsContent>
+
+        <TabsContent value="leave-loading" className="mt-0">
+          <CustomLeaveLoadingPanel />
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-0">
+          <RateChangeHistoryPanel />
+        </TabsContent>
+
+        <TabsContent value="import-export" className="mt-0">
+          <BulkImportExportPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
