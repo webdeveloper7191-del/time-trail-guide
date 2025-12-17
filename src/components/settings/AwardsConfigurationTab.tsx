@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import {
   Award,
@@ -33,8 +34,20 @@ import {
   Info,
   Copy,
   Eye,
+  Upload,
+  History,
+  Layers,
+  Percent,
+  Code2,
 } from 'lucide-react';
 import { australianAwards, AustralianAward, AwardClassification, calculateRates } from '@/data/australianAwards';
+import { CustomRateOverridesPanel } from './awards/CustomRateOverridesPanel';
+import { RateChangeHistoryPanel } from './awards/RateChangeHistoryPanel';
+import { BulkImportExportPanel } from './awards/BulkImportExportPanel';
+import { CustomRuleBuilderPanel } from './awards/CustomRuleBuilderPanel';
+import { AllowanceRatesEditorPanel } from './awards/AllowanceRatesEditorPanel';
+import { CustomOvertimeRatesPanel } from './awards/CustomOvertimeRatesPanel';
+import { CustomLeaveLoadingPanel } from './awards/CustomLeaveLoadingPanel';
 
 interface EnabledAward {
   awardId: string;
