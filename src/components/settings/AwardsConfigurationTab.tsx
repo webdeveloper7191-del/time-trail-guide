@@ -41,6 +41,8 @@ import {
   Code2,
   GitCompare,
   Sun,
+  Calculator,
+  BarChart3,
 } from 'lucide-react';
 import { australianAwards, AustralianAward, AwardClassification, calculateRates } from '@/data/australianAwards';
 import { CustomRateOverridesPanel } from './awards/CustomRateOverridesPanel';
@@ -52,6 +54,8 @@ import { CustomOvertimeRatesPanel } from './awards/CustomOvertimeRatesPanel';
 import { CustomLeaveLoadingPanel } from './awards/CustomLeaveLoadingPanel';
 import { PenaltyRatesEditorPanel } from './awards/PenaltyRatesEditorPanel';
 import { AwardComparisonPanel } from './awards/AwardComparisonPanel';
+import { ShiftDifferentialCalculator } from './awards/ShiftDifferentialCalculator';
+import { RateSimulationPanel } from './awards/RateSimulationPanel';
 
 interface EnabledAward {
   awardId: string;
@@ -617,6 +621,20 @@ export function AwardsConfigurationTab() {
               <span className="hidden sm:inline">Leave</span>
             </TabsTrigger>
             <TabsTrigger 
+              value="calculator" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Calculator className="h-4 w-4" />
+              <span className="hidden sm:inline">Calculator</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="simulation" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Simulate</span>
+            </TabsTrigger>
+            <TabsTrigger 
               value="history" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
@@ -663,6 +681,14 @@ export function AwardsConfigurationTab() {
 
         <TabsContent value="leave-loading" className="mt-0">
           <CustomLeaveLoadingPanel />
+        </TabsContent>
+
+        <TabsContent value="calculator" className="mt-0">
+          <ShiftDifferentialCalculator />
+        </TabsContent>
+
+        <TabsContent value="simulation" className="mt-0">
+          <RateSimulationPanel />
         </TabsContent>
 
         <TabsContent value="history" className="mt-0">
