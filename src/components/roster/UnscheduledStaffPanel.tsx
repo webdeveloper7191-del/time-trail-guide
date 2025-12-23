@@ -57,8 +57,8 @@ export function UnscheduledStaffPanel({
     );
   }, [shifts, selectedCentreId]);
 
-  const filterStaff = (staffList: StaffMember[]) => {
-    let filtered = staffList.filter(s => !scheduledStaffIds.has(s.id));
+  const availableStaff = useMemo(() => {
+    let filtered = staff.filter(s => !scheduledStaffIds.has(s.id));
     
     // Prefer staff who have this centre as preferred
     filtered = filtered.filter(s => 
@@ -80,10 +80,32 @@ export function UnscheduledStaffPanel({
     }
 
     return filtered;
-  };
+  }, [staff, scheduledStaffIds, searchQuery, qualificationFilter, selectedCentreId]);
 
-  const availableStaff = useMemo(() => filterStaff(staff), [staff, scheduledStaffIds, searchQuery, qualificationFilter, selectedCentreId]);
-  const availableAgencyStaff = useMemo(() => filterStaff(agencyStaff), [agencyStaff, scheduledStaffIds, searchQuery, qualificationFilter, selectedCentreId]);
+  const availableAgencyStaff = useMemo(() => {
+    let filtered = agencyStaff.filter(s => !scheduledStaffIds.has(s.id));
+    
+    // Prefer staff who have this centre as preferred
+    filtered = filtered.filter(s => 
+      s.preferredCentres.includes(selectedCentreId) || s.preferredCentres.length === 0
+    );
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(s => 
+        s.name.toLowerCase().includes(query) ||
+        s.qualifications.some(q => q.name.toLowerCase().includes(query))
+      );
+    }
+
+    if (qualificationFilter !== 'all') {
+      filtered = filtered.filter(s => 
+        s.qualifications.some(q => q.type === qualificationFilter)
+      );
+    }
+
+    return filtered;
+  }, [agencyStaff, scheduledStaffIds, searchQuery, qualificationFilter, selectedCentreId]);
 
   // Group by employment type for internal staff
   const groupedStaff = useMemo(() => {
