@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { format, addDays, startOfWeek, subWeeks, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
 import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff, SchedulingPreferences } from '@/types/roster';
+import { RosterTemplate } from '@/types/rosterTemplates';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags, mockAgencyStaff } from '@/data/mockRosterData';
 import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel';
 import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
@@ -19,6 +20,10 @@ import { SchedulingPreferencesModal } from '@/components/roster/SchedulingPrefer
 import { ShiftNotificationsModal } from '@/components/roster/ShiftNotificationsModal';
 import { StaffProfileModal } from '@/components/roster/StaffProfileModal';
 import { WeeklySummaryDashboard } from '@/components/roster/WeeklySummaryDashboard';
+import { SaveRosterTemplateModal } from '@/components/roster/SaveRosterTemplateModal';
+import { ApplyTemplateModal } from '@/components/roster/ApplyTemplateModal';
+import { BulkShiftAssignmentModal } from '@/components/roster/BulkShiftAssignmentModal';
+import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
 import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { Button } from '@/components/ui/button';
@@ -57,7 +62,11 @@ import {
   Moon,
   Sun,
   BarChart3,
-  MoreHorizontal
+  MoreHorizontal,
+  Layers,
+  FileStack,
+  UserPlus,
+  Clock
 } from 'lucide-react';
 
 // Default budget configuration per centre
@@ -77,7 +86,7 @@ export default function RosterScheduler() {
   const [showDemandOverlay, setShowDemandOverlay] = useState(true);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [shiftTemplates] = useState<ShiftTemplate[]>(defaultShiftTemplates);
+  const [shiftTemplates, setShiftTemplates] = useState<ShiftTemplate[]>([]);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [shiftToSwap, setShiftToSwap] = useState<Shift | null>(null);
@@ -95,6 +104,13 @@ export default function RosterScheduler() {
   const [selectedStaffForPrefs, setSelectedStaffForPrefs] = useState<StaffMember | null>(null);
   const [centreBudgets, setCentreBudgets] = useState<Record<string, number>>(defaultCentreBudgets);
   const [staffList, setStaffList] = useState<StaffMember[]>([...mockStaff, ...mockAgencyStaff]);
+  
+  // Template & Bulk Assignment state
+  const [rosterTemplates, setRosterTemplates] = useState<RosterTemplate[]>([]);
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+  const [showApplyTemplateModal, setShowApplyTemplateModal] = useState(false);
+  const [showBulkAssignmentModal, setShowBulkAssignmentModal] = useState(false);
+  const [showShiftTemplateManager, setShowShiftTemplateManager] = useState(false);
   
   const printRef = useRef<HTMLDivElement>(null);
   
@@ -483,7 +499,42 @@ export default function RosterScheduler() {
     setShowStaffProfile(true);
   };
 
-  return (
+  // Template handlers
+  const handleSaveRosterTemplate = (template: Omit<RosterTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newTemplate: RosterTemplate = {
+      ...template,
+      id: `template-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setRosterTemplates(prev => [...prev, newTemplate]);
+    toast.success(`Template "${template.name}" saved`);
+  };
+
+  const handleApplyTemplate = (newShifts: Omit<Shift, 'id'>[]) => {
+    const shiftsWithIds = newShifts.map((s, idx) => ({
+      ...s,
+      id: `shift-template-${Date.now()}-${idx}`,
+    }));
+    setShifts(prev => [...prev, ...shiftsWithIds]);
+    toast.success(`Applied ${shiftsWithIds.length} shifts from template`);
+  };
+
+  const handleBulkAssignment = (newShifts: Omit<Shift, 'id'>[]) => {
+    const shiftsWithIds = newShifts.map((s, idx) => ({
+      ...s,
+      id: `shift-bulk-${Date.now()}-${idx}`,
+    }));
+    setShifts(prev => [...prev, ...shiftsWithIds]);
+    toast.success(`Created ${shiftsWithIds.length} shifts`);
+  };
+
+  const handleSaveShiftTemplates = (templates: ShiftTemplate[]) => {
+    setShiftTemplates(templates);
+    toast.success('Shift templates saved');
+  };
+
+  const allShiftTemplates = [...defaultShiftTemplates, ...shiftTemplates];
     <div className="h-screen flex flex-col bg-background">
       {/* Header - Material Style */}
       <header className="bg-card border-b border-border shrink-0 shadow-sm">
@@ -630,6 +681,11 @@ export default function RosterScheduler() {
               Open Shift
             </Button>
 
+            <Button variant="ghost" size="sm" onClick={() => setShowBulkAssignmentModal(true)} className="h-8 text-xs">
+              <UserPlus className="h-3.5 w-3.5 mr-1" />
+              Bulk Assign
+            </Button>
+
             <Button variant="ghost" size="sm" onClick={handleCopyWeek} className="h-8 text-xs">
               <Copy className="h-3.5 w-3.5 mr-1" />
               Copy Week
@@ -662,7 +718,32 @@ export default function RosterScheduler() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* More Actions Menu */}
+            {/* Templates Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 text-xs">
+                  <Layers className="h-3.5 w-3.5 mr-1" />
+                  Templates
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-popover">
+                <DropdownMenuItem onClick={() => setShowSaveTemplateModal(true)}>
+                  <FileStack className="h-4 w-4 mr-2" />
+                  Save as Template
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowApplyTemplateModal(true)}>
+                  <Layers className="h-4 w-4 mr-2" />
+                  Apply Template
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowShiftTemplateManager(true)}>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Manage Shift Templates
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Schedule Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 text-xs">
