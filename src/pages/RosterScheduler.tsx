@@ -535,6 +535,8 @@ export default function RosterScheduler() {
   };
 
   const allShiftTemplates = [...defaultShiftTemplates, ...shiftTemplates];
+
+  return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header - Material Style */}
       <header className="bg-card border-b border-border shrink-0 shadow-sm">
@@ -1012,6 +1014,47 @@ export default function RosterScheduler() {
         weeklyBudget={weeklyBudget}
         isOpen={showWeeklySummary}
         onClose={() => setShowWeeklySummary(false)}
+      />
+
+      <SaveRosterTemplateModal
+        open={showSaveTemplateModal}
+        onClose={() => setShowSaveTemplateModal(false)}
+        shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+        rooms={selectedCentre.rooms}
+        centreId={selectedCentreId}
+        dates={dates}
+        onSave={handleSaveRosterTemplate}
+      />
+
+      <ApplyTemplateModal
+        open={showApplyTemplateModal}
+        onClose={() => setShowApplyTemplateModal(false)}
+        rosterTemplates={rosterTemplates}
+        shiftTemplates={allShiftTemplates}
+        existingShifts={shifts.filter(s => s.centreId === selectedCentreId)}
+        rooms={selectedCentre.rooms}
+        centreId={selectedCentreId}
+        currentDate={currentDate}
+        onApply={handleApplyTemplate}
+      />
+
+      <BulkShiftAssignmentModal
+        open={showBulkAssignmentModal}
+        onClose={() => setShowBulkAssignmentModal(false)}
+        staff={allStaff}
+        rooms={selectedCentre.rooms}
+        dates={dates}
+        existingShifts={shifts}
+        centreId={selectedCentreId}
+        shiftTemplates={allShiftTemplates}
+        onAssign={handleBulkAssignment}
+      />
+
+      <ShiftTemplateManager
+        open={showShiftTemplateManager}
+        onClose={() => setShowShiftTemplateManager(false)}
+        customTemplates={shiftTemplates}
+        onSave={handleSaveShiftTemplates}
       />
 
       {/* Hidden Print View */}
