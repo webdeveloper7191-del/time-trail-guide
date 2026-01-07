@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Menu, MenuItem as MuiMenuItem, Divider, MenuProps } from "@mui/material";
+import { Menu, Popper, Paper, Fade, ClickAwayListener } from "@mui/material";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +56,7 @@ const DropdownMenuTrigger = React.forwardRef<HTMLElement, DropdownMenuTriggerPro
     
     const handleClick = (e: React.MouseEvent<HTMLElement>) => {
       e.preventDefault();
+      e.stopPropagation();
       setAnchorEl(e.currentTarget);
       setOpen(true);
       if (onClick) onClick(e);
@@ -70,7 +71,7 @@ const DropdownMenuTrigger = React.forwardRef<HTMLElement, DropdownMenuTriggerPro
     }
     
     return (
-      <button ref={ref as any} onClick={handleClick} {...props}>
+      <button type="button" ref={ref as any} onClick={handleClick} {...props}>
         {children}
       </button>
     );
@@ -95,36 +96,49 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
   ({ className, sideOffset = 4, align = 'start', children, ...props }, ref) => {
     const { open, setOpen, anchorEl } = React.useContext(DropdownMenuContext);
     
+    if (!open) return null;
+
+    const placement = align === 'end' ? 'bottom-end' : align === 'center' ? 'bottom' : 'bottom-start';
+
     return (
-      <Menu
+      <Popper
         open={open}
         anchorEl={anchorEl}
-        onClose={() => setOpen(false)}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: align === 'end' ? 'right' : align === 'center' ? 'center' : 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: align === 'end' ? 'right' : align === 'center' ? 'center' : 'left',
-        }}
-        slotProps={{
-          paper: {
-            sx: {
-              backgroundColor: 'hsl(var(--popover))',
-              color: 'hsl(var(--popover-foreground))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '0.375rem',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-              minWidth: '8rem',
-              padding: '0.25rem',
-              marginTop: `${sideOffset}px`,
-            }
-          }
-        }}
+        placement={placement}
+        transition
+        style={{ zIndex: 9999 }}
+        modifiers={[
+          {
+            name: 'offset',
+            options: {
+              offset: [0, sideOffset],
+            },
+          },
+        ]}
       >
-        {children}
-      </Menu>
+        {({ TransitionProps }) => (
+          <Fade {...TransitionProps} timeout={150}>
+            <Paper
+              elevation={8}
+              sx={{
+                backgroundColor: 'hsl(var(--popover))',
+                color: 'hsl(var(--popover-foreground))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '0.375rem',
+                minWidth: '8rem',
+                overflow: 'hidden',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              }}
+            >
+              <ClickAwayListener onClickAway={() => setOpen(false)}>
+                <div ref={ref} className={cn("p-1", className)} {...props}>
+                  {children}
+                </div>
+              </ClickAwayListener>
+            </Paper>
+          </Fade>
+        )}
+      </Popper>
     );
   }
 );
@@ -151,7 +165,7 @@ const DropdownMenuItem = React.forwardRef<HTMLDivElement, DropdownMenuItemProps>
         ref={ref}
         role="menuitem"
         className={cn(
-          "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
+          "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
           inset && "pl-8",
           disabled && "pointer-events-none opacity-50",
           className
@@ -173,25 +187,37 @@ interface DropdownMenuCheckboxItemProps extends React.HTMLAttributes<HTMLDivElem
 }
 
 const DropdownMenuCheckboxItem = React.forwardRef<HTMLDivElement, DropdownMenuCheckboxItemProps>(
-  ({ className, children, checked, onCheckedChange, disabled, ...props }, ref) => (
-    <div
-      ref={ref}
-      role="menuitemcheckbox"
-      aria-checked={checked}
-      className={cn(
-        "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
-        disabled && "pointer-events-none opacity-50",
-        className
-      )}
-      onClick={() => !disabled && onCheckedChange?.(!checked)}
-      {...props}
-    >
-      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-        {checked && <Check className="h-4 w-4" />}
-      </span>
-      {children}
-    </div>
-  )
+  ({ className, children, checked, onCheckedChange, disabled, onClick, ...props }, ref) => {
+    const { setOpen } = React.useContext(DropdownMenuContext);
+
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!disabled) {
+        onCheckedChange?.(!checked);
+        onClick?.(e);
+        setOpen(false);
+      }
+    };
+
+    return (
+      <div
+        ref={ref}
+        role="menuitemcheckbox"
+        aria-checked={checked}
+        className={cn(
+          "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
+          disabled && "pointer-events-none opacity-50",
+          className
+        )}
+        onClick={handleClick}
+        {...props}
+      >
+        <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+          {checked && <Check className="h-4 w-4" />}
+        </span>
+        {children}
+      </div>
+    );
+  }
 );
 DropdownMenuCheckboxItem.displayName = "DropdownMenuCheckboxItem";
 

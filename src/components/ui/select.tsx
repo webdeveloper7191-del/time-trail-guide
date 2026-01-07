@@ -4,17 +4,29 @@ import {
   MenuItem,
   FormControl,
   SelectChangeEvent,
-  Box,
+  Popper,
+  Paper,
+  ClickAwayListener,
+  Fade,
 } from "@mui/material";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SelectContextValue {
   value?: string;
   onValueChange?: (value: string) => void;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  anchorEl: HTMLElement | null;
+  setAnchorEl: (el: HTMLElement | null) => void;
 }
 
-const SelectContext = React.createContext<SelectContextValue>({});
+const SelectContext = React.createContext<SelectContextValue>({
+  open: false,
+  setOpen: () => {},
+  anchorEl: null,
+  setAnchorEl: () => {},
+});
 
 interface SelectProps {
   value?: string;
@@ -26,6 +38,8 @@ interface SelectProps {
 
 const Select = ({ value, onValueChange, defaultValue, children, disabled }: SelectProps) => {
   const [internalValue, setInternalValue] = React.useState(defaultValue || '');
+  const [open, setOpen] = React.useState(false);
+  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
   
   const currentValue = value !== undefined ? value : internalValue;
   
@@ -34,10 +48,18 @@ const Select = ({ value, onValueChange, defaultValue, children, disabled }: Sele
       setInternalValue(newValue);
     }
     onValueChange?.(newValue);
+    setOpen(false);
   };
 
   return (
-    <SelectContext.Provider value={{ value: currentValue, onValueChange: handleChange }}>
+    <SelectContext.Provider value={{ 
+      value: currentValue, 
+      onValueChange: handleChange, 
+      open, 
+      setOpen, 
+      anchorEl, 
+      setAnchorEl 
+    }}>
       {children}
     </SelectContext.Provider>
   );
@@ -51,7 +73,7 @@ interface SelectValueProps {
 
 const SelectValue = ({ placeholder }: SelectValueProps) => {
   const { value } = React.useContext(SelectContext);
-  return <>{value || placeholder}</>;
+  return <span className={!value ? "text-muted-foreground" : ""}>{value || placeholder}</span>;
 };
 
 interface SelectTriggerProps extends React.HTMLAttributes<HTMLButtonElement> {
@@ -59,7 +81,15 @@ interface SelectTriggerProps extends React.HTMLAttributes<HTMLButtonElement> {
 }
 
 const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
-  ({ className, children, ...props }, ref) => {
+  ({ className, children, onClick, ...props }, ref) => {
+    const { open, setOpen, setAnchorEl } = React.useContext(SelectContext);
+
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      setAnchorEl(e.currentTarget);
+      setOpen(!open);
+      onClick?.(e);
+    };
+
     return (
       <button
         ref={ref}
@@ -68,10 +98,12 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
           "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
           className,
         )}
+        onClick={handleClick}
+        aria-expanded={open}
         {...props}
       >
         {children}
-        <ChevronDown className="h-4 w-4 opacity-50" />
+        <ChevronDown className={cn("h-4 w-4 opacity-50 transition-transform", open && "rotate-180")} />
       </button>
     );
   }
@@ -81,18 +113,44 @@ SelectTrigger.displayName = "SelectTrigger";
 interface SelectContentProps {
   children?: React.ReactNode;
   className?: string;
+  position?: "popper" | "item-aligned";
 }
 
-const SelectContent = ({ children, className }: SelectContentProps) => {
+const SelectContent = ({ children, className, position = "popper" }: SelectContentProps) => {
+  const { open, setOpen, anchorEl } = React.useContext(SelectContext);
+
+  if (!open) return null;
+
   return (
-    <div className={cn(
-      "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
-      className
-    )}>
-      <div className="p-1">
-        {children}
-      </div>
-    </div>
+    <Popper
+      open={open}
+      anchorEl={anchorEl}
+      placement="bottom-start"
+      transition
+      style={{ zIndex: 9999, width: anchorEl?.offsetWidth }}
+    >
+      {({ TransitionProps }) => (
+        <Fade {...TransitionProps} timeout={150}>
+          <Paper
+            elevation={8}
+            sx={{
+              backgroundColor: 'hsl(var(--popover))',
+              color: 'hsl(var(--popover-foreground))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '0.375rem',
+              mt: 0.5,
+              overflow: 'hidden',
+            }}
+          >
+            <ClickAwayListener onClickAway={() => setOpen(false)}>
+              <div className={cn("max-h-96 overflow-auto p-1", className)}>
+                {children}
+              </div>
+            </ClickAwayListener>
+          </Paper>
+        </Fade>
+      )}
+    </Popper>
   );
 };
 
@@ -119,7 +177,7 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
       <div
         ref={ref}
         className={cn(
-          "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+          "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
           isSelected && "bg-accent text-accent-foreground",
           disabled && "pointer-events-none opacity-50",
           className,
@@ -128,11 +186,7 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
         {...props}
       >
         <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-          {isSelected && (
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          )}
+          {isSelected && <Check className="h-4 w-4" />}
         </span>
         {children}
       </div>
