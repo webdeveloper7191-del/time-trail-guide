@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Popover as MuiPopover, PopoverProps as MuiPopoverProps, Box } from "@mui/material";
+import { Popper, Paper, Fade, ClickAwayListener } from "@mui/material";
 import { cn } from "@/lib/utils";
 
 interface PopoverContextValue {
@@ -49,11 +49,11 @@ interface PopoverTriggerProps extends React.HTMLAttributes<HTMLElement> {
 
 const PopoverTrigger = React.forwardRef<HTMLElement, PopoverTriggerProps>(
   ({ children, asChild, onClick, ...props }, ref) => {
-    const { setOpen, setAnchorEl } = React.useContext(PopoverContext);
+    const { open, setOpen, setAnchorEl } = React.useContext(PopoverContext);
     
     const handleClick = (e: React.MouseEvent<HTMLElement>) => {
       setAnchorEl(e.currentTarget);
-      setOpen(true);
+      setOpen(!open);
       if (onClick) onClick(e);
     };
 
@@ -66,9 +66,9 @@ const PopoverTrigger = React.forwardRef<HTMLElement, PopoverTriggerProps>(
     }
     
     return (
-      <span ref={ref as any} onClick={handleClick} {...props}>
+      <button type="button" ref={ref as any} onClick={handleClick} {...props}>
         {children}
-      </span>
+      </button>
     );
   }
 );
@@ -81,43 +81,57 @@ interface PopoverContentProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
-  ({ className, align = "center", sideOffset = 4, children, ...props }, ref) => {
+  ({ className, align = "center", sideOffset = 4, side = "bottom", children, ...props }, ref) => {
     const { open, setOpen, anchorEl } = React.useContext(PopoverContext);
     
-    const anchorOrigin = {
-      vertical: 'bottom' as const,
-      horizontal: align === 'start' ? 'left' as const : align === 'end' ? 'right' as const : 'center' as const,
-    };
-    
-    const transformOrigin = {
-      vertical: 'top' as const,
-      horizontal: align === 'start' ? 'left' as const : align === 'end' ? 'right' as const : 'center' as const,
-    };
+    const placement = side === 'bottom' 
+      ? (align === 'start' ? 'bottom-start' : align === 'end' ? 'bottom-end' : 'bottom')
+      : side === 'top'
+      ? (align === 'start' ? 'top-start' : align === 'end' ? 'top-end' : 'top')
+      : side === 'left'
+      ? (align === 'start' ? 'left-start' : align === 'end' ? 'left-end' : 'left')
+      : (align === 'start' ? 'right-start' : align === 'end' ? 'right-end' : 'right');
+
+    if (!open) return null;
 
     return (
-      <MuiPopover
+      <Popper
         open={open}
         anchorEl={anchorEl}
-        onClose={() => setOpen(false)}
-        anchorOrigin={anchorOrigin}
-        transformOrigin={transformOrigin}
-        slotProps={{
-          paper: {
-            sx: {
-              backgroundColor: 'hsl(var(--popover))',
-              color: 'hsl(var(--popover-foreground))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '0.375rem',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-              marginTop: `${sideOffset}px`,
-            }
-          }
-        }}
+        placement={placement as any}
+        transition
+        style={{ zIndex: 9999 }}
+        modifiers={[
+          {
+            name: 'offset',
+            options: {
+              offset: [0, sideOffset],
+            },
+          },
+        ]}
       >
-        <div ref={ref} className={cn("p-4", className)} {...props}>
-          {children}
-        </div>
-      </MuiPopover>
+        {({ TransitionProps }) => (
+          <Fade {...TransitionProps} timeout={200}>
+            <Paper
+              elevation={8}
+              sx={{
+                backgroundColor: 'hsl(var(--popover))',
+                color: 'hsl(var(--popover-foreground))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '0.5rem',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                overflow: 'hidden',
+              }}
+            >
+              <ClickAwayListener onClickAway={() => setOpen(false)}>
+                <div ref={ref} className={cn("p-4 outline-none", className)} {...props}>
+                  {children}
+                </div>
+              </ClickAwayListener>
+            </Paper>
+          </Fade>
+        )}
+      </Popper>
     );
   }
 );
