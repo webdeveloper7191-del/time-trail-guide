@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Shift, OpenShift, Centre, StaffMember, qualificationLabels, roleLabels, ShiftTemplate } from '@/types/roster';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 
 interface DayTimelineViewProps {
   centre: Centre;
@@ -58,6 +58,19 @@ const timeToPixels = (time: string) => {
   return timeToSlotIndex(time) * SLOT_WIDTH;
 };
 
+// Convert current time to pixel position (more precise, includes seconds)
+const currentTimeToPixels = (now: Date) => {
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const startHour = 5;
+  
+  // If outside timeline range, return null
+  if (hours < startHour || hours > 21) return null;
+  
+  const totalMinutes = (hours - startHour) * 60 + minutes;
+  return (totalMinutes / 15) * SLOT_WIDTH;
+};
+
 // Calculate shift width in pixels
 const getShiftWidth = (startTime: string, endTime: string) => {
   const startSlot = timeToSlotIndex(startTime);
@@ -82,8 +95,23 @@ export function DayTimelineView({
   const [staffSearch, setStaffSearch] = useState('');
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const dateStr = format(date, 'yyyy-MM-dd');
+  const showCurrentTime = isToday(date);
+
+  // Update current time every minute
+  useEffect(() => {
+    if (!showCurrentTime) return;
+    
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [showCurrentTime]);
+
+  const currentTimePosition = showCurrentTime ? currentTimeToPixels(currentTime) : null;
 
   // Filter staff by search
   const filteredStaff = useMemo(() => {
@@ -176,6 +204,15 @@ export function DayTimelineView({
 
             {/* Time slots header */}
             <div className="flex-1 relative" style={{ width: totalWidth }}>
+              {/* Current time indicator in header */}
+              {currentTimePosition !== null && (
+                <div 
+                  className="absolute top-0 bottom-0 z-30 pointer-events-none"
+                  style={{ left: currentTimePosition }}
+                >
+                  <div className="w-3 h-3 bg-red-500 rounded-full -translate-x-1/2 shadow-md" />
+                </div>
+              )}
               {/* Hour labels */}
               <div className="flex h-10 border-b border-border/50">
                 {Array.from({ length: 17 }, (_, i) => i + 5).map((hour) => (
@@ -297,6 +334,16 @@ export function DayTimelineView({
                           })}
                         </div>
 
+                        {/* Current time indicator line */}
+                        {currentTimePosition !== null && (
+                          <div 
+                            className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20 pointer-events-none"
+                            style={{ left: currentTimePosition }}
+                          >
+                            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-red-500 rounded-full" />
+                          </div>
+                        )}
+
                         {/* Drop zone indicator */}
                         {isDragging && dragOverSlot === `${member.id}-${room.id}` && (
                           <div className="absolute inset-0 bg-primary/10 border-2 border-primary border-dashed rounded flex items-center justify-center pointer-events-none z-10">
@@ -377,6 +424,14 @@ export function DayTimelineView({
                           );
                         })}
                       </div>
+
+                      {/* Current time indicator line */}
+                      {currentTimePosition !== null && (
+                        <div 
+                          className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20 pointer-events-none"
+                          style={{ left: currentTimePosition }}
+                        />
+                      )}
 
                       {/* Open shift bars */}
                       {roomOpenShifts.map((openShift) => (
