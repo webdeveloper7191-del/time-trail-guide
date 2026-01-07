@@ -424,24 +424,57 @@ export function StaffTimelineGrid({
                                       </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
+                                      {/* Quick Shift Types */}
+                                      <DropdownMenuItem 
+                                        onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'morning', name: 'Morning', startTime: '06:30', endTime: '14:30', breakMinutes: 30, color: 'hsl(200, 70%, 50%)' })}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(200, 70%, 50%)' }} />
+                                          <span>Morning</span>
+                                          <span className="text-muted-foreground text-[10px]">06:30-14:30</span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem 
+                                        onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'afternoon', name: 'Afternoon', startTime: '12:00', endTime: '18:30', breakMinutes: 30, color: 'hsl(280, 60%, 50%)' })}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(280, 60%, 50%)' }} />
+                                          <span>Afternoon</span>
+                                          <span className="text-muted-foreground text-[10px]">12:00-18:30</span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem 
+                                        onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'fullday', name: 'Full Day', startTime: '07:00', endTime: '18:00', breakMinutes: 60, color: 'hsl(340, 65%, 50%)' })}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(340, 65%, 50%)' }} />
+                                          <span>Full Day</span>
+                                          <span className="text-muted-foreground text-[10px]">07:00-18:00</span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
                                       <DropdownMenuItem onClick={() => onAddShift(member.id, dateStr, room.id)}>
                                         Custom Shift
                                       </DropdownMenuItem>
-                                      <DropdownMenuSeparator />
-                                      {shiftTemplates.map(template => (
-                                        <DropdownMenuItem 
-                                          key={template.id}
-                                          onClick={() => onAddShift(member.id, dateStr, room.id, template)}
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: template.color }} />
-                                            <span>{template.name}</span>
-                                            <span className="text-muted-foreground text-[10px]">
-                                              {template.startTime}-{template.endTime}
-                                            </span>
-                                          </div>
-                                        </DropdownMenuItem>
-                                      ))}
+                                      {shiftTemplates.length > 0 && (
+                                        <>
+                                          <DropdownMenuSeparator />
+                                          {shiftTemplates.map(template => (
+                                            <DropdownMenuItem 
+                                              key={template.id}
+                                              onClick={() => onAddShift(member.id, dateStr, room.id, template)}
+                                            >
+                                              <div className="flex items-center gap-2">
+                                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: template.color }} />
+                                                <span>{template.name}</span>
+                                                <span className="text-muted-foreground text-[10px]">
+                                                  {template.startTime}-{template.endTime}
+                                                </span>
+                                              </div>
+                                            </DropdownMenuItem>
+                                          ))}
+                                        </>
+                                      )}
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 )}
