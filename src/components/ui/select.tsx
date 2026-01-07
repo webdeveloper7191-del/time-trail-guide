@@ -19,6 +19,8 @@ interface SelectContextValue {
   setOpen: (open: boolean) => void;
   anchorEl: HTMLElement | null;
   setAnchorEl: (el: HTMLElement | null) => void;
+  displayValue?: React.ReactNode;
+  setDisplayValue: (value: React.ReactNode) => void;
 }
 
 const SelectContext = React.createContext<SelectContextValue>({
@@ -26,6 +28,7 @@ const SelectContext = React.createContext<SelectContextValue>({
   setOpen: () => {},
   anchorEl: null,
   setAnchorEl: () => {},
+  setDisplayValue: () => {},
 });
 
 interface SelectProps {
@@ -40,12 +43,16 @@ const Select = ({ value, onValueChange, defaultValue, children, disabled }: Sele
   const [internalValue, setInternalValue] = React.useState(defaultValue || '');
   const [open, setOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
+  const [displayValue, setDisplayValue] = React.useState<React.ReactNode>(null);
   
   const currentValue = value !== undefined ? value : internalValue;
   
-  const handleChange = (newValue: string) => {
+  const handleChange = (newValue: string, display?: React.ReactNode) => {
     if (value === undefined) {
       setInternalValue(newValue);
+    }
+    if (display) {
+      setDisplayValue(display);
     }
     onValueChange?.(newValue);
     setOpen(false);
@@ -58,7 +65,9 @@ const Select = ({ value, onValueChange, defaultValue, children, disabled }: Sele
       open, 
       setOpen, 
       anchorEl, 
-      setAnchorEl 
+      setAnchorEl,
+      displayValue,
+      setDisplayValue,
     }}>
       {children}
     </SelectContext.Provider>
@@ -72,7 +81,12 @@ interface SelectValueProps {
 }
 
 const SelectValue = ({ placeholder }: SelectValueProps) => {
-  const { value } = React.useContext(SelectContext);
+  const { value, displayValue } = React.useContext(SelectContext);
+  
+  if (displayValue) {
+    return <span>{displayValue}</span>;
+  }
+  
   return <span className={!value ? "text-muted-foreground" : ""}>{value || placeholder}</span>;
 };
 
@@ -170,8 +184,22 @@ interface SelectItemProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
   ({ className, children, value, disabled, ...props }, ref) => {
-    const { value: selectedValue, onValueChange } = React.useContext(SelectContext);
+    const { value: selectedValue, onValueChange, setDisplayValue } = React.useContext(SelectContext);
     const isSelected = selectedValue === value;
+
+    // Update display value when this item is selected (on mount or when selection changes)
+    React.useEffect(() => {
+      if (isSelected && children) {
+        setDisplayValue(children);
+      }
+    }, [isSelected, children, setDisplayValue]);
+
+    const handleClick = () => {
+      if (!disabled) {
+        setDisplayValue(children);
+        onValueChange?.(value);
+      }
+    };
 
     return (
       <div
@@ -182,7 +210,7 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
           disabled && "pointer-events-none opacity-50",
           className,
         )}
-        onClick={() => !disabled && onValueChange?.(value)}
+        onClick={handleClick}
         {...props}
       >
         <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
