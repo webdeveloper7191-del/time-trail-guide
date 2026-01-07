@@ -27,7 +27,7 @@ import { Separator } from '@/components/ui/separator';
 import { CalendarIcon, TrendingUp, AlertCircle, Check } from 'lucide-react';
 import { format, isBefore, startOfDay, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface SchedulePayChangeSheetProps {
   open: boolean;
@@ -75,19 +75,16 @@ export function SchedulePayChangeSheet({ open, onOpenChange, staff }: SchedulePa
 
   const handleSchedule = () => {
     if (!effectiveDate) {
-      toast({ title: 'Please select an effective date', variant: 'destructive' });
+      toast.error('Please select an effective date');
       return;
     }
 
     if (isBefore(effectiveDate, startOfDay(new Date()))) {
-      toast({ title: 'Effective date must be in the future', variant: 'destructive' });
+      toast.error('Effective date must be in the future');
       return;
     }
 
-    toast({
-      title: 'Pay Change Scheduled',
-      description: `New pay conditions will take effect on ${format(effectiveDate, 'dd MMM yyyy')}`,
-    });
+    toast.success(`Pay change scheduled for ${format(effectiveDate, 'dd MMM yyyy')}`);
     onOpenChange(false);
   };
 

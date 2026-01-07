@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Tabs as MuiTabs, Tab as MuiTab, Box } from "@mui/material";
 import { cn } from "@/lib/utils";
 
 interface TabsContextValue {

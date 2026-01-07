@@ -1,5 +1,4 @@
 import * as React from "react";
-import { LinearProgress, LinearProgressProps } from "@mui/material";
 import { cn } from "@/lib/utils";
 
 export interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {

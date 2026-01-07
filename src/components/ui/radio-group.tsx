@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Radio, RadioGroup as MuiRadioGroup, FormControlLabel } from "@mui/material";
 import { cn } from "@/lib/utils";
 
 interface RadioGroupContextValue {

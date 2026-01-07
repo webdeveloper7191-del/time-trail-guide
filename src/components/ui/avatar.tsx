@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Avatar as MuiAvatar, AvatarProps as MuiAvatarProps } from "@mui/material";
 import { cn } from "@/lib/utils";
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLSpanElement> {}

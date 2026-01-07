@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Box } from "@mui/material";
 import { cn } from "@/lib/utils";
 
 export interface ScrollAreaProps extends React.HTMLAttributes<HTMLDivElement> {}

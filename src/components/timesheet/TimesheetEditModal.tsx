@@ -40,7 +40,7 @@ import {
   Calendar,
   Briefcase,
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface TimesheetEditModalProps {
@@ -259,10 +259,7 @@ export function TimesheetEditModal({
     };
 
     onSave(updatedTimesheet);
-    toast({
-      title: 'Timesheet Updated',
-      description: 'The timesheet has been successfully updated.',
-    });
+    toast.success('Timesheet updated successfully');
     onClose();
   };
 

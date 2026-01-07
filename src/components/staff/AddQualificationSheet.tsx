@@ -24,7 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Award, CalendarIcon, Upload, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface AddQualificationSheetProps {
   open: boolean;
@@ -66,7 +66,7 @@ export function AddQualificationSheet({ open, onOpenChange, onAdd }: AddQualific
 
   const handleSubmit = () => {
     if (!name || !issuer || !issueDate) {
-      toast({ title: 'Please fill in all required fields', variant: 'destructive' });
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -83,7 +83,7 @@ export function AddQualificationSheet({ open, onOpenChange, onAdd }: AddQualific
     };
 
     onAdd(newQualification);
-    toast({ title: 'Qualification added successfully' });
+    toast.success('Qualification added successfully');
     
     // Reset form
     setName('');
