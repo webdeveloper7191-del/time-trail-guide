@@ -1,23 +1,51 @@
 import * as React from "react";
-import * as SliderPrimitive from "@radix-ui/react-slider";
-
+import { Slider as MuiSlider, SliderProps as MuiSliderProps } from "@mui/material";
 import { cn } from "@/lib/utils";
 
-const Slider = React.forwardRef<
-  React.ElementRef<typeof SliderPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <SliderPrimitive.Root
-    ref={ref}
-    className={cn("relative flex w-full touch-none select-none items-center", className)}
-    {...props}
-  >
-    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-secondary">
-      <SliderPrimitive.Range className="absolute h-full bg-primary" />
-    </SliderPrimitive.Track>
-    <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
-  </SliderPrimitive.Root>
-));
-Slider.displayName = SliderPrimitive.Root.displayName;
+export interface SliderProps extends Omit<MuiSliderProps, 'value' | 'onChange'> {
+  value?: number[];
+  onValueChange?: (value: number[]) => void;
+}
+
+const Slider = React.forwardRef<HTMLSpanElement, SliderProps>(
+  ({ className, value, onValueChange, ...props }, ref) => {
+    const handleChange = (_event: Event, newValue: number | number[]) => {
+      if (onValueChange) {
+        onValueChange(Array.isArray(newValue) ? newValue : [newValue]);
+      }
+    };
+
+    return (
+      <MuiSlider
+        ref={ref}
+        value={value ? value[0] : undefined}
+        onChange={handleChange}
+        className={cn("w-full", className)}
+        sx={{
+          height: 8,
+          '& .MuiSlider-track': {
+            border: 'none',
+            backgroundColor: 'hsl(var(--primary))',
+          },
+          '& .MuiSlider-rail': {
+            backgroundColor: 'hsl(var(--secondary))',
+            opacity: 1,
+          },
+          '& .MuiSlider-thumb': {
+            height: 20,
+            width: 20,
+            backgroundColor: 'hsl(var(--background))',
+            border: '2px solid hsl(var(--primary))',
+            '&:focus, &:hover, &.Mui-active, &.Mui-focusVisible': {
+              boxShadow: 'inherit',
+            },
+          },
+        }}
+        {...props}
+      />
+    );
+  }
+);
+Slider.displayName = "Slider";
 
 export { Slider };

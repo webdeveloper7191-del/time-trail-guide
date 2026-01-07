@@ -1,26 +1,43 @@
 import * as React from "react";
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { Check } from "lucide-react";
-
+import { Checkbox as MuiCheckbox, CheckboxProps as MuiCheckboxProps } from "@mui/material";
 import { cn } from "@/lib/utils";
 
-const Checkbox = React.forwardRef<
-  React.ElementRef<typeof CheckboxPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <CheckboxPrimitive.Root
-    ref={ref}
-    className={cn(
-      "peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-      className,
-    )}
-    {...props}
-  >
-    <CheckboxPrimitive.Indicator className={cn("flex items-center justify-center text-current")}>
-      <Check className="h-4 w-4" />
-    </CheckboxPrimitive.Indicator>
-  </CheckboxPrimitive.Root>
-));
-Checkbox.displayName = CheckboxPrimitive.Root.displayName;
+export interface CheckboxProps extends Omit<MuiCheckboxProps, 'checked'> {
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+}
+
+const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
+  ({ className, checked, onCheckedChange, onChange, ...props }, ref) => {
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (onCheckedChange) {
+        onCheckedChange(event.target.checked);
+      }
+      if (onChange) {
+        onChange(event, event.target.checked);
+      }
+    };
+
+    return (
+      <MuiCheckbox
+        ref={ref}
+        checked={checked}
+        onChange={handleChange}
+        className={cn("h-4 w-4 shrink-0", className)}
+        sx={{
+          padding: 0,
+          '&.Mui-checked': {
+            color: 'hsl(var(--primary))',
+          },
+          '& .MuiSvgIcon-root': {
+            fontSize: 18,
+          },
+        }}
+        {...props}
+      />
+    );
+  }
+);
+Checkbox.displayName = "Checkbox";
 
 export { Checkbox };

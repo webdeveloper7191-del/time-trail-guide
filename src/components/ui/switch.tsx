@@ -1,27 +1,63 @@
 import * as React from "react";
-import * as SwitchPrimitives from "@radix-ui/react-switch";
-
+import { Switch as MuiSwitch, SwitchProps as MuiSwitchProps } from "@mui/material";
 import { cn } from "@/lib/utils";
 
-const Switch = React.forwardRef<
-  React.ElementRef<typeof SwitchPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
->(({ className, ...props }, ref) => (
-  <SwitchPrimitives.Root
-    className={cn(
-      "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors data-[state=checked]:bg-primary data-[state=unchecked]:bg-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
-      className,
-    )}
-    {...props}
-    ref={ref}
-  >
-    <SwitchPrimitives.Thumb
-      className={cn(
-        "pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
-      )}
-    />
-  </SwitchPrimitives.Root>
-));
-Switch.displayName = SwitchPrimitives.Root.displayName;
+export interface SwitchProps extends Omit<MuiSwitchProps, 'checked'> {
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+}
+
+const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
+  ({ className, checked, onCheckedChange, onChange, ...props }, ref) => {
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (onCheckedChange) {
+        onCheckedChange(event.target.checked);
+      }
+      if (onChange) {
+        onChange(event, event.target.checked);
+      }
+    };
+
+    return (
+      <MuiSwitch
+        ref={ref}
+        checked={checked}
+        onChange={handleChange}
+        className={cn(className)}
+        sx={{
+          width: 44,
+          height: 24,
+          padding: 0,
+          '& .MuiSwitch-switchBase': {
+            padding: 0,
+            margin: '2px',
+            transitionDuration: '300ms',
+            '&.Mui-checked': {
+              transform: 'translateX(20px)',
+              color: '#fff',
+              '& + .MuiSwitch-track': {
+                backgroundColor: 'hsl(var(--primary))',
+                opacity: 1,
+                border: 0,
+              },
+            },
+          },
+          '& .MuiSwitch-thumb': {
+            boxSizing: 'border-box',
+            width: 20,
+            height: 20,
+          },
+          '& .MuiSwitch-track': {
+            borderRadius: 12,
+            backgroundColor: 'hsl(var(--input))',
+            opacity: 1,
+          },
+        }}
+        {...props}
+      />
+    );
+  }
+);
+Switch.displayName = "Switch";
 
 export { Switch };
