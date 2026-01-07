@@ -5,6 +5,7 @@ import { RosterTemplate } from '@/types/rosterTemplates';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags, mockAgencyStaff } from '@/data/mockRosterData';
 import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel';
 import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
+import { DayTimelineView } from '@/components/roster/DayTimelineView';
 import { ShiftDetailPanel } from '@/components/roster/ShiftDetailPanel';
 import { RosterSummaryBar } from '@/components/roster/RosterSummaryBar';
 import { LeaveRequestModal } from '@/components/roster/LeaveRequestModal';
@@ -983,27 +984,44 @@ export default function RosterScheduler() {
 
       {/* Main Content */}
       <Box className="flex-1 flex overflow-hidden">
-        <StaffTimelineGrid
-          centre={selectedCentre}
-          shifts={shifts.filter(s => s.centreId === selectedCentreId)}
-          openShifts={openShifts.filter(os => os.centreId === selectedCentreId)}
-          staff={filteredStaff}
-          demandData={demandData}
-          complianceFlags={complianceFlags}
-          dates={dates}
-          viewMode={viewMode}
-          showDemandOverlay={showDemandOverlay}
-          shiftTemplates={shiftTemplates}
-          onDropStaff={handleDropStaff}
-          onShiftEdit={setSelectedShift}
-          onShiftDelete={handleShiftDelete}
-          onOpenShiftFill={(os) => toast.info('Drag a staff member to fill this shift')}
-          onAddShift={handleAddShift}
-          onDragStart={handleDragStart}
-          onOpenShiftDrop={handleOpenShiftDrop}
-          onShiftMove={handleShiftMove}
-          onStaffClick={openStaffProfile}
-        />
+        {viewMode === 'day' ? (
+          <DayTimelineView
+            centre={selectedCentre}
+            shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+            openShifts={openShifts.filter(os => os.centreId === selectedCentreId)}
+            staff={filteredStaff}
+            date={currentDate}
+            shiftTemplates={shiftTemplates}
+            onShiftEdit={setSelectedShift}
+            onShiftDelete={handleShiftDelete}
+            onAddShift={handleAddShift}
+            onDragStart={handleDragStart}
+            onDropStaff={handleDropStaff}
+            onStaffClick={openStaffProfile}
+          />
+        ) : (
+          <StaffTimelineGrid
+            centre={selectedCentre}
+            shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+            openShifts={openShifts.filter(os => os.centreId === selectedCentreId)}
+            staff={filteredStaff}
+            demandData={demandData}
+            complianceFlags={complianceFlags}
+            dates={dates}
+            viewMode={viewMode}
+            showDemandOverlay={showDemandOverlay}
+            shiftTemplates={shiftTemplates}
+            onDropStaff={handleDropStaff}
+            onShiftEdit={setSelectedShift}
+            onShiftDelete={handleShiftDelete}
+            onOpenShiftFill={(os) => toast.info('Drag a staff member to fill this shift')}
+            onAddShift={handleAddShift}
+            onDragStart={handleDragStart}
+            onOpenShiftDrop={handleOpenShiftDrop}
+            onShiftMove={handleShiftMove}
+            onStaffClick={openStaffProfile}
+          />
+        )}
 
         <UnscheduledStaffPanel
           staff={filteredStaff}
