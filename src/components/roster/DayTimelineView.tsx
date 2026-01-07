@@ -26,6 +26,7 @@ interface DayTimelineViewProps {
   onShiftEdit: (shift: Shift) => void;
   onShiftDelete: (shiftId: string) => void;
   onAddShift: (staffId: string, date: string, roomId: string, template?: ShiftTemplate) => void;
+  onAddShiftAtTime?: (staffId: string, date: string, roomId: string, startTime: string) => void;
   onDragStart: (e: React.DragEvent, staff: StaffMember) => void;
   onDropStaff: (staffId: string, roomId: string, date: string) => void;
   onStaffClick?: (staff: StaffMember) => void;
@@ -45,6 +46,14 @@ const generateTimeSlots = () => {
 const TIME_SLOTS = generateTimeSlots();
 const SLOT_WIDTH = 30; // pixels per 15-minute slot
 const HOUR_WIDTH = SLOT_WIDTH * 4; // 120px per hour
+
+// Convert pixel position to time string (must be after SLOT_WIDTH is defined)
+const pixelsToTime = (pixels: number) => {
+  const totalMinutes = Math.floor(pixels / SLOT_WIDTH) * 15;
+  const hours = Math.floor(totalMinutes / 60) + 5; // Start at 5 AM
+  const minutes = totalMinutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
 
 // Convert time string to slot index
 const timeToSlotIndex = (time: string) => {
@@ -88,6 +97,7 @@ export function DayTimelineView({
   onShiftEdit,
   onShiftDelete,
   onAddShift,
+  onAddShiftAtTime,
   onDragStart,
   onDropStaff,
   onStaffClick,
@@ -96,6 +106,7 @@ export function DayTimelineView({
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [hoverTime, setHoverTime] = useState<{ staffId: string; roomId: string; time: string; x: number } | null>(null);
 
   const dateStr = format(date, 'yyyy-MM-dd');
   const showCurrentTime = isToday(date);
@@ -171,6 +182,32 @@ export function DayTimelineView({
   const handleDragEnd = () => {
     setDragOverSlot(null);
     setIsDragging(false);
+  };
+
+  const handleTimelineMouseMove = (e: React.MouseEvent<HTMLDivElement>, staffId: string, roomId: string) => {
+    if (isDragging) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const time = pixelsToTime(x);
+    setHoverTime({ staffId, roomId, time, x });
+  };
+
+  const handleTimelineMouseLeave = () => {
+    setHoverTime(null);
+  };
+
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>, staffId: string, roomId: string) => {
+    if (isDragging) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const time = pixelsToTime(x);
+    
+    if (onAddShiftAtTime) {
+      onAddShiftAtTime(staffId, dateStr, roomId, time);
+    } else {
+      // Fallback to regular add shift
+      onAddShift(staffId, dateStr, roomId);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, staffId: string, roomId: string) => {
@@ -309,13 +346,16 @@ export function DayTimelineView({
                       {/* Timeline area */}
                       <div 
                         className={cn(
-                          "relative h-16 bg-muted/5",
-                          isDragging && "bg-primary/5"
+                          "relative h-16 bg-muted/5 cursor-crosshair group/timeline",
+                          isDragging && "bg-primary/5 cursor-default"
                         )}
                         style={{ width: totalWidth }}
                         onDragOver={(e) => handleDragOver(e, `${member.id}-${room.id}`)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, member.id, room.id)}
+                        onMouseMove={(e) => handleTimelineMouseMove(e, member.id, room.id)}
+                        onMouseLeave={handleTimelineMouseLeave}
+                        onClick={(e) => handleTimelineClick(e, member.id, room.id)}
                       >
                         {/* Grid lines */}
                         <div className="absolute inset-0 flex pointer-events-none">
@@ -333,6 +373,22 @@ export function DayTimelineView({
                             );
                           })}
                         </div>
+
+                        {/* Hover time indicator */}
+                        {hoverTime && hoverTime.staffId === member.id && hoverTime.roomId === room.id && !isDragging && memberShifts.length === 0 && (
+                          <div 
+                            className="absolute top-0 bottom-0 pointer-events-none z-10 transition-all duration-75"
+                            style={{ left: hoverTime.x }}
+                          >
+                            {/* Vertical line */}
+                            <div className="absolute top-0 bottom-0 w-0.5 bg-primary/60 -translate-x-1/2" />
+                            {/* Time label */}
+                            <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-medium shadow-lg whitespace-nowrap">
+                              <Plus className="h-3 w-3 inline mr-1" />
+                              {hoverTime.time}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Current time indicator line */}
                         {currentTimePosition !== null && (
@@ -363,17 +419,11 @@ export function DayTimelineView({
                           />
                         ))}
 
-                        {/* Add shift button (appears on hover when no shifts) */}
-                        {memberShifts.length === 0 && !isDragging && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute left-2 top-1/2 -translate-y-1/2 h-8 text-xs text-muted-foreground/50 hover:text-muted-foreground opacity-0 hover:opacity-100 transition-opacity"
-                            onClick={() => onAddShift(member.id, dateStr, room.id)}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add shift
-                          </Button>
+                        {/* Click hint for empty rows */}
+                        {memberShifts.length === 0 && !isDragging && !hoverTime && (
+                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/30 text-xs pointer-events-none opacity-0 group-hover/timeline:opacity-100 transition-opacity">
+                            Click to add shift
+                          </div>
                         )}
                       </div>
 
