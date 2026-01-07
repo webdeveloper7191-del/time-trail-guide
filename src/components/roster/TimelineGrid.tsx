@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Shift, OpenShift, Centre, Room, StaffMember, DemandData, RosterComplianceFlag, ageGroupLabels } from '@/types/roster';
+import { Shift, OpenShift, Centre, Room, StaffMember, DemandData, RosterComplianceFlag, ageGroupLabels, ShiftTemplate } from '@/types/roster';
 import { ShiftCard, OpenShiftCard } from './ShiftCard';
 import { DemandHistogram } from './DemandHistogram';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { 
   Plus, 
   AlertTriangle, 
@@ -13,7 +14,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  EyeOff
+  EyeOff,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -33,7 +35,7 @@ interface TimelineGridProps {
   onShiftEdit: (shift: Shift) => void;
   onShiftDelete: (shiftId: string) => void;
   onOpenShiftFill: (openShift: OpenShift) => void;
-  onAddShift: (roomId: string, date: string) => void;
+  onAddShift: (roomId: string, date: string, template?: ShiftTemplate) => void;
   onUnassignStaff?: (shiftId: string) => void;
 }
 
@@ -309,19 +311,57 @@ export function TimelineGrid({
 
                     {/* Add shift button */}
                     {!isCompact && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn(
-                          "w-full mt-2 h-6 text-xs text-muted-foreground hover:text-foreground",
-                          "border border-dashed border-muted-foreground/30 hover:border-primary/50",
-                          "opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
-                        )}
-                        onClick={() => onAddShift(room.id, dateStr)}
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "w-full mt-2 h-6 text-xs text-muted-foreground hover:text-foreground",
+                              "border border-dashed border-muted-foreground/30 hover:border-primary/50",
+                              "opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
+                            )}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                            <ChevronDown className="h-2.5 w-2.5 ml-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          {/* Quick Shift Types */}
+                          <DropdownMenuItem 
+                            onClick={() => onAddShift(room.id, dateStr, { id: 'morning', name: 'Morning', startTime: '06:30', endTime: '14:30', breakMinutes: 30, color: 'hsl(200, 70%, 50%)' })}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(200, 70%, 50%)' }} />
+                              <span>Morning</span>
+                              <span className="text-muted-foreground text-[10px]">06:30-14:30</span>
+                            </div>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => onAddShift(room.id, dateStr, { id: 'afternoon', name: 'Afternoon', startTime: '12:00', endTime: '18:30', breakMinutes: 30, color: 'hsl(280, 60%, 50%)' })}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(280, 60%, 50%)' }} />
+                              <span>Afternoon</span>
+                              <span className="text-muted-foreground text-[10px]">12:00-18:30</span>
+                            </div>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => onAddShift(room.id, dateStr, { id: 'fullday', name: 'Full Day', startTime: '07:00', endTime: '18:00', breakMinutes: 60, color: 'hsl(340, 65%, 50%)' })}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(340, 65%, 50%)' }} />
+                              <span>Full Day</span>
+                              <span className="text-muted-foreground text-[10px]">07:00-18:00</span>
+                            </div>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => onAddShift(room.id, dateStr)}>
+                            Custom Shift
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
                 );
