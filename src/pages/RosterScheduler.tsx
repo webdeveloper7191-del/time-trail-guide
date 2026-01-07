@@ -26,15 +26,32 @@ import { BulkShiftAssignmentModal } from '@/components/roster/BulkShiftAssignmen
 import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
 import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+// MUI Components
+import {
+  Button,
+  IconButton,
+  Box,
+  Typography,
+  Chip,
+  Stack,
+  Collapse,
+  MenuItem,
+} from '@mui/material';
+import { Select } from '@/components/mui/Select';
+import { Tabs, Tab } from '@/components/mui/Tabs';
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator 
+} from '@/components/mui/DropdownMenu';
+import { Tooltip } from '@/components/mui/Tooltip';
+import { useThemeMode } from '@/theme/ThemeProvider';
+
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { useTheme } from 'next-themes';
 import { 
   Calendar, 
   ChevronLeft, 
@@ -62,7 +79,6 @@ import {
   Moon,
   Sun,
   BarChart3,
-  MoreHorizontal,
   Layers,
   FileStack,
   UserPlus,
@@ -77,7 +93,7 @@ const defaultCentreBudgets: Record<string, number> = {
 };
 
 export default function RosterScheduler() {
-  const { theme, setTheme } = useTheme();
+  const { mode, setMode, resolvedMode } = useThemeMode();
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [selectedCentreId, setSelectedCentreId] = useState<string>(mockCentres[0].id);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -536,185 +552,192 @@ export default function RosterScheduler() {
 
   const allShiftTemplates = [...defaultShiftTemplates, ...shiftTemplates];
 
-  return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header - Material Style */}
-      <header className="bg-card border-b border-border shrink-0 shadow-sm">
-        {/* Top Bar - Navigation & Primary Actions */}
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            {/* Logo/Brand */}
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-primary" />
-              </div>
-              <span className="text-lg font-semibold text-foreground">Rosters</span>
-            </div>
+  const centreOptions = mockCentres.map(centre => ({
+    value: centre.id,
+    label: centre.name,
+  }));
 
-            {/* Centre Selector - Clean dropdown */}
-            <Select value={selectedCentreId} onValueChange={setSelectedCentreId}>
-              <SelectTrigger className="w-[200px] bg-background border-border h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                {mockCentres.map(centre => (
-                  <SelectItem key={centre.id} value={centre.id}>{centre.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+  const roleOptions = [
+    { value: 'all', label: 'All Roles' },
+    ...Object.entries(roleLabels).map(([key, label]) => ({
+      value: key,
+      label,
+    })),
+  ];
+
+  return (
+    <Box className="h-screen flex flex-col" sx={{ bgcolor: 'background.default' }}>
+      {/* Header - Material Style */}
+      <Box component="header" sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0, boxShadow: 1 }}>
+        {/* Top Bar - Navigation & Primary Actions */}
+        <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Stack direction="row" spacing={3} alignItems="center">
+            {/* Logo/Brand */}
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Box sx={{ height: 32, width: 32, borderRadius: 2, bgcolor: 'primary.main', opacity: 0.1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <Calendar className="h-5 w-5" style={{ position: 'absolute', color: 'var(--mui-palette-primary-main)' }} />
+              </Box>
+              <Typography variant="h6" fontWeight={600}>Rosters</Typography>
+            </Stack>
+
+            {/* Centre Selector */}
+            <Select
+              value={selectedCentreId}
+              onValueChange={setSelectedCentreId}
+              options={centreOptions}
+              size="small"
+              fullWidth={false}
+              className="min-w-[200px]"
+            />
 
             {/* Role Filter */}
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-[140px] bg-background border-border h-9">
-                <SelectValue placeholder="All Roles" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                <SelectItem value="all">All Roles</SelectItem>
-                {Object.entries(roleLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            <Select
+              value={roleFilter}
+              onValueChange={setRoleFilter}
+              options={roleOptions}
+              size="small"
+              fullWidth={false}
+              className="min-w-[140px]"
+            />
+          </Stack>
 
           {/* Status Badges & Primary Actions */}
-          <div className="flex items-center gap-3">
+          <Stack direction="row" spacing={1.5} alignItems="center">
             {/* Status indicators */}
-            <div className="flex items-center gap-2 mr-2">
+            <Stack direction="row" spacing={1} sx={{ mr: 1 }}>
               {centreOpenShifts.length > 0 && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  {centreOpenShifts.length} Open
-                </div>
+                <Chip 
+                  size="small" 
+                  label={`${centreOpenShifts.length} Open`}
+                  color="warning"
+                  variant="outlined"
+                  icon={<Box component="span" sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'warning.main', animation: 'pulse 2s infinite' }} />}
+                />
               )}
               {criticalFlags.length > 0 && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-destructive/10 text-destructive rounded-full text-xs font-medium">
-                  <AlertTriangle className="h-3 w-3" />
-                  {criticalFlags.length} Critical
-                </div>
+                <Chip 
+                  size="small" 
+                  label={`${criticalFlags.length} Critical`}
+                  color="error"
+                  variant="outlined"
+                  icon={<AlertTriangle size={14} />}
+                />
               )}
-            </div>
+            </Stack>
 
             {/* Summary Dashboard */}
-            <Button variant="outline" size="sm" onClick={() => setShowWeeklySummary(true)} className="h-9">
-              <BarChart3 className="h-4 w-4 mr-2" />
+            <Button 
+              variant="outlined" 
+              size="small" 
+              onClick={() => setShowWeeklySummary(true)}
+              startIcon={<BarChart3 size={16} />}
+            >
               Summary
             </Button>
 
             {/* Budget indicator */}
-            <button 
+            <Button 
+              variant="text" 
+              size="small"
               onClick={() => setShowBudgetBar(prev => !prev)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-lg text-sm transition-colors"
+              sx={{ bgcolor: 'action.hover', px: 1.5 }}
             >
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-foreground">${costSummary.totalCost.toLocaleString()}</span>
-              <span className="text-muted-foreground">/ ${weeklyBudget.toLocaleString()}</span>
-            </button>
+              <DollarSign size={16} />
+              <Typography variant="body2" fontWeight={500} sx={{ ml: 0.5 }}>
+                ${costSummary.totalCost.toLocaleString()}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
+                / ${weeklyBudget.toLocaleString()}
+              </Typography>
+            </Button>
 
             {/* Publish Button - Primary */}
-            <Button onClick={handlePublish} className="h-9 px-4">
-              <Send className="h-4 w-4 mr-2" />
+            <Button 
+              variant="contained" 
+              onClick={handlePublish}
+              startIcon={<Send size={16} />}
+            >
               Publish
             </Button>
-          </div>
-        </div>
+          </Stack>
+        </Box>
 
         {/* Toolbar Row - Compact */}
-        <div className="px-4 py-2 bg-muted/30 border-t border-border/50 flex items-center justify-between">
+        <Box sx={{ px: 2, py: 1, bgcolor: 'action.hover', borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* Left: Date Navigation */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center bg-background rounded-lg border border-border overflow-hidden">
-              <button 
-                onClick={() => navigateDate('prev')}
-                className="p-2 hover:bg-muted transition-colors border-r border-border"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button 
-                onClick={() => setCurrentDate(new Date())}
-                className="px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors"
-              >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" sx={{ bgcolor: 'background.paper', borderRadius: 1, border: 1, borderColor: 'divider', overflow: 'hidden' }}>
+              <IconButton size="small" onClick={() => navigateDate('prev')} sx={{ borderRadius: 0, borderRight: 1, borderColor: 'divider' }}>
+                <ChevronLeft size={18} />
+              </IconButton>
+              <Button size="small" onClick={() => setCurrentDate(new Date())} sx={{ borderRadius: 0, px: 2 }}>
                 Today
-              </button>
-              <button 
-                onClick={() => navigateDate('next')}
-                className="p-2 hover:bg-muted transition-colors border-l border-border"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
+              </Button>
+              <IconButton size="small" onClick={() => navigateDate('next')} sx={{ borderRadius: 0, borderLeft: 1, borderColor: 'divider' }}>
+                <ChevronRight size={18} />
+              </IconButton>
+            </Stack>
             
-            <span className="text-sm font-medium text-foreground">
+            <Typography variant="body2" fontWeight={500}>
               {format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d, yyyy')}
-            </span>
+            </Typography>
 
             {/* View Mode Tabs */}
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-              <TabsList className="h-8 bg-background border border-border">
-                <TabsTrigger value="day" className="text-xs px-3 h-6">Day</TabsTrigger>
-                <TabsTrigger value="week" className="text-xs px-3 h-6">Week</TabsTrigger>
-                <TabsTrigger value="fortnight" className="text-xs px-3 h-6">Fortnight</TabsTrigger>
-                <TabsTrigger value="month" className="text-xs px-3 h-6">Month</TabsTrigger>
-              </TabsList>
+              <Tab value="day" label="Day" />
+              <Tab value="week" label="Week" />
+              <Tab value="fortnight" label="Fortnight" />
+              <Tab value="month" label="Month" />
             </Tabs>
-          </div>
+          </Stack>
 
           {/* Right: Action Buttons */}
-          <div className="flex items-center gap-1">
+          <Stack direction="row" spacing={0.5} alignItems="center">
             {/* Demand Toggle */}
-            <button 
+            <Button 
+              variant={showDemandOverlay ? "contained" : "text"}
+              size="small"
               onClick={() => setShowDemandOverlay(prev => !prev)}
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors",
-                showDemandOverlay 
-                  ? "bg-primary/10 text-primary" 
-                  : "text-muted-foreground hover:bg-muted"
-              )}
+              color={showDemandOverlay ? "primary" : "inherit"}
+              startIcon={showDemandOverlay ? <Eye size={14} /> : <EyeOff size={14} />}
+              sx={{ fontSize: '0.75rem' }}
             >
-              {showDemandOverlay ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
               Demand
-            </button>
+            </Button>
 
-            <div className="w-px h-5 bg-border mx-1" />
+            <Box sx={{ width: 1, height: 20, bgcolor: 'divider', mx: 0.5 }} />
 
             {/* Quick Actions */}
-            <Button variant="ghost" size="sm" onClick={() => setShowAddOpenShiftModal(true)} className="h-8 text-xs">
-              <Plus className="h-3.5 w-3.5 mr-1" />
+            <Button variant="text" size="small" onClick={() => setShowAddOpenShiftModal(true)} startIcon={<Plus size={14} />}>
               Open Shift
             </Button>
 
-            <Button variant="ghost" size="sm" onClick={() => setShowBulkAssignmentModal(true)} className="h-8 text-xs">
-              <UserPlus className="h-3.5 w-3.5 mr-1" />
+            <Button variant="text" size="small" onClick={() => setShowBulkAssignmentModal(true)} startIcon={<UserPlus size={14} />}>
               Bulk Assign
             </Button>
 
-            <Button variant="ghost" size="sm" onClick={handleCopyWeek} className="h-8 text-xs">
-              <Copy className="h-3.5 w-3.5 mr-1" />
+            <Button variant="text" size="small" onClick={handleCopyWeek} startIcon={<Copy size={14} />}>
               Copy Week
             </Button>
 
-            <div className="w-px h-5 bg-border mx-1" />
+            <Box sx={{ width: 1, height: 20, bgcolor: 'divider', mx: 0.5 }} />
 
             {/* Export Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  <Download className="h-3.5 w-3.5 mr-1" />
+                <Button variant="text" size="small" startIcon={<Download size={14} />}>
                   Export
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-popover">
-                <DropdownMenuItem onClick={handleExportPDF}>
-                  <FileText className="h-4 w-4 mr-2" />
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleExportPDF} icon={<FileText size={16} />}>
                   Export to PDF
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportExcel}>
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                <DropdownMenuItem onClick={handleExportExcel} icon={<FileSpreadsheet size={16} />}>
                   Export to Excel
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handlePrint}>
-                  <Printer className="h-4 w-4 mr-2" />
+                <DropdownMenuItem onClick={handlePrint} icon={<Printer size={16} />}>
                   Print View
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -723,23 +746,19 @@ export default function RosterScheduler() {
             {/* Templates Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  <Layers className="h-3.5 w-3.5 mr-1" />
+                <Button variant="text" size="small" startIcon={<Layers size={14} />}>
                   Templates
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-popover">
-                <DropdownMenuItem onClick={() => setShowSaveTemplateModal(true)}>
-                  <FileStack className="h-4 w-4 mr-2" />
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setShowSaveTemplateModal(true)} icon={<FileStack size={16} />}>
                   Save as Template
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowApplyTemplateModal(true)}>
-                  <Layers className="h-4 w-4 mr-2" />
+                <DropdownMenuItem onClick={() => setShowApplyTemplateModal(true)} icon={<Layers size={16} />}>
                   Apply Template
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowShiftTemplateManager(true)}>
-                  <Clock className="h-4 w-4 mr-2" />
+                <DropdownMenuItem onClick={() => setShowShiftTemplateManager(true)} icon={<Clock size={16} />}>
                   Manage Shift Templates
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -748,119 +767,151 @@ export default function RosterScheduler() {
             {/* Schedule Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  <CalendarDays className="h-3.5 w-3.5 mr-1" />
+                <Button variant="text" size="small" startIcon={<CalendarDays size={14} />}>
                   Schedule
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-popover">
-                <DropdownMenuItem onClick={() => setShowAvailabilityModal(true)}>
-                  <CalendarCheck className="h-4 w-4 mr-2" />
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setShowAvailabilityModal(true)} icon={<CalendarCheck size={16} />}>
                   Staff Availability
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowLeaveModal(true)}>
-                  <CalendarDays className="h-4 w-4 mr-2" />
+                <DropdownMenuItem onClick={() => setShowLeaveModal(true)} icon={<CalendarDays size={16} />}>
                   Leave Requests
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => {
                   if (allStaff.length > 0) openPreferencesForStaff(allStaff[0]);
-                }}>
-                  <UserCog className="h-4 w-4 mr-2" />
+                }} icon={<UserCog size={16} />}>
                   Staff Preferences
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <div className="w-px h-5 bg-border mx-1" />
+            <Box sx={{ width: 1, height: 20, bgcolor: 'divider', mx: 0.5 }} />
 
             {/* Icon Buttons - Compact */}
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setShowConflicts(true)}
-              className="h-8 w-8 relative"
-            >
-              <Shield className="h-4 w-4" />
-              {conflictCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center font-medium">
-                  {conflictCount}
-                </span>
-              )}
-            </Button>
+            <Tooltip content="View Conflicts">
+              <IconButton 
+                size="small"
+                onClick={() => setShowConflicts(true)}
+                sx={{ position: 'relative' }}
+              >
+                <Shield size={18} />
+                {conflictCount > 0 && (
+                  <Box 
+                    component="span"
+                    sx={{ 
+                      position: 'absolute', 
+                      top: -2, 
+                      right: -2, 
+                      width: 16, 
+                      height: 16, 
+                      bgcolor: 'error.main', 
+                      color: 'error.contrastText',
+                      fontSize: 10, 
+                      borderRadius: '50%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      fontWeight: 600
+                    }}
+                  >
+                    {conflictCount}
+                  </Box>
+                )}
+              </IconButton>
+            </Tooltip>
 
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setShowAlerts(true)}
-              className="h-8 w-8 relative"
-            >
-              <Bell className="h-4 w-4" />
-              {alertCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center font-medium">
-                  {alertCount}
-                </span>
-              )}
-            </Button>
+            <Tooltip content="Alerts">
+              <IconButton 
+                size="small"
+                onClick={() => setShowAlerts(true)}
+                sx={{ position: 'relative' }}
+              >
+                <Bell size={18} />
+                {alertCount > 0 && (
+                  <Box 
+                    component="span"
+                    sx={{ 
+                      position: 'absolute', 
+                      top: -2, 
+                      right: -2, 
+                      width: 16, 
+                      height: 16, 
+                      bgcolor: 'error.main', 
+                      color: 'error.contrastText',
+                      fontSize: 10, 
+                      borderRadius: '50%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      fontWeight: 600
+                    }}
+                  >
+                    {alertCount}
+                  </Box>
+                )}
+              </IconButton>
+            </Tooltip>
 
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setShowNotifications(true)}
-              className="h-8 w-8"
-            >
-              <Mail className="h-4 w-4" />
-            </Button>
+            <Tooltip content="Notifications">
+              <IconButton size="small" onClick={() => setShowNotifications(true)}>
+                <Mail size={18} />
+              </IconButton>
+            </Tooltip>
 
             {/* Theme Toggle */}
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="h-8 w-8"
-            >
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
+            <Tooltip content={resolvedMode === 'dark' ? 'Light Mode' : 'Dark Mode'}>
+              <IconButton 
+                size="small"
+                onClick={() => setMode(resolvedMode === 'dark' ? 'light' : 'dark')}
+              >
+                {resolvedMode === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </IconButton>
+            </Tooltip>
 
             {/* Settings */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Settings className="h-4 w-4" />
-                </Button>
+                <IconButton size="small">
+                  <Settings size={18} />
+                </IconButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-popover">
-                <DropdownMenuItem onClick={() => setShowBudgetSettings(true)}>
-                  <DollarSign className="h-4 w-4 mr-2" />
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowBudgetSettings(true)} icon={<DollarSign size={16} />}>
                   Budget Settings
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        </div>
-      </header>
+          </Stack>
+        </Box>
+      </Box>
 
       {/* Collapsible Budget Tracker Bar */}
-      <Collapsible open={showBudgetBar} onOpenChange={setShowBudgetBar}>
-        <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center justify-center gap-2 py-1.5 bg-muted/50 border-b border-border hover:bg-muted transition-colors text-xs text-muted-foreground">
-            <DollarSign className="h-3.5 w-3.5" />
-            <span>Budget Tracker</span>
-            {showBudgetBar ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
+      <Box>
+        <Button
+          fullWidth
+          variant="text"
+          size="small"
+          onClick={() => setShowBudgetBar(!showBudgetBar)}
+          sx={{ py: 0.75, bgcolor: 'action.hover', borderBottom: 1, borderColor: 'divider', borderRadius: 0 }}
+          startIcon={<DollarSign size={14} />}
+          endIcon={showBudgetBar ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        >
+          Budget Tracker
+        </Button>
+        <Collapse in={showBudgetBar}>
           <BudgetTrackerBar
             shifts={shifts}
             staff={allStaff}
             centreId={selectedCentreId}
             weeklyBudget={weeklyBudget}
           />
-        </CollapsibleContent>
-      </Collapsible>
+        </Collapse>
+      </Box>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <Box className="flex-1 flex overflow-hidden">
         <StaffTimelineGrid
           centre={selectedCentre}
           shifts={shifts.filter(s => s.centreId === selectedCentreId)}
@@ -892,7 +943,7 @@ export default function RosterScheduler() {
           onGenerateAI={handleGenerateAIShifts}
           isGenerating={isGenerating}
         />
-      </div>
+      </Box>
 
       {/* Summary Bar */}
       <RosterSummaryBar
@@ -1070,6 +1121,6 @@ export default function RosterScheduler() {
           costSummary={costSummary}
         />
       </div>
-    </div>
+    </Box>
   );
 }
