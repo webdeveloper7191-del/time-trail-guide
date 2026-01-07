@@ -1,22 +1,33 @@
 import { StaffMember, Shift, roleLabels, qualificationLabels } from '@/types/roster';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Tabs,
+  Tab,
+  Card,
+  CardContent,
+  CardHeader,
+  LinearProgress,
+  Chip,
+  Avatar,
+  Box,
+  Typography,
+  IconButton,
+} from '@mui/material';
 import { 
   Clock, 
   DollarSign, 
   Calendar, 
   Award, 
   TrendingUp,
-  MapPin,
   Phone,
   Mail,
   Star
 } from 'lucide-react';
+import CloseIcon from '@mui/icons-material/Close';
 import { format, parseISO, isWithinInterval, startOfWeek, endOfWeek } from 'date-fns';
+import { useState } from 'react';
 
 interface StaffProfileModalProps {
   staff: StaffMember | null;
@@ -26,11 +37,11 @@ interface StaffProfileModalProps {
 }
 
 export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfileModalProps) {
+  const [tabValue, setTabValue] = useState(0);
+  
   if (!staff) return null;
 
   const staffShifts = shifts.filter(s => s.staffId === staff.id);
-  
-  // Calculate weekly hours
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
@@ -50,260 +61,134 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
   const hoursProgress = (weeklyHours / staff.maxHoursPerWeek) * 100;
   const totalEarnings = weeklyHours * staff.hourlyRate;
 
-  // Upcoming shifts (next 7 days)
   const upcomingShifts = staffShifts
     .filter(s => parseISO(s.date) >= now)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-4">
-          <div className="flex items-start gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback 
-                className="text-lg font-semibold text-white"
-                style={{ backgroundColor: staff.color }}
-              >
-                {staff.name.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <DialogTitle className="text-xl">{staff.name}</DialogTitle>
-              <p className="text-sm text-muted-foreground">{roleLabels[staff.role]}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant={staff.agency ? 'destructive' : 'secondary'}>
-                  {staff.agency ? 'Agency' : 'Permanent'}
-                </Badge>
-                {staff.employmentType && (
-                  <Badge variant="outline" className="capitalize">
-                    {staff.employmentType}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-primary">${staff.hourlyRate}/hr</div>
-              <div className="text-xs text-muted-foreground">OT: ${staff.overtimeRate}/hr</div>
-            </div>
-          </div>
-        </DialogHeader>
+    <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ pb: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+          <Avatar sx={{ width: 64, height: 64, bgcolor: staff.color, fontSize: '1.25rem', fontWeight: 600 }}>
+            {staff.name.split(' ').map(n => n[0]).join('')}
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6">{staff.name}</Typography>
+              <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+            </Box>
+            <Typography variant="body2" color="text.secondary">{roleLabels[staff.role]}</Typography>
+            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+              <Chip size="small" label={staff.agency ? 'Agency' : 'Permanent'} color={staff.agency ? 'error' : 'default'} />
+              {staff.employmentType && <Chip size="small" label={staff.employmentType} variant="outlined" sx={{ textTransform: 'capitalize' }} />}
+            </Box>
+          </Box>
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography variant="h5" color="primary" fontWeight={700}>${staff.hourlyRate}/hr</Typography>
+            <Typography variant="caption" color="text.secondary">OT: ${staff.overtimeRate}/hr</Typography>
+          </Box>
+        </Box>
+      </DialogTitle>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="schedule">Schedule</TabsTrigger>
-            <TabsTrigger value="qualifications">Qualifications</TabsTrigger>
-          </TabsList>
+      <DialogContent dividers sx={{ p: 0 }}>
+        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} variant="fullWidth">
+          <Tab label="Overview" />
+          <Tab label="Schedule" />
+          <Tab label="Qualifications" />
+        </Tabs>
 
-          <TabsContent value="overview" className="space-y-4 mt-4">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Clock className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">This Week</p>
-                      <p className="text-lg font-semibold">{weeklyHours.toFixed(1)}h / {staff.maxHoursPerWeek}h</p>
-                    </div>
-                  </div>
-                  <Progress value={hoursProgress} className="mt-3 h-2" />
+        <Box sx={{ p: 2 }}>
+          {tabValue === 0 && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                <Card variant="outlined">
+                  <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: 'primary.light' }}><Clock size={20} /></Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">This Week</Typography>
+                      <Typography variant="body1" fontWeight={600}>{weeklyHours.toFixed(1)}h / {staff.maxHoursPerWeek}h</Typography>
+                    </Box>
+                  </CardContent>
+                  <LinearProgress variant="determinate" value={Math.min(hoursProgress, 100)} sx={{ height: 4 }} />
+                </Card>
+                <Card variant="outlined">
+                  <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: 'success.light' }}><DollarSign size={20} /></Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Est. Earnings</Typography>
+                      <Typography variant="body1" fontWeight={600}>${totalEarnings.toFixed(2)}</Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Box>
+              <Card variant="outlined">
+                <CardHeader title={<Typography variant="body2" fontWeight={500}>Contact</Typography>} sx={{ pb: 0 }} />
+                <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Mail size={16} style={{ opacity: 0.5 }} /><Typography variant="body2">{staff.email || 'Not provided'}</Typography></Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Phone size={16} style={{ opacity: 0.5 }} /><Typography variant="body2">{staff.phone || 'Not provided'}</Typography></Box>
                 </CardContent>
               </Card>
+            </Box>
+          )}
 
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                      <DollarSign className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Est. Earnings</p>
-                      <p className="text-lg font-semibold">${totalEarnings.toFixed(2)}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Shifts This Week</p>
-                      <p className="text-lg font-semibold">{thisWeekShifts.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                      <TrendingUp className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Shifts</p>
-                      <p className="text-lg font-semibold">{staffShifts.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Availability */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Availability</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-1">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => {
-                    const isAvailable = staff.availability?.includes(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'][idx] as any);
-                    return (
-                      <div 
-                        key={day}
-                        className={`flex-1 py-2 text-center rounded-md text-xs font-medium transition-colors ${
-                          isAvailable 
-                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' 
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {day}
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Contact Info */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Contact Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{staff.email || 'Not provided'}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{staff.phone || 'Not provided'}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="schedule" className="mt-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Upcoming Shifts</CardTitle>
-              </CardHeader>
+          {tabValue === 1 && (
+            <Card variant="outlined">
+              <CardHeader title={<Typography variant="body2" fontWeight={500}>Upcoming Shifts</Typography>} />
               <CardContent>
                 {upcomingShifts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No upcoming shifts</p>
+                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 2 }}>No upcoming shifts</Typography>
                 ) : (
-                  <div className="space-y-2">
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {upcomingShifts.map(shift => (
-                      <div 
-                        key={shift.id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex flex-col items-center justify-center">
-                            <span className="text-xs font-medium text-primary">
-                              {format(parseISO(shift.date), 'MMM')}
-                            </span>
-                            <span className="text-sm font-bold text-primary">
-                              {format(parseISO(shift.date), 'd')}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{format(parseISO(shift.date), 'EEEE')}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {shift.startTime} - {shift.endTime}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge variant={shift.status === 'published' ? 'default' : 'outline'} className="capitalize">
-                          {shift.status}
-                        </Badge>
-                      </div>
+                      <Box key={shift.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Box sx={{ p: 1, borderRadius: 1, bgcolor: 'primary.light', textAlign: 'center' }}>
+                            <Typography variant="caption" color="primary">{format(parseISO(shift.date), 'MMM')}</Typography>
+                            <Typography variant="body2" fontWeight={600} color="primary">{format(parseISO(shift.date), 'd')}</Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" fontWeight={500}>{format(parseISO(shift.date), 'EEEE')}</Typography>
+                            <Typography variant="caption" color="text.secondary">{shift.startTime} - {shift.endTime}</Typography>
+                          </Box>
+                        </Box>
+                        <Chip size="small" label={shift.status} color={shift.status === 'published' ? 'primary' : 'default'} sx={{ textTransform: 'capitalize' }} />
+                      </Box>
                     ))}
-                  </div>
+                  </Box>
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="qualifications" className="mt-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Award className="h-4 w-4" />
-                  Qualifications & Certifications
-                </CardTitle>
-              </CardHeader>
+          {tabValue === 2 && (
+            <Card variant="outlined">
+              <CardHeader title={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Award size={16} />Qualifications</Box>} />
               <CardContent>
                 {staff.qualifications.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No qualifications recorded</p>
+                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 2 }}>No qualifications recorded</Typography>
                 ) : (
-                  <div className="space-y-3">
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {staff.qualifications.map((qual, idx) => (
-                      <div 
-                        key={idx}
-                        className={`flex items-center justify-between p-3 rounded-lg border ${
-                          qual.isExpired 
-                            ? 'bg-destructive/10 border-destructive/30' 
-                            : qual.isExpiringSoon 
-                              ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
-                              : 'bg-muted/50 border-transparent'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                            qual.isExpired 
-                              ? 'bg-destructive/20' 
-                              : qual.isExpiringSoon 
-                                ? 'bg-amber-500/20' 
-                                : 'bg-emerald-500/20'
-                          }`}>
-                            <Star className={`h-4 w-4 ${
-                              qual.isExpired 
-                                ? 'text-destructive' 
-                                : qual.isExpiringSoon 
-                                  ? 'text-amber-600' 
-                                  : 'text-emerald-600'
-                            }`} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{qualificationLabels[qual.type]}</p>
-                            {qual.expiryDate && (
-                              <p className="text-xs text-muted-foreground">
-                                Expires: {qual.expiryDate}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Badge variant={qual.isExpired ? 'destructive' : qual.isExpiringSoon ? 'outline' : 'secondary'}>
-                          {qual.isExpired ? 'Expired' : qual.isExpiringSoon ? 'Expiring Soon' : 'Valid'}
-                        </Badge>
-                      </div>
+                      <Box key={idx} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 1, bgcolor: qual.isExpired ? 'error.light' : qual.isExpiringSoon ? 'warning.light' : 'action.hover' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Box sx={{ p: 0.75, borderRadius: '50%', bgcolor: qual.isExpired ? 'error.main' : qual.isExpiringSoon ? 'warning.main' : 'success.main', opacity: 0.2 }}>
+                            <Star size={16} />
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" fontWeight={500}>{qualificationLabels[qual.type]}</Typography>
+                            {qual.expiryDate && <Typography variant="caption" color="text.secondary">Expires: {qual.expiryDate}</Typography>}
+                          </Box>
+                        </Box>
+                        <Chip size="small" label={qual.isExpired ? 'Expired' : qual.isExpiringSoon ? 'Expiring Soon' : 'Valid'} color={qual.isExpired ? 'error' : qual.isExpiringSoon ? 'warning' : 'success'} />
+                      </Box>
                     ))}
-                  </div>
+                  </Box>
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          )}
+        </Box>
       </DialogContent>
     </Dialog>
   );

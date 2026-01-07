@@ -1,13 +1,24 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip,
+  Stack,
+  Box,
+  Typography,
+  IconButton,
+} from '@mui/material';
 import { Room, OpenShift, QualificationType, qualificationLabels, ageGroupLabels } from '@/types/roster';
 import { Plus, X, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface AddOpenShiftModalProps {
   open: boolean;
@@ -73,130 +84,138 @@ export function AddOpenShiftModal({
   };
 
   const urgencyColors = {
-    low: 'bg-muted text-muted-foreground',
-    medium: 'bg-amber-500/15 text-amber-700 border-amber-500/50',
-    high: 'bg-orange-500/15 text-orange-700 border-orange-500/50',
-    critical: 'bg-destructive/15 text-destructive border-destructive/50',
+    low: { bgcolor: 'grey.100', color: 'grey.700' },
+    medium: { bgcolor: 'warning.light', color: 'warning.dark' },
+    high: { bgcolor: 'orange.100', color: 'orange.700' },
+    critical: { bgcolor: 'error.light', color: 'error.dark' },
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-500" />
-            Add Open Shift
-          </DialogTitle>
-        </DialogHeader>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AlertCircle className="h-5 w-5" style={{ color: '#f59e0b' }} />
+          <Typography variant="h6">Add Open Shift</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-        <div className="space-y-4">
+      <DialogContent dividers>
+        <Stack spacing={3}>
           {/* Room Selection */}
-          <div className="space-y-2">
-            <Label>Room / Area</Label>
-            <Select value={roomId} onValueChange={setRoomId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select room..." />
-              </SelectTrigger>
-              <SelectContent>
-                {rooms.map((room) => (
-                  <SelectItem key={room.id} value={room.id}>
-                    <div className="flex items-center gap-2">
-                      <span>{room.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {ageGroupLabels[room.ageGroup]}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
+          <FormControl fullWidth size="small">
+            <InputLabel>Room / Area</InputLabel>
+            <Select
+              value={roomId}
+              label="Room / Area"
+              onChange={(e) => setRoomId(e.target.value)}
+            >
+              {rooms.map((room) => (
+                <MenuItem key={room.id} value={room.id}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>{room.name}</span>
+                    <Typography variant="caption" color="text.secondary">
+                      {ageGroupLabels[room.ageGroup]}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
             </Select>
-          </div>
+          </FormControl>
 
           {/* Date */}
-          <div className="space-y-2">
-            <Label>Date</Label>
-            <Input 
-              type="date" 
-              value={date} 
-              onChange={(e) => setDate(e.target.value)} 
-            />
-          </div>
+          <TextField
+            label="Date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            size="small"
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+          />
 
           {/* Time */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Start Time</Label>
-              <Input 
-                type="time" 
-                value={startTime} 
-                onChange={(e) => setStartTime(e.target.value)} 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>End Time</Label>
-              <Input 
-                type="time" 
-                value={endTime} 
-                onChange={(e) => setEndTime(e.target.value)} 
-              />
-            </div>
-          </div>
+          <Stack direction="row" spacing={2}>
+            <TextField
+              label="Start Time"
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              size="small"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="End Time"
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              size="small"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </Stack>
 
           {/* Urgency */}
-          <div className="space-y-2">
-            <Label>Urgency Level</Label>
-            <div className="flex gap-2">
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Urgency Level
+            </Typography>
+            <Stack direction="row" spacing={1}>
               {(['low', 'medium', 'high', 'critical'] as const).map((level) => (
                 <Button
                   key={level}
-                  type="button"
-                  variant="outline"
-                  size="sm"
+                  variant={urgency === level ? 'contained' : 'outlined'}
+                  size="small"
                   onClick={() => setUrgency(level)}
-                  className={cn(
-                    "flex-1 capitalize",
-                    urgency === level && urgencyColors[level],
-                    urgency === level && "ring-1 ring-offset-1"
-                  )}
+                  sx={{
+                    flex: 1,
+                    textTransform: 'capitalize',
+                    ...(urgency === level && urgencyColors[level]),
+                  }}
                 >
                   {level}
                 </Button>
               ))}
-            </div>
-          </div>
+            </Stack>
+          </Box>
 
           {/* Required Qualifications */}
-          <div className="space-y-2">
-            <Label>Required Qualifications (Optional)</Label>
-            <div className="flex flex-wrap gap-2">
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Required Qualifications (Optional)
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {availableQualifications.map((qual) => (
-                <Badge
+                <Chip
                   key={qual}
-                  variant={selectedQualifications.includes(qual) ? 'default' : 'outline'}
-                  className="cursor-pointer transition-colors"
+                  label={qualificationLabels[qual]}
                   onClick={() => toggleQualification(qual)}
-                >
-                  {selectedQualifications.includes(qual) && (
-                    <X className="h-3 w-3 mr-1" />
-                  )}
-                  {qualificationLabels[qual]}
-                </Badge>
+                  color={selectedQualifications.includes(qual) ? 'primary' : 'default'}
+                  variant={selectedQualifications.includes(qual) ? 'filled' : 'outlined'}
+                  size="small"
+                  deleteIcon={selectedQualifications.includes(qual) ? <X size={14} /> : undefined}
+                  onDelete={selectedQualifications.includes(qual) ? () => toggleQualification(qual) : undefined}
+                />
               ))}
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={!roomId || !date || !startTime || !endTime}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Open Shift
-          </Button>
-        </DialogFooter>
+            </Box>
+          </Box>
+        </Stack>
       </DialogContent>
+
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button variant="outlined" onClick={onClose}>Cancel</Button>
+        <Button 
+          variant="contained"
+          onClick={handleSubmit} 
+          disabled={!roomId || !date || !startTime || !endTime}
+          startIcon={<Plus size={16} />}
+        >
+          Add Open Shift
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }

@@ -1,12 +1,19 @@
 import { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Chip,
+  Box,
+  Typography,
+  IconButton,
+} from '@mui/material';
 import { Shift, StaffMember, roleLabels, qualificationLabels } from '@/types/roster';
 import { ArrowLeftRight, Search, AlertTriangle, Check, Clock, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface ShiftSwapModalProps {
   open: boolean;
@@ -23,30 +30,21 @@ export function ShiftSwapModal({ open, onClose, shift, staff, allShifts, onSwap 
 
   const currentStaff = staff.find(s => s.id === shift.staffId);
 
-  // Find eligible staff for swap
   const eligibleStaff = useMemo(() => {
     return staff.filter(s => {
-      // Can't swap with self
       if (s.id === shift.staffId) return false;
-      
-      // Check if staff is available on the shift date
       const shiftDate = new Date(shift.date);
       const dayOfWeek = shiftDate.getDay();
       const availability = s.availability.find(a => a.dayOfWeek === dayOfWeek);
       if (!availability?.available) return false;
-
-      // Check if staff already has a shift at that time
       const hasConflict = allShifts.some(existingShift => 
         existingShift.staffId === s.id && 
         existingShift.date === shift.date &&
         existingShift.id !== shift.id
       );
       if (hasConflict) return false;
-
-      // Check hours capacity
       const shiftHours = calculateShiftHours(shift);
-      if (s.currentWeeklyHours + shiftHours > s.maxHoursPerWeek + 2) return false; // Allow slight overtime
-
+      if (s.currentWeeklyHours + shiftHours > s.maxHoursPerWeek + 2) return false;
       return true;
     }).filter(s => {
       if (!searchQuery) return true;
@@ -64,14 +62,11 @@ export function ShiftSwapModal({ open, onClose, shift, staff, allShifts, onSwap 
     const conflicts: string[] = [];
     const member = staff.find(s => s.id === staffId);
     if (!member) return conflicts;
-
     const shiftHours = calculateShiftHours(shift);
     const newTotalHours = member.currentWeeklyHours + shiftHours;
-    
     if (newTotalHours > member.maxHoursPerWeek) {
       conflicts.push(`Will result in ${Math.round((newTotalHours - member.maxHoursPerWeek) * 10) / 10}h overtime`);
     }
-
     return conflicts;
   };
 
@@ -83,127 +78,105 @@ export function ShiftSwapModal({ open, onClose, shift, staff, allShifts, onSwap 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ArrowLeftRight className="h-5 w-5 text-primary" />
-            Swap Shift
-          </DialogTitle>
-        </DialogHeader>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ArrowLeftRight className="h-5 w-5" style={{ color: 'var(--mui-palette-primary-main)' }} />
+          <Typography variant="h6">Swap Shift</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+      </DialogTitle>
 
+      <DialogContent dividers>
         {/* Current Assignment */}
-        <div className="p-4 rounded-lg bg-muted/50 border border-border">
-          <p className="text-xs text-muted-foreground mb-2">Current Assignment</p>
-          <div className="flex items-center gap-3">
-            <div 
-              className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-medium"
-              style={{ backgroundColor: currentStaff?.color }}
-            >
+        <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover', border: 1, borderColor: 'divider', mb: 2 }}>
+          <Typography variant="caption" color="text.secondary">Current Assignment</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
+            <Box sx={{ height: 40, width: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.875rem', fontWeight: 500, bgcolor: currentStaff?.color }}>
               {currentStaff?.name.split(' ').map(n => n[0]).join('')}
-            </div>
-            <div className="flex-1">
-              <p className="font-medium">{currentStaff?.name}</p>
-              <p className="text-sm text-muted-foreground">{currentStaff && roleLabels[currentStaff.role]}</p>
-            </div>
-            <div className="text-right">
-              <p className="font-medium">{shift.startTime} - {shift.endTime}</p>
-              <p className="text-sm text-muted-foreground">{shift.date}</p>
-            </div>
-          </div>
-        </div>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="body1" fontWeight={500}>{currentStaff?.name}</Typography>
+              <Typography variant="body2" color="text.secondary">{currentStaff && roleLabels[currentStaff.role]}</Typography>
+            </Box>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="body2" fontWeight={500}>{shift.startTime} - {shift.endTime}</Typography>
+              <Typography variant="body2" color="text.secondary">{shift.date}</Typography>
+            </Box>
+          </Box>
+        </Box>
 
-        <div className="flex items-center justify-center">
-          <ArrowLeftRight className="h-5 w-5 text-muted-foreground" />
-        </div>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <ArrowLeftRight size={20} style={{ opacity: 0.5 }} />
+        </Box>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search staff to swap with..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <TextField
+          placeholder="Search staff to swap with..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          size="small"
+          fullWidth
+          InputProps={{ startAdornment: <Search size={16} style={{ marginRight: 8, opacity: 0.5 }} /> }}
+          sx={{ mb: 2 }}
+        />
 
-        {/* Eligible Staff */}
-        <ScrollArea className="h-[300px]">
-          <div className="space-y-2">
-            {eligibleStaff.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <User className="h-12 w-12 mb-2 opacity-50" />
-                <p className="text-center">No eligible staff found<br/>for this shift</p>
-              </div>
-            ) : (
-              eligibleStaff.map((member) => {
-                const conflicts = getConflicts(member.id);
-                const hoursRemaining = member.maxHoursPerWeek - member.currentWeeklyHours;
-                const isSelected = selectedStaffId === member.id;
-
-                return (
-                  <div
-                    key={member.id}
-                    onClick={() => setSelectedStaffId(member.id)}
-                    className={cn(
-                      "p-3 rounded-lg border cursor-pointer transition-all",
-                      isSelected 
-                        ? "border-primary bg-primary/5 ring-1 ring-primary" 
-                        : "border-border bg-card hover:border-muted-foreground/50",
-                      conflicts.length > 0 && !isSelected && "border-amber-500/50"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div 
-                        className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0"
-                        style={{ backgroundColor: member.color }}
-                      >
-                        {member.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium truncate">{member.name}</p>
-                          {isSelected && <Check className="h-4 w-4 text-primary shrink-0" />}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{roleLabels[member.role]} • ${member.hourlyRate}/hr</p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <Clock className="h-3 w-3" />
-                          <span className={cn(hoursRemaining <= 0 && "text-destructive")}>
-                            {hoursRemaining}h available this week
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {member.qualifications.slice(0, 3).map((q, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                              {qualificationLabels[q.type].slice(0, 8)}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {conflicts.length > 0 && (
-                      <div className="mt-2 flex items-start gap-1.5 text-xs text-amber-600 bg-amber-500/10 p-2 rounded">
-                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                        <div>{conflicts.join(', ')}</div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </ScrollArea>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSwap} disabled={!selectedStaffId}>
-            <ArrowLeftRight className="h-4 w-4 mr-2" />
-            Confirm Swap
-          </Button>
-        </DialogFooter>
+        <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+          {eligibleStaff.length === 0 ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6, color: 'text.secondary' }}>
+              <User size={48} style={{ opacity: 0.2, marginBottom: 8 }} />
+              <Typography variant="body2" align="center">No eligible staff found for this shift</Typography>
+            </Box>
+          ) : (
+            eligibleStaff.map((member) => {
+              const conflicts = getConflicts(member.id);
+              const hoursRemaining = member.maxHoursPerWeek - member.currentWeeklyHours;
+              const isSelected = selectedStaffId === member.id;
+              return (
+                <Box
+                  key={member.id}
+                  onClick={() => setSelectedStaffId(member.id)}
+                  sx={{
+                    p: 1.5, mb: 1, borderRadius: 1, border: 2, cursor: 'pointer',
+                    borderColor: isSelected ? 'primary.main' : conflicts.length > 0 ? 'warning.main' : 'divider',
+                    bgcolor: isSelected ? 'primary.light' : 'transparent',
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ height: 40, width: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.875rem', fontWeight: 500, flexShrink: 0, bgcolor: member.color }}>
+                      {member.name.split(' ').map(n => n[0]).join('')}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" fontWeight={500} noWrap>{member.name}</Typography>
+                        {isSelected && <Check size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />}
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">{roleLabels[member.role]} • ${member.hourlyRate}/hr</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: hoursRemaining <= 0 ? 'error.main' : 'text.secondary' }}>
+                        <Clock size={12} />
+                        <Typography variant="caption">{hoursRemaining}h available this week</Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                  {conflicts.length > 0 && (
+                    <Box sx={{ mt: 1, p: 1, bgcolor: 'warning.light', borderRadius: 0.5, display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+                      <AlertTriangle size={14} />
+                      <Typography variant="caption">{conflicts.join(', ')}</Typography>
+                    </Box>
+                  )}
+                </Box>
+              );
+            })
+          )}
+        </Box>
       </DialogContent>
+
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button variant="outlined" onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSwap} disabled={!selectedStaffId} startIcon={<ArrowLeftRight size={16} />}>
+          Confirm Swap
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }

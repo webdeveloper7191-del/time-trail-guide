@@ -1,14 +1,22 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Checkbox,
+  Chip,
+  Box,
+  Typography,
+  IconButton,
+} from '@mui/material';
 import { Shift, Room } from '@/types/roster';
 import { RosterTemplate, RosterTemplateShift } from '@/types/rosterTemplates';
 import { format } from 'date-fns';
 import { Save, FileText, Clock, Users } from 'lucide-react';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface SaveRosterTemplateModalProps {
   open: boolean;
@@ -82,96 +90,116 @@ export function SaveRosterTemplateModal({
   }, {} as Record<string, number>);
 
   return (
-    <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Save className="h-5 w-5 text-primary" />
-            Save as Roster Template
-          </DialogTitle>
-          <DialogDescription>
-            Save the current week's shifts as a reusable template
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Save className="h-5 w-5" style={{ color: 'var(--mui-palette-primary-main)' }} />
+          <Typography variant="h6">Save as Roster Template</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="template-name">Template Name</Label>
-            <Input
-              id="template-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Standard Week, Holiday Roster"
-            />
-          </div>
+      <DialogContent dividers>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          Save the current week's shifts as a reusable template
+        </Typography>
 
-          <div className="space-y-2">
-            <Label htmlFor="template-desc">Description (Optional)</Label>
-            <Textarea
-              id="template-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe when to use this template..."
-              rows={2}
-            />
-          </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label="Template Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g., Standard Week, Holiday Roster"
+            size="small"
+            fullWidth
+          />
 
-          <div className="space-y-2">
-            <Label>Include Rooms</Label>
-            <div className="grid grid-cols-2 gap-2">
+          <TextField
+            label="Description (Optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe when to use this template..."
+            size="small"
+            fullWidth
+            multiline
+            rows={2}
+          />
+
+          <Box>
+            <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Include Rooms</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
               {rooms.map(room => (
-                <label
+                <Box
                   key={room.id}
-                  className="flex items-center gap-2 p-2 rounded-md border border-border hover:bg-muted/50 cursor-pointer"
+                  onClick={() => toggleRoom(room.id)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    p: 1,
+                    borderRadius: 1,
+                    border: 1,
+                    borderColor: 'divider',
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
                 >
-                  <Checkbox
-                    checked={selectedRooms.includes(room.id)}
-                    onCheckedChange={() => toggleRoom(room.id)}
-                  />
-                  <span className="text-sm">{room.name}</span>
-                  <span className="text-xs text-muted-foreground ml-auto">
+                  <Checkbox checked={selectedRooms.includes(room.id)} size="small" />
+                  <Typography variant="body2">{room.name}</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
                     {groupedShifts[room.id] || 0} shifts
-                  </span>
-                </label>
+                  </Typography>
+                </Box>
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Checkbox
-              id="include-prefs"
-              checked={includeStaffPreferences}
-              onCheckedChange={(checked) => setIncludeStaffPreferences(!!checked)}
-            />
-            <Label htmlFor="include-prefs" className="text-sm cursor-pointer">
-              Include staff role preferences
-            </Label>
-          </div>
+          <Box
+            onClick={() => setIncludeStaffPreferences(!includeStaffPreferences)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              p: 1.5,
+              bgcolor: 'action.hover',
+              borderRadius: 1,
+              cursor: 'pointer',
+            }}
+          >
+            <Checkbox checked={includeStaffPreferences} size="small" />
+            <Typography variant="body2">Include staff role preferences</Typography>
+          </Box>
 
-          <div className="flex items-center gap-4 p-3 bg-primary/5 rounded-lg text-sm">
-            <div className="flex items-center gap-1.5">
-              <FileText className="h-4 w-4 text-primary" />
-              <span>{relevantShifts.length} shifts</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4 text-primary" />
-              <span>{dates.length} days</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Users className="h-4 w-4 text-primary" />
-              <span>{selectedRooms.length} rooms</span>
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} disabled={!name.trim() || relevantShifts.length === 0}>
-            <Save className="h-4 w-4 mr-2" />
-            Save Template
-          </Button>
-        </DialogFooter>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 1.5, bgcolor: 'primary.light', borderRadius: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <FileText size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
+              <Typography variant="body2">{relevantShifts.length} shifts</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Clock size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
+              <Typography variant="body2">{dates.length} days</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Users size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
+              <Typography variant="body2">{selectedRooms.length} rooms</Typography>
+            </Box>
+          </Box>
+        </Box>
       </DialogContent>
+
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button variant="outlined" onClick={onClose}>Cancel</Button>
+        <Button 
+          variant="contained"
+          onClick={handleSave} 
+          disabled={!name.trim() || relevantShifts.length === 0}
+          startIcon={<Save size={16} />}
+        >
+          Save Template
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }
