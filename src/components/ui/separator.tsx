@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Divider, DividerProps } from "@mui/material";
 import { cn } from "@/lib/utils";
 
 export interface SeparatorProps extends React.HTMLAttributes<HTMLDivElement> {

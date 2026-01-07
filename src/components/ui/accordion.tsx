@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Accordion as MuiAccordion, AccordionSummary, AccordionDetails, Collapse } from "@mui/material";
+import { Collapse } from "@mui/material";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 

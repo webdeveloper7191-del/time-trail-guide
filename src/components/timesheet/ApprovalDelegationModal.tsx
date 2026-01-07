@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import { format, addDays, isBefore, isAfter, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface Delegation {
   id: string;
@@ -90,20 +90,12 @@ export function ApprovalDelegationModal({
 
   const handleSubmit = () => {
     if (!selectedDelegate || !startDate || !endDate) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please fill in all required fields.',
-        variant: 'destructive',
-      });
+      toast.error('Please fill in all required fields');
       return;
     }
 
     if (isBefore(endDate, startDate)) {
-      toast({
-        title: 'Invalid Date Range',
-        description: 'End date must be after start date.',
-        variant: 'destructive',
-      });
+      toast.error('End date must be after start date');
       return;
     }
 
@@ -121,10 +113,7 @@ export function ApprovalDelegationModal({
       reason,
     });
 
-    toast({
-      title: 'Delegation Created',
-      description: `Approval authority delegated to ${delegate?.name} until ${format(endDate, 'MMM d, yyyy')}`,
-    });
+    toast.success(`Delegation created for ${delegate?.name}`);
 
     setShowCreateForm(false);
     resetForm();

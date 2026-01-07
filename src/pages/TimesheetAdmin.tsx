@@ -44,7 +44,7 @@ import {
   UserCheck,
   User,
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { addDays } from 'date-fns';
 
@@ -151,7 +151,7 @@ export default function TimesheetAdmin() {
       )
     );
     setIsViewModalOpen(false);
-    toast({ title: 'Timesheet Approved', description: 'The timesheet has been approved successfully.' });
+    toast.success('Timesheet Approved');
     addNotification({
       type: 'approval',
       title: 'Timesheet Approved',
@@ -168,7 +168,7 @@ export default function TimesheetAdmin() {
       )
     );
     setIsViewModalOpen(false);
-    toast({ title: 'Timesheet Rejected', description: 'The timesheet has been rejected.', variant: 'destructive' });
+    toast.error('Timesheet Rejected');
     addNotification({
       type: 'rejection',
       title: 'Timesheet Rejected',
@@ -183,7 +183,7 @@ export default function TimesheetAdmin() {
         selectedIds.has(t.id) ? { ...t, status: 'approved' as TimesheetStatus, reviewedAt: new Date().toISOString() } : t
       )
     );
-    toast({ title: 'Bulk Approved', description: `${selectedIds.size} timesheets approved.` });
+    toast.success(`${selectedIds.size} timesheets approved`);
     addNotification({
       type: 'approval',
       title: 'Bulk Approval Complete',
@@ -199,7 +199,7 @@ export default function TimesheetAdmin() {
         selectedIds.has(t.id) ? { ...t, status: 'rejected' as TimesheetStatus, reviewedAt: new Date().toISOString() } : t
       )
     );
-    toast({ title: 'Bulk Rejected', description: `${selectedIds.size} timesheets rejected.`, variant: 'destructive' });
+    toast.error(`${selectedIds.size} timesheets rejected`);
     setSelectedIds(new Set());
     setShowSelection(false);
   };
@@ -239,7 +239,7 @@ export default function TimesheetAdmin() {
 
   const handleRevokeDelegation = (id: string) => {
     setDelegations(prev => prev.filter(d => d.id !== id));
-    toast({ title: 'Delegation Revoked', description: 'The delegation has been revoked.' });
+    toast.success('Delegation revoked');
   };
 
   return (

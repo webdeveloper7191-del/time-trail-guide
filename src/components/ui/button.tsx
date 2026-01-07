@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Button as MuiButton, ButtonProps as MuiButtonProps } from "@mui/material";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
