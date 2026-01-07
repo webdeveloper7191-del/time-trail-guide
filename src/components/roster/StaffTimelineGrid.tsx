@@ -3,6 +3,7 @@ import { Shift, OpenShift, Centre, StaffMember, DemandData, RosterComplianceFlag
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tooltip as MuiTooltip } from '@mui/material';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,8 @@ import {
   DollarSign,
   Palmtree,
   ChevronDown,
-  Search
+  Search,
+  Coffee
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -396,6 +398,7 @@ export function StaffTimelineGrid({
                                     <StaffShiftCard
                                       key={shift.id}
                                       shift={shift}
+                                      staff={member}
                                       onEdit={() => onShiftEdit(shift)}
                                       onDelete={() => onShiftDelete(shift.id)}
                                       onDragStart={handleShiftDragStart}
@@ -566,8 +569,9 @@ export function StaffTimelineGrid({
   );
 }
 
-function StaffShiftCard({ shift, onEdit, onDelete, onDragStart, isCompact = false }: {
+function StaffShiftCard({ shift, staff, onEdit, onDelete, onDragStart, isCompact = false }: {
   shift: Shift;
+  staff?: StaffMember;
   onEdit: () => void;
   onDelete: () => void;
   onDragStart: (e: React.DragEvent, shift: Shift) => void;
@@ -603,47 +607,111 @@ function StaffShiftCard({ shift, onEdit, onDelete, onDragStart, isCompact = fals
 
   const style = statusStyles[shift.status];
 
+  // Calculate duration
+  const [sh, sm] = shift.startTime.split(':').map(Number);
+  const [eh, em] = shift.endTime.split(':').map(Number);
+  const duration = ((eh * 60 + em) - (sh * 60 + sm) - shift.breakMinutes) / 60;
+
+  const tooltipContent = (
+    <div className="p-3 min-w-[200px]">
+      {/* Header with staff info */}
+      <div className="flex items-center gap-3 mb-3 pb-2 border-b border-white/20">
+        <div 
+          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+          style={{ backgroundColor: staff?.color || 'hsl(var(--muted-foreground))' }}
+        >
+          {staff?.name ? staff.name.split(' ').map(n => n[0]).join('') : '?'}
+        </div>
+        <div>
+          <p className="font-semibold text-white text-sm">{staff?.name || 'Unassigned'}</p>
+          <p className="text-xs text-white/70">{staff?.role ? roleLabels[staff.role] : 'No role'}</p>
+        </div>
+      </div>
+
+      {/* Time details */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-white/90">
+          <Clock className="h-4 w-4 text-white/60" />
+          <span className="text-sm font-medium">{shift.startTime} - {shift.endTime}</span>
+          <span className="text-xs text-white/60 ml-auto">{duration.toFixed(1)}h</span>
+        </div>
+
+        {shift.breakMinutes > 0 && (
+          <div className="flex items-center gap-2 text-white/90">
+            <Coffee className="h-4 w-4 text-white/60" />
+            <span className="text-sm">{shift.breakMinutes} min break</span>
+          </div>
+        )}
+      </div>
+
+      {/* Status badge */}
+      <div className="mt-3 pt-2 border-t border-white/20">
+        <span className={cn(
+          "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+          shift.status === 'draft' && "bg-amber-500/20 text-amber-200",
+          shift.status === 'published' && "bg-blue-500/20 text-blue-200",
+          shift.status === 'confirmed' && "bg-green-500/20 text-green-200",
+          shift.status === 'completed' && "bg-gray-500/20 text-gray-200",
+        )}>
+          {shift.status === 'draft' && 'Draft - Not Published'}
+          {shift.status === 'published' && 'Published'}
+          {shift.status === 'confirmed' && 'Confirmed by Staff'}
+          {shift.status === 'completed' && 'Completed'}
+        </span>
+      </div>
+    </div>
+  );
+
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div
-            draggable
-            onDragStart={(e) => onDragStart(e, shift)}
-            onClick={onEdit}
-            className={cn(
-              "relative rounded-lg border overflow-hidden cursor-pointer transition-all duration-200",
-              "hover:shadow-md hover:-translate-y-0.5 active:cursor-grabbing",
-              style.bg,
-              style.border,
-              shift.status === 'draft' && "border-dashed"
-            )}
-          >
-            {/* Left accent bar */}
-            <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
-            
-            <div className="pl-3 pr-2 py-1.5">
-              <div className={cn("text-xs font-semibold", style.text)}>
-                {shift.startTime}-{shift.endTime}
-              </div>
-              {!isCompact && (
-                <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <Clock className="h-2.5 w-2.5" />
-                  <span>{shift.breakMinutes}m break</span>
-                </div>
-              )}
+    <MuiTooltip
+      title={tooltipContent}
+      placement="right"
+      arrow
+      enterDelay={300}
+      leaveDelay={100}
+      slotProps={{
+        tooltip: {
+          sx: {
+            bgcolor: 'hsl(220, 20%, 20%)',
+            borderRadius: '12px',
+            boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.4)',
+            padding: 0,
+            maxWidth: 280,
+            '& .MuiTooltip-arrow': {
+              color: 'hsl(220, 20%, 20%)',
+            },
+          },
+        },
+      }}
+    >
+      <div
+        draggable
+        onDragStart={(e) => onDragStart(e, shift)}
+        onClick={onEdit}
+        className={cn(
+          "relative rounded-lg border overflow-hidden cursor-pointer transition-all duration-200",
+          "hover:shadow-md hover:-translate-y-0.5 active:cursor-grabbing",
+          style.bg,
+          style.border,
+          shift.status === 'draft' && "border-dashed"
+        )}
+      >
+        {/* Left accent bar */}
+        <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
+        
+        <div className="pl-3 pr-2 py-1.5">
+          <div className={cn("text-xs font-semibold", style.text)}>
+            {shift.startTime}-{shift.endTime}
+          </div>
+          {!isCompact && (
+            <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+              <Clock className="h-2.5 w-2.5" />
+              <span>{shift.breakMinutes}m break</span>
             </div>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="right" className="bg-popover border-border">
-          <div className="space-y-1">
-            <p className="font-medium text-foreground">{shift.startTime} - {shift.endTime}</p>
-            <p className="text-xs text-muted-foreground">Break: {shift.breakMinutes}m</p>
-            <p className="text-xs capitalize text-muted-foreground">{shift.status}</p>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+          )}
+        </div>
+      </div>
+    </MuiTooltip>
   );
 }
 

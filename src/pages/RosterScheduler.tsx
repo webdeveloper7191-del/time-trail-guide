@@ -400,6 +400,33 @@ export default function RosterScheduler() {
     toast.success(`Created ${template?.name || 'custom'} shift for ${staff.name}`);
   };
 
+  const handleAddShiftAtTime = (staffId: string, date: string, roomId: string, startTime: string) => {
+    const staff = allStaff.find(s => s.id === staffId);
+    if (!staff) return;
+
+    // Calculate end time (default 8 hours from start)
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endHour = Math.min(hours + 8, 21); // Cap at 9 PM
+    const endTime = `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+    const newShift: Shift = {
+      id: `shift-${Date.now()}`,
+      staffId,
+      centreId: selectedCentreId,
+      roomId,
+      date,
+      startTime,
+      endTime,
+      breakMinutes: 30,
+      status: 'draft',
+      isOpenShift: false,
+    };
+
+    setShifts(prev => [...prev, newShift]);
+    setSelectedShift(newShift); // Open the edit panel to adjust times
+    toast.success(`Created shift for ${staff.name} starting at ${startTime}`);
+  };
+
   const handleSwapStaff = (shift: Shift) => {
     setShiftToSwap(shift);
     setShowSwapModal(true);
@@ -995,6 +1022,7 @@ export default function RosterScheduler() {
             onShiftEdit={setSelectedShift}
             onShiftDelete={handleShiftDelete}
             onAddShift={handleAddShift}
+            onAddShiftAtTime={handleAddShiftAtTime}
             onDragStart={handleDragStart}
             onDropStaff={handleDropStaff}
             onStaffClick={openStaffProfile}
