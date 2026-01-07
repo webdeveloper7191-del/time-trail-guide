@@ -427,6 +427,15 @@ export default function RosterScheduler() {
     toast.success(`Created shift for ${staff.name} starting at ${startTime}`);
   };
 
+  const handleShiftResize = (shiftId: string, newStartTime: string, newEndTime: string) => {
+    setShifts(prev => prev.map(s => 
+      s.id === shiftId 
+        ? { ...s, startTime: newStartTime, endTime: newEndTime, status: 'draft' as const }
+        : s
+    ));
+    toast.success(`Shift resized to ${newStartTime} - ${newEndTime}`);
+  };
+
   const handleSwapStaff = (shift: Shift) => {
     setShiftToSwap(shift);
     setShowSwapModal(true);
@@ -1021,11 +1030,13 @@ export default function RosterScheduler() {
             shiftTemplates={shiftTemplates}
             onShiftEdit={setSelectedShift}
             onShiftDelete={handleShiftDelete}
+            onShiftResize={handleShiftResize}
             onAddShift={handleAddShift}
             onAddShiftAtTime={handleAddShiftAtTime}
             onDragStart={handleDragStart}
             onDropStaff={handleDropStaff}
             onStaffClick={openStaffProfile}
+            onOpenShiftTemplateManager={() => setShowShiftTemplateManager(true)}
           />
         ) : (
           <StaffTimelineGrid
@@ -1048,6 +1059,7 @@ export default function RosterScheduler() {
             onOpenShiftDrop={handleOpenShiftDrop}
             onShiftMove={handleShiftMove}
             onStaffClick={openStaffProfile}
+            onOpenShiftTemplateManager={() => setShowShiftTemplateManager(true)}
           />
         )}
 

@@ -17,7 +17,8 @@ import {
   Palmtree,
   ChevronDown,
   Search,
-  Coffee
+  Coffee,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -42,6 +43,7 @@ interface StaffTimelineGridProps {
   onOpenShiftDrop: (staffId: string, openShift: OpenShift) => void;
   onShiftMove?: (shiftId: string, newDate: string, newRoomId: string) => void;
   onStaffClick?: (staff: StaffMember) => void;
+  onOpenShiftTemplateManager?: () => void;
 }
 
 export function StaffTimelineGrid({
@@ -60,6 +62,7 @@ export function StaffTimelineGrid({
   onOpenShiftDrop,
   onShiftMove,
   onStaffClick,
+  onOpenShiftTemplateManager,
 }: StaffTimelineGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -475,6 +478,13 @@ export function StaffTimelineGrid({
                                           ))}
                                         </>
                                       )}
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem onClick={() => onOpenShiftTemplateManager?.()}>
+                                        <div className="flex items-center gap-2">
+                                          <Settings className="h-3 w-3" />
+                                          <span>Create Shift Type...</span>
+                                        </div>
+                                      </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 )}
