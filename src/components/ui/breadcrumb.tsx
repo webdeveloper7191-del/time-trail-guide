@@ -1,8 +1,19 @@
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
-
 import { cn } from "@/lib/utils";
+
+// Simple Slot replacement for asChild pattern
+const Slot = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }>(
+  ({ children, ...props }, ref) => {
+    if (React.isValidElement(children)) {
+      return React.cloneElement(children as React.ReactElement<any>, {
+        ...props,
+        ref,
+      });
+    }
+    return <span ref={ref as any} {...props}>{children}</span>;
+  }
+);
 
 const Breadcrumb = React.forwardRef<
   HTMLElement,
@@ -38,10 +49,16 @@ const BreadcrumbLink = React.forwardRef<
   React.ComponentPropsWithoutRef<"a"> & {
     asChild?: boolean;
   }
->(({ asChild, className, ...props }, ref) => {
-  const Comp = asChild ? Slot : "a";
+>(({ asChild, className, children, ...props }, ref) => {
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      ref,
+      className: cn("transition-colors hover:text-foreground", className),
+      ...props,
+    });
+  }
 
-  return <Comp ref={ref} className={cn("transition-colors hover:text-foreground", className)} {...props} />;
+  return <a ref={ref} className={cn("transition-colors hover:text-foreground", className)} {...props}>{children}</a>;
 });
 BreadcrumbLink.displayName = "BreadcrumbLink";
 
