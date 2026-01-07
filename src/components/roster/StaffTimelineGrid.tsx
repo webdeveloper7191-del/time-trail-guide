@@ -60,6 +60,8 @@ export function StaffTimelineGrid({
   onStaffClick,
 }: StaffTimelineGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragType, setDragType] = useState<'staff' | 'shift' | null>(null);
   const [staffSearch, setStaffSearch] = useState('');
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
 
@@ -150,13 +152,32 @@ export function StaffTimelineGrid({
   const handleDragOver = (e: React.DragEvent, cellId: string) => {
     e.preventDefault();
     setDragOverCell(cellId);
+    if (!isDragging) {
+      setIsDragging(true);
+      const type = e.dataTransfer.types.includes('shiftid') ? 'shift' : 'staff';
+      setDragType(type);
+    }
   };
 
-  const handleDragLeave = () => { setDragOverCell(null); };
+  const handleDragLeave = (e: React.DragEvent) => { 
+    // Only clear if leaving the grid entirely
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (!relatedTarget?.closest('[data-drop-zone]')) {
+      setDragOverCell(null);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDragOverCell(null);
+    setIsDragging(false);
+    setDragType(null);
+  };
 
   const handleDrop = (e: React.DragEvent, staffId: string, date: string, roomId: string) => {
     e.preventDefault();
     setDragOverCell(null);
+    setIsDragging(false);
+    setDragType(null);
     
     // Check if this is a shift being moved
     const shiftId = e.dataTransfer.getData('shiftId');
@@ -171,6 +192,8 @@ export function StaffTimelineGrid({
   const handleOpenShiftDrop = (e: React.DragEvent, openShift: OpenShift) => {
     e.preventDefault();
     setDragOverCell(null);
+    setIsDragging(false);
+    setDragType(null);
     const staffId = e.dataTransfer.getData('staffId');
     if (staffId) onOpenShiftDrop(staffId, openShift);
   };
@@ -180,10 +203,18 @@ export function StaffTimelineGrid({
     e.dataTransfer.setData('shiftId', shift.id);
     e.dataTransfer.setData('dragType', 'shift');
     e.dataTransfer.effectAllowed = 'move';
+    setIsDragging(true);
+    setDragType('shift');
+  };
+
+  const handleStaffDragStart = (e: React.DragEvent, member: StaffMember) => {
+    onDragStart(e, member);
+    setIsDragging(true);
+    setDragType('staff');
   };
 
   return (
-    <div className="flex-1 overflow-hidden bg-background">
+    <div className="flex-1 overflow-hidden bg-background" onDragEnd={handleDragEnd}>
       <ScrollArea className="h-full">
         <div className="min-w-max">
           {/* Header */}
@@ -247,9 +278,12 @@ export function StaffTimelineGrid({
                     <div key={`${room.id}-${member.id}`} className="flex border-b border-border hover:bg-muted/20 transition-colors">
                       {/* Staff info cell */}
                       <div 
-                        className="w-64 shrink-0 p-2 border-r border-border bg-card flex items-start gap-2 cursor-grab group"
+                        className={cn(
+                          "w-64 shrink-0 p-2 border-r border-border bg-card flex items-start gap-2 cursor-grab group transition-opacity duration-200",
+                          isDragging && "opacity-60"
+                        )}
                         draggable
-                        onDragStart={(e) => onDragStart(e, member)}
+                        onDragStart={(e) => handleStaffDragStart(e, member)}
                       >
                         <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-1" />
                         <div 
@@ -310,17 +344,41 @@ export function StaffTimelineGrid({
                         return (
                           <div
                             key={cellKey}
+                            data-drop-zone
                             className={cn(
-                              "flex-1 p-1 border-r border-border relative",
-                              "transition-colors duration-150",
-                              isDragOver && "bg-primary/10",
+                              "flex-1 p-1 border-r border-border relative group/cell",
+                              "transition-all duration-200 ease-out",
                               viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
-                              timeOff && "bg-amber-500/10"
+                              timeOff && "bg-amber-500/10",
+                              // Drop zone highlight states
+                              isDragging && !timeOff && "bg-primary/5",
+                              isDragOver && !timeOff && "bg-primary/20 ring-2 ring-inset ring-primary/50 scale-[1.02]",
+                              // Pulsing effect for valid drop targets during drag
+                              isDragging && !timeOff && !isDragOver && "animate-pulse"
                             )}
                             onDragOver={(e) => !timeOff && handleDragOver(e, cellKey)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => !timeOff && handleDrop(e, member.id, dateStr, room.id)}
                           >
+                            {/* Drop zone indicator overlay */}
+                            {isDragging && !timeOff && !isDragOver && (
+                              <div className="absolute inset-1 border-2 border-dashed border-primary/30 rounded-md pointer-events-none flex items-center justify-center">
+                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <Plus className="h-3 w-3 text-primary/50" />
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Active drop indicator */}
+                            {isDragOver && !timeOff && (
+                              <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none animate-scale-in">
+                                <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                                  <div className="bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-medium shadow-lg">
+                                    Drop here
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                             {/* Time off indicator */}
                             {timeOff && (
                               <div className="absolute inset-0 flex items-center justify-center">
@@ -458,15 +516,30 @@ export function StaffTimelineGrid({
                       return (
                         <div
                           key={cellKey}
+                          data-drop-zone
                           className={cn(
                             "flex-1 min-w-[120px] p-1 border-r border-border relative",
-                            isDragOver && "bg-primary/10",
-                            isCompact && "min-w-[80px]"
+                            "transition-all duration-200 ease-out",
+                            isCompact && "min-w-[80px]",
+                            // Drop zone highlight states for open shifts
+                            isDragging && openShift && "bg-green-500/5",
+                            isDragOver && openShift && "bg-green-500/20 ring-2 ring-inset ring-green-500/50 scale-[1.02]"
                           )}
                           onDragOver={(e) => openShift && handleDragOver(e, cellKey)}
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => openShift && handleOpenShiftDrop(e, openShift)}
                         >
+                          {/* Drop overlay for filling open shift */}
+                          {isDragging && openShift && !isDragOver && (
+                            <div className="absolute inset-1 border-2 border-dashed border-green-500/40 rounded-md pointer-events-none" />
+                          )}
+                          {isDragOver && openShift && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                              <div className="bg-green-600 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg animate-scale-in">
+                                Fill shift
+                              </div>
+                            </div>
+                          )}
                           {openShift && <OpenShiftCard openShift={openShift} isCompact={isCompact} isDragOver={isDragOver} />}
                         </div>
                       );
