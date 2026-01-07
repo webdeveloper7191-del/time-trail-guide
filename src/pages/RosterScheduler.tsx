@@ -662,227 +662,298 @@ export default function RosterScheduler() {
           </Stack>
         </Box>
 
-        {/* Toolbar Row - Compact */}
-        <Box sx={{ px: 2, py: 1, bgcolor: 'action.hover', borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* Left: Date Navigation */}
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Stack direction="row" sx={{ bgcolor: 'background.paper', borderRadius: 1, border: 1, borderColor: 'divider', overflow: 'hidden' }}>
-              <IconButton size="small" onClick={() => navigateDate('prev')} sx={{ borderRadius: 0, borderRight: 1, borderColor: 'divider' }}>
+        {/* Toolbar Row - Clean & Organized */}
+        <Box sx={{ px: 2, py: 1, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Left: Date Navigation & View Mode */}
+          <Stack direction="row" spacing={2} alignItems="center">
+            {/* Date Navigation Group */}
+            <Stack direction="row" alignItems="center" sx={{ bgcolor: 'grey.100', borderRadius: 1.5, p: 0.5 }}>
+              <IconButton size="small" onClick={() => navigateDate('prev')} sx={{ color: 'text.secondary' }}>
                 <ChevronLeft size={18} />
               </IconButton>
-              <Button size="small" onClick={() => setCurrentDate(new Date())} sx={{ borderRadius: 0, px: 2 }}>
+              <Button 
+                size="small" 
+                onClick={() => setCurrentDate(new Date())} 
+                sx={{ px: 2, minWidth: 'auto', color: 'primary.main', fontWeight: 600 }}
+              >
                 Today
               </Button>
-              <IconButton size="small" onClick={() => navigateDate('next')} sx={{ borderRadius: 0, borderLeft: 1, borderColor: 'divider' }}>
+              <IconButton size="small" onClick={() => navigateDate('next')} sx={{ color: 'text.secondary' }}>
                 <ChevronRight size={18} />
               </IconButton>
             </Stack>
             
-            <Typography variant="body2" fontWeight={500}>
+            <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ minWidth: 150 }}>
               {format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d, yyyy')}
             </Typography>
 
-            {/* View Mode Tabs */}
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-              <Tab value="day" label="Day" />
-              <Tab value="week" label="Week" />
-              <Tab value="fortnight" label="Fortnight" />
-              <Tab value="month" label="Month" />
-            </Tabs>
+            {/* View Mode Tabs - Styled */}
+            <Stack direction="row" sx={{ bgcolor: 'grey.100', borderRadius: 1.5, p: 0.5 }}>
+              {(['day', 'week', 'fortnight', 'month'] as ViewMode[]).map((mode) => (
+                <Button
+                  key={mode}
+                  size="small"
+                  onClick={() => setViewMode(mode)}
+                  sx={{
+                    px: 2,
+                    py: 0.5,
+                    minWidth: 'auto',
+                    borderRadius: 1,
+                    textTransform: 'capitalize',
+                    fontWeight: viewMode === mode ? 600 : 400,
+                    bgcolor: viewMode === mode ? 'background.paper' : 'transparent',
+                    color: viewMode === mode ? 'primary.main' : 'text.secondary',
+                    boxShadow: viewMode === mode ? 1 : 0,
+                    '&:hover': {
+                      bgcolor: viewMode === mode ? 'background.paper' : 'grey.200',
+                    },
+                  }}
+                >
+                  {mode === 'fortnight' ? 'Fortnight' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </Button>
+              ))}
+            </Stack>
           </Stack>
 
-          {/* Right: Action Buttons */}
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            {/* Demand Toggle */}
-            <Button 
-              variant={showDemandOverlay ? "contained" : "text"}
+          {/* Right: Action Groups */}
+          <Stack direction="row" spacing={1} alignItems="center">
+            {/* Demand Toggle - Chip Style */}
+            <Chip
               size="small"
+              label="Demand"
+              icon={showDemandOverlay ? <Eye size={14} /> : <EyeOff size={14} />}
               onClick={() => setShowDemandOverlay(prev => !prev)}
-              color={showDemandOverlay ? "primary" : "inherit"}
-              startIcon={showDemandOverlay ? <Eye size={14} /> : <EyeOff size={14} />}
-              sx={{ fontSize: '0.75rem' }}
+              color={showDemandOverlay ? "primary" : "default"}
+              variant={showDemandOverlay ? "filled" : "outlined"}
+              sx={{ fontWeight: 500 }}
+            />
+
+            {/* Quick Actions Group */}
+            <Stack 
+              direction="row" 
+              spacing={0.5} 
+              sx={{ 
+                bgcolor: 'grey.100', 
+                borderRadius: 1.5, 
+                p: 0.5,
+                '& .MuiIconButton-root': {
+                  borderRadius: 1,
+                }
+              }}
             >
-              Demand
-            </Button>
-
-            <Box sx={{ width: 1, height: 20, bgcolor: 'divider', mx: 0.5 }} />
-
-            {/* Quick Actions */}
-            <Button variant="text" size="small" onClick={() => setShowAddOpenShiftModal(true)} startIcon={<Plus size={14} />}>
-              Open Shift
-            </Button>
-
-            <Button variant="text" size="small" onClick={() => setShowBulkAssignmentModal(true)} startIcon={<UserPlus size={14} />}>
-              Bulk Assign
-            </Button>
-
-            <Button variant="text" size="small" onClick={handleCopyWeek} startIcon={<Copy size={14} />}>
-              Copy Week
-            </Button>
-
-            <Box sx={{ width: 1, height: 20, bgcolor: 'divider', mx: 0.5 }} />
-
-            {/* Export Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="text" size="small" startIcon={<Download size={14} />}>
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={handleExportPDF} icon={<FileText size={16} />}>
-                  Export to PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportExcel} icon={<FileSpreadsheet size={16} />}>
-                  Export to Excel
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handlePrint} icon={<Printer size={16} />}>
-                  Print View
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Templates Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="text" size="small" startIcon={<Layers size={14} />}>
-                  Templates
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setShowSaveTemplateModal(true)} icon={<FileStack size={16} />}>
-                  Save as Template
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowApplyTemplateModal(true)} icon={<Layers size={16} />}>
-                  Apply Template
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowShiftTemplateManager(true)} icon={<Clock size={16} />}>
-                  Manage Shift Templates
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Schedule Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="text" size="small" startIcon={<CalendarDays size={14} />}>
-                  Schedule
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setShowAvailabilityModal(true)} icon={<CalendarCheck size={16} />}>
-                  Staff Availability
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowLeaveModal(true)} icon={<CalendarDays size={16} />}>
-                  Leave Requests
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
-                  if (allStaff.length > 0) openPreferencesForStaff(allStaff[0]);
-                }} icon={<UserCog size={16} />}>
-                  Staff Preferences
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Box sx={{ width: 1, height: 20, bgcolor: 'divider', mx: 0.5 }} />
-
-            {/* Icon Buttons - Compact */}
-            <Tooltip content="View Conflicts">
-              <IconButton 
-                size="small"
-                onClick={() => setShowConflicts(true)}
-                sx={{ position: 'relative' }}
-              >
-                <Shield size={18} />
-                {conflictCount > 0 && (
-                  <Box 
-                    component="span"
-                    sx={{ 
-                      position: 'absolute', 
-                      top: -2, 
-                      right: -2, 
-                      width: 16, 
-                      height: 16, 
-                      bgcolor: 'error.main', 
-                      color: 'error.contrastText',
-                      fontSize: 10, 
-                      borderRadius: '50%', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      fontWeight: 600
-                    }}
-                  >
-                    {conflictCount}
-                  </Box>
-                )}
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip content="Alerts">
-              <IconButton 
-                size="small"
-                onClick={() => setShowAlerts(true)}
-                sx={{ position: 'relative' }}
-              >
-                <Bell size={18} />
-                {alertCount > 0 && (
-                  <Box 
-                    component="span"
-                    sx={{ 
-                      position: 'absolute', 
-                      top: -2, 
-                      right: -2, 
-                      width: 16, 
-                      height: 16, 
-                      bgcolor: 'error.main', 
-                      color: 'error.contrastText',
-                      fontSize: 10, 
-                      borderRadius: '50%', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      fontWeight: 600
-                    }}
-                  >
-                    {alertCount}
-                  </Box>
-                )}
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip content="Notifications">
-              <IconButton size="small" onClick={() => setShowNotifications(true)}>
-                <Mail size={18} />
-              </IconButton>
-            </Tooltip>
-
-            {/* Theme Toggle */}
-            <Tooltip content={resolvedMode === 'dark' ? 'Light Mode' : 'Dark Mode'}>
-              <IconButton 
-                size="small"
-                onClick={() => setMode(resolvedMode === 'dark' ? 'light' : 'dark')}
-              >
-                {resolvedMode === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-              </IconButton>
-            </Tooltip>
-
-            {/* Settings */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <IconButton size="small">
-                  <Settings size={18} />
+              <Tooltip content="Add Open Shift">
+                <IconButton size="small" onClick={() => setShowAddOpenShiftModal(true)} sx={{ color: 'text.secondary' }}>
+                  <Plus size={18} />
                 </IconButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setShowBudgetSettings(true)} icon={<DollarSign size={16} />}>
-                  Budget Settings
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </Tooltip>
+              <Tooltip content="Bulk Assign">
+                <IconButton size="small" onClick={() => setShowBulkAssignmentModal(true)} sx={{ color: 'text.secondary' }}>
+                  <UserPlus size={18} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip content="Copy Week">
+                <IconButton size="small" onClick={handleCopyWeek} sx={{ color: 'text.secondary' }}>
+                  <Copy size={18} />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+
+            {/* Dropdown Menus Group */}
+            <Stack 
+              direction="row" 
+              spacing={0.5} 
+              sx={{ 
+                bgcolor: 'grey.100', 
+                borderRadius: 1.5, 
+                p: 0.5,
+              }}
+            >
+              {/* Export Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Tooltip content="Export">
+                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                      <Download size={18} />
+                    </IconButton>
+                  </Tooltip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={handleExportPDF} icon={<FileText size={16} />}>
+                    Export to PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportExcel} icon={<FileSpreadsheet size={16} />}>
+                    Export to Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handlePrint} icon={<Printer size={16} />}>
+                    Print View
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Templates Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Tooltip content="Templates">
+                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                      <Layers size={18} />
+                    </IconButton>
+                  </Tooltip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setShowSaveTemplateModal(true)} icon={<FileStack size={16} />}>
+                    Save as Template
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowApplyTemplateModal(true)} icon={<Layers size={16} />}>
+                    Apply Template
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowShiftTemplateManager(true)} icon={<Clock size={16} />}>
+                    Manage Shift Templates
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Schedule Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Tooltip content="Schedule">
+                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                      <CalendarDays size={18} />
+                    </IconButton>
+                  </Tooltip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setShowAvailabilityModal(true)} icon={<CalendarCheck size={16} />}>
+                    Staff Availability
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowLeaveModal(true)} icon={<CalendarDays size={16} />}>
+                    Leave Requests
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    if (allStaff.length > 0) openPreferencesForStaff(allStaff[0]);
+                  }} icon={<UserCog size={16} />}>
+                    Staff Preferences
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </Stack>
+
+            {/* Status Icons Group */}
+            <Stack 
+              direction="row" 
+              spacing={0.5} 
+              sx={{ 
+                bgcolor: 'grey.100', 
+                borderRadius: 1.5, 
+                p: 0.5,
+              }}
+            >
+              <Tooltip content="View Conflicts">
+                <IconButton 
+                  size="small"
+                  onClick={() => setShowConflicts(true)}
+                  sx={{ position: 'relative', borderRadius: 1, color: conflictCount > 0 ? 'error.main' : 'text.secondary' }}
+                >
+                  <Shield size={18} />
+                  {conflictCount > 0 && (
+                    <Box 
+                      component="span"
+                      sx={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        right: 0, 
+                        width: 14, 
+                        height: 14, 
+                        bgcolor: 'error.main', 
+                        color: 'error.contrastText',
+                        fontSize: 9, 
+                        borderRadius: '50%', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        fontWeight: 700
+                      }}
+                    >
+                      {conflictCount}
+                    </Box>
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip content="Alerts">
+                <IconButton 
+                  size="small"
+                  onClick={() => setShowAlerts(true)}
+                  sx={{ position: 'relative', borderRadius: 1, color: alertCount > 0 ? 'warning.main' : 'text.secondary' }}
+                >
+                  <Bell size={18} />
+                  {alertCount > 0 && (
+                    <Box 
+                      component="span"
+                      sx={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        right: 0, 
+                        width: 14, 
+                        height: 14, 
+                        bgcolor: 'warning.main', 
+                        color: 'warning.contrastText',
+                        fontSize: 9, 
+                        borderRadius: '50%', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        fontWeight: 700
+                      }}
+                    >
+                      {alertCount}
+                    </Box>
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip content="Notifications">
+                <IconButton size="small" onClick={() => setShowNotifications(true)} sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                  <Mail size={18} />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+
+            {/* Theme & Settings */}
+            <Stack 
+              direction="row" 
+              spacing={0.5} 
+              sx={{ 
+                bgcolor: 'grey.100', 
+                borderRadius: 1.5, 
+                p: 0.5,
+              }}
+            >
+              <Tooltip content={resolvedMode === 'dark' ? 'Light Mode' : 'Dark Mode'}>
+                <IconButton 
+                  size="small"
+                  onClick={() => setMode(resolvedMode === 'dark' ? 'light' : 'dark')}
+                  sx={{ borderRadius: 1, color: 'text.secondary' }}
+                >
+                  {resolvedMode === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                </IconButton>
+              </Tooltip>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                    <Settings size={18} />
+                  </IconButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowBudgetSettings(true)} icon={<DollarSign size={16} />}>
+                    Budget Settings
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </Stack>
           </Stack>
         </Box>
       </Box>
