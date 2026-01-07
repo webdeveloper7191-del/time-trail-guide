@@ -25,11 +25,13 @@ interface DayTimelineViewProps {
   shiftTemplates: ShiftTemplate[];
   onShiftEdit: (shift: Shift) => void;
   onShiftDelete: (shiftId: string) => void;
+  onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
   onAddShift: (staffId: string, date: string, roomId: string, template?: ShiftTemplate) => void;
   onAddShiftAtTime?: (staffId: string, date: string, roomId: string, startTime: string) => void;
   onDragStart: (e: React.DragEvent, staff: StaffMember) => void;
   onDropStaff: (staffId: string, roomId: string, date: string) => void;
   onStaffClick?: (staff: StaffMember) => void;
+  onOpenShiftTemplateManager?: () => void;
 }
 
 // Generate time slots from 5:00 AM to 9:00 PM with 15-minute intervals
@@ -96,11 +98,13 @@ export function DayTimelineView({
   shiftTemplates,
   onShiftEdit,
   onShiftDelete,
+  onShiftResize,
   onAddShift,
   onAddShiftAtTime,
   onDragStart,
   onDropStaff,
   onStaffClick,
+  onOpenShiftTemplateManager,
 }: DayTimelineViewProps) {
   const [staffSearch, setStaffSearch] = useState('');
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
@@ -416,6 +420,7 @@ export function DayTimelineView({
                             shift={shift} 
                             staff={member}
                             onEdit={() => onShiftEdit(shift)}
+                            onResize={onShiftResize}
                           />
                         ))}
 
@@ -512,10 +517,27 @@ export function DayTimelineView({
   );
 }
 
-// Shift bar component for timeline
-function ShiftBar({ shift, staff, onEdit }: { shift: Shift; staff: StaffMember; onEdit: () => void }) {
-  const left = timeToPixels(shift.startTime);
-  const width = getShiftWidth(shift.startTime, shift.endTime);
+// Shift bar component for timeline with resize handles
+function ShiftBar({ 
+  shift, 
+  staff, 
+  onEdit,
+  onResize 
+}: { 
+  shift: Shift; 
+  staff: StaffMember; 
+  onEdit: () => void;
+  onResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
+}) {
+  const [isResizing, setIsResizing] = useState<'left' | 'right' | null>(null);
+  const [resizeStartX, setResizeStartX] = useState(0);
+  const [originalLeft, setOriginalLeft] = useState(0);
+  const [originalWidth, setOriginalWidth] = useState(0);
+  const [currentLeft, setCurrentLeft] = useState(timeToPixels(shift.startTime));
+  const [currentWidth, setCurrentWidth] = useState(getShiftWidth(shift.startTime, shift.endTime));
+
+  const left = isResizing ? currentLeft : timeToPixels(shift.startTime);
+  const width = isResizing ? currentWidth : getShiftWidth(shift.startTime, shift.endTime);
   
   const statusColors = {
     draft: { bg: 'bg-amber-100 dark:bg-amber-900/40', border: 'border-amber-400', text: 'text-amber-800 dark:text-amber-200' },
@@ -526,6 +548,75 @@ function ShiftBar({ shift, staff, onEdit }: { shift: Shift; staff: StaffMember; 
 
   const colors = statusColors[shift.status];
   const duration = ((timeToSlotIndex(shift.endTime) - timeToSlotIndex(shift.startTime)) * 15 - shift.breakMinutes) / 60;
+
+  // Handle resize start
+  const handleResizeStart = (e: React.MouseEvent, side: 'left' | 'right') => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsResizing(side);
+    setResizeStartX(e.clientX);
+    setOriginalLeft(timeToPixels(shift.startTime));
+    setOriginalWidth(getShiftWidth(shift.startTime, shift.endTime));
+    setCurrentLeft(timeToPixels(shift.startTime));
+    setCurrentWidth(getShiftWidth(shift.startTime, shift.endTime));
+  };
+
+  // Handle resize move
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - resizeStartX;
+      
+      if (isResizing === 'left') {
+        // Resize from left - changes start time
+        const newLeft = Math.max(0, originalLeft + deltaX);
+        const newWidth = Math.max(SLOT_WIDTH * 2, originalWidth - deltaX); // Min 30 minutes
+        setCurrentLeft(newLeft);
+        setCurrentWidth(newWidth);
+      } else {
+        // Resize from right - changes end time
+        const newWidth = Math.max(SLOT_WIDTH * 2, originalWidth + deltaX); // Min 30 minutes
+        setCurrentWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (onResize && isResizing) {
+        // Snap to 15-minute intervals
+        const snappedLeft = Math.round(currentLeft / SLOT_WIDTH) * SLOT_WIDTH;
+        const snappedWidth = Math.round(currentWidth / SLOT_WIDTH) * SLOT_WIDTH;
+        
+        const newStartTime = pixelsToTime(snappedLeft);
+        const newEndTime = pixelsToTime(snappedLeft + snappedWidth);
+        
+        // Validate times are within bounds (5 AM - 9 PM)
+        const [startHour] = newStartTime.split(':').map(Number);
+        const [endHour] = newEndTime.split(':').map(Number);
+        
+        if (startHour >= 5 && endHour <= 21 && newStartTime < newEndTime) {
+          onResize(shift.id, newStartTime, newEndTime);
+        }
+      }
+      setIsResizing(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, resizeStartX, originalLeft, originalWidth, currentLeft, currentWidth, onResize, shift.id]);
+
+  // Calculate display times during resize
+  const displayStartTime = isResizing 
+    ? pixelsToTime(Math.round(currentLeft / SLOT_WIDTH) * SLOT_WIDTH)
+    : shift.startTime;
+  const displayEndTime = isResizing 
+    ? pixelsToTime(Math.round((currentLeft + currentWidth) / SLOT_WIDTH) * SLOT_WIDTH)
+    : shift.endTime;
 
   const tooltipContent = (
     <div className="p-3 min-w-[180px]">
@@ -554,7 +645,7 @@ function ShiftBar({ shift, staff, onEdit }: { shift: Shift; staff: StaffMember; 
           </div>
         )}
       </div>
-      <div className="mt-2 pt-2 border-t border-white/20">
+      <div className="mt-2 pt-2 border-t border-white/20 space-y-1">
         <span className={cn(
           "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize",
           shift.status === 'draft' && "bg-amber-500/20 text-amber-200",
@@ -564,13 +655,14 @@ function ShiftBar({ shift, staff, onEdit }: { shift: Shift; staff: StaffMember; 
         )}>
           {shift.status}
         </span>
+        <p className="text-[10px] text-white/50">Drag edges to resize</p>
       </div>
     </div>
   );
 
   return (
     <MuiTooltip
-      title={tooltipContent}
+      title={isResizing ? null : tooltipContent}
       placement="top"
       arrow
       enterDelay={200}
@@ -589,9 +681,10 @@ function ShiftBar({ shift, staff, onEdit }: { shift: Shift; staff: StaffMember; 
     >
       <div
         className={cn(
-          "absolute top-2 bottom-2 rounded-lg border-2 cursor-pointer",
-          "transition-all duration-200 hover:shadow-lg hover:scale-y-110 hover:z-10",
-          "flex items-center gap-1.5 px-2 overflow-hidden",
+          "absolute top-2 bottom-2 rounded-lg border-2 cursor-pointer group/shiftbar",
+          "transition-all duration-200",
+          !isResizing && "hover:shadow-lg hover:scale-y-110 hover:z-10",
+          isResizing && "z-30 shadow-xl",
           colors.bg,
           colors.border,
           shift.status === 'draft' && "border-dashed"
@@ -602,23 +695,54 @@ function ShiftBar({ shift, staff, onEdit }: { shift: Shift; staff: StaffMember; 
           backgroundColor: `${staff.color}20`,
           borderColor: staff.color,
         }}
-        onClick={onEdit}
+        onClick={(e) => {
+          if (!isResizing) onEdit();
+        }}
       >
-        <div 
-          className="w-1 h-6 rounded-full shrink-0" 
-          style={{ backgroundColor: staff.color }} 
-        />
-        <div className="flex-1 min-w-0">
-          <div className={cn("text-xs font-semibold truncate", colors.text)}>
-            {shift.startTime} - {shift.endTime}
-          </div>
-          {width > 100 && (
-            <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <Clock className="h-2.5 w-2.5" />
-              {duration.toFixed(1)}h
-              {shift.breakMinutes > 0 && ` • ${shift.breakMinutes}m break`}
-            </div>
+        {/* Left resize handle */}
+        <div
+          className={cn(
+            "absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-10",
+            "opacity-0 group-hover/shiftbar:opacity-100 transition-opacity",
+            "hover:bg-primary/30 rounded-l-lg",
+            isResizing === 'left' && "opacity-100 bg-primary/40"
           )}
+          onMouseDown={(e) => handleResizeStart(e, 'left')}
+        >
+          <div className="absolute left-0.5 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-current opacity-50 rounded-full" />
+        </div>
+
+        {/* Right resize handle */}
+        <div
+          className={cn(
+            "absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize z-10",
+            "opacity-0 group-hover/shiftbar:opacity-100 transition-opacity",
+            "hover:bg-primary/30 rounded-r-lg",
+            isResizing === 'right' && "opacity-100 bg-primary/40"
+          )}
+          onMouseDown={(e) => handleResizeStart(e, 'right')}
+        >
+          <div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-current opacity-50 rounded-full" />
+        </div>
+
+        {/* Shift content */}
+        <div className="flex items-center gap-1.5 px-2 overflow-hidden h-full">
+          <div 
+            className="w-1 h-6 rounded-full shrink-0" 
+            style={{ backgroundColor: staff.color }} 
+          />
+          <div className="flex-1 min-w-0">
+            <div className={cn("text-xs font-semibold truncate", colors.text)}>
+              {displayStartTime} - {displayEndTime}
+            </div>
+            {width > 100 && !isResizing && (
+              <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <Clock className="h-2.5 w-2.5" />
+                {duration.toFixed(1)}h
+                {shift.breakMinutes > 0 && ` • ${shift.breakMinutes}m break`}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </MuiTooltip>

@@ -15,7 +15,8 @@ import {
   TrendingDown,
   Minus,
   EyeOff,
-  ChevronDown
+  ChevronDown,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -37,6 +38,7 @@ interface TimelineGridProps {
   onOpenShiftFill: (openShift: OpenShift) => void;
   onAddShift: (roomId: string, date: string, template?: ShiftTemplate) => void;
   onUnassignStaff?: (shiftId: string) => void;
+  onOpenShiftTemplateManager?: () => void;
 }
 
 export function TimelineGrid({
@@ -56,6 +58,7 @@ export function TimelineGrid({
   onOpenShiftFill,
   onAddShift,
   onUnassignStaff,
+  onOpenShiftTemplateManager,
 }: TimelineGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
@@ -359,6 +362,13 @@ export function TimelineGrid({
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => onAddShift(room.id, dateStr)}>
                             Custom Shift
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => onOpenShiftTemplateManager?.()}>
+                            <div className="flex items-center gap-2">
+                              <Settings className="h-3 w-3" />
+                              <span>Create Shift Type...</span>
+                            </div>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
