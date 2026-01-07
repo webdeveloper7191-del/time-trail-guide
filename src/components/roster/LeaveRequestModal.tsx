@@ -1,13 +1,22 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tab,
+  Tabs,
+  Box,
+  MenuItem,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TimeOff, timeOffTypeLabels, StaffMember } from '@/types/roster';
 import { format } from 'date-fns';
 import { Check, X, Clock, Calendar, User } from 'lucide-react';
@@ -42,6 +51,7 @@ export function LeaveRequestModal({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [tabValue, setTabValue] = useState(0);
 
   const pendingRequests = leaveRequests.filter(r => r.status === 'pending');
   const approvedRequests = leaveRequests.filter(r => r.status === 'approved');
@@ -70,26 +80,23 @@ export function LeaveRequestModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            Leave Request Management
-          </DialogTitle>
-        </DialogHeader>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Calendar className="h-5 w-5 text-primary" />
+        Leave Request Management
+      </DialogTitle>
 
-        <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="pending" className="gap-1">
-              Pending <Badge variant="secondary" className="text-xs">{pendingRequests.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
-            <TabsTrigger value="new">New Request</TabsTrigger>
-          </TabsList>
+      <DialogContent dividers>
+        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>Pending <Badge variant="secondary" className="text-xs">{pendingRequests.length}</Badge></Box>} />
+          <Tab label="Approved" />
+          <Tab label="Rejected" />
+          <Tab label="New Request" />
+        </Tabs>
 
-          <TabsContent value="pending" className="mt-4">
+        {/* Pending Tab */}
+        {tabValue === 0 && (
+          <Box sx={{ mt: 2 }}>
             <ScrollArea className="h-[400px]">
               {pendingRequests.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -111,9 +118,12 @@ export function LeaveRequestModal({
                 </div>
               )}
             </ScrollArea>
-          </TabsContent>
+          </Box>
+        )}
 
-          <TabsContent value="approved" className="mt-4">
+        {/* Approved Tab */}
+        {tabValue === 1 && (
+          <Box sx={{ mt: 2 }}>
             <ScrollArea className="h-[400px]">
               {approvedRequests.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -132,9 +142,12 @@ export function LeaveRequestModal({
                 </div>
               )}
             </ScrollArea>
-          </TabsContent>
+          </Box>
+        )}
 
-          <TabsContent value="rejected" className="mt-4">
+        {/* Rejected Tab */}
+        {tabValue === 2 && (
+          <Box sx={{ mt: 2 }}>
             <ScrollArea className="h-[400px]">
               {rejectedRequests.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -153,37 +166,43 @@ export function LeaveRequestModal({
                 </div>
               )}
             </ScrollArea>
-          </TabsContent>
+          </Box>
+        )}
 
-          <TabsContent value="new" className="mt-4">
+        {/* New Request Tab */}
+        {tabValue === 3 && (
+          <Box sx={{ mt: 2 }}>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Staff Member</Label>
-                  <Select value={selectedStaff} onValueChange={setSelectedStaff}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select staff..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {staff.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    value={selectedStaff}
+                    onChange={(e) => setSelectedStaff(e.target.value)}
+                    placeholder="Select staff..."
+                  >
+                    {staff.map((s) => (
+                      <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                    ))}
+                  </TextField>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Leave Type</Label>
-                  <Select value={leaveType} onValueChange={(v) => setLeaveType(v as TimeOff['type'])}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(timeOffTypeLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    value={leaveType}
+                    onChange={(e) => setLeaveType(e.target.value as TimeOff['type'])}
+                  >
+                    {Object.entries(timeOffTypeLabels).map(([key, label]) => (
+                      <MenuItem key={key} value={key}>{label}</MenuItem>
+                    ))}
+                  </TextField>
                 </div>
               </div>
 
@@ -211,8 +230,8 @@ export function LeaveRequestModal({
                 Submit Leave Request
               </Button>
             </div>
-          </TabsContent>
-        </Tabs>
+          </Box>
+        )}
       </DialogContent>
     </Dialog>
   );

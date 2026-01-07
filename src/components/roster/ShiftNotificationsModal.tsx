@@ -1,10 +1,18 @@
 import { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tab,
+  Tabs,
+  Box,
+  Checkbox as MuiCheckbox,
+  Typography,
+} from '@mui/material';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -83,6 +91,7 @@ export function ShiftNotificationsModal({
   const [sendViaEmail, setSendViaEmail] = useState(true);
   const [sendViaSms, setSendViaSms] = useState(false);
   const [notifications] = useState<ShiftNotification[]>(mockNotifications);
+  const [tabValue, setTabValue] = useState(0);
 
   const affectedStaff = useMemo(() => {
     const staffIds = new Set(shifts.filter(s => s.centreId === centreId).map(s => s.staffId));
@@ -146,25 +155,24 @@ export function ShiftNotificationsModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-primary" />
-            Shift Notifications
-          </DialogTitle>
-          <DialogDescription>
-            Send notifications to staff about their shifts
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Bell className="h-5 w-5 text-primary" />
+        Shift Notifications
+      </DialogTitle>
+      <Typography variant="body2" color="text.secondary" sx={{ px: 3, pb: 1 }}>
+        Send notifications to staff about their shifts
+      </Typography>
 
-        <Tabs defaultValue="send" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="send">Send Notifications</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-          </TabsList>
+      <DialogContent dividers>
+        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tab label="Send Notifications" />
+          <Tab label="History" />
+        </Tabs>
 
-          <TabsContent value="send" className="space-y-4 mt-4">
+        {/* Send Tab */}
+        {tabValue === 0 && (
+          <Box sx={{ mt: 2 }} className="space-y-4">
             {/* Notification Type */}
             <div className="space-y-2">
               <Label>Notification Type</Label>
@@ -242,7 +250,7 @@ export function ShiftNotificationsModal({
                         onClick={() => toggleRecipient(member.id)}
                       >
                         <div className="flex items-center gap-3">
-                          <Checkbox checked={selectedRecipients.includes(member.id)} />
+                          <MuiCheckbox checked={selectedRecipients.includes(member.id)} size="small" />
                           <div>
                             <p className="text-sm font-medium">{member.name}</p>
                             <p className="text-xs text-muted-foreground">{member.role}</p>
@@ -266,32 +274,35 @@ export function ShiftNotificationsModal({
               </CardHeader>
               <CardContent className="flex gap-6">
                 <div className="flex items-center gap-2">
-                  <Checkbox 
-                    id="email" 
+                  <MuiCheckbox 
                     checked={sendViaEmail} 
-                    onCheckedChange={(checked) => setSendViaEmail(checked as boolean)}
+                    onChange={(e) => setSendViaEmail(e.target.checked)}
+                    size="small"
                   />
-                  <Label htmlFor="email" className="flex items-center gap-1 cursor-pointer">
+                  <Label className="flex items-center gap-1 cursor-pointer">
                     <Mail className="h-4 w-4" />
                     Email
                   </Label>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Checkbox 
-                    id="sms" 
+                  <MuiCheckbox 
                     checked={sendViaSms} 
-                    onCheckedChange={(checked) => setSendViaSms(checked as boolean)}
+                    onChange={(e) => setSendViaSms(e.target.checked)}
+                    size="small"
                   />
-                  <Label htmlFor="sms" className="flex items-center gap-1 cursor-pointer">
+                  <Label className="flex items-center gap-1 cursor-pointer">
                     <Smartphone className="h-4 w-4" />
                     SMS
                   </Label>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </Box>
+        )}
 
-          <TabsContent value="history" className="mt-4">
+        {/* History Tab */}
+        {tabValue === 1 && (
+          <Box sx={{ mt: 2 }}>
             <ScrollArea className="h-[400px]">
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -355,19 +366,19 @@ export function ShiftNotificationsModal({
                 </div>
               )}
             </ScrollArea>
-          </TabsContent>
-        </Tabs>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSendNotifications} disabled={selectedRecipients.length === 0}>
-            <Send className="h-4 w-4 mr-1" />
-            Send to {selectedRecipients.length} Staff
-          </Button>
-        </DialogFooter>
+          </Box>
+        )}
       </DialogContent>
+
+      <DialogActions sx={{ p: 2, gap: 1 }}>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleSendNotifications} disabled={selectedRecipients.length === 0}>
+          <Send className="h-4 w-4 mr-1" />
+          Send to {selectedRecipients.length} Staff
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }
