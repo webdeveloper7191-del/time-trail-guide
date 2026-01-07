@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { format, addDays, startOfWeek, subWeeks, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
 import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff, SchedulingPreferences } from '@/types/roster';
 import { RosterTemplate } from '@/types/rosterTemplates';
@@ -27,6 +27,7 @@ import { BulkShiftAssignmentModal } from '@/components/roster/BulkShiftAssignmen
 import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
 import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
 
 // MUI Components
 import {
@@ -83,7 +84,9 @@ import {
   Layers,
   FileStack,
   UserPlus,
-  Clock
+  Clock,
+  Undo2,
+  Redo2
 } from 'lucide-react';
 
 // Default budget configuration per centre
@@ -98,7 +101,17 @@ export default function RosterScheduler() {
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [selectedCentreId, setSelectedCentreId] = useState<string>(mockCentres[0].id);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [shifts, setShifts] = useState<Shift[]>(generateMockShifts());
+  
+  // Use undo/redo for shifts
+  const { 
+    state: shifts, 
+    setState: setShifts, 
+    undo: undoShifts, 
+    redo: redoShifts, 
+    canUndo, 
+    canRedo 
+  } = useUndoRedo<Shift[]>(generateMockShifts(), 30);
+  
   const [openShifts, setOpenShifts] = useState<OpenShift[]>(mockOpenShifts);
   const [showDemandOverlay, setShowDemandOverlay] = useState(true);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
@@ -135,6 +148,42 @@ export default function RosterScheduler() {
   
   const demandData = useMemo(() => generateMockDemandData(), []);
   const complianceFlags = useMemo(() => generateMockComplianceFlags(), []);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl/Cmd + Z (undo) or Ctrl/Cmd + Shift + Z (redo)
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modifier = isMac ? e.metaKey : e.ctrlKey;
+      
+      if (modifier && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          if (canRedo) {
+            redoShifts();
+            toast.success('Redo');
+          }
+        } else {
+          if (canUndo) {
+            undoShifts();
+            toast.success('Undo');
+          }
+        }
+      }
+      
+      // Also support Ctrl/Cmd + Y for redo (Windows standard)
+      if (modifier && e.key.toLowerCase() === 'y' && !isMac) {
+        e.preventDefault();
+        if (canRedo) {
+          redoShifts();
+          toast.success('Redo');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, undoShifts, redoShifts]);
   
   const selectedCentre = mockCentres.find(c => c.id === selectedCentreId)!;
   const allStaff = staffList;
@@ -764,6 +813,45 @@ export default function RosterScheduler() {
               variant={showDemandOverlay ? "filled" : "outlined"}
               sx={{ fontWeight: 500 }}
             />
+
+            {/* Undo/Redo Group */}
+            <Stack 
+              direction="row" 
+              spacing={0.5} 
+              sx={{ 
+                bgcolor: 'grey.100', 
+                borderRadius: 1.5, 
+                p: 0.5,
+                '& .MuiIconButton-root': {
+                  borderRadius: 1,
+                }
+              }}
+            >
+              <Tooltip content={`Undo (${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Z)`}>
+                <span>
+                  <IconButton 
+                    size="small" 
+                    onClick={undoShifts} 
+                    disabled={!canUndo}
+                    sx={{ color: canUndo ? 'text.secondary' : 'text.disabled' }}
+                  >
+                    <Undo2 size={18} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip content={`Redo (${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Shift+Z)`}>
+                <span>
+                  <IconButton 
+                    size="small" 
+                    onClick={redoShifts} 
+                    disabled={!canRedo}
+                    sx={{ color: canRedo ? 'text.secondary' : 'text.disabled' }}
+                  >
+                    <Redo2 size={18} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Stack>
 
             {/* Quick Actions Group */}
             <Stack 
