@@ -1,8 +1,17 @@
 import { StaffMember, Shift, Centre, roleLabels } from '@/types/roster';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Card,
+  CardContent,
+  CardHeader,
+  LinearProgress,
+  Chip,
+  Box,
+  Typography,
+  IconButton,
+} from '@mui/material';
 import { 
   Clock, 
   DollarSign, 
@@ -13,6 +22,7 @@ import {
   CheckCircle2,
   PieChart
 } from 'lucide-react';
+import CloseIcon from '@mui/icons-material/Close';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 interface WeeklySummaryDashboardProps {
@@ -34,7 +44,6 @@ export function WeeklySummaryDashboard({
   isOpen, 
   onClose 
 }: WeeklySummaryDashboardProps) {
-  // Calculate summary stats
   const centreShifts = shifts.filter(s => s.centreId === centre.id);
   
   let totalHours = 0;
@@ -63,7 +72,6 @@ export function WeeklySummaryDashboard({
   const totalCost = regularCost + overtimeCost;
   const budgetUsage = (totalCost / weeklyBudget) * 100;
 
-  // Shift status breakdown
   const statusCounts = {
     draft: centreShifts.filter(s => s.status === 'draft').length,
     published: centreShifts.filter(s => s.status === 'published').length,
@@ -78,7 +86,6 @@ export function WeeklySummaryDashboard({
     { name: 'Completed', value: statusCounts.completed, color: '#94a3b8' },
   ].filter(d => d.value > 0);
 
-  // Hours by role
   const hoursByRole: Record<string, number> = {};
   centreShifts.forEach(shift => {
     const member = staff.find(s => s.id === shift.staffId);
@@ -95,228 +102,106 @@ export function WeeklySummaryDashboard({
     hours: Math.round(hours * 10) / 10,
   }));
 
-  // Staff utilization
-  const staffUtilization = staff.slice(0, 6).map(member => {
-    const hours = staffHours[member.id] || 0;
-    const utilization = (hours / member.maxHoursPerWeek) * 100;
-    return {
-      name: member.name.split(' ')[0],
-      hours,
-      max: member.maxHoursPerWeek,
-      utilization: Math.min(utilization, 100),
-    };
-  });
-
-  // Active staff count
   const activeStaffCount = Object.keys(staffHours).length;
   const totalStaffCount = staff.length;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <PieChart className="h-5 w-5 text-primary" />
-            Weekly Summary - {centre.name}
-          </DialogTitle>
-        </DialogHeader>
+    <Dialog open={isOpen} onClose={onClose} maxWidth="lg" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <PieChart className="h-5 w-5" style={{ color: 'var(--mui-palette-primary-main)' }} />
+          <Typography variant="h6">Weekly Summary - {centre.name}</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+      </DialogTitle>
 
-        <div className="space-y-6 mt-4">
+      <DialogContent dividers>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Key Metrics */}
-          <div className="grid grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total Hours</p>
-                    <p className="text-xl font-bold">{totalHours.toFixed(1)}h</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                    <DollarSign className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total Cost</p>
-                    <p className="text-xl font-bold">${totalCost.toFixed(0)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Staff Rostered</p>
-                    <p className="text-xl font-bold">{activeStaffCount}/{totalStaffCount}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total Shifts</p>
-                    <p className="text-xl font-bold">{centreShifts.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
+            {[
+              { icon: Clock, label: 'Total Hours', value: `${totalHours.toFixed(1)}h`, color: 'primary' },
+              { icon: DollarSign, label: 'Total Cost', value: `$${totalCost.toFixed(0)}`, color: 'success' },
+              { icon: Users, label: 'Staff Rostered', value: `${activeStaffCount}/${totalStaffCount}`, color: 'secondary' },
+              { icon: Calendar, label: 'Total Shifts', value: centreShifts.length, color: 'warning' },
+            ].map((metric, idx) => (
+              <Card key={idx} variant="outlined">
+                <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ p: 1, borderRadius: 1, bgcolor: `${metric.color}.light` }}>
+                    <metric.icon size={20} />
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">{metric.label}</Typography>
+                    <Typography variant="h6" fontWeight={700}>{metric.value}</Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
 
           {/* Budget Progress */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center justify-between">
-                <span>Budget Usage</span>
-                <span className={budgetUsage > 100 ? 'text-destructive' : budgetUsage > 90 ? 'text-amber-600' : 'text-emerald-600'}>
-                  {budgetUsage.toFixed(1)}%
-                </span>
-              </CardTitle>
-            </CardHeader>
+          <Card variant="outlined">
+            <CardHeader 
+              title={
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" fontWeight={500}>Budget Usage</Typography>
+                  <Typography variant="body2" fontWeight={600} color={budgetUsage > 100 ? 'error.main' : budgetUsage > 90 ? 'warning.main' : 'success.main'}>
+                    {budgetUsage.toFixed(1)}%
+                  </Typography>
+                </Box>
+              }
+              sx={{ pb: 0 }}
+            />
             <CardContent>
-              <Progress 
+              <LinearProgress 
+                variant="determinate" 
                 value={Math.min(budgetUsage, 100)} 
-                className={`h-3 ${budgetUsage > 100 ? '[&>div]:bg-destructive' : budgetUsage > 90 ? '[&>div]:bg-amber-500' : ''}`}
+                color={budgetUsage > 100 ? 'error' : budgetUsage > 90 ? 'warning' : 'primary'}
+                sx={{ height: 8, borderRadius: 1, mb: 1 }}
               />
-              <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                <span>Spent: ${totalCost.toFixed(0)}</span>
-                <span>Budget: ${weeklyBudget.toLocaleString()}</span>
-              </div>
-              <div className="flex gap-4 mt-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-primary" />
-                  <span className="text-xs">Regular: ${regularCost.toFixed(0)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-amber-500" />
-                  <span className="text-xs">Overtime: ${overtimeCost.toFixed(0)}</span>
-                </div>
-              </div>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="caption" color="text.secondary">Spent: ${totalCost.toFixed(0)}</Typography>
+                <Typography variant="caption" color="text.secondary">Budget: ${weeklyBudget.toLocaleString()}</Typography>
+              </Box>
             </CardContent>
           </Card>
 
-          {/* Charts Row */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Shift Status */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Shift Status</CardTitle>
-              </CardHeader>
+          {/* Charts */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+            <Card variant="outlined">
+              <CardHeader title={<Typography variant="body2" fontWeight={500}>Shift Status</Typography>} />
               <CardContent>
-                <div className="h-48">
+                <Box sx={{ height: 180 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsPie>
-                      <Pie
-                        data={statusData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={70}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {statusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
+                      <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
+                        {statusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                       </Pie>
                       <Tooltip />
                       <Legend />
                     </RechartsPie>
                   </ResponsiveContainer>
-                </div>
+                </Box>
               </CardContent>
             </Card>
 
-            {/* Hours by Role */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Hours by Role</CardTitle>
-              </CardHeader>
+            <Card variant="outlined">
+              <CardHeader title={<Typography variant="body2" fontWeight={500}>Hours by Role</Typography>} />
               <CardContent>
-                <div className="h-48">
+                <Box sx={{ height: 180 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={roleData} layout="vertical">
                       <XAxis type="number" />
                       <YAxis dataKey="role" type="category" width={80} tick={{ fontSize: 11 }} />
                       <Tooltip />
-                      <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="hours" fill="hsl(199, 89%, 48%)" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                </div>
+                </Box>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Staff Utilization */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Staff Utilization</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {staffUtilization.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <span className="text-sm font-medium w-20 truncate">{item.name}</span>
-                    <div className="flex-1">
-                      <Progress 
-                        value={item.utilization} 
-                        className={`h-2 ${item.utilization > 100 ? '[&>div]:bg-destructive' : item.utilization > 80 ? '[&>div]:bg-amber-500' : ''}`}
-                      />
-                    </div>
-                    <span className="text-xs text-muted-foreground w-20 text-right">
-                      {item.hours.toFixed(1)}h / {item.max}h
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              <div>
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Confirmed Shifts</p>
-                <p className="text-lg font-bold text-emerald-800 dark:text-emerald-300">{statusCounts.confirmed + statusCounts.published}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
-              <div>
-                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Draft Shifts</p>
-                <p className="text-lg font-bold text-amber-800 dark:text-amber-300">{statusCounts.draft}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30">
-              <TrendingUp className="h-5 w-5 text-purple-600" />
-              <div>
-                <p className="text-sm font-medium text-purple-700 dark:text-purple-400">Avg Hours/Staff</p>
-                <p className="text-lg font-bold text-purple-800 dark:text-purple-300">
-                  {activeStaffCount > 0 ? (totalHours / activeStaffCount).toFixed(1) : 0}h
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+          </Box>
+        </Box>
       </DialogContent>
     </Dialog>
   );

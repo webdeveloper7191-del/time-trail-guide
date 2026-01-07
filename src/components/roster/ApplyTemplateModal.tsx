@@ -1,16 +1,26 @@
 import { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Checkbox,
+  Chip,
+  Box,
+  Typography,
+  IconButton,
+  FormControlLabel,
+} from '@mui/material';
 import { Shift, Room, ShiftTemplate, defaultShiftTemplates } from '@/types/roster';
 import { RosterTemplate, TemplateMatchResult } from '@/types/rosterTemplates';
 import { format, addDays, startOfWeek } from 'date-fns';
-import { FileStack, Check, Plus, AlertCircle, ArrowRight, Layers } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { FileStack, Check, Plus, ArrowRight, Layers } from 'lucide-react';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface ApplyTemplateModalProps {
   open: boolean;
@@ -48,7 +58,6 @@ export function ApplyTemplateModal({
     if (!selectedTemplate) return [];
 
     return selectedTemplate.shifts.map(templateShift => {
-      // Find the actual date for this day of week in the current week
       const targetDate = dates.find(d => d.getDay() === templateShift.dayOfWeek);
       if (!targetDate) {
         return {
@@ -61,7 +70,6 @@ export function ApplyTemplateModal({
 
       const dateStr = format(targetDate, 'yyyy-MM-dd');
       
-      // Check for existing shift at same room/time
       const existingShift = existingShifts.find(s => 
         s.centreId === centreId &&
         s.roomId === templateShift.roomId &&
@@ -132,149 +140,155 @@ export function ApplyTemplateModal({
     setSelectedShifts(new Set());
   };
 
-  const getRoomName = (roomId: string) => rooms.find(r => r.id === roomId)?.name || roomId;
-
   return (
-    <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileStack className="h-5 w-5 text-primary" />
-            Apply Roster Template
-          </DialogTitle>
-          <DialogDescription>
-            Apply a saved template to the current week. Existing shifts can be skipped or updated.
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FileStack className="h-5 w-5" style={{ color: 'var(--mui-palette-primary-main)' }} />
+          <Typography variant="h6">Apply Roster Template</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-        <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-          <div className="space-y-2">
-            <Label>Select Template</Label>
-            <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a roster template..." />
-              </SelectTrigger>
-              <SelectContent>
-                {rosterTemplates.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground text-sm">
+      <DialogContent dividers>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Apply a saved template to the current week. Existing shifts can be skipped or updated.
+        </Typography>
+
+        <Box sx={{ mb: 3 }}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Select Template</InputLabel>
+            <Select
+              value={selectedTemplateId}
+              label="Select Template"
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+            >
+              {rosterTemplates.length === 0 ? (
+                <MenuItem disabled>
+                  <Typography variant="body2" color="text.secondary">
                     No templates saved yet. Save your current roster as a template first.
-                  </div>
-                ) : (
-                  rosterTemplates.map(template => (
-                    <SelectItem key={template.id} value={template.id}>
-                      <div className="flex items-center gap-2">
-                        <Layers className="h-4 w-4" />
-                        <span>{template.name}</span>
-                        <Badge variant="secondary" className="text-xs">
-                          {template.shifts.length} shifts
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
+                  </Typography>
+                </MenuItem>
+              ) : (
+                rosterTemplates.map(template => (
+                  <MenuItem key={template.id} value={template.id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Layers size={16} />
+                      <span>{template.name}</span>
+                      <Chip size="small" label={`${template.shifts.length} shifts`} />
+                    </Box>
+                  </MenuItem>
+                ))
+              )}
             </Select>
-          </div>
+          </FormControl>
+        </Box>
 
-          {selectedTemplate && (
-            <>
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm">
+        {selectedTemplate && (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <FormControlLabel
+                control={
                   <Checkbox
                     checked={skipExisting}
-                    onCheckedChange={(checked) => setSkipExisting(!!checked)}
+                    onChange={(e) => setSkipExisting(e.target.checked)}
+                    size="small"
                   />
-                  Skip existing shifts (don't overwrite)
-                </label>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={selectAll}>
-                    Select All
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={deselectAll}>
-                    Deselect All
-                  </Button>
-                </div>
-              </div>
+                }
+                label={<Typography variant="body2">Skip existing shifts (don't overwrite)</Typography>}
+              />
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button variant="text" size="small" onClick={selectAll}>Select All</Button>
+                <Button variant="text" size="small" onClick={deselectAll}>Deselect All</Button>
+              </Box>
+            </Box>
 
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-1.5 text-emerald-600">
-                  <Plus className="h-4 w-4" />
-                  <span>{shiftsToAdd.length} to add</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Check className="h-4 w-4" />
-                  <span>{shiftsToSkip.length} will be skipped</span>
-                </div>
-              </div>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
+                <Plus size={16} />
+                <Typography variant="body2">{shiftsToAdd.length} to add</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
+                <Check size={16} />
+                <Typography variant="body2">{shiftsToSkip.length} will be skipped</Typography>
+              </Box>
+            </Box>
 
-              <ScrollArea className="flex-1 border rounded-lg">
-                <div className="p-2 space-y-1">
-                  {matchResults.map((result, idx) => {
-                    const room = rooms.find(r => r.id === result.templateShift.roomId);
-                    const isSelected = selectedShifts.size === 0 || selectedShifts.has(result.templateShift.id);
+            <Box sx={{ maxHeight: 300, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+              {matchResults.map((result, idx) => {
+                const room = rooms.find(r => r.id === result.templateShift.roomId);
+                const isSelected = selectedShifts.size === 0 || selectedShifts.has(result.templateShift.id);
+                
+                return (
+                  <Box
+                    key={idx}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      p: 1,
+                      borderBottom: 1,
+                      borderColor: 'divider',
+                      bgcolor: result.action === 'add' ? 'success.light' : 'action.hover',
+                      opacity: result.action === 'skip' ? 0.6 : 1,
+                    }}
+                  >
+                    {result.action === 'add' && (
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={() => toggleShift(result.templateShift.id)}
+                        size="small"
+                      />
+                    )}
+                    {result.action === 'skip' && (
+                      <Check size={16} style={{ opacity: 0.5 }} />
+                    )}
                     
-                    return (
-                      <div
-                        key={idx}
-                        className={cn(
-                          "flex items-center gap-3 p-2 rounded-md text-sm",
-                          result.action === 'add' && "bg-emerald-50 dark:bg-emerald-950/20",
-                          result.action === 'skip' && "bg-muted/50 opacity-60"
-                        )}
-                      >
-                        {result.action === 'add' && (
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => toggleShift(result.templateShift.id)}
-                          />
-                        )}
-                        {result.action === 'skip' && (
-                          <Check className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        
-                        <div className="flex-1 flex items-center gap-2">
-                          <span className="font-medium">{room?.name || 'Unknown'}</span>
-                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">
-                            {result.date ? format(new Date(result.date), 'EEE, MMM d') : 'N/A'}
-                          </span>
-                          <span>
-                            {result.templateShift.startTime} - {result.templateShift.endTime}
-                          </span>
-                        </div>
+                    <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" fontWeight={500}>{room?.name || 'Unknown'}</Typography>
+                      <ArrowRight size={12} style={{ opacity: 0.5 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {result.date ? format(new Date(result.date), 'EEE, MMM d') : 'N/A'}
+                      </Typography>
+                      <Typography variant="body2">
+                        {result.templateShift.startTime} - {result.templateShift.endTime}
+                      </Typography>
+                    </Box>
 
-                        <Badge variant={result.action === 'add' ? 'default' : 'secondary'} className="text-xs">
-                          {result.action === 'add' ? 'Add' : 'Skip'}
-                        </Badge>
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </>
-          )}
+                    <Chip 
+                      size="small" 
+                      label={result.action === 'add' ? 'Add' : 'Skip'}
+                      color={result.action === 'add' ? 'success' : 'default'}
+                      variant={result.action === 'add' ? 'filled' : 'outlined'}
+                    />
+                  </Box>
+                );
+              })}
+            </Box>
+          </>
+        )}
 
-          {!selectedTemplate && rosterTemplates.length > 0 && (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              <div className="text-center">
-                <FileStack className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                <p>Select a template to preview shifts</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button 
-            onClick={handleApply} 
-            disabled={!selectedTemplate || shiftsToAdd.length === 0}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Apply {shiftsToAdd.length} Shifts
-          </Button>
-        </DialogFooter>
+        {!selectedTemplate && rosterTemplates.length > 0 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 6, color: 'text.secondary' }}>
+            <FileStack size={48} style={{ opacity: 0.2, marginBottom: 8 }} />
+            <Typography variant="body2">Select a template to preview shifts</Typography>
+          </Box>
+        )}
       </DialogContent>
+
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button variant="outlined" onClick={onClose}>Cancel</Button>
+        <Button 
+          variant="contained"
+          onClick={handleApply} 
+          disabled={!selectedTemplate || shiftsToAdd.length === 0}
+          startIcon={<Plus size={16} />}
+        >
+          Apply {shiftsToAdd.length} Shifts
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }
