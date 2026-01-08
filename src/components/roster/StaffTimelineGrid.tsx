@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Shift, OpenShift, Centre, StaffMember, DemandData, RosterComplianceFlag, ageGroupLabels, qualificationLabels, roleLabels, ShiftTemplate, timeOffTypeLabels, defaultShiftTemplates } from '@/types/roster';
+import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Tooltip as MuiTooltip } from '@mui/material';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { InlineDemandChart } from './InlineDemandChart';
 import { 
   Plus, 
   Clock,
@@ -33,6 +35,9 @@ interface StaffTimelineGridProps {
   dates: Date[];
   viewMode: 'day' | 'week' | 'fortnight' | 'month';
   showDemandOverlay: boolean;
+  showAnalyticsCharts?: boolean;
+  demandAnalytics?: DemandAnalyticsData[];
+  staffAbsences?: StaffAbsence[];
   shiftTemplates: ShiftTemplate[];
   onDropStaff: (staffId: string, roomId: string, date: string) => void;
   onShiftEdit: (shift: Shift) => void;
@@ -53,6 +58,9 @@ export function StaffTimelineGrid({
   staff,
   dates,
   viewMode,
+  showAnalyticsCharts = false,
+  demandAnalytics = [],
+  staffAbsences = [],
   shiftTemplates,
   onDropStaff,
   onShiftEdit,
@@ -266,12 +274,36 @@ export function StaffTimelineGrid({
               <div key={room.id}>
                 {/* Room header */}
                 <div className="flex bg-primary/10 border-b border-primary/20 sticky top-[52px] z-10">
-                  <div className="px-4 py-2 flex items-center gap-3">
+                  <div className="w-64 shrink-0 px-4 py-2 flex items-center gap-3 border-r border-primary/20">
                     <Badge variant="secondary" className="font-semibold">{room.name}</Badge>
                     <span className="text-xs text-muted-foreground">
                       {ageGroupLabels[room.ageGroup]} • 1:{room.requiredRatio} • Cap: {room.capacity}
                     </span>
                   </div>
+                  
+                  {/* Analytics charts in header row when enabled */}
+                  {showAnalyticsCharts && demandAnalytics.length > 0 && dates.map((date) => {
+                    const dateStr = format(date, 'yyyy-MM-dd');
+                    return (
+                      <div 
+                        key={dateStr} 
+                        className={cn(
+                          "flex-1 p-1 border-r border-primary/20",
+                          viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]"
+                        )}
+                      >
+                        <InlineDemandChart
+                          analyticsData={demandAnalytics}
+                          absences={staffAbsences}
+                          date={dateStr}
+                          roomId={room.id}
+                          isCompact={isCompact}
+                        />
+                      </div>
+                    );
+                  })}
+                  
+                  {showAnalyticsCharts && <div className="w-24 shrink-0 border-r border-primary/20" />}
                 </div>
 
                 {/* Staff rows */}

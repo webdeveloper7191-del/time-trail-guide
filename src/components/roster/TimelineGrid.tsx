@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Shift, OpenShift, Centre, Room, StaffMember, DemandData, RosterComplianceFlag, ageGroupLabels, ShiftTemplate } from '@/types/roster';
 import { ShiftCard, OpenShiftCard } from './ShiftCard';
 import { DemandHistogram } from './DemandHistogram';
+import { InlineDemandChart } from './InlineDemandChart';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 
 interface TimelineGridProps {
   centre: Centre;
@@ -31,7 +33,10 @@ interface TimelineGridProps {
   dates: Date[];
   viewMode: 'day' | 'week' | 'fortnight' | 'month';
   showDemandOverlay: boolean;
+  showAnalyticsCharts?: boolean;
   lowDemandDays?: Set<string>;
+  demandAnalytics?: DemandAnalyticsData[];
+  staffAbsences?: StaffAbsence[];
   onDropStaff: (staffId: string, roomId: string, date: string, timeSlot?: string) => void;
   onShiftEdit: (shift: Shift) => void;
   onShiftDelete: (shiftId: string) => void;
@@ -51,7 +56,10 @@ export function TimelineGrid({
   dates,
   viewMode,
   showDemandOverlay,
+  showAnalyticsCharts = false,
   lowDemandDays = new Set(),
+  demandAnalytics = [],
+  staffAbsences = [],
   onDropStaff,
   onShiftEdit,
   onShiftDelete,
@@ -215,8 +223,21 @@ export function TimelineGrid({
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, room.id, dateStr)}
                   >
-                    {/* Demand histogram overlay */}
-                    {showDemandOverlay && (
+                    {/* Demand analytics chart (new) */}
+                    {showAnalyticsCharts && demandAnalytics.length > 0 && (
+                      <div className="mb-2">
+                        <InlineDemandChart
+                          analyticsData={demandAnalytics}
+                          absences={staffAbsences}
+                          date={dateStr}
+                          roomId={room.id}
+                          isCompact={isCompact}
+                        />
+                      </div>
+                    )}
+
+                    {/* Demand histogram overlay (legacy) */}
+                    {showDemandOverlay && !showAnalyticsCharts && (
                       <div className="absolute top-1 right-1 left-1">
                         <DemandHistogram
                           demandData={demandData}
