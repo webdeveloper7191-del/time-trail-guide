@@ -1153,6 +1153,9 @@ export default function RosterScheduler() {
             staff={filteredStaff}
             date={currentDate}
             shiftTemplates={shiftTemplates}
+            showAnalyticsCharts={showAnalyticsCharts}
+            demandAnalytics={demandAnalytics}
+            staffAbsences={mockStaffAbsences}
             onShiftEdit={setSelectedShift}
             onShiftDelete={handleShiftDelete}
             onShiftResize={handleShiftResize}
