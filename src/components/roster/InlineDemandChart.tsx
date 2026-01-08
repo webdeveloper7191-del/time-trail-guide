@@ -1,7 +1,7 @@
 import { DemandAnalyticsData, StaffAbsence, DemandChartConfig } from '@/types/demandAnalytics';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { Users, UserMinus, AlertTriangle, TrendingUp, Calendar } from 'lucide-react';
+import { Users, UserMinus, UserPlus, AlertTriangle, TrendingUp, Calendar, DollarSign } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, ComposedChart, Line } from 'recharts';
 
 interface InlineDemandChartProps {
@@ -51,6 +51,16 @@ export function InlineDemandChart({
   const totalAttendance = dayData.reduce((sum, d) => sum + d.historicalAttendance, 0);
   const hasRatioIssue = dayData.some(d => !d.staffRatioCompliant);
   const dayAbsences = absences.filter(a => a.date === date);
+  
+  // Staffing metrics
+  const totalScheduled = dayData.reduce((sum, d) => sum + d.scheduledStaff, 0);
+  const totalRequired = dayData.reduce((sum, d) => sum + d.requiredStaff, 0);
+  const isOverstaffed = totalScheduled > totalRequired;
+  const isUnderstaffed = totalScheduled < totalRequired;
+  const staffDifference = totalScheduled - totalRequired;
+  const hoursExcess = Math.max(0, staffDifference) * 3; // 3 hours per slot
+  const hoursShortfall = Math.max(0, -staffDifference) * 3;
+  const potentialSavings = hoursExcess * 30; // $30/hr estimate
 
   if (isCompact) {
     return (
@@ -91,7 +101,25 @@ export function InlineDemandChart({
                 )}>
                   {avgUtilization}%
                 </span>
-                {hasRatioIssue && (
+                {isOverstaffed && (
+                  <span className="flex items-center gap-0.5 text-amber-600">
+                    <UserPlus className="h-2.5 w-2.5" />
+                    +{hoursExcess}h
+                  </span>
+                )}
+                {isUnderstaffed && (
+                  <span className="flex items-center gap-0.5 text-destructive">
+                    <UserMinus className="h-2.5 w-2.5" />
+                    -{hoursShortfall}h
+                  </span>
+                )}
+                {potentialSavings > 0 && (
+                  <span className="flex items-center gap-0.5 text-emerald-600">
+                    <DollarSign className="h-2.5 w-2.5" />
+                    ${potentialSavings}
+                  </span>
+                )}
+                {hasRatioIssue && !isUnderstaffed && (
                   <AlertTriangle className="h-2.5 w-2.5 text-destructive" />
                 )}
                 {dayAbsences.length > 0 && (
@@ -132,7 +160,22 @@ export function InlineDemandChart({
           )}>
             {avgUtilization}% util
           </span>
-          {hasRatioIssue && (
+          {isOverstaffed && (
+            <span className="flex items-center gap-0.5 text-amber-600 text-[10px]">
+              <UserPlus className="h-3 w-3" /> +{hoursExcess}h over
+            </span>
+          )}
+          {isUnderstaffed && (
+            <span className="flex items-center gap-0.5 text-destructive text-[10px]">
+              <UserMinus className="h-3 w-3" /> -{hoursShortfall}h short
+            </span>
+          )}
+          {potentialSavings > 0 && (
+            <span className="flex items-center gap-0.5 text-emerald-600 text-[10px]">
+              <DollarSign className="h-3 w-3" /> ${potentialSavings} save
+            </span>
+          )}
+          {hasRatioIssue && !isUnderstaffed && (
             <span className="flex items-center gap-0.5 text-destructive text-[10px]">
               <AlertTriangle className="h-3 w-3" /> Ratio
             </span>

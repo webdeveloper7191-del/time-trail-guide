@@ -1,10 +1,12 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Shift, OpenShift, Centre, StaffMember, qualificationLabels, roleLabels, ShiftTemplate } from '@/types/roster';
+import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip as MuiTooltip } from '@mui/material';
 import { Input } from '@/components/ui/input';
+import { StaffingInsightsBar } from './StaffingInsightsBar';
 import { 
   Plus, 
   Clock,
@@ -23,6 +25,9 @@ interface DayTimelineViewProps {
   staff: StaffMember[];
   date: Date;
   shiftTemplates: ShiftTemplate[];
+  showAnalyticsCharts?: boolean;
+  demandAnalytics?: DemandAnalyticsData[];
+  staffAbsences?: StaffAbsence[];
   onShiftEdit: (shift: Shift) => void;
   onShiftDelete: (shiftId: string) => void;
   onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
@@ -96,6 +101,9 @@ export function DayTimelineView({
   staff,
   date,
   shiftTemplates,
+  showAnalyticsCharts = false,
+  demandAnalytics = [],
+  staffAbsences = [],
   onShiftEdit,
   onShiftDelete,
   onShiftResize,
@@ -300,14 +308,40 @@ export function DayTimelineView({
 
             return (
               <div key={room.id}>
-                {/* Room header */}
-                <div className="flex bg-primary/10 border-b border-primary/20 sticky top-[52px] z-10">
-                  <div className="px-4 py-2 flex items-center gap-3">
-                    <Badge variant="secondary" className="font-semibold">{room.name}</Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {format(date, 'EEEE, MMMM d, yyyy')}
-                    </span>
+                {/* Room header with analytics */}
+                <div className="flex flex-col bg-primary/10 border-b border-primary/20 sticky top-[52px] z-10">
+                  <div className="px-4 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="secondary" className="font-semibold">{room.name}</Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {format(date, 'EEEE, MMMM d, yyyy')}
+                      </span>
+                    </div>
+                    {/* Inline staffing insights */}
+                    {showAnalyticsCharts && demandAnalytics.length > 0 && (
+                      <StaffingInsightsBar
+                        analyticsData={demandAnalytics}
+                        absences={staffAbsences}
+                        date={dateStr}
+                        roomId={room.id}
+                        centreId={centre.id}
+                        isCompact={true}
+                      />
+                    )}
                   </div>
+                  {/* Expanded analytics panel when enabled */}
+                  {showAnalyticsCharts && demandAnalytics.length > 0 && (
+                    <div className="px-4 pb-2">
+                      <StaffingInsightsBar
+                        analyticsData={demandAnalytics}
+                        absences={staffAbsences}
+                        date={dateStr}
+                        roomId={room.id}
+                        centreId={centre.id}
+                        isCompact={false}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Staff rows */}
