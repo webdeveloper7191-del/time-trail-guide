@@ -939,11 +939,9 @@ export default function RosterScheduler() {
               {/* Export Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Tooltip content="Export">
-                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                      <Download size={18} />
-                    </IconButton>
-                  </Tooltip>
+                  <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                    <Download size={18} />
+                  </IconButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={handleExportPDF} icon={<FileText size={16} />}>
@@ -962,11 +960,9 @@ export default function RosterScheduler() {
               {/* Templates Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Tooltip content="Templates">
-                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                      <Layers size={18} />
-                    </IconButton>
-                  </Tooltip>
+                  <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                    <Layers size={18} />
+                  </IconButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => setShowSaveTemplateModal(true)} icon={<FileStack size={16} />}>
@@ -985,11 +981,9 @@ export default function RosterScheduler() {
               {/* Schedule Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Tooltip content="Schedule">
-                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                      <CalendarDays size={18} />
-                    </IconButton>
-                  </Tooltip>
+                  <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                    <CalendarDays size={18} />
+                  </IconButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => setShowAvailabilityModal(true)} icon={<CalendarCheck size={16} />}>
