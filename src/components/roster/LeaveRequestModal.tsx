@@ -1,9 +1,5 @@
 import { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Tab,
   Tabs,
   Box,
@@ -21,6 +17,13 @@ import { TimeOff, timeOffTypeLabels, StaffMember } from '@/types/roster';
 import { format } from 'date-fns';
 import { Check, X, Clock, Calendar, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 
 interface LeaveRequest extends TimeOff {
   staffName: string;
@@ -80,160 +83,167 @@ export function LeaveRequestModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Calendar className="h-5 w-5 text-primary" />
-        Leave Request Management
-      </DialogTitle>
+    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-xl">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            Leave Request Management
+          </SheetTitle>
+          <SheetDescription>
+            Manage staff leave requests and create new ones
+          </SheetDescription>
+        </SheetHeader>
 
-      <DialogContent dividers>
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>Pending <Badge variant="secondary" className="text-xs">{pendingRequests.length}</Badge></Box>} />
-          <Tab label="Approved" />
-          <Tab label="Rejected" />
-          <Tab label="New Request" />
-        </Tabs>
+        <div className="mt-6">
+          <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>Pending <Badge variant="secondary" className="text-xs">{pendingRequests.length}</Badge></Box>} />
+            <Tab label="Approved" />
+            <Tab label="Rejected" />
+            <Tab label="New Request" />
+          </Tabs>
 
-        {/* Pending Tab */}
-        {tabValue === 0 && (
-          <Box sx={{ mt: 2 }}>
-            <ScrollArea className="h-[400px]">
-              {pendingRequests.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                  <Clock className="h-12 w-12 mb-2 opacity-50" />
-                  <p>No pending requests</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {pendingRequests.map((request) => (
-                    <LeaveRequestCard 
-                      key={request.id} 
-                      request={request}
-                      statusColors={statusColors}
-                      onApprove={() => onApprove(request.id)}
-                      onReject={() => onReject(request.id)}
-                      showActions
-                    />
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </Box>
-        )}
-
-        {/* Approved Tab */}
-        {tabValue === 1 && (
-          <Box sx={{ mt: 2 }}>
-            <ScrollArea className="h-[400px]">
-              {approvedRequests.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                  <Check className="h-12 w-12 mb-2 opacity-50" />
-                  <p>No approved requests</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {approvedRequests.map((request) => (
-                    <LeaveRequestCard 
-                      key={request.id} 
-                      request={request}
-                      statusColors={statusColors}
-                    />
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </Box>
-        )}
-
-        {/* Rejected Tab */}
-        {tabValue === 2 && (
-          <Box sx={{ mt: 2 }}>
-            <ScrollArea className="h-[400px]">
-              {rejectedRequests.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                  <X className="h-12 w-12 mb-2 opacity-50" />
-                  <p>No rejected requests</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {rejectedRequests.map((request) => (
-                    <LeaveRequestCard 
-                      key={request.id} 
-                      request={request}
-                      statusColors={statusColors}
-                    />
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </Box>
-        )}
-
-        {/* New Request Tab */}
-        {tabValue === 3 && (
-          <Box sx={{ mt: 2 }}>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Staff Member</Label>
-                  <TextField
-                    select
-                    fullWidth
-                    size="small"
-                    value={selectedStaff}
-                    onChange={(e) => setSelectedStaff(e.target.value)}
-                    placeholder="Select staff..."
-                  >
-                    {staff.map((s) => (
-                      <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+          {/* Pending Tab */}
+          {tabValue === 0 && (
+            <Box sx={{ mt: 2 }}>
+              <ScrollArea className="h-[calc(100vh-280px)]">
+                {pendingRequests.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <Clock className="h-12 w-12 mb-2 opacity-50" />
+                    <p>No pending requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingRequests.map((request) => (
+                      <LeaveRequestCard 
+                        key={request.id} 
+                        request={request}
+                        statusColors={statusColors}
+                        onApprove={() => onApprove(request.id)}
+                        onReject={() => onReject(request.id)}
+                        showActions
+                      />
                     ))}
-                  </TextField>
-                </div>
+                  </div>
+                )}
+              </ScrollArea>
+            </Box>
+          )}
 
-                <div className="space-y-2">
-                  <Label>Leave Type</Label>
-                  <TextField
-                    select
-                    fullWidth
-                    size="small"
-                    value={leaveType}
-                    onChange={(e) => setLeaveType(e.target.value as TimeOff['type'])}
-                  >
-                    {Object.entries(timeOffTypeLabels).map(([key, label]) => (
-                      <MenuItem key={key} value={key}>{label}</MenuItem>
+          {/* Approved Tab */}
+          {tabValue === 1 && (
+            <Box sx={{ mt: 2 }}>
+              <ScrollArea className="h-[calc(100vh-280px)]">
+                {approvedRequests.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <Check className="h-12 w-12 mb-2 opacity-50" />
+                    <p>No approved requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {approvedRequests.map((request) => (
+                      <LeaveRequestCard 
+                        key={request.id} 
+                        request={request}
+                        statusColors={statusColors}
+                      />
                     ))}
-                  </TextField>
-                </div>
-              </div>
+                  </div>
+                )}
+              </ScrollArea>
+            </Box>
+          )}
 
-              <div className="grid grid-cols-2 gap-4">
+          {/* Rejected Tab */}
+          {tabValue === 2 && (
+            <Box sx={{ mt: 2 }}>
+              <ScrollArea className="h-[calc(100vh-280px)]">
+                {rejectedRequests.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <X className="h-12 w-12 mb-2 opacity-50" />
+                    <p>No rejected requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {rejectedRequests.map((request) => (
+                      <LeaveRequestCard 
+                        key={request.id} 
+                        request={request}
+                        statusColors={statusColors}
+                      />
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </Box>
+          )}
+
+          {/* New Request Tab */}
+          {tabValue === 3 && (
+            <Box sx={{ mt: 2 }}>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Staff Member</Label>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      value={selectedStaff}
+                      onChange={(e) => setSelectedStaff(e.target.value)}
+                      placeholder="Select staff..."
+                    >
+                      {staff.map((s) => (
+                        <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                      ))}
+                    </TextField>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Leave Type</Label>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      value={leaveType}
+                      onChange={(e) => setLeaveType(e.target.value as TimeOff['type'])}
+                    >
+                      {Object.entries(timeOffTypeLabels).map(([key, label]) => (
+                        <MenuItem key={key} value={key}>{label}</MenuItem>
+                      ))}
+                    </TextField>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Start Date</Label>
+                    <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>End Date</Label>
+                    <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <Label>Notes</Label>
+                  <Textarea 
+                    placeholder="Optional notes..." 
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea 
-                  placeholder="Optional notes..." 
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
+                <Button onClick={handleSubmit} disabled={!selectedStaff || !startDate || !endDate} className="w-full">
+                  Submit Leave Request
+                </Button>
               </div>
-
-              <Button onClick={handleSubmit} disabled={!selectedStaff || !startDate || !endDate} className="w-full">
-                Submit Leave Request
-              </Button>
-            </div>
-          </Box>
-        )}
-      </DialogContent>
-    </Dialog>
+            </Box>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 

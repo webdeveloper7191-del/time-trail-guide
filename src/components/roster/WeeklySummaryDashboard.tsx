@@ -1,8 +1,5 @@
 import { StaffMember, Shift, Centre, roleLabels } from '@/types/roster';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
   Card,
   CardContent,
   CardHeader,
@@ -10,7 +7,6 @@ import {
   Chip,
   Box,
   Typography,
-  IconButton,
 } from '@mui/material';
 import { 
   Clock, 
@@ -18,12 +14,17 @@ import {
   Users, 
   TrendingUp,
   Calendar,
-  AlertTriangle,
-  CheckCircle2,
   PieChart
 } from 'lucide-react';
-import CloseIcon from '@mui/icons-material/Close';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface WeeklySummaryDashboardProps {
   shifts: Shift[];
@@ -106,103 +107,107 @@ export function WeeklySummaryDashboard({
   const totalStaffCount = staff.length;
 
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <PieChart className="h-5 w-5" style={{ color: 'var(--mui-palette-primary-main)' }} />
-          <Typography variant="h6">Weekly Summary - {centre.name}</Typography>
-        </Box>
-        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
-      </DialogTitle>
+    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <PieChart className="h-5 w-5 text-primary" />
+            Weekly Summary - {centre.name}
+          </SheetTitle>
+          <SheetDescription>
+            Overview of hours, costs, and staffing for the current period
+          </SheetDescription>
+        </SheetHeader>
 
-      <DialogContent dividers>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* Key Metrics */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
-            {[
-              { icon: Clock, label: 'Total Hours', value: `${totalHours.toFixed(1)}h`, color: 'primary' },
-              { icon: DollarSign, label: 'Total Cost', value: `$${totalCost.toFixed(0)}`, color: 'success' },
-              { icon: Users, label: 'Staff Rostered', value: `${activeStaffCount}/${totalStaffCount}`, color: 'secondary' },
-              { icon: Calendar, label: 'Total Shifts', value: centreShifts.length, color: 'warning' },
-            ].map((metric, idx) => (
-              <Card key={idx} variant="outlined">
-                <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ p: 1, borderRadius: 1, bgcolor: `${metric.color}.light` }}>
-                    <metric.icon size={20} />
+        <ScrollArea className="flex-1 pr-4 mt-6 h-[calc(100vh-140px)]">
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Key Metrics */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+              {[
+                { icon: Clock, label: 'Total Hours', value: `${totalHours.toFixed(1)}h`, color: 'primary' },
+                { icon: DollarSign, label: 'Total Cost', value: `$${totalCost.toFixed(0)}`, color: 'success' },
+                { icon: Users, label: 'Staff Rostered', value: `${activeStaffCount}/${totalStaffCount}`, color: 'secondary' },
+                { icon: Calendar, label: 'Total Shifts', value: centreShifts.length, color: 'warning' },
+              ].map((metric, idx) => (
+                <Card key={idx} variant="outlined">
+                  <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2, '&:last-child': { pb: 2 } }}>
+                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: `${metric.color}.light` }}>
+                      <metric.icon size={20} />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">{metric.label}</Typography>
+                      <Typography variant="h6" fontWeight={700}>{metric.value}</Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+
+            {/* Budget Progress */}
+            <Card variant="outlined">
+              <CardHeader 
+                title={
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" fontWeight={500}>Budget Usage</Typography>
+                    <Typography variant="body2" fontWeight={600} color={budgetUsage > 100 ? 'error.main' : budgetUsage > 90 ? 'warning.main' : 'success.main'}>
+                      {budgetUsage.toFixed(1)}%
+                    </Typography>
                   </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">{metric.label}</Typography>
-                    <Typography variant="h6" fontWeight={700}>{metric.value}</Typography>
+                }
+                sx={{ pb: 0 }}
+              />
+              <CardContent>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={Math.min(budgetUsage, 100)} 
+                  color={budgetUsage > 100 ? 'error' : budgetUsage > 90 ? 'warning' : 'primary'}
+                  sx={{ height: 8, borderRadius: 1, mb: 1 }}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="caption" color="text.secondary">Spent: ${totalCost.toFixed(0)}</Typography>
+                  <Typography variant="caption" color="text.secondary">Budget: ${weeklyBudget.toLocaleString()}</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Charts */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
+              <Card variant="outlined">
+                <CardHeader title={<Typography variant="body2" fontWeight={500}>Shift Status Distribution</Typography>} />
+                <CardContent>
+                  <Box sx={{ height: 180 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPie>
+                        <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
+                          {statusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </RechartsPie>
+                    </ResponsiveContainer>
                   </Box>
                 </CardContent>
               </Card>
-            ))}
+
+              <Card variant="outlined">
+                <CardHeader title={<Typography variant="body2" fontWeight={500}>Hours by Role</Typography>} />
+                <CardContent>
+                  <Box sx={{ height: 180 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={roleData} layout="vertical">
+                        <XAxis type="number" />
+                        <YAxis dataKey="role" type="category" width={100} tick={{ fontSize: 11 }} />
+                        <Tooltip />
+                        <Bar dataKey="hours" fill="hsl(199, 89%, 48%)" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
           </Box>
-
-          {/* Budget Progress */}
-          <Card variant="outlined">
-            <CardHeader 
-              title={
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" fontWeight={500}>Budget Usage</Typography>
-                  <Typography variant="body2" fontWeight={600} color={budgetUsage > 100 ? 'error.main' : budgetUsage > 90 ? 'warning.main' : 'success.main'}>
-                    {budgetUsage.toFixed(1)}%
-                  </Typography>
-                </Box>
-              }
-              sx={{ pb: 0 }}
-            />
-            <CardContent>
-              <LinearProgress 
-                variant="determinate" 
-                value={Math.min(budgetUsage, 100)} 
-                color={budgetUsage > 100 ? 'error' : budgetUsage > 90 ? 'warning' : 'primary'}
-                sx={{ height: 8, borderRadius: 1, mb: 1 }}
-              />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="caption" color="text.secondary">Spent: ${totalCost.toFixed(0)}</Typography>
-                <Typography variant="caption" color="text.secondary">Budget: ${weeklyBudget.toLocaleString()}</Typography>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Charts */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-            <Card variant="outlined">
-              <CardHeader title={<Typography variant="body2" fontWeight={500}>Shift Status</Typography>} />
-              <CardContent>
-                <Box sx={{ height: 180 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsPie>
-                      <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
-                        {statusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </RechartsPie>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-
-            <Card variant="outlined">
-              <CardHeader title={<Typography variant="body2" fontWeight={500}>Hours by Role</Typography>} />
-              <CardContent>
-                <Box sx={{ height: 180 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={roleData} layout="vertical">
-                      <XAxis type="number" />
-                      <YAxis dataKey="role" type="category" width={80} tick={{ fontSize: 11 }} />
-                      <Tooltip />
-                      <Bar dataKey="hours" fill="hsl(199, 89%, 48%)" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-        </Box>
-      </DialogContent>
-    </Dialog>
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
   );
 }

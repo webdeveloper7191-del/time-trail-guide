@@ -1,9 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   FormControl,
   InputLabel,
@@ -15,12 +11,19 @@ import {
   Tab,
   Box,
   Typography,
-  IconButton,
 } from '@mui/material';
 import { Shift, Room, StaffMember, ShiftTemplate, defaultShiftTemplates, roleLabels } from '@/types/roster';
 import { format } from 'date-fns';
 import { Users, Calendar, Clock, Plus, Check, AlertTriangle, UserPlus } from 'lucide-react';
-import CloseIcon from '@mui/icons-material/Close';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface BulkShiftAssignmentModalProps {
   open: boolean;
@@ -152,252 +155,257 @@ export function BulkShiftAssignmentModal({
   const getStaffName = (staffId: string) => staff.find(s => s.id === staffId)?.name || staffId;
 
   return (
-    <Dialog open={open} onClose={() => { onClose(); resetForm(); }} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <UserPlus className="h-5 w-5" style={{ color: 'var(--mui-palette-primary-main)' }} />
-          <Typography variant="h6">Bulk Shift Assignment</Typography>
-        </Box>
-        <IconButton size="small" onClick={() => { onClose(); resetForm(); }}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
+    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) { onClose(); resetForm(); } }}>
+      <SheetContent side="right" className="w-full sm:max-w-xl">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-primary" />
+            Bulk Shift Assignment
+          </SheetTitle>
+          <SheetDescription>
+            Create multiple shifts at once by selecting staff, dates, and shift template
+          </SheetDescription>
+        </SheetHeader>
 
-      <DialogContent dividers sx={{ p: 0 }}>
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} variant="fullWidth">
-          <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Users size={14} />Staff ({selectedStaff.size})</Box>} />
-          <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Calendar size={14} />Dates ({selectedDates.size})</Box>} />
-          <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Clock size={14} />Shift</Box>} />
-          <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Check size={14} />Preview</Box>} />
-        </Tabs>
+        <div className="mt-6">
+          <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} variant="fullWidth">
+            <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Users size={14} />Staff ({selectedStaff.size})</Box>} />
+            <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Calendar size={14} />Dates ({selectedDates.size})</Box>} />
+            <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Clock size={14} />Shift</Box>} />
+            <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Check size={14} />Preview</Box>} />
+          </Tabs>
 
-        <Box sx={{ p: 2 }}>
-          {tabValue === 0 && (
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" fontWeight={500}>Select Staff Members</Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button size="small" variant="text" onClick={selectAllStaff}>Select All</Button>
-                  <Button size="small" variant="text" onClick={deselectAllStaff}>Clear</Button>
-                </Box>
-              </Box>
-              <Box sx={{ maxHeight: 300, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                {availableStaff.map(member => (
-                  <Box
-                    key={member.id}
-                    onClick={() => toggleStaff(member.id)}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      p: 1,
-                      cursor: 'pointer',
-                      '&:hover': { bgcolor: 'action.hover' },
-                      bgcolor: selectedStaff.has(member.id) ? 'primary.light' : 'transparent',
-                    }}
-                  >
-                    <Checkbox checked={selectedStaff.has(member.id)} size="small" />
-                    <Box
-                      sx={{
-                        height: 32,
-                        width: 32,
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        bgcolor: member.color,
-                      }}
-                    >
-                      {member.name.charAt(0)}
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" fontWeight={500}>{member.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {roleLabels[member.role]} • {member.currentWeeklyHours}/{member.maxHoursPerWeek}h
-                      </Typography>
-                    </Box>
-                    <Chip size="small" label={`$${member.hourlyRate}/hr`} variant="outlined" />
+          <ScrollArea className="h-[calc(100vh-340px)] mt-4">
+            {tabValue === 0 && (
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" fontWeight={500}>Select Staff Members</Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button size="small" variant="text" onClick={selectAllStaff}>Select All</Button>
+                    <Button size="small" variant="text" onClick={deselectAllStaff}>Clear</Button>
                   </Box>
-                ))}
-              </Box>
-            </Box>
-          )}
-
-          {tabValue === 1 && (
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" fontWeight={500}>Select Dates</Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button size="small" variant="text" onClick={selectAllDates}>Select All</Button>
-                  <Button size="small" variant="text" onClick={deselectAllDates}>Clear</Button>
                 </Box>
-              </Box>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
-                {dates.map(date => {
-                  const dateStr = format(date, 'yyyy-MM-dd');
-                  const isSelected = selectedDates.has(dateStr);
-                  return (
+                <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                  {availableStaff.map(member => (
                     <Box
-                      key={dateStr}
-                      onClick={() => toggleDate(dateStr)}
+                      key={member.id}
+                      onClick={() => toggleStaff(member.id)}
                       sx={{
                         display: 'flex',
-                        flexDirection: 'column',
                         alignItems: 'center',
-                        p: 1.5,
-                        borderRadius: 1,
-                        border: 2,
-                        borderColor: isSelected ? 'primary.main' : 'divider',
-                        bgcolor: isSelected ? 'primary.light' : 'transparent',
+                        gap: 1.5,
+                        p: 1,
                         cursor: 'pointer',
                         '&:hover': { bgcolor: 'action.hover' },
+                        bgcolor: selectedStaff.has(member.id) ? 'primary.light' : 'transparent',
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        '&:last-child': { borderBottom: 0 },
                       }}
                     >
-                      <Typography variant="caption" color="text.secondary">{format(date, 'EEE')}</Typography>
-                      <Typography variant="h6">{format(date, 'd')}</Typography>
-                      <Typography variant="caption" color="text.secondary">{format(date, 'MMM')}</Typography>
-                    </Box>
-                  );
-                })}
-              </Box>
-            </Box>
-          )}
-
-          {tabValue === 2 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Room</InputLabel>
-                <Select value={selectedRoomId} label="Room" onChange={(e) => setSelectedRoomId(e.target.value)}>
-                  {rooms.map(room => (
-                    <MenuItem key={room.id} value={room.id}>{room.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl fullWidth size="small">
-                <InputLabel>Shift Template</InputLabel>
-                <Select value={selectedTemplateId} label="Shift Template" onChange={(e) => setSelectedTemplateId(e.target.value)}>
-                  {allTemplates.map(template => (
-                    <MenuItem key={template.id} value={template.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ height: 12, width: 12, borderRadius: '50%', bgcolor: template.color }} />
-                        <span>{template.name}</span>
-                        <Typography variant="caption" color="text.secondary">
-                          ({template.startTime} - {template.endTime})
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <Box>
-                <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Assignment Mode</Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
-                  {(['all-to-all', 'round-robin'] as const).map(mode => (
-                    <Box
-                      key={mode}
-                      onClick={() => setAssignmentMode(mode)}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 1,
-                        border: 2,
-                        borderColor: assignmentMode === mode ? 'primary.main' : 'divider',
-                        bgcolor: assignmentMode === mode ? 'primary.light' : 'transparent',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={500}>
-                        {mode === 'all-to-all' ? 'All to All' : 'Round Robin'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {mode === 'all-to-all' 
-                          ? 'Every staff member gets a shift on every selected date'
-                          : 'Distribute dates evenly among selected staff'}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            </Box>
-          )}
-
-          {tabValue === 3 && (
-            <Box>
-              {previewShifts.length === 0 ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 6, color: 'text.secondary' }}>
-                  <Users size={48} style={{ opacity: 0.2, marginBottom: 8 }} />
-                  <Typography variant="body2">Select staff, dates, and shift template to preview</Typography>
-                </Box>
-              ) : (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
-                      <Plus size={16} />
-                      <Typography variant="body2">{shiftsWithoutConflicts.length} shifts to create</Typography>
-                    </Box>
-                    {previewShifts.some(s => s.hasConflict) && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'warning.main' }}>
-                        <AlertTriangle size={16} />
-                        <Typography variant="body2">{previewShifts.filter(s => s.hasConflict).length} conflicts (will be skipped)</Typography>
-                      </Box>
-                    )}
-                  </Box>
-                  <Box sx={{ maxHeight: 260, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                    {previewShifts.map((preview, idx) => (
+                      <Checkbox checked={selectedStaff.has(member.id)} size="small" />
                       <Box
-                        key={idx}
                         sx={{
+                          height: 32,
+                          width: 32,
+                          borderRadius: '50%',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 1.5,
-                          p: 1,
-                          bgcolor: preview.hasConflict ? 'warning.light' : 'success.light',
-                          opacity: preview.hasConflict ? 0.6 : 1,
-                          borderBottom: 1,
-                          borderColor: 'divider',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          bgcolor: member.color,
                         }}
                       >
-                        {preview.hasConflict ? <AlertTriangle size={16} /> : <Check size={16} />}
-                        <Typography variant="body2" fontWeight={500}>{getStaffName(preview.staffId)}</Typography>
-                        <Typography variant="body2" color="text.secondary">→</Typography>
-                        <Typography variant="body2">{format(new Date(preview.date), 'EEE, MMM d')}</Typography>
-                        {selectedTemplate && (
-                          <Typography variant="body2" color="text.secondary">
-                            {selectedTemplate.startTime} - {selectedTemplate.endTime}
+                        {member.name.charAt(0)}
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" fontWeight={500}>{member.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {roleLabels[member.role]} • {member.currentWeeklyHours}/{member.maxHoursPerWeek}h
+                        </Typography>
+                      </Box>
+                      <Chip size="small" label={`$${member.hourlyRate}/hr`} variant="outlined" />
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {tabValue === 1 && (
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" fontWeight={500}>Select Dates</Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button size="small" variant="text" onClick={selectAllDates}>Select All</Button>
+                    <Button size="small" variant="text" onClick={deselectAllDates}>Clear</Button>
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
+                  {dates.map(date => {
+                    const dateStr = format(date, 'yyyy-MM-dd');
+                    const isSelected = selectedDates.has(dateStr);
+                    return (
+                      <Box
+                        key={dateStr}
+                        onClick={() => toggleDate(dateStr)}
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          p: 1.5,
+                          borderRadius: 1,
+                          border: 2,
+                          borderColor: isSelected ? 'primary.main' : 'divider',
+                          bgcolor: isSelected ? 'primary.light' : 'transparent',
+                          cursor: 'pointer',
+                          '&:hover': { bgcolor: 'action.hover' },
+                        }}
+                      >
+                        <Typography variant="caption" color="text.secondary">{format(date, 'EEE')}</Typography>
+                        <Typography variant="h6">{format(date, 'd')}</Typography>
+                        <Typography variant="caption" color="text.secondary">{format(date, 'MMM')}</Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+            )}
+
+            {tabValue === 2 && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Room</InputLabel>
+                  <Select value={selectedRoomId} label="Room" onChange={(e) => setSelectedRoomId(e.target.value)}>
+                    {rooms.map(room => (
+                      <MenuItem key={room.id} value={room.id}>{room.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth size="small">
+                  <InputLabel>Shift Template</InputLabel>
+                  <Select value={selectedTemplateId} label="Shift Template" onChange={(e) => setSelectedTemplateId(e.target.value)}>
+                    {allTemplates.map(template => (
+                      <MenuItem key={template.id} value={template.id}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box sx={{ height: 12, width: 12, borderRadius: '50%', bgcolor: template.color }} />
+                          <span>{template.name}</span>
+                          <Typography variant="caption" color="text.secondary">
+                            ({template.startTime} - {template.endTime})
                           </Typography>
-                        )}
-                        <Chip 
-                          size="small" 
-                          label={preview.hasConflict ? 'Conflict' : 'Will Add'}
-                          color={preview.hasConflict ? 'warning' : 'success'}
-                          variant={preview.hasConflict ? 'outlined' : 'filled'}
-                          sx={{ ml: 'auto' }}
-                        />
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <Box>
+                  <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Assignment Mode</Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+                    {(['all-to-all', 'round-robin'] as const).map(mode => (
+                      <Box
+                        key={mode}
+                        onClick={() => setAssignmentMode(mode)}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 1,
+                          border: 2,
+                          borderColor: assignmentMode === mode ? 'primary.main' : 'divider',
+                          bgcolor: assignmentMode === mode ? 'primary.light' : 'transparent',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Typography variant="body2" fontWeight={500}>
+                          {mode === 'all-to-all' ? 'All to All' : 'Round Robin'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {mode === 'all-to-all' 
+                            ? 'Every staff gets a shift on every date'
+                            : 'Distribute dates evenly among staff'}
+                        </Typography>
                       </Box>
                     ))}
                   </Box>
-                </>
-              )}
-            </Box>
-          )}
-        </Box>
-      </DialogContent>
+                </Box>
+              </Box>
+            )}
 
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button variant="outlined" onClick={() => { onClose(); resetForm(); }}>Cancel</Button>
-        <Button 
-          variant="contained"
-          onClick={handleAssign} 
-          disabled={shiftsWithoutConflicts.length === 0}
-          startIcon={<Plus size={16} />}
-        >
-          Create {shiftsWithoutConflicts.length} Shifts
-        </Button>
-      </DialogActions>
-    </Dialog>
+            {tabValue === 3 && (
+              <Box>
+                {previewShifts.length === 0 ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 6, color: 'text.secondary' }}>
+                    <Users size={48} style={{ opacity: 0.2, marginBottom: 8 }} />
+                    <Typography variant="body2">Select staff, dates, and shift template to preview</Typography>
+                  </Box>
+                ) : (
+                  <>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
+                        <Plus size={16} />
+                        <Typography variant="body2">{shiftsWithoutConflicts.length} shifts to create</Typography>
+                      </Box>
+                      {previewShifts.some(s => s.hasConflict) && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'warning.main' }}>
+                          <AlertTriangle size={16} />
+                          <Typography variant="body2">{previewShifts.filter(s => s.hasConflict).length} conflicts</Typography>
+                        </Box>
+                      )}
+                    </Box>
+                    <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                      {previewShifts.map((preview, idx) => (
+                        <Box
+                          key={idx}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            p: 1,
+                            bgcolor: preview.hasConflict ? 'warning.light' : 'success.light',
+                            opacity: preview.hasConflict ? 0.6 : 1,
+                            borderBottom: idx < previewShifts.length - 1 ? 1 : 0,
+                            borderColor: 'divider',
+                          }}
+                        >
+                          {preview.hasConflict ? <AlertTriangle size={16} /> : <Check size={16} />}
+                          <Typography variant="body2" fontWeight={500}>{getStaffName(preview.staffId)}</Typography>
+                          <Typography variant="body2" color="text.secondary">→</Typography>
+                          <Typography variant="body2">{format(new Date(preview.date), 'EEE, MMM d')}</Typography>
+                          {selectedTemplate && (
+                            <Typography variant="body2" color="text.secondary">
+                              {selectedTemplate.startTime} - {selectedTemplate.endTime}
+                            </Typography>
+                          )}
+                          <Chip 
+                            size="small" 
+                            label={preview.hasConflict ? 'Conflict' : 'Will Add'}
+                            color={preview.hasConflict ? 'warning' : 'success'}
+                            variant={preview.hasConflict ? 'outlined' : 'filled'}
+                            sx={{ ml: 'auto' }}
+                          />
+                        </Box>
+                      ))}
+                    </Box>
+                  </>
+                )}
+              </Box>
+            )}
+          </ScrollArea>
+        </div>
+
+        <SheetFooter className="mt-6">
+          <Button variant="outlined" onClick={() => { onClose(); resetForm(); }}>Cancel</Button>
+          <Button 
+            variant="contained"
+            onClick={handleAssign} 
+            disabled={shiftsWithoutConflicts.length === 0}
+            startIcon={<Plus size={16} />}
+          >
+            Create {shiftsWithoutConflicts.length} Shifts
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

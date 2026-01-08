@@ -1,19 +1,21 @@
 import { useState, useMemo } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   TextField,
-  Chip,
   Box,
   Typography,
-  IconButton,
 } from '@mui/material';
-import { Shift, StaffMember, roleLabels, qualificationLabels } from '@/types/roster';
+import { Shift, StaffMember, roleLabels } from '@/types/roster';
 import { ArrowLeftRight, Search, AlertTriangle, Check, Clock, User } from 'lucide-react';
-import CloseIcon from '@mui/icons-material/Close';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ShiftSwapModalProps {
   open: boolean;
@@ -78,105 +80,110 @@ export function ShiftSwapModal({ open, onClose, shift, staff, allShifts, onSwap 
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <ArrowLeftRight className="h-5 w-5" style={{ color: 'var(--mui-palette-primary-main)' }} />
-          <Typography variant="h6">Swap Shift</Typography>
-        </Box>
-        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
-      </DialogTitle>
+    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-xl">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <ArrowLeftRight className="h-5 w-5 text-primary" />
+            Swap Shift
+          </SheetTitle>
+          <SheetDescription>
+            Select a staff member to swap this shift with
+          </SheetDescription>
+        </SheetHeader>
 
-      <DialogContent dividers>
-        {/* Current Assignment */}
-        <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover', border: 1, borderColor: 'divider', mb: 2 }}>
-          <Typography variant="caption" color="text.secondary">Current Assignment</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
-            <Box sx={{ height: 40, width: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.875rem', fontWeight: 500, bgcolor: currentStaff?.color }}>
-              {currentStaff?.name.split(' ').map(n => n[0]).join('')}
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body1" fontWeight={500}>{currentStaff?.name}</Typography>
-              <Typography variant="body2" color="text.secondary">{currentStaff && roleLabels[currentStaff.role]}</Typography>
-            </Box>
-            <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="body2" fontWeight={500}>{shift.startTime} - {shift.endTime}</Typography>
-              <Typography variant="body2" color="text.secondary">{shift.date}</Typography>
+        <div className="mt-6 space-y-4">
+          {/* Current Assignment */}
+          <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover', border: 1, borderColor: 'divider' }}>
+            <Typography variant="caption" color="text.secondary">Current Assignment</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
+              <Box sx={{ height: 40, width: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.875rem', fontWeight: 500, bgcolor: currentStaff?.color }}>
+                {currentStaff?.name.split(' ').map(n => n[0]).join('')}
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body1" fontWeight={500}>{currentStaff?.name}</Typography>
+                <Typography variant="body2" color="text.secondary">{currentStaff && roleLabels[currentStaff.role]}</Typography>
+              </Box>
+              <Box sx={{ textAlign: 'right' }}>
+                <Typography variant="body2" fontWeight={500}>{shift.startTime} - {shift.endTime}</Typography>
+                <Typography variant="body2" color="text.secondary">{shift.date}</Typography>
+              </Box>
             </Box>
           </Box>
-        </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-          <ArrowLeftRight size={20} style={{ opacity: 0.5 }} />
-        </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <ArrowLeftRight size={20} style={{ opacity: 0.5 }} />
+          </Box>
 
-        <TextField
-          placeholder="Search staff to swap with..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          size="small"
-          fullWidth
-          InputProps={{ startAdornment: <Search size={16} style={{ marginRight: 8, opacity: 0.5 }} /> }}
-          sx={{ mb: 2 }}
-        />
+          <TextField
+            placeholder="Search staff to swap with..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            size="small"
+            fullWidth
+            InputProps={{ startAdornment: <Search size={16} style={{ marginRight: 8, opacity: 0.5 }} /> }}
+          />
 
-        <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-          {eligibleStaff.length === 0 ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6, color: 'text.secondary' }}>
-              <User size={48} style={{ opacity: 0.2, marginBottom: 8 }} />
-              <Typography variant="body2" align="center">No eligible staff found for this shift</Typography>
-            </Box>
-          ) : (
-            eligibleStaff.map((member) => {
-              const conflicts = getConflicts(member.id);
-              const hoursRemaining = member.maxHoursPerWeek - member.currentWeeklyHours;
-              const isSelected = selectedStaffId === member.id;
-              return (
-                <Box
-                  key={member.id}
-                  onClick={() => setSelectedStaffId(member.id)}
-                  sx={{
-                    p: 1.5, mb: 1, borderRadius: 1, border: 2, cursor: 'pointer',
-                    borderColor: isSelected ? 'primary.main' : conflicts.length > 0 ? 'warning.main' : 'divider',
-                    bgcolor: isSelected ? 'primary.light' : 'transparent',
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{ height: 40, width: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.875rem', fontWeight: 500, flexShrink: 0, bgcolor: member.color }}>
-                      {member.name.split(' ').map(n => n[0]).join('')}
-                    </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" fontWeight={500} noWrap>{member.name}</Typography>
-                        {isSelected && <Check size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />}
+          <ScrollArea className="h-[calc(100vh-420px)]">
+            {eligibleStaff.length === 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6, color: 'text.secondary' }}>
+                <User size={48} style={{ opacity: 0.2, marginBottom: 8 }} />
+                <Typography variant="body2" align="center">No eligible staff found for this shift</Typography>
+              </Box>
+            ) : (
+              <div className="space-y-2">
+                {eligibleStaff.map((member) => {
+                  const conflicts = getConflicts(member.id);
+                  const hoursRemaining = member.maxHoursPerWeek - member.currentWeeklyHours;
+                  const isSelected = selectedStaffId === member.id;
+                  return (
+                    <Box
+                      key={member.id}
+                      onClick={() => setSelectedStaffId(member.id)}
+                      sx={{
+                        p: 1.5, borderRadius: 1, border: 2, cursor: 'pointer',
+                        borderColor: isSelected ? 'primary.main' : conflicts.length > 0 ? 'warning.main' : 'divider',
+                        bgcolor: isSelected ? 'primary.light' : 'transparent',
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{ height: 40, width: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.875rem', fontWeight: 500, flexShrink: 0, bgcolor: member.color }}>
+                          {member.name.split(' ').map(n => n[0]).join('')}
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" fontWeight={500} noWrap>{member.name}</Typography>
+                            {isSelected && <Check size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />}
+                          </Box>
+                          <Typography variant="caption" color="text.secondary">{roleLabels[member.role]} • ${member.hourlyRate}/hr</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: hoursRemaining <= 0 ? 'error.main' : 'text.secondary' }}>
+                            <Clock size={12} />
+                            <Typography variant="caption">{hoursRemaining}h available this week</Typography>
+                          </Box>
+                        </Box>
                       </Box>
-                      <Typography variant="caption" color="text.secondary">{roleLabels[member.role]} • ${member.hourlyRate}/hr</Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: hoursRemaining <= 0 ? 'error.main' : 'text.secondary' }}>
-                        <Clock size={12} />
-                        <Typography variant="caption">{hoursRemaining}h available this week</Typography>
-                      </Box>
+                      {conflicts.length > 0 && (
+                        <Box sx={{ mt: 1, p: 1, bgcolor: 'warning.light', borderRadius: 0.5, display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+                          <AlertTriangle size={14} />
+                          <Typography variant="caption">{conflicts.join(', ')}</Typography>
+                        </Box>
+                      )}
                     </Box>
-                  </Box>
-                  {conflicts.length > 0 && (
-                    <Box sx={{ mt: 1, p: 1, bgcolor: 'warning.light', borderRadius: 0.5, display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
-                      <AlertTriangle size={14} />
-                      <Typography variant="caption">{conflicts.join(', ')}</Typography>
-                    </Box>
-                  )}
-                </Box>
-              );
-            })
-          )}
-        </Box>
-      </DialogContent>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
 
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button variant="outlined" onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSwap} disabled={!selectedStaffId} startIcon={<ArrowLeftRight size={16} />}>
-          Confirm Swap
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <SheetFooter className="mt-6">
+          <Button variant="outlined" onClick={onClose}>Cancel</Button>
+          <Button variant="contained" onClick={handleSwap} disabled={!selectedStaffId} startIcon={<ArrowLeftRight size={16} />}>
+            Confirm Swap
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
