@@ -25,9 +25,10 @@ import { SaveRosterTemplateModal } from '@/components/roster/SaveRosterTemplateM
 import { ApplyTemplateModal } from '@/components/roster/ApplyTemplateModal';
 import { BulkShiftAssignmentModal } from '@/components/roster/BulkShiftAssignmentModal';
 import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
+import { RosterHistoryPanel } from '@/components/roster/RosterHistoryPanel';
 import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
 import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
-import { useUndoRedo } from '@/hooks/useUndoRedo';
+import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
 
 // MUI Components
 import {
@@ -86,7 +87,9 @@ import {
   UserPlus,
   Clock,
   Undo2,
-  Redo2
+  Redo2,
+  History,
+  Save
 } from 'lucide-react';
 
 // Default budget configuration per centre
@@ -102,15 +105,21 @@ export default function RosterScheduler() {
   const [selectedCentreId, setSelectedCentreId] = useState<string>(mockCentres[0].id);
   const [currentDate, setCurrentDate] = useState(new Date());
   
-  // Use undo/redo for shifts
+  // Use undo/redo for shifts with history tracking
   const { 
     state: shifts, 
     setState: setShifts, 
     undo: undoShifts, 
     redo: redoShifts, 
     canUndo, 
-    canRedo 
-  } = useUndoRedo<Shift[]>(generateMockShifts(), 30);
+    canRedo,
+    historyEntries,
+    currentHistoryIndex,
+    revertToHistoryIndex,
+    lastSaveTime,
+  } = useUndoRedo<Shift[]>(generateMockShifts(), 50);
+  
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   
   const [openShifts, setOpenShifts] = useState<OpenShift[]>(mockOpenShifts);
   const [showDemandOverlay, setShowDemandOverlay] = useState(true);
@@ -274,7 +283,7 @@ export default function RosterScheduler() {
       isOpenShift: false,
     };
 
-    setShifts(prev => [...prev, newShift]);
+    setShifts(prev => [...prev, newShift], `Added shift for ${staff.name}`, 'add');
     toast.success(`Added shift for ${staff.name}`);
   };
 
@@ -283,7 +292,7 @@ export default function RosterScheduler() {
       s.id === shiftId 
         ? { ...s, date: newDate, roomId: newRoomId, status: 'draft' as const }
         : s
-    ));
+    ), 'Moved shift', 'move');
     toast.success('Shift moved');
   };
 
@@ -304,7 +313,7 @@ export default function RosterScheduler() {
       isOpenShift: false,
     };
 
-    setShifts(prev => [...prev, newShift]);
+    setShifts(prev => [...prev, newShift], `Assigned ${staff.name} to open shift`, 'add');
     setOpenShifts(prev => prev.filter(os => os.id !== openShift.id));
     toast.success(`Assigned ${staff.name} to open shift`);
   };
@@ -320,7 +329,7 @@ export default function RosterScheduler() {
       s.status === 'draft' && s.centreId === selectedCentreId 
         ? { ...s, status: 'published' } 
         : s
-    ));
+    ), `Published ${draftShifts.length} shifts`, 'bulk');
     toast.success(`Published ${draftShifts.length} shifts`);
   };
 
@@ -353,7 +362,7 @@ export default function RosterScheduler() {
         }
       });
 
-      setShifts(prev => [...prev, ...newShifts]);
+      setShifts(prev => [...prev, ...newShifts], `Generated ${newShifts.length} AI shifts`, 'bulk');
       setOpenShifts(prev => prev.filter(os => os.centreId !== selectedCentreId));
       setIsGenerating(false);
       toast.success(`Generated ${newShifts.length} AI-optimized shifts`);
@@ -389,7 +398,7 @@ export default function RosterScheduler() {
       };
     });
 
-    setShifts(prev => [...prev, ...newShifts]);
+    setShifts(prev => [...prev, ...newShifts], `Copied ${newShifts.length} shifts from last week`, 'copy');
     toast.success(`Copied ${newShifts.length} shifts from previous week`);
   };
 
@@ -409,19 +418,19 @@ export default function RosterScheduler() {
   };
 
   const handleShiftSave = (updatedShift: Shift) => {
-    setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s));
+    setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s), 'Updated shift', 'update');
     toast.success('Shift updated');
   };
 
   const handleShiftDelete = (shiftId: string) => {
-    setShifts(prev => prev.filter(s => s.id !== shiftId));
+    setShifts(prev => prev.filter(s => s.id !== shiftId), 'Deleted shift', 'delete');
     setSelectedShift(null);
     toast.success('Shift removed');
   };
 
   const handleShiftDuplicate = (shift: Shift) => {
     const newShift = { ...shift, id: `shift-${Date.now()}`, status: 'draft' as const };
-    setShifts(prev => [...prev, newShift]);
+    setShifts(prev => [...prev, newShift], 'Duplicated shift', 'add');
     toast.success('Shift duplicated');
   };
 
@@ -442,7 +451,7 @@ export default function RosterScheduler() {
       isOpenShift: false,
     };
 
-    setShifts(prev => [...prev, newShift]);
+    setShifts(prev => [...prev, newShift], `Created ${template?.name || 'custom'} shift for ${staff.name}`, 'add');
     if (!template) {
       setSelectedShift(newShift);
     }
@@ -471,7 +480,7 @@ export default function RosterScheduler() {
       isOpenShift: false,
     };
 
-    setShifts(prev => [...prev, newShift]);
+    setShifts(prev => [...prev, newShift], `Created shift for ${staff.name}`, 'add');
     setSelectedShift(newShift); // Open the edit panel to adjust times
     toast.success(`Created shift for ${staff.name} starting at ${startTime}`);
   };
@@ -481,7 +490,7 @@ export default function RosterScheduler() {
       s.id === shiftId 
         ? { ...s, startTime: newStartTime, endTime: newEndTime, status: 'draft' as const }
         : s
-    ));
+    ), `Resized shift to ${newStartTime}-${newEndTime}`, 'resize');
     toast.success(`Shift resized to ${newStartTime} - ${newEndTime}`);
   };
 
@@ -497,7 +506,7 @@ export default function RosterScheduler() {
       s.id === fromShift.id 
         ? { ...s, staffId: toStaffId, status: 'draft' as const }
         : s
-    ));
+    ), `Swapped shift to ${newStaff?.name}`, 'update');
     toast.success(`Shift swapped to ${newStaff?.name}`);
     setShiftToSwap(null);
   };
@@ -618,7 +627,7 @@ export default function RosterScheduler() {
       ...s,
       id: `shift-template-${Date.now()}-${idx}`,
     }));
-    setShifts(prev => [...prev, ...shiftsWithIds]);
+    setShifts(prev => [...prev, ...shiftsWithIds], `Applied template (${shiftsWithIds.length} shifts)`, 'bulk');
     toast.success(`Applied ${shiftsWithIds.length} shifts from template`);
   };
 
@@ -627,7 +636,7 @@ export default function RosterScheduler() {
       ...s,
       id: `shift-bulk-${Date.now()}-${idx}`,
     }));
-    setShifts(prev => [...prev, ...shiftsWithIds]);
+    setShifts(prev => [...prev, ...shiftsWithIds], `Bulk assigned ${shiftsWithIds.length} shifts`, 'bulk');
     toast.success(`Created ${shiftsWithIds.length} shifts`);
   };
 
@@ -851,6 +860,25 @@ export default function RosterScheduler() {
                   </IconButton>
                 </span>
               </Tooltip>
+              <Tooltip content="View History">
+                <IconButton 
+                  size="small" 
+                  onClick={() => setShowHistoryPanel(prev => !prev)}
+                  sx={{ 
+                    color: showHistoryPanel ? 'primary.main' : 'text.secondary',
+                    bgcolor: showHistoryPanel ? 'primary.lighter' : 'transparent',
+                  }}
+                >
+                  <History size={18} />
+                </IconButton>
+              </Tooltip>
+              {lastSaveTime && (
+                <Tooltip content={`Auto-saved at ${lastSaveTime.toLocaleTimeString()}`}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', px: 0.5 }}>
+                    <Save size={12} className="text-green-600" />
+                  </Box>
+                </Tooltip>
+              )}
             </Stack>
 
             {/* Quick Actions Group */}
@@ -1323,6 +1351,24 @@ export default function RosterScheduler() {
         onClose={() => setShowShiftTemplateManager(false)}
         customTemplates={shiftTemplates}
         onSave={handleSaveShiftTemplates}
+      />
+
+      {/* History Panel */}
+      <RosterHistoryPanel
+        open={showHistoryPanel}
+        onClose={() => setShowHistoryPanel(false)}
+        historyEntries={historyEntries.map(entry => ({
+          id: entry.id,
+          timestamp: entry.timestamp,
+          actionType: entry.actionType,
+          description: entry.description,
+          shiftsSnapshot: entry.snapshot,
+        }))}
+        currentIndex={currentHistoryIndex}
+        onRevertToIndex={(index) => {
+          revertToHistoryIndex(index);
+          toast.success(`Reverted to: ${historyEntries[index]?.description}`);
+        }}
       />
 
       {/* Hidden Print View */}
