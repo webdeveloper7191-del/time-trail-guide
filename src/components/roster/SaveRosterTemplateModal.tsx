@@ -1,22 +1,24 @@
 import { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   TextField,
   Checkbox,
-  Chip,
   Box,
   Typography,
-  IconButton,
 } from '@mui/material';
 import { Shift, Room } from '@/types/roster';
 import { RosterTemplate, RosterTemplateShift } from '@/types/rosterTemplates';
 import { format } from 'date-fns';
 import { Save, FileText, Clock, Users } from 'lucide-react';
-import CloseIcon from '@mui/icons-material/Close';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SaveRosterTemplateModalProps {
   open: boolean;
@@ -90,116 +92,114 @@ export function SaveRosterTemplateModal({
   }, {} as Record<string, number>);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Save className="h-5 w-5" style={{ color: 'var(--mui-palette-primary-main)' }} />
-          <Typography variant="h6">Save as Roster Template</Typography>
-        </Box>
-        <IconButton size="small" onClick={onClose}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
+    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <Save className="h-5 w-5 text-primary" />
+            Save as Roster Template
+          </SheetTitle>
+          <SheetDescription>
+            Save the current week's shifts as a reusable template
+          </SheetDescription>
+        </SheetHeader>
 
-      <DialogContent dividers>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Save the current week's shifts as a reusable template
-        </Typography>
+        <ScrollArea className="flex-1 pr-4 mt-6 h-[calc(100vh-260px)]">
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Template Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Standard Week, Holiday Roster"
+              size="small"
+              fullWidth
+            />
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Template Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., Standard Week, Holiday Roster"
-            size="small"
-            fullWidth
-          />
+            <TextField
+              label="Description (Optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe when to use this template..."
+              size="small"
+              fullWidth
+              multiline
+              rows={2}
+            />
 
-          <TextField
-            label="Description (Optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe when to use this template..."
-            size="small"
-            fullWidth
-            multiline
-            rows={2}
-          />
+            <Box>
+              <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Include Rooms</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+                {rooms.map(room => (
+                  <Box
+                    key={room.id}
+                    onClick={() => toggleRoom(room.id)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      p: 1,
+                      borderRadius: 1,
+                      border: 1,
+                      borderColor: 'divider',
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <Checkbox checked={selectedRooms.includes(room.id)} size="small" />
+                    <Typography variant="body2">{room.name}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+                      {groupedShifts[room.id] || 0} shifts
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
 
-          <Box>
-            <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Include Rooms</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
-              {rooms.map(room => (
-                <Box
-                  key={room.id}
-                  onClick={() => toggleRoom(room.id)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    p: 1,
-                    borderRadius: 1,
-                    border: 1,
-                    borderColor: 'divider',
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
-                >
-                  <Checkbox checked={selectedRooms.includes(room.id)} size="small" />
-                  <Typography variant="body2">{room.name}</Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-                    {groupedShifts[room.id] || 0} shifts
-                  </Typography>
-                </Box>
-              ))}
+            <Box
+              onClick={() => setIncludeStaffPreferences(!includeStaffPreferences)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                p: 1.5,
+                bgcolor: 'action.hover',
+                borderRadius: 1,
+                cursor: 'pointer',
+              }}
+            >
+              <Checkbox checked={includeStaffPreferences} size="small" />
+              <Typography variant="body2">Include staff role preferences</Typography>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 1.5, bgcolor: 'primary.light', borderRadius: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <FileText size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
+                <Typography variant="body2">{relevantShifts.length} shifts</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Clock size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
+                <Typography variant="body2">{dates.length} days</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Users size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
+                <Typography variant="body2">{selectedRooms.length} rooms</Typography>
+              </Box>
             </Box>
           </Box>
+        </ScrollArea>
 
-          <Box
-            onClick={() => setIncludeStaffPreferences(!includeStaffPreferences)}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              p: 1.5,
-              bgcolor: 'action.hover',
-              borderRadius: 1,
-              cursor: 'pointer',
-            }}
+        <SheetFooter className="mt-6">
+          <Button variant="outlined" onClick={onClose}>Cancel</Button>
+          <Button 
+            variant="contained"
+            onClick={handleSave} 
+            disabled={!name.trim() || relevantShifts.length === 0}
+            startIcon={<Save size={16} />}
           >
-            <Checkbox checked={includeStaffPreferences} size="small" />
-            <Typography variant="body2">Include staff role preferences</Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 1.5, bgcolor: 'primary.light', borderRadius: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <FileText size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
-              <Typography variant="body2">{relevantShifts.length} shifts</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Clock size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
-              <Typography variant="body2">{dates.length} days</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Users size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
-              <Typography variant="body2">{selectedRooms.length} rooms</Typography>
-            </Box>
-          </Box>
-        </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button variant="outlined" onClick={onClose}>Cancel</Button>
-        <Button 
-          variant="contained"
-          onClick={handleSave} 
-          disabled={!name.trim() || relevantShifts.length === 0}
-          startIcon={<Save size={16} />}
-        >
-          Save Template
-        </Button>
-      </DialogActions>
-    </Dialog>
+            Save Template
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

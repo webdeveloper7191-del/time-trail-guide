@@ -1,9 +1,5 @@
 import { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   TextField,
   FormControl,
@@ -14,11 +10,18 @@ import {
   Stack,
   Box,
   Typography,
-  IconButton,
 } from '@mui/material';
 import { Room, OpenShift, QualificationType, qualificationLabels, ageGroupLabels } from '@/types/roster';
 import { Plus, X, AlertCircle } from 'lucide-react';
-import CloseIcon from '@mui/icons-material/Close';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AddOpenShiftModalProps {
   open: boolean;
@@ -91,131 +94,133 @@ export function AddOpenShiftModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AlertCircle className="h-5 w-5" style={{ color: '#f59e0b' }} />
-          <Typography variant="h6">Add Open Shift</Typography>
-        </Box>
-        <IconButton size="small" onClick={onClose}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
+    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-amber-500" />
+            Add Open Shift
+          </SheetTitle>
+          <SheetDescription>
+            Create a new open shift that needs to be filled
+          </SheetDescription>
+        </SheetHeader>
 
-      <DialogContent dividers>
-        <Stack spacing={3}>
-          {/* Room Selection */}
-          <FormControl fullWidth size="small">
-            <InputLabel>Room / Area</InputLabel>
-            <Select
-              value={roomId}
-              label="Room / Area"
-              onChange={(e) => setRoomId(e.target.value)}
-            >
-              {rooms.map((room) => (
-                <MenuItem key={room.id} value={room.id}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>{room.name}</span>
-                    <Typography variant="caption" color="text.secondary">
-                      {ageGroupLabels[room.ageGroup]}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <ScrollArea className="flex-1 pr-4 mt-6">
+          <Stack spacing={3}>
+            {/* Room Selection */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Room / Area</InputLabel>
+              <Select
+                value={roomId}
+                label="Room / Area"
+                onChange={(e) => setRoomId(e.target.value)}
+              >
+                {rooms.map((room) => (
+                  <MenuItem key={room.id} value={room.id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <span>{room.name}</span>
+                      <Typography variant="caption" color="text.secondary">
+                        {ageGroupLabels[room.ageGroup]}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-          {/* Date */}
-          <TextField
-            label="Date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            size="small"
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-          />
-
-          {/* Time */}
-          <Stack direction="row" spacing={2}>
+            {/* Date */}
             <TextField
-              label="Start Time"
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              label="Date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
               size="small"
               fullWidth
               InputLabelProps={{ shrink: true }}
             />
-            <TextField
-              label="End Time"
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              size="small"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-            />
-          </Stack>
 
-          {/* Urgency */}
-          <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Urgency Level
-            </Typography>
-            <Stack direction="row" spacing={1}>
-              {(['low', 'medium', 'high', 'critical'] as const).map((level) => (
-                <Button
-                  key={level}
-                  variant={urgency === level ? 'contained' : 'outlined'}
-                  size="small"
-                  onClick={() => setUrgency(level)}
-                  sx={{
-                    flex: 1,
-                    textTransform: 'capitalize',
-                    ...(urgency === level && urgencyColors[level]),
-                  }}
-                >
-                  {level}
-                </Button>
-              ))}
+            {/* Time */}
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label="Start Time"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                size="small"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="End Time"
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                size="small"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
             </Stack>
-          </Box>
 
-          {/* Required Qualifications */}
-          <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Required Qualifications (Optional)
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {availableQualifications.map((qual) => (
-                <Chip
-                  key={qual}
-                  label={qualificationLabels[qual]}
-                  onClick={() => toggleQualification(qual)}
-                  color={selectedQualifications.includes(qual) ? 'primary' : 'default'}
-                  variant={selectedQualifications.includes(qual) ? 'filled' : 'outlined'}
-                  size="small"
-                  deleteIcon={selectedQualifications.includes(qual) ? <X size={14} /> : undefined}
-                  onDelete={selectedQualifications.includes(qual) ? () => toggleQualification(qual) : undefined}
-                />
-              ))}
+            {/* Urgency */}
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Urgency Level
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                {(['low', 'medium', 'high', 'critical'] as const).map((level) => (
+                  <Button
+                    key={level}
+                    variant={urgency === level ? 'contained' : 'outlined'}
+                    size="small"
+                    onClick={() => setUrgency(level)}
+                    sx={{
+                      flex: 1,
+                      textTransform: 'capitalize',
+                      ...(urgency === level && urgencyColors[level]),
+                    }}
+                  >
+                    {level}
+                  </Button>
+                ))}
+              </Stack>
             </Box>
-          </Box>
-        </Stack>
-      </DialogContent>
 
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button variant="outlined" onClick={onClose}>Cancel</Button>
-        <Button 
-          variant="contained"
-          onClick={handleSubmit} 
-          disabled={!roomId || !date || !startTime || !endTime}
-          startIcon={<Plus size={16} />}
-        >
-          Add Open Shift
-        </Button>
-      </DialogActions>
-    </Dialog>
+            {/* Required Qualifications */}
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Required Qualifications (Optional)
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {availableQualifications.map((qual) => (
+                  <Chip
+                    key={qual}
+                    label={qualificationLabels[qual]}
+                    onClick={() => toggleQualification(qual)}
+                    color={selectedQualifications.includes(qual) ? 'primary' : 'default'}
+                    variant={selectedQualifications.includes(qual) ? 'filled' : 'outlined'}
+                    size="small"
+                    deleteIcon={selectedQualifications.includes(qual) ? <X size={14} /> : undefined}
+                    onDelete={selectedQualifications.includes(qual) ? () => toggleQualification(qual) : undefined}
+                  />
+                ))}
+              </Box>
+            </Box>
+          </Stack>
+        </ScrollArea>
+
+        <SheetFooter className="mt-6">
+          <Button variant="outlined" onClick={onClose}>Cancel</Button>
+          <Button 
+            variant="contained"
+            onClick={handleSubmit} 
+            disabled={!roomId || !date || !startTime || !endTime}
+            startIcon={<Plus size={16} />}
+          >
+            Add Open Shift
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
