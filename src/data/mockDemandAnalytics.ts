@@ -3,19 +3,26 @@ import { format, addDays, startOfWeek } from 'date-fns';
 
 const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
+// Use actual room IDs from mockCentres
 const mockCentreRooms = [
-  { centreId: 'centre-1', roomId: 'room-1', capacity: 20, ratioReq: 4 },
-  { centreId: 'centre-1', roomId: 'room-2', capacity: 15, ratioReq: 5 },
-  { centreId: 'centre-1', roomId: 'room-3', capacity: 24, ratioReq: 11 },
-  { centreId: 'centre-2', roomId: 'room-4', capacity: 16, ratioReq: 4 },
-  { centreId: 'centre-2', roomId: 'room-5', capacity: 20, ratioReq: 5 },
+  { centreId: 'centre-1', roomId: 'room-1a', capacity: 12, ratioReq: 4 },
+  { centreId: 'centre-1', roomId: 'room-1b', capacity: 15, ratioReq: 5 },
+  { centreId: 'centre-1', roomId: 'room-1c', capacity: 22, ratioReq: 10 },
+  { centreId: 'centre-1', roomId: 'room-1d', capacity: 22, ratioReq: 11 },
+  { centreId: 'centre-2', roomId: 'room-2a', capacity: 10, ratioReq: 4 },
+  { centreId: 'centre-2', roomId: 'room-2b', capacity: 12, ratioReq: 5 },
+  { centreId: 'centre-2', roomId: 'room-2c', capacity: 20, ratioReq: 10 },
+  { centreId: 'centre-3', roomId: 'room-3a', capacity: 8, ratioReq: 4 },
+  { centreId: 'centre-3', roomId: 'room-3b', capacity: 15, ratioReq: 5 },
+  { centreId: 'centre-3', roomId: 'room-3c', capacity: 22, ratioReq: 10 },
+  { centreId: 'centre-3', roomId: 'room-3d', capacity: 24, ratioReq: 11 },
 ];
 
 export const mockStaffAbsences: StaffAbsence[] = [
-  { staffId: 'staff-1', staffName: 'Sarah Johnson', type: 'sick', date: format(addDays(weekStart, 1), 'yyyy-MM-dd'), centreId: 'centre-1', roomId: 'room-1' },
-  { staffId: 'staff-3', staffName: 'Emma Wilson', type: 'annual', date: format(addDays(weekStart, 2), 'yyyy-MM-dd'), centreId: 'centre-1', roomId: 'room-2' },
-  { staffId: 'staff-5', staffName: 'James Taylor', type: 'personal', date: format(addDays(weekStart, 3), 'yyyy-MM-dd'), centreId: 'centre-2', roomId: 'room-4' },
-  { staffId: 'staff-2', staffName: 'Michael Chen', type: 'sick', date: format(addDays(weekStart, 0), 'yyyy-MM-dd'), centreId: 'centre-1', roomId: 'room-3' },
+  { staffId: 'staff-1', staffName: 'Sarah Johnson', type: 'sick', date: format(addDays(weekStart, 1), 'yyyy-MM-dd'), centreId: 'centre-1', roomId: 'room-1a' },
+  { staffId: 'staff-3', staffName: 'Emma Wilson', type: 'annual', date: format(addDays(weekStart, 2), 'yyyy-MM-dd'), centreId: 'centre-1', roomId: 'room-1b' },
+  { staffId: 'staff-5', staffName: 'James Taylor', type: 'personal', date: format(addDays(weekStart, 3), 'yyyy-MM-dd'), centreId: 'centre-2', roomId: 'room-2a' },
+  { staffId: 'staff-2', staffName: 'Michael Chen', type: 'sick', date: format(addDays(weekStart, 0), 'yyyy-MM-dd'), centreId: 'centre-1', roomId: 'room-1c' },
 ];
 
 export const generateMockDemandAnalytics = (): DemandAnalyticsData[] => {
