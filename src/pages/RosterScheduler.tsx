@@ -3,6 +3,7 @@ import { format, addDays, startOfWeek, subWeeks, startOfMonth, endOfMonth, getDa
 import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff, SchedulingPreferences } from '@/types/roster';
 import { RosterTemplate } from '@/types/rosterTemplates';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags, mockAgencyStaff } from '@/data/mockRosterData';
+import { generateMockDemandAnalytics, mockStaffAbsences } from '@/data/mockDemandAnalytics';
 import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel';
 import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
 import { DayTimelineView } from '@/components/roster/DayTimelineView';
@@ -91,6 +92,7 @@ import {
   History,
   Save
 } from 'lucide-react';
+import { BarChart2 } from 'lucide-react';
 
 // Default budget configuration per centre
 const defaultCentreBudgets: Record<string, number> = {
@@ -123,6 +125,7 @@ export default function RosterScheduler() {
   
   const [openShifts, setOpenShifts] = useState<OpenShift[]>(mockOpenShifts);
   const [showDemandOverlay, setShowDemandOverlay] = useState(true);
+  const [showAnalyticsCharts, setShowAnalyticsCharts] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [shiftTemplates, setShiftTemplates] = useState<ShiftTemplate[]>([]);
@@ -156,6 +159,7 @@ export default function RosterScheduler() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   
   const demandData = useMemo(() => generateMockDemandData(), []);
+  const demandAnalytics = useMemo(() => generateMockDemandAnalytics(), []);
   const complianceFlags = useMemo(() => generateMockComplianceFlags(), []);
 
   // Keyboard shortcuts for undo/redo
@@ -823,6 +827,17 @@ export default function RosterScheduler() {
               sx={{ fontWeight: 500 }}
             />
 
+            {/* Analytics Charts Toggle */}
+            <Chip
+              size="small"
+              label="Analytics"
+              icon={<BarChart2 size={14} />}
+              onClick={() => setShowAnalyticsCharts(prev => !prev)}
+              color={showAnalyticsCharts ? "secondary" : "default"}
+              variant={showAnalyticsCharts ? "filled" : "outlined"}
+              sx={{ fontWeight: 500 }}
+            />
+
             {/* Undo/Redo Group */}
             <Stack 
               direction="row" 
@@ -1165,6 +1180,9 @@ export default function RosterScheduler() {
             dates={dates}
             viewMode={viewMode}
             showDemandOverlay={showDemandOverlay}
+            showAnalyticsCharts={showAnalyticsCharts}
+            demandAnalytics={demandAnalytics}
+            staffAbsences={mockStaffAbsences}
             shiftTemplates={shiftTemplates}
             onDropStaff={handleDropStaff}
             onShiftEdit={setSelectedShift}
