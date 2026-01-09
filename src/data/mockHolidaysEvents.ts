@@ -29,49 +29,63 @@ export const mockPublicHolidays: PublicHoliday[] = [
   { id: 'ph-8', date: '2025-11-04', name: 'Melbourne Cup Day', type: 'public_holiday', state: 'VIC' },
   { id: 'ph-9', date: '2025-12-25', name: 'Christmas Day', type: 'public_holiday' },
   { id: 'ph-10', date: '2025-12-26', name: 'Boxing Day', type: 'public_holiday' },
+  // 2026 holidays
   { id: 'ph-11', date: '2026-01-01', name: "New Year's Day", type: 'public_holiday' },
   { id: 'ph-12', date: '2026-01-26', name: 'Australia Day', type: 'public_holiday' },
-  // School holidays (example periods)
-  { id: 'sh-1', date: '2025-01-06', name: 'School Holidays', type: 'school_holiday' },
-  { id: 'sh-2', date: '2025-01-07', name: 'School Holidays', type: 'school_holiday' },
-  { id: 'sh-3', date: '2025-01-08', name: 'School Holidays', type: 'school_holiday' },
-  { id: 'sh-4', date: '2025-01-09', name: 'School Holidays', type: 'school_holiday' },
-  { id: 'sh-5', date: '2025-01-10', name: 'School Holidays', type: 'school_holiday' },
+  { id: 'ph-13', date: '2026-04-03', name: 'Good Friday', type: 'public_holiday' },
+  { id: 'ph-14', date: '2026-04-04', name: 'Easter Saturday', type: 'public_holiday' },
+  { id: 'ph-15', date: '2026-04-06', name: 'Easter Monday', type: 'public_holiday' },
+  { id: 'ph-16', date: '2026-04-25', name: 'Anzac Day', type: 'public_holiday' },
+  { id: 'ph-17', date: '2026-06-08', name: "Queen's Birthday", type: 'public_holiday', state: 'VIC' },
+  { id: 'ph-18', date: '2026-12-25', name: 'Christmas Day', type: 'public_holiday' },
+  { id: 'ph-19', date: '2026-12-26', name: 'Boxing Day', type: 'public_holiday' },
+  // School holidays (example periods - current week Jan 2026)
+  { id: 'sh-1', date: '2026-01-05', name: 'School Holidays', type: 'school_holiday' },
+  { id: 'sh-2', date: '2026-01-06', name: 'School Holidays', type: 'school_holiday' },
+  { id: 'sh-3', date: '2026-01-07', name: 'School Holidays', type: 'school_holiday' },
+  { id: 'sh-4', date: '2026-01-08', name: 'School Holidays', type: 'school_holiday' },
+  { id: 'sh-5', date: '2026-01-09', name: 'School Holidays', type: 'school_holiday' },
+  { id: 'sh-6', date: '2026-01-12', name: 'School Holidays', type: 'school_holiday' },
+  { id: 'sh-7', date: '2026-01-13', name: 'School Holidays', type: 'school_holiday' },
+  { id: 'sh-8', date: '2026-01-14', name: 'School Holidays', type: 'school_holiday' },
+  { id: 'sh-9', date: '2026-01-15', name: 'School Holidays', type: 'school_holiday' },
+  { id: 'sh-10', date: '2026-01-16', name: 'School Holidays', type: 'school_holiday' },
 ];
 
-// Sample centre events
+// Sample centre events - include current week dates
 export const mockRosterEvents: RosterEvent[] = [
+  // Current week events (Jan 2026)
   { 
     id: 'ev-1', 
-    date: '2025-01-15', 
-    name: 'Staff Training Day', 
+    date: '2026-01-06', 
+    name: 'Staff Meeting', 
+    type: 'staff_meeting',
+    description: 'Weekly team meeting - 4pm'
+  },
+  { 
+    id: 'ev-2', 
+    date: '2026-01-07', 
+    name: 'First Aid Training', 
     type: 'training',
     description: 'First aid refresher course for all staff'
   },
   { 
-    id: 'ev-2', 
-    date: '2025-01-20', 
-    name: 'Parent Open Day', 
+    id: 'ev-3', 
+    date: '2026-01-08', 
+    name: 'Parent Info Night', 
     type: 'parent_event',
-    description: 'Annual open day for prospective parents'
+    description: 'Welcome back parent information session'
   },
   { 
-    id: 'ev-3', 
-    date: '2025-01-22', 
+    id: 'ev-4', 
+    date: '2026-01-09', 
     name: 'Quality Audit', 
     type: 'inspection',
     description: 'ACECQA quality assessment visit'
   },
   { 
-    id: 'ev-4', 
-    date: '2025-02-14', 
-    name: "Valentine's Party", 
-    type: 'celebration',
-    affectedRooms: ['room-1', 'room-2']
-  },
-  { 
     id: 'ev-5', 
-    date: '2025-03-05', 
+    date: '2026-01-12', 
     name: 'Zoo Excursion', 
     type: 'excursion',
     affectedRooms: ['room-3', 'room-4'],
@@ -79,10 +93,10 @@ export const mockRosterEvents: RosterEvent[] = [
   },
   { 
     id: 'ev-6', 
-    date: '2025-01-13', 
-    name: 'Staff Meeting', 
-    type: 'staff_meeting',
-    description: 'Monthly team meeting - 4pm'
+    date: '2026-02-14', 
+    name: "Valentine's Party", 
+    type: 'celebration',
+    affectedRooms: ['room-1', 'room-2']
   },
 ];
 
