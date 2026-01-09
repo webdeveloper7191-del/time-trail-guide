@@ -22,6 +22,7 @@ import { SchedulingPreferencesModal } from '@/components/roster/SchedulingPrefer
 import { ShiftNotificationsModal } from '@/components/roster/ShiftNotificationsModal';
 import { StaffProfileModal } from '@/components/roster/StaffProfileModal';
 import { WeeklySummaryDashboard } from '@/components/roster/WeeklySummaryDashboard';
+import { WeeklyOptimizationReport } from '@/components/roster/WeeklyOptimizationReport';
 import { SaveRosterTemplateModal } from '@/components/roster/SaveRosterTemplateModal';
 import { ApplyTemplateModal } from '@/components/roster/ApplyTemplateModal';
 import { BulkShiftAssignmentModal } from '@/components/roster/BulkShiftAssignmentModal';
@@ -90,7 +91,8 @@ import {
   Undo2,
   Redo2,
   History,
-  Save
+  Save,
+  TrendingUp
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
 
@@ -142,6 +144,7 @@ export default function RosterScheduler() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showStaffProfile, setShowStaffProfile] = useState(false);
   const [showWeeklySummary, setShowWeeklySummary] = useState(false);
+  const [showOptimizationReport, setShowOptimizationReport] = useState(false);
   const [selectedStaffForProfile, setSelectedStaffForProfile] = useState<StaffMember | null>(null);
   const [selectedStaffForPrefs, setSelectedStaffForPrefs] = useState<StaffMember | null>(null);
   const [centreBudgets, setCentreBudgets] = useState<Record<string, number>>(defaultCentreBudgets);
@@ -732,6 +735,17 @@ export default function RosterScheduler() {
               startIcon={<BarChart3 size={16} />}
             >
               Summary
+            </Button>
+
+            {/* Optimization Report */}
+            <Button 
+              variant="outlined" 
+              size="small" 
+              onClick={() => setShowOptimizationReport(true)}
+              startIcon={<TrendingUp size={16} />}
+              color="success"
+            >
+              Optimize
             </Button>
 
             {/* Budget indicator */}
@@ -1325,6 +1339,18 @@ export default function RosterScheduler() {
         weeklyBudget={weeklyBudget}
         isOpen={showWeeklySummary}
         onClose={() => setShowWeeklySummary(false)}
+      />
+
+      <WeeklyOptimizationReport
+        shifts={shifts}
+        staff={allStaff}
+        centre={selectedCentre}
+        dates={dates}
+        weeklyBudget={weeklyBudget}
+        analyticsData={demandAnalytics}
+        absences={mockStaffAbsences}
+        isOpen={showOptimizationReport}
+        onClose={() => setShowOptimizationReport(false)}
       />
 
       <SaveRosterTemplateModal
