@@ -59,7 +59,7 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-lg">
+      <SheetContent side="right">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-primary" />
@@ -70,7 +70,7 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className="flex-1 pr-4 mt-6 h-[calc(100vh-200px)]">
+        <ScrollArea className="flex-1 pr-4 h-[calc(100vh-220px)]">
           <Stack spacing={4}>
             {/* Weekly Budget */}
             <Box>

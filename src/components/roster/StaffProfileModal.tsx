@@ -70,7 +70,7 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-lg p-0">
+      <SheetContent side="right" className="p-0">
         {/* Header with Gradient Background */}
         <Box
           sx={{

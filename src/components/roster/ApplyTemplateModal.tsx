@@ -145,7 +145,7 @@ export function ApplyTemplateModal({
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-xl">
+      <SheetContent side="right">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <FileStack className="h-5 w-5 text-primary" />

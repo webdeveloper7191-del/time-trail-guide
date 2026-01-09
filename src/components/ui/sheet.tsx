@@ -99,8 +99,8 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
         onClose={() => onOpenChange(false)}
         PaperProps={{
           sx: {
-            width: side === 'left' || side === 'right' ? { xs: '75%', sm: '384px' } : '100%',
-            maxWidth: side === 'left' || side === 'right' ? '384px' : '100%',
+            width: side === 'left' || side === 'right' ? { xs: '90%', sm: '480px', md: '560px' } : '100%',
+            maxWidth: side === 'left' || side === 'right' ? '640px' : '100%',
             height: side === 'top' || side === 'bottom' ? 'auto' : '100%',
             backgroundColor: 'hsl(var(--background))',
             color: 'hsl(var(--foreground))',
@@ -108,6 +108,7 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
             borderRight: side === 'left' ? '1px solid hsl(var(--border))' : undefined,
             borderTop: side === 'bottom' ? '1px solid hsl(var(--border))' : undefined,
             borderBottom: side === 'top' ? '1px solid hsl(var(--border))' : undefined,
+            boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
           }
         }}
         slotProps={{
@@ -120,7 +121,7 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
       >
         <div
           ref={ref}
-          className={cn("relative h-full p-6", className)}
+          className={cn("relative h-full p-6 flex flex-col overflow-hidden", className)}
           {...props}
         >
           {children}
@@ -148,18 +149,18 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
 SheetContent.displayName = "SheetContent";
 
 const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />
+  <div className={cn("flex flex-col space-y-2 text-left pb-4 border-b border-border mb-4 shrink-0", className)} {...props} />
 );
 SheetHeader.displayName = "SheetHeader";
 
 const SheetFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />
+  <div className={cn("flex flex-row justify-end gap-3 pt-4 border-t border-border mt-auto shrink-0", className)} {...props} />
 );
 SheetFooter.displayName = "SheetFooter";
 
 const SheetTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h2 ref={ref} className={cn("text-lg font-semibold text-foreground", className)} {...props} />
+    <h2 ref={ref} className={cn("text-xl font-semibold text-foreground tracking-tight", className)} {...props} />
   )
 );
 SheetTitle.displayName = "SheetTitle";
