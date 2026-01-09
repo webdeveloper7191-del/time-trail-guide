@@ -46,7 +46,7 @@ export function AvailabilityCalendarModal({ open, onClose, staff, currentDate }:
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-4xl">
+      <SheetContent side="right" className="!w-[90vw] sm:!w-[720px] md:!w-[840px] !max-w-[900px]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <User className="h-5 w-5 text-primary" />

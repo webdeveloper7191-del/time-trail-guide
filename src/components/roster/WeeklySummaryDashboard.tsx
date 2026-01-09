@@ -108,7 +108,7 @@ export function WeeklySummaryDashboard({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl">
+      <SheetContent side="right" className="!w-[90vw] sm:!w-[640px] md:!w-[720px] !max-w-[720px]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <PieChart className="h-5 w-5 text-primary" />
@@ -119,7 +119,7 @@ export function WeeklySummaryDashboard({
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className="flex-1 pr-4 mt-6 h-[calc(100vh-140px)]">
+        <ScrollArea className="flex-1 pr-4 h-[calc(100vh-180px)]">
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Key Metrics */}
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>

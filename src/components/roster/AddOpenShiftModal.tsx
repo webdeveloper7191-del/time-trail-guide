@@ -95,7 +95,7 @@ export function AddOpenShiftModal({
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-lg">
+      <SheetContent side="right">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-amber-500" />
@@ -106,7 +106,7 @@ export function AddOpenShiftModal({
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className="flex-1 pr-4 mt-6">
+        <ScrollArea className="flex-1 pr-4 h-[calc(100vh-220px)]">
           <Stack spacing={3}>
             {/* Room Selection */}
             <FormControl fullWidth size="small">
