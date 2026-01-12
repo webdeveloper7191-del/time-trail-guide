@@ -39,6 +39,7 @@ interface ShiftDetailPanelProps {
   onDelete: (shiftId: string) => void;
   onDuplicate: (shift: Shift) => void;
   onSwapStaff: (shift: Shift) => void;
+  onCopyShift?: (shift: Shift) => void;
 }
 
 export function ShiftDetailPanel({
@@ -52,6 +53,7 @@ export function ShiftDetailPanel({
   onDelete,
   onDuplicate,
   onSwapStaff,
+  onCopyShift,
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
   
@@ -339,9 +341,12 @@ export function ShiftDetailPanel({
             <ArrowLeftRight className="h-4 w-4 mr-1" />
             Swap
           </Button>
-          <Button variant="outline" size="sm" className="flex-1" onClick={() => onDuplicate(shift)}>
+          <Button variant="outline" size="sm" className="flex-1" onClick={() => onCopyShift?.(shift)}>
             <Copy className="h-4 w-4 mr-1" />
-            Copy
+            Copy to...
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => onDuplicate(shift)}>
+            <Copy className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(shift.id)}>
             <Trash2 className="h-4 w-4" />

@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm, FormProvider, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
   TextField,
@@ -10,18 +12,14 @@ import {
   Stack,
   Box,
   Typography,
+  FormHelperText,
 } from '@mui/material';
 import { Room, OpenShift, QualificationType, qualificationLabels, ageGroupLabels } from '@/types/roster';
 import { Plus, X, AlertCircle } from 'lucide-react';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
+import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { openShiftSchema, OpenShiftFormValues } from '@/lib/validationSchemas';
+import { toast } from 'sonner';
 
 interface AddOpenShiftModalProps {
   open: boolean;
@@ -42,12 +40,50 @@ export function AddOpenShiftModal({
   selectedRoomId,
   onAdd 
 }: AddOpenShiftModalProps) {
-  const [roomId, setRoomId] = useState(selectedRoomId || '');
-  const [date, setDate] = useState(selectedDate || '');
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('17:00');
-  const [urgency, setUrgency] = useState<OpenShift['urgency']>('medium');
   const [selectedQualifications, setSelectedQualifications] = useState<QualificationType[]>([]);
+
+  const methods = useForm<OpenShiftFormValues>({
+    resolver: zodResolver(openShiftSchema),
+    defaultValues: {
+      centreId,
+      roomId: selectedRoomId || '',
+      date: selectedDate || '',
+      startTime: '09:00',
+      endTime: '17:00',
+      urgency: 'medium',
+      requiredQualifications: [],
+      notes: '',
+    },
+    mode: 'onChange',
+  });
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isValid },
+  } = methods;
+
+  const urgency = watch('urgency');
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      reset({
+        centreId,
+        roomId: selectedRoomId || '',
+        date: selectedDate || '',
+        startTime: '09:00',
+        endTime: '17:00',
+        urgency: 'medium',
+        requiredQualifications: [],
+        notes: '',
+      });
+      setSelectedQualifications([]);
+    }
+  }, [open, reset, centreId, selectedRoomId, selectedDate]);
 
   const availableQualifications: QualificationType[] = [
     'diploma_ece', 'certificate_iii', 'first_aid', 'food_safety', 
@@ -55,33 +91,31 @@ export function AddOpenShiftModal({
   ];
 
   const toggleQualification = (qual: QualificationType) => {
-    setSelectedQualifications(prev => 
-      prev.includes(qual) 
-        ? prev.filter(q => q !== qual)
-        : [...prev, qual]
-    );
+    const newQuals = selectedQualifications.includes(qual) 
+      ? selectedQualifications.filter(q => q !== qual)
+      : [...selectedQualifications, qual];
+    setSelectedQualifications(newQuals);
+    setValue('requiredQualifications', newQuals);
   };
 
-  const handleSubmit = () => {
-    if (!roomId || !date || !startTime || !endTime) return;
-
+  const onSubmit = (data: OpenShiftFormValues) => {
     onAdd({
-      centreId,
-      roomId,
-      date,
-      startTime,
-      endTime,
+      centreId: data.centreId,
+      roomId: data.roomId,
+      date: data.date,
+      startTime: data.startTime,
+      endTime: data.endTime,
       requiredQualifications: selectedQualifications,
-      urgency,
+      urgency: data.urgency,
       applicants: [],
     });
 
-    // Reset form
-    setRoomId('');
-    setDate('');
-    setStartTime('09:00');
-    setEndTime('17:00');
-    setUrgency('medium');
+    toast.success('Open shift added');
+    handleClose();
+  };
+
+  const handleClose = () => {
+    reset();
     setSelectedQualifications([]);
     onClose();
   };
@@ -93,134 +127,181 @@ export function AddOpenShiftModal({
     critical: { bgcolor: 'error.light', color: 'error.dark' },
   };
 
+  const actions: OffCanvasAction[] = [
+    { label: 'Cancel', onClick: handleClose, variant: 'outlined' },
+    { label: 'Add Open Shift', onClick: handleSubmit(onSubmit), variant: 'primary', disabled: !isValid },
+  ];
+
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-500" />
-            Add Open Shift
-          </SheetTitle>
-          <SheetDescription>
-            Create a new open shift that needs to be filled
-          </SheetDescription>
-        </SheetHeader>
-
-        <ScrollArea className="flex-1 pr-4 h-[calc(100vh-220px)]">
-          <Stack spacing={3}>
-            {/* Room Selection */}
-            <FormControl fullWidth size="small">
-              <InputLabel>Room / Area</InputLabel>
-              <Select
-                value={roomId}
-                label="Room / Area"
-                onChange={(e) => setRoomId(e.target.value)}
-              >
-                {rooms.map((room) => (
-                  <MenuItem key={room.id} value={room.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <span>{room.name}</span>
-                      <Typography variant="caption" color="text.secondary">
-                        {ageGroupLabels[room.ageGroup]}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {/* Date */}
-            <TextField
-              label="Date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              size="small"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-            />
-
-            {/* Time */}
-            <Stack direction="row" spacing={2}>
-              <TextField
-                label="Start Time"
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
+    <FormProvider {...methods}>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <PrimaryOffCanvas
+          title="Add Open Shift"
+          description="Create a new open shift that needs to be filled"
+          width="500px"
+          open={open}
+          onClose={handleClose}
+          actions={actions}
+          showFooter
+        >
+          <ScrollArea className="h-[calc(100vh-280px)]">
+            <Stack spacing={3}>
+              {/* Room Selection */}
+              <Controller
+                name="roomId"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth size="small" error={!!errors.roomId}>
+                    <InputLabel>Room / Area *</InputLabel>
+                    <Select
+                      {...field}
+                      label="Room / Area *"
+                    >
+                      {rooms.map((room) => (
+                        <MenuItem key={room.id} value={room.id}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <span>{room.name}</span>
+                            <Typography variant="caption" color="text.secondary">
+                              {ageGroupLabels[room.ageGroup]}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {errors.roomId && (
+                      <FormHelperText>{errors.roomId.message}</FormHelperText>
+                    )}
+                  </FormControl>
+                )}
               />
-              <TextField
-                label="End Time"
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
+
+              {/* Date */}
+              <Controller
+                name="date"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Date *"
+                    type="date"
+                    size="small"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    error={!!errors.date}
+                    helperText={errors.date?.message}
+                  />
+                )}
+              />
+
+              {/* Time */}
+              <Stack direction="row" spacing={2}>
+                <Controller
+                  name="startTime"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Start Time *"
+                      type="time"
+                      size="small"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                      error={!!errors.startTime}
+                      helperText={errors.startTime?.message}
+                    />
+                  )}
+                />
+                <Controller
+                  name="endTime"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="End Time *"
+                      type="time"
+                      size="small"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                      error={!!errors.endTime}
+                      helperText={errors.endTime?.message}
+                    />
+                  )}
+                />
+              </Stack>
+
+              {/* Urgency */}
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Urgency Level *
+                </Typography>
+                <Controller
+                  name="urgency"
+                  control={control}
+                  render={({ field }) => (
+                    <Stack direction="row" spacing={1}>
+                      {(['low', 'medium', 'high', 'critical'] as const).map((level) => (
+                        <Button
+                          key={level}
+                          variant={field.value === level ? 'contained' : 'outlined'}
+                          size="small"
+                          onClick={() => field.onChange(level)}
+                          sx={{
+                            flex: 1,
+                            textTransform: 'capitalize',
+                            ...(field.value === level && urgencyColors[level]),
+                          }}
+                        >
+                          {level}
+                        </Button>
+                      ))}
+                    </Stack>
+                  )}
+                />
+              </Box>
+
+              {/* Required Qualifications */}
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Required Qualifications (Optional)
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {availableQualifications.map((qual) => (
+                    <Chip
+                      key={qual}
+                      label={qualificationLabels[qual]}
+                      onClick={() => toggleQualification(qual)}
+                      color={selectedQualifications.includes(qual) ? 'primary' : 'default'}
+                      variant={selectedQualifications.includes(qual) ? 'filled' : 'outlined'}
+                      size="small"
+                      deleteIcon={selectedQualifications.includes(qual) ? <X size={14} /> : undefined}
+                      onDelete={selectedQualifications.includes(qual) ? () => toggleQualification(qual) : undefined}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
+              {/* Notes */}
+              <Controller
+                name="notes"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Notes"
+                    multiline
+                    rows={3}
+                    size="small"
+                    fullWidth
+                    placeholder="Optional notes about this open shift..."
+                    error={!!errors.notes}
+                    helperText={errors.notes?.message}
+                  />
+                )}
               />
             </Stack>
-
-            {/* Urgency */}
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Urgency Level
-              </Typography>
-              <Stack direction="row" spacing={1}>
-                {(['low', 'medium', 'high', 'critical'] as const).map((level) => (
-                  <Button
-                    key={level}
-                    variant={urgency === level ? 'contained' : 'outlined'}
-                    size="small"
-                    onClick={() => setUrgency(level)}
-                    sx={{
-                      flex: 1,
-                      textTransform: 'capitalize',
-                      ...(urgency === level && urgencyColors[level]),
-                    }}
-                  >
-                    {level}
-                  </Button>
-                ))}
-              </Stack>
-            </Box>
-
-            {/* Required Qualifications */}
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Required Qualifications (Optional)
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {availableQualifications.map((qual) => (
-                  <Chip
-                    key={qual}
-                    label={qualificationLabels[qual]}
-                    onClick={() => toggleQualification(qual)}
-                    color={selectedQualifications.includes(qual) ? 'primary' : 'default'}
-                    variant={selectedQualifications.includes(qual) ? 'filled' : 'outlined'}
-                    size="small"
-                    deleteIcon={selectedQualifications.includes(qual) ? <X size={14} /> : undefined}
-                    onDelete={selectedQualifications.includes(qual) ? () => toggleQualification(qual) : undefined}
-                  />
-                ))}
-              </Box>
-            </Box>
-          </Stack>
-        </ScrollArea>
-
-        <SheetFooter className="mt-6">
-          <Button variant="outlined" onClick={onClose}>Cancel</Button>
-          <Button 
-            variant="contained"
-            onClick={handleSubmit} 
-            disabled={!roomId || !date || !startTime || !endTime}
-            startIcon={<Plus size={16} />}
-          >
-            Add Open Shift
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          </ScrollArea>
+        </PrimaryOffCanvas>
+      </form>
+    </FormProvider>
   );
 }

@@ -11,6 +11,7 @@ import { ShiftDetailPanel } from '@/components/roster/ShiftDetailPanel';
 import { RosterSummaryBar } from '@/components/roster/RosterSummaryBar';
 import { LeaveRequestModal } from '@/components/roster/LeaveRequestModal';
 import { ShiftSwapModal } from '@/components/roster/ShiftSwapModal';
+import { ShiftCopyModal } from '@/components/roster/ShiftCopyModal';
 import { BudgetTrackerBar } from '@/components/roster/BudgetTrackerBar';
 import { AddOpenShiftModal } from '@/components/roster/AddOpenShiftModal';
 import { AvailabilityCalendarModal } from '@/components/roster/AvailabilityCalendarModal';
@@ -156,6 +157,10 @@ export default function RosterScheduler() {
   const [showApplyTemplateModal, setShowApplyTemplateModal] = useState(false);
   const [showBulkAssignmentModal, setShowBulkAssignmentModal] = useState(false);
   const [showShiftTemplateManager, setShowShiftTemplateManager] = useState(false);
+  
+  // Shift copy state
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [shiftToCopy, setShiftToCopy] = useState<Shift | null>(null);
   
   const printRef = useRef<HTMLDivElement>(null);
   
@@ -516,6 +521,22 @@ export default function RosterScheduler() {
     ), `Swapped shift to ${newStaff?.name}`, 'update');
     toast.success(`Shift swapped to ${newStaff?.name}`);
     setShiftToSwap(null);
+  };
+
+  const handleCopyShift = (shift: Shift) => {
+    setShiftToCopy(shift);
+    setShowCopyModal(true);
+    setSelectedShift(null);
+  };
+
+  const handleConfirmCopy = (newShifts: Omit<Shift, 'id'>[]) => {
+    const shiftsWithIds = newShifts.map((s, idx) => ({
+      ...s,
+      id: `shift-copy-${Date.now()}-${idx}`,
+    }));
+    setShifts(prev => [...prev, ...shiftsWithIds], `Copied ${shiftsWithIds.length} shifts`, 'copy');
+    toast.success(`Copied ${shiftsWithIds.length} shift(s)`);
+    setShiftToCopy(null);
   };
 
   const handleAddOpenShift = (openShift: Omit<OpenShift, 'id'>) => {
@@ -1240,6 +1261,7 @@ export default function RosterScheduler() {
           onDelete={handleShiftDelete}
           onDuplicate={handleShiftDuplicate}
           onSwapStaff={handleSwapStaff}
+          onCopyShift={handleCopyShift}
         />
       )}
 
@@ -1253,16 +1275,23 @@ export default function RosterScheduler() {
         onCreateRequest={handleCreateLeaveRequest}
       />
 
-      {shiftToSwap && (
-        <ShiftSwapModal
-          open={showSwapModal}
-          onClose={() => { setShowSwapModal(false); setShiftToSwap(null); }}
-          shift={shiftToSwap}
-          staff={allStaff}
-          allShifts={shifts}
-          onSwap={handleConfirmSwap}
-        />
-      )}
+      <ShiftSwapModal
+        open={showSwapModal}
+        onClose={() => { setShowSwapModal(false); setShiftToSwap(null); }}
+        shift={shiftToSwap}
+        staff={allStaff}
+        allShifts={shifts}
+        onSwap={handleConfirmSwap}
+      />
+
+      <ShiftCopyModal
+        open={showCopyModal}
+        onClose={() => { setShowCopyModal(false); setShiftToCopy(null); }}
+        shift={shiftToCopy}
+        rooms={selectedCentre.rooms}
+        existingShifts={shifts}
+        onCopy={handleConfirmCopy}
+      />
 
       <AddOpenShiftModal
         open={showAddOpenShiftModal}
