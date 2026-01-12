@@ -186,49 +186,62 @@ export function BulkShiftAssignmentModal({
                   </Box>
                 </Box>
                 <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                  {availableStaff.map(member => (
-                    <Box
-                      key={member.id}
-                      onClick={() => toggleStaff(member.id)}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        p: 1,
-                        cursor: 'pointer',
-                        '&:hover': { bgcolor: 'action.hover' },
-                        bgcolor: selectedStaff.has(member.id) ? 'primary.light' : 'transparent',
-                        borderBottom: 1,
-                        borderColor: 'divider',
-                        '&:last-child': { borderBottom: 0 },
-                      }}
-                    >
-                      <Checkbox checked={selectedStaff.has(member.id)} size="small" />
+                  {availableStaff.map(member => {
+                    const isSelected = selectedStaff.has(member.id);
+                    return (
                       <Box
+                        key={member.id}
+                        onClick={() => toggleStaff(member.id)}
                         sx={{
-                          height: 32,
-                          width: 32,
-                          borderRadius: '50%',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                          bgcolor: member.color,
+                          gap: 1.5,
+                          p: 1.5,
+                          cursor: 'pointer',
+                          bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'transparent',
+                          borderBottom: 1,
+                          borderColor: 'divider',
+                          transition: 'all 0.15s ease-in-out',
+                          '&:hover': { 
+                            bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
+                          },
+                          '&:last-child': { borderBottom: 0 },
                         }}
                       >
-                        {member.name.charAt(0)}
+                        <Checkbox checked={isSelected} size="small" color="primary" />
+                        <Box
+                          sx={{
+                            height: 32,
+                            width: 32,
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            bgcolor: member.color,
+                          }}
+                        >
+                          {member.name.charAt(0)}
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" fontWeight={isSelected ? 600 : 500} color={isSelected ? 'primary.main' : 'text.primary'}>
+                            {member.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {roleLabels[member.role]} • {member.currentWeeklyHours}/{member.maxHoursPerWeek}h
+                          </Typography>
+                        </Box>
+                        <Chip 
+                          size="small" 
+                          label={`$${member.hourlyRate}/hr`} 
+                          variant={isSelected ? 'filled' : 'outlined'}
+                          color={isSelected ? 'primary' : 'default'}
+                        />
                       </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={500}>{member.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {roleLabels[member.role]} • {member.currentWeeklyHours}/{member.maxHoursPerWeek}h
-                        </Typography>
-                      </Box>
-                      <Chip size="small" label={`$${member.hourlyRate}/hr`} variant="outlined" />
-                    </Box>
-                  ))}
+                    );
+                  })}
                 </Box>
               </Box>
             )}
@@ -255,17 +268,22 @@ export function BulkShiftAssignmentModal({
                           flexDirection: 'column',
                           alignItems: 'center',
                           p: 1.5,
-                          borderRadius: 1,
+                          borderRadius: 1.5,
                           border: 2,
                           borderColor: isSelected ? 'primary.main' : 'divider',
-                          bgcolor: isSelected ? 'primary.light' : 'transparent',
+                          bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'transparent',
+                          boxShadow: isSelected ? '0 0 0 3px rgba(3, 169, 244, 0.12)' : 'none',
                           cursor: 'pointer',
-                          '&:hover': { bgcolor: 'action.hover' },
+                          transition: 'all 0.15s ease-in-out',
+                          '&:hover': { 
+                            bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
+                            borderColor: isSelected ? 'primary.main' : 'primary.light',
+                          },
                         }}
                       >
-                        <Typography variant="caption" color="text.secondary">{format(date, 'EEE')}</Typography>
-                        <Typography variant="h6">{format(date, 'd')}</Typography>
-                        <Typography variant="caption" color="text.secondary">{format(date, 'MMM')}</Typography>
+                        <Typography variant="caption" color={isSelected ? 'primary.main' : 'text.secondary'}>{format(date, 'EEE')}</Typography>
+                        <Typography variant="h6" fontWeight={isSelected ? 700 : 500} color={isSelected ? 'primary.main' : 'text.primary'}>{format(date, 'd')}</Typography>
+                        <Typography variant="caption" color={isSelected ? 'primary.main' : 'text.secondary'}>{format(date, 'MMM')}</Typography>
                       </Box>
                     );
                   })}
@@ -304,29 +322,38 @@ export function BulkShiftAssignmentModal({
                 <Box>
                   <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Assignment Mode</Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
-                    {(['all-to-all', 'round-robin'] as const).map(mode => (
-                      <Box
-                        key={mode}
-                        onClick={() => setAssignmentMode(mode)}
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 1,
-                          border: 2,
-                          borderColor: assignmentMode === mode ? 'primary.main' : 'divider',
-                          bgcolor: assignmentMode === mode ? 'primary.light' : 'transparent',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight={500}>
-                          {mode === 'all-to-all' ? 'All to All' : 'Round Robin'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {mode === 'all-to-all' 
-                            ? 'Every staff gets a shift on every date'
-                            : 'Distribute dates evenly among staff'}
-                        </Typography>
-                      </Box>
-                    ))}
+                    {(['all-to-all', 'round-robin'] as const).map(mode => {
+                      const isSelected = assignmentMode === mode;
+                      return (
+                        <Box
+                          key={mode}
+                          onClick={() => setAssignmentMode(mode)}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            border: 2,
+                            borderColor: isSelected ? 'primary.main' : 'divider',
+                            bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'transparent',
+                            boxShadow: isSelected ? '0 0 0 3px rgba(3, 169, 244, 0.12)' : 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease-in-out',
+                            '&:hover': {
+                              bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
+                              borderColor: isSelected ? 'primary.main' : 'primary.light',
+                            },
+                          }}
+                        >
+                          <Typography variant="body2" fontWeight={isSelected ? 600 : 500} color={isSelected ? 'primary.main' : 'text.primary'}>
+                            {mode === 'all-to-all' ? 'All to All' : 'Round Robin'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {mode === 'all-to-all' 
+                              ? 'Every staff gets a shift on every date'
+                              : 'Distribute dates evenly among staff'}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
                   </Box>
                 </Box>
               </Box>

@@ -228,18 +228,27 @@ export function ApplyTemplateModal({
                         display: 'flex',
                         alignItems: 'center',
                         gap: 1.5,
-                        p: 1,
+                        p: 1.5,
                         borderBottom: idx < matchResults.length - 1 ? 1 : 0,
                         borderColor: 'divider',
-                        bgcolor: result.action === 'add' ? 'success.light' : 'action.hover',
+                        bgcolor: result.action === 'add' 
+                          ? (isSelected ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.06)') 
+                          : 'action.hover',
                         opacity: result.action === 'skip' ? 0.6 : 1,
+                        transition: 'all 0.15s ease-in-out',
+                        cursor: result.action === 'add' ? 'pointer' : 'default',
+                        '&:hover': result.action === 'add' ? {
+                          bgcolor: 'rgba(34, 197, 94, 0.16)',
+                        } : {},
                       }}
+                      onClick={() => result.action === 'add' && toggleShift(result.templateShift.id)}
                     >
                       {result.action === 'add' && (
                         <Checkbox
                           checked={isSelected}
                           onChange={() => toggleShift(result.templateShift.id)}
                           size="small"
+                          color="success"
                         />
                       )}
                       {result.action === 'skip' && (
@@ -247,7 +256,9 @@ export function ApplyTemplateModal({
                       )}
                       
                       <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" fontWeight={500}>{room?.name || 'Unknown'}</Typography>
+                        <Typography variant="body2" fontWeight={isSelected ? 600 : 500} color={isSelected ? 'success.main' : 'text.primary'}>
+                          {room?.name || 'Unknown'}
+                        </Typography>
                         <ArrowRight size={12} style={{ opacity: 0.5 }} />
                         <Typography variant="body2" color="text.secondary">
                           {result.date ? format(new Date(result.date), 'EEE, MMM d') : 'N/A'}
@@ -261,7 +272,7 @@ export function ApplyTemplateModal({
                         size="small" 
                         label={result.action === 'add' ? 'Add' : 'Skip'}
                         color={result.action === 'add' ? 'success' : 'default'}
-                        variant={result.action === 'add' ? 'filled' : 'outlined'}
+                        variant={result.action === 'add' && isSelected ? 'filled' : 'outlined'}
                       />
                     </Box>
                   );

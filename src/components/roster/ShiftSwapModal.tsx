@@ -195,13 +195,17 @@ export function ShiftSwapModal({ open, onClose, shift, staff, allShifts, onSwap 
                     onClick={() => setSelectedStaffId(member.id)}
                     sx={{
                       p: 1.5, 
-                      borderRadius: 1, 
+                      borderRadius: 1.5, 
                       border: 2, 
                       cursor: 'pointer',
                       borderColor: isSelected ? 'primary.main' : conflicts.length > 0 ? 'warning.main' : 'divider',
-                      bgcolor: isSelected ? 'primary.light' : 'transparent',
-                      '&:hover': { bgcolor: isSelected ? 'primary.light' : 'action.hover' },
-                      transition: 'all 0.2s',
+                      bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'transparent',
+                      boxShadow: isSelected ? '0 0 0 3px rgba(3, 169, 244, 0.12)' : 'none',
+                      '&:hover': { 
+                        bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
+                        borderColor: isSelected ? 'primary.main' : conflicts.length > 0 ? 'warning.main' : 'primary.light',
+                      },
+                      transition: 'all 0.2s ease-in-out',
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -222,8 +226,23 @@ export function ShiftSwapModal({ open, onClose, shift, staff, allShifts, onSwap 
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="body2" fontWeight={500} noWrap>{member.name}</Typography>
-                          {isSelected && <Check size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />}
+                          <Typography variant="body2" fontWeight={isSelected ? 600 : 500} color={isSelected ? 'primary.main' : 'text.primary'} noWrap>{member.name}</Typography>
+                          {isSelected && (
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 18,
+                                height: 18,
+                                borderRadius: '50%',
+                                bgcolor: 'primary.main',
+                                color: 'white',
+                              }}
+                            >
+                              <Check size={10} />
+                            </Box>
+                          )}
                         </Box>
                         <Typography variant="caption" color="text.secondary">
                           {roleLabels[member.role]} • ${member.hourlyRate}/hr

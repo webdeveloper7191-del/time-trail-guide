@@ -129,29 +129,39 @@ export function SaveRosterTemplateModal({
             <Box>
               <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Include Rooms</Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
-                {rooms.map(room => (
-                  <Box
-                    key={room.id}
-                    onClick={() => toggleRoom(room.id)}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      p: 1,
-                      borderRadius: 1,
-                      border: 1,
-                      borderColor: 'divider',
-                      cursor: 'pointer',
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    <Checkbox checked={selectedRooms.includes(room.id)} size="small" />
-                    <Typography variant="body2">{room.name}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-                      {groupedShifts[room.id] || 0} shifts
-                    </Typography>
-                  </Box>
-                ))}
+                {rooms.map(room => {
+                  const isSelected = selectedRooms.includes(room.id);
+                  return (
+                    <Box
+                      key={room.id}
+                      onClick={() => toggleRoom(room.id)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        p: 1.5,
+                        borderRadius: 1.5,
+                        border: 1,
+                        borderColor: isSelected ? 'primary.main' : 'divider',
+                        bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'transparent',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease-in-out',
+                        '&:hover': { 
+                          bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
+                          borderColor: isSelected ? 'primary.main' : 'primary.light',
+                        },
+                      }}
+                    >
+                      <Checkbox checked={isSelected} size="small" color="primary" />
+                      <Typography variant="body2" fontWeight={isSelected ? 600 : 400} color={isSelected ? 'primary.main' : 'text.primary'}>
+                        {room.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+                        {groupedShifts[room.id] || 0} shifts
+                      </Typography>
+                    </Box>
+                  );
+                })}
               </Box>
             </Box>
 
@@ -171,7 +181,7 @@ export function SaveRosterTemplateModal({
               <Typography variant="body2">Include staff role preferences</Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 1.5, bgcolor: 'primary.light', borderRadius: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 1.5, bgcolor: 'rgba(3, 169, 244, 0.08)', borderRadius: 1.5, border: 1, borderColor: 'primary.main' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <FileText size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
                 <Typography variant="body2">{relevantShifts.length} shifts</Typography>
