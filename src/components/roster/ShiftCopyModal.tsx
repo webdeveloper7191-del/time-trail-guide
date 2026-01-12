@@ -14,11 +14,12 @@ import {
   Typography,
   Chip,
   Stack,
+  Autocomplete,
 } from '@mui/material';
 import { format, addDays, addWeeks, parseISO, isBefore, isAfter } from 'date-fns';
-import { Copy, Calendar, Repeat, CalendarDays, X } from 'lucide-react';
+import { Copy, Calendar, Repeat, CalendarDays, X, Users } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { Shift, Room } from '@/types/roster';
+import { Shift, Room, StaffMember } from '@/types/roster';
 import { shiftCopySchema, ShiftCopyFormValues } from '@/lib/validationSchemas';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -30,6 +31,7 @@ interface ShiftCopyModalProps {
   onClose: () => void;
   shift: Shift | null;
   rooms: Room[];
+  staff: StaffMember[];
   existingShifts: Shift[];
   onCopy: (newShifts: Omit<Shift, 'id'>[]) => void;
 }
@@ -39,11 +41,15 @@ export function ShiftCopyModal({
   onClose,
   shift,
   rooms,
+  staff,
   existingShifts,
   onCopy,
 }: ShiftCopyModalProps) {
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember[]>([]);
+
+  const originalStaff = staff.find(s => s.id === shift?.staffId);
 
   const methods = useForm<ShiftCopyFormValues>({
     resolver: zodResolver(shiftCopySchema),
@@ -55,6 +61,8 @@ export function ShiftCopyModal({
       recurringEndDate: format(addWeeks(new Date(), 4), 'yyyy-MM-dd'),
       targetRoomId: shift?.roomId || '',
       copyToAllRooms: false,
+      targetStaffIds: [],
+      keepOriginalStaff: true,
     },
     mode: 'onChange',
   });
@@ -72,6 +80,7 @@ export function ShiftCopyModal({
   const recurringPattern = watch('recurringPattern');
   const recurringEndDate = watch('recurringEndDate');
   const copyToAllRooms = watch('copyToAllRooms');
+  const keepOriginalStaff = watch('keepOriginalStaff');
 
   // Generate recurring dates based on pattern
   const recurringDates = useMemo(() => {
@@ -94,13 +103,13 @@ export function ShiftCopyModal({
     return dates;
   }, [shift, copyMode, recurringPattern, recurringEndDate]);
 
-  // Check for conflicts
-  const getConflictsForDate = (date: string, roomId: string) => {
+  // Check for conflicts (now with staff consideration)
+  const getConflictsForDate = (date: string, roomId: string, staffId: string) => {
     return existingShifts.filter(
       (s) =>
         s.date === date &&
         s.roomId === roomId &&
-        s.staffId === shift?.staffId
+        s.staffId === staffId
     );
   };
 
@@ -141,24 +150,34 @@ export function ShiftCopyModal({
     }
 
     const targetRooms = data.copyToAllRooms ? rooms.map((r) => r.id) : [shift.roomId];
+    
+    // Determine target staff members
+    const targetStaffMembers = keepOriginalStaff 
+      ? [shift.staffId] 
+      : selectedStaff.length > 0 
+        ? selectedStaff.map(s => s.id)
+        : [shift.staffId];
+
     const newShifts: Omit<Shift, 'id'>[] = [];
 
     datesToCopy.forEach((date) => {
       targetRooms.forEach((roomId) => {
-        const conflicts = getConflictsForDate(date, roomId);
-        if (conflicts.length === 0) {
-          newShifts.push({
-            staffId: shift.staffId,
-            centreId: shift.centreId,
-            roomId,
-            date,
-            startTime: shift.startTime,
-            endTime: shift.endTime,
-            breakMinutes: shift.breakMinutes,
-            status: 'draft',
-            isOpenShift: false,
-          });
-        }
+        targetStaffMembers.forEach((staffId) => {
+          const conflicts = getConflictsForDate(date, roomId, staffId);
+          if (conflicts.length === 0) {
+            newShifts.push({
+              staffId,
+              centreId: shift.centreId,
+              roomId,
+              date,
+              startTime: shift.startTime,
+              endTime: shift.endTime,
+              breakMinutes: shift.breakMinutes,
+              status: 'draft',
+              isOpenShift: false,
+            });
+          }
+        });
       });
     });
 
@@ -174,8 +193,17 @@ export function ShiftCopyModal({
   const handleClose = () => {
     reset();
     setSelectedDates([]);
+    setSelectedStaff([]);
     onClose();
   };
+
+  // Calculate estimated shift count
+  const estimatedShiftCount = useMemo(() => {
+    const dateCount = copyMode === 'recurring' ? recurringDates.length : selectedDates.length;
+    const roomCount = copyToAllRooms ? rooms.length : 1;
+    const staffCount = keepOriginalStaff ? 1 : Math.max(1, selectedStaff.length);
+    return dateCount * roomCount * staffCount;
+  }, [copyMode, recurringDates.length, selectedDates.length, copyToAllRooms, rooms.length, keepOriginalStaff, selectedStaff.length]);
 
   const actions: OffCanvasAction[] = [
     {
@@ -184,7 +212,7 @@ export function ShiftCopyModal({
       variant: 'outlined',
     },
     {
-      label: `Copy Shift${selectedDates.length > 0 || recurringDates.length > 0 ? ` (${copyMode === 'recurring' ? recurringDates.length : selectedDates.length})` : ''}`,
+      label: `Copy Shift${estimatedShiftCount > 0 ? ` (${estimatedShiftCount})` : ''}`,
       onClick: handleSubmit(onSubmit),
       variant: 'primary',
       disabled: (copyMode !== 'recurring' && selectedDates.length === 0) || (copyMode === 'recurring' && recurringDates.length === 0),
@@ -318,7 +346,8 @@ export function ShiftCopyModal({
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {selectedDates.map((date) => {
                       const dateStr = format(date, 'yyyy-MM-dd');
-                      const hasConflict = getConflictsForDate(dateStr, shift.roomId).length > 0;
+                      const staffId = keepOriginalStaff ? shift.staffId : (selectedStaff[0]?.id || shift.staffId);
+                      const hasConflict = getConflictsForDate(dateStr, shift.roomId, staffId).length > 0;
                       return (
                         <Chip
                           key={dateStr}
@@ -431,6 +460,123 @@ export function ShiftCopyModal({
                 />
               )}
             />
+
+            {/* Staff Selection */}
+            <div className="space-y-3">
+              <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Users className="h-4 w-4" />
+                Staff Assignment
+              </Typography>
+
+              <Controller
+                name="keepOriginalStaff"
+                control={control}
+                render={({ field }) => (
+                  <RadioGroup
+                    value={field.value ? 'original' : 'different'}
+                    onChange={(e) => {
+                      const keepOriginal = e.target.value === 'original';
+                      field.onChange(keepOriginal);
+                      if (keepOriginal) {
+                        setSelectedStaff([]);
+                      }
+                    }}
+                  >
+                    <FormControlLabel
+                      value="original"
+                      control={<Radio size="small" />}
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              bgcolor: originalStaff?.color || 'grey.400',
+                            }}
+                          />
+                          <Typography variant="body2">
+                            Keep original ({originalStaff?.name || 'Unknown'})
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                    <FormControlLabel
+                      value="different"
+                      control={<Radio size="small" />}
+                      label={
+                        <Typography variant="body2">
+                          Copy to different staff member(s)
+                        </Typography>
+                      }
+                    />
+                  </RadioGroup>
+                )}
+              />
+
+              {!keepOriginalStaff && (
+                <Autocomplete
+                  multiple
+                  options={staff.filter(s => s.id !== shift?.staffId)}
+                  getOptionLabel={(option) => option.name}
+                  value={selectedStaff}
+                  onChange={(_, newValue) => setSelectedStaff(newValue)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select Staff Members"
+                      size="small"
+                      placeholder="Choose staff to copy shift to..."
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          bgcolor: option.color || 'grey.400',
+                        }}
+                      />
+                      <Box>
+                        <Typography variant="body2">{option.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.role} • {option.currentWeeklyHours}/{option.maxHoursPerWeek}h
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                  renderTags={(value, getTagProps) =>
+                    value.map((option, index) => {
+                      const { key, ...tagProps } = getTagProps({ index });
+                      return (
+                        <Chip
+                          key={key}
+                          label={option.name}
+                          size="small"
+                          sx={{
+                            '& .MuiChip-label': { display: 'flex', alignItems: 'center', gap: 0.5 },
+                          }}
+                          avatar={
+                            <Box
+                              sx={{
+                                width: 16,
+                                height: 16,
+                                borderRadius: '50%',
+                                bgcolor: option.color || 'grey.400',
+                                ml: 0.5,
+                              }}
+                            />
+                          }
+                          {...tagProps}
+                        />
+                      );
+                    })
+                  }
+                />
+              )}
+            </div>
           </div>
         </PrimaryOffCanvas>
       </form>

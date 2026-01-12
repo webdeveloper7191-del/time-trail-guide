@@ -53,6 +53,7 @@ interface StaffTimelineGridProps {
   onDragStart: (e: React.DragEvent, staff: StaffMember) => void;
   onOpenShiftDrop: (staffId: string, openShift: OpenShift) => void;
   onShiftMove?: (shiftId: string, newDate: string, newRoomId: string) => void;
+  onShiftReassign?: (shiftId: string, newStaffId: string, newDate: string, newRoomId: string) => void;
   onStaffClick?: (staff: StaffMember) => void;
   onOpenShiftTemplateManager?: () => void;
 }
@@ -77,6 +78,7 @@ export function StaffTimelineGrid({
   onDragStart,
   onOpenShiftDrop,
   onShiftMove,
+  onShiftReassign,
   onStaffClick,
   onOpenShiftTemplateManager,
 }: StaffTimelineGridProps) {
@@ -194,7 +196,7 @@ export function StaffTimelineGrid({
     setDragType(null);
   };
 
-  const handleDrop = (e: React.DragEvent, staffId: string, date: string, roomId: string) => {
+  const handleDrop = (e: React.DragEvent, targetStaffId: string, date: string, roomId: string) => {
     e.preventDefault();
     setDragOverCell(null);
     setIsDragging(false);
@@ -202,12 +204,23 @@ export function StaffTimelineGrid({
     
     // Check if this is a shift being moved
     const shiftId = e.dataTransfer.getData('shiftId');
-    if (shiftId && onShiftMove) {
-      onShiftMove(shiftId, date, roomId);
-      return;
+    const draggedStaffId = e.dataTransfer.getData('staffId');
+    
+    if (shiftId) {
+      // If dropping on a different staff member, reassign the shift
+      if (draggedStaffId !== targetStaffId && onShiftReassign) {
+        onShiftReassign(shiftId, targetStaffId, date, roomId);
+        return;
+      }
+      // Same staff, just moving date/room
+      if (onShiftMove) {
+        onShiftMove(shiftId, date, roomId);
+        return;
+      }
     }
     
-    onDropStaff(staffId, roomId, date);
+    // Otherwise, creating a new shift for this staff
+    onDropStaff(targetStaffId, roomId, date);
   };
 
   const handleOpenShiftDrop = (e: React.DragEvent, openShift: OpenShift) => {

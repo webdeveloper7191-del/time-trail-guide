@@ -506,6 +506,16 @@ export default function RosterScheduler() {
     toast.success(`Shift resized to ${newStartTime} - ${newEndTime}`);
   };
 
+  const handleShiftReassign = (shiftId: string, newStaffId: string, newDate: string, newRoomId: string) => {
+    const newStaff = allStaff.find(s => s.id === newStaffId);
+    setShifts(prev => prev.map(s => 
+      s.id === shiftId 
+        ? { ...s, staffId: newStaffId, date: newDate, roomId: newRoomId, status: 'draft' as const }
+        : s
+    ), `Reassigned shift to ${newStaff?.name}`, 'move');
+    toast.success(`Shift reassigned to ${newStaff?.name}`);
+  };
+
   const handleSwapStaff = (shift: Shift) => {
     setShiftToSwap(shift);
     setShowSwapModal(true);
@@ -1226,6 +1236,7 @@ export default function RosterScheduler() {
             onDragStart={handleDragStart}
             onOpenShiftDrop={handleOpenShiftDrop}
             onShiftMove={handleShiftMove}
+            onShiftReassign={handleShiftReassign}
             onStaffClick={openStaffProfile}
             onOpenShiftTemplateManager={() => setShowShiftTemplateManager(true)}
           />
@@ -1291,6 +1302,7 @@ export default function RosterScheduler() {
         onClose={() => { setShowCopyModal(false); setShiftToCopy(null); }}
         shift={shiftToCopy}
         rooms={selectedCentre.rooms}
+        staff={allStaff}
         existingShifts={shifts}
         onCopy={handleConfirmCopy}
       />

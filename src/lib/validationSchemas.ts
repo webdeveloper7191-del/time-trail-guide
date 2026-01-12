@@ -96,6 +96,9 @@ export const shiftCopySchema = z.object({
   recurringEndDate: z.string().optional(),
   targetRoomId: z.string().optional(),
   copyToAllRooms: z.boolean().default(false),
+  // New: allow copying to different staff members
+  targetStaffIds: z.array(z.string()).optional(),
+  keepOriginalStaff: z.boolean().default(true),
 });
 
 export type ShiftCopyFormValues = z.infer<typeof shiftCopySchema>;
