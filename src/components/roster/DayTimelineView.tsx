@@ -62,6 +62,16 @@ const pixelsToTime = (pixels: number) => {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
+// Snap pixel position to nearest 15-minute grid boundary
+const snapToGrid = (pixels: number) => {
+  return Math.round(pixels / SLOT_WIDTH) * SLOT_WIDTH;
+};
+
+// Convert pixel position to snapped time string
+const pixelsToSnappedTime = (pixels: number) => {
+  return pixelsToTime(snapToGrid(pixels));
+};
+
 // Convert time string to slot index
 const timeToSlotIndex = (time: string) => {
   const [hours, minutes] = time.split(':').map(Number);
@@ -200,8 +210,10 @@ export function DayTimelineView({
     if (isDragging) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const time = pixelsToTime(x);
-    setHoverTime({ staffId, roomId, time, x });
+    // Snap to 15-minute grid
+    const snappedX = snapToGrid(x);
+    const time = pixelsToTime(snappedX);
+    setHoverTime({ staffId, roomId, time, x: snappedX });
   };
 
   const handleTimelineMouseLeave = () => {
@@ -212,10 +224,11 @@ export function DayTimelineView({
     if (isDragging) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const time = pixelsToTime(x);
+    // Snap to 15-minute grid
+    const snappedTime = pixelsToSnappedTime(x);
     
     if (onAddShiftAtTime) {
-      onAddShiftAtTime(staffId, dateStr, roomId, time);
+      onAddShiftAtTime(staffId, dateStr, roomId, snappedTime);
     } else {
       // Fallback to regular add shift
       onAddShift(staffId, dateStr, roomId);
@@ -615,7 +628,7 @@ function ShiftBar({
     setCurrentWidth(getShiftWidth(shift.startTime, shift.endTime));
   };
 
-  // Handle resize move
+  // Handle resize move with live snapping
   useEffect(() => {
     if (!isResizing) return;
 
@@ -624,25 +637,27 @@ function ShiftBar({
       
       if (isResizing === 'left') {
         // Resize from left - changes start time
-        const newLeft = Math.max(0, originalLeft + deltaX);
-        const newWidth = Math.max(SLOT_WIDTH * 2, originalWidth - deltaX); // Min 30 minutes
-        setCurrentLeft(newLeft);
-        setCurrentWidth(newWidth);
+        const rawLeft = originalLeft + deltaX;
+        const rawWidth = originalWidth - deltaX;
+        // Snap to grid during resize for visual feedback
+        const snappedLeft = Math.max(0, snapToGrid(rawLeft));
+        const snappedWidth = Math.max(SLOT_WIDTH * 2, snapToGrid(rawWidth)); // Min 30 minutes
+        setCurrentLeft(snappedLeft);
+        setCurrentWidth(snappedWidth);
       } else {
         // Resize from right - changes end time
-        const newWidth = Math.max(SLOT_WIDTH * 2, originalWidth + deltaX); // Min 30 minutes
-        setCurrentWidth(newWidth);
+        const rawWidth = originalWidth + deltaX;
+        // Snap to grid during resize for visual feedback
+        const snappedWidth = Math.max(SLOT_WIDTH * 2, snapToGrid(rawWidth)); // Min 30 minutes
+        setCurrentWidth(snappedWidth);
       }
     };
 
     const handleMouseUp = () => {
       if (onResize && isResizing) {
-        // Snap to 15-minute intervals
-        const snappedLeft = Math.round(currentLeft / SLOT_WIDTH) * SLOT_WIDTH;
-        const snappedWidth = Math.round(currentWidth / SLOT_WIDTH) * SLOT_WIDTH;
-        
-        const newStartTime = pixelsToTime(snappedLeft);
-        const newEndTime = pixelsToTime(snappedLeft + snappedWidth);
+        // Values are already snapped during resize, use directly
+        const newStartTime = pixelsToTime(currentLeft);
+        const newEndTime = pixelsToTime(currentLeft + currentWidth);
         
         // Validate times are within bounds (5 AM - 9 PM)
         const [startHour] = newStartTime.split(':').map(Number);
@@ -664,12 +679,12 @@ function ShiftBar({
     };
   }, [isResizing, resizeStartX, originalLeft, originalWidth, currentLeft, currentWidth, onResize, shift.id]);
 
-  // Calculate display times during resize
+  // Display times are already snapped during resize
   const displayStartTime = isResizing 
-    ? pixelsToTime(Math.round(currentLeft / SLOT_WIDTH) * SLOT_WIDTH)
+    ? pixelsToTime(currentLeft)
     : shift.startTime;
   const displayEndTime = isResizing 
-    ? pixelsToTime(Math.round((currentLeft + currentWidth) / SLOT_WIDTH) * SLOT_WIDTH)
+    ? pixelsToTime(currentLeft + currentWidth)
     : shift.endTime;
 
   const tooltipContent = (
