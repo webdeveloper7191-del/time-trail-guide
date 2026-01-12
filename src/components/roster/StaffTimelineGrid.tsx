@@ -4,13 +4,12 @@ import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tooltip as MuiTooltip } from '@mui/material';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { InlineDemandChart } from './InlineDemandChart';
-import { 
-  Plus, 
+import {
+  Plus,
   Clock,
   GripVertical,
   User,
@@ -20,7 +19,12 @@ import {
   ChevronDown,
   Search,
   Coffee,
-  Settings
+  Settings,
+  MoreHorizontal,
+  Copy,
+  ArrowLeftRight,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -746,55 +750,77 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onDrag
   );
 
   return (
-    <MuiTooltip
-      title={tooltipContent}
-      placement="right"
-      arrow
-      enterDelay={300}
-      leaveDelay={100}
-      slotProps={{
-        tooltip: {
-          sx: {
-            bgcolor: 'hsl(220, 20%, 20%)',
-            borderRadius: '12px',
-            boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.4)',
-            padding: 0,
-            maxWidth: 280,
-            '& .MuiTooltip-arrow': {
-              color: 'hsl(220, 20%, 20%)',
-            },
-          },
-        },
-      }}
+    <div
+      draggable
+      onDragStart={(e) => onDragStart(e, shift)}
+      className={cn(
+        "group relative rounded-lg border overflow-hidden transition-all duration-200",
+        "hover:shadow-md hover:-translate-y-0.5 active:cursor-grabbing",
+        style.bg,
+        style.border,
+        shift.status === 'draft' && "border-dashed"
+      )}
     >
-      <div
-        draggable
-        onDragStart={(e) => onDragStart(e, shift)}
-        onClick={onEdit}
-        className={cn(
-          "relative rounded-lg border overflow-hidden cursor-pointer transition-all duration-200",
-          "hover:shadow-md hover:-translate-y-0.5 active:cursor-grabbing",
-          style.bg,
-          style.border,
-          shift.status === 'draft' && "border-dashed"
-        )}
-      >
-        {/* Left accent bar */}
-        <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
-        
-        <div className="pl-3 pr-2 py-1.5">
-          <div className={cn("text-xs font-semibold", style.text)}>
-            {shift.startTime}-{shift.endTime}
-          </div>
-          {!isCompact && (
-            <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-              <Clock className="h-2.5 w-2.5" />
-              <span>{shift.breakMinutes}m break</span>
-            </div>
-          )}
-        </div>
+      {/* Left accent bar */}
+      <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
+
+      {/* Three-dot actions */}
+      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit Shift
+            </DropdownMenuItem>
+            {onCopy && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCopy(); }}>
+                <Copy className="h-4 w-4 mr-2" />
+                Copy to Dates...
+              </DropdownMenuItem>
+            )}
+            {onSwap && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSwap(); }}>
+                <ArrowLeftRight className="h-4 w-4 mr-2" />
+                Swap Staff
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Shift
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-    </MuiTooltip>
+
+      <div className="pl-3 pr-8 py-1.5" onClick={onEdit}>
+        <div className={cn("text-xs font-semibold", style.text)}>
+          {shift.startTime}-{shift.endTime}
+        </div>
+        {!isCompact && (
+          <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+            <Clock className="h-2.5 w-2.5" />
+            <span>{shift.breakMinutes}m break</span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

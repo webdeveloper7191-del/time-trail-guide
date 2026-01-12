@@ -44,34 +44,60 @@ const Select = ({ value, onValueChange, defaultValue, children, disabled }: Sele
   const [open, setOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
   const [displayValue, setDisplayValue] = React.useState<React.ReactNode>(null);
-  const [initialized, setInitialized] = React.useState(false);
-  
+
   const currentValue = value !== undefined ? value : internalValue;
-  
+
+  const findDisplayForValue = React.useCallback((node: React.ReactNode, target: string): React.ReactNode | null => {
+    let found: React.ReactNode | null = null;
+
+    React.Children.forEach(node, (child) => {
+      if (found) return;
+      if (!React.isValidElement(child)) return;
+
+      // Match any element that looks like a SelectItem (has a string `value` prop)
+      const childValue = (child.props as any)?.value;
+      if (typeof childValue === 'string' && childValue === target) {
+        found = (child.props as any)?.children ?? null;
+        return;
+      }
+
+      const nested = (child.props as any)?.children;
+      if (nested) {
+        const nestedFound = findDisplayForValue(nested, target);
+        if (nestedFound) found = nestedFound;
+      }
+    });
+
+    return found;
+  }, []);
+
+  const computedDisplay = React.useMemo(() => {
+    if (!currentValue) return null;
+    return findDisplayForValue(children, currentValue);
+  }, [children, currentValue, findDisplayForValue]);
+
+  // Keep the display label in sync even when the menu is closed
+  React.useEffect(() => {
+    setDisplayValue(computedDisplay);
+  }, [computedDisplay]);
+
   const handleChange = (newValue: string, display?: React.ReactNode) => {
     if (value === undefined) {
       setInternalValue(newValue);
     }
-    if (display) {
-      setDisplayValue(display);
-    }
+    // Prefer provided display, but fall back to scanning children.
+    setDisplayValue(display ?? findDisplayForValue(children, newValue));
     onValueChange?.(newValue);
     setOpen(false);
   };
 
-  // Mark as initialized after first render to allow children to set display value
-  React.useEffect(() => {
-    const timer = setTimeout(() => setInitialized(true), 0);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
-    <SelectContext.Provider value={{ 
-      value: currentValue, 
-      onValueChange: handleChange, 
-      open, 
-      setOpen, 
-      anchorEl, 
+    <SelectContext.Provider value={{
+      value: currentValue,
+      onValueChange: handleChange,
+      open,
+      setOpen,
+      anchorEl,
       setAnchorEl,
       displayValue,
       setDisplayValue,
@@ -89,16 +115,15 @@ interface SelectValueProps {
 
 const SelectValue = ({ placeholder }: SelectValueProps) => {
   const { value, displayValue } = React.useContext(SelectContext);
-  
-  // Show display value if we have one, otherwise show raw value, otherwise placeholder
+
   if (displayValue) {
-    return <span>{displayValue}</span>;
+    return <>{displayValue}</>;
   }
-  
+
   if (value) {
     return <span>{value}</span>;
   }
-  
+
   return <span className="text-muted-foreground">{placeholder}</span>;
 };
 
@@ -192,23 +217,27 @@ SelectLabel.displayName = "SelectLabel";
 interface SelectItemProps extends React.HTMLAttributes<HTMLDivElement> {
   value: string;
   disabled?: boolean;
+  /** Optional plain-text label used for the closed trigger display */
+  textValue?: string;
 }
 
 const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
-  ({ className, children, value, disabled, ...props }, ref) => {
+  ({ className, children, value, disabled, textValue, ...props }, ref) => {
     const { value: selectedValue, onValueChange, setDisplayValue } = React.useContext(SelectContext);
     const isSelected = selectedValue === value;
 
+    const display = textValue ?? children;
+
     // Update display value when this item is selected (on mount or when selection changes)
     React.useEffect(() => {
-      if (isSelected && children) {
-        setDisplayValue(children);
+      if (isSelected) {
+        setDisplayValue(display);
       }
-    }, [isSelected, children, setDisplayValue]);
+    }, [isSelected, display, setDisplayValue]);
 
     const handleClick = () => {
       if (!disabled) {
-        setDisplayValue(children);
+        setDisplayValue(display);
         onValueChange?.(value);
       }
     };

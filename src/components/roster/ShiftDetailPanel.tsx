@@ -173,7 +173,7 @@ export function ShiftDetailPanel({
               </SelectTrigger>
               <SelectContent>
                 {staff.map(member => (
-                  <SelectItem key={member.id} value={member.id}>
+                  <SelectItem key={member.id} value={member.id} textValue={member.name}>
                     <div className="flex items-center gap-2">
                       <div 
                         className="h-3 w-3 rounded-full"
@@ -300,7 +300,7 @@ export function ShiftDetailPanel({
               </SelectTrigger>
               <SelectContent>
                 {centre.rooms.map(r => (
-                  <SelectItem key={r.id} value={r.id}>
+                  <SelectItem key={r.id} value={r.id} textValue={r.name}>
                     {r.name} (1:{r.requiredRatio} ratio)
                   </SelectItem>
                 ))}
