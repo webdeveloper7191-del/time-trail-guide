@@ -277,20 +277,40 @@ export function DayTimelineView({
                 ))}
               </div>
 
-              {/* 15-minute tick marks */}
-              <div className="flex h-3 bg-muted/30">
+              {/* 15-minute tick marks with labels */}
+              <div className="flex h-5 bg-muted/30 relative">
                 {TIME_SLOTS.map((slot, idx) => {
                   const isHour = idx % 4 === 0;
-                  const isHalfHour = idx % 2 === 0;
+                  const isHalfHour = idx % 4 === 2;
+                  const isQuarter = idx % 4 === 1 || idx % 4 === 3;
+                  const minutes = (idx % 4) * 15;
+                  
                   return (
                     <div
                       key={slot}
                       className={cn(
-                        "border-r",
-                        isHour ? "border-border" : isHalfHour ? "border-border/40" : "border-border/20"
+                        "border-r relative flex items-end justify-center",
+                        isHour ? "border-border" : isHalfHour ? "border-border/50" : "border-border/25"
                       )}
                       style={{ width: SLOT_WIDTH }}
-                    />
+                    >
+                      {/* Tick mark */}
+                      <div 
+                        className={cn(
+                          "absolute bottom-0 left-0 w-px -translate-x-1/2",
+                          isHour ? "h-full bg-border" : isHalfHour ? "h-3 bg-border/60" : "h-2 bg-border/40"
+                        )}
+                      />
+                      {/* Minute label for non-hour slots */}
+                      {!isHour && (
+                        <span className={cn(
+                          "text-[9px] text-muted-foreground/70 mb-0.5",
+                          isHalfHour ? "font-medium" : "font-normal"
+                        )}>
+                          :{minutes.toString().padStart(2, '0')}
+                        </span>
+                      )}
+                    </div>
                   );
                 })}
               </div>
