@@ -133,56 +133,89 @@ export function IndustryConfigurationModal({
     >
       {step === 'select' ? (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, mt: 2 }}>
-          {INDUSTRY_TEMPLATES.map((industry) => (
-            <Card
-              key={industry.id}
-              variant="outlined"
-              sx={{
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                borderColor: selectedIndustry === industry.id ? 'primary.main' : 'divider',
-                borderWidth: selectedIndustry === industry.id ? 2 : 1,
-                bgcolor: selectedIndustry === industry.id ? 'primary.light' : 'background.paper',
-                '&:hover': {
-                  borderColor: 'primary.main',
-                  bgcolor: 'action.hover',
-                },
-              }}
-              onClick={() => handleSelectIndustry(industry.id)}
-            >
-              <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-                <Stack direction="row" spacing={2} alignItems="flex-start">
-                  <Box
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      bgcolor: selectedIndustry === industry.id ? 'primary.main' : 'action.hover',
-                      color: selectedIndustry === industry.id ? 'white' : 'text.secondary',
-                    }}
-                  >
-                    {industryIcons[industry.id]}
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {industry.name}
+          {INDUSTRY_TEMPLATES.map((industry) => {
+            const isSelected = selectedIndustry === industry.id;
+            return (
+              <Card
+                key={industry.id}
+                variant="outlined"
+                sx={{
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  borderColor: isSelected ? 'primary.main' : 'divider',
+                  borderWidth: isSelected ? 2 : 1,
+                  bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'background.paper',
+                  boxShadow: isSelected ? '0 0 0 3px rgba(3, 169, 244, 0.12)' : 'none',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
+                  },
+                }}
+                onClick={() => handleSelectIndustry(industry.id)}
+              >
+                <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+                  <Stack direction="row" spacing={2} alignItems="flex-start">
+                    <Box
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: isSelected ? 'primary.main' : 'action.hover',
+                        color: isSelected ? 'white' : 'text.secondary',
+                      }}
+                    >
+                      {industryIcons[industry.id]}
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography 
+                          variant="subtitle1" 
+                          fontWeight={600}
+                          color={isSelected ? 'primary.main' : 'text.primary'}
+                        >
+                          {industry.name}
+                        </Typography>
+                        {isSelected && (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 20,
+                              height: 20,
+                              borderRadius: '50%',
+                              bgcolor: 'primary.main',
+                              color: 'white',
+                            }}
+                          >
+                            <Check size={12} />
+                          </Box>
+                        )}
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                        {industry.description}
                       </Typography>
-                      {selectedIndustry === industry.id && (
-                        <Check size={16} className="text-primary" />
-                      )}
-                    </Stack>
-                    <Typography variant="body2" color="text.secondary">
-                      {industry.description}
-                    </Typography>
-                    <Stack direction="row" spacing={0.5} mt={1} flexWrap="wrap" gap={0.5}>
-                      <Chip size="small" label={industry.demandConfig.demandUnitPlural} variant="outlined" />
-                      <Chip size="small" label={industry.demandConfig.zoneLabelPlural} variant="outlined" />
-                    </Stack>
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          ))}
+                      <Stack direction="row" spacing={0.5} mt={1.5} flexWrap="wrap" gap={0.5}>
+                        <Chip 
+                          size="small" 
+                          label={industry.demandConfig.demandUnitPlural} 
+                          variant={isSelected ? 'filled' : 'outlined'}
+                          color={isSelected ? 'primary' : 'default'}
+                          sx={isSelected ? { fontWeight: 500 } : {}}
+                        />
+                        <Chip 
+                          size="small" 
+                          label={industry.demandConfig.zoneLabelPlural} 
+                          variant={isSelected ? 'filled' : 'outlined'}
+                          color={isSelected ? 'primary' : 'default'}
+                          sx={isSelected ? { fontWeight: 500 } : {}}
+                        />
+                      </Stack>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            );
+          })}
         </Box>
       ) : (
         <Tabs defaultValue="demand" className="mt-4">
