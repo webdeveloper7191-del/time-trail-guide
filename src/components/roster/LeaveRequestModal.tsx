@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm, FormProvider, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Tab,
   Tabs,
@@ -6,10 +8,10 @@ import {
   MenuItem,
   TextField,
   Typography,
+  FormHelperText,
 } from '@mui/material';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,13 +19,9 @@ import { TimeOff, timeOffTypeLabels, StaffMember } from '@/types/roster';
 import { format } from 'date-fns';
 import { Check, X, Clock, Calendar, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
+import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { leaveRequestSchema, LeaveRequestFormValues } from '@/lib/validationSchemas';
+import { toast } from 'sonner';
 
 interface LeaveRequest extends TimeOff {
   staffName: string;
@@ -49,31 +47,56 @@ export function LeaveRequestModal({
   onReject,
   onCreateRequest 
 }: LeaveRequestModalProps) {
-  const [selectedStaff, setSelectedStaff] = useState('');
-  const [leaveType, setLeaveType] = useState<TimeOff['type']>('annual_leave');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [notes, setNotes] = useState('');
   const [tabValue, setTabValue] = useState(0);
+
+  const methods = useForm<LeaveRequestFormValues>({
+    resolver: zodResolver(leaveRequestSchema),
+    defaultValues: {
+      staffId: '',
+      startDate: '',
+      endDate: '',
+      type: 'annual_leave',
+      notes: '',
+    },
+    mode: 'onChange',
+  });
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isValid },
+  } = methods;
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      reset({
+        staffId: '',
+        startDate: '',
+        endDate: '',
+        type: 'annual_leave',
+        notes: '',
+      });
+    }
+  }, [open, reset]);
 
   const pendingRequests = leaveRequests.filter(r => r.status === 'pending');
   const approvedRequests = leaveRequests.filter(r => r.status === 'approved');
   const rejectedRequests = leaveRequests.filter(r => r.status === 'rejected');
 
-  const handleSubmit = () => {
-    if (!selectedStaff || !startDate || !endDate) return;
+  const onSubmit = (data: LeaveRequestFormValues) => {
     onCreateRequest({
-      staffId: selectedStaff,
-      startDate,
-      endDate,
-      type: leaveType,
+      staffId: data.staffId,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      type: data.type,
       status: 'pending',
-      notes,
+      notes: data.notes,
     });
-    setSelectedStaff('');
-    setStartDate('');
-    setEndDate('');
-    setNotes('');
+    reset();
+    toast.success('Leave request submitted');
+    setTabValue(0); // Switch to pending tab
   };
 
   const statusColors = {
@@ -82,20 +105,30 @@ export function LeaveRequestModal({
     rejected: 'bg-destructive/15 text-destructive border-destructive/50',
   };
 
-  return (
-    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            Leave Request Management
-          </SheetTitle>
-          <SheetDescription>
-            Manage staff leave requests and create new ones
-          </SheetDescription>
-        </SheetHeader>
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
 
-        <div className="mt-6">
+  const actions: OffCanvasAction[] = tabValue === 3 
+    ? [
+        { label: 'Cancel', onClick: handleClose, variant: 'outlined' },
+        { label: 'Submit Request', onClick: handleSubmit(onSubmit), variant: 'primary', disabled: !isValid },
+      ]
+    : [];
+
+  return (
+    <FormProvider {...methods}>
+      <PrimaryOffCanvas
+        title="Leave Request Management"
+        description="Manage staff leave requests and create new ones"
+        width="500px"
+        open={open}
+        onClose={handleClose}
+        actions={actions}
+        showFooter={tabValue === 3}
+      >
+        <div>
           <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>Pending <Badge variant="secondary" className="text-xs">{pendingRequests.length}</Badge></Box>} />
             <Tab label="Approved" />
@@ -106,7 +139,7 @@ export function LeaveRequestModal({
           {/* Pending Tab */}
           {tabValue === 0 && (
             <Box sx={{ mt: 2 }}>
-              <ScrollArea className="h-[calc(100vh-280px)]">
+              <ScrollArea className="h-[calc(100vh-320px)]">
                 {pendingRequests.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                     <Clock className="h-12 w-12 mb-2 opacity-50" />
@@ -133,7 +166,7 @@ export function LeaveRequestModal({
           {/* Approved Tab */}
           {tabValue === 1 && (
             <Box sx={{ mt: 2 }}>
-              <ScrollArea className="h-[calc(100vh-280px)]">
+              <ScrollArea className="h-[calc(100vh-320px)]">
                 {approvedRequests.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                     <Check className="h-12 w-12 mb-2 opacity-50" />
@@ -157,7 +190,7 @@ export function LeaveRequestModal({
           {/* Rejected Tab */}
           {tabValue === 2 && (
             <Box sx={{ mt: 2 }}>
-              <ScrollArea className="h-[calc(100vh-280px)]">
+              <ScrollArea className="h-[calc(100vh-320px)]">
                 {rejectedRequests.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                     <X className="h-12 w-12 mb-2 opacity-50" />
@@ -181,69 +214,117 @@ export function LeaveRequestModal({
           {/* New Request Tab */}
           {tabValue === 3 && (
             <Box sx={{ mt: 2 }}>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Staff Member</Label>
-                    <TextField
-                      select
-                      fullWidth
-                      size="small"
-                      value={selectedStaff}
-                      onChange={(e) => setSelectedStaff(e.target.value)}
-                      placeholder="Select staff..."
-                    >
-                      {staff.map((s) => (
-                        <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
-                      ))}
-                    </TextField>
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Staff Member *</Label>
+                      <Controller
+                        name="staffId"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            select
+                            fullWidth
+                            size="small"
+                            placeholder="Select staff..."
+                            error={!!errors.staffId}
+                            helperText={errors.staffId?.message}
+                          >
+                            {staff.map((s) => (
+                              <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                            ))}
+                          </TextField>
+                        )}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Leave Type *</Label>
+                      <Controller
+                        name="type"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            select
+                            fullWidth
+                            size="small"
+                            error={!!errors.type}
+                            helperText={errors.type?.message}
+                          >
+                            {Object.entries(timeOffTypeLabels).map(([key, label]) => (
+                              <MenuItem key={key} value={key}>{label}</MenuItem>
+                            ))}
+                          </TextField>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Start Date *</Label>
+                      <Controller
+                        name="startDate"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            type="date"
+                            fullWidth
+                            size="small"
+                            InputLabelProps={{ shrink: true }}
+                            error={!!errors.startDate}
+                            helperText={errors.startDate?.message}
+                          />
+                        )}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>End Date *</Label>
+                      <Controller
+                        name="endDate"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            type="date"
+                            fullWidth
+                            size="small"
+                            InputLabelProps={{ shrink: true }}
+                            error={!!errors.endDate}
+                            helperText={errors.endDate?.message}
+                          />
+                        )}
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Leave Type</Label>
-                    <TextField
-                      select
-                      fullWidth
-                      size="small"
-                      value={leaveType}
-                      onChange={(e) => setLeaveType(e.target.value as TimeOff['type'])}
-                    >
-                      {Object.entries(timeOffTypeLabels).map(([key, label]) => (
-                        <MenuItem key={key} value={key}>{label}</MenuItem>
-                      ))}
-                    </TextField>
+                    <Label>Notes</Label>
+                    <Controller
+                      name="notes"
+                      control={control}
+                      render={({ field }) => (
+                        <Textarea 
+                          {...field}
+                          placeholder="Optional notes..." 
+                        />
+                      )}
+                    />
+                    {errors.notes && (
+                      <FormHelperText error>{errors.notes.message}</FormHelperText>
+                    )}
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Start Date</Label>
-                    <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>End Date</Label>
-                    <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Notes</Label>
-                  <Textarea 
-                    placeholder="Optional notes..." 
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </div>
-
-                <Button onClick={handleSubmit} disabled={!selectedStaff || !startDate || !endDate} className="w-full">
-                  Submit Leave Request
-                </Button>
-              </div>
+              </form>
             </Box>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </PrimaryOffCanvas>
+    </FormProvider>
   );
 }
 

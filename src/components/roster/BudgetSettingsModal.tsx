@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm, FormProvider, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   Button,
   TextField,
@@ -16,6 +19,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  FormHelperText,
 } from '@mui/material';
 import { 
   DollarSign, 
@@ -37,16 +41,17 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import { Centre } from '@/types/roster';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
+import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
+
+// Zod validation schema for budget settings
+const budgetSettingsValidationSchema = z.object({
+  weeklyBudget: z.number().min(0, 'Budget must be positive').max(1000000, 'Budget too high'),
+  overtimeThreshold: z.number().min(30).max(50),
+  maxAgencyPercent: z.number().min(0).max(50),
+});
 
 export interface BudgetSettings {
   // Core Budget
@@ -146,7 +151,20 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
   });
 
   const handleSave = () => {
+    // Validate core settings
+    const result = budgetSettingsValidationSchema.safeParse({
+      weeklyBudget: settings.weeklyBudget,
+      overtimeThreshold: settings.overtimeThreshold,
+      maxAgencyPercent: settings.maxAgencyPercent,
+    });
+    
+    if (!result.success) {
+      toast.error('Please check your budget settings');
+      return;
+    }
+    
     onSave(settings);
+    toast.success('Budget settings saved');
     onClose();
   };
 
@@ -157,18 +175,21 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
     });
   };
 
+  const actions: OffCanvasAction[] = [
+    { label: 'Cancel', onClick: onClose, variant: 'outlined' },
+    { label: 'Save Settings', onClick: handleSave, variant: 'primary' },
+  ];
+
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right" className="!w-[95vw] sm:!w-[600px] md:!w-[700px] !max-w-[700px]">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-primary" />
-            Budget Settings
-          </SheetTitle>
-          <SheetDescription>
-            Configure comprehensive budget limits and staffing controls for {centre.name}
-          </SheetDescription>
-        </SheetHeader>
+    <PrimaryOffCanvas
+      title="Budget Settings"
+      description={`Configure comprehensive budget limits and staffing controls for ${centre.name}`}
+      width="700px"
+      open={open}
+      onClose={onClose}
+      actions={actions}
+      showFooter
+    >
 
         <Tabs defaultValue="costs" className="mt-4">
           <TabsList className="grid w-full grid-cols-4">
@@ -733,12 +754,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
             </TabsContent>
           </ScrollArea>
         </Tabs>
-
-        <SheetFooter className="mt-4">
-          <Button variant="outlined" onClick={onClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave}>Save Settings</Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+    </PrimaryOffCanvas>
   );
 }
