@@ -177,7 +177,9 @@ export function StaffTimelineGrid({
     setDragOverCell(cellId);
     if (!isDragging) {
       setIsDragging(true);
-      const type = e.dataTransfer.types.includes('shiftid') ? 'shift' : 'staff';
+      // Check both lowercase and mixed case for shiftId
+      const hasShiftId = e.dataTransfer.types.includes('shiftid') || e.dataTransfer.types.includes('shiftId');
+      const type = hasShiftId ? 'shift' : 'staff';
       setDragType(type);
     }
   };
@@ -650,13 +652,80 @@ export function StaffTimelineGrid({
                   </div>
                 )}
 
-                {roomStaff.length === 0 && roomOpenShifts.length === 0 && (
-                  <div className="flex border-b border-border">
-                    <div className="w-64 shrink-0 p-4 border-r border-border text-center text-muted-foreground text-sm">No staff assigned</div>
-                    {dates.map((date) => <div key={date.toISOString()} className="flex-1 min-w-[120px] p-1 border-r border-border" />)}
-                    <div className="w-24 shrink-0 border-r border-border" />
+                {/* Drop zone row for adding new staff to this room */}
+                <div className="flex border-b border-border bg-muted/20 hover:bg-muted/40 transition-colors">
+                  <div className="w-64 shrink-0 p-2 border-r border-border flex items-center gap-2">
+                    <div className="h-9 w-9 rounded-full flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/30">
+                      <User className="h-4 w-4 text-primary/50" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Drop to Add Staff</p>
+                      <p className="text-[10px] text-muted-foreground/70">Drag staff here to assign to {room.name}</p>
+                    </div>
                   </div>
-                )}
+
+                  {dates.map((date) => {
+                    const dateStr = format(date, 'yyyy-MM-dd');
+                    const cellKey = `add-staff-${room.id}-${dateStr}`;
+                    const isDragOver = dragOverCell === cellKey;
+
+                    return (
+                      <div
+                        key={cellKey}
+                        data-drop-zone
+                        className={cn(
+                          "flex-1 p-1 border-r border-border relative",
+                          "transition-all duration-200 ease-out",
+                          viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
+                          // Drop zone highlight states
+                          isDragging && dragType === 'staff' && "bg-primary/5",
+                          isDragOver && "bg-primary/20 ring-2 ring-inset ring-primary/50 scale-[1.02]"
+                        )}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          if (dragType === 'staff' || e.dataTransfer.types.includes('staffId')) {
+                            handleDragOver(e, cellKey);
+                          }
+                        }}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const staffId = e.dataTransfer.getData('staffId');
+                          const draggedType = e.dataTransfer.getData('dragType');
+                          // Only handle staff drops, not shift moves
+                          if (staffId && draggedType !== 'shift') {
+                            setDragOverCell(null);
+                            setIsDragging(false);
+                            setDragType(null);
+                            onDropStaff(staffId, room.id, dateStr);
+                          }
+                        }}
+                      >
+                        {/* Drop zone indicator */}
+                        {isDragging && dragType === 'staff' && !isDragOver && (
+                          <div className="absolute inset-1 border-2 border-dashed border-primary/30 rounded-md pointer-events-none flex items-center justify-center">
+                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Plus className="h-3 w-3 text-primary/50" />
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Active drop indicator */}
+                        {isDragOver && (
+                          <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none animate-scale-in">
+                            <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                              <div className="bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-medium shadow-lg">
+                                Add shift
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  <div className="w-24 shrink-0 border-r border-border" />
+                </div>
               </div>
             );
           })}
