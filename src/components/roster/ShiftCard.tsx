@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Shift, StaffMember, OpenShift, qualificationLabels } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip as MuiTooltip } from '@mui/material';
-import { Clock, MoreHorizontal, X, AlertCircle, Users, Coffee, Calendar, Award, MapPin } from 'lucide-react';
+import { Tooltip as MuiTooltip, ClickAwayListener } from '@mui/material';
+import { Clock, MoreHorizontal, X, AlertCircle, Users, Coffee, Calendar, Award, MapPin, Copy, ArrowLeftRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -19,6 +19,8 @@ interface ShiftCardProps {
   onEdit?: (shift: Shift) => void;
   onDelete?: (shiftId: string) => void;
   onDragStart?: (e: React.DragEvent, shift: Shift) => void;
+  onCopy?: (shift: Shift) => void;
+  onSwap?: (shift: Shift) => void;
   isCompact?: boolean;
 }
 
@@ -28,18 +30,33 @@ export function ShiftCard({
   onEdit, 
   onDelete, 
   onDragStart,
+  onCopy,
+  onSwap,
   isCompact = false 
 }: ShiftCardProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   const duration = calculateDuration(shift.startTime, shift.endTime, shift.breakMinutes);
 
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
+    setTooltipOpen(false); // Close tooltip when dragging starts
     onDragStart?.(e, shift);
   };
 
   const handleDragEnd = () => {
     setIsDragging(false);
+  };
+
+  const handleMouseEnter = () => {
+    if (!isDragging) {
+      setTooltipOpen(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setTooltipOpen(false);
   };
   
   const tooltipContent = (
@@ -102,9 +119,17 @@ export function ShiftCard({
       title={tooltipContent}
       placement="top"
       arrow
-      enterDelay={300}
-      leaveDelay={100}
+      open={tooltipOpen && !isDragging}
+      onClose={() => setTooltipOpen(false)}
+      disableHoverListener // Disable default hover to have manual control
+      disableFocusListener
       slotProps={{
+        popper: {
+          // Allow pointer events to pass through when dragging
+          sx: {
+            pointerEvents: isDragging ? 'none' : 'auto',
+          },
+        },
         tooltip: {
           sx: {
             bgcolor: 'hsl(220, 20%, 20%)',
@@ -112,6 +137,7 @@ export function ShiftCard({
             boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.4)',
             padding: 0,
             maxWidth: 280,
+            pointerEvents: 'none', // Tooltip doesn't block drag events
             '& .MuiTooltip-arrow': {
               color: 'hsl(220, 20%, 20%)',
             },
@@ -120,9 +146,12 @@ export function ShiftCard({
       }}
     >
       <div
+        ref={cardRef}
         draggable
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className={cn(
           "group relative rounded-md border cursor-grab active:cursor-grabbing",
           "transition-all duration-200 ease-out",
@@ -161,6 +190,7 @@ export function ShiftCard({
                     variant="ghost" 
                     size="icon" 
                     className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <MoreHorizontal className="h-3.5 w-3.5" />
                   </Button>
@@ -169,8 +199,14 @@ export function ShiftCard({
                   <DropdownMenuItem onClick={() => onEdit?.(shift)}>
                     Edit Shift
                   </DropdownMenuItem>
-                  <DropdownMenuItem>Swap Staff</DropdownMenuItem>
-                  <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onSwap?.(shift)}>
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    Swap Staff
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onCopy?.(shift)}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy to Dates...
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     className="text-destructive"
@@ -219,6 +255,7 @@ export function OpenShiftCard({
   isCompact = false 
 }: OpenShiftCardProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
   const duration = calculateDuration(openShift.startTime, openShift.endTime, 0);
 
   const urgencyColors = {
@@ -238,6 +275,7 @@ export function OpenShiftCard({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
+    setTooltipOpen(false); // Close tooltip when drag over
     onDragOver?.(e);
   };
 
@@ -248,6 +286,16 @@ export function OpenShiftCard({
   const handleDrop = (e: React.DragEvent) => {
     setIsDragOver(false);
     onDrop?.(e, openShift);
+  };
+
+  const handleMouseEnter = () => {
+    if (!isDragOver) {
+      setTooltipOpen(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setTooltipOpen(false);
   };
 
   const tooltipContent = (
@@ -330,9 +378,16 @@ export function OpenShiftCard({
       title={tooltipContent}
       placement="top"
       arrow
-      enterDelay={300}
-      leaveDelay={100}
+      open={tooltipOpen && !isDragOver}
+      onClose={() => setTooltipOpen(false)}
+      disableHoverListener
+      disableFocusListener
       slotProps={{
+        popper: {
+          sx: {
+            pointerEvents: isDragOver ? 'none' : 'auto',
+          },
+        },
         tooltip: {
           sx: {
             bgcolor: 'hsl(220, 20%, 20%)',
@@ -340,6 +395,7 @@ export function OpenShiftCard({
             boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.4)',
             padding: 0,
             maxWidth: 300,
+            pointerEvents: 'none',
             '& .MuiTooltip-arrow': {
               color: 'hsl(220, 20%, 20%)',
             },
@@ -358,6 +414,8 @@ export function OpenShiftCard({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-1.5">
