@@ -1,8 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Shift, StaffMember, OpenShift, qualificationLabels } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip as MuiTooltip, ClickAwayListener } from '@mui/material';
-import { Clock, MoreHorizontal, X, AlertCircle, Users, Coffee, Calendar, Award, MapPin, Copy, ArrowLeftRight } from 'lucide-react';
+import { Clock, MoreHorizontal, X, AlertCircle, Users, Coffee, Calendar, Award, MapPin, Copy, ArrowLeftRight, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -12,6 +11,27 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+
+// Global drag state to disable tooltips during any drag operation
+let globalDragInProgress = false;
+const dragListeners = new Set<() => void>();
+
+const setGlobalDrag = (isDragging: boolean) => {
+  globalDragInProgress = isDragging;
+  dragListeners.forEach(listener => listener());
+};
+
+const useGlobalDrag = () => {
+  const [isDragging, setIsDragging] = useState(globalDragInProgress);
+  
+  useEffect(() => {
+    const listener = () => setIsDragging(globalDragInProgress);
+    dragListeners.add(listener);
+    return () => { dragListeners.delete(listener); };
+  }, []);
+  
+  return isDragging;
+};
 
 interface ShiftCardProps {
   shift: Shift;
@@ -35,207 +55,115 @@ export function ShiftCard({
   isCompact = false 
 }: ShiftCardProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const globalDrag = useGlobalDrag();
   const cardRef = useRef<HTMLDivElement>(null);
   const duration = calculateDuration(shift.startTime, shift.endTime, shift.breakMinutes);
 
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
-    setTooltipOpen(false); // Close tooltip when dragging starts
+    setGlobalDrag(true);
     onDragStart?.(e, shift);
   };
 
   const handleDragEnd = () => {
     setIsDragging(false);
-  };
-
-  const handleMouseEnter = () => {
-    if (!isDragging) {
-      setTooltipOpen(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setTooltipOpen(false);
+    setGlobalDrag(false);
   };
   
-  const tooltipContent = (
-    <div className="p-3 min-w-[200px]">
-      {/* Header with staff info */}
-      <div className="flex items-center gap-3 mb-3 pb-2 border-b border-white/20">
-        <div 
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-          style={{ backgroundColor: staff?.color || 'hsl(var(--muted-foreground))' }}
-        >
-          {staff?.name ? staff.name.split(' ').map(n => n[0]).join('') : '?'}
-        </div>
-        <div>
-          <p className="font-semibold text-white text-sm">{staff?.name || 'Unassigned'}</p>
-          <p className="text-xs text-white/70">{staff?.role || 'No role assigned'}</p>
-        </div>
-      </div>
-
-      {/* Time details */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-white/90">
-          <Clock className="h-4 w-4 text-white/60" />
-          <span className="text-sm font-medium">{shift.startTime} - {shift.endTime}</span>
-          <span className="text-xs text-white/60 ml-auto">{duration}h</span>
-        </div>
-
-        {shift.breakMinutes > 0 && (
-          <div className="flex items-center gap-2 text-white/90">
-            <Coffee className="h-4 w-4 text-white/60" />
-            <span className="text-sm">{shift.breakMinutes} min break</span>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 text-white/90">
-          <Calendar className="h-4 w-4 text-white/60" />
-          <span className="text-sm capitalize">{shift.status}</span>
-        </div>
-      </div>
-
-      {/* Status badge */}
-      <div className="mt-3 pt-2 border-t border-white/20">
-        <span className={cn(
-          "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-          shift.status === 'draft' && "bg-amber-500/20 text-amber-200",
-          shift.status === 'published' && "bg-blue-500/20 text-blue-200",
-          shift.status === 'confirmed' && "bg-green-500/20 text-green-200",
-          shift.status === 'completed' && "bg-gray-500/20 text-gray-200",
-        )}>
-          {shift.status === 'draft' && 'Draft - Not Published'}
-          {shift.status === 'published' && 'Published'}
-          {shift.status === 'confirmed' && 'Confirmed by Staff'}
-          {shift.status === 'completed' && 'Completed'}
-        </span>
-      </div>
-    </div>
-  );
+  // Don't show anything if global drag is in progress (hides tooltips during drag)
+  const showTooltipContent = !globalDrag && !isDragging;
 
   return (
-    <MuiTooltip
-      title={tooltipContent}
-      placement="top"
-      arrow
-      open={tooltipOpen && !isDragging}
-      onClose={() => setTooltipOpen(false)}
-      disableHoverListener // Disable default hover to have manual control
-      disableFocusListener
-      slotProps={{
-        popper: {
-          // Allow pointer events to pass through when dragging
-          sx: {
-            pointerEvents: isDragging ? 'none' : 'auto',
-          },
-        },
-        tooltip: {
-          sx: {
-            bgcolor: 'hsl(220, 20%, 20%)',
-            borderRadius: '12px',
-            boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.4)',
-            padding: 0,
-            maxWidth: 280,
-            pointerEvents: 'none', // Tooltip doesn't block drag events
-            '& .MuiTooltip-arrow': {
-              color: 'hsl(220, 20%, 20%)',
-            },
-          },
-        },
+    <div
+      ref={cardRef}
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      className={cn(
+        "group relative rounded-md border cursor-grab active:cursor-grabbing",
+        "transition-all duration-200 ease-out",
+        "hover:shadow-md hover:scale-[1.02]",
+        isDragging && "opacity-50 scale-95 rotate-2 shadow-xl ring-2 ring-primary/50",
+        shift.status === 'draft' && "border-dashed opacity-80",
+        shift.status === 'published' && "border-solid",
+        isCompact ? "p-1.5" : "p-2"
+      )}
+      style={{
+        backgroundColor: staff?.color ? `${staff.color}15` : 'hsl(var(--muted))',
+        borderColor: staff?.color || 'hsl(var(--border))',
       }}
     >
-      <div
-        ref={cardRef}
-        draggable
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+      {/* Status indicator */}
+      <div 
         className={cn(
-          "group relative rounded-md border cursor-grab active:cursor-grabbing",
-          "transition-all duration-200 ease-out",
-          "hover:shadow-md hover:scale-[1.02]",
-          isDragging && "opacity-50 scale-95 rotate-2 shadow-xl ring-2 ring-primary/50",
-          shift.status === 'draft' && "border-dashed opacity-80",
-          shift.status === 'published' && "border-solid",
-          isCompact ? "p-1.5" : "p-2"
+          "absolute top-0 left-0 w-1 h-full rounded-l-md",
         )}
-        style={{
-          backgroundColor: staff?.color ? `${staff.color}15` : 'hsl(var(--muted))',
-          borderColor: staff?.color || 'hsl(var(--border))',
-        }}
-      >
-        {/* Status indicator */}
-        <div 
-          className={cn(
-            "absolute top-0 left-0 w-1 h-full rounded-l-md",
-          )}
-          style={{ backgroundColor: staff?.color || 'hsl(var(--muted-foreground))' }}
-        />
+        style={{ backgroundColor: staff?.color || 'hsl(var(--muted-foreground))' }}
+      />
 
-        <div className="pl-2">
-          {!isCompact && (
-            <div className="flex items-start justify-between mb-1">
-              <span 
-                className="text-sm font-medium truncate"
-                style={{ color: staff?.color || 'hsl(var(--foreground))' }}
-              >
-                {staff?.name || 'Unassigned'}
-              </span>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreHorizontal className="h-3.5 w-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit?.(shift)}>
-                    Edit Shift
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onSwap?.(shift)}>
-                    <ArrowLeftRight className="h-4 w-4 mr-2" />
-                    Swap Staff
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onCopy?.(shift)}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy to Dates...
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="text-destructive"
-                    onClick={() => onDelete?.(shift.id)}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Remove
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>{shift.startTime} - {shift.endTime}</span>
-            {!isCompact && (
-              <span className="text-muted-foreground/60">({duration}h)</span>
-            )}
+      <div className="pl-2">
+        {!isCompact && (
+          <div className="flex items-start justify-between mb-1">
+            <span 
+              className="text-sm font-medium truncate"
+              style={{ color: staff?.color || 'hsl(var(--foreground))' }}
+            >
+              {staff?.name || 'Unassigned'}
+            </span>
+            
+            {/* Three-dot menu for shift actions */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity -mr-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => onEdit?.(shift)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Shift
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onCopy?.(shift)}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy to Dates...
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSwap?.(shift)}>
+                  <ArrowLeftRight className="h-4 w-4 mr-2" />
+                  Swap Staff
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={() => onDelete?.(shift.id)}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Delete Shift
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+        )}
 
-          {!isCompact && shift.status === 'draft' && (
-            <Badge variant="outline" className="mt-1 text-[10px] py-0">
-              Draft
-            </Badge>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span>{shift.startTime} - {shift.endTime}</span>
+          {!isCompact && (
+            <span className="text-muted-foreground/60">({duration}h)</span>
           )}
         </div>
+
+        {!isCompact && shift.status === 'draft' && (
+          <Badge variant="outline" className="mt-1 text-[10px] py-0">
+            Draft
+          </Badge>
+        )}
       </div>
-    </MuiTooltip>
+    </div>
   );
 }
 
@@ -255,7 +183,7 @@ export function OpenShiftCard({
   isCompact = false 
 }: OpenShiftCardProps) {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const globalDrag = useGlobalDrag();
   const duration = calculateDuration(openShift.startTime, openShift.endTime, 0);
 
   const urgencyColors = {
@@ -265,17 +193,9 @@ export function OpenShiftCard({
     critical: 'border-destructive/50 bg-destructive/10 animate-pulse',
   };
 
-  const urgencyConfig = {
-    low: { color: 'hsl(var(--muted-foreground))', label: 'Low Priority', bgClass: 'bg-gray-500/20 text-gray-200' },
-    medium: { color: 'hsl(45, 93%, 47%)', label: 'Medium Priority', bgClass: 'bg-amber-500/20 text-amber-200' },
-    high: { color: 'hsl(25, 95%, 53%)', label: 'High Priority', bgClass: 'bg-orange-500/20 text-orange-200' },
-    critical: { color: 'hsl(0, 84%, 60%)', label: 'Critical - Fill ASAP', bgClass: 'bg-red-500/20 text-red-200' },
-  };
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
-    setTooltipOpen(false); // Close tooltip when drag over
     onDragOver?.(e);
   };
 
@@ -288,189 +208,72 @@ export function OpenShiftCard({
     onDrop?.(e, openShift);
   };
 
-  const handleMouseEnter = () => {
-    if (!isDragOver) {
-      setTooltipOpen(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setTooltipOpen(false);
-  };
-
-  const tooltipContent = (
-    <div className="p-3 min-w-[220px]">
-      {/* Header with urgency */}
-      <div className="flex items-center gap-3 mb-3 pb-2 border-b border-white/20">
-        <div 
-          className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center",
-            openShift.urgency === 'critical' && "animate-pulse"
-          )}
-          style={{ backgroundColor: urgencyConfig[openShift.urgency].color }}
+  return (
+    <div
+      className={cn(
+        "relative rounded-md border-2 border-dashed p-2",
+        "transition-all duration-200 ease-out",
+        urgencyColors[openShift.urgency],
+        "hover:border-primary/50 hover:bg-primary/5",
+        isDragOver && "scale-105 border-primary bg-primary/10 shadow-lg ring-2 ring-primary/30"
+      )}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          <AlertCircle className={cn(
+            "h-4 w-4 transition-transform duration-200",
+            isDragOver && "scale-110",
+            openShift.urgency === 'critical' && "text-destructive",
+            openShift.urgency === 'high' && "text-orange-500",
+            openShift.urgency === 'medium' && "text-amber-500",
+            openShift.urgency === 'low' && "text-muted-foreground",
+          )} />
+          <span className="text-sm font-medium text-foreground">Open Shift</span>
+        </div>
+        <Badge 
+          variant={openShift.urgency === 'critical' ? 'destructive' : 'outline'}
+          className="text-[10px] capitalize"
         >
-          <AlertCircle className="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <p className="font-semibold text-white text-sm">Open Shift</p>
-          <p className="text-xs text-white/70">{urgencyConfig[openShift.urgency].label}</p>
-        </div>
+          {openShift.urgency}
+        </Badge>
       </div>
 
-      {/* Time details */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-white/90">
-          <Clock className="h-4 w-4 text-white/60" />
-          <span className="text-sm font-medium">{openShift.startTime} - {openShift.endTime}</span>
-          <span className="text-xs text-white/60 ml-auto">{duration}h</span>
-        </div>
-
-        <div className="flex items-center gap-2 text-white/90">
-          <MapPin className="h-4 w-4 text-white/60" />
-          <span className="text-sm">{openShift.roomId}</span>
-        </div>
+      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+        <Clock className="h-3 w-3" />
+        <span>{openShift.startTime} - {openShift.endTime}</span>
       </div>
 
-      {/* Required Qualifications */}
-      {openShift.requiredQualifications.length > 0 && (
-        <div className="mt-3 pt-2 border-t border-white/20">
-          <div className="flex items-center gap-2 mb-2">
-            <Award className="h-4 w-4 text-white/60" />
-            <span className="text-xs text-white/70 uppercase tracking-wide">Required Qualifications</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
+      {!isCompact && (
+        <>
+          <div className="flex flex-wrap gap-1 mb-2">
             {openShift.requiredQualifications.map((qual) => (
-              <span 
-                key={qual} 
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white/90"
-              >
+              <Badge key={qual} variant="secondary" className="text-[10px]">
                 {qualificationLabels[qual]}
-              </span>
+              </Badge>
             ))}
           </div>
-        </div>
-      )}
 
-      {/* Applicants */}
-      {openShift.applicants.length > 0 && (
-        <div className="mt-3 pt-2 border-t border-white/20">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-green-400" />
-            <span className="text-sm text-green-300">{openShift.applicants.length} applicant(s) available</span>
-          </div>
-        </div>
-      )}
-
-      {/* Urgency badge */}
-      <div className="mt-3 pt-2 border-t border-white/20">
-        <span className={cn(
-          "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-          urgencyConfig[openShift.urgency].bgClass
-        )}>
-          {urgencyConfig[openShift.urgency].label}
-        </span>
-      </div>
-    </div>
-  );
-
-  return (
-    <MuiTooltip
-      title={tooltipContent}
-      placement="top"
-      arrow
-      open={tooltipOpen && !isDragOver}
-      onClose={() => setTooltipOpen(false)}
-      disableHoverListener
-      disableFocusListener
-      slotProps={{
-        popper: {
-          sx: {
-            pointerEvents: isDragOver ? 'none' : 'auto',
-          },
-        },
-        tooltip: {
-          sx: {
-            bgcolor: 'hsl(220, 20%, 20%)',
-            borderRadius: '12px',
-            boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.4)',
-            padding: 0,
-            maxWidth: 300,
-            pointerEvents: 'none',
-            '& .MuiTooltip-arrow': {
-              color: 'hsl(220, 20%, 20%)',
-            },
-          },
-        },
-      }}
-    >
-      <div
-        className={cn(
-          "relative rounded-md border-2 border-dashed p-2",
-          "transition-all duration-200 ease-out",
-          urgencyColors[openShift.urgency],
-          "hover:border-primary/50 hover:bg-primary/5",
-          isDragOver && "scale-105 border-primary bg-primary/10 shadow-lg ring-2 ring-primary/30"
-        )}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-1.5">
-            <AlertCircle className={cn(
-              "h-4 w-4 transition-transform duration-200",
-              isDragOver && "scale-110",
-              openShift.urgency === 'critical' && "text-destructive",
-              openShift.urgency === 'high' && "text-orange-500",
-              openShift.urgency === 'medium' && "text-amber-500",
-              openShift.urgency === 'low' && "text-muted-foreground",
-            )} />
-            <span className="text-sm font-medium text-foreground">Open Shift</span>
-          </div>
-          <Badge 
-            variant={openShift.urgency === 'critical' ? 'destructive' : 'outline'}
-            className="text-[10px] capitalize"
-          >
-            {openShift.urgency}
-          </Badge>
-        </div>
-
-        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-          <Clock className="h-3 w-3" />
-          <span>{openShift.startTime} - {openShift.endTime}</span>
-        </div>
-
-        {!isCompact && (
-          <>
-            <div className="flex flex-wrap gap-1 mb-2">
-              {openShift.requiredQualifications.map((qual) => (
-                <Badge key={qual} variant="secondary" className="text-[10px]">
-                  {qualificationLabels[qual]}
-                </Badge>
-              ))}
+          {openShift.applicants.length > 0 && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Users className="h-3 w-3" />
+              <span>{openShift.applicants.length} applicant(s)</span>
             </div>
+          )}
+        </>
+      )}
 
-            {openShift.applicants.length > 0 && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Users className="h-3 w-3" />
-                <span>{openShift.applicants.length} applicant(s)</span>
-              </div>
-            )}
-          </>
-        )}
-
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="w-full mt-2 h-7 text-xs transition-all duration-200 hover:scale-[1.02]"
-          onClick={() => onAssign?.(openShift)}
-        >
-          Fill Shift
-        </Button>
-      </div>
-    </MuiTooltip>
+      <Button 
+        size="sm" 
+        variant="outline" 
+        className="w-full mt-2 h-7 text-xs transition-all duration-200 hover:scale-[1.02]"
+        onClick={() => onAssign?.(openShift)}
+      >
+        Fill Shift
+      </Button>
+    </div>
   );
 }
 

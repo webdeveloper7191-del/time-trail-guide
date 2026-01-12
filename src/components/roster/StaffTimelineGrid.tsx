@@ -42,6 +42,8 @@ interface StaffTimelineGridProps {
   onDropStaff: (staffId: string, roomId: string, date: string) => void;
   onShiftEdit: (shift: Shift) => void;
   onShiftDelete: (shiftId: string) => void;
+  onShiftCopy?: (shift: Shift) => void;
+  onShiftSwap?: (shift: Shift) => void;
   onOpenShiftFill: (openShift: OpenShift) => void;
   onAddShift: (staffId: string, date: string, roomId: string, template?: ShiftTemplate) => void;
   onDragStart: (e: React.DragEvent, staff: StaffMember) => void;
@@ -65,6 +67,8 @@ export function StaffTimelineGrid({
   onDropStaff,
   onShiftEdit,
   onShiftDelete,
+  onShiftCopy,
+  onShiftSwap,
   onAddShift,
   onDragStart,
   onOpenShiftDrop,
@@ -429,13 +433,15 @@ export function StaffTimelineGrid({
                             {!timeOff && (
                               <>
                                 <div className="space-y-1">
-                                  {cellShifts.map((shift) => (
+                                {cellShifts.map((shift) => (
                                     <StaffShiftCard
                                       key={shift.id}
                                       shift={shift}
                                       staff={member}
                                       onEdit={() => onShiftEdit(shift)}
                                       onDelete={() => onShiftDelete(shift.id)}
+                                      onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
+                                      onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
                                       onDragStart={handleShiftDragStart}
                                       isCompact={isCompact}
                                     />
@@ -644,11 +650,13 @@ export function StaffTimelineGrid({
   );
 }
 
-function StaffShiftCard({ shift, staff, onEdit, onDelete, onDragStart, isCompact = false }: {
+function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onDragStart, isCompact = false }: {
   shift: Shift;
   staff?: StaffMember;
   onEdit: () => void;
   onDelete: () => void;
+  onCopy?: () => void;
+  onSwap?: () => void;
   onDragStart: (e: React.DragEvent, shift: Shift) => void;
   isCompact?: boolean;
 }) {

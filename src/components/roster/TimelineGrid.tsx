@@ -53,6 +53,8 @@ interface TimelineGridProps {
   onDropStaff: (staffId: string, roomId: string, date: string, timeSlot?: string) => void;
   onShiftEdit: (shift: Shift) => void;
   onShiftDelete: (shiftId: string) => void;
+  onShiftCopy?: (shift: Shift) => void;
+  onShiftSwap?: (shift: Shift) => void;
   onOpenShiftFill: (openShift: OpenShift) => void;
   onAddShift: (roomId: string, date: string, template?: ShiftTemplate) => void;
   onUnassignStaff?: (shiftId: string) => void;
@@ -76,6 +78,8 @@ export function TimelineGrid({
   onDropStaff,
   onShiftEdit,
   onShiftDelete,
+  onShiftCopy,
+  onShiftSwap,
   onOpenShiftFill,
   onAddShift,
   onUnassignStaff,
@@ -432,6 +436,8 @@ export function TimelineGrid({
                           staff={staff.find(s => s.id === shift.staffId)}
                           onEdit={onShiftEdit}
                           onDelete={onShiftDelete}
+                          onCopy={onShiftCopy}
+                          onSwap={onShiftSwap}
                           onDragStart={handleShiftDragStart}
                           isCompact={isCompact}
                         />
