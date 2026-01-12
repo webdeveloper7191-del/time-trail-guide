@@ -47,6 +47,93 @@ export interface DemandConfig {
   zoneLabelPlural: string;
 }
 
+// Extended demand data configuration
+export type DemandDataSourceType = 'manual' | 'integration' | 'historical' | 'forecast' | 'hybrid';
+export type DemandGranularity = '15min' | '30min' | '1hour' | '2hour' | '4hour' | 'daily';
+export type ForecastMethod = 'moving_average' | 'weighted_average' | 'seasonal' | 'ml_prediction' | 'manual';
+
+export interface DemandDataSourceConfig {
+  type: DemandDataSourceType;
+  enabled: boolean;
+  priority: number; // Lower = higher priority when merging sources
+  settings: Record<string, any>;
+}
+
+export interface DemandSchedulePattern {
+  id: string;
+  name: string;
+  dayOfWeek: number[]; // 0-6
+  startTime: string;
+  endTime: string;
+  expectedDemandMultiplier: number; // 1.0 = normal, 1.5 = 50% higher
+  color: string;
+}
+
+export interface DemandThreshold {
+  id: string;
+  name: string;
+  minDemand: number;
+  maxDemand?: number;
+  requiredStaff: number;
+  color: string;
+  alertLevel: 'info' | 'warning' | 'critical';
+}
+
+export interface DemandMasterSettings {
+  // Basic settings
+  enabled: boolean;
+  granularity: DemandGranularity;
+  timezone: string;
+  
+  // Operating hours
+  operatingHours: {
+    dayOfWeek: number;
+    open: string;
+    close: string;
+    isOpen: boolean;
+  }[];
+  
+  // Data sources
+  dataSources: {
+    manual: DemandDataSourceConfig;
+    historical: DemandDataSourceConfig;
+    integration: DemandDataSourceConfig;
+    forecast: DemandDataSourceConfig;
+  };
+  
+  // Forecasting
+  forecasting: {
+    enabled: boolean;
+    method: ForecastMethod;
+    lookbackWeeks: number;
+    confidenceThreshold: number; // 0-100
+    autoAdjust: boolean;
+    seasonalAdjustments: boolean;
+  };
+  
+  // Patterns & thresholds
+  schedulePatterns: DemandSchedulePattern[];
+  thresholds: DemandThreshold[];
+  
+  // Alerts
+  alerts: {
+    understaffing: boolean;
+    overstaffing: boolean;
+    demandSpike: boolean;
+    forecastAccuracy: boolean;
+    thresholdPercentage: number;
+  };
+  
+  // Display preferences
+  display: {
+    showForecast: boolean;
+    showHistorical: boolean;
+    showVariance: boolean;
+    chartType: 'bar' | 'line' | 'area';
+    colorScheme: 'default' | 'heatmap' | 'gradient';
+  };
+}
+
 export interface StaffingConfig {
   // Role terminology
   roleLabel: string; // e.g., "Educator", "Associate", "Nurse"

@@ -30,10 +30,11 @@ import { BulkShiftAssignmentModal } from '@/components/roster/BulkShiftAssignmen
 import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { RosterHistoryPanel } from '@/components/roster/RosterHistoryPanel';
 import { IndustryConfigurationModal } from '@/components/settings/IndustryConfigurationModal';
+import { DemandMasterSettingsModal, defaultDemandMasterSettings } from '@/components/settings/DemandMasterSettingsModal';
 import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
 import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
-import { IndustryType, DemandConfig, StaffingConfig, getIndustryTemplate } from '@/types/industryConfig';
+import { IndustryType, DemandConfig, StaffingConfig, DemandMasterSettings, getIndustryTemplate } from '@/types/industryConfig';
 
 // MUI Components
 import {
@@ -167,6 +168,10 @@ export default function RosterScheduler() {
   const [industryType, setIndustryType] = useState<IndustryType>('childcare');
   const [demandConfig, setDemandConfig] = useState<DemandConfig>(getIndustryTemplate('childcare').demandConfig);
   const [staffingConfig, setStaffingConfig] = useState<StaffingConfig>(getIndustryTemplate('childcare').staffingConfig);
+  
+  // Demand master settings
+  const [showDemandSettings, setShowDemandSettings] = useState(false);
+  const [demandMasterSettings, setDemandMasterSettings] = useState<DemandMasterSettings>(defaultDemandMasterSettings);
   
   // Shift copy state
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -1041,6 +1046,9 @@ export default function RosterScheduler() {
                   <DropdownMenuItem onClick={() => setShowIndustryConfig(true)} icon={<Settings size={16} />}>
                     Industry Settings
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowDemandSettings(true)} icon={<BarChart2 size={16} />}>
+                    Demand Settings
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -1490,6 +1498,14 @@ export default function RosterScheduler() {
           setDemandConfig(newDemandConfig);
           setStaffingConfig(newStaffingConfig);
         }}
+      />
+
+      {/* Demand Master Settings Modal */}
+      <DemandMasterSettingsModal
+        open={showDemandSettings}
+        onClose={() => setShowDemandSettings(false)}
+        settings={demandMasterSettings}
+        onSave={(newSettings) => setDemandMasterSettings(newSettings)}
       />
 
       {/* Hidden Print View */}
