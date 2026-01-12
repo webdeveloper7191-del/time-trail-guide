@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
   Button,
-  TextField,
   Card,
   CardContent,
   Stack,
@@ -19,30 +18,20 @@ import {
   Paper,
 } from '@mui/material';
 import {
-  Plus,
-  Trash2,
-  Save,
-  Calendar,
-  Clock,
   FileSpreadsheet,
-  Download,
-  Upload,
   Copy,
   ChevronLeft,
   ChevronRight,
-  Layers,
 } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { format, addDays, startOfWeek, parse } from 'date-fns';
-import { Centre, Room } from '@/types/roster';
+import { format, addDays, startOfWeek } from 'date-fns';
+import { Centre } from '@/types/roster';
 import { ManualDemandEntry, useDemand } from '@/contexts/DemandContext';
+import { DemandCsvImportExport } from './DemandCsvImportExport';
 import { z } from 'zod';
 
 interface DemandDataEntryModalProps {
@@ -305,14 +294,14 @@ export function DemandDataEntryModal({
                 </Box>
               </Stack>
 
-              <Stack direction="row" spacing={1}>
+              <Stack direction="row" spacing={1} alignItems="center">
                 <Button
                   variant="outlined"
                   size="small"
                   startIcon={<Copy size={14} />}
                   onClick={() => handleCopyWeek('next')}
                 >
-                  Copy to Next Week
+                  Copy to Next
                 </Button>
                 <Button
                   variant="outlined"
@@ -326,6 +315,9 @@ export function DemandDataEntryModal({
             </Stack>
           </CardContent>
         </Card>
+
+        {/* CSV Import/Export */}
+        <DemandCsvImportExport centre={centre} />
 
         {/* Quick fill */}
         <Card variant="outlined">
