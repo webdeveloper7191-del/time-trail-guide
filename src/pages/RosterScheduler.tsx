@@ -150,8 +150,9 @@ export default function RosterScheduler() {
   const [selectedStaffForPrefs, setSelectedStaffForPrefs] = useState<StaffMember | null>(null);
   const [centreBudgets, setCentreBudgets] = useState<Record<string, number>>(defaultCentreBudgets);
   const [staffList, setStaffList] = useState<StaffMember[]>([...mockStaff, ...mockAgencyStaff]);
-  
-  // Template & Bulk Assignment state
+
+  // Room assignments (no shift created). Stored per-centre.
+  const [staffRoomAssignmentsByCentre, setStaffRoomAssignmentsByCentre] = useState<Record<string, Record<string, string>>>({});
   const [rosterTemplates, setRosterTemplates] = useState<RosterTemplate[]>([]);
   const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
   const [showApplyTemplateModal, setShowApplyTemplateModal] = useState(false);
@@ -276,6 +277,22 @@ export default function RosterScheduler() {
   const handleDragStart = (e: React.DragEvent, staff: StaffMember) => {
     e.dataTransfer.setData('staffId', staff.id);
     e.dataTransfer.setData('dragType', 'staff');
+  };
+
+  const handleAssignStaffToRoom = (staffId: string, roomId: string) => {
+    setStaffRoomAssignmentsByCentre(prev => {
+      const current = prev[selectedCentreId] || {};
+      return {
+        ...prev,
+        [selectedCentreId]: {
+          ...current,
+          [staffId]: roomId,
+        },
+      };
+    });
+
+    const staff = allStaff.find(s => s.id === staffId);
+    toast.success(`${staff?.name ?? 'Staff'} assigned to room`);
   };
 
   const handleDropStaff = (staffId: string, roomId: string, date: string) => {
@@ -1227,6 +1244,8 @@ export default function RosterScheduler() {
             staffAbsences={mockStaffAbsences}
             shiftTemplates={shiftTemplates}
             onDropStaff={handleDropStaff}
+            staffRoomAssignments={staffRoomAssignmentsByCentre[selectedCentreId] || {}}
+            onAssignStaffToRoom={handleAssignStaffToRoom}
             onShiftEdit={setSelectedShift}
             onShiftDelete={handleShiftDelete}
             onShiftCopy={handleCopyShift}
