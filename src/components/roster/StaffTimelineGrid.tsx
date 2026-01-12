@@ -43,7 +43,14 @@ interface StaffTimelineGridProps {
   demandAnalytics?: DemandAnalyticsData[];
   staffAbsences?: StaffAbsence[];
   shiftTemplates: ShiftTemplate[];
+
+  /** Creates a shift by dropping staff onto a specific day cell */
   onDropStaff: (staffId: string, roomId: string, date: string) => void;
+
+  /** Assigns staff into a room section (no shift created) */
+  staffRoomAssignments?: Record<string, string>; // staffId -> roomId
+  onAssignStaffToRoom?: (staffId: string, roomId: string) => void;
+
   onShiftEdit: (shift: Shift) => void;
   onShiftDelete: (shiftId: string) => void;
   onShiftCopy?: (shift: Shift) => void;
@@ -70,6 +77,8 @@ export function StaffTimelineGrid({
   staffAbsences = [],
   shiftTemplates,
   onDropStaff,
+  staffRoomAssignments = {},
+  onAssignStaffToRoom,
   onShiftEdit,
   onShiftDelete,
   onShiftCopy,
@@ -98,25 +107,27 @@ export function StaffTimelineGrid({
     );
   }, [staff, staffSearch]);
 
-  // Group shifts by room
+  // Group shifts + explicit room assignments by room
   const staffByRoom = useMemo(() => {
     const roomStaff: Record<string, Set<string>> = {};
-    centre.rooms.forEach(room => { roomStaff[room.id] = new Set(); });
+    centre.rooms.forEach(room => {
+      roomStaff[room.id] = new Set();
+    });
+
+    // 1) staff with shifts
     shifts.forEach(shift => {
       if (shift.centreId === centre.id && roomStaff[shift.roomId]) {
         roomStaff[shift.roomId].add(shift.staffId);
       }
     });
-    staff.forEach(s => {
-      if (s.preferredCentres.includes(centre.id) || s.preferredCentres.length === 0) {
-        const hasRoom = Object.values(roomStaff).some(set => set.has(s.id));
-        if (!hasRoom && centre.rooms.length > 0) {
-          roomStaff[centre.rooms[0].id].add(s.id);
-        }
-      }
+
+    // 2) staff explicitly assigned to a room (even with no shifts)
+    Object.entries(staffRoomAssignments).forEach(([staffId, roomId]) => {
+      if (roomStaff[roomId]) roomStaff[roomId].add(staffId);
     });
+
     return roomStaff;
-  }, [shifts, staff, centre]);
+  }, [shifts, centre, staffRoomAssignments]);
 
   const openShiftsByRoomDate = useMemo(() => {
     const grouped: Record<string, OpenShift[]> = {};
@@ -317,7 +328,26 @@ export function StaffTimelineGrid({
               <div key={room.id}>
                 {/* Room header */}
                 <div className="flex bg-primary/10 border-b border-primary/20 sticky top-[52px] z-10">
-                  <div className="w-64 shrink-0 px-4 py-2 flex items-center gap-3 border-r border-primary/20">
+                  <div
+                    data-drop-zone
+                    className="w-64 shrink-0 px-4 py-2 flex items-center gap-3 border-r border-primary/20"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      handleDragOver(e, `room-header-${room.id}`);
+                    }}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const staffId = e.dataTransfer.getData('staffId');
+                      const draggedType = e.dataTransfer.getData('dragType');
+                      if (!staffId || draggedType === 'shift') return;
+
+                      setDragOverCell(null);
+                      setIsDragging(false);
+                      setDragType(null);
+                      onAssignStaffToRoom?.(staffId, room.id);
+                    }}
+                  >
                     <Badge variant="secondary" className="font-semibold">{room.name}</Badge>
                     <span className="text-xs text-muted-foreground">
                       {ageGroupLabels[room.ageGroup]} • 1:{room.requiredRatio} • Cap: {room.capacity}
@@ -682,12 +712,29 @@ export function StaffTimelineGrid({
                   )}
                 >
                   <div 
+                    data-drop-zone
                     className={cn(
                       "w-64 shrink-0 p-2 border-r flex items-center gap-2 transition-colors",
                       isDragging && dragType === 'staff' 
                         ? "border-primary/30 bg-primary/5" 
                         : "border-border"
                     )}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      handleDragOver(e, `assign-staff-${room.id}`);
+                    }}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const staffId = e.dataTransfer.getData('staffId');
+                      const draggedType = e.dataTransfer.getData('dragType');
+                      if (!staffId || draggedType === 'shift') return;
+
+                      setDragOverCell(null);
+                      setIsDragging(false);
+                      setDragType(null);
+                      onAssignStaffToRoom?.(staffId, room.id);
+                    }}
                   >
                     <div className={cn(
                       "h-9 w-9 rounded-full flex items-center justify-center border-2 border-dashed transition-colors",
@@ -744,12 +791,12 @@ export function StaffTimelineGrid({
                           e.preventDefault();
                           const staffId = e.dataTransfer.getData('staffId');
                           const draggedType = e.dataTransfer.getData('dragType');
-                          // Only handle staff drops, not shift moves
+                          // Only handle staff drops (assign to room), not shift moves
                           if (staffId && draggedType !== 'shift') {
                             setDragOverCell(null);
                             setIsDragging(false);
                             setDragType(null);
-                            onDropStaff(staffId, room.id, dateStr);
+                            onAssignStaffToRoom?.(staffId, room.id);
                           }
                         }}
                       >
