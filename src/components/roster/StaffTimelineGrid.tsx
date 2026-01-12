@@ -175,17 +175,15 @@ export function StaffTimelineGrid({
   const handleDragOver = (e: React.DragEvent, cellId: string) => {
     e.preventDefault();
     setDragOverCell(cellId);
-    // Always detect drag type from dataTransfer types (case-insensitive check)
-    const types = e.dataTransfer.types.map(t => t.toLowerCase());
-    const hasShiftId = types.includes('shiftid');
-    const hasDragType = types.includes('dragtype');
-    // If dragType data is 'shift' or shiftId exists, it's a shift drag
-    const detectedType = hasShiftId ? 'shift' : 'staff';
-    
-    if (!isDragging || dragType !== detectedType) {
-      setIsDragging(true);
-      setDragType(detectedType);
-    }
+
+    // Some browsers don't expose custom setData keys in dataTransfer.types,
+    // so we detect by reading the actual payloads.
+    const shiftId = e.dataTransfer.getData('shiftId');
+    const explicit = (e.dataTransfer.getData('dragType') as 'staff' | 'shift' | '') || '';
+    const detectedType: 'staff' | 'shift' = explicit === 'shift' || !!shiftId ? 'shift' : 'staff';
+
+    if (!isDragging) setIsDragging(true);
+    if (dragType !== detectedType) setDragType(detectedType);
   };
 
   const handleDragLeave = (e: React.DragEvent) => { 
@@ -253,8 +251,26 @@ export function StaffTimelineGrid({
     setDragType('staff');
   };
 
+  const handleGridDragEnter = (e: React.DragEvent) => {
+    // When dragging from outside the grid (e.g. left StaffPanel), we won't have set local state yet.
+    // As soon as the cursor enters the grid, mark the drag as active and infer what is being dragged.
+    e.preventDefault();
+
+    const types = Array.from(e.dataTransfer.types || []).map(t => t.toLowerCase());
+    const hasShiftId = types.includes('shiftid') || !!e.dataTransfer.getData('shiftId');
+    const explicit = (e.dataTransfer.getData('dragType') as 'staff' | 'shift' | '') || '';
+    const detectedType: 'staff' | 'shift' = explicit === 'shift' || hasShiftId ? 'shift' : 'staff';
+
+    if (!isDragging) setIsDragging(true);
+    if (dragType !== detectedType) setDragType(detectedType);
+  };
+
   return (
-    <div className="flex-1 overflow-hidden bg-background" onDragEnd={handleDragEnd}>
+    <div
+      className="flex-1 overflow-hidden bg-background"
+      onDragEnd={handleDragEnd}
+      onDragEnter={handleGridDragEnter}
+    >
       <ScrollArea className="h-full">
         <div className="min-w-max">
           {/* Header */}
@@ -751,7 +767,7 @@ export function StaffTimelineGrid({
                           <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none animate-scale-in">
                             <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
                               <div className="bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-medium shadow-lg">
-                                Add shift
+                                Add staff
                               </div>
                             </div>
                           </div>
