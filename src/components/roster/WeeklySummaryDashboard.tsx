@@ -108,7 +108,7 @@ export function WeeklySummaryDashboard({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="!w-[95vw] sm:!w-[720px] md:!w-[900px] lg:!w-[1000px] !max-w-[1000px]">
+      <SheetContent side="right" className="!w-[95vw] sm:!w-[800px] md:!w-[960px] lg:!w-[1100px] !max-w-[1200px]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <PieChart className="h-5 w-5 text-primary" />
