@@ -29,9 +29,11 @@ import { ApplyTemplateModal } from '@/components/roster/ApplyTemplateModal';
 import { BulkShiftAssignmentModal } from '@/components/roster/BulkShiftAssignmentModal';
 import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { RosterHistoryPanel } from '@/components/roster/RosterHistoryPanel';
+import { IndustryConfigurationModal } from '@/components/settings/IndustryConfigurationModal';
 import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
 import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
+import { IndustryType, DemandConfig, StaffingConfig, getIndustryTemplate } from '@/types/industryConfig';
 
 // MUI Components
 import {
@@ -158,6 +160,12 @@ export default function RosterScheduler() {
   const [showApplyTemplateModal, setShowApplyTemplateModal] = useState(false);
   const [showBulkAssignmentModal, setShowBulkAssignmentModal] = useState(false);
   const [showShiftTemplateManager, setShowShiftTemplateManager] = useState(false);
+  const [showIndustryConfig, setShowIndustryConfig] = useState(false);
+  
+  // Industry configuration state
+  const [industryType, setIndustryType] = useState<IndustryType>('childcare');
+  const [demandConfig, setDemandConfig] = useState<DemandConfig>(getIndustryTemplate('childcare').demandConfig);
+  const [staffingConfig, setStaffingConfig] = useState<StaffingConfig>(getIndustryTemplate('childcare').staffingConfig);
   
   // Shift copy state
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -1029,6 +1037,9 @@ export default function RosterScheduler() {
                   <DropdownMenuItem onClick={() => setShowShiftTemplateManager(true)} icon={<Clock size={16} />}>
                     Manage Shift Templates
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowIndustryConfig(true)} icon={<Settings size={16} />}>
+                    Industry Settings
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -1463,6 +1474,18 @@ export default function RosterScheduler() {
         onRevertToIndex={(index) => {
           revertToHistoryIndex(index);
           toast.success(`Reverted to: ${historyEntries[index]?.description}`);
+        }}
+      />
+
+      {/* Industry Configuration Modal */}
+      <IndustryConfigurationModal
+        open={showIndustryConfig}
+        onClose={() => setShowIndustryConfig(false)}
+        currentIndustry={industryType}
+        onSave={(industry, newDemandConfig, newStaffingConfig) => {
+          setIndustryType(industry);
+          setDemandConfig(newDemandConfig);
+          setStaffingConfig(newStaffingConfig);
         }}
       />
 
