@@ -31,10 +31,12 @@ import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { RosterHistoryPanel } from '@/components/roster/RosterHistoryPanel';
 import { IndustryConfigurationModal } from '@/components/settings/IndustryConfigurationModal';
 import { DemandMasterSettingsModal, defaultDemandMasterSettings } from '@/components/settings/DemandMasterSettingsModal';
+import { DemandDataEntryModal } from '@/components/settings/DemandDataEntryModal';
 import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
 import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
 import { IndustryType, DemandConfig, StaffingConfig, DemandMasterSettings, getIndustryTemplate } from '@/types/industryConfig';
+import { useDemand } from '@/contexts/DemandContext';
 
 // MUI Components
 import {
@@ -109,6 +111,8 @@ const defaultCentreBudgets: Record<string, number> = {
 
 export default function RosterScheduler() {
   const { mode, setMode, resolvedMode } = useThemeMode();
+  const { settings: demandContextSettings, updateSettings: updateDemandContextSettings } = useDemand();
+  
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [selectedCentreId, setSelectedCentreId] = useState<string>(mockCentres[0].id);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -169,8 +173,9 @@ export default function RosterScheduler() {
   const [demandConfig, setDemandConfig] = useState<DemandConfig>(getIndustryTemplate('childcare').demandConfig);
   const [staffingConfig, setStaffingConfig] = useState<StaffingConfig>(getIndustryTemplate('childcare').staffingConfig);
   
-  // Demand master settings
+  // Demand settings modals
   const [showDemandSettings, setShowDemandSettings] = useState(false);
+  const [showDemandDataEntry, setShowDemandDataEntry] = useState(false);
   const [demandMasterSettings, setDemandMasterSettings] = useState<DemandMasterSettings>(defaultDemandMasterSettings);
   
   // Shift copy state
@@ -1049,6 +1054,9 @@ export default function RosterScheduler() {
                   <DropdownMenuItem onClick={() => setShowDemandSettings(true)} icon={<BarChart2 size={16} />}>
                     Demand Settings
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowDemandDataEntry(true)} icon={<FileSpreadsheet size={16} />}>
+                    Enter Demand Data
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -1505,7 +1513,18 @@ export default function RosterScheduler() {
         open={showDemandSettings}
         onClose={() => setShowDemandSettings(false)}
         settings={demandMasterSettings}
-        onSave={(newSettings) => setDemandMasterSettings(newSettings)}
+        onSave={(newSettings) => {
+          setDemandMasterSettings(newSettings);
+          updateDemandContextSettings(newSettings);
+        }}
+      />
+
+      {/* Demand Data Entry Modal */}
+      <DemandDataEntryModal
+        open={showDemandDataEntry}
+        onClose={() => setShowDemandDataEntry(false)}
+        centre={selectedCentre}
+        currentDate={currentDate}
       />
 
       {/* Hidden Print View */}

@@ -2,6 +2,7 @@ import { DemandData, Room } from '@/types/roster';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Users, Calendar } from 'lucide-react';
+import { useDemand } from '@/contexts/DemandContext';
 
 interface DemandHistogramProps {
   demandData: DemandData[];
@@ -11,6 +12,8 @@ interface DemandHistogramProps {
 }
 
 export function DemandHistogram({ demandData, room, date, isCompact = false }: DemandHistogramProps) {
+  const { settings, getThresholdForDemand, getActivePatterns, getDemandWithMultiplier } = useDemand();
+  
   const dayDemand = demandData.filter(d => d.date === date && d.roomId === room.id);
   
   if (dayDemand.length === 0) return null;
@@ -26,6 +29,41 @@ export function DemandHistogram({ demandData, room, date, isCompact = false }: D
     dayDemand.reduce((sum, d) => sum + d.historicalAttendance, 0) / dayDemand.length
   );
 
+  // Get threshold colors from settings
+  const getBarColor = (percentage: number) => {
+    if (!settings.enabled) {
+      // Fallback to default colors
+      if (percentage >= 90) return 'bg-emerald-500';
+      if (percentage >= 70) return 'bg-amber-500';
+      if (percentage >= 50) return 'bg-blue-400';
+      return 'bg-muted-foreground/30';
+    }
+    
+    const demand = Math.round((percentage / 100) * maxCapacity);
+    const threshold = getThresholdForDemand(demand);
+    if (threshold) {
+      return `bg-[${threshold.color}]`;
+    }
+    return 'bg-muted-foreground/30';
+  };
+
+  const getBarStyle = (percentage: number, slot: string) => {
+    const demand = Math.round((percentage / 100) * maxCapacity);
+    const threshold = getThresholdForDemand(demand);
+    const patterns = getActivePatterns(date, slot);
+    
+    return {
+      height: `${Math.max(percentage, 10)}%`,
+      backgroundColor: threshold?.color || (
+        percentage >= 90 ? '#22c55e' :
+        percentage >= 70 ? '#f59e0b' :
+        percentage >= 50 ? '#60a5fa' :
+        'rgba(156, 163, 175, 0.3)'
+      ),
+      borderLeft: patterns.length > 0 ? `2px solid ${patterns[0].color}` : undefined,
+    };
+  };
+
   if (isCompact) {
     return (
       <TooltipProvider>
@@ -39,14 +77,8 @@ export function DemandHistogram({ demandData, room, date, isCompact = false }: D
                 return (
                   <div
                     key={slot}
-                    className={cn(
-                      "w-1.5 rounded-sm transition-all",
-                      percentage >= 90 && "bg-emerald-500",
-                      percentage >= 70 && percentage < 90 && "bg-amber-500",
-                      percentage >= 50 && percentage < 70 && "bg-blue-400",
-                      percentage < 50 && "bg-muted-foreground/30"
-                    )}
-                    style={{ height: `${Math.max(percentage, 10)}%` }}
+                    className="w-1.5 rounded-sm transition-all"
+                    style={getBarStyle(percentage, slot)}
                   />
                 );
               })}
@@ -58,6 +90,7 @@ export function DemandHistogram({ demandData, room, date, isCompact = false }: D
               peakChildren={peakChildren}
               avgAttendance={avgAttendance}
               capacity={maxCapacity}
+              settings={settings}
             />
           </TooltipContent>
         </Tooltip>
@@ -71,7 +104,9 @@ export function DemandHistogram({ demandData, room, date, isCompact = false }: D
         <TooltipTrigger asChild>
           <div className="bg-muted/50 rounded-md p-2">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-medium text-muted-foreground">Demand</span>
+              <span className="text-[10px] font-medium text-muted-foreground">
+                {settings.enabled ? 'Demand' : 'Demand'}
+              </span>
               <div className="flex items-center gap-1">
                 {avgUtilization >= 80 ? (
                   <TrendingUp className="h-3 w-3 text-emerald-500" />
@@ -94,29 +129,30 @@ export function DemandHistogram({ demandData, room, date, isCompact = false }: D
                 const slotData = dayDemand.find(d => d.timeSlot === slot);
                 const bookedPercent = slotData ? (slotData.bookedChildren / maxCapacity) * 100 : 0;
                 const attendancePercent = slotData ? (slotData.historicalAttendance / maxCapacity) * 100 : 0;
+                const patterns = getActivePatterns(date, slot);
                 
                 return (
                   <div key={slot} className="flex-1 flex flex-col items-center gap-0.5">
-                    <div className="relative w-full h-6 bg-muted rounded-sm overflow-hidden">
+                    <div 
+                      className="relative w-full h-6 bg-muted rounded-sm overflow-hidden"
+                      style={{ borderLeft: patterns.length > 0 ? `2px solid ${patterns[0].color}` : undefined }}
+                    >
                       {/* Booked (background) */}
                       <div
-                        className={cn(
-                          "absolute bottom-0 w-full transition-all",
-                          bookedPercent >= 90 && "bg-emerald-500/30",
-                          bookedPercent >= 70 && bookedPercent < 90 && "bg-amber-500/30",
-                          bookedPercent < 70 && "bg-blue-400/30"
-                        )}
-                        style={{ height: `${bookedPercent}%` }}
+                        className="absolute bottom-0 w-full transition-all"
+                        style={{ 
+                          height: `${bookedPercent}%`,
+                          backgroundColor: getBarStyle(bookedPercent, slot).backgroundColor,
+                          opacity: 0.3,
+                        }}
                       />
                       {/* Historical attendance (foreground) */}
                       <div
-                        className={cn(
-                          "absolute bottom-0 w-full transition-all",
-                          bookedPercent >= 90 && "bg-emerald-500",
-                          bookedPercent >= 70 && bookedPercent < 90 && "bg-amber-500",
-                          bookedPercent < 70 && "bg-blue-400"
-                        )}
-                        style={{ height: `${attendancePercent}%` }}
+                        className="absolute bottom-0 w-full transition-all"
+                        style={{ 
+                          height: `${attendancePercent}%`,
+                          backgroundColor: getBarStyle(bookedPercent, slot).backgroundColor,
+                        }}
                       />
                     </div>
                     <span className="text-[8px] text-muted-foreground">
@@ -139,6 +175,7 @@ export function DemandHistogram({ demandData, room, date, isCompact = false }: D
             peakChildren={peakChildren}
             avgAttendance={avgAttendance}
             capacity={maxCapacity}
+            settings={settings}
           />
         </TooltipContent>
       </Tooltip>
@@ -146,16 +183,20 @@ export function DemandHistogram({ demandData, room, date, isCompact = false }: D
   );
 }
 
+import { DemandMasterSettings } from '@/types/industryConfig';
+
 function DemandTooltipContent({ 
   avgUtilization, 
   peakChildren, 
   avgAttendance, 
-  capacity 
+  capacity,
+  settings,
 }: { 
   avgUtilization: number; 
   peakChildren: number; 
   avgAttendance: number;
   capacity: number;
+  settings?: DemandMasterSettings;
 }) {
   return (
     <div className="space-y-2">
@@ -175,8 +216,14 @@ function DemandTooltipContent({
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">Historical Avg</span>
-        <span className="text-xs font-medium">{avgAttendance} children</span>
+        <span className="text-xs font-medium">{avgAttendance}</span>
       </div>
+      {settings?.display.showForecast && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Forecast</span>
+          <span className="text-xs font-medium text-primary">Enabled</span>
+        </div>
+      )}
       <div className="pt-1 border-t border-border">
         <p className="text-[10px] text-muted-foreground">
           {avgUtilization >= 80 
