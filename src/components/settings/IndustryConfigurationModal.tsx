@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Button,
   TextField,
@@ -37,18 +37,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import {
   IndustryType,
-  IndustryTemplate,
   DemandConfig,
   StaffingConfig,
   INDUSTRY_TEMPLATES,
   getIndustryTemplate,
 } from '@/types/industryConfig';
+import { useDemand } from '@/contexts/DemandContext';
 
 interface IndustryConfigurationModalProps {
   open: boolean;
   onClose: () => void;
-  currentIndustry: IndustryType;
-  onSave: (industry: IndustryType, demandConfig: DemandConfig, staffingConfig: StaffingConfig) => void;
 }
 
 const industryIcons: Record<IndustryType, React.ReactNode> = {
@@ -65,17 +63,33 @@ const industryIcons: Record<IndustryType, React.ReactNode> = {
 export function IndustryConfigurationModal({
   open,
   onClose,
-  currentIndustry,
-  onSave,
 }: IndustryConfigurationModalProps) {
-  const [selectedIndustry, setSelectedIndustry] = useState<IndustryType>(currentIndustry);
+  const { 
+    config, 
+    switchIndustry, 
+    updateTerminology, 
+    updateStaffingTerminology,
+  } = useDemand();
+  
+  const [selectedIndustry, setSelectedIndustry] = useState<IndustryType>(config.industryType);
   const [step, setStep] = useState<'select' | 'configure'>('select');
   
   const template = useMemo(() => getIndustryTemplate(selectedIndustry), [selectedIndustry]);
   
-  const [demandConfig, setDemandConfig] = useState<DemandConfig>(template.demandConfig);
-  const [staffingConfig, setStaffingConfig] = useState<StaffingConfig>(template.staffingConfig);
+  // Local state for editing (synced from context on open)
+  const [demandConfig, setDemandConfig] = useState<DemandConfig>(config.terminology);
+  const [staffingConfig, setStaffingConfig] = useState<StaffingConfig>(config.staffingTerminology);
   const [newPeakIndicator, setNewPeakIndicator] = useState('');
+
+  // Sync local state when modal opens or industry changes
+  useEffect(() => {
+    if (open) {
+      setSelectedIndustry(config.industryType);
+      setDemandConfig(config.terminology);
+      setStaffingConfig(config.staffingTerminology);
+      setStep('select');
+    }
+  }, [open, config.industryType, config.terminology, config.staffingTerminology]);
 
   const handleSelectIndustry = (industry: IndustryType) => {
     setSelectedIndustry(industry);
@@ -85,7 +99,11 @@ export function IndustryConfigurationModal({
   };
 
   const handleSave = () => {
-    onSave(selectedIndustry, demandConfig, staffingConfig);
+    // Update context with new settings
+    switchIndustry(selectedIndustry);
+    updateTerminology(demandConfig);
+    updateStaffingTerminology(staffingConfig);
+    
     toast.success(`Industry settings saved for ${template.name}`);
     onClose();
   };
@@ -122,8 +140,8 @@ export function IndustryConfigurationModal({
       title={step === 'select' ? 'Select Industry' : `Configure ${template.name}`}
       description={
         step === 'select'
-          ? 'Choose an industry template to customize demand and staffing settings'
-          : 'Customize the terminology and settings for your organization'
+          ? 'Choose an industry template to customize demand and staffing terminology'
+          : 'Customize the terminology and labels for your organization'
       }
       width="900px"
       open={open}
@@ -219,18 +237,14 @@ export function IndustryConfigurationModal({
         </Box>
       ) : (
         <Tabs defaultValue="demand" className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="demand">
               <BarChart3 className="h-4 w-4 mr-2" />
-              Demand
+              Demand Terminology
             </TabsTrigger>
             <TabsTrigger value="staffing">
               <Users className="h-4 w-4 mr-2" />
-              Staffing
-            </TabsTrigger>
-            <TabsTrigger value="integrations">
-              <Plug className="h-4 w-4 mr-2" />
-              Integrations
+              Staffing Terminology
             </TabsTrigger>
           </TabsList>
 
@@ -239,7 +253,7 @@ export function IndustryConfigurationModal({
             <TabsContent value="demand" className="mt-0">
               <Stack spacing={3}>
                 <Alert severity="info">
-                  These settings control how demand is displayed and calculated in your roster.
+                  These labels control how demand is displayed throughout the roster. Configure operational settings (hours, patterns, thresholds) in <strong>Demand Settings</strong>.
                 </Alert>
 
                 {/* Demand Unit */}
@@ -345,10 +359,10 @@ export function IndustryConfigurationModal({
                 {/* Peak Indicators */}
                 <Box>
                   <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                    Peak Demand Indicators
+                    Peak Demand Labels
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Common busy periods to highlight in the roster
+                    Common busy period labels for your industry. Configure actual times in <strong>Demand Settings → Patterns</strong>.
                   </Typography>
                   <Stack direction="row" spacing={1} flexWrap="wrap" gap={1} mb={2}>
                     {demandConfig.peakIndicators.map((indicator, index) => (
@@ -362,7 +376,7 @@ export function IndustryConfigurationModal({
                   </Stack>
                   <Stack direction="row" spacing={1}>
                     <TextField
-                      placeholder="Add peak indicator (e.g., Lunch 12-2pm)"
+                      placeholder="Add peak label (e.g., Lunch Rush)"
                       value={newPeakIndicator}
                       onChange={(e) => setNewPeakIndicator(e.target.value)}
                       size="small"
@@ -457,83 +471,6 @@ export function IndustryConfigurationModal({
                         </Stack>
                       </Card>
                     ))}
-                    {staffingConfig.qualificationTypes.length === 0 && (
-                      <Typography variant="body2" color="text.secondary">
-                        No qualifications configured. Add qualifications based on your industry requirements.
-                      </Typography>
-                    )}
-                  </Stack>
-                </Box>
-              </Stack>
-            </TabsContent>
-
-            {/* Integrations */}
-            <TabsContent value="integrations" className="mt-0">
-              <Stack spacing={3}>
-                <Alert severity="info">
-                  Connect external systems to automatically sync demand data into your roster.
-                </Alert>
-
-                <Typography variant="subtitle2">
-                  Available Integrations for {template.name}
-                </Typography>
-
-                <Stack spacing={2}>
-                  {template.integrations.map((integration) => (
-                    <Card key={integration.id} variant="outlined">
-                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                          <Box>
-                            <Stack direction="row" alignItems="center" spacing={1}>
-                              <Typography variant="subtitle2">{integration.name}</Typography>
-                              <Chip size="small" label={integration.type} variant="outlined" />
-                            </Stack>
-                            <Typography variant="body2" color="text.secondary">
-                              {integration.description}
-                            </Typography>
-                          </Box>
-                          <Button variant="outlined" size="small" endIcon={<ChevronRight size={16} />}>
-                            Connect
-                          </Button>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
-
-                <Divider />
-
-                <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                    Data Sources
-                  </Typography>
-                  <Stack spacing={1}>
-                    <Card variant="outlined" sx={{ bgcolor: 'action.hover' }}>
-                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                        <Stack direction="row" alignItems="center" spacing={2}>
-                          <Check className="text-green-600" size={20} />
-                          <Box>
-                            <Typography variant="body2" fontWeight={500}>Historical Patterns</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              AI learns from past data to predict future demand
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                    <Card variant="outlined" sx={{ bgcolor: 'action.hover' }}>
-                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                        <Stack direction="row" alignItems="center" spacing={2}>
-                          <Check className="text-green-600" size={20} />
-                          <Box>
-                            <Typography variant="body2" fontWeight={500}>External Integration</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              Pull demand data from connected systems
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </CardContent>
-                    </Card>
                   </Stack>
                 </Box>
               </Stack>
@@ -544,5 +481,3 @@ export function IndustryConfigurationModal({
     </PrimaryOffCanvas>
   );
 }
-
-export default IndustryConfigurationModal;
