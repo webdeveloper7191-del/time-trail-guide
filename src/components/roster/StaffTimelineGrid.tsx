@@ -175,12 +175,16 @@ export function StaffTimelineGrid({
   const handleDragOver = (e: React.DragEvent, cellId: string) => {
     e.preventDefault();
     setDragOverCell(cellId);
-    if (!isDragging) {
+    // Always detect drag type from dataTransfer types (case-insensitive check)
+    const types = e.dataTransfer.types.map(t => t.toLowerCase());
+    const hasShiftId = types.includes('shiftid');
+    const hasDragType = types.includes('dragtype');
+    // If dragType data is 'shift' or shiftId exists, it's a shift drag
+    const detectedType = hasShiftId ? 'shift' : 'staff';
+    
+    if (!isDragging || dragType !== detectedType) {
       setIsDragging(true);
-      // Check both lowercase and mixed case for shiftId
-      const hasShiftId = e.dataTransfer.types.includes('shiftid') || e.dataTransfer.types.includes('shiftId');
-      const type = hasShiftId ? 'shift' : 'staff';
-      setDragType(type);
+      setDragType(detectedType);
     }
   };
 
@@ -652,15 +656,46 @@ export function StaffTimelineGrid({
                   </div>
                 )}
 
-                {/* Drop zone row for adding new staff to this room */}
-                <div className="flex border-b border-border bg-muted/20 hover:bg-muted/40 transition-colors">
-                  <div className="w-64 shrink-0 p-2 border-r border-border flex items-center gap-2">
-                    <div className="h-9 w-9 rounded-full flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/30">
-                      <User className="h-4 w-4 text-primary/50" />
+                {/* Drop zone row for adding new staff to this room - ALWAYS visible */}
+                <div 
+                  className={cn(
+                    "flex border-b border-border transition-colors",
+                    isDragging && dragType === 'staff' 
+                      ? "bg-primary/10 border-primary/30" 
+                      : "bg-muted/20 hover:bg-muted/40"
+                  )}
+                >
+                  <div 
+                    className={cn(
+                      "w-64 shrink-0 p-2 border-r flex items-center gap-2 transition-colors",
+                      isDragging && dragType === 'staff' 
+                        ? "border-primary/30 bg-primary/5" 
+                        : "border-border"
+                    )}
+                  >
+                    <div className={cn(
+                      "h-9 w-9 rounded-full flex items-center justify-center border-2 border-dashed transition-colors",
+                      isDragging && dragType === 'staff'
+                        ? "bg-primary/20 border-primary/50"
+                        : "bg-primary/10 border-primary/30"
+                    )}>
+                      <User className={cn(
+                        "h-4 w-4 transition-colors",
+                        isDragging && dragType === 'staff' ? "text-primary" : "text-primary/50"
+                      )} />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Drop to Add Staff</p>
-                      <p className="text-[10px] text-muted-foreground/70">Drag staff here to assign to {room.name}</p>
+                      <p className={cn(
+                        "text-sm font-medium transition-colors",
+                        isDragging && dragType === 'staff' ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {isDragging && dragType === 'staff' ? "Drop staff here" : "Drop to Add Staff"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/70">
+                        {isDragging && dragType === 'staff' 
+                          ? `Assign to ${room.name}` 
+                          : `Drag staff here to assign to ${room.name}`}
+                      </p>
                     </div>
                   </div>
 
@@ -668,24 +703,25 @@ export function StaffTimelineGrid({
                     const dateStr = format(date, 'yyyy-MM-dd');
                     const cellKey = `add-staff-${room.id}-${dateStr}`;
                     const isDragOver = dragOverCell === cellKey;
+                    // Show drop zone when dragging staff (not shifts)
+                    const showDropZone = isDragging && dragType === 'staff';
 
                     return (
                       <div
                         key={cellKey}
                         data-drop-zone
                         className={cn(
-                          "flex-1 p-1 border-r border-border relative",
+                          "flex-1 p-1 border-r relative",
                           "transition-all duration-200 ease-out",
                           viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
-                          // Drop zone highlight states
-                          isDragging && dragType === 'staff' && "bg-primary/5",
-                          isDragOver && "bg-primary/20 ring-2 ring-inset ring-primary/50 scale-[1.02]"
+                          showDropZone && !isDragOver && "border-primary/20 bg-primary/5",
+                          isDragOver && "bg-primary/20 ring-2 ring-inset ring-primary/50 scale-[1.02]",
+                          !showDropZone && "border-border"
                         )}
                         onDragOver={(e) => {
                           e.preventDefault();
-                          if (dragType === 'staff' || e.dataTransfer.types.includes('staffId')) {
-                            handleDragOver(e, cellKey);
-                          }
+                          // Accept any drag - we'll filter on drop
+                          handleDragOver(e, cellKey);
                         }}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => {
@@ -701,11 +737,11 @@ export function StaffTimelineGrid({
                           }
                         }}
                       >
-                        {/* Drop zone indicator */}
-                        {isDragging && dragType === 'staff' && !isDragOver && (
-                          <div className="absolute inset-1 border-2 border-dashed border-primary/30 rounded-md pointer-events-none flex items-center justify-center">
-                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Plus className="h-3 w-3 text-primary/50" />
+                        {/* Drop zone indicator - show when dragging staff */}
+                        {showDropZone && !isDragOver && (
+                          <div className="absolute inset-1 border-2 border-dashed border-primary/40 rounded-md pointer-events-none flex items-center justify-center bg-primary/5">
+                            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                              <Plus className="h-3 w-3 text-primary" />
                             </div>
                           </div>
                         )}
