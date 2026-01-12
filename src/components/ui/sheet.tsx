@@ -99,8 +99,8 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
         onClose={() => onOpenChange(false)}
         PaperProps={{
           sx: {
-            width: side === 'left' || side === 'right' ? { xs: '90%', sm: '480px', md: '560px' } : '100%',
-            maxWidth: side === 'left' || side === 'right' ? '640px' : '100%',
+            width: side === 'left' || side === 'right' ? { xs: '95%', sm: '520px', md: '600px' } : '100%',
+            maxWidth: side === 'left' || side === 'right' ? '700px' : '100%',
             height: side === 'top' || side === 'bottom' ? 'auto' : '100%',
             backgroundColor: 'hsl(var(--background))',
             color: 'hsl(var(--foreground))',

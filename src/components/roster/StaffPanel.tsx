@@ -76,7 +76,7 @@ export function StaffPanel({ staff, selectedCentreId, onDragStart }: StaffPanelP
   };
 
   return (
-    <div className="w-72 border-r border-border bg-card flex flex-col h-full">
+    <div className="w-[300px] shrink-0 border-r border-border bg-card flex flex-col h-full overflow-hidden">
       <div className="p-4 border-b border-border">
         <h2 className="text-lg font-semibold text-foreground mb-3">Staff</h2>
         <div className="relative">
