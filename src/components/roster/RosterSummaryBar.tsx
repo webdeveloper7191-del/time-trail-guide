@@ -90,18 +90,18 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
       {/* Divider */}
       <div className="h-4 w-px bg-border mx-2" />
       
-      {/* Holiday indicators */}
+      {/* Holiday & Event indicators */}
       <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-        <div className="h-3 w-3 rounded-sm bg-gradient-to-r from-violet-400 to-violet-600" />
+        <div className="h-3 w-3 rounded-sm bg-destructive" />
         <span className="text-muted-foreground">Public Holiday</span>
       </div>
       <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-        <div className="h-3 w-3 rounded-sm bg-gradient-to-r from-orange-400 to-orange-600" />
-        <span className="text-muted-foreground">Organization Holiday</span>
+        <div className="h-3 w-3 rounded-sm bg-amber-500" />
+        <span className="text-muted-foreground">School Holiday</span>
       </div>
       <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-        <div className="h-3 w-3 rounded-sm bg-gradient-to-r from-rose-400 to-rose-600" />
-        <span className="text-muted-foreground">Week Holiday</span>
+        <div className="h-3 w-3 rounded-sm bg-primary" />
+        <span className="text-muted-foreground">Event</span>
       </div>
     </div>
   );
