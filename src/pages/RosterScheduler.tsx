@@ -878,24 +878,16 @@ export default function RosterScheduler() {
 
           {/* Right: Action Groups */}
           <Stack direction="row" spacing={1} alignItems="center">
-            {/* Demand Toggle - Chip Style */}
+            {/* Demand Analytics Toggle - Shows demand charts inline with the roster */}
             <Chip
               size="small"
               label="Demand"
-              icon={showDemandOverlay ? <Eye size={14} /> : <EyeOff size={14} />}
-              onClick={() => setShowDemandOverlay(prev => !prev)}
-              color={showDemandOverlay ? "primary" : "default"}
-              variant={showDemandOverlay ? "filled" : "outlined"}
-              sx={{ fontWeight: 500 }}
-            />
-
-            {/* Analytics Charts Toggle */}
-            <Chip
-              size="small"
-              label="Analytics"
-              icon={<BarChart2 size={14} />}
-              onClick={() => setShowAnalyticsCharts(prev => !prev)}
-              color={showAnalyticsCharts ? "secondary" : "default"}
+              icon={showAnalyticsCharts ? <Eye size={14} /> : <EyeOff size={14} />}
+              onClick={() => {
+                setShowAnalyticsCharts(prev => !prev);
+                setShowDemandOverlay(prev => !prev);
+              }}
+              color={showAnalyticsCharts ? "primary" : "default"}
               variant={showAnalyticsCharts ? "filled" : "outlined"}
               sx={{ fontWeight: 500 }}
             />
