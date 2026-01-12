@@ -184,7 +184,7 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
     <PrimaryOffCanvas
       title="Budget Settings"
       description={`Configure comprehensive budget limits and staffing controls for ${centre.name}`}
-      width="700px"
+      width="900px"
       open={open}
       onClose={onClose}
       actions={actions}
