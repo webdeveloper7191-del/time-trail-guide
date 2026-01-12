@@ -1219,6 +1219,8 @@ export default function RosterScheduler() {
             onDropStaff={handleDropStaff}
             onShiftEdit={setSelectedShift}
             onShiftDelete={handleShiftDelete}
+            onShiftCopy={handleCopyShift}
+            onShiftSwap={handleSwapStaff}
             onOpenShiftFill={(os) => toast.info('Drag a staff member to fill this shift')}
             onAddShift={handleAddShift}
             onDragStart={handleDragStart}

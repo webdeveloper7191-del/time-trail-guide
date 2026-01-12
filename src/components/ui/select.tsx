@@ -44,6 +44,7 @@ const Select = ({ value, onValueChange, defaultValue, children, disabled }: Sele
   const [open, setOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
   const [displayValue, setDisplayValue] = React.useState<React.ReactNode>(null);
+  const [initialized, setInitialized] = React.useState(false);
   
   const currentValue = value !== undefined ? value : internalValue;
   
@@ -57,6 +58,12 @@ const Select = ({ value, onValueChange, defaultValue, children, disabled }: Sele
     onValueChange?.(newValue);
     setOpen(false);
   };
+
+  // Mark as initialized after first render to allow children to set display value
+  React.useEffect(() => {
+    const timer = setTimeout(() => setInitialized(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <SelectContext.Provider value={{ 
@@ -83,11 +90,16 @@ interface SelectValueProps {
 const SelectValue = ({ placeholder }: SelectValueProps) => {
   const { value, displayValue } = React.useContext(SelectContext);
   
+  // Show display value if we have one, otherwise show raw value, otherwise placeholder
   if (displayValue) {
     return <span>{displayValue}</span>;
   }
   
-  return <span className={!value ? "text-muted-foreground" : ""}>{value || placeholder}</span>;
+  if (value) {
+    return <span>{value}</span>;
+  }
+  
+  return <span className="text-muted-foreground">{placeholder}</span>;
 };
 
 interface SelectTriggerProps extends React.HTMLAttributes<HTMLButtonElement> {
