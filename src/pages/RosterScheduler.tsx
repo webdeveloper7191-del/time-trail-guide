@@ -37,6 +37,7 @@ import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
 import { DemandMasterSettings } from '@/types/industryConfig';
 import { useDemand } from '@/contexts/DemandContext';
+import { IntegrationManagerModal } from '@/components/settings/IntegrationManagerModal';
 
 // MUI Components
 import {
@@ -98,7 +99,8 @@ import {
   Redo2,
   History,
   Save,
-  TrendingUp
+  TrendingUp,
+  Plug
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
 
@@ -177,6 +179,7 @@ export default function RosterScheduler() {
   // Demand settings modals
   const [showDemandSettings, setShowDemandSettings] = useState(false);
   const [showDemandDataEntry, setShowDemandDataEntry] = useState(false);
+  const [showIntegrationManager, setShowIntegrationManager] = useState(false);
   
   // Shift copy state
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -1057,6 +1060,10 @@ export default function RosterScheduler() {
                   <DropdownMenuItem onClick={() => setShowDemandDataEntry(true)} icon={<FileSpreadsheet size={16} />}>
                     Enter Demand Data
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowIntegrationManager(true)} icon={<Plug size={16} />}>
+                    Integration Manager
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -1518,6 +1525,12 @@ export default function RosterScheduler() {
         onClose={() => setShowDemandDataEntry(false)}
         centre={selectedCentre}
         currentDate={currentDate}
+      />
+
+      {/* Integration Manager Modal */}
+      <IntegrationManagerModal
+        open={showIntegrationManager}
+        onClose={() => setShowIntegrationManager(false)}
       />
 
       {/* Hidden Print View */}
