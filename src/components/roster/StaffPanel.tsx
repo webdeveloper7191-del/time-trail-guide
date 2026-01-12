@@ -124,7 +124,12 @@ export function StaffPanel({ staff, selectedCentreId, onDragStart }: StaffPanelP
                           <TooltipTrigger asChild>
                             <div
                               draggable
-                              onDragStart={(e) => onDragStart(e, member)}
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('staffId', member.id);
+                                e.dataTransfer.setData('dragType', 'staff');
+                                e.dataTransfer.effectAllowed = 'copy';
+                                onDragStart(e, member);
+                              }}
                               className={cn(
                                 "flex items-center gap-2 p-2 rounded-lg cursor-grab active:cursor-grabbing",
                                 "bg-background hover:bg-muted/50 border border-transparent hover:border-border",
