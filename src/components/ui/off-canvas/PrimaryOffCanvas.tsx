@@ -85,7 +85,7 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
         )}
         style={{ 
           width: side === 'left' || side === 'right' ? width : undefined,
-          maxWidth: side === 'left' || side === 'right' ? '90vw' : undefined,
+          maxWidth: side === 'left' || side === 'right' ? '95vw' : undefined,
         }}
       >
         {/* Header */}

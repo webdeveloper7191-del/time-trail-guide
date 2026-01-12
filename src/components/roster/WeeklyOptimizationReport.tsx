@@ -441,7 +441,7 @@ export function WeeklyOptimizationReport({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="!w-[95vw] sm:!w-[900px] md:!w-[1100px] lg:!w-[1200px] !max-w-[1300px]">
+      <SheetContent side="right" style={{ width: '1200px', maxWidth: '95vw' }}>
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />

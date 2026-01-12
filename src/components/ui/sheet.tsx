@@ -87,10 +87,14 @@ const sheetVariants = cva(
 interface SheetContentProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof sheetVariants> {}
 
 const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
-  ({ side = "right", className, children, ...props }, ref) => {
+  ({ side = "right", className, children, style, ...props }, ref) => {
     const { open, onOpenChange } = React.useContext(SheetContext);
     
     const anchor = side === 'left' ? 'left' : side === 'top' ? 'top' : side === 'bottom' ? 'bottom' : 'right';
+    
+    // Extract width from style prop if provided, otherwise use defaults
+    const customWidth = style?.width;
+    const customMaxWidth = style?.maxWidth;
     
     return (
       <Drawer
@@ -99,8 +103,8 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
         onClose={() => onOpenChange(false)}
         PaperProps={{
           sx: {
-            width: side === 'left' || side === 'right' ? { xs: '95%', sm: '520px', md: '600px' } : '100%',
-            maxWidth: side === 'left' || side === 'right' ? '700px' : '100%',
+            width: customWidth || (side === 'left' || side === 'right' ? { xs: '95%', sm: '600px', md: '700px' } : '100%'),
+            maxWidth: customMaxWidth || (side === 'left' || side === 'right' ? '95vw' : '100%'),
             height: side === 'top' || side === 'bottom' ? 'auto' : '100%',
             backgroundColor: 'hsl(var(--background))',
             color: 'hsl(var(--foreground))',
