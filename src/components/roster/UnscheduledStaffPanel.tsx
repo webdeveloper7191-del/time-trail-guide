@@ -282,7 +282,7 @@ export function UnscheduledStaffPanel({
   };
 
   return (
-    <div className="w-80 border-l border-border bg-card flex flex-col h-full">
+    <div className="w-[340px] shrink-0 border-l border-border bg-card flex flex-col h-full overflow-hidden">
       <div className="p-3 border-b border-border">
         <h2 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
           <UserPlus className="h-4 w-4 text-primary" />

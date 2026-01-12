@@ -18,6 +18,7 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface ShiftTemplateManagerProps {
   open: boolean;
@@ -101,8 +102,8 @@ export function ShiftTemplateManager({
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right">
-        <SheetHeader>
+      <SheetContent side="right" className="w-full sm:max-w-xl overflow-hidden flex flex-col">
+        <SheetHeader className="shrink-0">
           <SheetTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
             Manage Shift Templates
@@ -112,30 +113,30 @@ export function ShiftTemplateManager({
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className="flex-1 pr-4 mt-6 h-[calc(100vh-220px)]">
+        <ScrollArea className="flex-1 pr-4 mt-6">
           {/* Default Templates */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="body2" fontWeight={500} color="text.secondary" sx={{ mb: 1 }}>
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 1.5 }}>
               Default Templates
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {defaultShiftTemplates.map(template => (
                 <Box
                   key={template.id}
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1.5,
-                    p: 1.5,
-                    borderRadius: 1,
+                    gap: 2,
+                    p: 2,
+                    borderRadius: 2,
                     border: 1,
                     borderColor: 'divider',
                     bgcolor: 'action.hover',
                   }}
                 >
-                  <Box sx={{ height: 16, width: 16, borderRadius: '50%', flexShrink: 0, bgcolor: template.color }} />
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2" fontWeight={500}>{template.name}</Typography>
+                  <Box sx={{ height: 20, width: 20, borderRadius: '50%', flexShrink: 0, bgcolor: template.color }} />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" fontWeight={600}>{template.name}</Typography>
                     <Typography variant="caption" color="text.secondary">
                       {template.startTime} - {template.endTime} • {template.breakMinutes}min break
                     </Typography>
@@ -149,8 +150,8 @@ export function ShiftTemplateManager({
 
           {/* Custom Templates */}
           <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" fontWeight={500} color="text.secondary">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+              <Typography variant="body2" fontWeight={600} color="text.secondary">
                 Custom Templates
               </Typography>
               {!isAdding && (
@@ -160,76 +161,100 @@ export function ShiftTemplateManager({
               )}
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {templates.map(template => (
                 <Box
                   key={template.id}
                   sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    p: 1.5,
-                    borderRadius: 1,
+                    p: 2,
+                    borderRadius: 2,
                     border: 2,
                     borderColor: editingId === template.id ? 'primary.main' : 'divider',
-                    bgcolor: editingId === template.id ? 'primary.light' : 'transparent',
+                    bgcolor: 'background.paper',
                   }}
                 >
                   {editingId === template.id ? (
-                    <>
-                      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 1 }}>
-                        <TextField
-                          value={template.name}
-                          onChange={(e) => handleUpdate(template.id, { name: e.target.value })}
-                          placeholder="Name"
-                          size="small"
-                        />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {/* Template Name */}
+                      <TextField
+                        value={template.name}
+                        onChange={(e) => handleUpdate(template.id, { name: e.target.value })}
+                        label="Template Name"
+                        size="small"
+                        fullWidth
+                      />
+                      
+                      {/* Time Row */}
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
                         <TextField
                           type="time"
                           value={template.startTime}
                           onChange={(e) => handleUpdate(template.id, { startTime: e.target.value })}
+                          label="Start Time"
                           size="small"
+                          InputLabelProps={{ shrink: true }}
                         />
                         <TextField
                           type="time"
                           value={template.endTime}
                           onChange={(e) => handleUpdate(template.id, { endTime: e.target.value })}
+                          label="End Time"
                           size="small"
+                          InputLabelProps={{ shrink: true }}
                         />
                         <TextField
                           type="number"
                           value={template.breakMinutes}
                           onChange={(e) => handleUpdate(template.id, { breakMinutes: parseInt(e.target.value) || 0 })}
+                          label="Break (min)"
                           size="small"
                           inputProps={{ min: 0, max: 120 }}
                         />
                       </Box>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        {colorOptions.map(color => (
-                          <Box
-                            key={color}
-                            onClick={() => handleUpdate(template.id, { color })}
-                            sx={{
-                              height: 20,
-                              width: 20,
-                              borderRadius: '50%',
-                              border: 2,
-                              borderColor: template.color === color ? 'text.primary' : 'transparent',
-                              bgcolor: color,
-                              cursor: 'pointer',
-                            }}
-                          />
-                        ))}
+                      
+                      {/* Color Picker */}
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                          Color
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          {colorOptions.map(color => (
+                            <Box
+                              key={color}
+                              onClick={() => handleUpdate(template.id, { color })}
+                              sx={{
+                                height: 28,
+                                width: 28,
+                                borderRadius: '50%',
+                                border: 3,
+                                borderColor: template.color === color ? 'text.primary' : 'transparent',
+                                bgcolor: color,
+                                cursor: 'pointer',
+                                transition: 'transform 0.15s ease',
+                                '&:hover': {
+                                  transform: 'scale(1.1)',
+                                },
+                              }}
+                            />
+                          ))}
+                        </Box>
                       </Box>
-                      <IconButton size="small" onClick={() => setEditingId(null)}>
-                        <Check size={16} />
-                      </IconButton>
-                    </>
+                      
+                      {/* Actions */}
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                        <Button size="small" variant="outlined" onClick={() => setEditingId(null)} startIcon={<X size={14} />}>
+                          Cancel
+                        </Button>
+                        <Button size="small" variant="contained" onClick={() => setEditingId(null)} startIcon={<Check size={14} />}>
+                          Done
+                        </Button>
+                      </Box>
+                    </Box>
                   ) : (
-                    <>
-                      <Box sx={{ height: 16, width: 16, borderRadius: '50%', flexShrink: 0, bgcolor: template.color }} />
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={500}>{template.name}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box sx={{ height: 20, width: 20, borderRadius: '50%', flexShrink: 0, bgcolor: template.color }} />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight={600}>{template.name}</Typography>
                         <Typography variant="caption" color="text.secondary">
                           {template.startTime} - {template.endTime} • {template.breakMinutes}min break
                         </Typography>
@@ -241,7 +266,7 @@ export function ShiftTemplateManager({
                       <IconButton size="small" color="error" onClick={() => handleDelete(template.id)}>
                         <Trash2 size={16} />
                       </IconButton>
-                    </>
+                    </Box>
                   )}
                 </Box>
               ))}
@@ -250,80 +275,111 @@ export function ShiftTemplateManager({
               {isAdding && (
                 <Box
                   sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    p: 1.5,
-                    borderRadius: 1,
+                    p: 2,
+                    borderRadius: 2,
                     border: 2,
                     borderColor: 'primary.main',
-                    bgcolor: 'primary.light',
+                    bgcolor: 'background.paper',
                   }}
                 >
-                  <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 1 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {/* Template Name */}
                     <TextField
                       value={newTemplate.name}
                       onChange={(e) => setNewTemplate(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Template name"
+                      label="Template Name"
+                      placeholder="e.g. Early Morning"
                       size="small"
+                      fullWidth
+                      autoFocus
                     />
-                    <TextField
-                      type="time"
-                      value={newTemplate.startTime}
-                      onChange={(e) => setNewTemplate(prev => ({ ...prev, startTime: e.target.value }))}
-                      size="small"
-                    />
-                    <TextField
-                      type="time"
-                      value={newTemplate.endTime}
-                      onChange={(e) => setNewTemplate(prev => ({ ...prev, endTime: e.target.value }))}
-                      size="small"
-                    />
-                    <TextField
-                      type="number"
-                      value={newTemplate.breakMinutes}
-                      onChange={(e) => setNewTemplate(prev => ({ ...prev, breakMinutes: parseInt(e.target.value) || 0 }))}
-                      placeholder="Break"
-                      size="small"
-                      inputProps={{ min: 0, max: 120 }}
-                    />
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    {colorOptions.map(color => (
-                      <Box
-                        key={color}
-                        onClick={() => setNewTemplate(prev => ({ ...prev, color }))}
-                        sx={{
-                          height: 20,
-                          width: 20,
-                          borderRadius: '50%',
-                          border: 2,
-                          borderColor: newTemplate.color === color ? 'text.primary' : 'transparent',
-                          bgcolor: color,
-                          cursor: 'pointer',
-                        }}
+                    
+                    {/* Time Row */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                      <TextField
+                        type="time"
+                        value={newTemplate.startTime}
+                        onChange={(e) => setNewTemplate(prev => ({ ...prev, startTime: e.target.value }))}
+                        label="Start Time"
+                        size="small"
+                        InputLabelProps={{ shrink: true }}
                       />
-                    ))}
+                      <TextField
+                        type="time"
+                        value={newTemplate.endTime}
+                        onChange={(e) => setNewTemplate(prev => ({ ...prev, endTime: e.target.value }))}
+                        label="End Time"
+                        size="small"
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <TextField
+                        type="number"
+                        value={newTemplate.breakMinutes}
+                        onChange={(e) => setNewTemplate(prev => ({ ...prev, breakMinutes: parseInt(e.target.value) || 0 }))}
+                        label="Break (min)"
+                        size="small"
+                        inputProps={{ min: 0, max: 120 }}
+                      />
+                    </Box>
+                    
+                    {/* Color Picker */}
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                        Color
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        {colorOptions.map(color => (
+                          <Box
+                            key={color}
+                            onClick={() => setNewTemplate(prev => ({ ...prev, color }))}
+                            sx={{
+                              height: 28,
+                              width: 28,
+                              borderRadius: '50%',
+                              border: 3,
+                              borderColor: newTemplate.color === color ? 'text.primary' : 'transparent',
+                              bgcolor: color,
+                              cursor: 'pointer',
+                              transition: 'transform 0.15s ease',
+                              '&:hover': {
+                                transform: 'scale(1.1)',
+                              },
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                    
+                    {/* Actions */}
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                      <Button size="small" variant="outlined" onClick={() => setIsAdding(false)} startIcon={<X size={14} />}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        size="small" 
+                        variant="contained" 
+                        onClick={handleAdd} 
+                        disabled={!newTemplate.name?.trim()}
+                        startIcon={<Check size={14} />}
+                      >
+                        Add Template
+                      </Button>
+                    </Box>
                   </Box>
-                  <IconButton size="small" onClick={handleAdd} disabled={!newTemplate.name?.trim()}>
-                    <Check size={16} />
-                  </IconButton>
-                  <IconButton size="small" onClick={() => setIsAdding(false)}>
-                    <X size={16} />
-                  </IconButton>
                 </Box>
               )}
 
               {templates.length === 0 && !isAdding && (
-                <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
-                  <Typography variant="body2">No custom templates yet. Click "Add Template" to create one.</Typography>
+                <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary', bgcolor: 'action.hover', borderRadius: 2 }}>
+                  <Typography variant="body2">No custom templates yet.</Typography>
+                  <Typography variant="caption">Click "Add Template" to create one.</Typography>
                 </Box>
               )}
             </Box>
           </Box>
         </ScrollArea>
 
-        <SheetFooter className="mt-6">
+        <SheetFooter className="mt-6 pt-4 border-t border-border shrink-0">
           <Button variant="outlined" onClick={onClose}>Cancel</Button>
           <Button variant="contained" onClick={handleSave} startIcon={<Save size={16} />}>
             Save Changes
