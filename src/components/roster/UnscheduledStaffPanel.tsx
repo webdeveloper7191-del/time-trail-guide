@@ -13,12 +13,15 @@ import {
   AlertTriangle, 
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   User,
   UserPlus,
   Briefcase,
   CalendarDays,
   Building2,
-  Sparkles
+  Sparkles,
+  PanelRightClose,
+  PanelRightOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -31,6 +34,8 @@ interface UnscheduledStaffPanelProps {
   onDragStart: (e: React.DragEvent, staffMember: StaffMember) => void;
   onGenerateAI: () => void;
   isGenerating: boolean;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -42,7 +47,9 @@ export function UnscheduledStaffPanel({
   selectedCentreId, 
   onDragStart,
   onGenerateAI,
-  isGenerating
+  isGenerating,
+  isCollapsed = false,
+  onToggleCollapse
 }: UnscheduledStaffPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [qualificationFilter, setQualificationFilter] = useState<string>('all');
@@ -281,13 +288,49 @@ export function UnscheduledStaffPanel({
     );
   };
 
+  // Collapsed view - just a thin bar with expand button
+  if (isCollapsed) {
+    return (
+      <div className="w-12 shrink-0 border-l border-border bg-card flex flex-col h-full overflow-hidden">
+        <div className="p-2 border-b border-border flex justify-center">
+          <button
+            onClick={onToggleCollapse}
+            className="p-2 rounded-md hover:bg-muted transition-colors"
+            title="Expand staff panel"
+          >
+            <PanelRightOpen className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
+        <div className="flex-1 flex flex-col items-center py-4 gap-3">
+          <div className="writing-mode-vertical text-xs font-semibold text-muted-foreground uppercase tracking-wider rotate-180" style={{ writingMode: 'vertical-rl' }}>
+            Available Staff
+          </div>
+          <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+            {availableStaff.length + availableAgencyStaff.length}
+          </Badge>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-[340px] shrink-0 border-l border-border bg-card flex flex-col h-full overflow-hidden">
       <div className="p-3 border-b border-border">
-        <h2 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-          <UserPlus className="h-4 w-4 text-primary" />
-          Available Staff
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <UserPlus className="h-4 w-4 text-primary" />
+            Available Staff
+          </h2>
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="p-1.5 rounded-md hover:bg-muted transition-colors"
+              title="Collapse panel"
+            >
+              <PanelRightClose className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
+        </div>
         <div className="relative mb-2">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
