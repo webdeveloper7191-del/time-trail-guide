@@ -161,6 +161,7 @@ export default function RosterScheduler() {
   const [showBulkAssignmentModal, setShowBulkAssignmentModal] = useState(false);
   const [showShiftTemplateManager, setShowShiftTemplateManager] = useState(false);
   const [showIndustryConfig, setShowIndustryConfig] = useState(false);
+  const [isStaffPanelCollapsed, setIsStaffPanelCollapsed] = useState(false);
   
   // Industry configuration state
   const [industryType, setIndustryType] = useState<IndustryType>('childcare');
@@ -1272,6 +1273,8 @@ export default function RosterScheduler() {
           onDragStart={handleDragStart}
           onGenerateAI={handleGenerateAIShifts}
           isGenerating={isGenerating}
+          isCollapsed={isStaffPanelCollapsed}
+          onToggleCollapse={() => setIsStaffPanelCollapsed(prev => !prev)}
         />
       </Box>
 
