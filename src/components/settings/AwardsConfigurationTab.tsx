@@ -56,6 +56,7 @@ import { PenaltyRatesEditorPanel } from './awards/PenaltyRatesEditorPanel';
 import { AwardComparisonPanel } from './awards/AwardComparisonPanel';
 import { ShiftDifferentialCalculator } from './awards/ShiftDifferentialCalculator';
 import { RateSimulationPanel } from './awards/RateSimulationPanel';
+import { AwardsMasterTable } from './awards/AwardsMasterTable';
 
 interface EnabledAward {
   awardId: string;
@@ -652,7 +653,7 @@ export function AwardsConfigurationTab() {
         </div>
 
         <TabsContent value="awards" className="mt-0">
-          <AwardsOverviewContent />
+          <AwardsMasterTable />
         </TabsContent>
 
         <TabsContent value="comparison" className="mt-0">
