@@ -38,6 +38,7 @@ import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
 import { DemandMasterSettings } from '@/types/industryConfig';
 import { useDemand } from '@/contexts/DemandContext';
 import { IntegrationManagerModal } from '@/components/settings/IntegrationManagerModal';
+import { HolidayEventCalendarView } from '@/components/roster/HolidayEventCalendarView';
 
 // MUI Components
 import {
@@ -100,7 +101,8 @@ import {
   History,
   Save,
   TrendingUp,
-  Plug
+  Plug,
+  Flag,
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
 
@@ -180,6 +182,7 @@ export default function RosterScheduler() {
   const [showDemandSettings, setShowDemandSettings] = useState(false);
   const [showDemandDataEntry, setShowDemandDataEntry] = useState(false);
   const [showIntegrationManager, setShowIntegrationManager] = useState(false);
+  const [showHolidayCalendar, setShowHolidayCalendar] = useState(false);
   
   // Shift copy state
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -1075,6 +1078,10 @@ export default function RosterScheduler() {
                   </IconButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setShowHolidayCalendar(true)} icon={<Flag size={16} />}>
+                    Holidays & Events
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setShowAvailabilityModal(true)} icon={<CalendarCheck size={16} />}>
                     Staff Availability
                   </DropdownMenuItem>
@@ -1532,6 +1539,22 @@ export default function RosterScheduler() {
         open={showIntegrationManager}
         onClose={() => setShowIntegrationManager(false)}
       />
+
+      {/* Holiday & Events Calendar Sheet */}
+      {showHolidayCalendar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="max-w-lg w-full mx-4 max-h-[90vh] overflow-auto">
+            <HolidayEventCalendarView
+              currentDate={currentDate}
+              onDateClick={(date) => {
+                setCurrentDate(date);
+                setShowHolidayCalendar(false);
+              }}
+              onClose={() => setShowHolidayCalendar(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Hidden Print View */}
       <div className="hidden">

@@ -25,9 +25,17 @@ import {
   ArrowLeftRight,
   Pencil,
   Trash2,
+  Flag,
+  GraduationCap,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
+import { 
+  getHolidaysForDate, 
+  getEventsForDate, 
+  eventTypeConfig 
+} from '@/data/mockHolidaysEvents';
 
 interface StaffTimelineGridProps {
   centre: Centre;
@@ -298,18 +306,132 @@ export function StaffTimelineGrid({
                 />
               </div>
             </div>
-            {dates.map((date) => (
-              <div 
-                key={date.toISOString()} 
-                className={cn(
-                  "flex-1 p-2 text-center border-r border-border bg-muted/50",
-                  viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]"
-                )}
-              >
-                <div className={cn("font-medium text-foreground", viewMode === 'month' ? "text-xs" : "text-sm")}>{format(date, viewMode === 'month' ? 'EEE' : 'EEE')}</div>
-                <div className={cn("text-muted-foreground", viewMode === 'month' ? "text-[10px]" : "text-xs")}>{format(date, viewMode === 'month' ? 'd' : 'd MMM')}</div>
-              </div>
-            ))}
+            {dates.map((date) => {
+              const dateStr = format(date, 'yyyy-MM-dd');
+              const holidays = getHolidaysForDate(dateStr);
+              const events = getEventsForDate(dateStr);
+              const hasPublicHoliday = holidays.some(h => h.type === 'public_holiday');
+              const hasSchoolHoliday = holidays.some(h => h.type === 'school_holiday');
+              const hasEvents = events.length > 0;
+
+              return (
+                <div 
+                  key={date.toISOString()} 
+                  className={cn(
+                    "flex-1 p-2 text-center border-r border-border bg-muted/50",
+                    viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
+                    hasPublicHoliday && "bg-destructive/10 border-b-2 border-b-destructive/50"
+                  )}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span className={cn(
+                      "font-medium",
+                      viewMode === 'month' ? "text-xs" : "text-sm",
+                      hasPublicHoliday ? "text-destructive" : "text-foreground"
+                    )}>
+                      {format(date, viewMode === 'month' ? 'EEE' : 'EEE')}
+                    </span>
+
+                    {/* Public Holiday Indicator */}
+                    {hasPublicHoliday && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Flag className="h-3.5 w-3.5 text-destructive fill-destructive/20" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-destructive">Public Holiday</p>
+                              {holidays.filter(h => h.type === 'public_holiday').map(h => (
+                                <p key={h.id} className="text-xs">{h.name}</p>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+
+                    {/* School Holiday Indicator */}
+                    {hasSchoolHoliday && !hasPublicHoliday && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <GraduationCap className="h-3.5 w-3.5 text-amber-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">School Holidays</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+
+                    {/* Event Indicator */}
+                    {hasEvents && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <div className="relative">
+                              <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                              {events.length > 1 && (
+                                <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary text-[8px] text-primary-foreground flex items-center justify-center font-medium">
+                                  {events.length}
+                                </span>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="space-y-1.5">
+                              <p className="text-xs font-medium">Events</p>
+                              {events.map(ev => (
+                                <div key={ev.id} className="flex items-center gap-1.5">
+                                  <div 
+                                    className="h-2 w-2 rounded-full" 
+                                    style={{ backgroundColor: eventTypeConfig[ev.type].color }}
+                                  />
+                                  <span className="text-xs">{ev.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+
+                  <div className={cn(
+                    "text-muted-foreground",
+                    viewMode === 'month' ? "text-[10px]" : "text-xs",
+                    hasPublicHoliday && "text-destructive/80"
+                  )}>
+                    {format(date, viewMode === 'month' ? 'd' : 'd MMM')}
+                  </div>
+
+                  {/* Holiday/Event badges below date - non-compact only */}
+                  {!isCompact && (hasPublicHoliday || hasEvents) && (
+                    <div className="flex flex-wrap gap-1 justify-center mt-1">
+                      {holidays.filter(h => h.type === 'public_holiday').slice(0, 1).map(h => (
+                        <Badge 
+                          key={h.id} 
+                          variant="destructive" 
+                          className="text-[9px] px-1.5 py-0 h-4"
+                        >
+                          {h.name.length > 12 ? h.name.slice(0, 10) + '...' : h.name}
+                        </Badge>
+                      ))}
+                      {events.slice(0, 1).map(ev => (
+                        <Badge 
+                          key={ev.id} 
+                          variant="outline" 
+                          className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary"
+                        >
+                          {ev.name.length > 12 ? ev.name.slice(0, 10) + '...' : ev.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             <div className="w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground bg-muted/50 border-r border-border">
               <div className="flex items-center justify-center gap-1">
                 <DollarSign className="h-3.5 w-3.5" />
