@@ -7,7 +7,6 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -22,6 +21,7 @@ import {
   Eye,
   Copy,
   FileText,
+  FileSpreadsheet,
   DollarSign,
   Clock,
   TrendingUp,
@@ -40,6 +40,10 @@ import {
   Info,
   Star,
   StarOff,
+  Edit2,
+  Check,
+  X,
+  RotateCcw,
 } from 'lucide-react';
 import { australianAwards, AustralianAward, AwardClassification, calculateRates } from '@/data/australianAwards';
 import {
@@ -50,6 +54,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { AwardDetailModal } from './AwardDetailModal';
+import { exportAwardToPDF, exportAwardToExcel, exportMultipleAwardsToPDF, exportMultipleAwardsToExcel } from '@/lib/awardExport';
 
 interface EnabledAward {
   awardId: string;
@@ -79,6 +85,12 @@ export function AwardsMasterTable() {
   const [selectedAwardIds, setSelectedAwardIds] = useState<Set<string>>(new Set());
   const [expandedAwardIds, setExpandedAwardIds] = useState<Set<string>>(new Set());
   const [selectedAward, setSelectedAward] = useState<AustralianAward | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [customRates, setCustomRates] = useState<Record<string, Record<string, number>>>({});
+  
+  // Inline editing state
+  const [editingCell, setEditingCell] = useState<{ awardId: string; classificationId: string } | null>(null);
+  const [editValue, setEditValue] = useState('');
   
   // Sorting state
   const [sortField, setSortField] = useState<SortField>('name');
@@ -278,7 +290,7 @@ export function AwardsMasterTable() {
 
   const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
 
-  const handleBulkAction = (action: 'enable' | 'disable' | 'export') => {
+  const handleBulkAction = (action: 'enable' | 'disable' | 'exportPdf' | 'exportExcel') => {
     if (selectedAwardIds.size === 0) {
       toast.error('No awards selected');
       return;
@@ -294,12 +306,85 @@ export function AwardsMasterTable() {
         if (isAwardEnabled(id)) toggleAward(id);
       });
       toast.success(`${selectedAwardIds.size} awards disabled`);
-    } else if (action === 'export') {
-      toast.success(`Exporting ${selectedAwardIds.size} awards...`);
+    } else if (action === 'exportPdf') {
+      const selectedAwardsData = australianAwards.filter(a => selectedAwardIds.has(a.id));
+      exportMultipleAwardsToPDF({ awards: selectedAwardsData, customRates });
+      toast.success(`Exporting ${selectedAwardIds.size} awards to PDF...`);
+    } else if (action === 'exportExcel') {
+      const selectedAwardsData = australianAwards.filter(a => selectedAwardIds.has(a.id));
+      exportMultipleAwardsToExcel({ awards: selectedAwardsData, customRates });
+      toast.success(`Exporting ${selectedAwardIds.size} awards to Excel...`);
     }
 
     setSelectedAwardIds(new Set());
   };
+
+  const handleViewDetails = (award: AustralianAward) => {
+    setSelectedAward(award);
+    setDetailModalOpen(true);
+  };
+
+  const handleExportSinglePdf = (award: AustralianAward) => {
+    exportAwardToPDF({ award, customRates: customRates[award.id] || {} });
+    toast.success('PDF exported successfully');
+  };
+
+  const handleExportSingleExcel = (award: AustralianAward) => {
+    exportAwardToExcel({ award, customRates: customRates[award.id] || {} });
+    toast.success('Excel exported successfully');
+  };
+
+  const handleCopyRates = (award: AustralianAward) => {
+    const ratesText = award.classifications
+      .map(c => {
+        const override = customRates[award.id]?.[c.id];
+        return `${c.level}: ${formatCurrency(override || c.baseHourlyRate)}${override ? ' (override)' : ''}`;
+      })
+      .join('\n');
+    navigator.clipboard.writeText(ratesText);
+    toast.success('Rates copied to clipboard');
+  };
+
+  const handleStartInlineEdit = (awardId: string, classificationId: string, currentRate: number) => {
+    setEditingCell({ awardId, classificationId });
+    setEditValue(currentRate.toString());
+  };
+
+  const handleSaveInlineEdit = () => {
+    if (!editingCell) return;
+    
+    const numValue = parseFloat(editValue);
+    if (!isNaN(numValue) && numValue > 0) {
+      setCustomRates(prev => ({
+        ...prev,
+        [editingCell.awardId]: {
+          ...prev[editingCell.awardId],
+          [editingCell.classificationId]: numValue,
+        }
+      }));
+      toast.success('Rate override saved');
+    } else {
+      toast.error('Please enter a valid rate');
+    }
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const handleCancelInlineEdit = () => {
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const handleRemoveOverride = (awardId: string, classificationId: string) => {
+    setCustomRates(prev => {
+      const awardRates = { ...prev[awardId] };
+      delete awardRates[classificationId];
+      return { ...prev, [awardId]: awardRates };
+    });
+    toast.success('Override removed');
+  };
+
+  const getOverrideCount = (awardId: string) => Object.keys(customRates[awardId] || {}).length;
 
   const clearFilters = () => {
     setFilters({
@@ -552,10 +637,25 @@ export function AwardsMasterTable() {
               <Button variant="outline" size="sm" onClick={() => handleBulkAction('disable')}>
                 Disable Selected
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleBulkAction('export')}>
-                <Download className="h-4 w-4 mr-1" />
-                Export
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <Download className="h-4 w-4" />
+                    Export
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleBulkAction('exportPdf')}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export to PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleBulkAction('exportExcel')}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Export to Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button variant="ghost" size="sm" onClick={() => setSelectedAwardIds(new Set())}>
                 Clear Selection
               </Button>
@@ -718,21 +818,22 @@ export function AwardsMasterTable() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSelectedAward(award); }}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                              </DialogTrigger>
-                            </Dialog>
-                            <DropdownMenuItem onClick={() => toast.success('Rates copied to clipboard')}>
+                            <DropdownMenuItem onClick={() => handleViewDetails(award)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleCopyRates(award)}>
                               <Copy className="h-4 w-4 mr-2" />
                               Copy Rates
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => toast.success('Exporting PDF...')}>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleExportSinglePdf(award)}>
                               <FileText className="h-4 w-4 mr-2" />
                               Export PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExportSingleExcel(award)}>
+                              <FileSpreadsheet className="h-4 w-4 mr-2" />
+                              Export Excel
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => toggleAward(award.id)}>
@@ -806,28 +907,72 @@ export function AwardsMasterTable() {
                                     <TableHead>Level</TableHead>
                                     <TableHead>Description</TableHead>
                                     <TableHead className="text-right">Base Rate</TableHead>
+                                    <TableHead className="text-right">Custom Rate</TableHead>
                                     <TableHead className="text-right">Casual Rate</TableHead>
                                     <TableHead className="text-right">Sat Rate</TableHead>
                                     <TableHead className="text-right">Sun Rate</TableHead>
-                                    <TableHead>Qualification</TableHead>
+                                    <TableHead className="w-24">Actions</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   {award.classifications.map((classification) => {
-                                    const rates = calculateRates(award, classification, 'casual');
+                                    const hasOverride = customRates[award.id]?.[classification.id] !== undefined;
+                                    const effectiveRate = customRates[award.id]?.[classification.id] || classification.baseHourlyRate;
+                                    const rates = calculateRates({ ...award }, { ...classification, baseHourlyRate: effectiveRate }, 'casual');
+                                    const isEditing = editingCell?.awardId === award.id && editingCell?.classificationId === classification.id;
+
                                     return (
-                                      <TableRow key={classification.id}>
+                                      <TableRow key={classification.id} className={hasOverride ? 'bg-amber-500/5' : ''}>
                                         <TableCell className="font-medium">{classification.level}</TableCell>
                                         <TableCell className="text-muted-foreground text-sm">{classification.description}</TableCell>
-                                        <TableCell className="text-right font-mono">{formatCurrency(classification.baseHourlyRate)}</TableCell>
+                                        <TableCell className="text-right font-mono">
+                                          <span className={hasOverride ? 'line-through text-muted-foreground' : ''}>
+                                            {formatCurrency(classification.baseHourlyRate)}
+                                          </span>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          {isEditing ? (
+                                            <div className="flex items-center gap-1 justify-end">
+                                              <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={editValue}
+                                                onChange={(e) => setEditValue(e.target.value)}
+                                                className="w-20 h-7 text-right font-mono text-sm"
+                                                autoFocus
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') handleSaveInlineEdit();
+                                                  if (e.key === 'Escape') handleCancelInlineEdit();
+                                                }}
+                                              />
+                                              <Button variant="ghost" size="icon" className="h-6 w-6 text-green-600" onClick={handleSaveInlineEdit}>
+                                                <Check className="h-3 w-3" />
+                                              </Button>
+                                              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={handleCancelInlineEdit}>
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <span className={`font-mono ${hasOverride ? 'text-amber-600 font-semibold' : 'text-muted-foreground'}`}>
+                                              {hasOverride ? formatCurrency(customRates[award.id][classification.id]) : '-'}
+                                            </span>
+                                          )}
+                                        </TableCell>
                                         <TableCell className="text-right font-mono text-primary">{formatCurrency(rates.casualLoadedRate || 0)}</TableCell>
                                         <TableCell className="text-right font-mono text-sm">{formatCurrency(rates.saturdayRate)}</TableCell>
                                         <TableCell className="text-right font-mono text-sm">{formatCurrency(rates.sundayRate)}</TableCell>
                                         <TableCell>
-                                          {classification.qualificationRequired ? (
-                                            <Badge variant="outline" className="text-xs">{classification.qualificationRequired}</Badge>
-                                          ) : (
-                                            <span className="text-muted-foreground text-sm">-</span>
+                                          {!isEditing && (
+                                            <div className="flex items-center gap-1">
+                                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleStartInlineEdit(award.id, classification.id, classification.baseHourlyRate)}>
+                                                <Edit2 className="h-3 w-3" />
+                                              </Button>
+                                              {hasOverride && (
+                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveOverride(award.id, classification.id)}>
+                                                  <RotateCcw className="h-3 w-3" />
+                                                </Button>
+                                              )}
+                                            </div>
                                           )}
                                         </TableCell>
                                       </TableRow>
@@ -888,180 +1033,23 @@ export function AwardsMasterTable() {
         )}
       </Card>
 
-      {/* Detail Dialog */}
+      {/* Detail Modal */}
       {selectedAward && (
-        <Dialog open={!!selectedAward} onOpenChange={() => setSelectedAward(null)}>
-          <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-primary" />
-                {selectedAward.name}
-              </DialogTitle>
-              <DialogDescription>
-                {selectedAward.code} • {selectedAward.industry} • Effective from {selectedAward.effectiveDate}
-              </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-6">
-                {/* Rate Summary */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Casual Loading</p>
-                    <p className="text-xl font-bold text-primary">{selectedAward.casualLoading}%</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Saturday Penalty</p>
-                    <p className="text-xl font-bold">{selectedAward.saturdayPenalty}%</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Sunday Penalty</p>
-                    <p className="text-xl font-bold">{selectedAward.sundayPenalty}%</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Public Holiday</p>
-                    <p className="text-xl font-bold text-amber-600">{selectedAward.publicHolidayPenalty}%</p>
-                  </div>
-                </div>
-
-                {/* Classifications Table */}
-                <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Pay Classifications ({selectedAward.classifications.length})
-                  </h4>
-                  <div className="border rounded-lg overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead>Level</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead className="text-right">Base Rate</TableHead>
-                          <TableHead className="text-right">Casual Rate</TableHead>
-                          <TableHead>Qualification</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedAward.classifications.map((classification) => {
-                          const rates = calculateRates(selectedAward, classification, 'casual');
-                          return (
-                            <TableRow key={classification.id}>
-                              <TableCell className="font-medium">{classification.level}</TableCell>
-                              <TableCell className="text-muted-foreground">{classification.description}</TableCell>
-                              <TableCell className="text-right font-mono">{formatCurrency(classification.baseHourlyRate)}</TableCell>
-                              <TableCell className="text-right font-mono text-primary">{formatCurrency(rates.casualLoadedRate || 0)}</TableCell>
-                              <TableCell>
-                                {classification.qualificationRequired ? (
-                                  <Badge variant="outline" className="text-xs">{classification.qualificationRequired}</Badge>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">-</span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-
-                {/* Overtime Rates */}
-                <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Overtime Rates
-                  </h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 rounded-lg border bg-card">
-                      <p className="text-sm text-muted-foreground">First 2 Hours</p>
-                      <p className="text-2xl font-bold">{selectedAward.overtimeRates.first2Hours}%</p>
-                    </div>
-                    <div className="p-4 rounded-lg border bg-card">
-                      <p className="text-sm text-muted-foreground">After 2 Hours</p>
-                      <p className="text-2xl font-bold">{selectedAward.overtimeRates.after2Hours}%</p>
-                    </div>
-                    <div className="p-4 rounded-lg border bg-card">
-                      <p className="text-sm text-muted-foreground">Sunday Overtime</p>
-                      <p className="text-2xl font-bold">{selectedAward.overtimeRates.sundayOvertime}%</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Allowances */}
-                {selectedAward.allowances.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold mb-3 flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Allowances ({selectedAward.allowances.length})
-                    </h4>
-                    <div className="border rounded-lg overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-muted/50">
-                            <TableHead>Allowance</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                            <TableHead>Description</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {selectedAward.allowances.map((allowance) => (
-                            <TableRow key={allowance.id}>
-                              <TableCell className="font-medium">{allowance.name}</TableCell>
-                              <TableCell>
-                                <Badge variant="secondary" className="capitalize">
-                                  {allowance.type.replace('_', ' ')}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right font-mono">
-                                {formatCurrency(allowance.amount)}
-                                {allowance.type === 'per_km' && '/km'}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground text-sm">{allowance.description}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Additional Penalties */}
-                {(selectedAward.eveningPenalty || selectedAward.nightPenalty) && (
-                  <div>
-                    <h4 className="font-semibold mb-3 flex items-center gap-2">
-                      <Settings2 className="h-4 w-4" />
-                      Additional Penalties
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      {selectedAward.eveningPenalty && (
-                        <div className="p-4 rounded-lg border bg-card">
-                          <p className="text-sm text-muted-foreground">Evening Penalty</p>
-                          <p className="text-2xl font-bold">{selectedAward.eveningPenalty}%</p>
-                        </div>
-                      )}
-                      {selectedAward.nightPenalty && (
-                        <div className="p-4 rounded-lg border bg-card">
-                          <p className="text-sm text-muted-foreground">Night Penalty</p>
-                          <p className="text-2xl font-bold">{selectedAward.nightPenalty}%</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-            <DialogFooter className="mt-4 border-t pt-4">
-              <Button variant="outline" className="gap-2" onClick={() => toast.success('Rates copied to clipboard')}>
-                <Copy className="h-4 w-4" />
-                Copy Rates
-              </Button>
-              <Button className="gap-2" onClick={() => toast.success('Exporting PDF...')}>
-                <FileText className="h-4 w-4" />
-                Export PDF
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <AwardDetailModal
+          award={selectedAward}
+          open={detailModalOpen}
+          onOpenChange={(open) => {
+            setDetailModalOpen(open);
+            if (!open) setSelectedAward(null);
+          }}
+          customRates={customRates[selectedAward.id] || {}}
+          onCustomRatesChange={(rates) => {
+            setCustomRates(prev => ({
+              ...prev,
+              [selectedAward.id]: rates,
+            }));
+          }}
+        />
       )}
     </div>
   );
