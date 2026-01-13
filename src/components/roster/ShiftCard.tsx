@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Shift, StaffMember, OpenShift, qualificationLabels } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
-import { Clock, MoreHorizontal, X, AlertCircle, Users, Coffee, Calendar, Award, MapPin, Copy, ArrowLeftRight, Edit } from 'lucide-react';
+import { Clock, MoreHorizontal, X, AlertCircle, Users, Coffee, Calendar, Award, MapPin, Copy, ArrowLeftRight, Edit, Phone, Moon, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Global drag state to disable tooltips during any drag operation
 let globalDragInProgress = false;
@@ -59,6 +60,18 @@ export function ShiftCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const duration = calculateDuration(shift.startTime, shift.endTime, shift.breakMinutes);
 
+  // Get shift type indicator
+  const getShiftTypeIcon = () => {
+    switch (shift.shiftType) {
+      case 'on_call': return { icon: Phone, color: 'text-blue-500', label: 'On-Call' };
+      case 'sleepover': return { icon: Moon, color: 'text-purple-500', label: 'Sleepover' };
+      case 'broken': return { icon: Clock, color: 'text-orange-500', label: 'Split' };
+      case 'recall': return { icon: Zap, color: 'text-red-500', label: 'Recall' };
+      default: return null;
+    }
+  };
+  const shiftTypeInfo = getShiftTypeIcon();
+
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
     setGlobalDrag(true);
@@ -104,12 +117,26 @@ export function ShiftCard({
       <div className="pl-2">
         {!isCompact && (
           <div className="flex items-start justify-between mb-1">
-            <span 
-              className="text-sm font-medium truncate"
-              style={{ color: staff?.color || 'hsl(var(--foreground))' }}
-            >
-              {staff?.name || 'Unassigned'}
-            </span>
+            <div className="flex items-center gap-1">
+              <span 
+                className="text-sm font-medium truncate"
+                style={{ color: staff?.color || 'hsl(var(--foreground))' }}
+              >
+                {staff?.name || 'Unassigned'}
+              </span>
+              {shiftTypeInfo && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <shiftTypeInfo.icon className={cn("h-3 w-3", shiftTypeInfo.color)} />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{shiftTypeInfo.label} Shift</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
             
             {/* Three-dot menu for shift actions */}
             <DropdownMenu>
