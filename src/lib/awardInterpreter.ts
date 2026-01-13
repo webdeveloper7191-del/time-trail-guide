@@ -13,6 +13,16 @@ import {
 } from '@/data/australianAwards';
 import { isPublicHoliday, isSchoolHoliday } from '@/data/mockHolidaysEvents';
 import { format, parseISO, getDay, differenceInMinutes } from 'date-fns';
+import {
+  isBrokenShift,
+  isOnCallShift,
+  isSleepoverShift,
+  wasRecalledDuringOnCall,
+  wasSleepoverDisturbed,
+  hasHigherDuties,
+  calculateTravelAllowance,
+  enrichShiftWithDetectedConditions,
+} from './shiftTypeDetection';
 
 // Time period definitions
 export interface TimePeriod {
@@ -272,6 +282,9 @@ export function calculateShiftCost(
     warnings.push(`Overtime: ${overtimeHours.toFixed(1)}h (daily limit exceeded)`);
   }
   
+  // Enrich shift with auto-detected conditions
+  const enrichedShift = enrichShiftWithDetectedConditions(shift);
+  
   // Calculate allowances
   const allowances: ShiftCostBreakdown['allowances'] = [];
   
@@ -301,6 +314,136 @@ export function calculateShiftCost(
         description: `${netHours.toFixed(1)}h × $${edAllowance.amount.toFixed(2)}`,
       });
     }
+  }
+  
+  // On-Call Allowance
+  if (isOnCallShift(enrichedShift)) {
+    const onCallAllowance = award.allowances.find(a => 
+      a.name.toLowerCase().includes('on-call') || 
+      a.name.toLowerCase().includes('on call') ||
+      a.id.includes('oncall')
+    );
+    const onCallRate = onCallAllowance?.amount ?? 15.42; // Default rate
+    
+    // Calculate on-call hours
+    let onCallHours = netHours;
+    if (enrichedShift.onCallDetails) {
+      const ocStart = timeToMinutes(enrichedShift.onCallDetails.startTime);
+      let ocEnd = timeToMinutes(enrichedShift.onCallDetails.endTime);
+      if (ocEnd < ocStart) ocEnd += 24 * 60;
+      onCallHours = (ocEnd - ocStart) / 60;
+    }
+    
+    allowances.push({
+      id: 'on-call-allowance',
+      name: 'On-Call Allowance',
+      amount: onCallRate, // Daily rate
+      description: `On-call for ${onCallHours.toFixed(1)} hours`,
+    });
+    
+    // Recall during on-call (paid at overtime rates for time worked)
+    if (wasRecalledDuringOnCall(enrichedShift) && enrichedShift.onCallDetails?.recallDuration) {
+      const recallMinutes = enrichedShift.onCallDetails.recallDuration;
+      const recallHours = recallMinutes / 60;
+      // Minimum 2 hours for recall
+      const paidRecallHours = Math.max(2, recallHours);
+      const recallRate = effectiveHourlyRate * 1.5; // Time and a half minimum
+      
+      allowances.push({
+        id: 'recall-payment',
+        name: 'Recall During On-Call',
+        amount: paidRecallHours * recallRate,
+        description: `${recallHours.toFixed(1)}h actual (min 2h) @ 150% rate`,
+      });
+      
+      warnings.push(`Recalled during on-call: ${recallMinutes} mins worked`);
+    }
+  }
+  
+  // Sleepover Allowance
+  if (isSleepoverShift(enrichedShift)) {
+    const sleepoverAllowance = award.allowances.find(a => 
+      a.name.toLowerCase().includes('sleepover') ||
+      a.name.toLowerCase().includes('sleep over') ||
+      a.id.includes('sleep')
+    );
+    const sleepoverRate = sleepoverAllowance?.amount ?? 69.85; // Default rate
+    
+    allowances.push({
+      id: 'sleepover-allowance',
+      name: 'Sleepover Allowance',
+      amount: sleepoverRate,
+      description: 'Overnight stay at facility',
+    });
+    
+    // Disturbance during sleepover (paid at minimum rates)
+    if (wasSleepoverDisturbed(enrichedShift) && enrichedShift.sleepoverDetails?.disturbanceMinutes) {
+      const disturbanceMinutes = enrichedShift.sleepoverDetails.disturbanceMinutes;
+      const disturbanceHours = Math.max(1, disturbanceMinutes / 60); // Minimum 1 hour
+      const disturbanceRate = effectiveHourlyRate * 1.5; // Typically time and a half
+      
+      allowances.push({
+        id: 'sleepover-disturbance',
+        name: 'Sleepover Disturbance',
+        amount: disturbanceHours * disturbanceRate,
+        description: `Disturbed for ${disturbanceMinutes} mins (min 1h @ 150%)`,
+      });
+      
+      warnings.push(`Sleepover disturbed: ${disturbanceMinutes} mins`);
+    }
+  }
+  
+  // Broken/Split Shift Allowance
+  if (isBrokenShift(enrichedShift)) {
+    const brokenAllowance = award.allowances.find(a => 
+      a.name.toLowerCase().includes('broken') ||
+      a.name.toLowerCase().includes('split') ||
+      a.id.includes('broken') ||
+      a.id.includes('split')
+    );
+    const brokenRate = brokenAllowance?.amount ?? 18.46; // Default rate
+    
+    allowances.push({
+      id: 'broken-shift-allowance',
+      name: 'Broken Shift Allowance',
+      amount: brokenRate,
+      description: `Shift with unpaid break > 1 hour`,
+    });
+    
+    if (enrichedShift.brokenShiftDetails) {
+      warnings.push(`Broken shift: ${enrichedShift.brokenShiftDetails.unpaidGapMinutes} mins unpaid gap`);
+    }
+  }
+  
+  // Higher Duties Allowance
+  if (hasHigherDuties(enrichedShift) && enrichedShift.higherDuties) {
+    const hdAllowance = award.allowances.find(a => 
+      a.name.toLowerCase().includes('higher dut') ||
+      a.id.includes('higher')
+    );
+    const hdHourlyRate = hdAllowance?.amount ?? 2.50;
+    
+    // Calculate hours at higher duties (default to full shift)
+    const hdMinutes = enrichedShift.higherDuties.durationMinutes ?? netMinutes;
+    const hdHours = hdMinutes / 60;
+    
+    allowances.push({
+      id: 'higher-duties-allowance',
+      name: 'Higher Duties Allowance',
+      amount: hdHours * hdHourlyRate,
+      description: `${hdHours.toFixed(1)}h at ${enrichedShift.higherDuties.classification}`,
+    });
+  }
+  
+  // Vehicle/Travel Allowance
+  const travelAllowance = calculateTravelAllowance(enrichedShift);
+  if (travelAllowance > 0) {
+    allowances.push({
+      id: 'vehicle-allowance',
+      name: 'Vehicle Allowance',
+      amount: travelAllowance,
+      description: `${enrichedShift.travelKilometres} km @ $0.96/km`,
+    });
   }
   
   const totalAllowances = allowances.reduce((sum, a) => sum + a.amount, 0);
