@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -16,14 +16,12 @@ import {
   FileSpreadsheet,
   Clock,
   DollarSign,
-  Settings2,
   TrendingUp,
   Percent,
   Edit2,
   Check,
   X,
   RotateCcw,
-  Download,
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react';
@@ -106,53 +104,49 @@ export function AwardDetailModal({
   const overrideCount = Object.keys(localCustomRates).length;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Award className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <DialogTitle className="text-xl">{award.name}</DialogTitle>
-                <DialogDescription className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className="font-mono">{award.code}</Badge>
-                  <span>•</span>
-                  <Badge variant="secondary">{award.industry}</Badge>
-                  <span>•</span>
-                  <span>Effective: {award.effectiveDate}</span>
-                </DialogDescription>
-              </div>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" style={{ width: '800px', maxWidth: '95vw' }}>
+        <SheetHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Award className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <SheetTitle className="truncate">{award.shortName}</SheetTitle>
+              <SheetDescription className="flex items-center gap-2 flex-wrap mt-1">
+                <Badge variant="outline" className="font-mono text-xs">{award.code}</Badge>
+                <Badge variant="secondary" className="text-xs">{award.industry}</Badge>
+                <span className="text-xs">Effective: {award.effectiveDate}</span>
+              </SheetDescription>
             </div>
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
-        <Tabs defaultValue="classifications" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="w-full justify-start">
-            <TabsTrigger value="classifications" className="gap-2">
-              <TrendingUp className="h-4 w-4" />
+        <Tabs defaultValue="classifications" className="flex-1 flex flex-col overflow-hidden mt-4">
+          <TabsList className="w-full justify-start shrink-0">
+            <TabsTrigger value="classifications" className="gap-1.5 text-xs">
+              <TrendingUp className="h-3.5 w-3.5" />
               Classifications
               {overrideCount > 0 && (
-                <Badge variant="secondary" className="ml-1">{overrideCount} overrides</Badge>
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{overrideCount}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="penalties" className="gap-2">
-              <Percent className="h-4 w-4" />
+            <TabsTrigger value="penalties" className="gap-1.5 text-xs">
+              <Percent className="h-3.5 w-3.5" />
               Penalties
             </TabsTrigger>
-            <TabsTrigger value="overtime" className="gap-2">
-              <Clock className="h-4 w-4" />
+            <TabsTrigger value="overtime" className="gap-1.5 text-xs">
+              <Clock className="h-3.5 w-3.5" />
               Overtime
             </TabsTrigger>
-            <TabsTrigger value="allowances" className="gap-2">
-              <DollarSign className="h-4 w-4" />
+            <TabsTrigger value="allowances" className="gap-1.5 text-xs">
+              <DollarSign className="h-3.5 w-3.5" />
               Allowances
             </TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="flex-1 mt-4">
-            <TabsContent value="classifications" className="mt-0">
+          <ScrollArea className="flex-1 mt-4 -mx-6 px-6">
+            <TabsContent value="classifications" className="mt-0 mb-4">
               <div className="space-y-4">
                 {overrideCount > 0 && (
                   <Card className="bg-amber-500/10 border-amber-500/20">
@@ -171,9 +165,9 @@ export function AwardDetailModal({
                           onCustomRatesChange?.({});
                           toast.success('All overrides cleared');
                         }}
-                        className="text-amber-700 hover:text-amber-800"
+                        className="text-amber-700 hover:text-amber-800 h-7 text-xs"
                       >
-                        <RotateCcw className="h-4 w-4 mr-1" />
+                        <RotateCcw className="h-3 w-3 mr-1" />
                         Clear All
                       </Button>
                     </CardContent>
@@ -184,14 +178,12 @@ export function AwardDetailModal({
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className="w-28">Level</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right w-28">Base Rate</TableHead>
-                        <TableHead className="text-right w-32">Custom Rate</TableHead>
-                        <TableHead className="text-right w-28">Casual</TableHead>
-                        <TableHead className="text-right w-24">Saturday</TableHead>
-                        <TableHead className="text-right w-24">Sunday</TableHead>
-                        <TableHead className="w-24 text-center">Actions</TableHead>
+                        <TableHead className="text-xs">Level</TableHead>
+                        <TableHead className="text-xs">Description</TableHead>
+                        <TableHead className="text-right text-xs w-24">Base</TableHead>
+                        <TableHead className="text-right text-xs w-28">Custom</TableHead>
+                        <TableHead className="text-right text-xs w-24">Casual</TableHead>
+                        <TableHead className="w-20 text-center text-xs">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -210,34 +202,25 @@ export function AwardDetailModal({
                             key={classification.id}
                             className={hasOverride ? 'bg-amber-500/5' : ''}
                           >
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
+                            <TableCell className="font-medium text-sm py-2">
+                              <div className="flex items-center gap-1.5">
                                 {classification.level}
                                 {hasOverride && (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger>
-                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-700 border-amber-300">
-                                          Override
-                                        </Badge>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Original: {formatCurrency(classification.baseHourlyRate)}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-500/10 text-amber-700 border-amber-300">
+                                    Override
+                                  </Badge>
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
+                            <TableCell className="text-muted-foreground text-xs py-2 max-w-[150px] truncate">
                               {classification.description}
                             </TableCell>
-                            <TableCell className="text-right font-mono">
+                            <TableCell className="text-right font-mono text-sm py-2">
                               <span className={hasOverride ? 'line-through text-muted-foreground' : ''}>
                                 {formatCurrency(classification.baseHourlyRate)}
                               </span>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right py-2">
                               {isEditing ? (
                                 <div className="flex items-center gap-1 justify-end">
                                   <Input
@@ -255,36 +238,30 @@ export function AwardDetailModal({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-green-600"
+                                    className="h-6 w-6 text-green-600"
                                     onClick={() => handleSaveEdit(classification.id)}
                                   >
-                                    <Check className="h-4 w-4" />
+                                    <Check className="h-3 w-3" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-destructive"
+                                    className="h-6 w-6 text-destructive"
                                     onClick={handleCancelEdit}
                                   >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-3 w-3" />
                                   </Button>
                                 </div>
                               ) : (
-                                <span className={`font-mono ${hasOverride ? 'text-amber-600 font-semibold' : 'text-muted-foreground'}`}>
+                                <span className={`font-mono text-sm ${hasOverride ? 'text-amber-600 font-semibold' : 'text-muted-foreground'}`}>
                                   {hasOverride ? formatCurrency(localCustomRates[classification.id]) : '-'}
                                 </span>
                               )}
                             </TableCell>
-                            <TableCell className="text-right font-mono text-primary">
+                            <TableCell className="text-right font-mono text-sm text-primary py-2">
                               {formatCurrency(rates.casualLoadedRate || baseRate)}
                             </TableCell>
-                            <TableCell className="text-right font-mono text-sm">
-                              {formatCurrency(rates.saturdayRate)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm">
-                              {formatCurrency(rates.sundayRate)}
-                            </TableCell>
-                            <TableCell>
+                            <TableCell className="py-2">
                               <div className="flex items-center justify-center gap-1">
                                 {!isEditing && (
                                   <>
@@ -294,10 +271,10 @@ export function AwardDetailModal({
                                           <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-7 w-7"
+                                            className="h-6 w-6"
                                             onClick={() => handleStartEdit(classification)}
                                           >
-                                            <Edit2 className="h-4 w-4" />
+                                            <Edit2 className="h-3 w-3" />
                                           </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>Set custom rate</TooltipContent>
@@ -310,10 +287,10 @@ export function AwardDetailModal({
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-7 w-7 text-destructive"
+                                              className="h-6 w-6 text-destructive"
                                               onClick={() => handleRemoveOverride(classification.id)}
                                             >
-                                              <RotateCcw className="h-4 w-4" />
+                                              <RotateCcw className="h-3 w-3" />
                                             </Button>
                                           </TooltipTrigger>
                                           <TooltipContent>Reset to original</TooltipContent>
@@ -333,42 +310,42 @@ export function AwardDetailModal({
               </div>
             </TabsContent>
 
-            <TabsContent value="penalties" className="mt-0">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <TabsContent value="penalties" className="mt-0 mb-4">
+              <div className="grid grid-cols-2 gap-3">
                 <Card>
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Casual Loading</p>
-                    <p className="text-3xl font-bold text-primary mt-1">{award.casualLoading}%</p>
-                    <p className="text-xs text-muted-foreground mt-2">Applied to base rate for casual employees</p>
+                    <p className="text-2xl font-bold text-primary mt-1">{award.casualLoading}%</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Applied to base rate for casual employees</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Saturday Penalty</p>
-                    <p className="text-3xl font-bold mt-1">{award.saturdayPenalty}%</p>
-                    <p className="text-xs text-muted-foreground mt-2">Of base rate for Saturday work</p>
+                    <p className="text-2xl font-bold mt-1">{award.saturdayPenalty}%</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Of base rate for Saturday work</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Sunday Penalty</p>
-                    <p className="text-3xl font-bold mt-1">{award.sundayPenalty}%</p>
-                    <p className="text-xs text-muted-foreground mt-2">Of base rate for Sunday work</p>
+                    <p className="text-2xl font-bold mt-1">{award.sundayPenalty}%</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Of base rate for Sunday work</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Public Holiday</p>
-                    <p className="text-3xl font-bold text-amber-600 mt-1">{award.publicHolidayPenalty}%</p>
-                    <p className="text-xs text-muted-foreground mt-2">Of base rate for public holidays</p>
+                    <p className="text-2xl font-bold text-amber-600 mt-1">{award.publicHolidayPenalty}%</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Of base rate for public holidays</p>
                   </CardContent>
                 </Card>
                 {award.eveningPenalty && (
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground uppercase tracking-wide">Evening Penalty</p>
-                      <p className="text-3xl font-bold mt-1">{award.eveningPenalty}%</p>
-                      <p className="text-xs text-muted-foreground mt-2">For evening shift work</p>
+                      <p className="text-2xl font-bold mt-1">{award.eveningPenalty}%</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">For evening shift work</p>
                     </CardContent>
                   </Card>
                 )}
@@ -376,70 +353,71 @@ export function AwardDetailModal({
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground uppercase tracking-wide">Night Penalty</p>
-                      <p className="text-3xl font-bold mt-1">{award.nightPenalty}%</p>
-                      <p className="text-xs text-muted-foreground mt-2">For night shift work</p>
+                      <p className="text-2xl font-bold mt-1">{award.nightPenalty}%</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">For night shift work</p>
                     </CardContent>
                   </Card>
                 )}
               </div>
             </TabsContent>
 
-            <TabsContent value="overtime" className="mt-0">
-              <div className="grid grid-cols-3 gap-4">
+            <TabsContent value="overtime" className="mt-0 mb-4">
+              <div className="grid grid-cols-3 gap-3">
                 <Card>
-                  <CardContent className="p-6 text-center">
-                    <Clock className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-sm text-muted-foreground">First 2 Hours</p>
-                    <p className="text-4xl font-bold mt-2">{award.overtimeRates.first2Hours}%</p>
-                    <p className="text-xs text-muted-foreground mt-2">of base rate</p>
+                  <CardContent className="p-4 text-center">
+                    <Clock className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-xs text-muted-foreground">First 2 Hours</p>
+                    <p className="text-3xl font-bold mt-1">{award.overtimeRates.first2Hours}%</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">of base rate</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-6 text-center">
-                    <Clock className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-sm text-muted-foreground">After 2 Hours</p>
-                    <p className="text-4xl font-bold mt-2">{award.overtimeRates.after2Hours}%</p>
-                    <p className="text-xs text-muted-foreground mt-2">of base rate</p>
+                  <CardContent className="p-4 text-center">
+                    <Clock className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-xs text-muted-foreground">After 2 Hours</p>
+                    <p className="text-3xl font-bold mt-1">{award.overtimeRates.after2Hours}%</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">of base rate</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-6 text-center">
-                    <Clock className="h-8 w-8 mx-auto text-amber-600 mb-3" />
-                    <p className="text-sm text-muted-foreground">Sunday Overtime</p>
-                    <p className="text-4xl font-bold text-amber-600 mt-2">{award.overtimeRates.sundayOvertime}%</p>
-                    <p className="text-xs text-muted-foreground mt-2">of base rate</p>
+                  <CardContent className="p-4 text-center">
+                    <Clock className="h-6 w-6 mx-auto text-amber-600 mb-2" />
+                    <p className="text-xs text-muted-foreground">Sunday OT</p>
+                    <p className="text-3xl font-bold text-amber-600 mt-1">{award.overtimeRates.sundayOvertime}%</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">of base rate</p>
                   </CardContent>
                 </Card>
               </div>
             </TabsContent>
 
-            <TabsContent value="allowances" className="mt-0">
+            <TabsContent value="allowances" className="mt-0 mb-4">
               {award.allowances.length > 0 ? (
                 <div className="border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead>Allowance Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead className="text-xs">Allowance Name</TableHead>
+                        <TableHead className="text-xs">Type</TableHead>
+                        <TableHead className="text-right text-xs">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {award.allowances.map((allowance) => (
                         <TableRow key={allowance.id}>
-                          <TableCell className="font-medium">{allowance.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="capitalize">
+                          <TableCell className="font-medium text-sm py-2">
+                            <div>
+                              {allowance.name}
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{allowance.description}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-2">
+                            <Badge variant="secondary" className="capitalize text-xs">
                               {allowance.type.replace(/_/g, ' ')}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right font-mono font-semibold">
+                          <TableCell className="text-right font-mono font-semibold py-2">
                             {formatCurrency(allowance.amount)}
-                            {allowance.type === 'per_km' && <span className="text-muted-foreground">/km</span>}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm max-w-xs">
-                            {allowance.description}
+                            {allowance.type === 'per_km' && <span className="text-muted-foreground text-xs">/km</span>}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -448,8 +426,8 @@ export function AwardDetailModal({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <DollarSign className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-lg font-medium">No Allowances</p>
+                  <DollarSign className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                  <p className="font-medium">No Allowances</p>
                   <p className="text-sm text-muted-foreground">This award has no defined allowances</p>
                 </div>
               )}
@@ -457,27 +435,27 @@ export function AwardDetailModal({
           </ScrollArea>
         </Tabs>
 
-        <DialogFooter className="border-t pt-4 mt-4 flex-wrap gap-2">
+        <SheetFooter>
           <div className="flex items-center gap-2 mr-auto">
-            <Badge variant="outline" className="gap-1">
+            <Badge variant="outline" className="gap-1 text-xs">
               <CheckCircle2 className="h-3 w-3 text-green-600" />
               FWC 2024-25
             </Badge>
           </div>
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleCopyRates}>
-            <Copy className="h-4 w-4" />
-            Copy Rates
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCopyRates}>
+            <Copy className="h-3.5 w-3.5" />
+            Copy
           </Button>
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportExcel}>
-            <FileSpreadsheet className="h-4 w-4" />
-            Export Excel
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExportExcel}>
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            Excel
           </Button>
-          <Button size="sm" className="gap-2" onClick={handleExportPDF}>
-            <FileText className="h-4 w-4" />
-            Export PDF
+          <Button size="sm" className="gap-1.5" onClick={handleExportPDF}>
+            <FileText className="h-3.5 w-3.5" />
+            PDF
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
