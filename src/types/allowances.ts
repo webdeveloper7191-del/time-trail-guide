@@ -12,7 +12,20 @@ export type AllowanceCategory =
   | 'qualification' 
   | 'meal' 
   | 'first_aid' 
+  | 'on_call'
+  | 'sleepover'
+  | 'broken_shift'
+  | 'higher_duties'
   | 'other';
+
+// Shift-based allowance trigger types
+export type AllowanceTriggerType = 
+  | 'manual'           // User adds manually
+  | 'shift_type'       // Auto-triggered by shift type (on-call, sleepover, etc.)
+  | 'qualification'    // Based on staff qualifications
+  | 'role'            // Based on staff role
+  | 'time_based'      // Based on shift time/duration
+  | 'location';       // Based on work location
 
 export interface AllowanceType {
   id: string;
@@ -21,10 +34,31 @@ export interface AllowanceType {
   description: string;
   category: AllowanceCategory;
   applicableAwards: AwardType[];
-  rateType: 'fixed' | 'hourly' | 'daily' | 'per_occurrence';
+  rateType: 'fixed' | 'hourly' | 'daily' | 'per_occurrence' | 'per_km';
   defaultRate: number;
   taxable: boolean;
   superIncluded: boolean;
+  // New fields for shift-based detection
+  triggerType?: AllowanceTriggerType;
+  triggerConditions?: AllowanceTriggerConditions;
+  minimumEngagement?: number; // Minimum hours/occurrences to trigger
+  maxPerPeriod?: number; // Maximum times claimable per day/week
+  requiresApproval?: boolean;
+  stackable?: boolean; // Can be combined with other allowances
+}
+
+// Conditions that trigger automatic allowance application
+export interface AllowanceTriggerConditions {
+  shiftTypes?: ('on_call' | 'sleepover' | 'broken' | 'recall' | 'emergency')[];
+  qualificationTypes?: string[];
+  roleTypes?: string[];
+  minBreakMinutes?: number; // For broken shift detection
+  overnightRequired?: boolean; // For sleepover detection
+  recallRequired?: boolean; // For on-call recall
+  higherClassification?: boolean; // For higher duties
+  travelKilometres?: boolean; // For vehicle allowance
+  weekendOnly?: boolean;
+  publicHolidayOnly?: boolean;
 }
 
 export interface AppliedAllowance {
@@ -47,12 +81,18 @@ export const CHILDREN_SERVICES_ALLOWANCES: AllowanceType[] = [
     code: 'BROKEN_SHIFT',
     name: 'Broken Shift Allowance',
     description: 'Paid when an employee works two separate shifts in a single day',
-    category: 'shift',
+    category: 'broken_shift',
     applicableAwards: ['children_services'],
     rateType: 'per_occurrence',
     defaultRate: 18.46,
     taxable: true,
     superIncluded: true,
+    triggerType: 'shift_type',
+    triggerConditions: {
+      shiftTypes: ['broken'],
+      minBreakMinutes: 60,
+    },
+    stackable: true,
   },
   {
     id: 'cs-first-aid',
@@ -179,36 +219,87 @@ export const CHILDREN_SERVICES_ALLOWANCES: AllowanceType[] = [
     code: 'HIGHER_DUTIES',
     name: 'Higher Duties Allowance',
     description: 'When performing duties of a higher classification',
-    category: 'other',
+    category: 'higher_duties',
     applicableAwards: ['children_services', 'general'],
     rateType: 'hourly',
     defaultRate: 2.50,
     taxable: true,
     superIncluded: true,
+    triggerType: 'shift_type',
+    triggerConditions: {
+      higherClassification: true,
+    },
+    requiresApproval: true,
   },
   {
     id: 'cs-sleepover',
     code: 'SLEEPOVER',
     name: 'Sleepover Allowance',
     description: 'For overnight sleepover shifts at the facility',
-    category: 'shift',
+    category: 'sleepover',
     applicableAwards: ['children_services'],
     rateType: 'per_occurrence',
     defaultRate: 69.85,
     taxable: true,
     superIncluded: false,
+    triggerType: 'shift_type',
+    triggerConditions: {
+      shiftTypes: ['sleepover'],
+      overnightRequired: true,
+    },
+    maxPerPeriod: 1,
+  },
+  {
+    id: 'cs-sleepover-disturbed',
+    code: 'SLEEPOVER_DISTURBED',
+    name: 'Sleepover Disturbance Allowance',
+    description: 'Additional pay when sleepover is disturbed - minimum 1 hour at overtime rates',
+    category: 'sleepover',
+    applicableAwards: ['children_services'],
+    rateType: 'hourly',
+    defaultRate: 45.50,
+    taxable: true,
+    superIncluded: true,
+    triggerType: 'shift_type',
+    triggerConditions: {
+      shiftTypes: ['sleepover'],
+    },
+    minimumEngagement: 1,
   },
   {
     id: 'cs-on-call',
     code: 'ON_CALL',
     name: 'On Call Allowance',
     description: 'For being available on-call outside regular hours',
-    category: 'shift',
+    category: 'on_call',
     applicableAwards: ['children_services', 'general'],
     rateType: 'daily',
     defaultRate: 15.42,
     taxable: true,
     superIncluded: false,
+    triggerType: 'shift_type',
+    triggerConditions: {
+      shiftTypes: ['on_call'],
+    },
+    maxPerPeriod: 1,
+  },
+  {
+    id: 'cs-on-call-recall',
+    code: 'ON_CALL_RECALL',
+    name: 'On Call Recall Allowance',
+    description: 'Minimum 2 hours pay at overtime rates when recalled during on-call period',
+    category: 'on_call',
+    applicableAwards: ['children_services', 'general'],
+    rateType: 'hourly',
+    defaultRate: 52.50,
+    taxable: true,
+    superIncluded: true,
+    triggerType: 'shift_type',
+    triggerConditions: {
+      shiftTypes: ['recall'],
+      recallRequired: true,
+    },
+    minimumEngagement: 2,
   },
 ];
 
