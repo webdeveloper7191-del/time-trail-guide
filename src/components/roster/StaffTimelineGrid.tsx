@@ -58,12 +58,14 @@ interface StaffTimelineGridProps {
   /** Assigns staff into a room section (no shift created) */
   staffRoomAssignments?: Record<string, string>; // staffId -> roomId
   onAssignStaffToRoom?: (staffId: string, roomId: string) => void;
+  onRemoveStaffFromRoom?: (staffId: string, roomId: string) => void;
 
   onShiftEdit: (shift: Shift) => void;
   onShiftDelete: (shiftId: string) => void;
   onShiftCopy?: (shift: Shift) => void;
   onShiftSwap?: (shift: Shift) => void;
   onOpenShiftFill: (openShift: OpenShift) => void;
+  onOpenShiftDelete?: (openShiftId: string) => void;
   onAddShift: (staffId: string, date: string, roomId: string, template?: ShiftTemplate) => void;
   onDragStart: (e: React.DragEvent, staff: StaffMember) => void;
   onOpenShiftDrop: (staffId: string, openShift: OpenShift) => void;
@@ -87,10 +89,12 @@ export function StaffTimelineGrid({
   onDropStaff,
   staffRoomAssignments = {},
   onAssignStaffToRoom,
+  onRemoveStaffFromRoom,
   onShiftEdit,
   onShiftDelete,
   onShiftCopy,
   onShiftSwap,
+  onOpenShiftDelete,
   onAddShift,
   onDragStart,
   onOpenShiftDrop,
@@ -293,7 +297,7 @@ export function StaffTimelineGrid({
       <ScrollArea className="h-full">
         <div className="min-w-max">
           {/* Header */}
-          <div className="flex sticky top-0 z-20 bg-card border-b border-border">
+          <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-sm">
             <div className="w-64 shrink-0 p-2 font-medium text-sm text-muted-foreground border-r border-border bg-muted/50">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -449,7 +453,7 @@ export function StaffTimelineGrid({
             return (
               <div key={room.id}>
                 {/* Room header */}
-                <div className="flex bg-primary/10 border-b border-primary/20 sticky top-[52px] z-10">
+                <div className="flex bg-primary/10 border-b border-primary/20 sticky top-[53px] z-20 shadow-sm">
                   <div
                     data-drop-zone
                     className="w-64 shrink-0 px-4 py-2 flex items-center gap-3 border-r border-primary/20"
@@ -511,7 +515,7 @@ export function StaffTimelineGrid({
                       {/* Staff info cell */}
                       <div 
                         className={cn(
-                          "w-64 shrink-0 p-2 border-r border-border bg-card flex items-start gap-2 cursor-grab group transition-opacity duration-200",
+                          "w-64 shrink-0 p-2 border-r border-border bg-card flex items-start gap-2 cursor-grab group/staff transition-opacity duration-200",
                           isDragging && "opacity-60"
                         )}
                         draggable
@@ -529,15 +533,44 @@ export function StaffTimelineGrid({
                           {member.name.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p 
-                            className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary hover:underline transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onStaffClick?.(member);
-                            }}
-                          >
-                            {member.name}
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p 
+                              className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary hover:underline transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onStaffClick?.(member);
+                              }}
+                            >
+                              {member.name}
+                            </p>
+                            {/* Remove from room menu */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 opacity-0 group-hover/staff:opacity-100 transition-opacity -mr-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MoreHorizontal className="h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem onClick={() => onStaffClick?.(member)}>
+                                  <User className="h-4 w-4 mr-2" />
+                                  View Profile
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => onRemoveStaffFromRoom?.(member.id, room.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Remove from Room
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                           <p className="text-[10px] text-muted-foreground">{roleLabels[member.role]}</p>
                           <div className="flex flex-wrap gap-0.5 mt-0.5">
                             {topQualifications.map((q, idx) => (
@@ -815,7 +848,7 @@ export function StaffTimelineGrid({
                               </div>
                             </div>
                           )}
-                          {openShift && <OpenShiftCard openShift={openShift} isCompact={isCompact} isDragOver={isDragOver} />}
+                          {openShift && <OpenShiftCard openShift={openShift} isCompact={isCompact} isDragOver={isDragOver} onDelete={onOpenShiftDelete ? () => onOpenShiftDelete(openShift.id) : undefined} />}
                         </div>
                       );
                     })}
@@ -1127,7 +1160,7 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onDrag
   );
 }
 
-function OpenShiftCard({ openShift, isCompact, isDragOver }: { openShift: OpenShift; isCompact?: boolean; isDragOver?: boolean; }) {
+function OpenShiftCard({ openShift, isCompact, isDragOver, onDelete }: { openShift: OpenShift; isCompact?: boolean; isDragOver?: boolean; onDelete?: () => void; }) {
   const urgencyStyles = {
     low: {
       bg: 'bg-slate-50 dark:bg-slate-900/50',
@@ -1155,14 +1188,41 @@ function OpenShiftCard({ openShift, isCompact, isDragOver }: { openShift: OpenSh
 
   return (
     <div className={cn(
-      "relative rounded-lg border-2 border-dashed overflow-hidden transition-all duration-200",
+      "group relative rounded-lg border-2 border-dashed overflow-hidden transition-all duration-200",
       style.bg,
       style.border,
       isDragOver && "border-primary bg-primary/10 scale-[1.02]",
       openShift.urgency === 'critical' && "animate-pulse"
     )}>
       <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
-      <div className="pl-3 pr-2 py-1.5">
+      
+      {/* Delete button */}
+      {onDelete && (
+        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 hover:bg-destructive/20 hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Delete open shift</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
+      
+      <div className="pl-3 pr-7 py-1.5">
         <div className="text-xs font-semibold text-foreground">{openShift.startTime}-{openShift.endTime}</div>
         {!isCompact && (
           <>

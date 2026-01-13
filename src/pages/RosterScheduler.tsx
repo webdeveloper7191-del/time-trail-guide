@@ -600,6 +600,42 @@ export default function RosterScheduler() {
     toast.success('Open shift added');
   };
 
+  const handleDeleteOpenShift = (openShiftId: string) => {
+    setOpenShifts(prev => prev.filter(os => os.id !== openShiftId));
+    toast.success('Open shift removed');
+  };
+
+  const handleRemoveStaffFromRoom = (staffId: string, roomId: string) => {
+    // Remove all shifts for this staff in this room for the current date range
+    const dateStrings = dates.map(d => format(d, 'yyyy-MM-dd'));
+    const removedCount = shifts.filter(s => 
+      s.staffId === staffId && 
+      s.roomId === roomId && 
+      s.centreId === selectedCentreId &&
+      dateStrings.includes(s.date)
+    ).length;
+    
+    setShifts(prev => prev.filter(s => 
+      !(s.staffId === staffId && 
+        s.roomId === roomId && 
+        s.centreId === selectedCentreId &&
+        dateStrings.includes(s.date))
+    ), `Removed staff from room`, 'delete');
+    
+    // Also remove from room assignments
+    setStaffRoomAssignmentsByCentre(prev => {
+      const current = prev[selectedCentreId] || {};
+      const { [staffId]: _, ...rest } = current;
+      return {
+        ...prev,
+        [selectedCentreId]: rest,
+      };
+    });
+    
+    const staff = allStaff.find(s => s.id === staffId);
+    toast.success(`${staff?.name ?? 'Staff'} removed from room${removedCount > 0 ? ` (${removedCount} shifts deleted)` : ''}`);
+  };
+
   const handleLeaveApprove = (id: string) => {
     toast.success('Leave request approved');
   };
@@ -1280,11 +1316,13 @@ export default function RosterScheduler() {
             onDropStaff={handleDropStaff}
             staffRoomAssignments={staffRoomAssignmentsByCentre[selectedCentreId] || {}}
             onAssignStaffToRoom={handleAssignStaffToRoom}
+            onRemoveStaffFromRoom={handleRemoveStaffFromRoom}
             onShiftEdit={setSelectedShift}
             onShiftDelete={handleShiftDelete}
             onShiftCopy={handleCopyShift}
             onShiftSwap={handleSwapStaff}
             onOpenShiftFill={(os) => toast.info('Drag a staff member to fill this shift')}
+            onOpenShiftDelete={handleDeleteOpenShift}
             onAddShift={handleAddShift}
             onDragStart={handleDragStart}
             onOpenShiftDrop={handleOpenShiftDrop}
