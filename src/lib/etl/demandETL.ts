@@ -95,6 +95,68 @@ export const XplorAdapter: IntegrationAdapter = {
   },
 };
 
+// Childcare: Xap adapter
+export const XapAdapter: IntegrationAdapter = {
+  id: 'xap',
+  name: 'Xap',
+  sourceType: 'booking',
+  fieldMappings: [
+    { sourceField: 'date', targetField: 'date', required: true, transform: normalizeDate },
+    { sourceField: 'session', targetField: 'timeSlot', required: true, transform: normalizeTimeSlot },
+    { sourceField: 'room_id', targetField: 'zoneId', required: true },
+    { sourceField: 'room_name', targetField: 'zoneName', required: false, defaultValue: 'Unknown Room' },
+    { sourceField: 'child_count', targetField: 'demandValue', required: true, transform: toNumber },
+  ],
+  preProcess: (data) => data.filter(r => r.status !== 'cancelled'),
+  validate: (record) => {
+    const errors: string[] = [];
+    if (!record.date) errors.push('Missing date');
+    if (record.child_count < 0) errors.push('Invalid child_count');
+    return { valid: errors.length === 0, errors };
+  },
+};
+
+// Childcare: Owna adapter
+export const OwnaAdapter: IntegrationAdapter = {
+  id: 'owna',
+  name: 'Owna',
+  sourceType: 'booking',
+  fieldMappings: [
+    { sourceField: 'booking_date', targetField: 'date', required: true, transform: normalizeDate },
+    { sourceField: 'time_slot', targetField: 'timeSlot', required: true, transform: normalizeTimeSlot },
+    { sourceField: 'room_id', targetField: 'zoneId', required: true },
+    { sourceField: 'room_name', targetField: 'zoneName', required: false, defaultValue: 'Unknown Room' },
+    { sourceField: 'enrolled_children', targetField: 'demandValue', required: true, transform: toNumber },
+  ],
+  validate: (record) => {
+    const errors: string[] = [];
+    if (!record.booking_date) errors.push('Missing booking_date');
+    if (record.enrolled_children < 0) errors.push('Invalid enrolled_children count');
+    return { valid: errors.length === 0, errors };
+  },
+};
+
+// Childcare: Kidsoft adapter
+export const KidsoftAdapter: IntegrationAdapter = {
+  id: 'kidsoft',
+  name: 'Kidsoft',
+  sourceType: 'booking',
+  fieldMappings: [
+    { sourceField: 'attendance_date', targetField: 'date', required: true, transform: normalizeDate },
+    { sourceField: 'session_type', targetField: 'timeSlot', required: true, transform: normalizeTimeSlot },
+    { sourceField: 'room_code', targetField: 'zoneId', required: true },
+    { sourceField: 'room_description', targetField: 'zoneName', required: false, defaultValue: 'Unknown Room' },
+    { sourceField: 'booked_count', targetField: 'demandValue', required: true, transform: toNumber },
+  ],
+  preProcess: (data) => data.filter(r => r.booking_status === 'confirmed' || r.booking_status === 'active'),
+  validate: (record) => {
+    const errors: string[] = [];
+    if (!record.attendance_date) errors.push('Missing attendance_date');
+    if (record.booked_count < 0) errors.push('Invalid booked_count');
+    return { valid: errors.length === 0, errors };
+  },
+};
+
 // Childcare: QikKids adapter
 export const QikKidsAdapter: IntegrationAdapter = {
   id: 'qikkids',
@@ -227,6 +289,9 @@ export const RestAPIAdapter: IntegrationAdapter = {
 // Registry of all adapters
 export const INTEGRATION_ADAPTERS: Record<string, IntegrationAdapter> = {
   xplor: XplorAdapter,
+  xap: XapAdapter,
+  owna: OwnaAdapter,
+  kidsoft: KidsoftAdapter,
   qikkids: QikKidsAdapter,
   shopify: ShopifyPOSAdapter,
   lightspeed: LightspeedAdapter,

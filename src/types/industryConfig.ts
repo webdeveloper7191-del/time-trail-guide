@@ -229,6 +229,9 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
     },
     integrations: [
       { id: 'xplor', name: 'Xplor', type: 'booking', description: 'Sync child bookings and attendance', fields: [{ name: 'API Key', type: 'api_key', required: true }] },
+      { id: 'xap', name: 'Xap', type: 'booking', description: 'Sync child bookings and session data', fields: [{ name: 'API Key', type: 'api_key', required: true }] },
+      { id: 'owna', name: 'Owna', type: 'booking', description: 'Sync enrolments and attendance tracking', fields: [{ name: 'API Key', type: 'api_key', required: true }] },
+      { id: 'kidsoft', name: 'Kidsoft', type: 'booking', description: 'Sync bookings and room occupancy', fields: [{ name: 'API Key', type: 'api_key', required: true }] },
       { id: 'qikkids', name: 'QikKids', type: 'booking', description: 'Sync enrolments and sign-ins', fields: [{ name: 'API Key', type: 'api_key', required: true }] },
     ],
   },

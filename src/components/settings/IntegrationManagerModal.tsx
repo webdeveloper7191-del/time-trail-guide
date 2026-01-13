@@ -47,6 +47,15 @@ interface IntegrationManagerModalProps {
   onClose: () => void;
 }
 
+interface ApiEndpoint {
+  id: string;
+  name: string;
+  url: string;
+  method: 'GET';
+  headers?: Record<string, string>;
+  enabled: boolean;
+}
+
 interface ActiveIntegration extends IntegrationOption {
   enabled: boolean;
   lastSync?: string;
@@ -55,6 +64,7 @@ interface ActiveIntegration extends IntegrationOption {
   credentials: Record<string, string>;
   autoSync: boolean;
   syncInterval: number; // minutes
+  apiEndpoints: ApiEndpoint[]; // Multiple GET API endpoints
 }
 
 interface SyncResult {
@@ -89,10 +99,55 @@ export function IntegrationManagerModal({
         credentials: {},
         autoSync: false,
         syncInterval: 30,
+        apiEndpoints: [] as ApiEndpoint[],
       }));
       setActiveIntegrations(integrations);
     }
   }, [open, config.integrations, config.settings.dataSources.integration.enabled]);
+  
+  const handleAddApiEndpoint = (integrationId: string) => {
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: [
+              ...int.apiEndpoints, 
+              { 
+                id: `endpoint-${Date.now()}`, 
+                name: `API Endpoint ${int.apiEndpoints.length + 1}`,
+                url: '', 
+                method: 'GET' as const,
+                enabled: true,
+              }
+            ] 
+          }
+        : int
+    ));
+  };
+  
+  const handleUpdateApiEndpoint = (integrationId: string, endpointId: string, field: keyof ApiEndpoint, value: any) => {
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.map(ep => 
+              ep.id === endpointId ? { ...ep, [field]: value } : ep
+            )
+          }
+        : int
+    ));
+  };
+  
+  const handleRemoveApiEndpoint = (integrationId: string, endpointId: string) => {
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.filter(ep => ep.id !== endpointId)
+          }
+        : int
+    ));
+  };
   
   const handleToggleIntegration = (integrationId: string) => {
     setActiveIntegrations(prev => prev.map(int => 
@@ -498,6 +553,78 @@ export function IntegrationManagerModal({
                               )}
                             </Box>
                             
+                            {/* API Endpoints */}
+                            <Box>
+                              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+                                <Typography variant="subtitle2">
+                                  API Endpoints (GET)
+                                </Typography>
+                                <Button
+                                  size="small"
+                                  startIcon={<Plus size={14} />}
+                                  onClick={() => handleAddApiEndpoint(integration.id)}
+                                >
+                                  Add Endpoint
+                                </Button>
+                              </Stack>
+                              
+                              {integration.apiEndpoints.length === 0 ? (
+                                <Typography variant="body2" color="text.secondary">
+                                  No API endpoints configured. Add endpoints to fetch data from external APIs.
+                                </Typography>
+                              ) : (
+                                <Stack spacing={1.5}>
+                                  {integration.apiEndpoints.map((endpoint, idx) => (
+                                    <Card key={endpoint.id} variant="outlined" sx={{ p: 1.5, bgcolor: 'background.default' }}>
+                                      <Stack spacing={1.5}>
+                                        <Stack direction="row" spacing={1} alignItems="center">
+                                          <TextField
+                                            label="Endpoint Name"
+                                            value={endpoint.name}
+                                            onChange={(e) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'name', e.target.value)}
+                                            size="small"
+                                            sx={{ flex: 1 }}
+                                          />
+                                          <FormControlLabel
+                                            control={
+                                              <Switch
+                                                checked={endpoint.enabled}
+                                                onChange={(e) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'enabled', e.target.checked)}
+                                                size="small"
+                                              />
+                                            }
+                                            label="Enabled"
+                                          />
+                                          <IconButton 
+                                            size="small" 
+                                            color="error"
+                                            onClick={() => handleRemoveApiEndpoint(integration.id, endpoint.id)}
+                                          >
+                                            <Trash2 size={16} />
+                                          </IconButton>
+                                        </Stack>
+                                        <TextField
+                                          label="API URL"
+                                          value={endpoint.url}
+                                          onChange={(e) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'url', e.target.value)}
+                                          size="small"
+                                          fullWidth
+                                          placeholder="https://api.example.com/v1/data"
+                                          InputProps={{
+                                            startAdornment: (
+                                              <InputAdornment position="start">
+                                                <Chip label="GET" size="small" color="info" />
+                                              </InputAdornment>
+                                            ),
+                                          }}
+                                        />
+                                      </Stack>
+                                    </Card>
+                                  ))}
+                                </Stack>
+                              )}
+                            </Box>
+                            
                             {/* Error Message */}
                             {integration.errorMessage && (
                               <Alert severity="error" sx={{ py: 0.5 }}>
@@ -586,6 +713,7 @@ export function IntegrationManagerModal({
                         credentials: {},
                         autoSync: false,
                         syncInterval: 30,
+                        apiEndpoints: [],
                       })}
                     />
                   ))}
@@ -828,6 +956,29 @@ function generateMockIntegrationData(integrationId: string, count: number): any[
       room_name: ['Babies', 'Toddlers', 'Preschool', 'Kindergarten'][Math.floor(Math.random() * 4)],
       booked_children: Math.floor(Math.random() * 15) + 5,
       status: 'confirmed',
+    }),
+    xap: () => ({
+      date: today.toISOString().split('T')[0],
+      session: ['AM', 'PM', 'Full Day'][Math.floor(Math.random() * 3)],
+      room_id: `room-${Math.floor(Math.random() * 4) + 1}`,
+      room_name: ['Nursery', 'Junior Room', 'Kindy', 'Pre-School'][Math.floor(Math.random() * 4)],
+      child_count: Math.floor(Math.random() * 18) + 4,
+      status: 'confirmed',
+    }),
+    owna: () => ({
+      booking_date: today.toISOString().split('T')[0],
+      time_slot: ['06:00-12:00', '12:00-18:00', '06:00-18:00'][Math.floor(Math.random() * 3)],
+      room_id: `room-${Math.floor(Math.random() * 4) + 1}`,
+      room_name: ['Infants', 'Crawlers', 'Walkers', 'Explorers'][Math.floor(Math.random() * 4)],
+      enrolled_children: Math.floor(Math.random() * 16) + 6,
+    }),
+    kidsoft: () => ({
+      attendance_date: today.toISOString().split('T')[0],
+      session_type: ['Morning', 'Afternoon', 'Full'][Math.floor(Math.random() * 3)],
+      room_code: `R${Math.floor(Math.random() * 4) + 1}`,
+      room_description: ['Butterfly Room', 'Rainbow Room', 'Sunshine Room', 'Discovery Room'][Math.floor(Math.random() * 4)],
+      booked_count: Math.floor(Math.random() * 20) + 5,
+      booking_status: 'confirmed',
     }),
     qikkids: () => ({
       attendance_date: today.toISOString().split('T')[0],
