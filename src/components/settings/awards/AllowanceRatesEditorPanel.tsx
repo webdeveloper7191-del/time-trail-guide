@@ -10,47 +10,219 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, DollarSign, Search, CheckCircle2, AlertCircle, Building2, Filter, RotateCcw, Download } from 'lucide-react';
+import { 
+  Plus, Edit2, Trash2, DollarSign, Search, CheckCircle2, AlertCircle, 
+  Building2, Filter, RotateCcw, Download, Moon, Phone, Clock, 
+  ArrowUpCircle, Car, Zap, Info, Settings2
+} from 'lucide-react';
 import { australianAwards } from '@/data/australianAwards';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+// Shift-based allowance categories
+type AllowanceCategoryType = 
+  | 'on_call' 
+  | 'sleepover' 
+  | 'broken_shift' 
+  | 'higher_duties' 
+  | 'travel'
+  | 'qualification'
+  | 'meal'
+  | 'clothing'
+  | 'other';
+
+// Trigger types for automatic detection
+type TriggerType = 'manual' | 'shift_type' | 'qualification' | 'role' | 'time_based' | 'location';
+
+interface AllowanceTriggerConditions {
+  shiftTypes?: ('on_call' | 'sleepover' | 'broken' | 'recall' | 'emergency')[];
+  qualificationTypes?: string[];
+  roleTypes?: string[];
+  minBreakMinutes?: number;
+  overnightRequired?: boolean;
+  recallRequired?: boolean;
+  higherClassification?: boolean;
+  travelKilometres?: boolean;
+  weekendOnly?: boolean;
+  publicHolidayOnly?: boolean;
+}
 
 interface CustomAllowance {
   id: string;
   name: string;
-  type: 'per_hour' | 'per_shift' | 'per_week' | 'per_km' | 'one_off';
+  code: string;
+  description: string;
+  category: AllowanceCategoryType;
+  type: 'per_hour' | 'per_shift' | 'per_week' | 'per_km' | 'per_day' | 'one_off';
   baseAmount: number;
   customAmount?: number;
   isOverridden: boolean;
   applicableAwards: string[];
   conditions?: string;
   isActive: boolean;
+  // New trigger fields
+  triggerType: TriggerType;
+  triggerConditions?: AllowanceTriggerConditions;
+  minimumEngagement?: number;
+  maxPerPeriod?: number;
+  requiresApproval: boolean;
+  stackable: boolean;
+  taxable: boolean;
+  superIncluded: boolean;
 }
+
+const CATEGORY_CONFIG: Record<AllowanceCategoryType, { label: string; icon: typeof Moon; color: string }> = {
+  on_call: { label: 'On-Call', icon: Phone, color: 'text-blue-600 bg-blue-500/10' },
+  sleepover: { label: 'Sleepover', icon: Moon, color: 'text-purple-600 bg-purple-500/10' },
+  broken_shift: { label: 'Broken Shift', icon: Clock, color: 'text-orange-600 bg-orange-500/10' },
+  higher_duties: { label: 'Higher Duties', icon: ArrowUpCircle, color: 'text-emerald-600 bg-emerald-500/10' },
+  travel: { label: 'Travel', icon: Car, color: 'text-amber-600 bg-amber-500/10' },
+  qualification: { label: 'Qualification', icon: CheckCircle2, color: 'text-cyan-600 bg-cyan-500/10' },
+  meal: { label: 'Meal', icon: DollarSign, color: 'text-rose-600 bg-rose-500/10' },
+  clothing: { label: 'Clothing', icon: DollarSign, color: 'text-pink-600 bg-pink-500/10' },
+  other: { label: 'Other', icon: DollarSign, color: 'text-gray-600 bg-gray-500/10' },
+};
+
+const TRIGGER_TYPE_LABELS: Record<TriggerType, string> = {
+  manual: 'Manual Entry',
+  shift_type: 'Shift Type Detection',
+  qualification: 'Staff Qualification',
+  role: 'Staff Role',
+  time_based: 'Time-Based',
+  location: 'Location-Based',
+};
 
 const mockAllowances: CustomAllowance[] = [
   {
     id: '1',
-    name: 'First Aid Allowance',
-    type: 'per_week',
-    baseAmount: 18.93,
-    customAmount: 22.00,
+    name: 'On-Call Allowance',
+    code: 'ON_CALL',
+    description: 'For being available on-call outside regular hours',
+    category: 'on_call',
+    type: 'per_day',
+    baseAmount: 15.42,
+    customAmount: 18.00,
     isOverridden: true,
     applicableAwards: ['children-services-2020'],
-    conditions: 'Holder of current first aid certificate',
+    conditions: 'When rostered for on-call duty',
     isActive: true,
+    triggerType: 'shift_type',
+    triggerConditions: { shiftTypes: ['on_call'] },
+    requiresApproval: false,
+    stackable: true,
+    taxable: true,
+    superIncluded: false,
   },
   {
     id: '2',
-    name: 'Educational Leader Allowance',
+    name: 'On-Call Recall',
+    code: 'ON_CALL_RECALL',
+    description: 'Minimum 2 hours pay when recalled during on-call period',
+    category: 'on_call',
     type: 'per_hour',
-    baseAmount: 2.34,
+    baseAmount: 52.50,
     isOverridden: false,
     applicableAwards: ['children-services-2020'],
-    conditions: 'Appointed educational program leader',
+    conditions: 'When called in during on-call period',
     isActive: true,
+    triggerType: 'shift_type',
+    triggerConditions: { shiftTypes: ['recall'], recallRequired: true },
+    minimumEngagement: 2,
+    requiresApproval: false,
+    stackable: true,
+    taxable: true,
+    superIncluded: true,
   },
   {
     id: '3',
+    name: 'Sleepover Allowance',
+    code: 'SLEEPOVER',
+    description: 'For overnight sleepover shifts at the facility',
+    category: 'sleepover',
+    type: 'per_shift',
+    baseAmount: 69.85,
+    customAmount: 75.00,
+    isOverridden: true,
+    applicableAwards: ['children-services-2020'],
+    conditions: 'When required to sleep overnight at facility',
+    isActive: true,
+    triggerType: 'shift_type',
+    triggerConditions: { shiftTypes: ['sleepover'], overnightRequired: true },
+    maxPerPeriod: 1,
+    requiresApproval: false,
+    stackable: true,
+    taxable: true,
+    superIncluded: false,
+  },
+  {
+    id: '4',
+    name: 'Sleepover Disturbance',
+    code: 'SLEEPOVER_DISTURBED',
+    description: 'Additional pay when sleepover is disturbed - minimum 1 hour at overtime rates',
+    category: 'sleepover',
+    type: 'per_hour',
+    baseAmount: 45.50,
+    isOverridden: false,
+    applicableAwards: ['children-services-2020'],
+    conditions: 'When sleepover is disturbed',
+    isActive: true,
+    triggerType: 'shift_type',
+    triggerConditions: { shiftTypes: ['sleepover'] },
+    minimumEngagement: 1,
+    requiresApproval: true,
+    stackable: true,
+    taxable: true,
+    superIncluded: true,
+  },
+  {
+    id: '5',
+    name: 'Broken Shift Allowance',
+    code: 'BROKEN_SHIFT',
+    description: 'Paid when an employee works two separate shifts in a single day',
+    category: 'broken_shift',
+    type: 'per_shift',
+    baseAmount: 18.46,
+    customAmount: 20.00,
+    isOverridden: true,
+    applicableAwards: ['children-services-2020'],
+    conditions: 'When shift has unpaid break > 60 minutes',
+    isActive: true,
+    triggerType: 'shift_type',
+    triggerConditions: { shiftTypes: ['broken'], minBreakMinutes: 60 },
+    requiresApproval: false,
+    stackable: true,
+    taxable: true,
+    superIncluded: true,
+  },
+  {
+    id: '6',
+    name: 'Higher Duties Allowance',
+    code: 'HIGHER_DUTIES',
+    description: 'When performing duties of a higher classification',
+    category: 'higher_duties',
+    type: 'per_hour',
+    baseAmount: 2.50,
+    customAmount: 3.00,
+    isOverridden: true,
+    applicableAwards: ['children-services-2020', 'social-2020'],
+    conditions: 'When acting in higher position',
+    isActive: true,
+    triggerType: 'shift_type',
+    triggerConditions: { higherClassification: true },
+    requiresApproval: true,
+    stackable: false,
+    taxable: true,
+    superIncluded: true,
+  },
+  {
+    id: '7',
     name: 'Vehicle Allowance',
+    code: 'VEHICLE',
+    description: 'For using personal vehicle for work duties',
+    category: 'travel',
     type: 'per_km',
     baseAmount: 0.96,
     customAmount: 1.00,
@@ -58,17 +230,51 @@ const mockAllowances: CustomAllowance[] = [
     applicableAwards: ['children-services-2020', 'social-2020'],
     conditions: 'Use of personal vehicle for work duties',
     isActive: true,
+    triggerType: 'shift_type',
+    triggerConditions: { travelKilometres: true },
+    requiresApproval: false,
+    stackable: true,
+    taxable: true,
+    superIncluded: false,
   },
   {
-    id: '4',
-    name: 'On-Call Allowance',
-    type: 'per_shift',
-    baseAmount: 0,
-    customAmount: 35.00,
+    id: '8',
+    name: 'First Aid Allowance',
+    code: 'FIRST_AID',
+    description: 'For certified first-aiders',
+    category: 'qualification',
+    type: 'per_week',
+    baseAmount: 18.93,
+    customAmount: 22.00,
     isOverridden: true,
-    applicableAwards: [],
-    conditions: 'Staff required to be on-call',
+    applicableAwards: ['children-services-2020'],
+    conditions: 'Holder of current first aid certificate',
     isActive: true,
+    triggerType: 'qualification',
+    triggerConditions: { qualificationTypes: ['first_aid'] },
+    requiresApproval: false,
+    stackable: true,
+    taxable: true,
+    superIncluded: true,
+  },
+  {
+    id: '9',
+    name: 'Educational Leader Allowance',
+    code: 'NQA_LEADERSHIP',
+    description: 'For Educational Leaders under the National Quality Framework',
+    category: 'qualification',
+    type: 'per_hour',
+    baseAmount: 2.34,
+    isOverridden: false,
+    applicableAwards: ['children-services-2020'],
+    conditions: 'Appointed educational program leader',
+    isActive: true,
+    triggerType: 'role',
+    triggerConditions: { roleTypes: ['lead_educator'] },
+    requiresApproval: false,
+    stackable: true,
+    taxable: true,
+    superIncluded: true,
   },
 ];
 
@@ -85,10 +291,21 @@ export function AllowanceRatesEditorPanel() {
   const [editingAllowance, setEditingAllowance] = useState<CustomAllowance | null>(null);
   const [newAllowance, setNewAllowance] = useState({
     name: '',
+    code: '',
+    description: '',
+    category: 'other' as AllowanceCategoryType,
     type: 'per_week' as CustomAllowance['type'],
     amount: '',
     conditions: '',
     applicableAwards: [] as string[],
+    triggerType: 'manual' as TriggerType,
+    triggerConditions: {} as AllowanceTriggerConditions,
+    minimumEngagement: undefined as number | undefined,
+    maxPerPeriod: undefined as number | undefined,
+    requiresApproval: false,
+    stackable: true,
+    taxable: true,
+    superIncluded: false,
   });
 
   const getTypeLabel = (type: string) => {
@@ -96,6 +313,7 @@ export function AllowanceRatesEditorPanel() {
       case 'per_hour': return '/hour';
       case 'per_shift': return '/shift';
       case 'per_week': return '/week';
+      case 'per_day': return '/day';
       case 'per_km': return '/km';
       case 'one_off': return 'one-off';
       default: return type;
@@ -120,7 +338,24 @@ export function AllowanceRatesEditorPanel() {
   }, [allowances, searchQuery, selectedAwardFilter, selectedTypeFilter, showCustomOnly]);
 
   const resetForm = () => {
-    setNewAllowance({ name: '', type: 'per_week', amount: '', conditions: '', applicableAwards: [] });
+    setNewAllowance({ 
+      name: '', 
+      code: '',
+      description: '',
+      category: 'other',
+      type: 'per_week', 
+      amount: '', 
+      conditions: '', 
+      applicableAwards: [],
+      triggerType: 'manual',
+      triggerConditions: {},
+      minimumEngagement: undefined,
+      maxPerPeriod: undefined,
+      requiresApproval: false,
+      stackable: true,
+      taxable: true,
+      superIncluded: false,
+    });
     setEditingAllowance(null);
   };
 
@@ -129,10 +364,21 @@ export function AllowanceRatesEditorPanel() {
       setEditingAllowance(allowance);
       setNewAllowance({
         name: allowance.name,
+        code: allowance.code,
+        description: allowance.description,
+        category: allowance.category,
         type: allowance.type,
         amount: (allowance.customAmount || allowance.baseAmount).toString(),
         conditions: allowance.conditions || '',
         applicableAwards: allowance.applicableAwards,
+        triggerType: allowance.triggerType,
+        triggerConditions: allowance.triggerConditions || {},
+        minimumEngagement: allowance.minimumEngagement,
+        maxPerPeriod: allowance.maxPerPeriod,
+        requiresApproval: allowance.requiresApproval,
+        stackable: allowance.stackable,
+        taxable: allowance.taxable,
+        superIncluded: allowance.superIncluded,
       });
     } else {
       resetForm();
@@ -154,6 +400,9 @@ export function AllowanceRatesEditorPanel() {
     const allowance: CustomAllowance = {
       id: Date.now().toString(),
       name: newAllowance.name,
+      code: newAllowance.code || newAllowance.name.toUpperCase().replace(/\s+/g, '_'),
+      description: newAllowance.description,
+      category: newAllowance.category,
       type: newAllowance.type,
       baseAmount: 0,
       customAmount: parseFloat(newAllowance.amount),
@@ -161,6 +410,14 @@ export function AllowanceRatesEditorPanel() {
       applicableAwards: newAllowance.applicableAwards,
       conditions: newAllowance.conditions,
       isActive: true,
+      triggerType: newAllowance.triggerType,
+      triggerConditions: newAllowance.triggerConditions,
+      minimumEngagement: newAllowance.minimumEngagement,
+      maxPerPeriod: newAllowance.maxPerPeriod,
+      requiresApproval: newAllowance.requiresApproval,
+      stackable: newAllowance.stackable,
+      taxable: newAllowance.taxable,
+      superIncluded: newAllowance.superIncluded,
     };
 
     setAllowances([...allowances, allowance]);
@@ -176,11 +433,22 @@ export function AllowanceRatesEditorPanel() {
         ? {
             ...a,
             name: newAllowance.name,
+            code: newAllowance.code,
+            description: newAllowance.description,
+            category: newAllowance.category,
             type: newAllowance.type,
             customAmount: parseFloat(newAllowance.amount),
             isOverridden: true,
             conditions: newAllowance.conditions,
             applicableAwards: newAllowance.applicableAwards,
+            triggerType: newAllowance.triggerType,
+            triggerConditions: newAllowance.triggerConditions,
+            minimumEngagement: newAllowance.minimumEngagement,
+            maxPerPeriod: newAllowance.maxPerPeriod,
+            requiresApproval: newAllowance.requiresApproval,
+            stackable: newAllowance.stackable,
+            taxable: newAllowance.taxable,
+            superIncluded: newAllowance.superIncluded,
           }
         : a
     ));
@@ -247,43 +515,97 @@ export function AllowanceRatesEditorPanel() {
 
       {/* Side Panel */}
       <Sheet open={isPanelOpen} onOpenChange={handleClosePanel}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>{editingAllowance ? 'Edit Allowance' : 'Add Custom Allowance'}</SheetTitle>
             <SheetDescription>
-              {editingAllowance ? 'Update the allowance configuration' : 'Create a new custom allowance rate'}
+              {editingAllowance ? 'Update the allowance configuration' : 'Create a new custom allowance with trigger conditions'}
             </SheetDescription>
           </SheetHeader>
           
-          <div className="space-y-6 py-6">
-            <div className="space-y-2">
-              <Label>Allowance Name *</Label>
-              <Input
-                placeholder="e.g., On-Call Allowance"
-                value={newAllowance.name}
-                onChange={(e) => setNewAllowance(prev => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Payment Type</Label>
-                <Select 
-                  value={newAllowance.type} 
-                  onValueChange={(v) => setNewAllowance(prev => ({ ...prev, type: v as CustomAllowance['type'] }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="per_hour">Per Hour</SelectItem>
-                    <SelectItem value="per_shift">Per Shift</SelectItem>
-                    <SelectItem value="per_week">Per Week</SelectItem>
-                    <SelectItem value="per_km">Per Kilometer</SelectItem>
-                    <SelectItem value="one_off">One-Off</SelectItem>
-                  </SelectContent>
-                </Select>
+          <Tabs defaultValue="basic" className="mt-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="trigger">Trigger Rules</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
+            
+            {/* Basic Info Tab */}
+            <TabsContent value="basic" className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Allowance Name *</Label>
+                  <Input
+                    placeholder="e.g., On-Call Allowance"
+                    value={newAllowance.name}
+                    onChange={(e) => setNewAllowance(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Code</Label>
+                  <Input
+                    placeholder="e.g., ON_CALL"
+                    value={newAllowance.code}
+                    onChange={(e) => setNewAllowance(prev => ({ ...prev, code: e.target.value }))}
+                  />
+                </div>
               </div>
+
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  placeholder="Brief description of when this allowance applies..."
+                  value={newAllowance.description}
+                  onChange={(e) => setNewAllowance(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select 
+                    value={newAllowance.category} 
+                    onValueChange={(v) => setNewAllowance(prev => ({ ...prev, category: v as AllowanceCategoryType }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+                        const Icon = config.icon;
+                        return (
+                          <SelectItem key={key} value={key}>
+                            <div className="flex items-center gap-2">
+                              <Icon className="h-4 w-4" />
+                              {config.label}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Payment Type</Label>
+                  <Select 
+                    value={newAllowance.type} 
+                    onValueChange={(v) => setNewAllowance(prev => ({ ...prev, type: v as CustomAllowance['type'] }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="per_hour">Per Hour</SelectItem>
+                      <SelectItem value="per_shift">Per Shift</SelectItem>
+                      <SelectItem value="per_day">Per Day</SelectItem>
+                      <SelectItem value="per_week">Per Week</SelectItem>
+                      <SelectItem value="per_km">Per Kilometer</SelectItem>
+                      <SelectItem value="one_off">One-Off</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label>Amount ($) *</Label>
                 <Input
@@ -294,61 +616,373 @@ export function AllowanceRatesEditorPanel() {
                   onChange={(e) => setNewAllowance(prev => ({ ...prev, amount: e.target.value }))}
                 />
               </div>
-            </div>
 
-            <Separator />
+              <Separator />
 
-            <div className="space-y-2">
-              <Label>Applicable Awards (Optional)</Label>
-              <Select 
-                onValueChange={(v) => {
-                  if (!newAllowance.applicableAwards.includes(v)) {
-                    setNewAllowance(prev => ({ 
-                      ...prev, 
-                      applicableAwards: [...prev.applicableAwards, v] 
-                    }));
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select awards..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {australianAwards.map(award => (
-                    <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {newAllowance.applicableAwards.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {newAllowance.applicableAwards.map(awardId => (
-                    <Badge 
-                      key={awardId} 
-                      variant="secondary" 
-                      className="text-xs cursor-pointer hover:bg-destructive/20"
-                      onClick={() => removeAwardFromSelection(awardId)}
+              <div className="space-y-2">
+                <Label>Applicable Awards (Optional)</Label>
+                <Select 
+                  onValueChange={(v) => {
+                    if (!newAllowance.applicableAwards.includes(v)) {
+                      setNewAllowance(prev => ({ 
+                        ...prev, 
+                        applicableAwards: [...prev.applicableAwards, v] 
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select awards..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {australianAwards.map(award => (
+                      <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {newAllowance.applicableAwards.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {newAllowance.applicableAwards.map(awardId => (
+                      <Badge 
+                        key={awardId} 
+                        variant="secondary" 
+                        className="text-xs cursor-pointer hover:bg-destructive/20"
+                        onClick={() => removeAwardFromSelection(awardId)}
+                      >
+                        {getAwardName(awardId)} ×
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Leave empty to apply to all awards
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Conditions (Optional)</Label>
+                <Input
+                  placeholder="e.g., When required to be on-call"
+                  value={newAllowance.conditions}
+                  onChange={(e) => setNewAllowance(prev => ({ ...prev, conditions: e.target.value }))}
+                />
+              </div>
+            </TabsContent>
+
+            {/* Trigger Rules Tab */}
+            <TabsContent value="trigger" className="space-y-4 mt-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Automatic Detection
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Trigger Type</Label>
+                    <Select 
+                      value={newAllowance.triggerType} 
+                      onValueChange={(v) => setNewAllowance(prev => ({ ...prev, triggerType: v as TriggerType }))}
                     >
-                      {getAwardName(awardId)} ×
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Leave empty to apply to all awards
-              </p>
-            </div>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(TRIGGER_TYPE_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      How the system determines when to apply this allowance
+                    </p>
+                  </div>
 
-            <div className="space-y-2">
-              <Label>Conditions (Optional)</Label>
-              <Input
-                placeholder="e.g., When required to be on-call"
-                value={newAllowance.conditions}
-                onChange={(e) => setNewAllowance(prev => ({ ...prev, conditions: e.target.value }))}
-              />
-            </div>
-          </div>
+                  {newAllowance.triggerType === 'shift_type' && (
+                    <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                      <Label className="text-sm font-medium">Shift Type Triggers</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {(['on_call', 'sleepover', 'broken', 'recall', 'emergency'] as const).map((shiftType) => (
+                          <div key={shiftType} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`shift-${shiftType}`}
+                              checked={newAllowance.triggerConditions?.shiftTypes?.includes(shiftType) || false}
+                              onCheckedChange={(checked) => {
+                                setNewAllowance(prev => ({
+                                  ...prev,
+                                  triggerConditions: {
+                                    ...prev.triggerConditions,
+                                    shiftTypes: checked 
+                                      ? [...(prev.triggerConditions?.shiftTypes || []), shiftType]
+                                      : (prev.triggerConditions?.shiftTypes || []).filter(t => t !== shiftType)
+                                  }
+                                }));
+                              }}
+                            />
+                            <Label htmlFor={`shift-${shiftType}`} className="text-sm capitalize">
+                              {shiftType.replace('_', ' ')}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
 
-          <SheetFooter className="flex gap-2">
+                      <Separator className="my-3" />
+
+                      <Label className="text-sm font-medium">Additional Conditions</Label>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="overnight"
+                            checked={newAllowance.triggerConditions?.overnightRequired || false}
+                            onCheckedChange={(checked) => {
+                              setNewAllowance(prev => ({
+                                ...prev,
+                                triggerConditions: {
+                                  ...prev.triggerConditions,
+                                  overnightRequired: !!checked
+                                }
+                              }));
+                            }}
+                          />
+                          <Label htmlFor="overnight" className="text-sm">Requires overnight stay</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="recall"
+                            checked={newAllowance.triggerConditions?.recallRequired || false}
+                            onCheckedChange={(checked) => {
+                              setNewAllowance(prev => ({
+                                ...prev,
+                                triggerConditions: {
+                                  ...prev.triggerConditions,
+                                  recallRequired: !!checked
+                                }
+                              }));
+                            }}
+                          />
+                          <Label htmlFor="recall" className="text-sm">Requires recall to work</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="higher"
+                            checked={newAllowance.triggerConditions?.higherClassification || false}
+                            onCheckedChange={(checked) => {
+                              setNewAllowance(prev => ({
+                                ...prev,
+                                triggerConditions: {
+                                  ...prev.triggerConditions,
+                                  higherClassification: !!checked
+                                }
+                              }));
+                            }}
+                          />
+                          <Label htmlFor="higher" className="text-sm">Higher classification duties</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="travel"
+                            checked={newAllowance.triggerConditions?.travelKilometres || false}
+                            onCheckedChange={(checked) => {
+                              setNewAllowance(prev => ({
+                                ...prev,
+                                triggerConditions: {
+                                  ...prev.triggerConditions,
+                                  travelKilometres: !!checked
+                                }
+                              }));
+                            }}
+                          />
+                          <Label htmlFor="travel" className="text-sm">Travel kilometres recorded</Label>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Min Break (mins)</Label>
+                          <Input 
+                            type="number" 
+                            placeholder="e.g., 60"
+                            value={newAllowance.triggerConditions?.minBreakMinutes || ''}
+                            onChange={(e) => setNewAllowance(prev => ({
+                              ...prev,
+                              triggerConditions: {
+                                ...prev.triggerConditions,
+                                minBreakMinutes: e.target.value ? parseInt(e.target.value) : undefined
+                              }
+                            }))}
+                          />
+                          <p className="text-xs text-muted-foreground">For broken shift detection</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {newAllowance.triggerType === 'qualification' && (
+                    <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                      <Label className="text-sm font-medium">Required Qualifications</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {['first_aid', 'diploma', 'cert3', 'working_with_children'].map((qual) => (
+                          <div key={qual} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`qual-${qual}`}
+                              checked={newAllowance.triggerConditions?.qualificationTypes?.includes(qual) || false}
+                              onCheckedChange={(checked) => {
+                                setNewAllowance(prev => ({
+                                  ...prev,
+                                  triggerConditions: {
+                                    ...prev.triggerConditions,
+                                    qualificationTypes: checked 
+                                      ? [...(prev.triggerConditions?.qualificationTypes || []), qual]
+                                      : (prev.triggerConditions?.qualificationTypes || []).filter(q => q !== qual)
+                                  }
+                                }));
+                              }}
+                            />
+                            <Label htmlFor={`qual-${qual}`} className="text-sm capitalize">
+                              {qual.replace(/_/g, ' ')}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {newAllowance.triggerType === 'role' && (
+                    <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                      <Label className="text-sm font-medium">Required Roles</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {['lead_educator', 'director', 'assistant_director', 'room_leader'].map((role) => (
+                          <div key={role} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`role-${role}`}
+                              checked={newAllowance.triggerConditions?.roleTypes?.includes(role) || false}
+                              onCheckedChange={(checked) => {
+                                setNewAllowance(prev => ({
+                                  ...prev,
+                                  triggerConditions: {
+                                    ...prev.triggerConditions,
+                                    roleTypes: checked 
+                                      ? [...(prev.triggerConditions?.roleTypes || []), role]
+                                      : (prev.triggerConditions?.roleTypes || []).filter(r => r !== role)
+                                  }
+                                }));
+                              }}
+                            />
+                            <Label htmlFor={`role-${role}`} className="text-sm capitalize">
+                              {role.replace(/_/g, ' ')}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Settings2 className="h-4 w-4" />
+                    Engagement Rules
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Minimum Engagement</Label>
+                      <Input 
+                        type="number" 
+                        placeholder="e.g., 2"
+                        value={newAllowance.minimumEngagement || ''}
+                        onChange={(e) => setNewAllowance(prev => ({ 
+                          ...prev, 
+                          minimumEngagement: e.target.value ? parseFloat(e.target.value) : undefined 
+                        }))}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Min hours/units paid (e.g., 2hr minimum for recall)
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Max Per Period</Label>
+                      <Input 
+                        type="number" 
+                        placeholder="e.g., 1"
+                        value={newAllowance.maxPerPeriod || ''}
+                        onChange={(e) => setNewAllowance(prev => ({ 
+                          ...prev, 
+                          maxPerPeriod: e.target.value ? parseInt(e.target.value) : undefined 
+                        }))}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Max times claimable per day
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Settings Tab */}
+            <TabsContent value="settings" className="space-y-4 mt-4">
+              <Card>
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Requires Approval</Label>
+                      <p className="text-xs text-muted-foreground">Must be approved by manager before payment</p>
+                    </div>
+                    <Switch 
+                      checked={newAllowance.requiresApproval}
+                      onCheckedChange={(checked) => setNewAllowance(prev => ({ ...prev, requiresApproval: checked }))}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Stackable</Label>
+                      <p className="text-xs text-muted-foreground">Can be combined with other allowances</p>
+                    </div>
+                    <Switch 
+                      checked={newAllowance.stackable}
+                      onCheckedChange={(checked) => setNewAllowance(prev => ({ ...prev, stackable: checked }))}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Taxable</Label>
+                      <p className="text-xs text-muted-foreground">Subject to income tax</p>
+                    </div>
+                    <Switch 
+                      checked={newAllowance.taxable}
+                      onCheckedChange={(checked) => setNewAllowance(prev => ({ ...prev, taxable: checked }))}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Super Included</Label>
+                      <p className="text-xs text-muted-foreground">Superannuation guarantee applies</p>
+                    </div>
+                    <Switch 
+                      checked={newAllowance.superIncluded}
+                      onCheckedChange={(checked) => setNewAllowance(prev => ({ ...prev, superIncluded: checked }))}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          <SheetFooter className="flex gap-2 mt-6">
             <Button variant="outline" onClick={handleClosePanel} className="flex-1">
               Cancel
             </Button>
