@@ -33,7 +33,18 @@ import {
   Zap,
   Settings2,
   ArrowRight,
+  ChevronDown,
+  Key,
+  Shield,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -152,14 +163,48 @@ export function IntegrationManagerModal({
     ));
   };
   
-  const handleAddHeader = (integrationId: string, endpointId: string) => {
+  // Preset header templates
+  const headerPresets = [
+    { 
+      name: 'Bearer Token', 
+      icon: Shield, 
+      header: { key: 'Authorization', value: 'Bearer YOUR_TOKEN_HERE' },
+      description: 'OAuth 2.0 Bearer authentication'
+    },
+    { 
+      name: 'API Key (Header)', 
+      icon: Key, 
+      header: { key: 'X-API-Key', value: 'YOUR_API_KEY_HERE' },
+      description: 'API key in custom header'
+    },
+    { 
+      name: 'Basic Auth', 
+      icon: Shield, 
+      header: { key: 'Authorization', value: 'Basic BASE64_ENCODED_CREDENTIALS' },
+      description: 'HTTP Basic authentication'
+    },
+    { 
+      name: 'Content-Type JSON', 
+      icon: Key, 
+      header: { key: 'Content-Type', value: 'application/json' },
+      description: 'JSON content type'
+    },
+    { 
+      name: 'Accept JSON', 
+      icon: Key, 
+      header: { key: 'Accept', value: 'application/json' },
+      description: 'Accept JSON responses'
+    },
+  ];
+
+  const handleAddHeader = (integrationId: string, endpointId: string, preset?: { key: string; value: string }) => {
     setActiveIntegrations(prev => prev.map(int => 
       int.id === integrationId 
         ? { 
             ...int, 
             apiEndpoints: int.apiEndpoints.map(ep => 
               ep.id === endpointId 
-                ? { ...ep, headers: [...ep.headers, { key: '', value: '' }] }
+                ? { ...ep, headers: [...ep.headers, preset || { key: '', value: '' }] }
                 : ep
             )
           }
@@ -756,18 +801,51 @@ export function IntegrationManagerModal({
                                             <Typography variant="caption" fontWeight={500}>
                                               Headers
                                             </Typography>
-                                            <Button
-                                              size="small"
-                                              startIcon={<Plus size={12} />}
-                                              onClick={() => handleAddHeader(integration.id, endpoint.id)}
-                                              sx={{ fontSize: '0.7rem', py: 0.25, minWidth: 0 }}
-                                            >
-                                              Add Header
-                                            </Button>
+                                            <Stack direction="row" spacing={0.5}>
+                                              <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                  <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    endIcon={<ChevronDown size={12} />}
+                                                    sx={{ fontSize: '0.7rem', py: 0.25, minWidth: 0 }}
+                                                  >
+                                                    Presets
+                                                  </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-56">
+                                                  <DropdownMenuLabel>Authentication Templates</DropdownMenuLabel>
+                                                  <DropdownMenuSeparator />
+                                                  {headerPresets.map((preset) => (
+                                                    <DropdownMenuItem
+                                                      key={preset.name}
+                                                      onClick={() => handleAddHeader(integration.id, endpoint.id, preset.header)}
+                                                      className="flex flex-col items-start gap-0.5 py-2 cursor-pointer"
+                                                    >
+                                                      <div className="flex items-center gap-2">
+                                                        <preset.icon size={14} className="text-muted-foreground" />
+                                                        <span className="font-medium">{preset.name}</span>
+                                                      </div>
+                                                      <span className="text-xs text-muted-foreground pl-5">
+                                                        {preset.description}
+                                                      </span>
+                                                    </DropdownMenuItem>
+                                                  ))}
+                                                </DropdownMenuContent>
+                                              </DropdownMenu>
+                                              <Button
+                                                size="small"
+                                                startIcon={<Plus size={12} />}
+                                                onClick={() => handleAddHeader(integration.id, endpoint.id)}
+                                                sx={{ fontSize: '0.7rem', py: 0.25, minWidth: 0 }}
+                                              >
+                                                Custom
+                                              </Button>
+                                            </Stack>
                                           </Stack>
                                           {endpoint.headers.length === 0 ? (
                                             <Typography variant="caption" color="text.secondary">
-                                              No headers configured. Add headers for authentication (e.g., Authorization: Bearer token).
+                                              No headers configured. Use presets for common auth patterns or add custom headers.
                                             </Typography>
                                           ) : (
                                             <Stack spacing={1}>
