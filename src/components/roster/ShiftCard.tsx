@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Shift, StaffMember, OpenShift, qualificationLabels } from '@/types/roster';
+import { Shift, StaffMember, OpenShift, qualificationLabels, ShiftSpecialType } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
-import { Clock, MoreHorizontal, X, AlertCircle, Users, Coffee, Calendar, Award, MapPin, Copy, ArrowLeftRight, Edit, Phone, Moon, Zap } from 'lucide-react';
+import { Clock, MoreHorizontal, X, AlertCircle, Users, Copy, ArrowLeftRight, Edit, Phone, Moon, Zap, Car, ArrowUpCircle, PhoneCall } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -9,6 +9,11 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -34,6 +39,15 @@ const useGlobalDrag = () => {
   return isDragging;
 };
 
+const SHIFT_TYPE_CONFIG: Record<ShiftSpecialType, { icon: typeof Phone; color: string; bgColor: string; label: string }> = {
+  regular: { icon: Clock, color: 'text-muted-foreground', bgColor: 'bg-muted/50', label: 'Regular' },
+  on_call: { icon: Phone, color: 'text-blue-500', bgColor: 'bg-blue-500/20', label: 'On-Call' },
+  sleepover: { icon: Moon, color: 'text-purple-500', bgColor: 'bg-purple-500/20', label: 'Sleepover' },
+  broken: { icon: Clock, color: 'text-orange-500', bgColor: 'bg-orange-500/20', label: 'Split Shift' },
+  recall: { icon: PhoneCall, color: 'text-red-500', bgColor: 'bg-red-500/20', label: 'Recall' },
+  emergency: { icon: AlertCircle, color: 'text-destructive', bgColor: 'bg-destructive/20', label: 'Emergency' },
+};
+
 interface ShiftCardProps {
   shift: Shift;
   staff?: StaffMember;
@@ -42,6 +56,7 @@ interface ShiftCardProps {
   onDragStart?: (e: React.DragEvent, shift: Shift) => void;
   onCopy?: (shift: Shift) => void;
   onSwap?: (shift: Shift) => void;
+  onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   isCompact?: boolean;
 }
 
@@ -53,6 +68,7 @@ export function ShiftCard({
   onDragStart,
   onCopy,
   onSwap,
+  onShiftTypeChange,
   isCompact = false 
 }: ShiftCardProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -60,17 +76,14 @@ export function ShiftCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const duration = calculateDuration(shift.startTime, shift.endTime, shift.breakMinutes);
 
-  // Get shift type indicator
-  const getShiftTypeIcon = () => {
-    switch (shift.shiftType) {
-      case 'on_call': return { icon: Phone, color: 'text-blue-500', label: 'On-Call' };
-      case 'sleepover': return { icon: Moon, color: 'text-purple-500', label: 'Sleepover' };
-      case 'broken': return { icon: Clock, color: 'text-orange-500', label: 'Split' };
-      case 'recall': return { icon: Zap, color: 'text-red-500', label: 'Recall' };
-      default: return null;
-    }
+  const currentType = shift.shiftType || 'regular';
+  const shiftTypeInfo = SHIFT_TYPE_CONFIG[currentType];
+
+  const handleShiftTypeQuickToggle = (type: ShiftSpecialType, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newType = currentType === type ? undefined : type;
+    onShiftTypeChange?.(shift.id, newType);
   };
-  const shiftTypeInfo = getShiftTypeIcon();
 
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
@@ -124,15 +137,19 @@ export function ShiftCard({
               >
                 {staff?.name || 'Unassigned'}
               </span>
-              {shiftTypeInfo && (
+              {currentType !== 'regular' && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>
-                      <shiftTypeInfo.icon className={cn("h-3 w-3", shiftTypeInfo.color)} />
+                      <div className={cn("p-0.5 rounded", shiftTypeInfo.bgColor)}>
+                        <shiftTypeInfo.icon className={cn("h-3 w-3", shiftTypeInfo.color)} />
+                      </div>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{shiftTypeInfo.label} Shift</p>
-                    </TooltipContent>
+                    {showTooltipContent && (
+                      <TooltipContent>
+                        <p>{shiftTypeInfo.label} Shift</p>
+                      </TooltipContent>
+                    )}
                   </Tooltip>
                 </TooltipProvider>
               )}
@@ -150,7 +167,7 @@ export function ShiftCard({
                   <MoreHorizontal className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={() => onEdit?.(shift)}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Shift
@@ -163,6 +180,33 @@ export function ShiftCard({
                   <ArrowLeftRight className="h-4 w-4 mr-2" />
                   Swap Staff
                 </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                {/* Quick Shift Type Actions */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Set Shift Type
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuRadioGroup 
+                      value={currentType} 
+                      onValueChange={(value) => onShiftTypeChange?.(shift.id, value === 'regular' ? undefined : value as ShiftSpecialType)}
+                    >
+                      {Object.entries(SHIFT_TYPE_CONFIG).map(([type, config]) => {
+                        const TypeIcon = config.icon;
+                        return (
+                          <DropdownMenuRadioItem key={type} value={type}>
+                            <TypeIcon className={cn("h-4 w-4 mr-2", config.color)} />
+                            {config.label}
+                          </DropdownMenuRadioItem>
+                        );
+                      })}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive"
@@ -183,6 +227,74 @@ export function ShiftCard({
             <span className="text-muted-foreground/60">({duration}h)</span>
           )}
         </div>
+
+        {/* Quick shift type toggle buttons - show on hover */}
+        {!isCompact && onShiftTypeChange && (
+          <div className="flex items-center gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-5 w-5 p-0",
+                      currentType === 'on_call' && "bg-blue-500/20 text-blue-600"
+                    )}
+                    onClick={(e) => handleShiftTypeQuickToggle('on_call', e)}
+                  >
+                    <Phone className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                {showTooltipContent && (
+                  <TooltipContent side="bottom" className="text-xs">
+                    {currentType === 'on_call' ? 'Remove On-Call' : 'Mark as On-Call'}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-5 w-5 p-0",
+                      currentType === 'sleepover' && "bg-purple-500/20 text-purple-600"
+                    )}
+                    onClick={(e) => handleShiftTypeQuickToggle('sleepover', e)}
+                  >
+                    <Moon className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                {showTooltipContent && (
+                  <TooltipContent side="bottom" className="text-xs">
+                    {currentType === 'sleepover' ? 'Remove Sleepover' : 'Mark as Sleepover'}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-5 w-5 p-0",
+                      currentType === 'broken' && "bg-orange-500/20 text-orange-600"
+                    )}
+                    onClick={(e) => handleShiftTypeQuickToggle('broken', e)}
+                  >
+                    <Zap className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                {showTooltipContent && (
+                  <TooltipContent side="bottom" className="text-xs">
+                    {currentType === 'broken' ? 'Remove Split Shift' : 'Mark as Split Shift'}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
 
         {!isCompact && shift.status === 'draft' && (
           <Badge variant="outline" className="mt-1 text-[10px] py-0">

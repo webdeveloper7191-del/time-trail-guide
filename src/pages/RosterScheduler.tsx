@@ -350,6 +350,13 @@ export default function RosterScheduler() {
     toast.success('Shift moved');
   };
 
+  const handleShiftTypeChange = (shiftId: string, shiftType: Shift['shiftType']) => {
+    setShifts(prev => prev.map(s => 
+      s.id === shiftId ? { ...s, shiftType } : s
+    ), `Changed shift type to ${shiftType || 'regular'}`, 'update');
+    toast.success(`Shift marked as ${shiftType || 'regular'}`);
+  };
+
   const handleOpenShiftDrop = (staffId: string, openShift: OpenShift) => {
     const staff = allStaff.find(s => s.id === staffId);
     if (!staff) return;
@@ -1321,6 +1328,7 @@ export default function RosterScheduler() {
             onShiftDelete={handleShiftDelete}
             onShiftCopy={handleCopyShift}
             onShiftSwap={handleSwapStaff}
+            onShiftTypeChange={handleShiftTypeChange}
             onOpenShiftFill={(os) => toast.info('Drag a staff member to fill this shift')}
             onOpenShiftDelete={handleDeleteOpenShift}
             onAddShift={handleAddShift}

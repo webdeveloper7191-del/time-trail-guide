@@ -1,11 +1,11 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Shift, OpenShift, Centre, StaffMember, DemandData, RosterComplianceFlag, ageGroupLabels, qualificationLabels, roleLabels, ShiftTemplate, timeOffTypeLabels, defaultShiftTemplates } from '@/types/roster';
+import { Shift, OpenShift, Centre, StaffMember, DemandData, RosterComplianceFlag, ageGroupLabels, qualificationLabels, roleLabels, ShiftTemplate, timeOffTypeLabels, defaultShiftTemplates, ShiftSpecialType } from '@/types/roster';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { InlineDemandChart } from './InlineDemandChart';
 import {
@@ -28,6 +28,10 @@ import {
   Flag,
   GraduationCap,
   Calendar as CalendarIcon,
+  Phone,
+  Moon,
+  Zap,
+  PhoneCall,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -64,6 +68,7 @@ interface StaffTimelineGridProps {
   onShiftDelete: (shiftId: string) => void;
   onShiftCopy?: (shift: Shift) => void;
   onShiftSwap?: (shift: Shift) => void;
+  onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   onOpenShiftFill: (openShift: OpenShift) => void;
   onOpenShiftDelete?: (openShiftId: string) => void;
   onAddShift: (staffId: string, date: string, roomId: string, template?: ShiftTemplate) => void;
@@ -94,6 +99,7 @@ export function StaffTimelineGrid({
   onShiftDelete,
   onShiftCopy,
   onShiftSwap,
+  onShiftTypeChange,
   onOpenShiftDelete,
   onAddShift,
   onDragStart,
@@ -763,6 +769,7 @@ export function StaffTimelineGrid({
                                       onDelete={() => handleRequestDeleteShift(shift, member)}
                                       onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
                                       onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
+                                      onShiftTypeChange={onShiftTypeChange}
                                       onDragStart={handleShiftDragStart}
                                       isCompact={isCompact}
                                     />
@@ -1086,13 +1093,14 @@ export function StaffTimelineGrid({
   );
 }
 
-function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onDragStart, isCompact = false }: {
+function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onShiftTypeChange, onDragStart, isCompact = false }: {
   shift: Shift;
   staff?: StaffMember;
   onEdit: () => void;
   onDelete: () => void;
   onCopy?: () => void;
   onSwap?: () => void;
+  onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   onDragStart: (e: React.DragEvent, shift: Shift) => void;
   isCompact?: boolean;
 }) {
@@ -1124,7 +1132,23 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onDrag
     },
   };
 
+  const shiftTypeStyles: Record<string, { icon: typeof Phone; color: string; bgColor: string; label: string }> = {
+    on_call: { icon: Phone, color: 'text-blue-500', bgColor: 'bg-blue-500/20', label: 'On-Call' },
+    sleepover: { icon: Moon, color: 'text-purple-500', bgColor: 'bg-purple-500/20', label: 'Sleepover' },
+    broken: { icon: Zap, color: 'text-orange-500', bgColor: 'bg-orange-500/20', label: 'Split' },
+    recall: { icon: PhoneCall, color: 'text-red-500', bgColor: 'bg-red-500/20', label: 'Recall' },
+  };
+
   const style = statusStyles[shift.status];
+  const shiftTypeInfo = shift.shiftType ? shiftTypeStyles[shift.shiftType] : null;
+  const currentType = shift.shiftType || 'regular';
+
+  const handleQuickToggle = (type: ShiftSpecialType, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const newType = currentType === type ? undefined : type;
+    onShiftTypeChange?.(shift.id, newType);
+  };
 
   // Calculate duration
   const [sh, sm] = shift.startTime.split(':').map(Number);
@@ -1161,6 +1185,13 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onDrag
             <span className="text-sm">{shift.breakMinutes} min break</span>
           </div>
         )}
+
+        {shiftTypeInfo && (
+          <div className={cn("flex items-center gap-2 px-2 py-1 rounded", shiftTypeInfo.bgColor)}>
+            <shiftTypeInfo.icon className={cn("h-4 w-4", shiftTypeInfo.color)} />
+            <span className="text-sm text-white">{shiftTypeInfo.label} Shift</span>
+          </div>
+        )}
       </div>
 
       {/* Status badge */}
@@ -1193,11 +1224,24 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onDrag
         shift.status === 'draft' && "border-dashed"
       )}
     >
-      {/* Left accent bar */}
-      <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
+      {/* Left accent bar - colored by shift type if special */}
+      <div className={cn(
+        "absolute left-0 top-0 bottom-0 w-1",
+        shiftTypeInfo ? shiftTypeInfo.bgColor.replace('/20', '') : style.accent
+      )} />
+
+      {/* Shift type indicator */}
+      {shiftTypeInfo && (
+        <div className={cn(
+          "absolute top-1 left-2.5 p-0.5 rounded",
+          shiftTypeInfo.bgColor
+        )}>
+          <shiftTypeInfo.icon className={cn("h-2.5 w-2.5", shiftTypeInfo.color)} />
+        </div>
+      )}
 
       {/* Three-dot actions */}
-      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -1212,7 +1256,7 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onDrag
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
               <Pencil className="h-4 w-4 mr-2" />
               Edit Shift
@@ -1229,6 +1273,46 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onDrag
                 Swap Staff
               </DropdownMenuItem>
             )}
+            
+            {onShiftTypeChange && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Set Shift Type
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuRadioGroup 
+                      value={currentType} 
+                      onValueChange={(value) => onShiftTypeChange(shift.id, value === 'regular' ? undefined : value as ShiftSpecialType)}
+                    >
+                      <DropdownMenuRadioItem value="regular">
+                        <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                        Regular
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="on_call">
+                        <Phone className="h-4 w-4 mr-2 text-blue-500" />
+                        On-Call
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="sleepover">
+                        <Moon className="h-4 w-4 mr-2 text-purple-500" />
+                        Sleepover
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="broken">
+                        <Zap className="h-4 w-4 mr-2 text-orange-500" />
+                        Split/Broken
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="recall">
+                        <PhoneCall className="h-4 w-4 mr-2 text-red-500" />
+                        Recall
+                      </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </>
+            )}
+            
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive"
@@ -1241,7 +1325,71 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onDrag
         </DropdownMenu>
       </div>
 
-      <div className="pl-3 pr-8 py-1.5" onClick={onEdit}>
+      {/* Quick toggle buttons - show at bottom on hover */}
+      {onShiftTypeChange && !isCompact && (
+        <div className="absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-background/80 to-transparent py-1 px-2">
+          <div className="flex items-center justify-center gap-1">
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-5 w-5 p-0",
+                      currentType === 'on_call' && "bg-blue-500/30 text-blue-600"
+                    )}
+                    onClick={(e) => handleQuickToggle('on_call', e)}
+                  >
+                    <Phone className="h-2.5 w-2.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs py-1 px-2">
+                  {currentType === 'on_call' ? 'Remove' : 'On-Call'}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-5 w-5 p-0",
+                      currentType === 'sleepover' && "bg-purple-500/30 text-purple-600"
+                    )}
+                    onClick={(e) => handleQuickToggle('sleepover', e)}
+                  >
+                    <Moon className="h-2.5 w-2.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs py-1 px-2">
+                  {currentType === 'sleepover' ? 'Remove' : 'Sleepover'}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-5 w-5 p-0",
+                      currentType === 'broken' && "bg-orange-500/30 text-orange-600"
+                    )}
+                    onClick={(e) => handleQuickToggle('broken', e)}
+                  >
+                    <Zap className="h-2.5 w-2.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs py-1 px-2">
+                  {currentType === 'broken' ? 'Remove' : 'Split Shift'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+      )}
+
+      <div className={cn("pl-3 pr-8 py-1.5", shiftTypeInfo && "pt-4")} onClick={onEdit}>
         <div className={cn("text-xs font-semibold", style.text)}>
           {shift.startTime}-{shift.endTime}
         </div>
