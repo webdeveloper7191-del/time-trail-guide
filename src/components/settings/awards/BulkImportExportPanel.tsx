@@ -7,13 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { 
   Upload, Download, FileSpreadsheet, FileJson, FileText, 
   CheckCircle2, AlertCircle, ArrowRight, RefreshCw,
-  Folder, Clock, FileCheck, AlertTriangle
+  Folder, Clock, FileCheck, AlertTriangle, X
 } from 'lucide-react';
 import { australianAwards } from '@/data/australianAwards';
 
@@ -29,7 +29,7 @@ export function BulkImportExportPanel() {
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
-  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showImportPanel, setShowImportPanel] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [exportOptions, setExportOptions] = useState({
     includeOverrides: true,
@@ -56,7 +56,7 @@ export function BulkImportExportPanel() {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      setShowImportDialog(true);
+      setShowImportPanel(true);
     }
   };
 
@@ -92,7 +92,7 @@ export function BulkImportExportPanel() {
     setSelectedFile(null);
     setImportResult(null);
     setImportProgress(0);
-    setShowImportDialog(false);
+    setShowImportPanel(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -251,95 +251,114 @@ export function BulkImportExportPanel() {
         </Card>
       </div>
 
-      {/* Import Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Import Configuration</DialogTitle>
-          </DialogHeader>
+      {/* Import Side Panel */}
+      <Sheet open={showImportPanel} onOpenChange={resetImport}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Import Configuration</SheetTitle>
+            <SheetDescription>
+              Review and import your award configuration file
+            </SheetDescription>
+          </SheetHeader>
           
-          {!importResult ? (
-            <div className="space-y-4 py-4">
-              {selectedFile && (
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <FileSpreadsheet className="h-8 w-8 text-green-600" />
-                  <div className="flex-1">
-                    <p className="font-medium">{selectedFile.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(selectedFile.size / 1024).toFixed(1)} KB
+          <div className="py-6 space-y-6">
+            {!importResult ? (
+              <>
+                {selectedFile && (
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
+                    <FileSpreadsheet className="h-10 w-10 text-green-600" />
+                    <div className="flex-1">
+                      <p className="font-medium">{selectedFile.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(selectedFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <Badge variant="secondary">Ready</Badge>
+                  </div>
+                )}
+
+                {isImporting && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Processing...</span>
+                      <span>{importProgress}%</span>
+                    </div>
+                    <Progress value={importProgress} />
+                  </div>
+                )}
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Import Options</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="overwrite" defaultChecked />
+                      <Label htmlFor="overwrite" className="text-sm">Overwrite existing records</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="validate" defaultChecked />
+                      <Label htmlFor="validate" className="text-sm">Validate before importing</Label>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-4 rounded-lg bg-green-500/10">
+                    <p className="text-3xl font-bold text-green-600">{importResult.success}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Imported</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-amber-500/10">
+                    <p className="text-3xl font-bold text-amber-600">{importResult.warnings}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Warnings</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-red-500/10">
+                    <p className="text-3xl font-bold text-red-600">{importResult.failed}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Failed</p>
+                  </div>
+                </div>
+
+                {importResult.errors.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                      Errors
                     </p>
+                    <ScrollArea className="h-32 border rounded-lg p-3">
+                      {importResult.errors.map((error, i) => (
+                        <p key={i} className="text-xs text-red-600 mb-1">{error}</p>
+                      ))}
+                    </ScrollArea>
                   </div>
-                  <Badge variant="secondary">Ready</Badge>
-                </div>
-              )}
-
-              {isImporting && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Processing...</span>
-                    <span>{importProgress}%</span>
-                  </div>
-                  <Progress value={importProgress} />
-                </div>
-              )}
-
-              <DialogFooter>
-                <Button variant="outline" onClick={resetImport} disabled={isImporting}>
-                  Cancel
-                </Button>
-                <Button onClick={handleImport} disabled={isImporting}>
-                  {isImporting ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Importing...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Start Import
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </div>
-          ) : (
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-3 rounded-lg bg-green-500/10">
-                  <p className="text-2xl font-bold text-green-600">{importResult.success}</p>
-                  <p className="text-xs text-muted-foreground">Imported</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-amber-500/10">
-                  <p className="text-2xl font-bold text-amber-600">{importResult.warnings}</p>
-                  <p className="text-xs text-muted-foreground">Warnings</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-red-500/10">
-                  <p className="text-2xl font-bold text-red-600">{importResult.failed}</p>
-                  <p className="text-xs text-muted-foreground">Failed</p>
-                </div>
+                )}
               </div>
+            )}
+          </div>
 
-              {importResult.errors.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-red-600" />
-                    Errors
-                  </p>
-                  <ScrollArea className="h-24 border rounded-lg p-2">
-                    {importResult.errors.map((error, i) => (
-                      <p key={i} className="text-xs text-red-600">{error}</p>
-                    ))}
-                  </ScrollArea>
-                </div>
-              )}
-
-              <DialogFooter>
-                <Button onClick={resetImport}>Done</Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          <SheetFooter className="flex gap-2">
+            <Button variant="outline" onClick={resetImport} className="flex-1">
+              {importResult ? 'Done' : 'Cancel'}
+            </Button>
+            {!importResult && (
+              <Button onClick={handleImport} disabled={isImporting} className="flex-1">
+                {isImporting ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Start Import
+                  </>
+                )}
+              </Button>
+            )}
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* Recent Activity */}
       <Card className="card-material">

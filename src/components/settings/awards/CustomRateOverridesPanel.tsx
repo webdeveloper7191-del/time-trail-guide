@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, DollarSign, History, AlertCircle, CheckCircle2, Search, Filter, Download, Upload, RotateCcw, Building2 } from 'lucide-react';
 import { australianAwards, AustralianAward, AwardClassification } from '@/data/australianAwards';
@@ -73,8 +74,7 @@ const mockOverrides: RateOverride[] = [
 
 export function CustomRateOverridesPanel() {
   const [overrides, setOverrides] = useState<RateOverride[]>(mockOverrides);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingOverride, setEditingOverride] = useState<RateOverride | null>(null);
   
   // Filters
@@ -135,6 +135,38 @@ export function CustomRateOverridesPanel() {
     });
   }, [overrides, selectedAwardFilter, selectedClassificationFilter, statusFilter, searchQuery]);
 
+  const resetForm = () => {
+    setSelectedAward('');
+    setSelectedClassification('');
+    setOverrideType('base_rate');
+    setNewValue('');
+    setEffectiveFrom('');
+    setEffectiveTo('');
+    setReason('');
+    setEditingOverride(null);
+  };
+
+  const handleOpenPanel = (override?: RateOverride) => {
+    if (override) {
+      setEditingOverride(override);
+      setSelectedAward(override.awardId);
+      setSelectedClassification(override.classificationId);
+      setOverrideType(override.overrideType);
+      setNewValue(override.newValue.toString());
+      setEffectiveFrom(override.effectiveFrom);
+      setEffectiveTo(override.effectiveTo || '');
+      setReason(override.reason);
+    } else {
+      resetForm();
+    }
+    setIsPanelOpen(true);
+  };
+
+  const handleClosePanel = () => {
+    setIsPanelOpen(false);
+    resetForm();
+  };
+
   const handleAddOverride = () => {
     if (!selectedAward || !selectedClassification || !newValue || !effectiveFrom || !reason) {
       toast.error('Please fill in all required fields');
@@ -159,40 +191,19 @@ export function CustomRateOverridesPanel() {
 
     setOverrides([...overrides, newOverride]);
     toast.success('Rate override added successfully');
-    setIsAddDialogOpen(false);
-    resetForm();
+    handleClosePanel();
   };
 
-  const handleEditOverride = () => {
+  const handleSaveEdit = () => {
     if (!editingOverride) return;
     
     setOverrides(prev => prev.map(o => 
       o.id === editingOverride.id 
-        ? { ...editingOverride, newValue: parseFloat(newValue), reason, effectiveTo: effectiveTo || undefined }
+        ? { ...o, newValue: parseFloat(newValue), reason, effectiveTo: effectiveTo || undefined }
         : o
     ));
     toast.success('Override updated');
-    setIsEditDialogOpen(false);
-    setEditingOverride(null);
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setSelectedAward('');
-    setSelectedClassification('');
-    setOverrideType('base_rate');
-    setNewValue('');
-    setEffectiveFrom('');
-    setEffectiveTo('');
-    setReason('');
-  };
-
-  const openEditDialog = (override: RateOverride) => {
-    setEditingOverride(override);
-    setNewValue(override.newValue.toString());
-    setReason(override.reason);
-    setEffectiveTo(override.effectiveTo || '');
-    setIsEditDialogOpen(true);
+    handleClosePanel();
   };
 
   const toggleOverride = (id: string) => {
@@ -239,132 +250,156 @@ export function CustomRateOverridesPanel() {
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Override
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Add Rate Override</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Select Award *</Label>
-                    <Select value={selectedAward} onValueChange={(v) => { setSelectedAward(v); setSelectedClassification(''); }}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an award" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border shadow-lg z-50">
-                        {australianAwards.map(award => (
-                          <SelectItem key={award.id} value={award.id}>
-                            {award.shortName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Override Type</Label>
-                    <Select value={overrideType} onValueChange={(v) => setOverrideType(v as RateOverride['overrideType'])}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border shadow-lg z-50">
-                        <SelectItem value="base_rate">Base Rate</SelectItem>
-                        <SelectItem value="casual_loading">Casual Loading</SelectItem>
-                        <SelectItem value="penalty_rate">Penalty Rate</SelectItem>
-                        <SelectItem value="allowance">Allowance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {selectedAwardData && (
-                  <div className="space-y-2">
-                    <Label>Select Classification *</Label>
-                    <Select value={selectedClassification} onValueChange={setSelectedClassification}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select classification" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
-                        {selectedAwardData.classifications.map(cls => (
-                          <SelectItem key={cls.id} value={cls.id}>
-                            <div className="flex flex-col">
-                              <span>{cls.level} - ${cls.baseHourlyRate}/hr</span>
-                              <span className="text-xs text-muted-foreground">{cls.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {selectedClassification && (
-                  <div className="p-3 rounded-lg bg-muted/50 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Current Award Rate:</span>
-                      <span className="font-mono font-semibold">
-                        ${getOriginalRate(selectedAward, selectedClassification).toFixed(2)}/hr
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>New Hourly Rate ($) *</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={newValue}
-                      onChange={(e) => setNewValue(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Effective From *</Label>
-                    <Input
-                      type="date"
-                      value={effectiveFrom}
-                      onChange={(e) => setEffectiveFrom(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Effective To (Optional)</Label>
-                  <Input
-                    type="date"
-                    value={effectiveTo}
-                    onChange={(e) => setEffectiveTo(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Reason for Override *</Label>
-                  <Textarea
-                    placeholder="e.g., Market adjustment, retention bonus, skill premium..."
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    rows={2}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddOverride}>Add Override</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button className="gap-2" onClick={() => handleOpenPanel()}>
+            <Plus className="h-4 w-4" />
+            Add Override
+          </Button>
         </div>
       </div>
+
+      {/* Side Panel */}
+      <Sheet open={isPanelOpen} onOpenChange={handleClosePanel}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{editingOverride ? 'Edit Rate Override' : 'Add Rate Override'}</SheetTitle>
+            <SheetDescription>
+              {editingOverride ? 'Update the rate override configuration' : 'Create a new custom rate override'}
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="space-y-6 py-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Select Award *</Label>
+                <Select 
+                  value={selectedAward} 
+                  onValueChange={(v) => { setSelectedAward(v); setSelectedClassification(''); }}
+                  disabled={!!editingOverride}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an award" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    {australianAwards.map(award => (
+                      <SelectItem key={award.id} value={award.id}>
+                        {award.shortName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Override Type</Label>
+                <Select 
+                  value={overrideType} 
+                  onValueChange={(v) => setOverrideType(v as RateOverride['overrideType'])}
+                  disabled={!!editingOverride}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="base_rate">Base Rate</SelectItem>
+                    <SelectItem value="casual_loading">Casual Loading</SelectItem>
+                    <SelectItem value="penalty_rate">Penalty Rate</SelectItem>
+                    <SelectItem value="allowance">Allowance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {selectedAwardData && (
+              <div className="space-y-2">
+                <Label>Select Classification *</Label>
+                <Select 
+                  value={selectedClassification} 
+                  onValueChange={setSelectedClassification}
+                  disabled={!!editingOverride}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select classification" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
+                    {selectedAwardData.classifications.map(cls => (
+                      <SelectItem key={cls.id} value={cls.id}>
+                        <div className="flex flex-col">
+                          <span>{cls.level} - ${cls.baseHourlyRate}/hr</span>
+                          <span className="text-xs text-muted-foreground">{cls.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {selectedClassification && (
+              <div className="p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Current Award Rate:</span>
+                  <span className="font-mono font-semibold">
+                    ${getOriginalRate(selectedAward, selectedClassification).toFixed(2)}/hr
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>New Hourly Rate ($) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={newValue}
+                  onChange={(e) => setNewValue(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Effective From *</Label>
+                <Input
+                  type="date"
+                  value={effectiveFrom}
+                  onChange={(e) => setEffectiveFrom(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Effective To (Optional)</Label>
+              <Input
+                type="date"
+                value={effectiveTo}
+                onChange={(e) => setEffectiveTo(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave blank for ongoing override
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Reason for Override *</Label>
+              <Textarea
+                placeholder="e.g., Market adjustment, retention bonus, skill premium..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <SheetFooter className="flex gap-2">
+            <Button variant="outline" onClick={handleClosePanel} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={editingOverride ? handleSaveEdit : handleAddOverride} className="flex-1">
+              {editingOverride ? 'Update Override' : 'Add Override'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -432,13 +467,13 @@ export function CustomRateOverridesPanel() {
             <div className="relative flex-1 min-w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by award, classification, or reason..."
+                placeholder="Search overrides..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
             </div>
-            <Select value={selectedAwardFilter} onValueChange={(v) => { setSelectedAwardFilter(v); setSelectedClassificationFilter('all'); }}>
+            <Select value={selectedAwardFilter} onValueChange={setSelectedAwardFilter}>
               <SelectTrigger className="w-48">
                 <Building2 className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Filter by Award" />
@@ -450,22 +485,9 @@ export function CustomRateOverridesPanel() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={selectedClassificationFilter} onValueChange={setSelectedClassificationFilter}>
-              <SelectTrigger className="w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Classification" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
-                <SelectItem value="all">All Classifications</SelectItem>
-                {filterClassifications.map(cls => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.level}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'inactive')}>
               <SelectTrigger className="w-36">
+                <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="bg-background border shadow-lg z-50">
@@ -474,11 +496,10 @@ export function CustomRateOverridesPanel() {
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
-            {(searchQuery || selectedAwardFilter !== 'all' || selectedClassificationFilter !== 'all' || statusFilter !== 'all') && (
+            {(searchQuery || selectedAwardFilter !== 'all' || statusFilter !== 'all') && (
               <Button variant="ghost" size="sm" onClick={() => {
                 setSearchQuery('');
                 setSelectedAwardFilter('all');
-                setSelectedClassificationFilter('all');
                 setStatusFilter('all');
               }}>
                 <RotateCcw className="h-4 w-4 mr-1" />
@@ -490,11 +511,10 @@ export function CustomRateOverridesPanel() {
       </Card>
 
       {/* Results count */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>Showing {filteredOverrides.length} of {overrides.length} overrides</span>
+      <div className="text-sm text-muted-foreground">
+        Showing {filteredOverrides.length} of {overrides.length} overrides
       </div>
 
-      {/* Table */}
       <Card className="card-material-elevated">
         <CardContent className="p-0">
           <ScrollArea className="h-[500px]">
@@ -512,140 +532,74 @@ export function CustomRateOverridesPanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOverrides.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-12">
-                      <DollarSign className="h-10 w-10 text-muted-foreground/50 mx-auto mb-2" />
-                      <p className="font-medium">No overrides found</p>
-                      <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredOverrides.map((override) => {
-                    const diff = override.newValue - override.originalValue;
-                    const diffPercent = ((diff / override.originalValue) * 100).toFixed(1);
-                    const isPending = new Date(override.effectiveFrom) > new Date();
-                    
-                    return (
-                      <TableRow key={override.id} className={!override.isActive ? 'opacity-50' : ''}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{getAwardName(override.awardId)}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {getClassificationName(override.awardId, override.classificationId)}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate max-w-48">
-                              {getClassificationDescription(override.awardId, override.classificationId)}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize text-xs">
-                            {override.overrideType.replace('_', ' ')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          ${override.originalValue.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-semibold text-primary">
-                          ${override.newValue.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant="secondary" className={diff > 0 ? 'bg-green-500/10 text-green-700' : 'bg-red-500/10 text-red-700'}>
-                            {diff > 0 ? '+' : ''}${diff.toFixed(2)} ({diffPercent}%)
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <p>{override.effectiveFrom}</p>
-                            {override.effectiveTo && (
-                              <p className="text-xs text-muted-foreground">to {override.effectiveTo}</p>
-                            )}
-                            {isPending && (
-                              <Badge variant="outline" className="text-xs mt-1 bg-amber-500/10 text-amber-700">
-                                Pending
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={override.isActive}
-                            onCheckedChange={() => toggleOverride(override.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(override)}>
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => deleteOverride(override.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
+                {filteredOverrides.map((override) => {
+                  const difference = override.newValue - override.originalValue;
+                  const percentChange = ((difference / override.originalValue) * 100).toFixed(1);
+                  
+                  return (
+                    <TableRow key={override.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{getAwardName(override.awardId)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {getClassificationName(override.awardId, override.classificationId)}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="capitalize">
+                          {override.overrideType.replace('_', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        ${override.originalValue.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono font-semibold text-primary">
+                        ${override.newValue.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className={difference > 0 ? 'text-green-600' : 'text-red-600'}>
+                          {difference > 0 ? '+' : ''}{percentChange}%
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {override.effectiveFrom}
+                        {override.effectiveTo && ` - ${override.effectiveTo}`}
+                      </TableCell>
+                      <TableCell>
+                        <Switch 
+                          checked={override.isActive} 
+                          onCheckedChange={() => toggleOverride(override.id)} 
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => handleOpenPanel(override)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => deleteOverride(override.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </ScrollArea>
         </CardContent>
       </Card>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Override</DialogTitle>
-          </DialogHeader>
-          {editingOverride && (
-            <div className="space-y-4 py-4">
-              <div className="p-3 rounded-lg bg-muted/50 text-sm">
-                <p className="font-medium">{getAwardName(editingOverride.awardId)}</p>
-                <p className="text-muted-foreground">{getClassificationName(editingOverride.awardId, editingOverride.classificationId)}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>New Rate ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={newValue}
-                    onChange={(e) => setNewValue(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Effective To</Label>
-                  <Input
-                    type="date"
-                    value={effectiveTo}
-                    onChange={(e) => setEffectiveTo(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Reason</Label>
-                <Textarea
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  rows={2}
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleEditOverride}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
