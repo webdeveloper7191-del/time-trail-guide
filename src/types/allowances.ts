@@ -47,6 +47,17 @@ export interface AllowanceType {
   stackable?: boolean; // Can be combined with other allowances
 }
 
+// On-call specific configuration for award settings
+export interface OnCallConfiguration {
+  standbyRate: number; // Flat rate for being on-call (paid regardless of callback)
+  standbyRateType: 'per_period' | 'per_hour' | 'daily'; // How standby is calculated
+  callbackMinimumHours: number; // Minimum hours paid when called back (e.g., 2 or 3)
+  callbackRateMultiplier: number; // Multiplier for callback pay (e.g., 1.5 for time-and-a-half)
+  publicHolidayStandbyMultiplier?: number; // Higher rate for public holiday on-call
+  weekendStandbyRate?: number; // Different rate for weekend on-call
+  maximumCallbacksPerPeriod?: number; // Maximum separate callbacks in one on-call period
+}
+
 // Conditions that trigger automatic allowance application
 export interface AllowanceTriggerConditions {
   shiftTypes?: ('on_call' | 'sleepover' | 'broken' | 'recall' | 'emergency')[];
@@ -302,6 +313,48 @@ export const CHILDREN_SERVICES_ALLOWANCES: AllowanceType[] = [
     minimumEngagement: 2,
   },
 ];
+
+// Default on-call configuration for different awards
+export const DEFAULT_ON_CALL_CONFIGS: Record<AwardType, OnCallConfiguration> = {
+  children_services: {
+    standbyRate: 15.42,
+    standbyRateType: 'per_period',
+    callbackMinimumHours: 2,
+    callbackRateMultiplier: 1.5,
+    publicHolidayStandbyMultiplier: 2.0,
+    weekendStandbyRate: 23.13,
+    maximumCallbacksPerPeriod: 3,
+  },
+  healthcare: {
+    standbyRate: 18.50,
+    standbyRateType: 'per_period',
+    callbackMinimumHours: 3,
+    callbackRateMultiplier: 1.5,
+    publicHolidayStandbyMultiplier: 2.5,
+    weekendStandbyRate: 27.75,
+    maximumCallbacksPerPeriod: 4,
+  },
+  hospitality: {
+    standbyRate: 12.00,
+    standbyRateType: 'per_period',
+    callbackMinimumHours: 2,
+    callbackRateMultiplier: 1.5,
+    publicHolidayStandbyMultiplier: 2.0,
+  },
+  retail: {
+    standbyRate: 10.50,
+    standbyRateType: 'per_period',
+    callbackMinimumHours: 2,
+    callbackRateMultiplier: 1.5,
+  },
+  general: {
+    standbyRate: 15.00,
+    standbyRateType: 'per_period',
+    callbackMinimumHours: 2,
+    callbackRateMultiplier: 1.5,
+    publicHolidayStandbyMultiplier: 2.0,
+  },
+};
 
 // General industry allowances applicable across multiple awards
 export const GENERAL_ALLOWANCES: AllowanceType[] = [

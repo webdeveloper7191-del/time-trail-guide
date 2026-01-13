@@ -31,6 +31,7 @@ import { format, parseISO } from 'date-fns';
 import { DemandHistogram } from './DemandHistogram';
 import { ShiftTypeEditor } from './ShiftTypeEditor';
 import { AllowanceEligibilityPanel } from './AllowanceEligibilityPanel';
+import { OnCallPayBreakdown } from './OnCallPayBreakdown';
 
 interface ShiftDetailPanelProps {
   shift: Shift;
@@ -380,6 +381,18 @@ export function ShiftDetailPanel({
               />
 
               <Separator />
+
+              {/* On-Call Pay Breakdown - Show for on-call or recall shifts */}
+              {(editedShift.shiftType === 'on_call' || editedShift.shiftType === 'recall') && (
+                <>
+                  <OnCallPayBreakdown 
+                    shift={editedShift}
+                    staff={assignedStaff}
+                    awardType="children_services"
+                  />
+                  <Separator />
+                </>
+              )}
 
               {/* Allowance Eligibility */}
               <div className="space-y-3">
