@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Shift, OpenShift, Centre, StaffMember, DemandData, RosterComplianceFlag, ageGroupLabels, qualificationLabels, roleLabels, ShiftTemplate, timeOffTypeLabels, defaultShiftTemplates } from '@/types/roster';
+import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -108,6 +108,17 @@ export function StaffTimelineGrid({
   const [dragType, setDragType] = useState<'staff' | 'shift' | null>(null);
   const [staffSearch, setStaffSearch] = useState('');
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
+
+  // Delete confirmation state
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    type: 'shift' | 'openShift' | 'staffFromRoom';
+    id: string;
+    staffId?: string;
+    roomId?: string;
+    staffName?: string;
+    roomName?: string;
+    shiftInfo?: string;
+  } | null>(null);
 
   // Filter staff by search
   const filteredStaff = useMemo(() => {
@@ -288,16 +299,102 @@ export function StaffTimelineGrid({
     if (dragType !== detectedType) setDragType(detectedType);
   };
 
+  // Delete confirmation handlers
+  const handleRequestDeleteShift = useCallback((shift: Shift, staffMember?: StaffMember) => {
+    setDeleteConfirmation({
+      type: 'shift',
+      id: shift.id,
+      shiftInfo: `${shift.startTime}-${shift.endTime} on ${shift.date}`,
+      staffName: staffMember?.name,
+    });
+  }, []);
+
+  const handleRequestDeleteOpenShift = useCallback((openShift: OpenShift, roomName?: string) => {
+    setDeleteConfirmation({
+      type: 'openShift',
+      id: openShift.id,
+      shiftInfo: `${openShift.startTime}-${openShift.endTime} on ${openShift.date}`,
+      roomName,
+    });
+  }, []);
+
+  const handleRequestRemoveStaffFromRoom = useCallback((staffId: string, roomId: string, staffMember: StaffMember, roomName: string) => {
+    setDeleteConfirmation({
+      type: 'staffFromRoom',
+      id: staffId,
+      staffId,
+      roomId,
+      staffName: staffMember.name,
+      roomName,
+    });
+  }, []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!deleteConfirmation) return;
+    
+    switch (deleteConfirmation.type) {
+      case 'shift':
+        onShiftDelete(deleteConfirmation.id);
+        break;
+      case 'openShift':
+        onOpenShiftDelete?.(deleteConfirmation.id);
+        break;
+      case 'staffFromRoom':
+        if (deleteConfirmation.staffId && deleteConfirmation.roomId) {
+          onRemoveStaffFromRoom?.(deleteConfirmation.staffId, deleteConfirmation.roomId);
+        }
+        break;
+    }
+    setDeleteConfirmation(null);
+  }, [deleteConfirmation, onShiftDelete, onOpenShiftDelete, onRemoveStaffFromRoom]);
+
+  const getDeleteConfirmationDetails = () => {
+    if (!deleteConfirmation) return { title: '', description: '' };
+    
+    switch (deleteConfirmation.type) {
+      case 'shift':
+        return {
+          title: 'Delete Shift',
+          description: `Are you sure you want to delete the shift ${deleteConfirmation.shiftInfo}${deleteConfirmation.staffName ? ` for ${deleteConfirmation.staffName}` : ''}? This action cannot be undone.`,
+        };
+      case 'openShift':
+        return {
+          title: 'Delete Open Shift',
+          description: `Are you sure you want to delete the open shift ${deleteConfirmation.shiftInfo}${deleteConfirmation.roomName ? ` in ${deleteConfirmation.roomName}` : ''}? This action cannot be undone.`,
+        };
+      case 'staffFromRoom':
+        return {
+          title: 'Remove Staff from Room',
+          description: `Are you sure you want to remove ${deleteConfirmation.staffName} from ${deleteConfirmation.roomName}? Their shifts in this room will remain.`,
+        };
+      default:
+        return { title: '', description: '' };
+    }
+  };
+
+  const confirmationDetails = getDeleteConfirmationDetails();
+
   return (
     <div
-      className="flex-1 overflow-hidden bg-background"
+      className="flex-1 flex flex-col overflow-hidden bg-background"
       onDragEnd={handleDragEnd}
       onDragEnter={handleGridDragEnter}
     >
-      <ScrollArea className="h-full">
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={!!deleteConfirmation}
+        onOpenChange={(open) => !open && setDeleteConfirmation(null)}
+        title={confirmationDetails.title}
+        description={confirmationDetails.description}
+        onConfirm={handleConfirmDelete}
+        confirmLabel={deleteConfirmation?.type === 'staffFromRoom' ? 'Remove' : 'Delete'}
+      />
+
+      {/* Scrollable content with sticky header */}
+      <div className="flex-1 overflow-auto">
         <div className="min-w-max">
           {/* Header */}
-          <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-sm">
+          <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
             <div className="w-64 shrink-0 p-2 font-medium text-sm text-muted-foreground border-r border-border bg-muted/50">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -563,7 +660,7 @@ export function StaffTimelineGrid({
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   className="text-destructive"
-                                  onClick={() => onRemoveStaffFromRoom?.(member.id, room.id)}
+                                  onClick={() => handleRequestRemoveStaffFromRoom(member.id, room.id, member, room.name)}
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Remove from Room
@@ -663,7 +760,7 @@ export function StaffTimelineGrid({
                                       shift={shift}
                                       staff={member}
                                       onEdit={() => onShiftEdit(shift)}
-                                      onDelete={() => onShiftDelete(shift.id)}
+                                      onDelete={() => handleRequestDeleteShift(shift, member)}
                                       onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
                                       onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
                                       onDragStart={handleShiftDragStart}
@@ -848,7 +945,7 @@ export function StaffTimelineGrid({
                               </div>
                             </div>
                           )}
-                          {openShift && <OpenShiftCard openShift={openShift} isCompact={isCompact} isDragOver={isDragOver} onDelete={onOpenShiftDelete ? () => onOpenShiftDelete(openShift.id) : undefined} />}
+                          {openShift && <OpenShiftCard openShift={openShift} isCompact={isCompact} isDragOver={isDragOver} onDelete={onOpenShiftDelete ? () => handleRequestDeleteOpenShift(openShift, room.name) : undefined} />}
                         </div>
                       );
                     })}
@@ -984,8 +1081,7 @@ export function StaffTimelineGrid({
             );
           })}
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      </div>
     </div>
   );
 }
