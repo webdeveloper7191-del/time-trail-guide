@@ -65,6 +65,50 @@ interface ApiHeader {
 
 type DataType = 'bookings' | 'rooms' | 'attendance';
 
+interface FieldMapping {
+  sourceField: string;
+  targetField: string;
+  required: boolean;
+  transform?: 'none' | 'date' | 'time' | 'number' | 'boolean';
+}
+
+interface DataTypeSchema {
+  bookings: FieldMapping[];
+  rooms: FieldMapping[];
+  attendance: FieldMapping[];
+}
+
+const DEFAULT_FIELD_MAPPINGS: DataTypeSchema = {
+  bookings: [
+    { sourceField: 'id', targetField: 'bookingId', required: true, transform: 'none' },
+    { sourceField: 'child_id', targetField: 'childId', required: true, transform: 'none' },
+    { sourceField: 'child_name', targetField: 'childName', required: false, transform: 'none' },
+    { sourceField: 'date', targetField: 'date', required: true, transform: 'date' },
+    { sourceField: 'room_id', targetField: 'roomId', required: true, transform: 'none' },
+    { sourceField: 'booking_type', targetField: 'bookingType', required: false, transform: 'none' },
+    { sourceField: 'start_time', targetField: 'startTime', required: false, transform: 'time' },
+    { sourceField: 'end_time', targetField: 'endTime', required: false, transform: 'time' },
+  ],
+  rooms: [
+    { sourceField: 'id', targetField: 'roomId', required: true, transform: 'none' },
+    { sourceField: 'name', targetField: 'roomName', required: true, transform: 'none' },
+    { sourceField: 'capacity', targetField: 'capacity', required: true, transform: 'number' },
+    { sourceField: 'min_staff_ratio', targetField: 'minStaffRatio', required: false, transform: 'none' },
+    { sourceField: 'age_group_min', targetField: 'ageGroupMin', required: false, transform: 'number' },
+    { sourceField: 'age_group_max', targetField: 'ageGroupMax', required: false, transform: 'number' },
+  ],
+  attendance: [
+    { sourceField: 'id', targetField: 'attendanceId', required: true, transform: 'none' },
+    { sourceField: 'child_id', targetField: 'childId', required: true, transform: 'none' },
+    { sourceField: 'date', targetField: 'date', required: true, transform: 'date' },
+    { sourceField: 'check_in_time', targetField: 'checkInTime', required: false, transform: 'time' },
+    { sourceField: 'check_out_time', targetField: 'checkOutTime', required: false, transform: 'time' },
+    { sourceField: 'room_id', targetField: 'roomId', required: true, transform: 'none' },
+    { sourceField: 'absent', targetField: 'isAbsent', required: false, transform: 'boolean' },
+    { sourceField: 'absence_reason', targetField: 'absenceReason', required: false, transform: 'none' },
+  ],
+};
+
 interface AttendanceTransformSettings {
   intervalMinutes: 15 | 30 | 60;
   aggregateFields: {
@@ -87,6 +131,7 @@ interface ApiEndpoint {
   headers: ApiHeader[];
   enabled: boolean;
   dataType: DataType;
+  fieldMappings: FieldMapping[];
   transformSettings?: AttendanceTransformSettings;
   dateRangeParams?: {
     startParam: string;
@@ -184,11 +229,12 @@ export function IntegrationManagerModal({
                 headers: [],
                 enabled: true,
                 dataType,
+                fieldMappings: [...DEFAULT_FIELD_MAPPINGS[dataType]],
                 transformSettings: dataType === 'attendance' ? getDefaultTransformSettings() : undefined,
                 dateRangeParams: {
                   startParam: 'start_date',
                   endParam: 'end_date',
-                  dateFormat: 'YYYY-MM-DD',
+                  dateFormat: 'YYYY-MM-DD' as const,
                 },
               }
             ] 
@@ -209,7 +255,72 @@ export function IntegrationManagerModal({
         : int
     ));
   };
-  
+
+  const handleUpdateFieldMapping = (integrationId: string, endpointId: string, mappingIndex: number, field: keyof FieldMapping, value: any) => {
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.map(ep => 
+              ep.id === endpointId 
+                ? { 
+                    ...ep, 
+                    fieldMappings: ep.fieldMappings.map((m, i) => 
+                      i === mappingIndex ? { ...m, [field]: value } : m
+                    )
+                  }
+                : ep
+            )
+          }
+        : int
+    ));
+  };
+
+  const handleAddFieldMapping = (integrationId: string, endpointId: string) => {
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.map(ep => 
+              ep.id === endpointId 
+                ? { ...ep, fieldMappings: [...ep.fieldMappings, { sourceField: '', targetField: '', required: false, transform: 'none' as const }] }
+                : ep
+            )
+          }
+        : int
+    ));
+  };
+
+  const handleRemoveFieldMapping = (integrationId: string, endpointId: string, mappingIndex: number) => {
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.map(ep => 
+              ep.id === endpointId 
+                ? { ...ep, fieldMappings: ep.fieldMappings.filter((_, i) => i !== mappingIndex) }
+                : ep
+            )
+          }
+        : int
+    ));
+  };
+
+  const handleResetFieldMappings = (integrationId: string, endpointId: string, dataType: DataType) => {
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.map(ep => 
+              ep.id === endpointId 
+                ? { ...ep, fieldMappings: [...DEFAULT_FIELD_MAPPINGS[dataType]] }
+                : ep
+            )
+          }
+        : int
+    ));
+  };
+
   // Preset header templates
   const headerPresets = [
     { 
@@ -971,6 +1082,108 @@ export function IntegrationManagerModal({
                                               <option value="timestamp">Unix Timestamp</option>
                                             </TextField>
                                           </Stack>
+                                        </Box>
+                                        
+                                        {/* Field Mapping Configuration */}
+                                        <Box sx={{ bgcolor: 'rgba(25, 118, 210, 0.08)', p: 1.5, borderRadius: 1, border: '1px solid', borderColor: 'primary.light' }}>
+                                          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+                                            <Typography variant="caption" fontWeight={600} color="primary.main">
+                                              Field Mapping ({endpoint.dataType})
+                                            </Typography>
+                                            <Stack direction="row" spacing={0.5}>
+                                              <Button
+                                                size="small"
+                                                variant="text"
+                                                onClick={() => handleResetFieldMappings(integration.id, endpoint.id, endpoint.dataType)}
+                                                sx={{ fontSize: '0.65rem', py: 0, minWidth: 0 }}
+                                              >
+                                                Reset to Default
+                                              </Button>
+                                              <Button
+                                                size="small"
+                                                startIcon={<Plus size={10} />}
+                                                onClick={() => handleAddFieldMapping(integration.id, endpoint.id)}
+                                                sx={{ fontSize: '0.65rem', py: 0, minWidth: 0 }}
+                                              >
+                                                Add Field
+                                              </Button>
+                                            </Stack>
+                                          </Stack>
+                                          
+                                          {/* Header Row */}
+                                          <Stack direction="row" spacing={1} sx={{ mb: 0.5 }}>
+                                            <Typography variant="caption" fontWeight={500} sx={{ flex: 1, fontSize: '0.65rem' }}>
+                                              Source Field (API)
+                                            </Typography>
+                                            <Typography variant="caption" fontWeight={500} sx={{ flex: 1, fontSize: '0.65rem' }}>
+                                              Target Field (Internal)
+                                            </Typography>
+                                            <Typography variant="caption" fontWeight={500} sx={{ width: 80, fontSize: '0.65rem' }}>
+                                              Transform
+                                            </Typography>
+                                            <Typography variant="caption" fontWeight={500} sx={{ width: 50, fontSize: '0.65rem', textAlign: 'center' }}>
+                                              Req.
+                                            </Typography>
+                                            <Box sx={{ width: 24 }} />
+                                          </Stack>
+                                          
+                                          <Stack spacing={0.5}>
+                                            {endpoint.fieldMappings.map((mapping, mapIdx) => (
+                                              <Stack key={mapIdx} direction="row" spacing={1} alignItems="center">
+                                                <TextField
+                                                  value={mapping.sourceField}
+                                                  onChange={(e) => handleUpdateFieldMapping(integration.id, endpoint.id, mapIdx, 'sourceField', e.target.value)}
+                                                  size="small"
+                                                  placeholder="api_field_name"
+                                                  sx={{ flex: 1 }}
+                                                  inputProps={{ style: { fontSize: '0.7rem', padding: '4px 8px' } }}
+                                                />
+                                                <TextField
+                                                  value={mapping.targetField}
+                                                  onChange={(e) => handleUpdateFieldMapping(integration.id, endpoint.id, mapIdx, 'targetField', e.target.value)}
+                                                  size="small"
+                                                  placeholder="internalField"
+                                                  sx={{ flex: 1 }}
+                                                  inputProps={{ style: { fontSize: '0.7rem', padding: '4px 8px' } }}
+                                                />
+                                                <TextField
+                                                  select
+                                                  value={mapping.transform || 'none'}
+                                                  onChange={(e) => handleUpdateFieldMapping(integration.id, endpoint.id, mapIdx, 'transform', e.target.value)}
+                                                  size="small"
+                                                  sx={{ width: 80 }}
+                                                  SelectProps={{ native: true }}
+                                                  inputProps={{ style: { fontSize: '0.65rem', padding: '4px 8px' } }}
+                                                >
+                                                  <option value="none">None</option>
+                                                  <option value="date">Date</option>
+                                                  <option value="time">Time</option>
+                                                  <option value="number">Number</option>
+                                                  <option value="boolean">Boolean</option>
+                                                </TextField>
+                                                <Box sx={{ width: 50, display: 'flex', justifyContent: 'center' }}>
+                                                  <Switch
+                                                    checked={mapping.required}
+                                                    onChange={(e) => handleUpdateFieldMapping(integration.id, endpoint.id, mapIdx, 'required', e.target.checked)}
+                                                    size="small"
+                                                  />
+                                                </Box>
+                                                <IconButton 
+                                                  size="small" 
+                                                  onClick={() => handleRemoveFieldMapping(integration.id, endpoint.id, mapIdx)}
+                                                  sx={{ p: 0.25 }}
+                                                >
+                                                  <X size={12} />
+                                                </IconButton>
+                                              </Stack>
+                                            ))}
+                                          </Stack>
+                                          
+                                          {endpoint.fieldMappings.length === 0 && (
+                                            <Typography variant="caption" color="text.secondary" sx={{ py: 1, display: 'block', textAlign: 'center' }}>
+                                              No field mappings configured. Add fields or reset to default.
+                                            </Typography>
+                                          )}
                                         </Box>
                                         
                                         {/* Attendance Transform Settings */}
