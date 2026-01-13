@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,8 +21,25 @@ import {
   Search, Filter, Download, Upload, Play, TestTube,
   GripVertical, ChevronDown, ChevronRight, Eye, EyeOff,
   BookOpen, Lightbulb, FileText, RefreshCw, AlertTriangle,
-  Sparkles, Target, Shield, X, MoreVertical, History, Save
+  Sparkles, Target, Shield, X, MoreVertical, History, Save,
+  RotateCcw, ArrowUpDown, MoveUp, MoveDown, Clock3, User
 } from 'lucide-react';
+
+// Version history types
+interface RuleVersion {
+  id: string;
+  version: number;
+  timestamp: string;
+  changedBy: string;
+  changeType: 'created' | 'updated' | 'restored';
+  changeSummary: string;
+  snapshot: Omit<CustomRule, 'versions'>;
+}
+
+interface RuleWithVersions extends CustomRule {
+  versions?: RuleVersion[];
+  currentVersion?: number;
+}
 
 // Types
 interface RuleCondition {
@@ -81,8 +98,8 @@ interface RuleTemplate {
   category: string;
 }
 
-// Mock Data
-const mockRules: CustomRule[] = [
+// Mock Data with version history
+const mockRules: RuleWithVersions[] = [
   {
     id: '1',
     name: 'Senior Staff Overtime Premium',
@@ -110,6 +127,75 @@ const mockRules: CustomRule[] = [
     usageCount: 234,
     tags: ['senior', 'overtime'],
     testResult: 'pass',
+    currentVersion: 3,
+    versions: [
+      {
+        id: 'v1-3',
+        version: 3,
+        timestamp: '2024-03-15T10:30:00Z',
+        changedBy: 'Admin User',
+        changeType: 'updated',
+        changeSummary: 'Changed multiplier from 1.05 to 1.10',
+        snapshot: {
+          id: '1',
+          name: 'Senior Staff Overtime Premium',
+          description: 'Additional 10% on overtime for staff with 5+ years experience',
+          type: 'overtime',
+          awardId: 'childrens-services',
+          conditionGroups: [{ id: 'g1', logic: 'AND', conditions: [{ id: 'c1', field: 'years_of_service', operator: 'greater_than', value: '5', valueType: 'number' }, { id: 'c2', field: 'shift_type', operator: 'equals', value: 'overtime', valueType: 'select' }] }],
+          groupLogic: 'AND',
+          actions: [{ id: 'a1', type: 'apply_multiplier', value: '1.10', unit: 'x' }],
+          priority: 1,
+          isActive: true,
+          isCustom: true,
+          createdAt: '2024-01-15',
+        }
+      },
+      {
+        id: 'v1-2',
+        version: 2,
+        timestamp: '2024-02-10T14:20:00Z',
+        changedBy: 'Admin User',
+        changeType: 'updated',
+        changeSummary: 'Added shift type condition',
+        snapshot: {
+          id: '1',
+          name: 'Senior Staff Overtime Premium',
+          description: 'Additional 5% on overtime for staff with 5+ years experience',
+          type: 'overtime',
+          awardId: 'childrens-services',
+          conditionGroups: [{ id: 'g1', logic: 'AND', conditions: [{ id: 'c1', field: 'years_of_service', operator: 'greater_than', value: '5', valueType: 'number' }, { id: 'c2', field: 'shift_type', operator: 'equals', value: 'overtime', valueType: 'select' }] }],
+          groupLogic: 'AND',
+          actions: [{ id: 'a1', type: 'apply_multiplier', value: '1.05', unit: 'x' }],
+          priority: 1,
+          isActive: true,
+          isCustom: true,
+          createdAt: '2024-01-15',
+        }
+      },
+      {
+        id: 'v1-1',
+        version: 1,
+        timestamp: '2024-01-15T09:00:00Z',
+        changedBy: 'Admin User',
+        changeType: 'created',
+        changeSummary: 'Initial rule creation',
+        snapshot: {
+          id: '1',
+          name: 'Senior Staff Overtime Premium',
+          description: 'Additional 5% on overtime for senior staff',
+          type: 'overtime',
+          awardId: 'childrens-services',
+          conditionGroups: [{ id: 'g1', logic: 'AND', conditions: [{ id: 'c1', field: 'years_of_service', operator: 'greater_than', value: '5', valueType: 'number' }] }],
+          groupLogic: 'AND',
+          actions: [{ id: 'a1', type: 'apply_multiplier', value: '1.05', unit: 'x' }],
+          priority: 1,
+          isActive: true,
+          isCustom: true,
+          createdAt: '2024-01-15',
+        }
+      },
+    ],
   },
   {
     id: '2',
@@ -300,10 +386,15 @@ const ruleTypeConfig = {
 
 export function CustomRuleBuilderPanel() {
   // State
-  const [rules, setRules] = useState<CustomRule[]>(mockRules);
+  const [rules, setRules] = useState<RuleWithVersions[]>(mockRules);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [editingRule, setEditingRule] = useState<CustomRule | null>(null);
-  const [panelTab, setPanelTab] = useState<'builder' | 'templates' | 'test'>('builder');
+  const [editingRule, setEditingRule] = useState<RuleWithVersions | null>(null);
+  const [panelTab, setPanelTab] = useState<'builder' | 'templates' | 'test' | 'history'>('builder');
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const [selectedRuleForHistory, setSelectedRuleForHistory] = useState<RuleWithVersions | null>(null);
+  const [draggedRuleId, setDraggedRuleId] = useState<string | null>(null);
+  const [draggedGroupIndex, setDraggedGroupIndex] = useState<number | null>(null);
+  const [dragOverGroupIndex, setDragOverGroupIndex] = useState<number | null>(null);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -393,7 +484,7 @@ export function CustomRuleBuilderPanel() {
     setIsPanelOpen(true);
   };
 
-  const openEditRulePanel = (rule: CustomRule) => {
+  const openEditRulePanel = (rule: RuleWithVersions) => {
     setEditingRule(rule);
     setRuleForm({
       name: rule.name,
@@ -401,9 +492,9 @@ export function CustomRuleBuilderPanel() {
       type: rule.type,
       awardId: rule.awardId || '',
       classificationId: rule.classificationId || '',
-      conditionGroups: rule.conditionGroups,
+      conditionGroups: JSON.parse(JSON.stringify(rule.conditionGroups)),
       groupLogic: rule.groupLogic,
-      actions: rule.actions,
+      actions: JSON.parse(JSON.stringify(rule.actions)),
       priority: rule.priority,
       effectiveFrom: rule.effectiveFrom || '',
       effectiveTo: rule.effectiveTo || '',
@@ -440,22 +531,65 @@ export function CustomRuleBuilderPanel() {
       return;
     }
 
+    const timestamp = new Date().toISOString();
+
     if (editingRule) {
+      // Create version history entry
+      const newVersion: RuleVersion = {
+        id: `v${editingRule.id}-${(editingRule.currentVersion || 0) + 1}`,
+        version: (editingRule.currentVersion || 0) + 1,
+        timestamp,
+        changedBy: 'Current User',
+        changeType: 'updated',
+        changeSummary: `Updated rule configuration`,
+        snapshot: {
+          ...editingRule,
+          versions: undefined,
+          currentVersion: undefined,
+        } as Omit<CustomRule, 'versions'>,
+      };
+
       setRules(prev => prev.map(r => 
         r.id === editingRule.id 
-          ? { ...r, ...ruleForm, updatedAt: new Date().toISOString().split('T')[0], isCustom: true }
+          ? { 
+              ...r, 
+              ...ruleForm, 
+              updatedAt: timestamp.split('T')[0], 
+              isCustom: true,
+              currentVersion: (r.currentVersion || 0) + 1,
+              versions: [newVersion, ...(r.versions || [])],
+            }
           : r
       ));
-      toast.success('Rule updated successfully');
+      toast.success('Rule updated successfully. Version saved to history.');
     } else {
-      const newRule: CustomRule = {
-        id: Date.now().toString(),
+      const newRuleId = Date.now().toString();
+      const initialVersion: RuleVersion = {
+        id: `v${newRuleId}-1`,
+        version: 1,
+        timestamp,
+        changedBy: 'Current User',
+        changeType: 'created',
+        changeSummary: 'Initial rule creation',
+        snapshot: {
+          id: newRuleId,
+          ...ruleForm,
+          isActive: true,
+          isCustom: true,
+          createdAt: timestamp.split('T')[0],
+        },
+      };
+
+      const newRule: RuleWithVersions = {
+        id: newRuleId,
         ...ruleForm,
         isActive: true,
         isCustom: true,
-        createdAt: new Date().toISOString().split('T')[0],
+        createdAt: timestamp.split('T')[0],
         usageCount: 0,
         testResult: 'pending',
+        currentVersion: 1,
+        versions: [initialVersion],
       };
       setRules([...rules, newRule]);
       toast.success('Rule created successfully');
@@ -502,17 +636,140 @@ export function CustomRuleBuilderPanel() {
     toast.success('Rule deleted');
   };
 
-  const duplicateRule = (rule: CustomRule) => {
-    const newRule: CustomRule = {
+  const duplicateRule = (rule: RuleWithVersions) => {
+    const newRuleId = Date.now().toString();
+    const timestamp = new Date().toISOString();
+    const newRule: RuleWithVersions = {
       ...rule,
-      id: Date.now().toString(),
+      id: newRuleId,
       name: `${rule.name} (Copy)`,
       isCustom: true,
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: timestamp.split('T')[0],
       usageCount: 0,
+      currentVersion: 1,
+      versions: [{
+        id: `v${newRuleId}-1`,
+        version: 1,
+        timestamp,
+        changedBy: 'Current User',
+        changeType: 'created',
+        changeSummary: `Duplicated from "${rule.name}"`,
+        snapshot: { ...rule, versions: undefined, currentVersion: undefined } as Omit<CustomRule, 'versions'>,
+      }],
     };
     setRules([...rules, newRule]);
     toast.success('Rule duplicated');
+  };
+
+  // Version history handlers
+  const openHistoryPanel = (rule: RuleWithVersions) => {
+    setSelectedRuleForHistory(rule);
+    setHistoryPanelOpen(true);
+  };
+
+  const restoreVersion = (rule: RuleWithVersions, version: RuleVersion) => {
+    const timestamp = new Date().toISOString();
+    const restoredVersion: RuleVersion = {
+      id: `v${rule.id}-${(rule.currentVersion || 0) + 1}`,
+      version: (rule.currentVersion || 0) + 1,
+      timestamp,
+      changedBy: 'Current User',
+      changeType: 'restored',
+      changeSummary: `Restored to version ${version.version}`,
+      snapshot: { ...version.snapshot },
+    };
+
+    setRules(prev => prev.map(r => 
+      r.id === rule.id 
+        ? { 
+            ...version.snapshot,
+            id: rule.id,
+            currentVersion: (r.currentVersion || 0) + 1,
+            versions: [restoredVersion, ...(r.versions || [])],
+          }
+        : r
+    ));
+    setHistoryPanelOpen(false);
+    toast.success(`Restored to version ${version.version}`);
+  };
+
+  // Drag and drop handlers for rule priority
+  const handleRuleDragStart = (ruleId: string) => {
+    setDraggedRuleId(ruleId);
+  };
+
+  const handleRuleDragOver = (e: React.DragEvent, targetRuleId: string) => {
+    e.preventDefault();
+    if (draggedRuleId && draggedRuleId !== targetRuleId) {
+      const draggedIndex = rules.findIndex(r => r.id === draggedRuleId);
+      const targetIndex = rules.findIndex(r => r.id === targetRuleId);
+      
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        const newRules = [...rules];
+        const [draggedRule] = newRules.splice(draggedIndex, 1);
+        newRules.splice(targetIndex, 0, draggedRule);
+        
+        // Update priorities
+        newRules.forEach((rule, index) => {
+          rule.priority = index + 1;
+        });
+        
+        setRules(newRules);
+      }
+    }
+  };
+
+  const handleRuleDragEnd = () => {
+    if (draggedRuleId) {
+      toast.success('Rule priority updated');
+    }
+    setDraggedRuleId(null);
+  };
+
+  const moveRulePriority = (ruleId: string, direction: 'up' | 'down') => {
+    const index = rules.findIndex(r => r.id === ruleId);
+    if (index === -1) return;
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === rules.length - 1) return;
+
+    const newRules = [...rules];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    [newRules[index], newRules[targetIndex]] = [newRules[targetIndex], newRules[index]];
+    
+    newRules.forEach((rule, idx) => {
+      rule.priority = idx + 1;
+    });
+    
+    setRules(newRules);
+    toast.success('Rule priority updated');
+  };
+
+  // Drag and drop handlers for condition groups
+  const handleGroupDragStart = (groupIndex: number) => {
+    setDraggedGroupIndex(groupIndex);
+  };
+
+  const handleGroupDragOver = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    setDragOverGroupIndex(targetIndex);
+  };
+
+  const handleGroupDrop = (targetIndex: number) => {
+    if (draggedGroupIndex !== null && draggedGroupIndex !== targetIndex) {
+      setRuleForm(prev => {
+        const newGroups = [...prev.conditionGroups];
+        const [draggedGroup] = newGroups.splice(draggedGroupIndex, 1);
+        newGroups.splice(targetIndex, 0, draggedGroup);
+        return { ...prev, conditionGroups: newGroups };
+      });
+    }
+    setDraggedGroupIndex(null);
+    setDragOverGroupIndex(null);
+  };
+
+  const handleGroupDragEnd = () => {
+    setDraggedGroupIndex(null);
+    setDragOverGroupIndex(null);
   };
 
   const handleExport = () => {
@@ -826,19 +1083,56 @@ export function CustomRuleBuilderPanel() {
           {filteredRules.map((rule) => {
             const typeConfig = ruleTypeConfig[rule.type];
             const TypeIcon = typeConfig.icon;
+            const isDragging = draggedRuleId === rule.id;
             
             return (
               <Card 
                 key={rule.id} 
                 className={`card-material-elevated transition-all hover:shadow-lg ${
                   rule.isActive ? 'ring-1 ring-primary/20' : 'opacity-60'
-                }`}
+                } ${isDragging ? 'opacity-50 scale-[0.98]' : ''}`}
+                draggable
+                onDragStart={() => handleRuleDragStart(rule.id)}
+                onDragOver={(e) => handleRuleDragOver(e, rule.id)}
+                onDragEnd={handleRuleDragEnd}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     {/* Drag Handle & Icon */}
                     <div className="flex items-center gap-2">
-                      <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
+                      <div className="flex flex-col gap-0.5">
+                        <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
+                        <div className="flex flex-col">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 p-0"
+                                onClick={() => moveRulePriority(rule.id, 'up')}
+                                disabled={rule.priority === 1}
+                              >
+                                <MoveUp className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Move Up</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 p-0"
+                                onClick={() => moveRulePriority(rule.id, 'down')}
+                                disabled={rule.priority === rules.length}
+                              >
+                                <MoveDown className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Move Down</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </div>
                       <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
                         rule.isActive ? 'bg-primary text-primary-foreground' : 'bg-muted'
                       }`}>
@@ -852,6 +1146,9 @@ export function CustomRuleBuilderPanel() {
                         <h4 className="font-semibold text-base">{rule.name}</h4>
                         <Badge className={typeConfig.color}>{typeConfig.label}</Badge>
                         <Badge variant="outline" className="text-xs font-mono">P{rule.priority}</Badge>
+                        {rule.currentVersion && (
+                          <Badge variant="outline" className="text-xs font-mono">v{rule.currentVersion}</Badge>
+                        )}
                         {rule.isCustom && (
                           <Badge variant="secondary" className="text-xs">Custom</Badge>
                         )}
@@ -900,12 +1197,18 @@ export function CustomRuleBuilderPanel() {
                       </div>
 
                       {/* Meta info */}
-                      {(rule.usageCount !== undefined || rule.createdAt) && (
+                      {(rule.usageCount !== undefined || rule.createdAt || rule.versions?.length) && (
                         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                           {rule.usageCount !== undefined && (
                             <span>Used {rule.usageCount} times</span>
                           )}
                           <span>Created {rule.createdAt}</span>
+                          {rule.versions && rule.versions.length > 0 && (
+                            <span className="flex items-center gap-1">
+                              <History className="h-3 w-3" />
+                              {rule.versions.length} version{rule.versions.length > 1 ? 's' : ''}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -916,6 +1219,20 @@ export function CustomRuleBuilderPanel() {
                         checked={rule.isActive} 
                         onCheckedChange={() => toggleRule(rule.id)} 
                       />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8" 
+                            onClick={() => openHistoryPanel(rule)}
+                            disabled={!rule.versions || rule.versions.length === 0}
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Version History</TooltipContent>
+                      </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => duplicateRule(rule)}>
@@ -992,7 +1309,7 @@ export function CustomRuleBuilderPanel() {
             </SheetHeader>
 
             <Tabs value={panelTab} onValueChange={(v) => setPanelTab(v as any)} className="flex-1 flex flex-col mt-4">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className={`grid w-full ${editingRule ? 'grid-cols-4' : 'grid-cols-3'}`}>
                 <TabsTrigger value="builder" className="gap-2">
                   <Settings2 className="h-4 w-4" />
                   Builder
@@ -1005,6 +1322,12 @@ export function CustomRuleBuilderPanel() {
                   <TestTube className="h-4 w-4" />
                   Test
                 </TabsTrigger>
+                {editingRule && (
+                  <TabsTrigger value="history" className="gap-2">
+                    <History className="h-4 w-4" />
+                    History
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <ScrollArea className="flex-1 mt-4 pr-4" style={{ height: 'calc(100vh - 280px)' }}>
@@ -1173,12 +1496,29 @@ export function CustomRuleBuilderPanel() {
                         </div>
                       )}
 
-                      {/* Condition Groups */}
+                      {/* Condition Groups with Drag and Drop */}
                       {ruleForm.conditionGroups.map((group, groupIndex) => (
-                        <Card key={group.id} className="border-2 border-dashed border-muted">
+                        <Card 
+                          key={group.id} 
+                          className={`border-2 border-dashed transition-all ${
+                            dragOverGroupIndex === groupIndex 
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-muted'
+                          } ${
+                            draggedGroupIndex === groupIndex ? 'opacity-50' : ''
+                          }`}
+                          draggable={ruleForm.conditionGroups.length > 1}
+                          onDragStart={() => handleGroupDragStart(groupIndex)}
+                          onDragOver={(e) => handleGroupDragOver(e, groupIndex)}
+                          onDrop={() => handleGroupDrop(groupIndex)}
+                          onDragEnd={handleGroupDragEnd}
+                        >
                           <CardHeader className="pb-2 pt-3 px-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
+                                {ruleForm.conditionGroups.length > 1 && (
+                                  <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
+                                )}
                                 <Badge variant="secondary" className="font-mono">
                                   Group {groupIndex + 1}
                                 </Badge>
@@ -1496,6 +1836,73 @@ export function CustomRuleBuilderPanel() {
                     </CardContent>
                   </Card>
                 </TabsContent>
+
+                {/* History Tab */}
+                {editingRule && (
+                  <TabsContent value="history" className="space-y-4 mt-0">
+                    <div className="text-sm text-muted-foreground mb-4">
+                      View version history and restore previous versions
+                    </div>
+                    {editingRule.versions && editingRule.versions.length > 0 ? (
+                      <div className="space-y-3">
+                        {editingRule.versions.map((version) => (
+                          <Card key={version.id} className="card-material">
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-start gap-3">
+                                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                                    version.changeType === 'created' ? 'bg-green-500/10' :
+                                    version.changeType === 'restored' ? 'bg-blue-500/10' : 'bg-amber-500/10'
+                                  }`}>
+                                    {version.changeType === 'created' ? <Plus className="h-5 w-5 text-green-600" /> :
+                                     version.changeType === 'restored' ? <RotateCcw className="h-5 w-5 text-blue-600" /> :
+                                     <Edit2 className="h-5 w-5 text-amber-600" />}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Badge variant="outline" className="font-mono">v{version.version}</Badge>
+                                      <span className="font-medium text-sm">{version.changeSummary}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                      <span className="flex items-center gap-1">
+                                        <User className="h-3 w-3" />
+                                        {version.changedBy}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <Clock3 className="h-3 w-3" />
+                                        {new Date(version.timestamp).toLocaleString()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                {version.version !== editingRule.currentVersion && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => restoreVersion(editingRule, version)}
+                                  >
+                                    <RotateCcw className="h-3 w-3 mr-1" />
+                                    Restore
+                                  </Button>
+                                )}
+                                {version.version === editingRule.currentVersion && (
+                                  <Badge variant="secondary">Current</Badge>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <Card className="bg-muted/50">
+                        <CardContent className="p-8 text-center">
+                          <History className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No version history available</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+                )}
               </ScrollArea>
             </Tabs>
 
@@ -1508,6 +1915,82 @@ export function CustomRuleBuilderPanel() {
                 {editingRule ? 'Update Rule' : 'Create Rule'}
               </Button>
             </SheetFooter>
+          </SheetContent>
+        </Sheet>
+
+        {/* Version History Panel */}
+        <Sheet open={historyPanelOpen} onOpenChange={setHistoryPanelOpen}>
+          <SheetContent side="right" style={{ width: '500px', maxWidth: '95vw' }}>
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <History className="h-5 w-5 text-primary" />
+                Version History
+              </SheetTitle>
+              <SheetDescription>
+                {selectedRuleForHistory?.name} - {selectedRuleForHistory?.versions?.length || 0} versions
+              </SheetDescription>
+            </SheetHeader>
+
+            <ScrollArea className="mt-4 pr-4" style={{ height: 'calc(100vh - 150px)' }}>
+              {selectedRuleForHistory?.versions && selectedRuleForHistory.versions.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedRuleForHistory.versions.map((version) => (
+                    <Card key={version.id} className="card-material">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                              version.changeType === 'created' ? 'bg-green-500/10' :
+                              version.changeType === 'restored' ? 'bg-blue-500/10' : 'bg-amber-500/10'
+                            }`}>
+                              {version.changeType === 'created' ? <Plus className="h-5 w-5 text-green-600" /> :
+                               version.changeType === 'restored' ? <RotateCcw className="h-5 w-5 text-blue-600" /> :
+                               <Edit2 className="h-5 w-5 text-amber-600" />}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="font-mono">v{version.version}</Badge>
+                                <span className="font-medium text-sm">{version.changeSummary}</span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  {version.changedBy}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock3 className="h-3 w-3" />
+                                  {new Date(version.timestamp).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          {version.version !== selectedRuleForHistory.currentVersion && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => restoreVersion(selectedRuleForHistory, version)}
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                              Restore
+                            </Button>
+                          )}
+                          {version.version === selectedRuleForHistory.currentVersion && (
+                            <Badge variant="secondary">Current</Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="bg-muted/50">
+                  <CardContent className="p-8 text-center">
+                    <History className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No version history available</p>
+                  </CardContent>
+                </Card>
+              )}
+            </ScrollArea>
           </SheetContent>
         </Sheet>
       </div>
