@@ -67,6 +67,9 @@ export interface ShiftTemplate {
   // Travel/remote defaults
   isRemoteLocation?: boolean;
   defaultTravelKilometres?: number;
+  
+  // Selected allowances from the allowance dropdown
+  selectedAllowances?: string[];
 }
 
 export interface SchedulingPreferences {

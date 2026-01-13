@@ -29,6 +29,8 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AllowanceDropdownWithCreate } from './AllowanceDropdownWithCreate';
+import { AllowanceType } from '@/types/allowances';
 
 interface ShiftTemplateManagerProps {
   open: boolean;
@@ -70,6 +72,7 @@ const getEmptyTemplate = (): Partial<ShiftTemplate> => ({
   higherDutiesClassification: undefined,
   isRemoteLocation: false,
   defaultTravelKilometres: undefined,
+  selectedAllowances: [],
 });
 
 export function ShiftTemplateManager({
@@ -82,6 +85,11 @@ export function ShiftTemplateManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newTemplate, setNewTemplate] = useState<Partial<ShiftTemplate>>(getEmptyTemplate());
   const [isAdding, setIsAdding] = useState(false);
+  const [customAllowances, setCustomAllowances] = useState<AllowanceType[]>([]);
+
+  const handleCreateAllowance = (allowance: AllowanceType) => {
+    setCustomAllowances(prev => [...prev, allowance]);
+  };
 
   const handleAdd = () => {
     if (!newTemplate.name?.trim()) return;
@@ -100,6 +108,7 @@ export function ShiftTemplateManager({
       higherDutiesClassification: newTemplate.higherDutiesClassification,
       isRemoteLocation: newTemplate.isRemoteLocation,
       defaultTravelKilometres: newTemplate.defaultTravelKilometres,
+      selectedAllowances: newTemplate.selectedAllowances || [],
     };
 
     setTemplates(prev => [...prev, template]);
@@ -306,7 +315,7 @@ export function ShiftTemplateManager({
         )}
 
         {/* Additional Settings */}
-        <Accordion sx={{ bgcolor: 'action.hover' }}>
+        <Accordion defaultExpanded sx={{ bgcolor: 'action.hover' }}>
           <AccordionSummary expandIcon={<ChevronDown size={16} />}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <TrendingUp size={14} />
@@ -315,6 +324,19 @@ export function ShiftTemplateManager({
           </AccordionSummary>
           <AccordionDetails>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Prebuilt Allowances Dropdown */}
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                  Select Allowances
+                </Typography>
+                <AllowanceDropdownWithCreate
+                  selectedAllowances={template.selectedAllowances || []}
+                  onAllowancesChange={(allowances) => onUpdate({ selectedAllowances: allowances })}
+                  customAllowances={customAllowances}
+                  onCreateAllowance={handleCreateAllowance}
+                />
+              </Box>
+
               <TextField
                 value={template.higherDutiesClassification || ''}
                 onChange={(e) => onUpdate({ higherDutiesClassification: e.target.value || undefined })}
