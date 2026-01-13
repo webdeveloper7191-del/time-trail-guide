@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, DollarSign, Search, CheckCircle2, AlertCircle, Building2, Filter, RotateCcw, Download } from 'lucide-react';
 import { australianAwards } from '@/data/australianAwards';
@@ -80,7 +81,8 @@ export function AllowanceRatesEditorPanel() {
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
   const [showCustomOnly, setShowCustomOnly] = useState(false);
   
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [editingAllowance, setEditingAllowance] = useState<CustomAllowance | null>(null);
   const [newAllowance, setNewAllowance] = useState({
     name: '',
     type: 'per_week' as CustomAllowance['type'],
@@ -117,6 +119,32 @@ export function AllowanceRatesEditorPanel() {
     });
   }, [allowances, searchQuery, selectedAwardFilter, selectedTypeFilter, showCustomOnly]);
 
+  const resetForm = () => {
+    setNewAllowance({ name: '', type: 'per_week', amount: '', conditions: '', applicableAwards: [] });
+    setEditingAllowance(null);
+  };
+
+  const handleOpenPanel = (allowance?: CustomAllowance) => {
+    if (allowance) {
+      setEditingAllowance(allowance);
+      setNewAllowance({
+        name: allowance.name,
+        type: allowance.type,
+        amount: (allowance.customAmount || allowance.baseAmount).toString(),
+        conditions: allowance.conditions || '',
+        applicableAwards: allowance.applicableAwards,
+      });
+    } else {
+      resetForm();
+    }
+    setIsPanelOpen(true);
+  };
+
+  const handleClosePanel = () => {
+    setIsPanelOpen(false);
+    resetForm();
+  };
+
   const handleAddAllowance = () => {
     if (!newAllowance.name || !newAllowance.amount) {
       toast.error('Please fill in required fields');
@@ -137,8 +165,27 @@ export function AllowanceRatesEditorPanel() {
 
     setAllowances([...allowances, allowance]);
     toast.success('Custom allowance added');
-    setIsAddDialogOpen(false);
-    setNewAllowance({ name: '', type: 'per_week', amount: '', conditions: '', applicableAwards: [] });
+    handleClosePanel();
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingAllowance) return;
+    
+    setAllowances(prev => prev.map(a =>
+      a.id === editingAllowance.id
+        ? {
+            ...a,
+            name: newAllowance.name,
+            type: newAllowance.type,
+            customAmount: parseFloat(newAllowance.amount),
+            isOverridden: true,
+            conditions: newAllowance.conditions,
+            applicableAwards: newAllowance.applicableAwards,
+          }
+        : a
+    ));
+    toast.success('Allowance updated');
+    handleClosePanel();
   };
 
   const updateAllowanceRate = (id: string, newAmount: number) => {
@@ -170,6 +217,13 @@ export function AllowanceRatesEditorPanel() {
     toast.success('Allowances exported');
   };
 
+  const removeAwardFromSelection = (awardId: string) => {
+    setNewAllowance(prev => ({
+      ...prev,
+      applicableAwards: prev.applicableAwards.filter(id => id !== awardId),
+    }));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -184,103 +238,126 @@ export function AllowanceRatesEditorPanel() {
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Allowance
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Custom Allowance</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Allowance Name</Label>
-                <Input
-                  placeholder="e.g., On-Call Allowance"
-                  value={newAllowance.name}
-                  onChange={(e) => setNewAllowance(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
+          <Button className="gap-2" onClick={() => handleOpenPanel()}>
+            <Plus className="h-4 w-4" />
+            Add Allowance
+          </Button>
+        </div>
+      </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Payment Type</Label>
-                  <Select 
-                    value={newAllowance.type} 
-                    onValueChange={(v) => setNewAllowance(prev => ({ ...prev, type: v as CustomAllowance['type'] }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="per_hour">Per Hour</SelectItem>
-                      <SelectItem value="per_shift">Per Shift</SelectItem>
-                      <SelectItem value="per_week">Per Week</SelectItem>
-                      <SelectItem value="per_km">Per Kilometer</SelectItem>
-                      <SelectItem value="one_off">One-Off</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Amount ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={newAllowance.amount}
-                    onChange={(e) => setNewAllowance(prev => ({ ...prev, amount: e.target.value }))}
-                  />
-                </div>
-              </div>
+      {/* Side Panel */}
+      <Sheet open={isPanelOpen} onOpenChange={handleClosePanel}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{editingAllowance ? 'Edit Allowance' : 'Add Custom Allowance'}</SheetTitle>
+            <SheetDescription>
+              {editingAllowance ? 'Update the allowance configuration' : 'Create a new custom allowance rate'}
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="space-y-6 py-6">
+            <div className="space-y-2">
+              <Label>Allowance Name *</Label>
+              <Input
+                placeholder="e.g., On-Call Allowance"
+                value={newAllowance.name}
+                onChange={(e) => setNewAllowance(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Applicable Awards (Optional)</Label>
+                <Label>Payment Type</Label>
                 <Select 
-                  onValueChange={(v) => setNewAllowance(prev => ({ 
-                    ...prev, 
-                    applicableAwards: [...prev.applicableAwards, v] 
-                  }))}
+                  value={newAllowance.type} 
+                  onValueChange={(v) => setNewAllowance(prev => ({ ...prev, type: v as CustomAllowance['type'] }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select awards..." />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {australianAwards.map(award => (
-                      <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
-                    ))}
+                    <SelectItem value="per_hour">Per Hour</SelectItem>
+                    <SelectItem value="per_shift">Per Shift</SelectItem>
+                    <SelectItem value="per_week">Per Week</SelectItem>
+                    <SelectItem value="per_km">Per Kilometer</SelectItem>
+                    <SelectItem value="one_off">One-Off</SelectItem>
                   </SelectContent>
                 </Select>
-                {newAllowance.applicableAwards.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {newAllowance.applicableAwards.map(awardId => (
-                      <Badge key={awardId} variant="secondary" className="text-xs">
-                        {getAwardName(awardId)}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
               </div>
-
               <div className="space-y-2">
-                <Label>Conditions (Optional)</Label>
+                <Label>Amount ($) *</Label>
                 <Input
-                  placeholder="e.g., When required to be on-call"
-                  value={newAllowance.conditions}
-                  onChange={(e) => setNewAllowance(prev => ({ ...prev, conditions: e.target.value }))}
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={newAllowance.amount}
+                  onChange={(e) => setNewAllowance(prev => ({ ...prev, amount: e.target.value }))}
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleAddAllowance}>Add Allowance</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        </div>
-      </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <Label>Applicable Awards (Optional)</Label>
+              <Select 
+                onValueChange={(v) => {
+                  if (!newAllowance.applicableAwards.includes(v)) {
+                    setNewAllowance(prev => ({ 
+                      ...prev, 
+                      applicableAwards: [...prev.applicableAwards, v] 
+                    }));
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select awards..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {australianAwards.map(award => (
+                    <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {newAllowance.applicableAwards.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {newAllowance.applicableAwards.map(awardId => (
+                    <Badge 
+                      key={awardId} 
+                      variant="secondary" 
+                      className="text-xs cursor-pointer hover:bg-destructive/20"
+                      onClick={() => removeAwardFromSelection(awardId)}
+                    >
+                      {getAwardName(awardId)} ×
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Leave empty to apply to all awards
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Conditions (Optional)</Label>
+              <Input
+                placeholder="e.g., When required to be on-call"
+                value={newAllowance.conditions}
+                onChange={(e) => setNewAllowance(prev => ({ ...prev, conditions: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <SheetFooter className="flex gap-2">
+            <Button variant="outline" onClick={handleClosePanel} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={editingAllowance ? handleSaveEdit : handleAddAllowance} className="flex-1">
+              {editingAllowance ? 'Update Allowance' : 'Add Allowance'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="card-material">
@@ -448,9 +525,7 @@ export function AllowanceRatesEditorPanel() {
                             </Badge>
                           ))
                         ) : (
-                          <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-700">
-                            All Awards
-                          </Badge>
+                          <Badge variant="outline" className="text-xs">All Awards</Badge>
                         )}
                         {allowance.applicableAwards.length > 2 && (
                           <Badge variant="outline" className="text-xs">
@@ -460,14 +535,19 @@ export function AllowanceRatesEditorPanel() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Switch
-                        checked={allowance.isActive}
-                        onCheckedChange={() => toggleAllowance(allowance.id)}
+                      <Switch 
+                        checked={allowance.isActive} 
+                        onCheckedChange={() => toggleAllowance(allowance.id)} 
                       />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleOpenPanel(allowance)}
+                        >
                           <Edit2 className="h-4 w-4" />
                         </Button>
                         <Button 

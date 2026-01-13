@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { 
   Plus, Percent, Calendar, Clock, Sun, Moon, 
@@ -105,7 +106,8 @@ export function PenaltyRatesEditorPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCustomOnly, setShowCustomOnly] = useState(false);
   
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [editingRate, setEditingRate] = useState<PenaltyRate | null>(null);
   const [newRate, setNewRate] = useState({
     awardId: '',
     classificationId: '',
@@ -135,6 +137,40 @@ export function PenaltyRatesEditorPanel() {
     });
   }, [penaltyRates, selectedAwardFilter, selectedTypeFilter, searchQuery, showCustomOnly]);
 
+  const resetForm = () => {
+    setNewRate({
+      awardId: '',
+      classificationId: '',
+      type: 'saturday',
+      customPercentage: '',
+      effectiveFrom: new Date().toISOString().split('T')[0],
+      notes: '',
+    });
+    setEditingRate(null);
+  };
+
+  const handleOpenPanel = (rate?: PenaltyRate) => {
+    if (rate) {
+      setEditingRate(rate);
+      setNewRate({
+        awardId: rate.awardId,
+        classificationId: rate.classificationId || '',
+        type: rate.type,
+        customPercentage: (rate.customPercentage || rate.basePercentage).toString(),
+        effectiveFrom: rate.effectiveFrom,
+        notes: rate.notes,
+      });
+    } else {
+      resetForm();
+    }
+    setIsPanelOpen(true);
+  };
+
+  const handleClosePanel = () => {
+    setIsPanelOpen(false);
+    resetForm();
+  };
+
   const handleAddRate = () => {
     if (!newRate.awardId || !newRate.customPercentage) {
       toast.error('Please fill in all required fields');
@@ -157,8 +193,25 @@ export function PenaltyRatesEditorPanel() {
 
     setPenaltyRates([...penaltyRates, rate]);
     toast.success('Custom penalty rate added');
-    setIsAddDialogOpen(false);
-    resetForm();
+    handleClosePanel();
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingRate) return;
+    
+    setPenaltyRates(prev => prev.map(r =>
+      r.id === editingRate.id
+        ? {
+            ...r,
+            customPercentage: parseFloat(newRate.customPercentage),
+            isCustom: true,
+            effectiveFrom: newRate.effectiveFrom,
+            notes: newRate.notes,
+          }
+        : r
+    ));
+    toast.success('Penalty rate updated');
+    handleClosePanel();
   };
 
   const getBasePercentage = (awardId: string, type: PenaltyRate['type']): number => {
@@ -172,17 +225,6 @@ export function PenaltyRatesEditorPanel() {
       case 'night': return award.nightPenalty || 100;
       default: return 100;
     }
-  };
-
-  const resetForm = () => {
-    setNewRate({
-      awardId: '',
-      classificationId: '',
-      type: 'saturday',
-      customPercentage: '',
-      effectiveFrom: new Date().toISOString().split('T')[0],
-      notes: '',
-    });
   };
 
   const toggleCustomRate = (id: string) => {
@@ -240,110 +282,134 @@ export function PenaltyRatesEditorPanel() {
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Custom Rate
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Custom Penalty Rate</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Award *</Label>
-                  <Select value={newRate.awardId} onValueChange={(v) => setNewRate(prev => ({ ...prev, awardId: v, classificationId: '' }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select award" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-lg z-50">
-                      {australianAwards.map(award => (
-                        <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {selectedAwardData && (
-                  <div className="space-y-2">
-                    <Label>Classification (Optional - leave empty for all)</Label>
-                    <Select value={newRate.classificationId} onValueChange={(v) => setNewRate(prev => ({ ...prev, classificationId: v }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All classifications" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
-                        <SelectItem value="">All Classifications</SelectItem>
-                        {selectedAwardData.classifications.map(cls => (
-                          <SelectItem key={cls.id} value={cls.id}>{cls.level} - {cls.description}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label>Penalty Type *</Label>
-                  <Select value={newRate.type} onValueChange={(v) => setNewRate(prev => ({ ...prev, type: v as PenaltyRate['type'] }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-lg z-50">
-                      {Object.entries(penaltyTypeConfig).map(([key, config]) => (
-                        <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {newRate.awardId && (
-                  <div className="p-3 rounded-lg bg-muted/50 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Award Default:</span>
-                      <span className="font-mono font-semibold">
-                        {getBasePercentage(newRate.awardId, newRate.type)}%
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Custom Percentage (%) *</Label>
-                    <Input
-                      type="number"
-                      placeholder="e.g., 175"
-                      value={newRate.customPercentage}
-                      onChange={(e) => setNewRate(prev => ({ ...prev, customPercentage: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Effective From</Label>
-                    <Input
-                      type="date"
-                      value={newRate.effectiveFrom}
-                      onChange={(e) => setNewRate(prev => ({ ...prev, effectiveFrom: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Notes</Label>
-                  <Input
-                    placeholder="Optional notes about this rate override"
-                    value={newRate.notes}
-                    onChange={(e) => setNewRate(prev => ({ ...prev, notes: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleAddRate}>Add Rate</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button className="gap-2" onClick={() => handleOpenPanel()}>
+            <Plus className="h-4 w-4" />
+            Add Custom Rate
+          </Button>
         </div>
       </div>
+
+      {/* Side Panel */}
+      <Sheet open={isPanelOpen} onOpenChange={handleClosePanel}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{editingRate ? 'Edit Penalty Rate' : 'Add Custom Penalty Rate'}</SheetTitle>
+            <SheetDescription>
+              {editingRate ? 'Update the penalty rate configuration' : 'Create a new custom penalty rate'}
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="space-y-6 py-6">
+            <div className="space-y-2">
+              <Label>Award *</Label>
+              <Select 
+                value={newRate.awardId} 
+                onValueChange={(v) => setNewRate(prev => ({ ...prev, awardId: v, classificationId: '' }))}
+                disabled={!!editingRate}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select award" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg z-50">
+                  {australianAwards.map(award => (
+                    <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedAwardData && (
+              <div className="space-y-2">
+                <Label>Classification (Optional - leave empty for all)</Label>
+                <Select 
+                  value={newRate.classificationId} 
+                  onValueChange={(v) => setNewRate(prev => ({ ...prev, classificationId: v }))}
+                  disabled={!!editingRate}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All classifications" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
+                    <SelectItem value="">All Classifications</SelectItem>
+                    {selectedAwardData.classifications.map(cls => (
+                      <SelectItem key={cls.id} value={cls.id}>{cls.level} - {cls.description}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Penalty Type *</Label>
+              <Select 
+                value={newRate.type} 
+                onValueChange={(v) => setNewRate(prev => ({ ...prev, type: v as PenaltyRate['type'] }))}
+                disabled={!!editingRate}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg z-50">
+                  {Object.entries(penaltyTypeConfig).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {newRate.awardId && (
+              <div className="p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Award Default:</span>
+                  <span className="font-mono font-semibold">
+                    {getBasePercentage(newRate.awardId, newRate.type)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Custom Percentage (%) *</Label>
+                <Input
+                  type="number"
+                  placeholder="e.g., 175"
+                  value={newRate.customPercentage}
+                  onChange={(e) => setNewRate(prev => ({ ...prev, customPercentage: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Effective From</Label>
+                <Input
+                  type="date"
+                  value={newRate.effectiveFrom}
+                  onChange={(e) => setNewRate(prev => ({ ...prev, effectiveFrom: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Input
+                placeholder="Optional notes about this rate override"
+                value={newRate.notes}
+                onChange={(e) => setNewRate(prev => ({ ...prev, notes: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <SheetFooter className="flex gap-2">
+            <Button variant="outline" onClick={handleClosePanel} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={editingRate ? handleSaveEdit : handleAddRate} className="flex-1">
+              {editingRate ? 'Update Rate' : 'Add Rate'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -468,7 +534,6 @@ export function PenaltyRatesEditorPanel() {
         Showing {filteredRates.length} of {penaltyRates.length} penalty rates
       </div>
 
-      {/* Penalty Rates Table */}
       <Card className="card-material-elevated">
         <CardContent className="p-0">
           <ScrollArea className="h-[500px]">
@@ -480,96 +545,89 @@ export function PenaltyRatesEditorPanel() {
                   <TableHead className="text-right">Award Rate</TableHead>
                   <TableHead className="text-right">Custom Rate</TableHead>
                   <TableHead className="text-center">Custom</TableHead>
-                  <TableHead>Effective</TableHead>
+                  <TableHead>Effective Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRates.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12">
-                      <Percent className="h-10 w-10 text-muted-foreground/50 mx-auto mb-2" />
-                      <p className="font-medium">No penalty rates found</p>
-                      <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredRates.map((rate) => {
-                    const config = penaltyTypeConfig[rate.type];
-                    const Icon = config.icon;
-                    return (
-                      <TableRow key={rate.id} className={rate.isCustom ? 'bg-primary/5' : ''}>
-                        <TableCell className="font-medium">
-                          <div className="max-w-48">
-                            <p className="truncate" title={rate.awardName}>
-                              {australianAwards.find(a => a.id === rate.awardId)?.shortName || rate.awardName}
-                            </p>
-                            {rate.notes && (
-                              <p className="text-xs text-muted-foreground truncate">{rate.notes}</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${config.color} border gap-1`}>
-                            <Icon className="h-3 w-3" />
-                            {config.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {rate.basePercentage}%
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {rate.isCustom ? (
-                            <Input
-                              type="number"
-                              value={rate.customPercentage || ''}
-                              onChange={(e) => updateCustomPercentage(rate.id, parseFloat(e.target.value))}
-                              className="w-20 h-8 text-right font-mono inline-block"
-                            />
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
+                {filteredRates.map((rate) => {
+                  const config = penaltyTypeConfig[rate.type];
+                  return (
+                    <TableRow key={rate.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{rate.awardName}</p>
+                          {rate.notes && (
+                            <p className="text-xs text-muted-foreground">{rate.notes}</p>
                           )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Switch
-                            checked={rate.isCustom}
-                            onCheckedChange={() => toggleCustomRate(rate.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {rate.effectiveFrom}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={config.color}>{config.label}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {rate.basePercentage}%
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {rate.isCustom ? (
+                          <span className="font-mono font-semibold text-primary">
+                            {rate.customPercentage}%
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Switch 
+                          checked={rate.isCustom} 
+                          onCheckedChange={() => toggleCustomRate(rate.id)} 
+                        />
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {rate.effectiveFrom}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => handleOpenPanel(rate)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive"
                             onClick={() => deleteRate(rate.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </ScrollArea>
         </CardContent>
       </Card>
 
-      {/* Quick Reference */}
-      <Card className="card-material bg-blue-500/5 border-blue-500/20">
-        <CardContent className="flex items-start gap-4 p-4">
-          <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
-          <div>
-            <p className="font-medium text-blue-900 dark:text-blue-100">Penalty Rates Guide</p>
-            <p className="text-sm text-blue-700/80 dark:text-blue-200/80 mt-1">
-              Penalty rates apply as a percentage of the base hourly rate. For example, 150% Saturday penalty 
-              means employees earn 1.5x their base rate. Custom rates override award defaults and take effect 
-              from the specified date. You can apply penalties to all classifications or specific levels.
-            </p>
+      {/* Info Card */}
+      <Card className="card-material bg-muted/30">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-medium text-sm">Penalty Rates Guide</p>
+              <p className="text-xs text-muted-foreground">
+                Penalty rates are expressed as a percentage of the base hourly rate. For example, 150% means 
+                time-and-a-half, while 200% means double time. Custom overrides apply on top of award minimums 
+                and must meet or exceed the award rate.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

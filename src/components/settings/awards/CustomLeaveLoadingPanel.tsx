@@ -8,10 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Calendar, Percent, Edit2, Trash2, CheckCircle2, Sun, Umbrella } from 'lucide-react';
+import { Plus, Calendar, Percent, Edit2, Trash2, CheckCircle2, Sun, Umbrella, X } from 'lucide-react';
 import { australianAwards } from '@/data/australianAwards';
 
 interface LeaveLoadingRule {
@@ -77,7 +77,8 @@ const leaveTypes = [
 
 export function CustomLeaveLoadingPanel() {
   const [rules, setRules] = useState<LeaveLoadingRule[]>(mockLeaveLoadingRules);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<LeaveLoadingRule | null>(null);
   const [newRule, setNewRule] = useState({
     name: '',
     leaveType: 'annual' as LeaveLoadingRule['leaveType'],
@@ -86,6 +87,18 @@ export function CustomLeaveLoadingPanel() {
     minServiceMonths: 0,
     awardId: 'all',
   });
+
+  const resetForm = () => {
+    setNewRule({
+      name: '',
+      leaveType: 'annual',
+      loadingPercentage: 17.5,
+      applicableTo: 'all',
+      minServiceMonths: 0,
+      awardId: 'all',
+    });
+    setEditingRule(null);
+  };
 
   const handleAddRule = () => {
     if (!newRule.name) {
@@ -107,15 +120,42 @@ export function CustomLeaveLoadingPanel() {
 
     setRules([...rules, rule]);
     toast.success('Leave loading rule created');
-    setIsAddDialogOpen(false);
+    setIsAddPanelOpen(false);
+    resetForm();
+  };
+
+  const handleEditRule = (rule: LeaveLoadingRule) => {
+    setEditingRule(rule);
     setNewRule({
-      name: '',
-      leaveType: 'annual',
-      loadingPercentage: 17.5,
-      applicableTo: 'all',
-      minServiceMonths: 0,
-      awardId: 'all',
+      name: rule.name,
+      leaveType: rule.leaveType,
+      loadingPercentage: rule.loadingPercentage,
+      applicableTo: rule.applicableTo,
+      minServiceMonths: rule.minServiceMonths || 0,
+      awardId: rule.awardId || 'all',
     });
+    setIsAddPanelOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingRule) return;
+    
+    setRules(prev => prev.map(r => 
+      r.id === editingRule.id 
+        ? { 
+            ...r, 
+            name: newRule.name,
+            leaveType: newRule.leaveType,
+            loadingPercentage: newRule.loadingPercentage,
+            applicableTo: newRule.applicableTo,
+            minServiceMonths: newRule.minServiceMonths || undefined,
+            awardId: newRule.awardId === 'all' ? undefined : newRule.awardId,
+          }
+        : r
+    ));
+    toast.success('Rule updated');
+    setIsAddPanelOpen(false);
+    resetForm();
   };
 
   const toggleRule = (id: string) => {
@@ -149,6 +189,11 @@ export function CustomLeaveLoadingPanel() {
     return <Badge className={colors[type] || 'bg-gray-500/10'}>{getLeaveTypeLabel(type)}</Badge>;
   };
 
+  const handlePanelClose = () => {
+    setIsAddPanelOpen(false);
+    resetForm();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -158,108 +203,127 @@ export function CustomLeaveLoadingPanel() {
             Configure leave loading percentages and rules
           </p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Rule
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Leave Loading Rule</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+        <Button className="gap-2" onClick={() => { resetForm(); setIsAddPanelOpen(true); }}>
+          <Plus className="h-4 w-4" />
+          Add Rule
+        </Button>
+      </div>
+
+      {/* Side Panel */}
+      <Sheet open={isAddPanelOpen} onOpenChange={handlePanelClose}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{editingRule ? 'Edit Leave Loading Rule' : 'Create Leave Loading Rule'}</SheetTitle>
+            <SheetDescription>
+              {editingRule ? 'Update the leave loading rule configuration' : 'Configure a new leave loading rule'}
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="space-y-6 py-6">
+            <div className="space-y-2">
+              <Label>Rule Name</Label>
+              <Input
+                placeholder="e.g., Enhanced Annual Leave Loading"
+                value={newRule.name}
+                onChange={(e) => setNewRule(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Rule Name</Label>
-                <Input
-                  placeholder="e.g., Enhanced Annual Leave Loading"
-                  value={newRule.name}
-                  onChange={(e) => setNewRule(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Leave Type</Label>
-                  <Select 
-                    value={newRule.leaveType} 
-                    onValueChange={(v) => setNewRule(prev => ({ ...prev, leaveType: v as LeaveLoadingRule['leaveType'] }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leaveTypes.map(type => (
-                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Applies To</Label>
-                  <Select 
-                    value={newRule.applicableTo} 
-                    onValueChange={(v) => setNewRule(prev => ({ ...prev, applicableTo: v as LeaveLoadingRule['applicableTo'] }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Staff</SelectItem>
-                      <SelectItem value="permanent">Permanent Only</SelectItem>
-                      <SelectItem value="casual">Casual Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label>Loading Percentage: {newRule.loadingPercentage}%</Label>
-                <Slider
-                  value={[newRule.loadingPercentage]}
-                  onValueChange={([v]) => setNewRule(prev => ({ ...prev, loadingPercentage: v }))}
-                  min={0}
-                  max={50}
-                  step={0.5}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Minimum Service (Months, Optional)</Label>
-                <Input
-                  type="number"
-                  placeholder="e.g., 12"
-                  value={newRule.minServiceMonths || ''}
-                  onChange={(e) => setNewRule(prev => ({ ...prev, minServiceMonths: parseInt(e.target.value) || 0 }))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Specific Award (Optional)</Label>
+                <Label>Leave Type</Label>
                 <Select 
-                  value={newRule.awardId} 
-                  onValueChange={(v) => setNewRule(prev => ({ ...prev, awardId: v }))}
+                  value={newRule.leaveType} 
+                  onValueChange={(v) => setNewRule(prev => ({ ...prev, leaveType: v as LeaveLoadingRule['leaveType'] }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All Awards" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Awards</SelectItem>
-                    {australianAwards.map(award => (
-                      <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
+                    {leaveTypes.map(type => (
+                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Applies To</Label>
+                <Select 
+                  value={newRule.applicableTo} 
+                  onValueChange={(v) => setNewRule(prev => ({ ...prev, applicableTo: v as LeaveLoadingRule['applicableTo'] }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Staff</SelectItem>
+                    <SelectItem value="permanent">Permanent Only</SelectItem>
+                    <SelectItem value="casual">Casual Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleAddRule}>Create Rule</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <Label>Loading Percentage: {newRule.loadingPercentage}%</Label>
+              <Slider
+                value={[newRule.loadingPercentage]}
+                onValueChange={([v]) => setNewRule(prev => ({ ...prev, loadingPercentage: v }))}
+                min={0}
+                max={50}
+                step={0.5}
+              />
+              <p className="text-xs text-muted-foreground">
+                Standard leave loading is typically 17.5%
+              </p>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <Label>Minimum Service (Months, Optional)</Label>
+              <Input
+                type="number"
+                placeholder="e.g., 12"
+                value={newRule.minServiceMonths || ''}
+                onChange={(e) => setNewRule(prev => ({ ...prev, minServiceMonths: parseInt(e.target.value) || 0 }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave blank if no minimum service is required
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Specific Award (Optional)</Label>
+              <Select 
+                value={newRule.awardId} 
+                onValueChange={(v) => setNewRule(prev => ({ ...prev, awardId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Awards" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Awards</SelectItem>
+                  {australianAwards.map(award => (
+                    <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <SheetFooter className="flex gap-2">
+            <Button variant="outline" onClick={handlePanelClose} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={editingRule ? handleSaveEdit : handleAddRule} className="flex-1">
+              {editingRule ? 'Update Rule' : 'Create Rule'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="card-material">
@@ -366,7 +430,7 @@ export function CustomLeaveLoadingPanel() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditRule(rule)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
                       {rule.isCustom && (
