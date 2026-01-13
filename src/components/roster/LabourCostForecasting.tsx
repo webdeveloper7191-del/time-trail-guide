@@ -21,7 +21,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Shift, StaffMember, Centre } from '@/types/roster';
-import { generateForecast, ForecastSummary, formatCurrency } from '@/lib/labourForecasting';
+import { generateForecast, ForecastSummary } from '@/lib/labourForecasting';
+import { formatCurrency } from '@/lib/awardInterpreter';
 import { format, parseISO } from 'date-fns';
 
 interface LabourCostForecastingProps {
