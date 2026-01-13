@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, DollarSign, Search, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, DollarSign, Search, CheckCircle2, AlertCircle, Building2, Filter, RotateCcw, Download } from 'lucide-react';
 import { australianAwards } from '@/data/australianAwards';
 
 interface CustomAllowance {
@@ -73,7 +73,13 @@ const mockAllowances: CustomAllowance[] = [
 
 export function AllowanceRatesEditorPanel() {
   const [allowances, setAllowances] = useState<CustomAllowance[]>(mockAllowances);
+  
+  // Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAwardFilter, setSelectedAwardFilter] = useState<string>('all');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
+  const [showCustomOnly, setShowCustomOnly] = useState(false);
+  
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newAllowance, setNewAllowance] = useState({
     name: '',
@@ -98,9 +104,18 @@ export function AllowanceRatesEditorPanel() {
     return australianAwards.find(a => a.id === awardId)?.shortName || awardId;
   };
 
-  const filteredAllowances = allowances.filter(a =>
-    a.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filtered allowances
+  const filteredAllowances = useMemo(() => {
+    return allowances.filter(a => {
+      const matchesSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesAward = selectedAwardFilter === 'all' || 
+        a.applicableAwards.length === 0 || 
+        a.applicableAwards.includes(selectedAwardFilter);
+      const matchesType = selectedTypeFilter === 'all' || a.type === selectedTypeFilter;
+      const matchesCustom = !showCustomOnly || a.isOverridden;
+      return matchesSearch && matchesAward && matchesType && matchesCustom;
+    });
+  }, [allowances, searchQuery, selectedAwardFilter, selectedTypeFilter, showCustomOnly]);
 
   const handleAddAllowance = () => {
     if (!newAllowance.name || !newAllowance.amount) {
@@ -144,16 +159,32 @@ export function AllowanceRatesEditorPanel() {
     toast.success('Allowance deleted');
   };
 
+  const handleExport = () => {
+    const dataStr = JSON.stringify(filteredAllowances, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'allowances.json';
+    a.click();
+    toast.success('Allowances exported');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Allowance Rates Editor</h3>
           <p className="text-sm text-muted-foreground">
-            Customize and create allowance rates
+            Customize and create allowance rates by award
           </p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
@@ -294,19 +325,71 @@ export function AllowanceRatesEditorPanel() {
         </Card>
       </div>
 
+      {/* Filters */}
       <Card className="card-material">
         <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search allowances..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search allowances..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={selectedAwardFilter} onValueChange={setSelectedAwardFilter}>
+              <SelectTrigger className="w-48">
+                <Building2 className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filter by Award" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border shadow-lg z-50">
+                <SelectItem value="all">All Awards</SelectItem>
+                {australianAwards.map(award => (
+                  <SelectItem key={award.id} value={award.id}>{award.shortName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedTypeFilter} onValueChange={setSelectedTypeFilter}>
+              <SelectTrigger className="w-36">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border shadow-lg z-50">
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="per_hour">Per Hour</SelectItem>
+                <SelectItem value="per_shift">Per Shift</SelectItem>
+                <SelectItem value="per_week">Per Week</SelectItem>
+                <SelectItem value="per_km">Per Km</SelectItem>
+                <SelectItem value="one_off">One-Off</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant={showCustomOnly ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowCustomOnly(!showCustomOnly)}
+            >
+              Custom Only
+            </Button>
+            {(searchQuery || selectedAwardFilter !== 'all' || selectedTypeFilter !== 'all' || showCustomOnly) && (
+              <Button variant="ghost" size="sm" onClick={() => {
+                setSearchQuery('');
+                setSelectedAwardFilter('all');
+                setSelectedTypeFilter('all');
+                setShowCustomOnly(false);
+              }}>
+                <RotateCcw className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Results count */}
+      <div className="text-sm text-muted-foreground">
+        Showing {filteredAllowances.length} of {allowances.length} allowances
+      </div>
 
       <Card className="card-material-elevated">
         <CardContent className="p-0">
