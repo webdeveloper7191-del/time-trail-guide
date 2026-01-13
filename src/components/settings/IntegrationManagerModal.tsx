@@ -47,13 +47,26 @@ interface IntegrationManagerModalProps {
   onClose: () => void;
 }
 
+interface ApiHeader {
+  key: string;
+  value: string;
+}
+
 interface ApiEndpoint {
   id: string;
   name: string;
   url: string;
   method: 'GET';
-  headers?: Record<string, string>;
+  headers: ApiHeader[];
   enabled: boolean;
+  lastTestResult?: {
+    success: boolean;
+    statusCode?: number;
+    recordCount?: number;
+    error?: string;
+    timestamp: string;
+    previewData?: any[];
+  };
 }
 
 interface ActiveIntegration extends IntegrationOption {
@@ -117,6 +130,7 @@ export function IntegrationManagerModal({
                 name: `API Endpoint ${int.apiEndpoints.length + 1}`,
                 url: '', 
                 method: 'GET' as const,
+                headers: [],
                 enabled: true,
               }
             ] 
@@ -136,6 +150,123 @@ export function IntegrationManagerModal({
           }
         : int
     ));
+  };
+  
+  const handleAddHeader = (integrationId: string, endpointId: string) => {
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.map(ep => 
+              ep.id === endpointId 
+                ? { ...ep, headers: [...ep.headers, { key: '', value: '' }] }
+                : ep
+            )
+          }
+        : int
+    ));
+  };
+  
+  const handleUpdateHeader = (integrationId: string, endpointId: string, headerIndex: number, field: 'key' | 'value', value: string) => {
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.map(ep => 
+              ep.id === endpointId 
+                ? { 
+                    ...ep, 
+                    headers: ep.headers.map((h, i) => 
+                      i === headerIndex ? { ...h, [field]: value } : h
+                    )
+                  }
+                : ep
+            )
+          }
+        : int
+    ));
+  };
+  
+  const handleRemoveHeader = (integrationId: string, endpointId: string, headerIndex: number) => {
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.map(ep => 
+              ep.id === endpointId 
+                ? { ...ep, headers: ep.headers.filter((_, i) => i !== headerIndex) }
+                : ep
+            )
+          }
+        : int
+    ));
+  };
+  
+  const handleTestEndpoint = async (integrationId: string, endpoint: ApiEndpoint) => {
+    if (!endpoint.url) {
+      toast.error('Please enter an API URL');
+      return;
+    }
+    
+    // Update endpoint status
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.map(ep => 
+              ep.id === endpoint.id 
+                ? { ...ep, lastTestResult: { success: false, timestamp: new Date().toISOString() } }
+                : ep
+            )
+          }
+        : int
+    ));
+    
+    // Simulate API call (in real implementation, this would call the actual endpoint)
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const success = Math.random() > 0.3;
+    const mockRecords = Math.floor(Math.random() * 50) + 5;
+    const mockData = Array.from({ length: Math.min(3, mockRecords) }, (_, i) => ({
+      id: i + 1,
+      date: new Date().toISOString().split('T')[0],
+      value: Math.floor(Math.random() * 100),
+    }));
+    
+    setActiveIntegrations(prev => prev.map(int => 
+      int.id === integrationId 
+        ? { 
+            ...int, 
+            apiEndpoints: int.apiEndpoints.map(ep => 
+              ep.id === endpoint.id 
+                ? { 
+                    ...ep, 
+                    lastTestResult: success 
+                      ? { 
+                          success: true, 
+                          statusCode: 200, 
+                          recordCount: mockRecords,
+                          previewData: mockData,
+                          timestamp: new Date().toISOString(),
+                        }
+                      : { 
+                          success: false, 
+                          statusCode: 401, 
+                          error: 'Unauthorized - Check API key or credentials',
+                          timestamp: new Date().toISOString(),
+                        }
+                  }
+                : ep
+            )
+          }
+        : int
+    ));
+    
+    if (success) {
+      toast.success(`Connected to ${endpoint.name} - ${mockRecords} records found`);
+    } else {
+      toast.error(`Failed to connect to ${endpoint.name}`);
+    }
   };
   
   const handleRemoveApiEndpoint = (integrationId: string, endpointId: string) => {
@@ -618,6 +749,104 @@ export function IntegrationManagerModal({
                                             ),
                                           }}
                                         />
+                                        
+                                        {/* Headers Configuration */}
+                                        <Box>
+                                          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                                            <Typography variant="caption" fontWeight={500}>
+                                              Headers
+                                            </Typography>
+                                            <Button
+                                              size="small"
+                                              startIcon={<Plus size={12} />}
+                                              onClick={() => handleAddHeader(integration.id, endpoint.id)}
+                                              sx={{ fontSize: '0.7rem', py: 0.25, minWidth: 0 }}
+                                            >
+                                              Add Header
+                                            </Button>
+                                          </Stack>
+                                          {endpoint.headers.length === 0 ? (
+                                            <Typography variant="caption" color="text.secondary">
+                                              No headers configured. Add headers for authentication (e.g., Authorization: Bearer token).
+                                            </Typography>
+                                          ) : (
+                                            <Stack spacing={1}>
+                                              {endpoint.headers.map((header, headerIdx) => (
+                                                <Stack key={headerIdx} direction="row" spacing={1} alignItems="center">
+                                                  <TextField
+                                                    placeholder="Header Key"
+                                                    value={header.key}
+                                                    onChange={(e) => handleUpdateHeader(integration.id, endpoint.id, headerIdx, 'key', e.target.value)}
+                                                    size="small"
+                                                    sx={{ flex: 1 }}
+                                                    inputProps={{ style: { fontSize: '0.75rem' } }}
+                                                  />
+                                                  <TextField
+                                                    placeholder="Header Value"
+                                                    value={header.value}
+                                                    onChange={(e) => handleUpdateHeader(integration.id, endpoint.id, headerIdx, 'value', e.target.value)}
+                                                    size="small"
+                                                    sx={{ flex: 2 }}
+                                                    type={header.key.toLowerCase().includes('auth') || header.key.toLowerCase().includes('key') ? 'password' : 'text'}
+                                                    inputProps={{ style: { fontSize: '0.75rem' } }}
+                                                  />
+                                                  <IconButton 
+                                                    size="small" 
+                                                    onClick={() => handleRemoveHeader(integration.id, endpoint.id, headerIdx)}
+                                                  >
+                                                    <X size={14} />
+                                                  </IconButton>
+                                                </Stack>
+                                              ))}
+                                            </Stack>
+                                          )}
+                                        </Box>
+                                        
+                                        {/* Fetch Now Button & Test Result */}
+                                        <Stack direction="row" spacing={1} alignItems="center">
+                                          <Button
+                                            size="small"
+                                            variant="outlined"
+                                            startIcon={endpoint.lastTestResult && !endpoint.lastTestResult.success && !endpoint.lastTestResult.error ? <CircularProgress size={14} /> : <Download size={14} />}
+                                            onClick={() => handleTestEndpoint(integration.id, endpoint)}
+                                            disabled={!endpoint.url || (endpoint.lastTestResult && !endpoint.lastTestResult.success && !endpoint.lastTestResult.error)}
+                                          >
+                                            Fetch Now
+                                          </Button>
+                                          {endpoint.lastTestResult && (
+                                            <Chip 
+                                              size="small"
+                                              icon={endpoint.lastTestResult.success ? <Check size={14} /> : <AlertCircle size={14} />}
+                                              label={endpoint.lastTestResult.success 
+                                                ? `${endpoint.lastTestResult.recordCount} records` 
+                                                : `Error: ${endpoint.lastTestResult.statusCode || 'Failed'}`
+                                              }
+                                              color={endpoint.lastTestResult.success ? 'success' : 'error'}
+                                              variant="outlined"
+                                            />
+                                          )}
+                                        </Stack>
+                                        
+                                        {/* Preview Data */}
+                                        {endpoint.lastTestResult?.success && endpoint.lastTestResult.previewData && (
+                                          <Box sx={{ bgcolor: 'action.hover', p: 1, borderRadius: 1 }}>
+                                            <Typography variant="caption" fontWeight={500} sx={{ mb: 0.5, display: 'block' }}>
+                                              Data Preview (first 3 records)
+                                            </Typography>
+                                            <Box 
+                                              component="pre" 
+                                              sx={{ 
+                                                fontSize: '0.65rem', 
+                                                m: 0, 
+                                                overflow: 'auto', 
+                                                maxHeight: 80,
+                                                fontFamily: 'monospace',
+                                              }}
+                                            >
+                                              {JSON.stringify(endpoint.lastTestResult.previewData, null, 2)}
+                                            </Box>
+                                          </Box>
+                                        )}
                                       </Stack>
                                     </Card>
                                   ))}
