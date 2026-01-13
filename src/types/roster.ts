@@ -38,6 +38,35 @@ export interface ShiftTemplate {
   endTime: string;
   breakMinutes: number;
   color: string;
+  
+  // Special shift type configuration
+  shiftType?: ShiftSpecialType;
+  
+  // On-call template settings
+  onCallSettings?: {
+    defaultStartTime?: string;
+    defaultEndTime?: string;
+  };
+  
+  // Sleepover template settings
+  sleepoverSettings?: {
+    bedtimeStart?: string;
+    bedtimeEnd?: string;
+  };
+  
+  // Broken/split shift settings
+  brokenShiftSettings?: {
+    firstShiftEnd?: string;
+    secondShiftStart?: string;
+    unpaidGapMinutes?: number;
+  };
+  
+  // Higher duties preset
+  higherDutiesClassification?: string;
+  
+  // Travel/remote defaults
+  isRemoteLocation?: boolean;
+  defaultTravelKilometres?: number;
 }
 
 export interface SchedulingPreferences {
@@ -337,9 +366,12 @@ export const shiftTypeDescriptions: Record<ShiftSpecialType, string> = {
 };
 
 export const defaultShiftTemplates: ShiftTemplate[] = [
-  { id: 'early', name: 'Early', startTime: '06:30', endTime: '14:30', breakMinutes: 30, color: 'hsl(200, 70%, 50%)' },
-  { id: 'mid', name: 'Mid', startTime: '09:00', endTime: '17:00', breakMinutes: 30, color: 'hsl(150, 60%, 45%)' },
-  { id: 'late', name: 'Late', startTime: '10:30', endTime: '18:30', breakMinutes: 30, color: 'hsl(280, 60%, 50%)' },
-  { id: 'short', name: 'Short', startTime: '09:00', endTime: '15:00', breakMinutes: 0, color: 'hsl(30, 70%, 50%)' },
-  { id: 'full', name: 'Full Day', startTime: '07:00', endTime: '18:00', breakMinutes: 60, color: 'hsl(340, 65%, 50%)' },
+  { id: 'early', name: 'Early', startTime: '06:30', endTime: '14:30', breakMinutes: 30, color: 'hsl(200, 70%, 50%)', shiftType: 'regular' },
+  { id: 'mid', name: 'Mid', startTime: '09:00', endTime: '17:00', breakMinutes: 30, color: 'hsl(150, 60%, 45%)', shiftType: 'regular' },
+  { id: 'late', name: 'Late', startTime: '10:30', endTime: '18:30', breakMinutes: 30, color: 'hsl(280, 60%, 50%)', shiftType: 'regular' },
+  { id: 'short', name: 'Short', startTime: '09:00', endTime: '15:00', breakMinutes: 0, color: 'hsl(30, 70%, 50%)', shiftType: 'regular' },
+  { id: 'full', name: 'Full Day', startTime: '07:00', endTime: '18:00', breakMinutes: 60, color: 'hsl(340, 65%, 50%)', shiftType: 'regular' },
+  { id: 'on_call', name: 'On-Call', startTime: '18:00', endTime: '06:00', breakMinutes: 0, color: 'hsl(45, 80%, 50%)', shiftType: 'on_call', onCallSettings: { defaultStartTime: '18:00', defaultEndTime: '06:00' } },
+  { id: 'sleepover', name: 'Sleepover', startTime: '20:00', endTime: '07:00', breakMinutes: 0, color: 'hsl(260, 60%, 50%)', shiftType: 'sleepover', sleepoverSettings: { bedtimeStart: '22:00', bedtimeEnd: '06:00' } },
+  { id: 'split', name: 'Split Shift', startTime: '07:00', endTime: '18:00', breakMinutes: 0, color: 'hsl(15, 75%, 50%)', shiftType: 'broken', brokenShiftSettings: { firstShiftEnd: '11:00', secondShiftStart: '15:00', unpaidGapMinutes: 240 } },
 ];
