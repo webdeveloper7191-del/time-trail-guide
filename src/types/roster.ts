@@ -133,6 +133,15 @@ export interface Room {
   minQualifiedStaff: number;
 }
 
+// Special shift types that trigger allowances
+export type ShiftSpecialType = 
+  | 'regular'
+  | 'on_call'        // Available but not working - triggers on-call allowance
+  | 'sleepover'      // Overnight at facility - triggers sleepover allowance
+  | 'broken'         // Split shift with unpaid break >1hr - triggers broken shift allowance
+  | 'recall'         // Called back during on-call - triggers recall rates
+  | 'emergency';     // Emergency call-out - may trigger additional penalties
+
 export interface Shift {
   id: string;
   staffId: string;
@@ -145,6 +154,43 @@ export interface Shift {
   status: 'draft' | 'published' | 'confirmed' | 'completed';
   isOpenShift: boolean;
   notes?: string;
+  
+  // Special shift flags for allowance calculation
+  shiftType?: ShiftSpecialType;
+  
+  // On-call specific fields
+  onCallDetails?: {
+    startTime: string;       // On-call period start
+    endTime: string;         // On-call period end
+    wasRecalled: boolean;    // Whether staff was called in
+    recallTime?: string;     // Time recalled
+    recallDuration?: number; // Minutes worked after recall
+  };
+  
+  // Sleepover specific fields
+  sleepoverDetails?: {
+    bedtimeStart: string;    // When sleepover period begins (e.g., 22:00)
+    bedtimeEnd: string;      // When sleepover period ends (e.g., 06:00)
+    wasDisturbed: boolean;   // If woken during sleepover (triggers additional pay)
+    disturbanceMinutes?: number; // How long disturbance lasted
+  };
+  
+  // Split/broken shift fields
+  brokenShiftDetails?: {
+    firstShiftEnd: string;   // When first portion ends
+    secondShiftStart: string; // When second portion starts
+    unpaidGapMinutes: number; // Duration of unpaid gap
+  };
+  
+  // Higher duties during this shift
+  higherDuties?: {
+    classification: string;  // The higher classification performed
+    durationMinutes?: number; // If only part of shift
+  };
+  
+  // Travel/remote work
+  isRemoteLocation?: boolean;
+  travelKilometres?: number;
 }
 
 export interface OpenShift {
@@ -270,6 +316,24 @@ export const timeOffTypeLabels: Record<TimeOff['type'], string> = {
   sick_leave: 'Sick Leave',
   personal_leave: 'Personal Leave',
   unpaid_leave: 'Unpaid Leave',
+};
+
+export const shiftTypeLabels: Record<ShiftSpecialType, string> = {
+  regular: 'Regular Shift',
+  on_call: 'On-Call',
+  sleepover: 'Sleepover',
+  broken: 'Broken/Split Shift',
+  recall: 'Recall',
+  emergency: 'Emergency',
+};
+
+export const shiftTypeDescriptions: Record<ShiftSpecialType, string> = {
+  regular: 'Standard working shift with normal pay conditions',
+  on_call: 'Available outside regular hours - triggers on-call allowance',
+  sleepover: 'Required to stay overnight at facility - triggers sleepover allowance',
+  broken: 'Split shift with unpaid break >1 hour - triggers broken shift allowance',
+  recall: 'Called back during on-call period - paid at overtime rates',
+  emergency: 'Emergency call-out - may trigger additional penalties',
 };
 
 export const defaultShiftTemplates: ShiftTemplate[] = [
