@@ -1049,6 +1049,14 @@ export function AwardsMasterTable() {
               [selectedAward.id]: rates,
             }));
           }}
+          // Multi-award navigation support
+          installedAwards={enabledAwards.filter(e => e.isActive).map(e => 
+            australianAwards.find(a => a.id === e.awardId)!
+          ).filter(Boolean)}
+          allCustomRates={customRates}
+          onAwardChange={(award) => {
+            setSelectedAward(award);
+          }}
         />
       )}
     </div>
