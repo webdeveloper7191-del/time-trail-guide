@@ -63,6 +63,22 @@ interface ApiHeader {
   value: string;
 }
 
+type DataType = 'bookings' | 'rooms' | 'attendance';
+
+interface AttendanceTransformSettings {
+  intervalMinutes: 15 | 30 | 60;
+  aggregateFields: {
+    childrenCount: boolean;
+    absences: boolean;
+    arrivals: boolean;
+    departures: boolean;
+  };
+  dateRange?: {
+    startDate: string;
+    endDate: string;
+  };
+}
+
 interface ApiEndpoint {
   id: string;
   name: string;
@@ -70,6 +86,13 @@ interface ApiEndpoint {
   method: 'GET';
   headers: ApiHeader[];
   enabled: boolean;
+  dataType: DataType;
+  transformSettings?: AttendanceTransformSettings;
+  dateRangeParams?: {
+    startParam: string;
+    endParam: string;
+    dateFormat: 'ISO' | 'YYYY-MM-DD' | 'timestamp';
+  };
   lastTestResult?: {
     success: boolean;
     statusCode?: number;
@@ -77,6 +100,7 @@ interface ApiEndpoint {
     error?: string;
     timestamp: string;
     previewData?: any[];
+    transformedData?: any[];
   };
 }
 
@@ -129,7 +153,23 @@ export function IntegrationManagerModal({
     }
   }, [open, config.integrations, config.settings.dataSources.integration.enabled]);
   
-  const handleAddApiEndpoint = (integrationId: string) => {
+  const dataTypeOptions: { value: DataType; label: string; description: string }[] = [
+    { value: 'bookings', label: 'Bookings', description: 'Child booking records and reservations' },
+    { value: 'rooms', label: 'Rooms', description: 'Room configurations and capacities' },
+    { value: 'attendance', label: 'Attendance', description: 'Check-in/check-out records' },
+  ];
+
+  const getDefaultTransformSettings = (): AttendanceTransformSettings => ({
+    intervalMinutes: 15,
+    aggregateFields: {
+      childrenCount: true,
+      absences: true,
+      arrivals: true,
+      departures: true,
+    },
+  });
+
+  const handleAddApiEndpoint = (integrationId: string, dataType: DataType = 'bookings') => {
     setActiveIntegrations(prev => prev.map(int => 
       int.id === integrationId 
         ? { 
@@ -138,11 +178,18 @@ export function IntegrationManagerModal({
               ...int.apiEndpoints, 
               { 
                 id: `endpoint-${Date.now()}`, 
-                name: `API Endpoint ${int.apiEndpoints.length + 1}`,
+                name: `${dataType.charAt(0).toUpperCase() + dataType.slice(1)} API`,
                 url: '', 
                 method: 'GET' as const,
                 headers: [],
                 enabled: true,
+                dataType,
+                transformSettings: dataType === 'attendance' ? getDefaultTransformSettings() : undefined,
+                dateRangeParams: {
+                  startParam: 'start_date',
+                  endParam: 'end_date',
+                  dateFormat: 'YYYY-MM-DD',
+                },
               }
             ] 
           }
@@ -247,6 +294,64 @@ export function IntegrationManagerModal({
     ));
   };
   
+  const generateMockDataByType = (dataType: DataType, transformSettings?: AttendanceTransformSettings) => {
+    const baseDate = new Date();
+    
+    if (dataType === 'attendance') {
+      const intervalMinutes = transformSettings?.intervalMinutes || 15;
+      const intervals = Math.floor(480 / intervalMinutes); // 8 hour day
+      
+      const rawData = Array.from({ length: intervals }, (_, i) => {
+        const time = new Date(baseDate);
+        time.setHours(7, i * intervalMinutes, 0, 0);
+        return {
+          timeSlot: time.toTimeString().slice(0, 5),
+          childrenPresent: Math.floor(Math.random() * 20) + 5,
+          arrivals: Math.floor(Math.random() * 5),
+          departures: Math.floor(Math.random() * 3),
+          absences: Math.floor(Math.random() * 3),
+        };
+      });
+      
+      // Filter based on aggregate settings
+      const transformedData = rawData.map(record => {
+        const filtered: Record<string, any> = { timeSlot: record.timeSlot };
+        if (transformSettings?.aggregateFields?.childrenCount !== false) filtered.childrenPresent = record.childrenPresent;
+        if (transformSettings?.aggregateFields?.arrivals !== false) filtered.arrivals = record.arrivals;
+        if (transformSettings?.aggregateFields?.departures !== false) filtered.departures = record.departures;
+        if (transformSettings?.aggregateFields?.absences !== false) filtered.absences = record.absences;
+        return filtered;
+      });
+      
+      return { raw: rawData.slice(0, 3), transformed: transformedData.slice(0, 3), totalCount: rawData.length };
+    }
+    
+    if (dataType === 'rooms') {
+      const rooms = Array.from({ length: 5 }, (_, i) => ({
+        id: `room-${i + 1}`,
+        name: ['Nursery', 'Toddlers', 'Pre-Kindy', 'Kindy', 'OSHC'][i],
+        capacity: [12, 16, 20, 22, 30][i],
+        minStaffRatio: ['1:4', '1:5', '1:10', '1:11', '1:15'][i],
+        ageGroupMin: [0, 15, 24, 36, 48][i],
+        ageGroupMax: [15, 24, 36, 60, 144][i],
+      }));
+      return { raw: rooms, transformed: rooms, totalCount: rooms.length };
+    }
+    
+    // Bookings
+    const bookings = Array.from({ length: 8 }, (_, i) => ({
+      id: `booking-${i + 1}`,
+      childId: `child-${i + 1}`,
+      childName: `Child ${i + 1}`,
+      date: baseDate.toISOString().split('T')[0],
+      roomId: `room-${(i % 4) + 1}`,
+      bookingType: i % 3 === 0 ? 'casual' : 'permanent',
+      startTime: '07:00',
+      endTime: '18:00',
+    }));
+    return { raw: bookings.slice(0, 3), transformed: bookings.slice(0, 3), totalCount: bookings.length };
+  };
+
   const handleTestEndpoint = async (integrationId: string, endpoint: ApiEndpoint) => {
     if (!endpoint.url) {
       toast.error('Please enter an API URL');
@@ -271,12 +376,7 @@ export function IntegrationManagerModal({
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     const success = Math.random() > 0.3;
-    const mockRecords = Math.floor(Math.random() * 50) + 5;
-    const mockData = Array.from({ length: Math.min(3, mockRecords) }, (_, i) => ({
-      id: i + 1,
-      date: new Date().toISOString().split('T')[0],
-      value: Math.floor(Math.random() * 100),
-    }));
+    const mockResult = generateMockDataByType(endpoint.dataType || 'bookings', endpoint.transformSettings);
     
     setActiveIntegrations(prev => prev.map(int => 
       int.id === integrationId 
@@ -290,8 +390,9 @@ export function IntegrationManagerModal({
                       ? { 
                           success: true, 
                           statusCode: 200, 
-                          recordCount: mockRecords,
-                          previewData: mockData,
+                          recordCount: mockResult.totalCount,
+                          previewData: mockResult.raw,
+                          transformedData: endpoint.dataType === 'attendance' ? mockResult.transformed : undefined,
                           timestamp: new Date().toISOString(),
                         }
                       : { 
@@ -308,7 +409,7 @@ export function IntegrationManagerModal({
     ));
     
     if (success) {
-      toast.success(`Connected to ${endpoint.name} - ${mockRecords} records found`);
+      toast.success(`Connected to ${endpoint.name} - ${mockResult.totalCount} records found`);
     } else {
       toast.error(`Failed to connect to ${endpoint.name}`);
     }
@@ -735,18 +836,38 @@ export function IntegrationManagerModal({
                                 <Typography variant="subtitle2">
                                   API Endpoints (GET)
                                 </Typography>
-                                <Button
-                                  size="small"
-                                  startIcon={<Plus size={14} />}
-                                  onClick={() => handleAddApiEndpoint(integration.id)}
-                                >
-                                  Add Endpoint
-                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size="small"
+                                      startIcon={<Plus size={14} />}
+                                      endIcon={<ChevronDown size={12} />}
+                                    >
+                                      Add Endpoint
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuLabel>Select Data Type</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {dataTypeOptions.map((option) => (
+                                      <DropdownMenuItem
+                                        key={option.value}
+                                        onClick={() => handleAddApiEndpoint(integration.id, option.value)}
+                                        className="flex flex-col items-start gap-0.5 py-2 cursor-pointer"
+                                      >
+                                        <span className="font-medium">{option.label}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {option.description}
+                                        </span>
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </Stack>
                               
                               {integration.apiEndpoints.length === 0 ? (
                                 <Typography variant="body2" color="text.secondary">
-                                  No API endpoints configured. Add endpoints to fetch data from external APIs.
+                                  No API endpoints configured. Add endpoints to fetch bookings, rooms, or attendance data.
                                 </Typography>
                               ) : (
                                 <Stack spacing={1.5}>
@@ -754,6 +875,15 @@ export function IntegrationManagerModal({
                                     <Card key={endpoint.id} variant="outlined" sx={{ p: 1.5, bgcolor: 'background.default' }}>
                                       <Stack spacing={1.5}>
                                         <Stack direction="row" spacing={1} alignItems="center">
+                                          <Chip 
+                                            label={endpoint.dataType || 'bookings'} 
+                                            size="small" 
+                                            color={
+                                              endpoint.dataType === 'attendance' ? 'secondary' : 
+                                              endpoint.dataType === 'rooms' ? 'warning' : 'primary'
+                                            }
+                                            sx={{ textTransform: 'capitalize' }}
+                                          />
                                           <TextField
                                             label="Endpoint Name"
                                             value={endpoint.name}
@@ -794,6 +924,117 @@ export function IntegrationManagerModal({
                                             ),
                                           }}
                                         />
+                                        
+                                        {/* Date Range Parameters */}
+                                        <Box sx={{ bgcolor: 'action.hover', p: 1.5, borderRadius: 1 }}>
+                                          <Typography variant="caption" fontWeight={500} sx={{ mb: 1, display: 'block' }}>
+                                            Date Range Parameters (for historical data)
+                                          </Typography>
+                                          <Stack direction="row" spacing={1} alignItems="center">
+                                            <TextField
+                                              label="Start Date Param"
+                                              value={endpoint.dateRangeParams?.startParam || 'start_date'}
+                                              onChange={(e) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'dateRangeParams', {
+                                                ...endpoint.dateRangeParams,
+                                                startParam: e.target.value,
+                                              })}
+                                              size="small"
+                                              sx={{ flex: 1 }}
+                                              inputProps={{ style: { fontSize: '0.75rem' } }}
+                                            />
+                                            <TextField
+                                              label="End Date Param"
+                                              value={endpoint.dateRangeParams?.endParam || 'end_date'}
+                                              onChange={(e) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'dateRangeParams', {
+                                                ...endpoint.dateRangeParams,
+                                                endParam: e.target.value,
+                                              })}
+                                              size="small"
+                                              sx={{ flex: 1 }}
+                                              inputProps={{ style: { fontSize: '0.75rem' } }}
+                                            />
+                                            <TextField
+                                              select
+                                              label="Format"
+                                              value={endpoint.dateRangeParams?.dateFormat || 'YYYY-MM-DD'}
+                                              onChange={(e) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'dateRangeParams', {
+                                                ...endpoint.dateRangeParams,
+                                                dateFormat: e.target.value,
+                                              })}
+                                              size="small"
+                                              sx={{ width: 140 }}
+                                              SelectProps={{ native: true }}
+                                              inputProps={{ style: { fontSize: '0.75rem' } }}
+                                            >
+                                              <option value="ISO">ISO 8601</option>
+                                              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                              <option value="timestamp">Unix Timestamp</option>
+                                            </TextField>
+                                          </Stack>
+                                        </Box>
+                                        
+                                        {/* Attendance Transform Settings */}
+                                        {endpoint.dataType === 'attendance' && (
+                                          <Box sx={{ bgcolor: 'rgba(156, 39, 176, 0.08)', p: 1.5, borderRadius: 1, border: '1px solid', borderColor: 'secondary.main' }}>
+                                            <Typography variant="caption" fontWeight={600} color="secondary.main" sx={{ mb: 1, display: 'block' }}>
+                                              Attendance Transformation Settings
+                                            </Typography>
+                                            <Stack spacing={1.5}>
+                                              <Stack direction="row" spacing={1} alignItems="center">
+                                                <Typography variant="caption" sx={{ width: 120 }}>
+                                                  Aggregate Interval:
+                                                </Typography>
+                                                <Stack direction="row" spacing={0.5}>
+                                                  {[15, 30, 60].map((interval) => (
+                                                    <Chip
+                                                      key={interval}
+                                                      label={`${interval} min`}
+                                                      size="small"
+                                                      variant={endpoint.transformSettings?.intervalMinutes === interval ? 'filled' : 'outlined'}
+                                                      color={endpoint.transformSettings?.intervalMinutes === interval ? 'secondary' : 'default'}
+                                                      onClick={() => handleUpdateApiEndpoint(integration.id, endpoint.id, 'transformSettings', {
+                                                        ...endpoint.transformSettings,
+                                                        intervalMinutes: interval,
+                                                      })}
+                                                      sx={{ cursor: 'pointer' }}
+                                                    />
+                                                  ))}
+                                                </Stack>
+                                              </Stack>
+                                              <Divider />
+                                              <Typography variant="caption" fontWeight={500}>
+                                                Fields to Aggregate:
+                                              </Typography>
+                                              <Stack direction="row" spacing={1} flexWrap="wrap" gap={0.5}>
+                                                {[
+                                                  { key: 'childrenCount', label: 'Children Count' },
+                                                  { key: 'absences', label: 'Absences' },
+                                                  { key: 'arrivals', label: 'Arrivals' },
+                                                  { key: 'departures', label: 'Departures' },
+                                                ].map((field) => (
+                                                  <FormControlLabel
+                                                    key={field.key}
+                                                    control={
+                                                      <Switch
+                                                        checked={endpoint.transformSettings?.aggregateFields?.[field.key as keyof AttendanceTransformSettings['aggregateFields']] ?? true}
+                                                        onChange={(e) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'transformSettings', {
+                                                          ...endpoint.transformSettings,
+                                                          aggregateFields: {
+                                                            ...endpoint.transformSettings?.aggregateFields,
+                                                            [field.key]: e.target.checked,
+                                                          },
+                                                        })}
+                                                        size="small"
+                                                      />
+                                                    }
+                                                    label={<Typography variant="caption">{field.label}</Typography>}
+                                                    sx={{ mr: 2 }}
+                                                  />
+                                                ))}
+                                              </Stack>
+                                            </Stack>
+                                          </Box>
+                                        )}
                                         
                                         {/* Headers Configuration */}
                                         <Box>
@@ -909,7 +1150,7 @@ export function IntegrationManagerModal({
                                         {endpoint.lastTestResult?.success && endpoint.lastTestResult.previewData && (
                                           <Box sx={{ bgcolor: 'action.hover', p: 1, borderRadius: 1 }}>
                                             <Typography variant="caption" fontWeight={500} sx={{ mb: 0.5, display: 'block' }}>
-                                              Data Preview (first 3 records)
+                                              Raw Data Preview (first 3 records)
                                             </Typography>
                                             <Box 
                                               component="pre" 
@@ -922,6 +1163,36 @@ export function IntegrationManagerModal({
                                               }}
                                             >
                                               {JSON.stringify(endpoint.lastTestResult.previewData, null, 2)}
+                                            </Box>
+                                          </Box>
+                                        )}
+                                        
+                                        {/* Transformed Data Preview (for Attendance) */}
+                                        {endpoint.lastTestResult?.success && endpoint.lastTestResult.transformedData && endpoint.dataType === 'attendance' && (
+                                          <Box sx={{ bgcolor: 'rgba(156, 39, 176, 0.08)', p: 1, borderRadius: 1, border: '1px solid', borderColor: 'secondary.light' }}>
+                                            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+                                              <Typography variant="caption" fontWeight={500} color="secondary.main">
+                                                Transformed Data ({endpoint.transformSettings?.intervalMinutes || 15} min intervals)
+                                              </Typography>
+                                              <Chip 
+                                                label="Aggregated" 
+                                                size="small" 
+                                                color="secondary" 
+                                                variant="outlined"
+                                                sx={{ height: 16, fontSize: '0.6rem' }}
+                                              />
+                                            </Stack>
+                                            <Box 
+                                              component="pre" 
+                                              sx={{ 
+                                                fontSize: '0.65rem', 
+                                                m: 0, 
+                                                overflow: 'auto', 
+                                                maxHeight: 100,
+                                                fontFamily: 'monospace',
+                                              }}
+                                            >
+                                              {JSON.stringify(endpoint.lastTestResult.transformedData, null, 2)}
                                             </Box>
                                           </Box>
                                         )}
