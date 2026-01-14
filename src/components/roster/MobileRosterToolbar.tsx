@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { ViewMode } from '@/types/roster';
+import { ViewMode, Centre } from '@/types/roster';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -11,12 +11,12 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   ChevronLeft,
   ChevronRight,
@@ -41,7 +41,19 @@ import {
   EyeOff,
   UserPlus,
   Zap,
-  MoreVertical,
+  Copy,
+  Shield,
+  Mail,
+  Moon,
+  Sun,
+  History,
+  Flag,
+  CalendarCheck,
+  CalendarDays,
+  UserCog,
+  Clock,
+  Plug,
+  BarChart2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -53,27 +65,60 @@ interface MobileRosterToolbarProps {
   weeklyBudget: number;
   openShiftCount: number;
   alertCount: number;
+  conflictCount: number;
   canUndo: boolean;
   canRedo: boolean;
   showDemandOverlay: boolean;
   emptyShiftsCount: number;
+  isDarkMode: boolean;
+  // Selectors
+  centres: { id: string; name: string }[];
+  selectedCentreId: string;
+  roleOptions: { value: string; label: string }[];
+  selectedRole: string;
+  onCentreChange: (centreId: string) => void;
+  onRoleChange: (role: string) => void;
+  // Navigation
   onNavigateDate: (direction: 'prev' | 'next') => void;
   onToday: () => void;
   onViewModeChange: (mode: ViewMode) => void;
+  // Primary actions
   onPublish: () => void;
   onAddOpenShift: () => void;
   onBulkAssign: () => void;
   onAutoAssign: () => void;
+  onAddEmptyShift: () => void;
+  onCopyWeek: () => void;
+  // Export
   onExportPDF: () => void;
   onExportExcel: () => void;
   onPrint: () => void;
+  // Views/Panels
   onShowSummary: () => void;
   onShowOptimize: () => void;
   onShowAlerts: () => void;
+  onShowConflicts: () => void;
+  onShowNotifications: () => void;
   onShowBudgetSettings: () => void;
+  onShowHistory: () => void;
+  // Templates & Settings
+  onSaveTemplate: () => void;
+  onApplyTemplate: () => void;
+  onManageShiftTemplates: () => void;
+  onIndustrySettings: () => void;
+  onDemandSettings: () => void;
+  onDemandDataEntry: () => void;
+  onIntegrationManager: () => void;
+  // Schedule
+  onShowHolidays: () => void;
+  onShowAvailability: () => void;
+  onShowLeaveRequests: () => void;
+  onShowStaffPreferences: () => void;
+  // Toggles
   onUndo: () => void;
   onRedo: () => void;
   onToggleDemand: () => void;
+  onToggleTheme: () => void;
   onToggleStaffPanel: () => void;
 }
 
@@ -85,10 +130,18 @@ export function MobileRosterToolbar({
   weeklyBudget,
   openShiftCount,
   alertCount,
+  conflictCount,
   canUndo,
   canRedo,
   showDemandOverlay,
   emptyShiftsCount,
+  isDarkMode,
+  centres,
+  selectedCentreId,
+  roleOptions,
+  selectedRole,
+  onCentreChange,
+  onRoleChange,
   onNavigateDate,
   onToday,
   onViewModeChange,
@@ -96,16 +149,33 @@ export function MobileRosterToolbar({
   onAddOpenShift,
   onBulkAssign,
   onAutoAssign,
+  onAddEmptyShift,
+  onCopyWeek,
   onExportPDF,
   onExportExcel,
   onPrint,
   onShowSummary,
   onShowOptimize,
   onShowAlerts,
+  onShowConflicts,
+  onShowNotifications,
   onShowBudgetSettings,
+  onShowHistory,
+  onSaveTemplate,
+  onApplyTemplate,
+  onManageShiftTemplates,
+  onIndustrySettings,
+  onDemandSettings,
+  onDemandDataEntry,
+  onIntegrationManager,
+  onShowHolidays,
+  onShowAvailability,
+  onShowLeaveRequests,
+  onShowStaffPreferences,
   onUndo,
   onRedo,
   onToggleDemand,
+  onToggleTheme,
   onToggleStaffPanel,
 }: MobileRosterToolbarProps) {
   const [showActionsSheet, setShowActionsSheet] = useState(false);
@@ -119,7 +189,36 @@ export function MobileRosterToolbar({
 
   return (
     <div className="md:hidden bg-card border-b border-border">
-      {/* Top Row - Date Navigation */}
+      {/* Top Row - Centre & Role Selectors */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+        <Select value={selectedCentreId} onValueChange={onCentreChange}>
+          <SelectTrigger className="h-8 flex-1 text-xs">
+            <SelectValue placeholder="Select centre" />
+          </SelectTrigger>
+          <SelectContent>
+            {centres.map((centre) => (
+              <SelectItem key={centre.id} value={centre.id} className="text-xs">
+                {centre.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedRole} onValueChange={onRoleChange}>
+          <SelectTrigger className="h-8 w-[100px] text-xs">
+            <SelectValue placeholder="Role" />
+          </SelectTrigger>
+          <SelectContent>
+            {roleOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Second Row - Date Navigation */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="flex items-center gap-1">
           <Button
@@ -163,6 +262,24 @@ export function MobileRosterToolbar({
             <Users className="h-4 w-4" />
           </Button>
           
+          {/* Conflicts with badge */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 relative"
+            onClick={onShowConflicts}
+          >
+            <Shield className="h-4 w-4" />
+            {conflictCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-4 w-4 p-0 text-[10px] flex items-center justify-center"
+              >
+                {conflictCount}
+              </Badge>
+            )}
+          </Button>
+
           {/* Alerts with badge */}
           <Button
             variant="ghost"
@@ -188,9 +305,9 @@ export function MobileRosterToolbar({
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] p-0">
+            <SheetContent side="right" className="w-[300px] p-0">
               <SheetHeader className="p-4 border-b border-border">
-                <SheetTitle className="text-sm">Actions</SheetTitle>
+                <SheetTitle className="text-sm">Actions & Settings</SheetTitle>
               </SheetHeader>
               <div className="p-2 space-y-1 max-h-[calc(100vh-100px)] overflow-y-auto">
                 {/* Budget Info */}
@@ -210,7 +327,10 @@ export function MobileRosterToolbar({
                   </div>
                 </div>
 
-                {/* Quick Actions */}
+                {/* Section: Quick Actions */}
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Quick Actions
+                </div>
                 <Button
                   variant="ghost"
                   className="w-full justify-start h-10"
@@ -235,6 +355,30 @@ export function MobileRosterToolbar({
                   Bulk Assign
                 </Button>
 
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onAddEmptyShift();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <Layers className="h-4 w-4 mr-3" />
+                  Create Empty Shifts
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onCopyWeek();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <Copy className="h-4 w-4 mr-3" />
+                  Copy Week
+                </Button>
+
                 {emptyShiftsCount > 0 && (
                   <Button
                     variant="ghost"
@@ -251,7 +395,10 @@ export function MobileRosterToolbar({
 
                 <div className="border-t border-border my-2" />
 
-                {/* View Options */}
+                {/* Section: View Options */}
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  View Options
+                </div>
                 <Button
                   variant="ghost"
                   className="w-full justify-start h-10"
@@ -294,16 +441,17 @@ export function MobileRosterToolbar({
 
                 <div className="border-t border-border my-2" />
 
-                {/* Undo/Redo */}
-                <div className="flex gap-2 px-2">
+                {/* Section: Undo/Redo */}
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  History
+                </div>
+                <div className="flex gap-2 px-2 mb-2">
                   <Button
                     variant="outline"
                     size="sm"
                     className="flex-1"
                     disabled={!canUndo}
-                    onClick={() => {
-                      onUndo();
-                    }}
+                    onClick={onUndo}
                   >
                     <Undo2 className="h-4 w-4 mr-2" />
                     Undo
@@ -313,18 +461,175 @@ export function MobileRosterToolbar({
                     size="sm"
                     className="flex-1"
                     disabled={!canRedo}
-                    onClick={() => {
-                      onRedo();
-                    }}
+                    onClick={onRedo}
                   >
                     <Redo2 className="h-4 w-4 mr-2" />
                     Redo
                   </Button>
                 </div>
 
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onShowHistory();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <History className="h-4 w-4 mr-3" />
+                  View History
+                </Button>
+
                 <div className="border-t border-border my-2" />
 
-                {/* Export Options */}
+                {/* Section: Schedule */}
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Schedule
+                </div>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onShowHolidays();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <Flag className="h-4 w-4 mr-3" />
+                  Holidays & Events
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onShowAvailability();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <CalendarCheck className="h-4 w-4 mr-3" />
+                  Staff Availability
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onShowLeaveRequests();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <CalendarDays className="h-4 w-4 mr-3" />
+                  Leave Requests
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onShowStaffPreferences();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <UserCog className="h-4 w-4 mr-3" />
+                  Staff Preferences
+                </Button>
+
+                <div className="border-t border-border my-2" />
+
+                {/* Section: Templates & Settings */}
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Templates & Settings
+                </div>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onSaveTemplate();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <Layers className="h-4 w-4 mr-3" />
+                  Save as Template
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onApplyTemplate();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <Layers className="h-4 w-4 mr-3" />
+                  Apply Template
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onManageShiftTemplates();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <Clock className="h-4 w-4 mr-3" />
+                  Manage Shift Templates
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onIndustrySettings();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <Settings className="h-4 w-4 mr-3" />
+                  Industry Settings
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onDemandSettings();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <BarChart2 className="h-4 w-4 mr-3" />
+                  Demand Settings
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onDemandDataEntry();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-3" />
+                  Enter Demand Data
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onIntegrationManager();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <Plug className="h-4 w-4 mr-3" />
+                  Integration Manager
+                </Button>
+
+                <div className="border-t border-border my-2" />
+
+                {/* Section: Export Options */}
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Export
+                </div>
                 <Button
                   variant="ghost"
                   className="w-full justify-start h-10"
@@ -363,7 +668,22 @@ export function MobileRosterToolbar({
 
                 <div className="border-t border-border my-2" />
 
-                {/* Settings */}
+                {/* Section: Notifications & Settings */}
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Notifications & Settings
+                </div>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onShowNotifications();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  <Mail className="h-4 w-4 mr-3" />
+                  Notifications
+                </Button>
+
                 <Button
                   variant="ghost"
                   className="w-full justify-start h-10"
@@ -372,8 +692,24 @@ export function MobileRosterToolbar({
                     setShowActionsSheet(false);
                   }}
                 >
-                  <Settings className="h-4 w-4 mr-3" />
+                  <DollarSign className="h-4 w-4 mr-3" />
                   Budget Settings
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-10"
+                  onClick={() => {
+                    onToggleTheme();
+                    setShowActionsSheet(false);
+                  }}
+                >
+                  {isDarkMode ? (
+                    <Sun className="h-4 w-4 mr-3" />
+                  ) : (
+                    <Moon className="h-4 w-4 mr-3" />
+                  )}
+                  {isDarkMode ? 'Light Mode' : 'Dark Mode'}
                 </Button>
               </div>
             </SheetContent>
@@ -381,7 +717,7 @@ export function MobileRosterToolbar({
         </div>
       </div>
 
-      {/* Second Row - View Mode & Publish */}
+      {/* Third Row - View Mode & Publish */}
       <div className="flex items-center justify-between px-2 py-2 gap-2">
         {/* View Mode Tabs */}
         <div className="flex bg-muted rounded-lg p-0.5 overflow-x-auto">
