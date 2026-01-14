@@ -179,14 +179,19 @@ export function StaffTimelineGrid({
     return roomStaff;
   }, [shifts, centre, staffRoomAssignments]);
 
+  // Filter open shifts to only those within the visible date range
+  const visibleDateStrings = useMemo(() => dates.map(d => format(d, 'yyyy-MM-dd')), [dates]);
+
   const openShiftsByRoomDate = useMemo(() => {
     const grouped: Record<string, OpenShift[]> = {};
     openShifts.forEach(os => {
+      // Only include open shifts that are within the visible date range
+      if (!visibleDateStrings.includes(os.date)) return;
       if (!grouped[os.roomId]) grouped[os.roomId] = [];
       grouped[os.roomId].push(os);
     });
     return grouped;
-  }, [openShifts]);
+  }, [openShifts, visibleDateStrings]);
 
   // Group empty shifts by room and date
   const emptyShiftsByRoomDate = useMemo(() => {
@@ -210,8 +215,8 @@ export function StaffTimelineGrid({
     );
   };
 
-  const getOpenShiftForDay = (roomId: string, date: string) => {
-    return openShifts.find(os => os.roomId === roomId && os.date === date);
+  const getOpenShiftsForDay = (roomId: string, date: string) => {
+    return openShifts.filter(os => os.roomId === roomId && os.date === date);
   };
 
   const isStaffOnTimeOff = (member: StaffMember, date: string) => {
@@ -958,9 +963,10 @@ export function StaffTimelineGrid({
 
                     {dates.map((date) => {
                       const dateStr = format(date, 'yyyy-MM-dd');
-                      const openShift = getOpenShiftForDay(room.id, dateStr);
+                      const dayOpenShifts = getOpenShiftsForDay(room.id, dateStr);
                       const cellKey = `open-${room.id}-${dateStr}`;
                       const isDragOver = dragOverCell === cellKey;
+                      const hasOpenShifts = dayOpenShifts.length > 0;
 
                       return (
                         <div
@@ -971,25 +977,35 @@ export function StaffTimelineGrid({
                             "transition-all duration-200 ease-out",
                             isCompact && "min-w-[80px]",
                             // Drop zone highlight states for open shifts
-                            isDragging && openShift && "bg-green-500/5",
-                            isDragOver && openShift && "bg-green-500/20 ring-2 ring-inset ring-green-500/50 scale-[1.02]"
+                            isDragging && hasOpenShifts && "bg-green-500/5",
+                            isDragOver && hasOpenShifts && "bg-green-500/20 ring-2 ring-inset ring-green-500/50 scale-[1.02]"
                           )}
-                          onDragOver={(e) => openShift && handleDragOver(e, cellKey)}
+                          onDragOver={(e) => hasOpenShifts && handleDragOver(e, cellKey)}
                           onDragLeave={handleDragLeave}
-                          onDrop={(e) => openShift && handleOpenShiftDrop(e, openShift)}
+                          onDrop={(e) => hasOpenShifts && dayOpenShifts[0] && handleOpenShiftDrop(e, dayOpenShifts[0])}
                         >
                           {/* Drop overlay for filling open shift */}
-                          {isDragging && openShift && !isDragOver && (
+                          {isDragging && hasOpenShifts && !isDragOver && (
                             <div className="absolute inset-1 border-2 border-dashed border-green-500/40 rounded-md pointer-events-none" />
                           )}
-                          {isDragOver && openShift && (
+                          {isDragOver && hasOpenShifts && (
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                               <div className="bg-green-600 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg animate-scale-in">
                                 Fill shift
                               </div>
                             </div>
                           )}
-                          {openShift && <OpenShiftCard openShift={openShift} isCompact={isCompact} isDragOver={isDragOver} onDelete={onOpenShiftDelete ? () => handleRequestDeleteOpenShift(openShift, room.name) : undefined} />}
+                          <div className="flex flex-col gap-1">
+                            {dayOpenShifts.map((openShift) => (
+                              <OpenShiftCard 
+                                key={openShift.id} 
+                                openShift={openShift} 
+                                isCompact={isCompact} 
+                                isDragOver={isDragOver} 
+                                onDelete={onOpenShiftDelete ? () => handleRequestDeleteOpenShift(openShift, room.name) : undefined} 
+                              />
+                            ))}
+                          </div>
                         </div>
                       );
                     })}
