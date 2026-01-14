@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Shift, OpenShift, Centre, Room, StaffMember, DemandData, RosterComplianceFlag, ageGroupLabels, ShiftTemplate } from '@/types/roster';
 import { ShiftCard, OpenShiftCard } from './ShiftCard';
+import { MobileShiftCard } from './MobileShiftCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { DemandHistogram } from './DemandHistogram';
 import { InlineDemandChart } from './InlineDemandChart';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -87,6 +89,7 @@ export function TimelineGrid({
 }: TimelineGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
+  const isMobile = useIsMobile();
 
   const getShiftsForCell = (roomId: string, date: string) => {
     return shifts.filter(s => s.roomId === roomId && s.date === date);
@@ -430,17 +433,29 @@ export function TimelineGrid({
                       isCompact && "space-y-1"
                     )}>
                       {cellShifts.map((shift) => (
-                        <ShiftCard
-                          key={shift.id}
-                          shift={shift}
-                          staff={staff.find(s => s.id === shift.staffId)}
-                          onEdit={onShiftEdit}
-                          onDelete={onShiftDelete}
-                          onCopy={onShiftCopy}
-                          onSwap={onShiftSwap}
-                          onDragStart={handleShiftDragStart}
-                          isCompact={isCompact}
-                        />
+                        isMobile ? (
+                          <MobileShiftCard
+                            key={shift.id}
+                            shift={shift}
+                            staff={staff.find(s => s.id === shift.staffId)}
+                            onEdit={onShiftEdit}
+                            onDelete={onShiftDelete}
+                            onCopy={onShiftCopy}
+                            onSwap={onShiftSwap}
+                          />
+                        ) : (
+                          <ShiftCard
+                            key={shift.id}
+                            shift={shift}
+                            staff={staff.find(s => s.id === shift.staffId)}
+                            onEdit={onShiftEdit}
+                            onDelete={onShiftDelete}
+                            onCopy={onShiftCopy}
+                            onSwap={onShiftSwap}
+                            onDragStart={handleShiftDragStart}
+                            isCompact={isCompact}
+                          />
+                        )
                       ))}
 
                       {cellOpenShifts.map((openShift) => (
