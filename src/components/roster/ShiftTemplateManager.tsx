@@ -30,7 +30,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AllowanceDropdownWithCreate } from './AllowanceDropdownWithCreate';
-import { AllowanceType } from '@/types/allowances';
+import { 
+  AllowanceType, 
+  AwardType,
+  DEFAULT_ON_CALL_CONFIGS, 
+  DEFAULT_SLEEPOVER_CONFIGS, 
+  DEFAULT_BROKEN_SHIFT_CONFIGS 
+} from '@/types/allowances';
 
 interface ShiftTemplateManagerProps {
   open: boolean;
@@ -160,6 +166,52 @@ export function ShiftTemplateManager({
     );
   };
 
+  // Pre-populate settings from award defaults when shift type changes
+  const handleShiftTypeChange = (newType: ShiftSpecialType, template: Partial<ShiftTemplate>, onUpdate: (updates: Partial<ShiftTemplate>) => void) => {
+    const award: AwardType = 'children_services'; // Default award, could be made configurable
+    
+    const updates: Partial<ShiftTemplate> = { shiftType: newType };
+    
+    if (newType === 'on_call') {
+      const config = DEFAULT_ON_CALL_CONFIGS[award];
+      updates.onCallSettings = {
+        defaultStartTime: '18:00',
+        defaultEndTime: '06:00',
+        standbyRate: config.standbyRate,
+        standbyRateType: config.standbyRateType,
+        callbackMinimumHours: config.callbackMinimumHours,
+        callbackRateMultiplier: config.callbackRateMultiplier,
+        weekendStandbyRate: config.weekendStandbyRate,
+        publicHolidayStandbyMultiplier: config.publicHolidayStandbyMultiplier,
+      };
+    } else if (newType === 'sleepover') {
+      const config = DEFAULT_SLEEPOVER_CONFIGS[award];
+      updates.sleepoverSettings = {
+        bedtimeStart: '22:00',
+        bedtimeEnd: '06:00',
+        flatRate: config.flatRate,
+        disturbanceRatePerHour: config.disturbanceRatePerHour,
+        disturbanceMinimumHours: config.disturbanceMinimumHours,
+        disturbanceRateMultiplier: config.disturbanceRateMultiplier,
+        weekendFlatRate: config.weekendFlatRate,
+        publicHolidayFlatRate: config.publicHolidayFlatRate,
+      };
+    } else if (newType === 'broken') {
+      const config = DEFAULT_BROKEN_SHIFT_CONFIGS[award];
+      updates.brokenShiftSettings = {
+        firstShiftEnd: '11:00',
+        secondShiftStart: '15:00',
+        unpaidGapMinutes: 240,
+        allowanceRate: config.allowanceRate,
+        minimumGapMinutes: config.minimumGapMinutes,
+        maximumGapMinutes: config.maximumGapMinutes,
+        gapBonusRate: config.gapBonusRate,
+      };
+    }
+    
+    onUpdate(updates);
+  };
+
   const renderShiftTypeSettings = (template: Partial<ShiftTemplate>, onUpdate: (updates: Partial<ShiftTemplate>) => void) => {
     const shiftType = template.shiftType || 'regular';
 
@@ -170,7 +222,7 @@ export function ShiftTemplateManager({
           <InputLabel>Shift Type</InputLabel>
           <Select
             value={shiftType}
-            onChange={(e) => onUpdate({ shiftType: e.target.value as ShiftSpecialType })}
+            onChange={(e) => handleShiftTypeChange(e.target.value as ShiftSpecialType, template, onUpdate)}
             label="Shift Type"
           >
             {(Object.keys(shiftTypeLabels) as ShiftSpecialType[]).map(type => (
@@ -319,27 +371,106 @@ export function ShiftTemplateManager({
               </Box>
             </AccordionSummary>
             <AccordionDetails>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                <TextField
-                  type="time"
-                  value={template.sleepoverSettings?.bedtimeStart || '22:00'}
-                  onChange={(e) => onUpdate({ 
-                    sleepoverSettings: { ...template.sleepoverSettings, bedtimeStart: e.target.value } 
-                  })}
-                  label="Bedtime Start"
-                  size="small"
-                  InputLabelProps={{ shrink: true }}
-                />
-                <TextField
-                  type="time"
-                  value={template.sleepoverSettings?.bedtimeEnd || '06:00'}
-                  onChange={(e) => onUpdate({ 
-                    sleepoverSettings: { ...template.sleepoverSettings, bedtimeEnd: e.target.value } 
-                  })}
-                  label="Bedtime End"
-                  size="small"
-                  InputLabelProps={{ shrink: true }}
-                />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Period Times */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <TextField
+                    type="time"
+                    value={template.sleepoverSettings?.bedtimeStart || '22:00'}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, bedtimeStart: e.target.value } 
+                    })}
+                    label="Bedtime Start"
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <TextField
+                    type="time"
+                    value={template.sleepoverSettings?.bedtimeEnd || '06:00'}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, bedtimeEnd: e.target.value } 
+                    })}
+                    label="Bedtime End"
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Box>
+                
+                {/* Flat Rate Pay Settings */}
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mt: 1 }}>
+                  Flat Rate (paid for sleepover)
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                  <TextField
+                    type="number"
+                    value={template.sleepoverSettings?.flatRate || 69.85}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, flatRate: parseFloat(e.target.value) || 0 } 
+                    })}
+                    label="Flat Rate ($)"
+                    size="small"
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                  <TextField
+                    type="number"
+                    value={template.sleepoverSettings?.weekendFlatRate || ''}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, weekendFlatRate: parseFloat(e.target.value) || undefined } 
+                    })}
+                    label="Weekend Rate ($)"
+                    size="small"
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                  <TextField
+                    type="number"
+                    value={template.sleepoverSettings?.publicHolidayFlatRate || ''}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, publicHolidayFlatRate: parseFloat(e.target.value) || undefined } 
+                    })}
+                    label="Public Hol Rate ($)"
+                    size="small"
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                </Box>
+                
+                {/* Disturbance Pay Settings */}
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mt: 1 }}>
+                  Disturbance Pay (when sleep is interrupted)
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                  <TextField
+                    type="number"
+                    value={template.sleepoverSettings?.disturbanceRatePerHour || 45.50}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, disturbanceRatePerHour: parseFloat(e.target.value) || 0 } 
+                    })}
+                    label="Hourly Rate ($)"
+                    size="small"
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                  <TextField
+                    type="number"
+                    value={template.sleepoverSettings?.disturbanceMinimumHours || 1}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, disturbanceMinimumHours: parseInt(e.target.value) || 1 } 
+                    })}
+                    label="Min Hours"
+                    size="small"
+                    inputProps={{ min: 1, max: 4 }}
+                    helperText="Min paid per disturbance"
+                  />
+                  <TextField
+                    type="number"
+                    value={template.sleepoverSettings?.disturbanceRateMultiplier || 1.5}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, disturbanceRateMultiplier: parseFloat(e.target.value) || 1.5 } 
+                    })}
+                    label="Rate Multiplier"
+                    size="small"
+                    inputProps={{ min: 1, max: 3, step: 0.25 }}
+                    helperText="e.g. 1.5 = overtime"
+                  />
+                </Box>
               </Box>
             </AccordionDetails>
           </Accordion>
@@ -356,12 +487,13 @@ export function ShiftTemplateManager({
             </AccordionSummary>
             <AccordionDetails>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Shift Times */}
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                   <TextField
                     type="time"
                     value={template.brokenShiftSettings?.firstShiftEnd || '11:00'}
                     onChange={(e) => onUpdate({ 
-                      brokenShiftSettings: { ...template.brokenShiftSettings, firstShiftEnd: e.target.value, secondShiftStart: template.brokenShiftSettings?.secondShiftStart || '15:00', unpaidGapMinutes: template.brokenShiftSettings?.unpaidGapMinutes || 240 } 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, firstShiftEnd: e.target.value } 
                     })}
                     label="First Shift Ends"
                     size="small"
@@ -371,7 +503,7 @@ export function ShiftTemplateManager({
                     type="time"
                     value={template.brokenShiftSettings?.secondShiftStart || '15:00'}
                     onChange={(e) => onUpdate({ 
-                      brokenShiftSettings: { ...template.brokenShiftSettings, secondShiftStart: e.target.value, firstShiftEnd: template.brokenShiftSettings?.firstShiftEnd || '11:00', unpaidGapMinutes: template.brokenShiftSettings?.unpaidGapMinutes || 240 } 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, secondShiftStart: e.target.value } 
                     })}
                     label="Second Shift Starts"
                     size="small"
@@ -382,18 +514,65 @@ export function ShiftTemplateManager({
                   type="number"
                   value={template.brokenShiftSettings?.unpaidGapMinutes || 240}
                   onChange={(e) => onUpdate({ 
-                    brokenShiftSettings: { 
-                      ...template.brokenShiftSettings, 
-                      unpaidGapMinutes: parseInt(e.target.value) || 0,
-                      firstShiftEnd: template.brokenShiftSettings?.firstShiftEnd || '11:00',
-                      secondShiftStart: template.brokenShiftSettings?.secondShiftStart || '15:00'
-                    } 
+                    brokenShiftSettings: { ...template.brokenShiftSettings, unpaidGapMinutes: parseInt(e.target.value) || 0 } 
                   })}
                   label="Unpaid Gap (minutes)"
                   size="small"
                   inputProps={{ min: 60, max: 600 }}
-                  helperText="Must be >60 mins to qualify for broken shift allowance"
                 />
+                
+                {/* Allowance Pay Settings */}
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mt: 1 }}>
+                  Broken Shift Allowance
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <TextField
+                    type="number"
+                    value={template.brokenShiftSettings?.allowanceRate || 18.46}
+                    onChange={(e) => onUpdate({ 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, allowanceRate: parseFloat(e.target.value) || 0 } 
+                    })}
+                    label="Allowance Rate ($)"
+                    size="small"
+                    inputProps={{ min: 0, step: 0.01 }}
+                    helperText="Flat rate per broken shift"
+                  />
+                  <TextField
+                    type="number"
+                    value={template.brokenShiftSettings?.gapBonusRate || ''}
+                    onChange={(e) => onUpdate({ 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, gapBonusRate: parseFloat(e.target.value) || undefined } 
+                    })}
+                    label="Gap Bonus Rate ($)"
+                    size="small"
+                    inputProps={{ min: 0, step: 0.01 }}
+                    helperText="Per hour over minimum gap"
+                  />
+                </Box>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <TextField
+                    type="number"
+                    value={template.brokenShiftSettings?.minimumGapMinutes || 60}
+                    onChange={(e) => onUpdate({ 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, minimumGapMinutes: parseInt(e.target.value) || 60 } 
+                    })}
+                    label="Min Gap (minutes)"
+                    size="small"
+                    inputProps={{ min: 30, max: 240 }}
+                    helperText="Min gap to qualify"
+                  />
+                  <TextField
+                    type="number"
+                    value={template.brokenShiftSettings?.maximumGapMinutes || ''}
+                    onChange={(e) => onUpdate({ 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, maximumGapMinutes: parseInt(e.target.value) || undefined } 
+                    })}
+                    label="Max Gap (minutes)"
+                    size="small"
+                    inputProps={{ min: 60, max: 600 }}
+                    helperText="Max gap before different rules"
+                  />
+                </Box>
               </Box>
             </AccordionDetails>
           </Accordion>
