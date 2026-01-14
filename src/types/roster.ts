@@ -259,6 +259,47 @@ export interface OpenShift {
   requiredQualifications: QualificationType[];
   urgency: 'low' | 'medium' | 'high' | 'critical';
   applicants: string[]; // staff IDs who applied
+  
+  // Fields from ShiftTemplate
+  breakMinutes?: number;
+  shiftType?: ShiftSpecialType;
+  minimumClassification?: string;
+  preferredRole?: StaffMember['role'];
+  templateId?: string; // Reference to the template used
+  selectedAllowances?: string[];
+  
+  // On-call settings
+  onCallSettings?: {
+    standbyRate?: number;
+    standbyRateType?: 'per_period' | 'per_hour' | 'daily';
+    callbackMinimumHours?: number;
+    callbackRateMultiplier?: number;
+  };
+  
+  // Sleepover settings
+  sleepoverSettings?: {
+    bedtimeStart?: string;
+    bedtimeEnd?: string;
+    flatRate?: number;
+    disturbanceRatePerHour?: number;
+  };
+  
+  // Broken shift settings
+  brokenShiftSettings?: {
+    firstShiftEnd?: string;
+    secondShiftStart?: string;
+    unpaidGapMinutes?: number;
+    allowanceRate?: number;
+  };
+  
+  // Higher duties
+  higherDutiesClassification?: string;
+  
+  // Travel/remote
+  isRemoteLocation?: boolean;
+  defaultTravelKilometres?: number;
+  
+  notes?: string;
 }
 
 export type ComplianceFlagType = 
