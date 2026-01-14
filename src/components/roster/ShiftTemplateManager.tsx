@@ -198,26 +198,111 @@ export function ShiftTemplateManager({
               </Box>
             </AccordionSummary>
             <AccordionDetails>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Period Times */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <TextField
+                    type="time"
+                    value={template.onCallSettings?.defaultStartTime || '18:00'}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, defaultStartTime: e.target.value } 
+                    })}
+                    label="On-Call Start"
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <TextField
+                    type="time"
+                    value={template.onCallSettings?.defaultEndTime || '06:00'}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, defaultEndTime: e.target.value } 
+                    })}
+                    label="On-Call End"
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Box>
+                
+                {/* Standby Pay Settings */}
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mt: 1 }}>
+                  Standby Pay (paid regardless of callback)
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <TextField
+                    type="number"
+                    value={template.onCallSettings?.standbyRate || 15.42}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, standbyRate: parseFloat(e.target.value) || 0 } 
+                    })}
+                    label="Standby Rate ($)"
+                    size="small"
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                  <FormControl size="small">
+                    <InputLabel>Rate Type</InputLabel>
+                    <Select
+                      value={template.onCallSettings?.standbyRateType || 'per_period'}
+                      onChange={(e) => onUpdate({ 
+                        onCallSettings: { ...template.onCallSettings, standbyRateType: e.target.value as 'per_period' | 'per_hour' | 'daily' } 
+                      })}
+                      label="Rate Type"
+                    >
+                      <MenuItem value="per_period">Per Period</MenuItem>
+                      <MenuItem value="per_hour">Per Hour</MenuItem>
+                      <MenuItem value="daily">Per Day</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
                 <TextField
-                  type="time"
-                  value={template.onCallSettings?.defaultStartTime || '18:00'}
+                  type="number"
+                  value={template.onCallSettings?.weekendStandbyRate || ''}
                   onChange={(e) => onUpdate({ 
-                    onCallSettings: { ...template.onCallSettings, defaultStartTime: e.target.value } 
+                    onCallSettings: { ...template.onCallSettings, weekendStandbyRate: parseFloat(e.target.value) || undefined } 
                   })}
-                  label="On-Call Start"
+                  label="Weekend Standby Rate ($)"
                   size="small"
-                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ min: 0, step: 0.01 }}
+                  helperText="Higher rate for Sat/Sun on-call"
                 />
+                
+                {/* Callback Pay Settings */}
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mt: 1 }}>
+                  Callback Pay (when called in)
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <TextField
+                    type="number"
+                    value={template.onCallSettings?.callbackMinimumHours || 2}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, callbackMinimumHours: parseInt(e.target.value) || 2 } 
+                    })}
+                    label="Minimum Hours"
+                    size="small"
+                    inputProps={{ min: 1, max: 8 }}
+                    helperText="Min hours paid when called back"
+                  />
+                  <TextField
+                    type="number"
+                    value={template.onCallSettings?.callbackRateMultiplier || 1.5}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, callbackRateMultiplier: parseFloat(e.target.value) || 1.5 } 
+                    })}
+                    label="Rate Multiplier"
+                    size="small"
+                    inputProps={{ min: 1, max: 3, step: 0.25 }}
+                    helperText="e.g. 1.5 = time-and-a-half"
+                  />
+                </Box>
                 <TextField
-                  type="time"
-                  value={template.onCallSettings?.defaultEndTime || '06:00'}
+                  type="number"
+                  value={template.onCallSettings?.publicHolidayStandbyMultiplier || ''}
                   onChange={(e) => onUpdate({ 
-                    onCallSettings: { ...template.onCallSettings, defaultEndTime: e.target.value } 
+                    onCallSettings: { ...template.onCallSettings, publicHolidayStandbyMultiplier: parseFloat(e.target.value) || undefined } 
                   })}
-                  label="On-Call End"
+                  label="Public Holiday Multiplier"
                   size="small"
-                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ min: 1, max: 3, step: 0.25 }}
+                  helperText="Multiplier for public holiday callbacks"
                 />
               </Box>
             </AccordionDetails>
