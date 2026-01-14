@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Bell, 
@@ -162,9 +161,6 @@ export function AlertNotificationsPanel({
       });
     }
 
-    // Coverage gaps - open shifts
-    // We could add more alerts here for open shifts coverage
-
     return alertList.sort((a, b) => {
       const severityOrder = { critical: 0, warning: 1, info: 2 };
       return severityOrder[a.severity] - severityOrder[b.severity];
@@ -201,101 +197,91 @@ export function AlertNotificationsPanel({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-[400px] sm:w-[450px]">
-        <SheetHeader>
-          <SheetTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Alerts & Notifications
-            </span>
-            {unreadCount > 0 && (
-              <Badge variant="destructive">{unreadCount} new</Badge>
-            )}
-          </SheetTitle>
-          <SheetDescription>
-            Monitor budget, compliance, and scheduling alerts
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="mt-4">
-          <Tabs defaultValue="all">
-            <div className="flex items-center justify-between mb-4">
-              <TabsList>
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="critical">Critical</TabsTrigger>
-                <TabsTrigger value="warnings">Warnings</TabsTrigger>
-              </TabsList>
-              {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-                  Mark all read
-                </Button>
-              )}
-            </div>
-
-            <ScrollArea className="h-[calc(100vh-220px)]">
-              <TabsContent value="all" className="space-y-3 m-0">
-                {alerts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
-                    <p className="font-medium">All Clear!</p>
-                    <p className="text-sm text-muted-foreground">No alerts at this time</p>
-                  </div>
-                ) : (
-                  alerts.map(alert => (
-                    <AlertItem 
-                      key={alert.id} 
-                      alert={alert} 
-                      getIcon={getAlertIcon}
-                      getSeverityColor={getSeverityColor}
-                      onMarkRead={() => markAsRead(alert.id)}
-                    />
-                  ))
-                )}
-              </TabsContent>
-
-              <TabsContent value="critical" className="space-y-3 m-0">
-                {alerts.filter(a => a.severity === 'critical').length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
-                    <p className="text-sm text-muted-foreground">No critical alerts</p>
-                  </div>
-                ) : (
-                  alerts.filter(a => a.severity === 'critical').map(alert => (
-                    <AlertItem 
-                      key={alert.id} 
-                      alert={alert} 
-                      getIcon={getAlertIcon}
-                      getSeverityColor={getSeverityColor}
-                      onMarkRead={() => markAsRead(alert.id)}
-                    />
-                  ))
-                )}
-              </TabsContent>
-
-              <TabsContent value="warnings" className="space-y-3 m-0">
-                {alerts.filter(a => a.severity === 'warning').length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
-                    <p className="text-sm text-muted-foreground">No warnings</p>
-                  </div>
-                ) : (
-                  alerts.filter(a => a.severity === 'warning').map(alert => (
-                    <AlertItem 
-                      key={alert.id} 
-                      alert={alert} 
-                      getIcon={getAlertIcon}
-                      getSeverityColor={getSeverityColor}
-                      onMarkRead={() => markAsRead(alert.id)}
-                    />
-                  ))
-                )}
-              </TabsContent>
-            </ScrollArea>
-          </Tabs>
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Alerts & Notifications"
+      description="Monitor budget, compliance, and scheduling alerts"
+      icon={Bell}
+      size="sm"
+      headerActions={
+        unreadCount > 0 ? <Badge variant="destructive">{unreadCount} new</Badge> : null
+      }
+      showFooter={false}
+    >
+      <Tabs defaultValue="all">
+        <div className="flex items-center justify-between mb-4">
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="critical">Critical</TabsTrigger>
+            <TabsTrigger value="warnings">Warnings</TabsTrigger>
+          </TabsList>
+          {unreadCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+              Mark all read
+            </Button>
+          )}
         </div>
-      </SheetContent>
-    </Sheet>
+
+        <TabsContent value="all" className="space-y-3 m-0">
+          {alerts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
+              <p className="font-medium">All Clear!</p>
+              <p className="text-sm text-muted-foreground">No alerts at this time</p>
+            </div>
+          ) : (
+            alerts.map(alert => (
+              <AlertItem 
+                key={alert.id} 
+                alert={alert} 
+                getIcon={getAlertIcon}
+                getSeverityColor={getSeverityColor}
+                onMarkRead={() => markAsRead(alert.id)}
+              />
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="critical" className="space-y-3 m-0">
+          {alerts.filter(a => a.severity === 'critical').length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
+              <p className="text-sm text-muted-foreground">No critical alerts</p>
+            </div>
+          ) : (
+            alerts.filter(a => a.severity === 'critical').map(alert => (
+              <AlertItem 
+                key={alert.id} 
+                alert={alert} 
+                getIcon={getAlertIcon}
+                getSeverityColor={getSeverityColor}
+                onMarkRead={() => markAsRead(alert.id)}
+              />
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="warnings" className="space-y-3 m-0">
+          {alerts.filter(a => a.severity === 'warning').length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
+              <p className="text-sm text-muted-foreground">No warnings</p>
+            </div>
+          ) : (
+            alerts.filter(a => a.severity === 'warning').map(alert => (
+              <AlertItem 
+                key={alert.id} 
+                alert={alert} 
+                getIcon={getAlertIcon}
+                getSeverityColor={getSeverityColor}
+                onMarkRead={() => markAsRead(alert.id)}
+              />
+            ))
+          )}
+        </TabsContent>
+      </Tabs>
+    </PrimaryOffCanvas>
   );
 }
 

@@ -50,7 +50,7 @@ import { GPSClockInPanel } from '@/components/roster/GPSClockInPanel';
 import { WeatherIntegrationPanel } from '@/components/roster/WeatherIntegrationPanel';
 import { BreakSchedulingPanel } from '@/components/roster/BreakSchedulingPanel';
 import { SkillMatrixPanel } from '@/components/roster/SkillMatrixPanel';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 
 // MUI Components
 import {
@@ -1859,132 +1859,119 @@ export default function RosterScheduler() {
         onAssign={handleAutoAssign}
       />
 
-      {/* Advanced Features Panels */}
-      <Sheet open={showRecurringPatterns} onOpenChange={setShowRecurringPatterns}>
-        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Repeat className="h-5 w-5" />
-              Recurring Shift Patterns
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">
-            <RecurringPatternsPanel 
-              centreId={selectedCentreId}
-              centre={selectedCentre}
-              staff={allStaff}
-              existingShifts={shifts}
-              onGenerateShifts={(newShifts) => {
-                const shiftsWithIds = newShifts.map((s, idx) => ({
-                  ...s,
-                  id: `shift-pattern-${Date.now()}-${idx}`,
-                }));
-                setShifts(prev => [...prev, ...shiftsWithIds], `Generated ${shiftsWithIds.length} recurring shifts`, 'bulk');
-              }}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Advanced Features Panels - Using PrimaryOffCanvas */}
+      <PrimaryOffCanvas
+        open={showRecurringPatterns}
+        onClose={() => setShowRecurringPatterns(false)}
+        title="Recurring Shift Patterns"
+        description="Create and manage recurring shift templates"
+        icon={Repeat}
+        size="3xl"
+        showFooter={false}
+      >
+        <RecurringPatternsPanel 
+          centreId={selectedCentreId}
+          centre={selectedCentre}
+          staff={allStaff}
+          existingShifts={shifts}
+          onGenerateShifts={(newShifts) => {
+            const shiftsWithIds = newShifts.map((s, idx) => ({
+              ...s,
+              id: `shift-pattern-${Date.now()}-${idx}`,
+            }));
+            setShifts(prev => [...prev, ...shiftsWithIds], `Generated ${shiftsWithIds.length} recurring shifts`, 'bulk');
+          }}
+        />
+      </PrimaryOffCanvas>
 
-      <Sheet open={showBreakScheduling} onOpenChange={setShowBreakScheduling}>
-        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Coffee className="h-5 w-5" />
-              Break Scheduling
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">
-            <BreakSchedulingPanel />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <PrimaryOffCanvas
+        open={showBreakScheduling}
+        onClose={() => setShowBreakScheduling(false)}
+        title="Break Scheduling"
+        description="Manage staff break times and compliance"
+        icon={Coffee}
+        size="3xl"
+        showFooter={false}
+      >
+        <BreakSchedulingPanel />
+      </PrimaryOffCanvas>
 
-      <Sheet open={showSkillMatrix} onOpenChange={setShowSkillMatrix}>
-        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Skill Matrix Matching
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">
-            <SkillMatrixPanel 
-              centreId={selectedCentreId}
-              centre={selectedCentre}
-              staff={allStaff}
-              shifts={shifts}
-              openShifts={openShifts}
-              onAssignStaff={(staffId, shiftId) => {
-                // Find the open shift and assign staff
-                const openShift = openShifts.find(os => os.id === shiftId);
-                if (openShift) {
-                  const staffMember = allStaff.find(s => s.id === staffId);
-                  const newShift: Omit<Shift, 'id'> = {
-                    staffId,
-                    centreId: openShift.centreId,
-                    roomId: openShift.roomId,
-                    date: openShift.date,
-                    startTime: openShift.startTime,
-                    endTime: openShift.endTime,
-                    breakMinutes: openShift.breakMinutes || 30,
-                    status: 'draft',
-                    isOpenShift: false,
-                  };
-                  setShifts(prev => [...prev, { ...newShift, id: `shift-skill-${Date.now()}` }], 
-                    `Assigned ${staffMember?.name || 'staff'} via skill matching`, 'add');
-                }
-                toast.success(`Staff assigned to shift via skill matching`);
-              }}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <PrimaryOffCanvas
+        open={showSkillMatrix}
+        onClose={() => setShowSkillMatrix(false)}
+        title="Skill Matrix Matching"
+        description="Match staff to shifts based on qualifications"
+        icon={Target}
+        size="3xl"
+        showFooter={false}
+      >
+        <SkillMatrixPanel 
+          centreId={selectedCentreId}
+          centre={selectedCentre}
+          staff={allStaff}
+          shifts={shifts}
+          openShifts={openShifts}
+          onAssignStaff={(staffId, shiftId) => {
+            const openShift = openShifts.find(os => os.id === shiftId);
+            if (openShift) {
+              const staffMember = allStaff.find(s => s.id === staffId);
+              const newShift: Omit<Shift, 'id'> = {
+                staffId,
+                centreId: openShift.centreId,
+                roomId: openShift.roomId,
+                date: openShift.date,
+                startTime: openShift.startTime,
+                endTime: openShift.endTime,
+                breakMinutes: openShift.breakMinutes || 30,
+                status: 'draft',
+                isOpenShift: false,
+              };
+              setShifts(prev => [...prev, { ...newShift, id: `shift-skill-${Date.now()}` }], 
+                `Assigned ${staffMember?.name || 'staff'} via skill matching`, 'add');
+            }
+            toast.success(`Staff assigned to shift via skill matching`);
+          }}
+        />
+      </PrimaryOffCanvas>
 
-      <Sheet open={showFatigueManagement} onOpenChange={setShowFatigueManagement}>
-        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5" />
-              Fatigue Management
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">
-            <FatigueManagementPanel 
-              staff={allStaff}
-              shifts={shifts}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <PrimaryOffCanvas
+        open={showFatigueManagement}
+        onClose={() => setShowFatigueManagement(false)}
+        title="Fatigue Management"
+        description="Monitor staff fatigue levels and compliance"
+        icon={Brain}
+        size="3xl"
+        showFooter={false}
+      >
+        <FatigueManagementPanel 
+          staff={allStaff}
+          shifts={shifts}
+        />
+      </PrimaryOffCanvas>
 
-      <Sheet open={showGPSClockIn} onOpenChange={setShowGPSClockIn}>
-        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              GPS Clock-in/out
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">
-            <GPSClockInPanel />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <PrimaryOffCanvas
+        open={showGPSClockIn}
+        onClose={() => setShowGPSClockIn(false)}
+        title="GPS Clock-in/out"
+        description="Manage geofence zones and attendance validation"
+        icon={MapPin}
+        size="3xl"
+        showFooter={false}
+      >
+        <GPSClockInPanel />
+      </PrimaryOffCanvas>
 
-      <Sheet open={showWeatherIntegration} onOpenChange={setShowWeatherIntegration}>
-        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <CloudSun className="h-5 w-5" />
-              Weather Integration
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">
-            <WeatherIntegrationPanel />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <PrimaryOffCanvas
+        open={showWeatherIntegration}
+        onClose={() => setShowWeatherIntegration(false)}
+        title="Weather Integration"
+        description="Weather-based demand forecasting"
+        icon={CloudSun}
+        size="3xl"
+        showFooter={false}
+      >
+        <WeatherIntegrationPanel />
+      </PrimaryOffCanvas>
 
       {/* Hidden Print View */}
       <div className="hidden">
