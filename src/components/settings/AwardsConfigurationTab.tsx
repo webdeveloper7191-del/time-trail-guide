@@ -45,6 +45,9 @@ import {
   BarChart3,
   Phone,
   GitBranch,
+  Umbrella,
+  FileStack,
+  ClipboardCheck,
 } from 'lucide-react';
 import { australianAwards, AustralianAward, AwardClassification, calculateRates } from '@/data/australianAwards';
 import { CustomRateOverridesPanel } from './awards/CustomRateOverridesPanel';
@@ -63,6 +66,9 @@ import { AwardUpdatesPanel } from './awards/AwardUpdatesPanel';
 import { OnCallSettingsEditor } from './OnCallSettingsEditor';
 import { OnCallConfiguration, DEFAULT_ON_CALL_CONFIGS, AwardType, AWARD_NAMES } from '@/types/allowances';
 import { ModuleDependencyExplorer } from './architecture/ModuleDependencyExplorer';
+import { LeaveBalanceDashboard } from './awards/LeaveBalanceDashboard';
+import { EnterpriseAgreementPanel } from './awards/EnterpriseAgreementPanel';
+import { AuditTrailViewer } from './awards/AuditTrailViewer';
 
 interface EnabledAward {
   awardId: string;
@@ -781,6 +787,27 @@ export function AwardsConfigurationTab() {
               <GitBranch className="h-4 w-4" />
               <span className="hidden sm:inline">Architecture</span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="leave-balances" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Umbrella className="h-4 w-4" />
+              <span className="hidden sm:inline">Leave & LSL</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="enterprise-agreements" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <FileStack className="h-4 w-4" />
+              <span className="hidden sm:inline">EBA</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="audit-trail" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <ClipboardCheck className="h-4 w-4" />
+              <span className="hidden sm:inline">Audit</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -842,6 +869,18 @@ export function AwardsConfigurationTab() {
 
         <TabsContent value="architecture" className="mt-0">
           <ModuleDependencyExplorer />
+        </TabsContent>
+
+        <TabsContent value="leave-balances" className="mt-0">
+          <LeaveBalanceDashboard />
+        </TabsContent>
+
+        <TabsContent value="enterprise-agreements" className="mt-0">
+          <EnterpriseAgreementPanel />
+        </TabsContent>
+
+        <TabsContent value="audit-trail" className="mt-0">
+          <AuditTrailViewer />
         </TabsContent>
       </Tabs>
     </div>
