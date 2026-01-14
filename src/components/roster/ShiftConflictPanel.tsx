@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   AlertTriangle, 
@@ -66,97 +65,91 @@ export function ShiftConflictPanel({
   const getStaffName = (staffId: string) => staff.find(s => s.id === staffId)?.name || 'Unknown';
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-[450px] sm:w-[500px]">
-        <SheetHeader>
-          <SheetTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Shift Conflicts
-            </span>
-            <div className="flex items-center gap-2">
-              {errorConflicts.length > 0 && (
-                <Badge variant="destructive">{errorConflicts.length} errors</Badge>
-              )}
-              {warningConflicts.length > 0 && (
-                <Badge variant="outline" className="border-amber-500 text-amber-600">
-                  {warningConflicts.length} warnings
-                </Badge>
-              )}
-            </div>
-          </SheetTitle>
-          <SheetDescription>
-            Review and resolve scheduling conflicts
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="mt-4">
-          <Tabs defaultValue="all">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all">
-                All ({allConflicts.length})
-              </TabsTrigger>
-              <TabsTrigger value="errors">
-                Errors ({errorConflicts.length})
-              </TabsTrigger>
-              <TabsTrigger value="warnings">
-                Warnings ({warningConflicts.length})
-              </TabsTrigger>
-            </TabsList>
-
-            <ScrollArea className="h-[calc(100vh-240px)] mt-4">
-              <TabsContent value="all" className="space-y-3 m-0">
-                {allConflicts.length === 0 ? (
-                  <NoConflicts />
-                ) : (
-                  allConflicts.map(conflict => (
-                    <ConflictItem
-                      key={conflict.id}
-                      conflict={conflict}
-                      staffName={getStaffName(conflict.staffId)}
-                      getIcon={getConflictIcon}
-                      onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
-                    />
-                  ))
-                )}
-              </TabsContent>
-
-              <TabsContent value="errors" className="space-y-3 m-0">
-                {errorConflicts.length === 0 ? (
-                  <NoConflicts type="error" />
-                ) : (
-                  errorConflicts.map(conflict => (
-                    <ConflictItem
-                      key={conflict.id}
-                      conflict={conflict}
-                      staffName={getStaffName(conflict.staffId)}
-                      getIcon={getConflictIcon}
-                      onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
-                    />
-                  ))
-                )}
-              </TabsContent>
-
-              <TabsContent value="warnings" className="space-y-3 m-0">
-                {warningConflicts.length === 0 ? (
-                  <NoConflicts type="warning" />
-                ) : (
-                  warningConflicts.map(conflict => (
-                    <ConflictItem
-                      key={conflict.id}
-                      conflict={conflict}
-                      staffName={getStaffName(conflict.staffId)}
-                      getIcon={getConflictIcon}
-                      onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
-                    />
-                  ))
-                )}
-              </TabsContent>
-            </ScrollArea>
-          </Tabs>
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Shift Conflicts"
+      description="Review and resolve scheduling conflicts"
+      icon={AlertTriangle}
+      size="md"
+      headerActions={
+        <div className="flex items-center gap-2">
+          {errorConflicts.length > 0 && (
+            <Badge variant="destructive">{errorConflicts.length} errors</Badge>
+          )}
+          {warningConflicts.length > 0 && (
+            <Badge variant="outline" className="border-amber-500 text-amber-600">
+              {warningConflicts.length} warnings
+            </Badge>
+          )}
         </div>
-      </SheetContent>
-    </Sheet>
+      }
+      showFooter={false}
+    >
+      <Tabs defaultValue="all">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all">
+            All ({allConflicts.length})
+          </TabsTrigger>
+          <TabsTrigger value="errors">
+            Errors ({errorConflicts.length})
+          </TabsTrigger>
+          <TabsTrigger value="warnings">
+            Warnings ({warningConflicts.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="mt-4 space-y-3">
+          <TabsContent value="all" className="space-y-3 m-0">
+            {allConflicts.length === 0 ? (
+              <NoConflicts />
+            ) : (
+              allConflicts.map(conflict => (
+                <ConflictItem
+                  key={conflict.id}
+                  conflict={conflict}
+                  staffName={getStaffName(conflict.staffId)}
+                  getIcon={getConflictIcon}
+                  onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
+                />
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="errors" className="space-y-3 m-0">
+            {errorConflicts.length === 0 ? (
+              <NoConflicts type="error" />
+            ) : (
+              errorConflicts.map(conflict => (
+                <ConflictItem
+                  key={conflict.id}
+                  conflict={conflict}
+                  staffName={getStaffName(conflict.staffId)}
+                  getIcon={getConflictIcon}
+                  onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
+                />
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="warnings" className="space-y-3 m-0">
+            {warningConflicts.length === 0 ? (
+              <NoConflicts type="warning" />
+            ) : (
+              warningConflicts.map(conflict => (
+                <ConflictItem
+                  key={conflict.id}
+                  conflict={conflict}
+                  staffName={getStaffName(conflict.staffId)}
+                  getIcon={getConflictIcon}
+                  onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
+                />
+              ))
+            )}
+          </TabsContent>
+        </div>
+      </Tabs>
+    </PrimaryOffCanvas>
   );
 }
 
