@@ -535,9 +535,9 @@ export function EnterpriseAgreementPanel() {
 
       {/* EBA Detail Side Panel */}
       <Sheet open={!!selectedEBA} onOpenChange={() => { setSelectedEBA(null); setEditMode(false); }}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-2xl p-6">
           {selectedEBA && (
-            <>
+            <ScrollArea className="h-full pr-4">
               <SheetHeader>
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -907,17 +907,17 @@ export function EnterpriseAgreementPanel() {
                 </Button>
                 <Button onClick={() => setEditMode(true)}>
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit Agreement
+                Edit Agreement
                 </Button>
               </SheetFooter>
-            </>
+            </ScrollArea>
           )}
         </SheetContent>
       </Sheet>
 
       {/* Create Agreement Side Panel */}
       <Sheet open={showCreatePanel} onOpenChange={setShowCreatePanel}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Create Enterprise Agreement</SheetTitle>
             <SheetDescription>
@@ -1112,7 +1112,7 @@ export function EnterpriseAgreementPanel() {
 
       {/* Compare Agreements Side Panel */}
       <Sheet open={showComparePanel} onOpenChange={setShowComparePanel}>
-        <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Compare Agreements</SheetTitle>
             <SheetDescription>
@@ -1302,7 +1302,7 @@ export function EnterpriseAgreementPanel() {
 
       {/* Multi-Award Employee Management Side Panel */}
       <Sheet open={showMultiAwardPanel} onOpenChange={setShowMultiAwardPanel}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Multi-Award Employee Configuration</SheetTitle>
             <SheetDescription>
@@ -1381,7 +1381,7 @@ export function EnterpriseAgreementPanel() {
 
       {/* Employee Detail Sub-Panel */}
       <Sheet open={!!selectedEmployee} onOpenChange={() => setSelectedEmployee(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
           {selectedEmployee && (
             <>
               <SheetHeader>
