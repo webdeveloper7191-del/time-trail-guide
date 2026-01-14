@@ -702,28 +702,45 @@ export function AddOpenShiftModal({
                       {selectedRoomIds.length === rooms.length ? 'Deselect All' : 'Select All'}
                     </Button>
                   </Box>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, maxHeight: 120, overflow: 'auto' }}>
-                    {rooms.map((room) => (
-                      <Chip
-                        key={room.id}
-                        label={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <span>{room.name}</span>
-                            <Typography variant="caption" color="text.secondary">
-                              ({ageGroupLabels[room.ageGroup]})
-                            </Typography>
-                          </Box>
-                        }
-                        onClick={() => handleRoomToggle(room.id)}
-                        color={selectedRoomIds.includes(room.id) ? 'primary' : 'default'}
-                        variant={selectedRoomIds.includes(room.id) ? 'filled' : 'outlined'}
-                        size="small"
-                      />
-                    ))}
-                  </Box>
-                  {selectedRoomIds.length === 0 && (
-                    <FormHelperText error>Please select at least one room</FormHelperText>
-                  )}
+                  <FormControl fullWidth size="small" error={selectedRoomIds.length === 0}>
+                    <InputLabel>Rooms</InputLabel>
+                    <Select
+                      multiple
+                      value={selectedRoomIds}
+                      onChange={(e) => setSelectedRoomIds(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                      input={<OutlinedInput label="Rooms" />}
+                      renderValue={(selected) => (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {selected.map((roomId) => {
+                            const room = rooms.find(r => r.id === roomId);
+                            return room ? (
+                              <Chip key={roomId} label={room.name} size="small" />
+                            ) : null;
+                          })}
+                        </Box>
+                      )}
+                      MenuProps={{
+                        PaperProps: {
+                          style: {
+                            maxHeight: 300,
+                          },
+                        },
+                      }}
+                    >
+                      {rooms.map((room) => (
+                        <MenuItem key={room.id} value={room.id}>
+                          <Checkbox checked={selectedRoomIds.includes(room.id)} />
+                          <ListItemText 
+                            primary={room.name} 
+                            secondary={ageGroupLabels[room.ageGroup]}
+                          />
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {selectedRoomIds.length === 0 && (
+                      <FormHelperText>Please select at least one room</FormHelperText>
+                    )}
+                  </FormControl>
                 </Box>
               )}
 
