@@ -1268,127 +1268,595 @@ const PRODUCT_MIND_MAP: MindMapNode = {
 };
 
 // Export helper functions
-function generateMarkdownExport(): string {
+function generateRequirementsSpecification(): string {
   const lines: string[] = [];
+  const date = new Date();
+  const version = '2.0.0';
   
-  lines.push('# Time Trail Guide - Architecture Documentation');
+  // Title Page
+  lines.push('# Time Trail Guide');
+  lines.push('# Requirements Specification Document');
   lines.push('');
-  lines.push(`*Generated on ${new Date().toLocaleDateString()}*`);
+  lines.push('---');
+  lines.push('');
+  lines.push('## Document Information');
+  lines.push('');
+  lines.push('| Field | Value |');
+  lines.push('|-------|-------|');
+  lines.push(`| **Document Version** | ${version} |`);
+  lines.push(`| **Generated Date** | ${date.toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} |`);
+  lines.push(`| **Generated Time** | ${date.toLocaleTimeString('en-AU')} |`);
+  lines.push('| **Product Name** | Time Trail Guide |');
+  lines.push('| **Product Type** | Workforce Management System |');
+  lines.push('| **Target Industries** | Childcare, Healthcare, Hospitality, Retail |');
+  lines.push('| **Regulatory Framework** | Australian Fair Work Commission |');
   lines.push('');
   lines.push('---');
   lines.push('');
   
-  // Modules Section
-  lines.push('## Core Modules');
+  // Table of Contents
+  lines.push('## Table of Contents');
+  lines.push('');
+  lines.push('1. [Executive Summary](#1-executive-summary)');
+  lines.push('2. [System Overview](#2-system-overview)');
+  lines.push('3. [Functional Requirements](#3-functional-requirements)');
+  lines.push('4. [Core Modules](#4-core-modules)');
+  lines.push('5. [Data Architecture](#5-data-architecture)');
+  lines.push('6. [Business Rules Reference](#6-business-rules-reference)');
+  lines.push('7. [API Reference](#7-api-reference)');
+  lines.push('8. [Feature Specifications](#8-feature-specifications)');
+  lines.push('9. [Developer Guide](#9-developer-guide)');
+  lines.push('10. [Compliance Requirements](#10-compliance-requirements)');
+  lines.push('11. [Appendices](#11-appendices)');
+  lines.push('');
+  lines.push('---');
   lines.push('');
   
-  MODULES.forEach(module => {
-    lines.push(`### ${module.name}`);
+  // 1. Executive Summary
+  lines.push('# 1. Executive Summary');
+  lines.push('');
+  lines.push('## 1.1 Purpose');
+  lines.push('');
+  lines.push('Time Trail Guide is a comprehensive workforce management system designed specifically for Australian industries requiring complex award interpretation, shift scheduling, and compliance management. The system automates pay calculations, ensures regulatory compliance, and streamlines timesheet processing.');
+  lines.push('');
+  lines.push('## 1.2 Scope');
+  lines.push('');
+  lines.push('This document provides a complete technical specification for developers, business analysts, and stakeholders. It covers:');
+  lines.push('');
+  lines.push('- Functional and non-functional requirements');
+  lines.push('- System architecture and module dependencies');
+  lines.push('- Business rules and compliance requirements');
+  lines.push('- API specifications and data flows');
+  lines.push('- Developer implementation guidelines');
+  lines.push('');
+  lines.push('## 1.3 Target Audience');
+  lines.push('');
+  lines.push('| Role | Use Case |');
+  lines.push('|------|----------|');
+  lines.push('| Developers | Implementation reference, API documentation |');
+  lines.push('| Business Analysts | Requirements verification, feature understanding |');
+  lines.push('| Project Managers | Scope definition, dependency planning |');
+  lines.push('| QA Engineers | Test case development, acceptance criteria |');
+  lines.push('| Stakeholders | Feature overview, compliance verification |');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  
+  // 2. System Overview
+  lines.push('# 2. System Overview');
+  lines.push('');
+  lines.push('## 2.1 Technology Stack');
+  lines.push('');
+  lines.push('| Layer | Technology |');
+  lines.push('|-------|------------|');
+  lines.push('| Frontend Framework | React 18 with TypeScript |');
+  lines.push('| Build Tool | Vite |');
+  lines.push('| Styling | Tailwind CSS |');
+  lines.push('| UI Components | shadcn/ui + Radix |');
+  lines.push('| Charts | Recharts |');
+  lines.push('| Forms | React Hook Form + Zod |');
+  lines.push('| State Management | React Context + TanStack Query |');
+  lines.push('| Routing | React Router v6 |');
+  lines.push('');
+  lines.push('## 2.2 Module Architecture');
+  lines.push('');
+  lines.push('```');
+  lines.push('┌─────────────────────────────────────────────────────────────┐');
+  lines.push('│                    TIME TRAIL GUIDE                        │');
+  lines.push('├─────────────────────────────────────────────────────────────┤');
+  lines.push('│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │');
+  lines.push('│  │   Awards    │  │    Staff    │  │   Roster    │        │');
+  lines.push('│  │   Module    │──│   Module    │──│   Module    │        │');
+  lines.push('│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘        │');
+  lines.push('│         │                │                │               │');
+  lines.push('│         └────────────────┼────────────────┘               │');
+  lines.push('│                          │                                │');
+  lines.push('│  ┌─────────────┐  ┌──────┴──────┐  ┌─────────────┐        │');
+  lines.push('│  │ Calculation │  │  Timesheet  │  │ Compliance  │        │');
+  lines.push('│  │   Engine    │──│   Module    │──│   Engine    │        │');
+  lines.push('│  └─────────────┘  └─────────────┘  └─────────────┘        │');
+  lines.push('└─────────────────────────────────────────────────────────────┘');
+  lines.push('```');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  
+  // 3. Functional Requirements
+  lines.push('# 3. Functional Requirements');
+  lines.push('');
+  lines.push('## 3.1 User Stories Summary');
+  lines.push('');
+  lines.push('| ID | As a... | I want to... | So that... |');
+  lines.push('|----|---------|--------------|------------|');
+  lines.push('| US-001 | Centre Manager | Create and publish weekly rosters | Staff know their schedules in advance |');
+  lines.push('| US-002 | Staff Member | View my upcoming shifts | I can plan my week accordingly |');
+  lines.push('| US-003 | Payroll Admin | Export approved timesheets | Payments are processed accurately |');
+  lines.push('| US-004 | HR Manager | Configure award rates | Pay calculations comply with regulations |');
+  lines.push('| US-005 | Room Leader | Check staff-to-child ratios | Regulatory compliance is maintained |');
+  lines.push('| US-006 | Finance Manager | Track labor costs against budget | Spending stays within limits |');
+  lines.push('| US-007 | Compliance Officer | Generate audit reports | Regulatory requirements are documented |');
+  lines.push('');
+  lines.push('## 3.2 System Capabilities');
+  lines.push('');
+  MODULES.forEach((module, idx) => {
+    lines.push(`### 3.2.${idx + 1} ${module.name}`);
+    lines.push('');
+    lines.push(`> ${module.description}`);
+    lines.push('');
+    lines.push('**Capabilities:**');
+    module.dataProvides.forEach(cap => lines.push(`- ✓ ${cap}`));
+    lines.push('');
+  });
+  lines.push('---');
+  lines.push('');
+  
+  // 4. Core Modules
+  lines.push('# 4. Core Modules');
+  lines.push('');
+  
+  MODULES.forEach((module, idx) => {
+    lines.push(`## 4.${idx + 1} ${module.name}`);
+    lines.push('');
+    lines.push(`### Description`);
     lines.push('');
     lines.push(module.description);
     lines.push('');
     
-    lines.push('#### Components');
-    module.components.forEach(comp => lines.push(`- \`${comp}\``));
+    lines.push('### Components');
+    lines.push('');
+    lines.push('| Component | File Location |');
+    lines.push('|-----------|---------------|');
+    module.components.forEach(comp => {
+      lines.push(`| \`${comp}\` | \`src/components/**/${comp}.tsx\` |`);
+    });
     lines.push('');
     
-    lines.push('#### Data Provides');
-    module.dataProvides.forEach(data => lines.push(`- ${data}`));
+    lines.push('### Data Interface');
+    lines.push('');
+    lines.push('**Data Provided:**');
+    module.dataProvides.forEach(data => lines.push(`- 📤 ${data}`));
+    lines.push('');
+    lines.push('**Data Consumed:**');
+    module.dataConsumes.forEach(data => lines.push(`- 📥 ${data}`));
     lines.push('');
     
-    lines.push('#### Data Consumes');
-    module.dataConsumes.forEach(data => lines.push(`- ${data}`));
+    lines.push('### Business Rules');
+    lines.push('');
+    lines.push('| Rule ID | Description | Severity |');
+    lines.push('|---------|-------------|----------|');
+    module.businessRules.forEach((rule, ruleIdx) => {
+      const severity = rule.toLowerCase().includes('must') || rule.toLowerCase().includes('required') ? 'Critical' : 
+                       rule.toLowerCase().includes('should') ? 'High' : 'Medium';
+      lines.push(`| BR-${module.id.toUpperCase()}-${String(ruleIdx + 1).padStart(3, '0')} | ${rule} | ${severity} |`);
+    });
     lines.push('');
     
-    lines.push('#### Business Rules');
-    module.businessRules.forEach(rule => lines.push(`- ⚠️ ${rule}`));
+    lines.push('### API Endpoints');
+    lines.push('');
+    lines.push('| Method | Function | Description |');
+    lines.push('|--------|----------|-------------|');
+    module.apis.forEach(api => {
+      const desc = api.startsWith('get') || api.startsWith('fetch') ? 'Retrieve data' :
+                   api.startsWith('create') || api.startsWith('add') ? 'Create new record' :
+                   api.startsWith('update') ? 'Modify existing record' :
+                   api.startsWith('delete') || api.startsWith('remove') ? 'Delete record' :
+                   api.startsWith('export') ? 'Export data' :
+                   api.startsWith('calculate') ? 'Perform calculation' :
+                   api.startsWith('validate') || api.startsWith('check') ? 'Validation check' : 'Execute operation';
+      lines.push(`| \`${api}()\` | ${api.replace(/([A-Z])/g, ' $1').trim()} | ${desc} |`);
+    });
     lines.push('');
     
-    lines.push('#### Developer Notes');
-    module.developerNotes.forEach(note => lines.push(`- 💻 ${note}`));
+    lines.push('### Developer Notes');
     lines.push('');
-    
-    lines.push('#### APIs');
-    module.apis.forEach(api => lines.push(`- \`${api}()\``));
+    lines.push('> **Implementation Guidelines:**');
+    lines.push('');
+    module.developerNotes.forEach(note => lines.push(`> - ${note}`));
     lines.push('');
     lines.push('---');
     lines.push('');
   });
   
-  // Data Flows Section
-  lines.push('## Data Flows');
+  // 5. Data Architecture
+  lines.push('# 5. Data Architecture');
+  lines.push('');
+  lines.push('## 5.1 Data Flow Diagram');
+  lines.push('');
+  lines.push('The following table describes all data flows between system modules:');
+  lines.push('');
+  lines.push('| Flow ID | Source | Target | Data Type | Frequency | Description |');
+  lines.push('|---------|--------|--------|-----------|-----------|-------------|');
+  DATA_FLOWS.forEach(flow => {
+    const fromModule = MODULES.find(m => m.id === flow.from);
+    const toModule = MODULES.find(m => m.id === flow.to);
+    const freqEmoji = flow.frequency === 'realtime' ? '⚡' : flow.frequency === 'scheduled' ? '⏰' : '📋';
+    lines.push(`| ${flow.id.toUpperCase()} | ${fromModule?.name} | ${toModule?.name} | ${flow.dataType} | ${freqEmoji} ${flow.frequency} | ${flow.description} |`);
+  });
   lines.push('');
   
+  lines.push('## 5.2 Data Flow Details');
+  lines.push('');
   DATA_FLOWS.forEach(flow => {
     const fromModule = MODULES.find(m => m.id === flow.from);
     const toModule = MODULES.find(m => m.id === flow.to);
     
-    lines.push(`### ${fromModule?.name} → ${toModule?.name}`);
+    lines.push(`### ${flow.id.toUpperCase()}: ${fromModule?.name} → ${toModule?.name}`);
     lines.push('');
-    lines.push(`**Data Type:** ${flow.dataType}`);
+    lines.push(`**Data Type:** \`${flow.dataType}\``);
     lines.push('');
     lines.push(`**Description:** ${flow.description}`);
     lines.push('');
-    lines.push(`**Frequency:** ${flow.frequency}`);
+    lines.push(`**Frequency:** ${flow.frequency === 'realtime' ? 'Real-time (instant)' : flow.frequency === 'scheduled' ? 'Scheduled (batch)' : 'On-demand (user-triggered)'}`);
     lines.push('');
     
     if (flow.businessRules && flow.businessRules.length > 0) {
       lines.push('**Business Rules:**');
-      flow.businessRules.forEach(rule => lines.push(`- ${rule}`));
+      flow.businessRules.forEach(rule => lines.push(`- ⚠️ ${rule}`));
       lines.push('');
     }
     
     if (flow.technicalNotes) {
-      lines.push(`**Technical Notes:** ${flow.technicalNotes}`);
+      lines.push(`**Technical Notes:** \`${flow.technicalNotes}\``);
       lines.push('');
     }
-    
-    lines.push('---');
-    lines.push('');
   });
-  
-  // Mind Map Section
-  lines.push('## Product Feature Map');
+  lines.push('---');
   lines.push('');
   
-  const renderMindMapNode = (node: MindMapNode, level: number = 0) => {
-    const indent = '  '.repeat(level);
-    const prefix = level === 0 ? '# ' : level === 1 ? '## ' : level === 2 ? '### ' : '#### ';
-    
-    if (level <= 3) {
-      lines.push(`${indent}${prefix}${node.name}`);
-    } else {
-      lines.push(`${indent}- **${node.name}**`);
+  // 6. Business Rules Reference
+  lines.push('# 6. Business Rules Reference');
+  lines.push('');
+  lines.push('## 6.1 Critical Business Rules');
+  lines.push('');
+  lines.push('These rules MUST be enforced at all times:');
+  lines.push('');
+  lines.push('| Category | Rule | Enforcement |');
+  lines.push('|----------|------|-------------|');
+  lines.push('| Ratios | Child-to-staff ratios must never be breached | System blocks non-compliant assignments |');
+  lines.push('| Hours | Maximum 38 ordinary + 12 overtime hours per week | Warning at threshold, block at limit |');
+  lines.push('| Breaks | Mandatory breaks per work duration | Validation on timesheet submission |');
+  lines.push('| Awards | All pay calculations must comply with FWC awards | Automated calculation engine |');
+  lines.push('| Audit | All changes must be logged with user/timestamp | Append-only audit trail |');
+  lines.push('| Data | Personal data protected under Privacy Act | Encrypted storage, access logging |');
+  lines.push('');
+  
+  lines.push('## 6.2 Module-Specific Rules');
+  lines.push('');
+  MODULES.forEach(module => {
+    lines.push(`### ${module.name}`);
+    lines.push('');
+    module.businessRules.forEach((rule, idx) => {
+      lines.push(`${idx + 1}. ${rule}`);
+    });
+    lines.push('');
+  });
+  lines.push('---');
+  lines.push('');
+  
+  // 7. API Reference
+  lines.push('# 7. API Reference');
+  lines.push('');
+  lines.push('## 7.1 API Overview');
+  lines.push('');
+  lines.push('All APIs are implemented as TypeScript functions located in `src/lib/api/`. The following tables provide a complete reference.');
+  lines.push('');
+  
+  MODULES.forEach(module => {
+    if (module.apis.length > 0) {
+      lines.push(`## 7.${MODULES.indexOf(module) + 2} ${module.name} APIs`);
+      lines.push('');
+      lines.push('| Function | Parameters | Returns | Description |');
+      lines.push('|----------|------------|---------|-------------|');
+      module.apis.forEach(api => {
+        const params = api.startsWith('get') || api.startsWith('fetch') ? 'filters?: FilterOptions' :
+                       api.startsWith('create') || api.startsWith('add') ? 'data: CreateDTO' :
+                       api.startsWith('update') ? 'id: string, updates: UpdateDTO' :
+                       api.startsWith('delete') ? 'id: string' :
+                       api.startsWith('calculate') ? 'input: CalculationInput' :
+                       'options?: Options';
+        const returns = api.startsWith('get') || api.startsWith('fetch') ? 'Promise<T | T[]>' :
+                        api.startsWith('create') || api.startsWith('update') ? 'Promise<T>' :
+                        api.startsWith('delete') ? 'Promise<void>' :
+                        api.startsWith('calculate') ? 'CalculationResult' :
+                        api.startsWith('validate') || api.startsWith('check') ? 'ValidationResult' :
+                        'Promise<Result>';
+        lines.push(`| \`${api}()\` | ${params} | ${returns} | ${api.replace(/([A-Z])/g, ' $1').toLowerCase().trim()} |`);
+      });
+      lines.push('');
     }
+  });
+  lines.push('---');
+  lines.push('');
+  
+  // 8. Feature Specifications
+  lines.push('# 8. Feature Specifications');
+  lines.push('');
+  lines.push('This section provides detailed specifications for all product features organized hierarchically.');
+  lines.push('');
+  
+  const renderMindMapForSpec = (node: MindMapNode, level: number = 0, prefix: string = '8') => {
+    const headingLevel = Math.min(level + 2, 6);
+    const heading = '#'.repeat(headingLevel);
+    const sectionNum = level === 0 ? prefix : `${prefix}.${(node.children?.indexOf(node) || 0) + 1}`;
+    
+    lines.push(`${heading} ${node.name}`);
+    lines.push('');
     
     if (node.description) {
-      lines.push(`${indent}${node.description}`);
+      lines.push(`**Description:** ${node.description}`);
       lines.push('');
     }
     
     if (node.businessRules && node.businessRules.length > 0) {
-      lines.push(`${indent}*Business Rules:*`);
-      node.businessRules.forEach(rule => lines.push(`${indent}- ${rule}`));
+      lines.push('**Business Rules:**');
+      lines.push('');
+      node.businessRules.forEach((rule, idx) => {
+        lines.push(`${idx + 1}. ${rule}`);
+      });
       lines.push('');
     }
     
     if (node.apis && node.apis.length > 0) {
-      lines.push(`${indent}*APIs:* ${node.apis.map(a => `\`${a}()\``).join(', ')}`);
+      lines.push('**APIs:**');
+      lines.push('');
+      lines.push('| Function | Usage |');
+      lines.push('|----------|-------|');
+      node.apis.forEach(api => {
+        lines.push(`| \`${api}()\` | Primary API for this feature |`);
+      });
       lines.push('');
     }
     
     if (node.developerNotes && node.developerNotes.length > 0) {
-      lines.push(`${indent}*Developer Notes:*`);
-      node.developerNotes.forEach(note => lines.push(`${indent}- ${note}`));
+      lines.push('**Developer Implementation Notes:**');
+      lines.push('');
+      lines.push('```');
+      node.developerNotes.forEach(note => {
+        lines.push(`// ${note}`);
+      });
+      lines.push('```');
       lines.push('');
     }
     
-    node.children?.forEach(child => renderMindMapNode(child, level + 1));
+    if (node.children && node.children.length > 0) {
+      node.children.forEach((child, idx) => {
+        renderMindMapForSpec(child, level + 1, `${prefix}.${idx + 1}`);
+      });
+    }
   };
   
-  renderMindMapNode(PRODUCT_MIND_MAP);
+  // Render top-level children of the mind map
+  PRODUCT_MIND_MAP.children?.forEach((child, idx) => {
+    renderMindMapForSpec(child, 0, `8.${idx + 1}`);
+  });
+  lines.push('---');
+  lines.push('');
+  
+  // 9. Developer Guide
+  lines.push('# 9. Developer Guide');
+  lines.push('');
+  lines.push('## 9.1 Project Structure');
+  lines.push('');
+  lines.push('```');
+  lines.push('src/');
+  lines.push('├── components/');
+  lines.push('│   ├── roster/          # Roster scheduling components');
+  lines.push('│   ├── settings/        # Configuration & settings');
+  lines.push('│   ├── staff/           # Staff management sheets');
+  lines.push('│   ├── timesheet/       # Timesheet processing');
+  lines.push('│   └── ui/              # Shared UI components');
+  lines.push('├── data/                # Mock data & constants');
+  lines.push('├── hooks/               # Custom React hooks');
+  lines.push('├── lib/');
+  lines.push('│   ├── api/             # API layer');
+  lines.push('│   ├── awardInterpreter.ts    # Pay calculations');
+  lines.push('│   ├── complianceEngine.ts    # Compliance validation');
+  lines.push('│   └── ...              # Other utilities');
+  lines.push('├── pages/               # Route pages');
+  lines.push('├── types/               # TypeScript interfaces');
+  lines.push('└── theme/               # Theme configuration');
+  lines.push('```');
+  lines.push('');
+  
+  lines.push('## 9.2 Key Files Reference');
+  lines.push('');
+  lines.push('| File | Purpose | Key Exports |');
+  lines.push('|------|---------|-------------|');
+  lines.push('| `awardInterpreter.ts` | Award rate calculations | `calculateShiftCost`, `calculateWeeklyCost`, `calculateRosterCost` |');
+  lines.push('| `complianceEngine.ts` | Compliance validation | `validateCompliance`, `detectAnomalies`, `validateBreaks` |');
+  lines.push('| `shiftConflictDetection.ts` | Scheduling conflicts | `detectConflicts`, `validateShift` |');
+  lines.push('| `ratioCompliance.ts` | Staff ratio checking | `checkRatioCompliance` |');
+  lines.push('| `labourForecasting.ts` | Cost projections | `forecastLabourCost` |');
+  lines.push('| `validationSchemas.ts` | Form validation | Zod schemas for all forms |');
+  lines.push('');
+  
+  lines.push('## 9.3 Implementation Patterns');
+  lines.push('');
+  lines.push('### Data Fetching');
+  lines.push('```typescript');
+  lines.push('// Use TanStack Query for data fetching');
+  lines.push("import { useQuery } from '@tanstack/react-query';");
+  lines.push("import { staffApi } from '@/lib/api/staffApi';");
+  lines.push('');
+  lines.push('const { data, isLoading, error } = useQuery({');
+  lines.push("  queryKey: ['staff', filters],");
+  lines.push('  queryFn: () => staffApi.fetchAllStaff(filters),');
+  lines.push('});');
+  lines.push('```');
+  lines.push('');
+  
+  lines.push('### Form Validation');
+  lines.push('```typescript');
+  lines.push('// Use Zod schemas from validationSchemas.ts');
+  lines.push("import { staffSchema } from '@/lib/validationSchemas';");
+  lines.push("import { useForm } from 'react-hook-form';");
+  lines.push("import { zodResolver } from '@hookform/resolvers/zod';");
+  lines.push('');
+  lines.push('const form = useForm({');
+  lines.push('  resolver: zodResolver(staffSchema),');
+  lines.push('  defaultValues: initialData,');
+  lines.push('});');
+  lines.push('```');
+  lines.push('');
+  
+  lines.push('### Pay Calculations');
+  lines.push('```typescript');
+  lines.push('// Always use awardInterpreter for pay calculations');
+  lines.push("import { calculateShiftCost } from '@/lib/awardInterpreter';");
+  lines.push('');
+  lines.push('const costBreakdown = calculateShiftCost(shift, staffMember);');
+  lines.push('// Returns: { baseHours, penaltyPay, overtime, allowances, total }');
+  lines.push('```');
+  lines.push('');
+  
+  lines.push('## 9.4 Common Developer Notes');
+  lines.push('');
+  lines.push('> **Important guidelines for all developers:**');
+  lines.push('');
+  MODULES.forEach(module => {
+    module.developerNotes.forEach(note => {
+      lines.push(`> - **${module.name}:** ${note}`);
+    });
+  });
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  
+  // 10. Compliance Requirements
+  lines.push('# 10. Compliance Requirements');
+  lines.push('');
+  lines.push('## 10.1 Australian Fair Work Compliance');
+  lines.push('');
+  lines.push('The system must comply with Australian workplace regulations:');
+  lines.push('');
+  lines.push('| Requirement | Implementation |');
+  lines.push('|-------------|----------------|');
+  lines.push('| Modern Awards | Automated interpretation via `awardInterpreter.ts` |');
+  lines.push('| Penalty Rates | Calculated based on time-of-day, day-of-week |');
+  lines.push('| Overtime Rules | Weekly calculation with tier-based multipliers |');
+  lines.push('| Break Entitlements | Enforced via compliance engine validation |');
+  lines.push('| Maximum Hours | Blocked at system level with warnings |');
+  lines.push('| Record Keeping | 7-year retention in audit trail |');
+  lines.push('');
+  
+  lines.push('## 10.2 Industry-Specific Compliance');
+  lines.push('');
+  lines.push('### Childcare (Children\'s Services Award 2020)');
+  lines.push('');
+  lines.push('- Educator-to-child ratios enforced per room');
+  lines.push('- Qualified staff requirements tracked');
+  lines.push('- Broken shift and on-call allowances supported');
+  lines.push('');
+  lines.push('### Healthcare');
+  lines.push('');
+  lines.push('- Patient-to-nurse ratios validated');
+  lines.push('- On-call and sleepover shift handling');
+  lines.push('- Fatigue management rules enforced');
+  lines.push('');
+  lines.push('## 10.3 Data Privacy');
+  lines.push('');
+  lines.push('| Requirement | Implementation |');
+  lines.push('|-------------|----------------|');
+  lines.push('| Privacy Act 1988 | Personal data encrypted at rest |');
+  lines.push('| Access Logging | All data access recorded in audit trail |');
+  lines.push('| Data Minimization | Only necessary data collected |');
+  lines.push('| Right to Access | Export functionality for employee data |');
+  lines.push('| Retention Limits | Automatic archival after 7 years |');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  
+  // 11. Appendices
+  lines.push('# 11. Appendices');
+  lines.push('');
+  lines.push('## Appendix A: Glossary');
+  lines.push('');
+  lines.push('| Term | Definition |');
+  lines.push('|------|------------|');
+  lines.push('| **Award** | Australian Modern Award defining minimum pay and conditions |');
+  lines.push('| **FWC** | Fair Work Commission - Australian workplace relations tribunal |');
+  lines.push('| **Penalty Rate** | Additional pay for unsociable hours (weekends, nights, holidays) |');
+  lines.push('| **Allowance** | Additional payment for specific conditions (e.g., first aid, travel) |');
+  lines.push('| **Classification** | Level within an award determining base pay rate |');
+  lines.push('| **Casual Loading** | 25% addition to base rate for casual employees |');
+  lines.push('| **Timesheet** | Record of hours worked for a pay period |');
+  lines.push('| **Roster** | Schedule of shifts for staff over a period |');
+  lines.push('| **Compliance Flag** | System warning about potential rule violations |');
+  lines.push('| **On-Call** | Shift where employee is available to be called in |');
+  lines.push('| **Sleepover** | Overnight shift with sleeping provisions |');
+  lines.push('| **Broken Shift** | Shift with an unpaid break in the middle |');
+  lines.push('');
+  
+  lines.push('## Appendix B: Status Codes');
+  lines.push('');
+  lines.push('### Timesheet Status');
+  lines.push('| Status | Description |');
+  lines.push('|--------|-------------|');
+  lines.push('| `pending` | Awaiting manager approval |');
+  lines.push('| `approved` | Approved for payroll |');
+  lines.push('| `rejected` | Rejected with reason |');
+  lines.push('');
+  lines.push('### Staff Status');
+  lines.push('| Status | Description |');
+  lines.push('|--------|-------------|');
+  lines.push('| `active` | Currently employed and rostered |');
+  lines.push('| `inactive` | Not currently being rostered |');
+  lines.push('| `onboarding` | New employee in setup process |');
+  lines.push('| `terminated` | Employment ended |');
+  lines.push('');
+  
+  lines.push('## Appendix C: Rate Multipliers');
+  lines.push('');
+  lines.push('### Standard Penalty Rates');
+  lines.push('| Day/Time | Multiplier |');
+  lines.push('|----------|------------|');
+  lines.push('| Weekday (ordinary hours) | 100% |');
+  lines.push('| Saturday | 125% |');
+  lines.push('| Sunday | 150% |');
+  lines.push('| Public Holiday | 250% |');
+  lines.push('| Evening (after 6pm) | +10% |');
+  lines.push('| Night (after 12am) | +15% |');
+  lines.push('');
+  lines.push('### Overtime Rates');
+  lines.push('| Hours | Multiplier |');
+  lines.push('|-------|------------|');
+  lines.push('| First 2 hours | 150% |');
+  lines.push('| After 2 hours | 200% |');
+  lines.push('| Public Holiday OT | 275% |');
+  lines.push('');
+  
+  lines.push('---');
+  lines.push('');
+  lines.push('*End of Requirements Specification Document*');
+  lines.push('');
+  lines.push(`*Generated by Time Trail Guide Architecture Explorer - ${date.toISOString()}*`);
   
   return lines.join('\n');
+}
+
+function generateMarkdownExport(): string {
+  // Use the new detailed specification generator
+  return generateRequirementsSpecification();
 }
 
 function downloadFile(content: string, filename: string, mimeType: string) {
@@ -1438,12 +1906,32 @@ export function ModuleDependencyExplorer() {
 
   const handleExportMarkdown = useCallback(() => {
     const markdown = generateMarkdownExport();
-    downloadFile(markdown, 'architecture-documentation.md', 'text/markdown');
+    const date = new Date().toISOString().split('T')[0];
+    downloadFile(markdown, `TimeTrailGuide-Requirements-Specification-${date}.md`, 'text/markdown');
   }, []);
 
   const handleExportJSON = useCallback(() => {
+    const date = new Date();
     const data = {
-      generatedAt: new Date().toISOString(),
+      documentInfo: {
+        title: 'Time Trail Guide - Requirements Specification',
+        version: '2.0.0',
+        generatedAt: date.toISOString(),
+        format: 'JSON Schema',
+      },
+      systemOverview: {
+        productName: 'Time Trail Guide',
+        productType: 'Workforce Management System',
+        targetIndustries: ['Childcare', 'Healthcare', 'Hospitality', 'Retail'],
+        regulatoryFramework: 'Australian Fair Work Commission',
+        technologyStack: {
+          frontend: 'React 18 with TypeScript',
+          buildTool: 'Vite',
+          styling: 'Tailwind CSS',
+          uiComponents: 'shadcn/ui + Radix',
+          stateManagement: 'React Context + TanStack Query',
+        },
+      },
       modules: MODULES.map(m => ({
         id: m.id,
         name: m.name,
@@ -1451,23 +1939,55 @@ export function ModuleDependencyExplorer() {
         components: m.components,
         dataProvides: m.dataProvides,
         dataConsumes: m.dataConsumes,
-        businessRules: m.businessRules,
+        businessRules: m.businessRules.map((rule, idx) => ({
+          id: `BR-${m.id.toUpperCase()}-${String(idx + 1).padStart(3, '0')}`,
+          description: rule,
+          severity: rule.toLowerCase().includes('must') || rule.toLowerCase().includes('required') ? 'critical' : 'high',
+        })),
         developerNotes: m.developerNotes,
-        apis: m.apis,
+        apis: m.apis.map(api => ({
+          name: api,
+          type: api.startsWith('get') || api.startsWith('fetch') ? 'query' :
+                api.startsWith('create') || api.startsWith('add') ? 'mutation' :
+                api.startsWith('update') ? 'mutation' :
+                api.startsWith('delete') ? 'mutation' :
+                api.startsWith('calculate') ? 'computation' : 'action',
+        })),
       })),
-      dataFlows: DATA_FLOWS.map(f => ({
-        id: f.id,
-        from: f.from,
-        to: f.to,
-        dataType: f.dataType,
-        description: f.description,
-        frequency: f.frequency,
-        businessRules: f.businessRules,
-        technicalNotes: f.technicalNotes,
-      })),
-      productMap: PRODUCT_MIND_MAP,
+      dataFlows: DATA_FLOWS.map(f => {
+        const fromModule = MODULES.find(m => m.id === f.from);
+        const toModule = MODULES.find(m => m.id === f.to);
+        return {
+          id: f.id,
+          source: { id: f.from, name: fromModule?.name },
+          target: { id: f.to, name: toModule?.name },
+          dataType: f.dataType,
+          description: f.description,
+          frequency: f.frequency,
+          businessRules: f.businessRules,
+          technicalNotes: f.technicalNotes,
+        };
+      }),
+      featureHierarchy: PRODUCT_MIND_MAP,
+      compliance: {
+        australianFairWork: {
+          modernAwards: true,
+          penaltyRates: true,
+          overtimeRules: true,
+          breakEntitlements: true,
+          maximumHours: true,
+          recordKeeping: '7 years',
+        },
+        dataPrivacy: {
+          privacyAct1988: true,
+          accessLogging: true,
+          dataMinimization: true,
+          rightToAccess: true,
+        },
+      },
     };
-    downloadFile(JSON.stringify(data, null, 2), 'architecture-documentation.json', 'application/json');
+    const dateStr = date.toISOString().split('T')[0];
+    downloadFile(JSON.stringify(data, null, 2), `TimeTrailGuide-Requirements-${dateStr}.json`, 'application/json');
   }, []);
 
   const getFlowsForModule = (moduleId: string, direction: 'in' | 'out') => {
@@ -1488,12 +2008,13 @@ export function ModuleDependencyExplorer() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={handleExportMarkdown}
+            className="bg-gradient-to-r from-primary to-primary/80"
           >
-            <Download className="h-4 w-4 mr-2" />
-            Export Markdown
+            <FileText className="h-4 w-4 mr-2" />
+            Export Requirements Spec
           </Button>
           <Button
             variant="outline"
