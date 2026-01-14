@@ -1267,6 +1267,142 @@ const PRODUCT_MIND_MAP: MindMapNode = {
   ]
 };
 
+// Export helper functions
+function generateMarkdownExport(): string {
+  const lines: string[] = [];
+  
+  lines.push('# Time Trail Guide - Architecture Documentation');
+  lines.push('');
+  lines.push(`*Generated on ${new Date().toLocaleDateString()}*`);
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  
+  // Modules Section
+  lines.push('## Core Modules');
+  lines.push('');
+  
+  MODULES.forEach(module => {
+    lines.push(`### ${module.name}`);
+    lines.push('');
+    lines.push(module.description);
+    lines.push('');
+    
+    lines.push('#### Components');
+    module.components.forEach(comp => lines.push(`- \`${comp}\``));
+    lines.push('');
+    
+    lines.push('#### Data Provides');
+    module.dataProvides.forEach(data => lines.push(`- ${data}`));
+    lines.push('');
+    
+    lines.push('#### Data Consumes');
+    module.dataConsumes.forEach(data => lines.push(`- ${data}`));
+    lines.push('');
+    
+    lines.push('#### Business Rules');
+    module.businessRules.forEach(rule => lines.push(`- ⚠️ ${rule}`));
+    lines.push('');
+    
+    lines.push('#### Developer Notes');
+    module.developerNotes.forEach(note => lines.push(`- 💻 ${note}`));
+    lines.push('');
+    
+    lines.push('#### APIs');
+    module.apis.forEach(api => lines.push(`- \`${api}()\``));
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+  });
+  
+  // Data Flows Section
+  lines.push('## Data Flows');
+  lines.push('');
+  
+  DATA_FLOWS.forEach(flow => {
+    const fromModule = MODULES.find(m => m.id === flow.from);
+    const toModule = MODULES.find(m => m.id === flow.to);
+    
+    lines.push(`### ${fromModule?.name} → ${toModule?.name}`);
+    lines.push('');
+    lines.push(`**Data Type:** ${flow.dataType}`);
+    lines.push('');
+    lines.push(`**Description:** ${flow.description}`);
+    lines.push('');
+    lines.push(`**Frequency:** ${flow.frequency}`);
+    lines.push('');
+    
+    if (flow.businessRules && flow.businessRules.length > 0) {
+      lines.push('**Business Rules:**');
+      flow.businessRules.forEach(rule => lines.push(`- ${rule}`));
+      lines.push('');
+    }
+    
+    if (flow.technicalNotes) {
+      lines.push(`**Technical Notes:** ${flow.technicalNotes}`);
+      lines.push('');
+    }
+    
+    lines.push('---');
+    lines.push('');
+  });
+  
+  // Mind Map Section
+  lines.push('## Product Feature Map');
+  lines.push('');
+  
+  const renderMindMapNode = (node: MindMapNode, level: number = 0) => {
+    const indent = '  '.repeat(level);
+    const prefix = level === 0 ? '# ' : level === 1 ? '## ' : level === 2 ? '### ' : '#### ';
+    
+    if (level <= 3) {
+      lines.push(`${indent}${prefix}${node.name}`);
+    } else {
+      lines.push(`${indent}- **${node.name}**`);
+    }
+    
+    if (node.description) {
+      lines.push(`${indent}${node.description}`);
+      lines.push('');
+    }
+    
+    if (node.businessRules && node.businessRules.length > 0) {
+      lines.push(`${indent}*Business Rules:*`);
+      node.businessRules.forEach(rule => lines.push(`${indent}- ${rule}`));
+      lines.push('');
+    }
+    
+    if (node.apis && node.apis.length > 0) {
+      lines.push(`${indent}*APIs:* ${node.apis.map(a => `\`${a}()\``).join(', ')}`);
+      lines.push('');
+    }
+    
+    if (node.developerNotes && node.developerNotes.length > 0) {
+      lines.push(`${indent}*Developer Notes:*`);
+      node.developerNotes.forEach(note => lines.push(`${indent}- ${note}`));
+      lines.push('');
+    }
+    
+    node.children?.forEach(child => renderMindMapNode(child, level + 1));
+  };
+  
+  renderMindMapNode(PRODUCT_MIND_MAP);
+  
+  return lines.join('\n');
+}
+
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export function ModuleDependencyExplorer() {
   const [selectedModule, setSelectedModule] = useState<ModuleNode | null>(null);
   const [highlightedFlows, setHighlightedFlows] = useState<string[]>([]);
@@ -1300,6 +1436,40 @@ export function ModuleDependencyExplorer() {
     setHighlightedFlows([]);
   }, []);
 
+  const handleExportMarkdown = useCallback(() => {
+    const markdown = generateMarkdownExport();
+    downloadFile(markdown, 'architecture-documentation.md', 'text/markdown');
+  }, []);
+
+  const handleExportJSON = useCallback(() => {
+    const data = {
+      generatedAt: new Date().toISOString(),
+      modules: MODULES.map(m => ({
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        components: m.components,
+        dataProvides: m.dataProvides,
+        dataConsumes: m.dataConsumes,
+        businessRules: m.businessRules,
+        developerNotes: m.developerNotes,
+        apis: m.apis,
+      })),
+      dataFlows: DATA_FLOWS.map(f => ({
+        id: f.id,
+        from: f.from,
+        to: f.to,
+        dataType: f.dataType,
+        description: f.description,
+        frequency: f.frequency,
+        businessRules: f.businessRules,
+        technicalNotes: f.technicalNotes,
+      })),
+      productMap: PRODUCT_MIND_MAP,
+    };
+    downloadFile(JSON.stringify(data, null, 2), 'architecture-documentation.json', 'application/json');
+  }, []);
+
   const getFlowsForModule = (moduleId: string, direction: 'in' | 'out') => {
     return DATA_FLOWS.filter(f => 
       direction === 'out' ? f.from === moduleId : f.to === moduleId
@@ -1309,14 +1479,31 @@ export function ModuleDependencyExplorer() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold">Module Dependency Explorer</h2>
           <p className="text-muted-foreground">
             Interactive visualization of system architecture and data flows
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportMarkdown}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export Markdown
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportJSON}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export JSON
+          </Button>
+          <div className="w-px h-6 bg-border mx-1" />
           <Button
             variant="outline"
             size="sm"
@@ -2236,108 +2423,181 @@ function ProductMindMap() {
           </CardHeader>
           <CardContent>
             {selectedNodeData ? (
-              <div className="space-y-6">
-                {/* Icon and Name */}
-                <div className="flex items-start gap-4">
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${selectedNodeData.color} flex items-center justify-center flex-shrink-0`}>
-                    <selectedNodeData.icon className="h-7 w-7 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">{selectedNodeData.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedNodeData.children ? `${selectedNodeData.children.length} direct children` : 'Leaf node'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Statistics */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <div className="text-2xl font-bold">{selectedNodeData.children?.length || 0}</div>
-                    <div className="text-xs text-muted-foreground">Direct Children</div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <div className="text-2xl font-bold">{countDescendants(selectedNodeData)}</div>
-                    <div className="text-xs text-muted-foreground">Total Descendants</div>
-                  </div>
-                </div>
-
-                {/* Children List */}
-                {selectedNodeData.children && selectedNodeData.children.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                      <Layers className="h-4 w-4" />
-                      Child Features ({selectedNodeData.children.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {selectedNodeData.children.map(child => {
-                        const ChildIcon = child.icon;
-                        return (
-                          <div 
-                            key={child.id}
-                            className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
-                            onClick={() => {
-                              setSelectedNode(child.id);
-                              setExpandedNodes(prev => new Set([...prev, selectedNodeData.id]));
-                            }}
-                          >
-                            <div className={`w-6 h-6 rounded bg-gradient-to-br ${child.color} flex items-center justify-center`}>
-                              <ChildIcon className="h-3 w-3 text-white" />
-                            </div>
-                            <span className="text-sm font-medium">{child.name}</span>
-                            {child.children && (
-                              <Badge variant="outline" className="ml-auto text-xs">
-                                {child.children.length}
-                              </Badge>
-                            )}
-                          </div>
-                        );
-                      })}
+              <ScrollArea className="h-[600px] pr-4">
+                <div className="space-y-5">
+                  {/* Icon and Name */}
+                  <div className="flex items-start gap-4">
+                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${selectedNodeData.color} flex items-center justify-center flex-shrink-0`}>
+                      <selectedNodeData.icon className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">{selectedNodeData.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedNodeData.children ? `${selectedNodeData.children.length} direct children` : 'Leaf node'}
+                      </p>
                     </div>
                   </div>
-                )}
 
-                {/* Breadcrumb */}
-                <div>
-                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <GitBranch className="h-4 w-4" />
-                    Path
-                  </h4>
-                  <div className="flex flex-wrap items-center gap-1 text-xs">
-                    {(() => {
-                      const path: MindMapNode[] = [];
-                      const findPath = (node: MindMapNode, target: string, current: MindMapNode[]): boolean => {
-                        current.push(node);
-                        if (node.id === target) {
-                          path.push(...current);
-                          return true;
-                        }
-                        for (const child of node.children || []) {
-                          if (findPath(child, target, [...current])) return true;
-                        }
-                        return false;
-                      };
-                      findPath(PRODUCT_MIND_MAP, selectedNodeData.id, []);
-                      
-                      return path.map((p, idx) => (
-                        <React.Fragment key={p.id}>
-                          <span 
-                            className={`px-2 py-1 rounded cursor-pointer transition-colors ${
-                              p.id === selectedNodeData.id 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-muted hover:bg-muted/80'
-                            }`}
-                            onClick={() => setSelectedNode(p.id)}
-                          >
-                            {p.name}
-                          </span>
-                          {idx < path.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
-                        </React.Fragment>
-                      ));
-                    })()}
+                  {/* Description */}
+                  {selectedNodeData.description && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Description
+                      </h4>
+                      <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                        {selectedNodeData.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Statistics */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <div className="text-2xl font-bold">{selectedNodeData.children?.length || 0}</div>
+                      <div className="text-xs text-muted-foreground">Direct Children</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <div className="text-2xl font-bold">{countDescendants(selectedNodeData)}</div>
+                      <div className="text-xs text-muted-foreground">Total Descendants</div>
+                    </div>
+                  </div>
+
+                  {/* Business Rules */}
+                  {selectedNodeData.businessRules && selectedNodeData.businessRules.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-amber-600">
+                        <Shield className="h-4 w-4" />
+                        Business Rules ({selectedNodeData.businessRules.length})
+                      </h4>
+                      <div className="space-y-1.5">
+                        {selectedNodeData.businessRules.map((rule, idx) => (
+                          <div key={idx} className="flex items-start gap-2 text-xs p-2 rounded bg-amber-50 dark:bg-amber-950/30">
+                            <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-amber-900 dark:text-amber-100">{rule}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* APIs */}
+                  {selectedNodeData.apis && selectedNodeData.apis.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-green-600">
+                        <Settings className="h-4 w-4" />
+                        APIs ({selectedNodeData.apis.length})
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedNodeData.apis.map((api, idx) => (
+                          <Badge key={idx} variant="secondary" className="font-mono text-xs">
+                            {api}()
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Developer Notes */}
+                  {selectedNodeData.developerNotes && selectedNodeData.developerNotes.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-purple-600">
+                        <FileText className="h-4 w-4" />
+                        Developer Notes ({selectedNodeData.developerNotes.length})
+                      </h4>
+                      <div className="space-y-1.5">
+                        {selectedNodeData.developerNotes.map((note, idx) => (
+                          <div key={idx} className="flex items-start gap-2 text-xs p-2 rounded bg-purple-50 dark:bg-purple-950/30">
+                            <ChevronRight className="h-3 w-3 text-purple-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-purple-900 dark:text-purple-100 font-mono">{note}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Children List */}
+                  {selectedNodeData.children && selectedNodeData.children.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <Layers className="h-4 w-4" />
+                        Child Features ({selectedNodeData.children.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {selectedNodeData.children.map(child => {
+                          const ChildIcon = child.icon;
+                          return (
+                            <div 
+                              key={child.id}
+                              className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
+                              onClick={() => {
+                                setSelectedNode(child.id);
+                                setExpandedNodes(prev => new Set([...prev, selectedNodeData.id]));
+                              }}
+                            >
+                              <div className={`w-6 h-6 rounded bg-gradient-to-br ${child.color} flex items-center justify-center`}>
+                                <ChildIcon className="h-3 w-3 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm font-medium">{child.name}</span>
+                                {child.description && (
+                                  <p className="text-xs text-muted-foreground truncate">{child.description}</p>
+                                )}
+                              </div>
+                              {child.children && (
+                                <Badge variant="outline" className="text-xs flex-shrink-0">
+                                  {child.children.length}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Breadcrumb */}
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <GitBranch className="h-4 w-4" />
+                      Path
+                    </h4>
+                    <div className="flex flex-wrap items-center gap-1 text-xs">
+                      {(() => {
+                        const path: MindMapNode[] = [];
+                        const findPath = (node: MindMapNode, target: string, current: MindMapNode[]): boolean => {
+                          current.push(node);
+                          if (node.id === target) {
+                            path.push(...current);
+                            return true;
+                          }
+                          for (const child of node.children || []) {
+                            if (findPath(child, target, [...current])) return true;
+                          }
+                          return false;
+                        };
+                        findPath(PRODUCT_MIND_MAP, selectedNodeData.id, []);
+                        
+                        return path.map((p, idx) => (
+                          <React.Fragment key={p.id}>
+                            <span 
+                              className={`px-2 py-1 rounded cursor-pointer transition-colors ${
+                                p.id === selectedNodeData.id 
+                                  ? 'bg-primary text-primary-foreground' 
+                                  : 'bg-muted hover:bg-muted/80'
+                              }`}
+                              onClick={() => setSelectedNode(p.id)}
+                            >
+                              {p.name}
+                            </span>
+                            {idx < path.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+                          </React.Fragment>
+                        ));
+                      })()}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </ScrollArea>
             ) : (
               <div className="text-center text-muted-foreground py-8">
                 <Network className="h-12 w-12 mx-auto mb-4 opacity-50" />
