@@ -1911,8 +1911,30 @@ export default function RosterScheduler() {
           <div className="mt-4">
             <SkillMatrixPanel 
               centreId={selectedCentreId}
+              centre={selectedCentre}
+              staff={allStaff}
+              shifts={shifts}
+              openShifts={openShifts}
               onAssignStaff={(staffId, shiftId) => {
-                toast.success(`Staff assigned to shift`);
+                // Find the open shift and assign staff
+                const openShift = openShifts.find(os => os.id === shiftId);
+                if (openShift) {
+                  const staffMember = allStaff.find(s => s.id === staffId);
+                  const newShift: Omit<Shift, 'id'> = {
+                    staffId,
+                    centreId: openShift.centreId,
+                    roomId: openShift.roomId,
+                    date: openShift.date,
+                    startTime: openShift.startTime,
+                    endTime: openShift.endTime,
+                    breakMinutes: openShift.breakMinutes || 30,
+                    status: 'draft',
+                    isOpenShift: false,
+                  };
+                  setShifts(prev => [...prev, { ...newShift, id: `shift-skill-${Date.now()}` }], 
+                    `Assigned ${staffMember?.name || 'staff'} via skill matching`, 'add');
+                }
+                toast.success(`Staff assigned to shift via skill matching`);
               }}
             />
           </div>
