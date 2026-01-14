@@ -973,7 +973,7 @@ export function AddOpenShiftModal({
                       render={({ field }) => (
                         <FormControl fullWidth size="small">
                           <InputLabel>Minimum Classification</InputLabel>
-                          <Select {...field} label="Minimum Classification">
+                          <Select {...field} value={field.value || ''} label="Minimum Classification">
                             <MenuItem value="">
                               <em>No minimum</em>
                             </MenuItem>
@@ -994,7 +994,7 @@ export function AddOpenShiftModal({
                       render={({ field }) => (
                         <FormControl fullWidth size="small">
                           <InputLabel>Higher Duties Classification</InputLabel>
-                          <Select {...field} label="Higher Duties Classification">
+                          <Select {...field} value={field.value || ''} label="Higher Duties Classification">
                             <MenuItem value="">
                               <em>None</em>
                             </MenuItem>
