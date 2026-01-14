@@ -15,9 +15,10 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Tooltip,
 } from '@mui/material';
 import { ShiftTemplate, ShiftSpecialType, QualificationType, defaultShiftTemplates, shiftTypeLabels, shiftTypeDescriptions, qualificationLabels, roleLabels, StaffMember } from '@/types/roster';
-import { Clock, Plus, Edit2, Trash2, Save, X, Check, Phone, Moon, ArrowLeftRight, AlertTriangle, ChevronDown, Zap, Car, TrendingUp, GraduationCap, Award } from 'lucide-react';
+import { Clock, Plus, Edit2, Trash2, Save, X, Check, Phone, Moon, ArrowLeftRight, AlertTriangle, ChevronDown, Zap, Car, TrendingUp, GraduationCap, Award, RotateCcw } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -98,11 +99,20 @@ export function ShiftTemplateManager({
   customTemplates,
   onSave
 }: ShiftTemplateManagerProps) {
-  const [templates, setTemplates] = useState<ShiftTemplate[]>(customTemplates);
+  // Merge default templates with custom templates, allowing overrides
+  const [templates, setTemplates] = useState<ShiftTemplate[]>(() => {
+    const customIds = new Set(customTemplates.map(t => t.id));
+    // Include default templates that haven't been customized, plus all custom templates
+    const defaults = defaultShiftTemplates.filter(t => !customIds.has(t.id) && !customTemplates.some(c => c.id.startsWith(`custom-${t.id}`)));
+    return [...defaults, ...customTemplates];
+  });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newTemplate, setNewTemplate] = useState<Partial<ShiftTemplate>>(getEmptyTemplate());
   const [isAdding, setIsAdding] = useState(false);
   const [customAllowances, setCustomAllowances] = useState<AllowanceType[]>([]);
+
+  // Track which templates are defaults vs custom
+  const isDefaultTemplate = (id: string) => defaultShiftTemplates.some(t => t.id === id);
 
   const handleCreateAllowance = (allowance: AllowanceType) => {
     setCustomAllowances(prev => [...prev, allowance]);
@@ -143,12 +153,27 @@ export function ShiftTemplateManager({
   };
 
   const handleDelete = (id: string) => {
-    setTemplates(prev => prev.filter(t => t.id !== id));
+    if (isDefaultTemplate(id)) {
+      // Reset default template to original values
+      const original = defaultShiftTemplates.find(t => t.id === id);
+      if (original) {
+        setTemplates(prev => prev.map(t => t.id === id ? { ...original } : t));
+      }
+    } else {
+      setTemplates(prev => prev.filter(t => t.id !== id));
+    }
   };
 
   const handleSave = () => {
+    // Save all templates (both modified defaults and custom)
     onSave(templates);
     onClose();
+  };
+
+  const hasTemplateChanged = (template: ShiftTemplate) => {
+    const original = defaultShiftTemplates.find(t => t.id === template.id);
+    if (!original) return false;
+    return JSON.stringify(original) !== JSON.stringify(template);
   };
 
   const calculateDuration = (start: string, end: string, breakMins: number) => {
@@ -672,48 +697,11 @@ export function ShiftTemplateManager({
         </SheetHeader>
 
         <ScrollArea className="flex-1 pr-4 mt-6">
-          {/* Default Templates */}
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 1.5 }}>
-              Default Templates
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {defaultShiftTemplates.map(template => (
-                <Box
-                  key={template.id}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    p: 2,
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: 'divider',
-                    bgcolor: 'action.hover',
-                  }}
-                >
-                  <Box sx={{ height: 20, width: 20, borderRadius: '50%', flexShrink: 0, bgcolor: template.color }} />
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                      <Typography variant="body2" fontWeight={600}>{template.name}</Typography>
-                      {getShiftTypeChip(template.shiftType)}
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {template.startTime} - {template.endTime} • {template.breakMinutes}min break
-                    </Typography>
-                  </Box>
-                  <Chip size="small" label={`${calculateDuration(template.startTime, template.endTime, template.breakMinutes)}h`} />
-                  <Chip size="small" label="Default" variant="outlined" />
-                </Box>
-              ))}
-            </Box>
-          </Box>
-
-          {/* Custom Templates */}
+          {/* All Templates - Unified Editable List */}
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
               <Typography variant="body2" fontWeight={600} color="text.secondary">
-                Custom Templates
+                Shift Templates ({templates.length})
               </Typography>
               {!isAdding && (
                 <Button variant="text" size="small" startIcon={<Plus size={14} />} onClick={() => setIsAdding(true)}>
@@ -931,6 +919,15 @@ export function ShiftTemplateManager({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
                           <Typography variant="body2" fontWeight={600}>{template.name}</Typography>
                           {getShiftTypeChip(template.shiftType)}
+                          {isDefaultTemplate(template.id) && (
+                            <Chip 
+                              size="small" 
+                              label={hasTemplateChanged(template) ? "Modified" : "Default"} 
+                              variant="outlined"
+                              color={hasTemplateChanged(template) ? "warning" : "default"}
+                              sx={{ fontSize: '0.65rem', height: 20 }}
+                            />
+                          )}
                           {template.requiredQualifications && template.requiredQualifications.length > 0 && (
                             <Chip 
                               size="small" 
@@ -963,9 +960,24 @@ export function ShiftTemplateManager({
                       <IconButton size="small" onClick={() => setEditingId(template.id)}>
                         <Edit2 size={16} />
                       </IconButton>
-                      <IconButton size="small" color="error" onClick={() => handleDelete(template.id)}>
-                        <Trash2 size={16} />
-                      </IconButton>
+                      {isDefaultTemplate(template.id) ? (
+                        <Tooltip title="Reset to default">
+                          <span>
+                            <IconButton 
+                              size="small" 
+                              color="warning" 
+                              onClick={() => handleDelete(template.id)}
+                              disabled={!hasTemplateChanged(template)}
+                            >
+                              <RotateCcw size={16} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      ) : (
+                        <IconButton size="small" color="error" onClick={() => handleDelete(template.id)}>
+                          <Trash2 size={16} />
+                        </IconButton>
+                      )}
                     </Box>
                   )}
                 </Box>
