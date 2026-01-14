@@ -390,11 +390,37 @@ export function ShiftTypeEditor({ shift, onChange }: ShiftTypeEditorProps) {
             </Badge>
           </div>
           <div className="space-y-2">
-            <Input 
-              placeholder="Higher classification (e.g., Lead Educator)"
-              value={shift.higherDuties?.classification || ''}
-              onChange={(e) => handleHigherDutiesChange('classification', e.target.value || undefined)}
-            />
+            <Select 
+              value={shift.higherDuties?.classification || 'none'}
+              onValueChange={(value) => handleHigherDutiesChange('classification', value === 'none' ? undefined : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select higher classification" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Higher Duties</SelectItem>
+                <SelectItem value="Level 2.1">Level 2.1</SelectItem>
+                <SelectItem value="Level 2.2">Level 2.2</SelectItem>
+                <SelectItem value="Level 2.3">Level 2.3</SelectItem>
+                <SelectItem value="Level 3.1">Level 3.1</SelectItem>
+                <SelectItem value="Level 3.2">Level 3.2</SelectItem>
+                <SelectItem value="Level 3.3">Level 3.3</SelectItem>
+                <SelectItem value="Level 4.1">Level 4.1</SelectItem>
+                <SelectItem value="Level 4.2">Level 4.2</SelectItem>
+                <SelectItem value="Level 4.3">Level 4.3</SelectItem>
+                <SelectItem value="Level 5.1">Level 5.1</SelectItem>
+                <SelectItem value="Level 5.2">Level 5.2</SelectItem>
+                <SelectItem value="Level 5.3">Level 5.3</SelectItem>
+                <SelectItem value="Level 6.1">Level 6.1</SelectItem>
+                <SelectItem value="Level 6.2">Level 6.2</SelectItem>
+                <SelectItem value="Level 6.3">Level 6.3</SelectItem>
+                <SelectItem value="Lead Educator">Lead Educator</SelectItem>
+                <SelectItem value="Room Leader">Room Leader</SelectItem>
+                <SelectItem value="Educational Leader">Educational Leader</SelectItem>
+                <SelectItem value="Assistant Director">Assistant Director</SelectItem>
+                <SelectItem value="Director">Director</SelectItem>
+              </SelectContent>
+            </Select>
             {shift.higherDuties?.classification && (
               <div className="space-y-1">
                 <Label className="text-xs">Duration (mins, leave blank for full shift)</Label>
