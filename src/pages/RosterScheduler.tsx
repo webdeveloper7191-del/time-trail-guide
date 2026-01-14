@@ -1388,6 +1388,7 @@ export default function RosterScheduler() {
             demandAnalytics={demandAnalytics}
             staffAbsences={mockStaffAbsences}
             shiftTemplates={shiftTemplates}
+            emptyShifts={emptyShifts.filter(es => es.centreId === selectedCentreId)}
             onDropStaff={handleDropStaff}
             staffRoomAssignments={staffRoomAssignmentsByCentre[selectedCentreId] || {}}
             onAssignStaffToRoom={handleAssignStaffToRoom}
@@ -1406,6 +1407,11 @@ export default function RosterScheduler() {
             onShiftReassign={handleShiftReassign}
             onStaffClick={openStaffProfile}
             onOpenShiftTemplateManager={() => setShowShiftTemplateManager(true)}
+            onEmptyShiftClick={() => setShowAutoAssignModal(true)}
+            onDeleteEmptyShift={(id) => {
+              setEmptyShifts(prev => prev.filter(es => es.id !== id));
+              toast.success('Empty shift deleted');
+            }}
           />
         )}
 
@@ -1669,6 +1675,28 @@ export default function RosterScheduler() {
           </div>
         </div>
       )}
+
+      {/* Add Empty Shift Modal */}
+      <AddEmptyShiftModal
+        open={showAddEmptyShiftModal}
+        onClose={() => setShowAddEmptyShiftModal(false)}
+        rooms={selectedCentre.rooms}
+        centreId={selectedCentreId}
+        availableDates={dates}
+        shiftTemplates={allShiftTemplates}
+        onAdd={handleAddEmptyShifts}
+      />
+
+      {/* Auto-Assign Staff Modal */}
+      <AutoAssignStaffModal
+        open={showAutoAssignModal}
+        onClose={() => setShowAutoAssignModal(false)}
+        emptyShifts={emptyShifts.filter(s => s.centreId === selectedCentreId)}
+        staff={allStaff}
+        rooms={selectedCentre.rooms}
+        existingShifts={shifts}
+        onAssign={handleAutoAssign}
+      />
 
       {/* Hidden Print View */}
       <div className="hidden">
