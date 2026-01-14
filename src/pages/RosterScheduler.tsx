@@ -44,6 +44,13 @@ import { HolidayEventCalendarView } from '@/components/roster/HolidayEventCalend
 import { MobileRosterToolbar } from '@/components/roster/MobileRosterToolbar';
 import { MobileStaffPanel } from '@/components/roster/MobileStaffPanel';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { RecurringPatternsPanel } from '@/components/roster/RecurringPatternsPanel';
+import { FatigueManagementPanel } from '@/components/roster/FatigueManagementPanel';
+import { GPSClockInPanel } from '@/components/roster/GPSClockInPanel';
+import { WeatherIntegrationPanel } from '@/components/roster/WeatherIntegrationPanel';
+import { BreakSchedulingPanel } from '@/components/roster/BreakSchedulingPanel';
+import { SkillMatrixPanel } from '@/components/roster/SkillMatrixPanel';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 // MUI Components
 import {
