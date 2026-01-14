@@ -41,6 +41,9 @@ import { DemandMasterSettings } from '@/types/industryConfig';
 import { useDemand } from '@/contexts/DemandContext';
 import { IntegrationManagerModal } from '@/components/settings/IntegrationManagerModal';
 import { HolidayEventCalendarView } from '@/components/roster/HolidayEventCalendarView';
+import { MobileRosterToolbar } from '@/components/roster/MobileRosterToolbar';
+import { MobileStaffPanel } from '@/components/roster/MobileStaffPanel';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // MUI Components
 import {
@@ -118,6 +121,7 @@ const defaultCentreBudgets: Record<string, number> = {
 
 export default function RosterScheduler() {
   const { mode, setMode, resolvedMode } = useThemeMode();
+  const isMobile = useIsMobile();
   const { 
     config: demandConfig,
     settings: demandContextSettings, 
@@ -125,6 +129,9 @@ export default function RosterScheduler() {
     terminology,
     staffingTerminology,
   } = useDemand();
+  
+  // Mobile staff panel state
+  const [showMobileStaffPanel, setShowMobileStaffPanel] = useState(false);
   
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [selectedCentreId, setSelectedCentreId] = useState<string>(mockCentres[0].id);
@@ -835,8 +842,57 @@ export default function RosterScheduler() {
 
   return (
     <Box className="h-screen flex flex-col" sx={{ bgcolor: 'background.default' }}>
-      {/* Header - Material Style */}
-      <Box component="header" sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0, boxShadow: 1 }}>
+      {/* Mobile Toolbar */}
+      <MobileRosterToolbar
+        currentDate={currentDate}
+        dates={dates}
+        viewMode={viewMode}
+        costSummary={costSummary}
+        weeklyBudget={weeklyBudget}
+        openShiftCount={centreOpenShifts.length}
+        alertCount={centreFlags.length}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        showDemandOverlay={showDemandOverlay}
+        emptyShiftsCount={emptyShifts.filter(s => s.centreId === selectedCentreId).length}
+        onNavigateDate={navigateDate}
+        onToday={() => setCurrentDate(new Date())}
+        onViewModeChange={setViewMode}
+        onPublish={handlePublish}
+        onAddOpenShift={() => setShowAddOpenShiftModal(true)}
+        onBulkAssign={() => setShowBulkAssignmentModal(true)}
+        onAutoAssign={() => setShowAutoAssignModal(true)}
+        onExportPDF={handleExportPDF}
+        onExportExcel={handleExportExcel}
+        onPrint={handlePrint}
+        onShowSummary={() => setShowWeeklySummary(true)}
+        onShowOptimize={() => setShowOptimizationReport(true)}
+        onShowAlerts={() => setShowAlerts(true)}
+        onShowBudgetSettings={() => setShowBudgetSettings(true)}
+        onUndo={undoShifts}
+        onRedo={redoShifts}
+        onToggleDemand={() => {
+          setShowAnalyticsCharts(prev => !prev);
+          setShowDemandOverlay(prev => !prev);
+        }}
+        onToggleStaffPanel={() => setShowMobileStaffPanel(true)}
+      />
+
+      {/* Mobile Staff Panel */}
+      <MobileStaffPanel
+        isOpen={showMobileStaffPanel}
+        onClose={() => setShowMobileStaffPanel(false)}
+        staff={filteredStaff}
+        agencyStaff={mockAgencyStaff}
+        shifts={shifts}
+        selectedCentreId={selectedCentreId}
+        onDragStart={handleDragStart}
+        onGenerateAI={handleGenerateAIShifts}
+        isGenerating={isGenerating}
+      />
+
+      {/* Desktop Header - Material Style */}
+      <Box component="header" sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0, boxShadow: 1, display: { xs: 'none', md: 'block' } }}>
         {/* Top Bar - Navigation & Primary Actions */}
         <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Stack direction="row" spacing={3} alignItems="center">
@@ -1415,17 +1471,20 @@ export default function RosterScheduler() {
           />
         )}
 
-        <UnscheduledStaffPanel
-          staff={filteredStaff}
-          agencyStaff={mockAgencyStaff}
-          shifts={shifts}
-          selectedCentreId={selectedCentreId}
-          onDragStart={handleDragStart}
-          onGenerateAI={handleGenerateAIShifts}
-          isGenerating={isGenerating}
-          isCollapsed={isStaffPanelCollapsed}
-          onToggleCollapse={() => setIsStaffPanelCollapsed(prev => !prev)}
-        />
+        {/* Desktop Staff Panel - Hidden on mobile */}
+        <div className="hidden md:block">
+          <UnscheduledStaffPanel
+            staff={filteredStaff}
+            agencyStaff={mockAgencyStaff}
+            shifts={shifts}
+            selectedCentreId={selectedCentreId}
+            onDragStart={handleDragStart}
+            onGenerateAI={handleGenerateAIShifts}
+            isGenerating={isGenerating}
+            isCollapsed={isStaffPanelCollapsed}
+            onToggleCollapse={() => setIsStaffPanelCollapsed(prev => !prev)}
+          />
+        </div>
       </Box>
 
       {/* Summary Bar */}
