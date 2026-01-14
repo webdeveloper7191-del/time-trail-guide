@@ -349,18 +349,37 @@ export function AddOpenShiftModal({
 
   const bulkCount = selectedRoomIds.length * selectedDates.length;
 
+  const handleCreate = async () => {
+    // In bulk mode the form's roomId/date fields may be empty (hidden), but the schema still requires them.
+    // Keep them in sync so react-hook-form validation doesn't block submission.
+    if (createMode === 'bulk') {
+      if (selectedRoomIds.length === 0 || selectedDates.length === 0) {
+        toast.error('Please select at least one room and one date');
+        return;
+      }
+      setValue('roomId', selectedRoomIds[0], { shouldValidate: true, shouldDirty: true });
+      setValue('date', selectedDates[0], { shouldValidate: true, shouldDirty: true });
+    }
+
+    // handleSubmit returns a function
+    await handleSubmit(onSubmit)();
+  };
+
   const actions: OffCanvasAction[] = [
     { label: 'Cancel', onClick: handleClose, variant: 'outlined' },
-    { 
-      label: createMode === 'bulk' && bulkCount > 1 
-        ? `Create ${bulkCount} Open Shifts` 
-        : 'Add Open Shift', 
-      onClick: handleSubmit(onSubmit), 
-      variant: 'primary', 
-      disabled: createMode === 'single' ? !isValid : (selectedRoomIds.length === 0 || selectedDates.length === 0)
+    {
+      label:
+        createMode === 'bulk' && bulkCount > 1
+          ? `Create ${bulkCount} Open Shifts`
+          : 'Add Open Shift',
+      onClick: handleCreate,
+      variant: 'primary',
+      disabled:
+        createMode === 'single'
+          ? !isValid
+          : selectedRoomIds.length === 0 || selectedDates.length === 0,
     },
   ];
-
   const handleRoomToggle = (roomId: string) => {
     setSelectedRoomIds(prev => 
       prev.includes(roomId) 
