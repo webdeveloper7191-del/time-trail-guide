@@ -616,13 +616,13 @@ export default function RosterScheduler() {
     setShiftToCopy(null);
   };
 
-  const handleAddOpenShift = (openShift: Omit<OpenShift, 'id'>) => {
-    const newOpenShift: OpenShift = {
+  const handleAddOpenShift = (openShifts: Omit<OpenShift, 'id'>[]) => {
+    const newOpenShifts: OpenShift[] = openShifts.map((openShift, idx) => ({
       ...openShift,
-      id: `open-${Date.now()}`,
-    };
-    setOpenShifts(prev => [...prev, newOpenShift]);
-    toast.success('Open shift added');
+      id: `open-${Date.now()}-${idx}`,
+    }));
+    setOpenShifts(prev => [...prev, ...newOpenShifts]);
+    // Toast is handled by the modal
   };
 
   const handleDeleteOpenShift = (openShiftId: string) => {
