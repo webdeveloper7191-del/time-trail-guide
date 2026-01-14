@@ -46,6 +46,13 @@ export interface ShiftTemplate {
   onCallSettings?: {
     defaultStartTime?: string;
     defaultEndTime?: string;
+    // Pay configuration
+    standbyRate?: number;
+    standbyRateType?: 'per_period' | 'per_hour' | 'daily';
+    callbackMinimumHours?: number;
+    callbackRateMultiplier?: number;
+    weekendStandbyRate?: number;
+    publicHolidayStandbyMultiplier?: number;
   };
   
   // Sleepover template settings
