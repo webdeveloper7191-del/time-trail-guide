@@ -92,9 +92,22 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
     
     const anchor = side === 'left' ? 'left' : side === 'top' ? 'top' : side === 'bottom' ? 'bottom' : 'right';
     
-    // Extract width from style prop if provided, otherwise use defaults
-    const customWidth = style?.width;
-    const customMaxWidth = style?.maxWidth;
+    // Parse width from className (e.g., sm:max-w-2xl = 672px, sm:max-w-xl = 576px, sm:max-w-3xl = 768px)
+    const getWidthFromClassName = (className: string | undefined) => {
+      if (!className) return { xs: '95%', sm: '500px' };
+      
+      if (className.includes('max-w-3xl')) return { xs: '95%', sm: '768px' };
+      if (className.includes('max-w-2xl')) return { xs: '95%', sm: '672px' };
+      if (className.includes('max-w-xl')) return { xs: '95%', sm: '576px' };
+      if (className.includes('max-w-lg')) return { xs: '95%', sm: '512px' };
+      if (className.includes('max-w-md')) return { xs: '95%', sm: '448px' };
+      
+      return { xs: '95%', sm: '500px' };
+    };
+    
+    const widthConfig = side === 'left' || side === 'right' 
+      ? getWidthFromClassName(className) 
+      : '100%';
     
     return (
       <Drawer
@@ -103,8 +116,8 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
         onClose={() => onOpenChange(false)}
         PaperProps={{
           sx: {
-            width: customWidth || (side === 'left' || side === 'right' ? { xs: '95%', sm: '600px', md: '700px' } : '100%'),
-            maxWidth: customMaxWidth || (side === 'left' || side === 'right' ? '95vw' : '100%'),
+            width: widthConfig,
+            maxWidth: '95vw',
             height: side === 'top' || side === 'bottom' ? 'auto' : '100%',
             backgroundColor: 'hsl(var(--background))',
             color: 'hsl(var(--foreground))',
@@ -113,12 +126,13 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
             borderTop: side === 'bottom' ? '1px solid hsl(var(--border))' : undefined,
             borderBottom: side === 'top' ? '1px solid hsl(var(--border))' : undefined,
             boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+            overflow: 'hidden',
           }
         }}
         slotProps={{
           backdrop: {
             sx: {
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
             }
           }
         }}
