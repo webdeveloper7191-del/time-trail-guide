@@ -92,17 +92,17 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
     
     const anchor = side === 'left' ? 'left' : side === 'top' ? 'top' : side === 'bottom' ? 'bottom' : 'right';
     
-    // Parse width from className (e.g., sm:max-w-2xl = 672px, sm:max-w-xl = 576px, sm:max-w-3xl = 768px)
+    // Parse width from className - use conservative widths that won't overflow
     const getWidthFromClassName = (className: string | undefined) => {
-      if (!className) return { xs: '95%', sm: '500px' };
+      if (!className) return { xs: '100%', sm: '450px' };
       
-      if (className.includes('max-w-3xl')) return { xs: '95%', sm: '768px' };
-      if (className.includes('max-w-2xl')) return { xs: '95%', sm: '672px' };
-      if (className.includes('max-w-xl')) return { xs: '95%', sm: '576px' };
-      if (className.includes('max-w-lg')) return { xs: '95%', sm: '512px' };
-      if (className.includes('max-w-md')) return { xs: '95%', sm: '448px' };
+      if (className.includes('max-w-3xl')) return { xs: '100%', sm: '550px', md: '650px' };
+      if (className.includes('max-w-2xl')) return { xs: '100%', sm: '500px', md: '580px' };
+      if (className.includes('max-w-xl')) return { xs: '100%', sm: '450px', md: '520px' };
+      if (className.includes('max-w-lg')) return { xs: '100%', sm: '420px', md: '480px' };
+      if (className.includes('max-w-md')) return { xs: '100%', sm: '380px', md: '420px' };
       
-      return { xs: '95%', sm: '500px' };
+      return { xs: '100%', sm: '450px' };
     };
     
     const widthConfig = side === 'left' || side === 'right' 
@@ -117,7 +117,7 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
         PaperProps={{
           sx: {
             width: widthConfig,
-            maxWidth: '95vw',
+            maxWidth: '100vw',
             height: side === 'top' || side === 'bottom' ? 'auto' : '100%',
             backgroundColor: 'hsl(var(--background))',
             color: 'hsl(var(--foreground))',
@@ -125,7 +125,7 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
             borderRight: side === 'left' ? '1px solid hsl(var(--border))' : undefined,
             borderTop: side === 'bottom' ? '1px solid hsl(var(--border))' : undefined,
             borderBottom: side === 'top' ? '1px solid hsl(var(--border))' : undefined,
-            boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+            boxShadow: '-4px 0 20px rgba(0, 0, 0, 0.15)',
             overflow: 'hidden',
           }
         }}
