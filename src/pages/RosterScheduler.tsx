@@ -117,6 +117,12 @@ import {
   Plug,
   Flag,
   Users,
+  Repeat,
+  Brain,
+  MapPin,
+  CloudSun,
+  Coffee,
+  Target,
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
 
@@ -202,6 +208,14 @@ export default function RosterScheduler() {
   const [showIntegrationManager, setShowIntegrationManager] = useState(false);
   const [showHolidayCalendar, setShowHolidayCalendar] = useState(false);
   const [showAddEmptyShiftModal, setShowAddEmptyShiftModal] = useState(false);
+  
+  // Advanced Features panels
+  const [showRecurringPatterns, setShowRecurringPatterns] = useState(false);
+  const [showFatigueManagement, setShowFatigueManagement] = useState(false);
+  const [showGPSClockIn, setShowGPSClockIn] = useState(false);
+  const [showWeatherIntegration, setShowWeatherIntegration] = useState(false);
+  const [showBreakScheduling, setShowBreakScheduling] = useState(false);
+  const [showSkillMatrix, setShowSkillMatrix] = useState(false);
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
   const [emptyShifts, setEmptyShifts] = useState<Array<{
     id: string;
@@ -1320,6 +1334,37 @@ export default function RosterScheduler() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Advanced Features Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                    <Zap size={18} />
+                  </IconButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setShowRecurringPatterns(true)} icon={<Repeat size={16} />}>
+                    Recurring Patterns
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowBreakScheduling(true)} icon={<Coffee size={16} />}>
+                    Break Scheduling
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowSkillMatrix(true)} icon={<Target size={16} />}>
+                    Skill Matrix Matching
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowFatigueManagement(true)} icon={<Brain size={16} />}>
+                    Fatigue Management
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowGPSClockIn(true)} icon={<MapPin size={16} />}>
+                    GPS Clock-in/out
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowWeatherIntegration(true)} icon={<CloudSun size={16} />}>
+                    Weather Integration
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </Stack>
 
             {/* Status Icons Group */}
@@ -1813,6 +1858,91 @@ export default function RosterScheduler() {
         existingShifts={shifts}
         onAssign={handleAutoAssign}
       />
+
+      {/* Advanced Features Panels */}
+      <Sheet open={showRecurringPatterns} onOpenChange={setShowRecurringPatterns}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Repeat className="h-5 w-5" />
+              Recurring Shift Patterns
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <RecurringPatternsPanel />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showBreakScheduling} onOpenChange={setShowBreakScheduling}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Coffee className="h-5 w-5" />
+              Break Scheduling
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <BreakSchedulingPanel />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showSkillMatrix} onOpenChange={setShowSkillMatrix}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Skill Matrix Matching
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <SkillMatrixPanel />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showFatigueManagement} onOpenChange={setShowFatigueManagement}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              Fatigue Management
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <FatigueManagementPanel />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showGPSClockIn} onOpenChange={setShowGPSClockIn}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              GPS Clock-in/out
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <GPSClockInPanel />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showWeatherIntegration} onOpenChange={setShowWeatherIntegration}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <CloudSun className="h-5 w-5" />
+              Weather Integration
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <WeatherIntegrationPanel />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Hidden Print View */}
       <div className="hidden">
