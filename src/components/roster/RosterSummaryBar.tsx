@@ -77,32 +77,67 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
     { label: 'People Unavailable', count: summary.unavailable, color: 'bg-muted-foreground', bgColor: 'bg-muted' },
   ];
 
+  // Items to show on mobile (condensed)
+  const mobileItems = items.filter(item => 
+    ['Unpublished', 'Published', 'Open Shift', 'Warnings'].includes(item.label) && item.count > 0
+  );
+
   return (
-    <div className="flex items-center gap-4 px-4 py-2 bg-card border-t border-border overflow-x-auto">
-      {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-          <div className={`h-3 w-3 rounded-sm ${item.color} ${item.bgColor}`} />
-          <span className="text-muted-foreground">{item.count}</span>
-          <span className="text-muted-foreground">{item.label}</span>
+    <>
+      {/* Desktop Summary Bar */}
+      <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-card border-t border-border overflow-x-auto">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <div className={`h-3 w-3 rounded-sm ${item.color} ${item.bgColor}`} />
+            <span className="text-muted-foreground">{item.count}</span>
+            <span className="text-muted-foreground">{item.label}</span>
+          </div>
+        ))}
+        
+        {/* Divider */}
+        <div className="h-4 w-px bg-border mx-2" />
+        
+        {/* Holiday & Event indicators */}
+        <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+          <div className="h-3 w-3 rounded-sm bg-destructive" />
+          <span className="text-muted-foreground">Public Holiday</span>
         </div>
-      ))}
-      
-      {/* Divider */}
-      <div className="h-4 w-px bg-border mx-2" />
-      
-      {/* Holiday & Event indicators */}
-      <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-        <div className="h-3 w-3 rounded-sm bg-destructive" />
-        <span className="text-muted-foreground">Public Holiday</span>
+        <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+          <div className="h-3 w-3 rounded-sm bg-amber-500" />
+          <span className="text-muted-foreground">School Holiday</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+          <div className="h-3 w-3 rounded-sm bg-primary" />
+          <span className="text-muted-foreground">Event</span>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-        <div className="h-3 w-3 rounded-sm bg-amber-500" />
-        <span className="text-muted-foreground">School Holiday</span>
+
+      {/* Mobile Summary Bar - Condensed */}
+      <div className="md:hidden flex items-center gap-3 px-3 py-2 bg-card border-t border-border overflow-x-auto">
+        {mobileItems.length > 0 ? (
+          mobileItems.map((item) => (
+            <div key={item.label} className="flex items-center gap-1 text-[10px] whitespace-nowrap">
+              <div className={`h-2.5 w-2.5 rounded-sm ${item.color} ${item.bgColor}`} />
+              <span className="text-muted-foreground font-medium">{item.count}</span>
+              <span className="text-muted-foreground">{item.label}</span>
+            </div>
+          ))
+        ) : (
+          <div className="text-[10px] text-muted-foreground">No shifts scheduled</div>
+        )}
+        
+        {/* Condensed legend for mobile */}
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-1 text-[10px]">
+            <div className="h-2 w-2 rounded-sm bg-destructive" />
+            <span className="text-muted-foreground">Holiday</span>
+          </div>
+          <div className="flex items-center gap-1 text-[10px]">
+            <div className="h-2 w-2 rounded-sm bg-primary" />
+            <span className="text-muted-foreground">Event</span>
+          </div>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-        <div className="h-3 w-3 rounded-sm bg-primary" />
-        <span className="text-muted-foreground">Event</span>
-      </div>
-    </div>
+    </>
   );
 }
