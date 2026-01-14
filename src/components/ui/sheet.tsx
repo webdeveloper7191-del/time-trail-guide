@@ -125,7 +125,8 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
       >
         <div
           ref={ref}
-          className={cn("relative h-full p-6 flex flex-col overflow-hidden", className)}
+          className={cn("relative h-full flex flex-col overflow-hidden", className)}
+          style={style}
           {...props}
         >
           {children}

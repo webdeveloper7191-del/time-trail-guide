@@ -79,7 +79,7 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
       <SheetContent
         side={side}
         className={cn(
-          'p-0 flex flex-col',
+          '!p-0 flex flex-col h-full overflow-hidden',
           isBackground && 'bg-muted/30',
           className
         )}
@@ -89,8 +89,8 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
         }}
       >
         {/* Header */}
-        <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0">
-          <div className="flex items-center justify-between">
+        <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 !mb-0 !pb-4">
+          <div className="flex items-center justify-between pr-8">
             <div>
               <SheetTitle className="text-lg font-semibold">{title}</SheetTitle>
               {description && (
@@ -102,9 +102,9 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
           </div>
         </SheetHeader>
 
-        {/* Content */}
-        <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full side-popup-body">
+        {/* Content - flex-1 to fill remaining space */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
             <div className="px-6 py-4">
               {children}
             </div>
@@ -113,7 +113,7 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
 
         {/* Footer with actions */}
         {showFooter && actions.length > 0 && (
-          <SheetFooter className="px-6 py-4 border-t border-border flex-shrink-0">
+          <SheetFooter className="px-6 py-4 border-t border-border flex-shrink-0 !mt-0 !pt-4">
             <div className="flex justify-end gap-3 w-full">
               {actions.map((action, index) => (
                 <Button
