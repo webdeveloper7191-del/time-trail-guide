@@ -6,8 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { toast } from 'sonner';
+import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import {
   Activity,
   AlertTriangle,
@@ -408,115 +408,109 @@ export function FatigueManagementPanel({ staff = [], shifts = [] }: FatigueManag
         </CardContent>
       </Card>
 
-      {/* Staff Detail Sheet */}
-      <Sheet open={!!selectedStaff} onOpenChange={() => setSelectedStaff(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          {selectedStaff && (
-            <>
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  {selectedStaff.staffName}
-                </SheetTitle>
-                <SheetDescription>
-                  Detailed fatigue analysis
-                </SheetDescription>
-              </SheetHeader>
-              
-              <div className="mt-6 space-y-6">
-                {/* Overall Score */}
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Fatigue Score</p>
-                        <p className={`text-4xl font-bold ${getScoreColor(selectedStaff.currentScore)}`}>
-                          {selectedStaff.currentScore}
-                        </p>
+      {/* Staff Detail Sheet - Using PrimaryOffCanvas */}
+      <PrimaryOffCanvas
+        open={!!selectedStaff}
+        onClose={() => setSelectedStaff(null)}
+        title={selectedStaff?.staffName || 'Staff Details'}
+        description="Detailed fatigue analysis"
+        icon={Activity}
+        size="md"
+        showFooter={false}
+      >
+        {selectedStaff && (
+          <div className="space-y-6">
+            {/* Overall Score */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Fatigue Score</p>
+                    <p className={`text-4xl font-bold ${getScoreColor(selectedStaff.currentScore)}`}>
+                      {selectedStaff.currentScore}
+                    </p>
+                  </div>
+                  {getRiskBadge(selectedStaff.riskLevel)}
+                </div>
+                <Progress value={selectedStaff.currentScore} className="h-3" />
+              </CardContent>
+            </Card>
+
+            {/* Factor Breakdown */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Contributing Factors</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {selectedStaff.factors.map((factor, idx) => (
+                    <div key={idx}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium">{factor.factor}</span>
+                        <span className="text-sm text-muted-foreground">+{factor.contribution}</span>
                       </div>
-                      {getRiskBadge(selectedStaff.riskLevel)}
+                      <Progress value={(factor.contribution / 35) * 100} className="h-2" />
+                      <p className="text-xs text-muted-foreground mt-1">{factor.details}</p>
                     </div>
-                    <Progress value={selectedStaff.currentScore} className="h-3" />
-                  </CardContent>
-                </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-                {/* Factor Breakdown */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Contributing Factors</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {selectedStaff.factors.map((factor, idx) => (
-                        <div key={idx}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium">{factor.factor}</span>
-                            <span className="text-sm text-muted-foreground">+{factor.contribution}</span>
-                          </div>
-                          <Progress value={(factor.contribution / 35) * 100} className="h-2" />
-                          <p className="text-xs text-muted-foreground mt-1">{factor.details}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+            {/* Recommendations */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Recommendations</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {selectedStaff.recommendations.map((rec, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm">
+                      {rec.includes('URGENT') || rec.includes('CRITICAL') ? (
+                        <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                      )}
+                      {rec}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
 
-                {/* Recommendations */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Recommendations</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {selectedStaff.recommendations.map((rec, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm">
-                          {rec.includes('URGENT') || rec.includes('CRITICAL') ? (
-                            <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-                          ) : (
-                            <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                          )}
-                          {rec}
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
+            {/* Projection */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Next Week Projection</p>
+                    <p className={`text-2xl font-bold ${getScoreColor(selectedStaff.projectedScoreNextWeek)}`}>
+                      {selectedStaff.projectedScoreNextWeek}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {selectedStaff.projectedScoreNextWeek < selectedStaff.currentScore ? (
+                      <>
+                        <TrendingDown className="h-6 w-6 text-emerald-500" />
+                        <span className="text-emerald-600 font-medium">Improving</span>
+                      </>
+                    ) : (
+                      <>
+                        <TrendingUp className="h-6 w-6 text-orange-500" />
+                        <span className="text-orange-600 font-medium">Worsening</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                {/* Projection */}
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Next Week Projection</p>
-                        <p className={`text-2xl font-bold ${getScoreColor(selectedStaff.projectedScoreNextWeek)}`}>
-                          {selectedStaff.projectedScoreNextWeek}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {selectedStaff.projectedScoreNextWeek < selectedStaff.currentScore ? (
-                          <>
-                            <TrendingDown className="h-6 w-6 text-emerald-500" />
-                            <span className="text-emerald-600 font-medium">Improving</span>
-                          </>
-                        ) : (
-                          <>
-                            <TrendingUp className="h-6 w-6 text-orange-500" />
-                            <span className="text-orange-600 font-medium">Worsening</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <p className="text-xs text-muted-foreground text-center">
-                  Last updated: {format(new Date(selectedStaff.lastUpdated), 'PPp')}
-                </p>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+            <p className="text-xs text-muted-foreground text-center">
+              Last updated: {format(new Date(selectedStaff.lastUpdated), 'PPp')}
+            </p>
+          </div>
+        )}
+      </PrimaryOffCanvas>
     </div>
   );
 }

@@ -7,10 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import {
   Repeat,
   Plus,
@@ -477,183 +477,182 @@ export function RecurringPatternsPanel({
         </CardContent>
       </Card>
 
-      {/* Create Pattern Sheet */}
-      <Sheet open={showCreatePanel} onOpenChange={setShowCreatePanel}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Create Recurring Pattern</SheetTitle>
-            <SheetDescription>
-              Define a repeating shift schedule
-            </SheetDescription>
-          </SheetHeader>
+      {/* Create Pattern Sheet - Using PrimaryOffCanvas */}
+      <PrimaryOffCanvas
+        open={showCreatePanel}
+        onClose={() => setShowCreatePanel(false)}
+        title="Create Recurring Pattern"
+        description="Define a repeating shift schedule"
+        icon={Repeat}
+        size="md"
+        actions={[
+          {
+            label: 'Cancel',
+            variant: 'outlined',
+            onClick: () => setShowCreatePanel(false),
+          },
+          {
+            label: 'Create Pattern',
+            variant: 'primary',
+            onClick: handleCreatePattern,
+          },
+        ]}
+      >
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label>Pattern Name *</Label>
+            <Input
+              placeholder="e.g., Morning Educator Shift"
+              value={newPattern.name}
+              onChange={e => setNewPattern(prev => ({ ...prev, name: e.target.value }))}
+            />
+          </div>
 
-          <Separator className="my-4" />
+          <div className="space-y-2">
+            <Label>Recurrence Type *</Label>
+            <Select
+              value={newPattern.pattern}
+              onValueChange={v => setNewPattern(prev => ({ ...prev, pattern: v as RecurrencePattern }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label>Pattern Name *</Label>
-              <Input
-                placeholder="e.g., Morning Educator Shift"
-                value={newPattern.name}
-                onChange={e => setNewPattern(prev => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Recurrence Type *</Label>
-              <Select
-                value={newPattern.pattern}
-                onValueChange={v => setNewPattern(prev => ({ ...prev, pattern: v as RecurrencePattern }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="fortnightly">Fortnightly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Days of Week *</Label>
-              <div className="flex gap-2 flex-wrap">
-                {DAYS_OF_WEEK.map(day => (
-                  <div
-                    key={day.value}
-                    className={`px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
-                      newPattern.daysOfWeek?.includes(day.value)
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-muted/50 hover:bg-muted'
-                    }`}
-                    onClick={() => handleToggleDay(day.value)}
-                  >
-                    {day.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Start Time *</Label>
-                <Input
-                  type="time"
-                  value={newPattern.shiftTemplate?.startTime}
-                  onChange={e =>
-                    setNewPattern(prev => ({
-                      ...prev,
-                      shiftTemplate: { ...prev.shiftTemplate!, startTime: e.target.value },
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>End Time *</Label>
-                <Input
-                  type="time"
-                  value={newPattern.shiftTemplate?.endTime}
-                  onChange={e =>
-                    setNewPattern(prev => ({
-                      ...prev,
-                      shiftTemplate: { ...prev.shiftTemplate!, endTime: e.target.value },
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Role *</Label>
-              <Select
-                value={newPattern.shiftTemplate?.roleId}
-                onValueChange={v => {
-                  const role = mockRoles.find(r => r.id === v);
-                  setNewPattern(prev => ({
-                    ...prev,
-                    shiftTemplate: {
-                      ...prev.shiftTemplate!,
-                      roleId: v,
-                      roleName: role?.name || '',
-                    },
-                  }));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockRoles.map(role => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Centre *</Label>
-              <Select
-                value={newPattern.shiftTemplate?.centreId}
-                onValueChange={v =>
-                  setNewPattern(prev => ({
-                    ...prev,
-                    shiftTemplate: { ...prev.shiftTemplate!, centreId: v },
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select centre" />
-                </SelectTrigger>
-                <SelectContent>
-                  {centre ? (
-                    <SelectItem value={centre.id}>{centre.name}</SelectItem>
-                  ) : (
-                    <>
-                      <SelectItem value="centre-1">Sydney CBD Centre</SelectItem>
-                      <SelectItem value="centre-2">Melbourne Central</SelectItem>
-                      <SelectItem value="centre-3">Brisbane North</SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Start Date</Label>
-                <Input
-                  type="date"
-                  value={newPattern.startDate}
-                  onChange={e => setNewPattern(prev => ({ ...prev, startDate: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>End Date (optional)</Label>
-                <Input
-                  type="date"
-                  value={newPattern.endDate}
-                  onChange={e => setNewPattern(prev => ({ ...prev, endDate: e.target.value }))}
-                />
-              </div>
+          <div className="space-y-2">
+            <Label>Days of Week *</Label>
+            <div className="flex gap-2 flex-wrap">
+              {DAYS_OF_WEEK.map(day => (
+                <div
+                  key={day.value}
+                  className={`px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                    newPattern.daysOfWeek?.includes(day.value)
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted/50 hover:bg-muted'
+                  }`}
+                  onClick={() => handleToggleDay(day.value)}
+                >
+                  {day.label}
+                </div>
+              ))}
             </div>
           </div>
 
-          <SheetFooter className="mt-6">
-            <Button variant="outline" onClick={() => setShowCreatePanel(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreatePattern}>
-              Create Pattern
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          <Separator />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Start Time *</Label>
+              <Input
+                type="time"
+                value={newPattern.shiftTemplate?.startTime}
+                onChange={e =>
+                  setNewPattern(prev => ({
+                    ...prev,
+                    shiftTemplate: { ...prev.shiftTemplate!, startTime: e.target.value },
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>End Time *</Label>
+              <Input
+                type="time"
+                value={newPattern.shiftTemplate?.endTime}
+                onChange={e =>
+                  setNewPattern(prev => ({
+                    ...prev,
+                    shiftTemplate: { ...prev.shiftTemplate!, endTime: e.target.value },
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Role *</Label>
+            <Select
+              value={newPattern.shiftTemplate?.roleId}
+              onValueChange={v => {
+                const role = mockRoles.find(r => r.id === v);
+                setNewPattern(prev => ({
+                  ...prev,
+                  shiftTemplate: {
+                    ...prev.shiftTemplate!,
+                    roleId: v,
+                    roleName: role?.name || '',
+                  },
+                }));
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {mockRoles.map(role => (
+                  <SelectItem key={role.id} value={role.id}>
+                    {role.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Centre *</Label>
+            <Select
+              value={newPattern.shiftTemplate?.centreId}
+              onValueChange={v =>
+                setNewPattern(prev => ({
+                  ...prev,
+                  shiftTemplate: { ...prev.shiftTemplate!, centreId: v },
+                }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select centre" />
+              </SelectTrigger>
+              <SelectContent>
+                {centre ? (
+                  <SelectItem value={centre.id}>{centre.name}</SelectItem>
+                ) : (
+                  <>
+                    <SelectItem value="centre-1">Sydney CBD Centre</SelectItem>
+                    <SelectItem value="centre-2">Melbourne Central</SelectItem>
+                    <SelectItem value="centre-3">Brisbane North</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Start Date</Label>
+              <Input
+                type="date"
+                value={newPattern.startDate}
+                onChange={e => setNewPattern(prev => ({ ...prev, startDate: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>End Date (optional)</Label>
+              <Input
+                type="date"
+                value={newPattern.endDate}
+                onChange={e => setNewPattern(prev => ({ ...prev, endDate: e.target.value }))}
+              />
+            </div>
+          </div>
+        </div>
+      </PrimaryOffCanvas>
     </div>
   );
 }

@@ -254,7 +254,7 @@ export function BreakSchedulingPanel({ centreId, selectedDate, onClose }: BreakS
   const inProgressBreaks = scheduledBreaks.filter(b => b.status === 'in-progress').length;
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4">
       {/* Header Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
