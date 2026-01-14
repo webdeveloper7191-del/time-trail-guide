@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,165 +36,43 @@ import {
 import { StaffMember, Shift } from '@/types/roster';
 import { calculateAllFatigueScores, defaultFatigueRules } from '@/lib/fatigueCalculator';
 
-// Mock data
-const mockFatigueScores: FatigueScore[] = [
-  {
-    staffId: 'staff-1',
-    staffName: 'Sarah Johnson',
-    currentScore: 35,
-    riskLevel: 'low',
-    factors: [
-      { factor: 'Weekly Hours', contribution: 15, details: '38 of 40 max hours' },
-      { factor: 'Consecutive Days', contribution: 10, details: '4 of 6 max days' },
-      { factor: 'Night Shifts', contribution: 5, details: '0 night shifts this week' },
-      { factor: 'Rest Between Shifts', contribution: 5, details: 'Avg 14 hours rest' },
-    ],
-    lastUpdated: new Date().toISOString(),
-    recommendations: ['Schedule maintained well within limits'],
-    projectedScoreNextWeek: 40,
-  },
-  {
-    staffId: 'staff-2',
-    staffName: 'Michael Chen',
-    currentScore: 62,
-    riskLevel: 'moderate',
-    factors: [
-      { factor: 'Weekly Hours', contribution: 25, details: '44 of 40 max hours (overtime)' },
-      { factor: 'Consecutive Days', contribution: 20, details: '5 of 6 max days' },
-      { factor: 'Night Shifts', contribution: 10, details: '2 night shifts this week' },
-      { factor: 'Rest Between Shifts', contribution: 7, details: 'Avg 11 hours rest' },
-    ],
-    lastUpdated: new Date().toISOString(),
-    recommendations: [
-      'Consider reducing hours next week',
-      'Ensure minimum 10 hours rest between shifts',
-    ],
-    projectedScoreNextWeek: 55,
-  },
-  {
-    staffId: 'staff-3',
-    staffName: 'Emma Williams',
-    currentScore: 78,
-    riskLevel: 'high',
-    factors: [
-      { factor: 'Weekly Hours', contribution: 30, details: '48 of 40 max hours (overtime)' },
-      { factor: 'Consecutive Days', contribution: 25, details: '6 of 6 max days' },
-      { factor: 'Night Shifts', contribution: 15, details: '4 night shifts this week' },
-      { factor: 'Rest Between Shifts', contribution: 8, details: 'Avg 9 hours rest' },
-    ],
-    lastUpdated: new Date().toISOString(),
-    recommendations: [
-      'URGENT: Schedule rest day immediately',
-      'Reduce night shifts next roster',
-      'Review workload distribution',
-    ],
-    projectedScoreNextWeek: 70,
-  },
-  {
-    staffId: 'staff-4',
-    staffName: 'David Liu',
-    currentScore: 92,
-    riskLevel: 'critical',
-    factors: [
-      { factor: 'Weekly Hours', contribution: 35, details: '52 of 40 max hours' },
-      { factor: 'Consecutive Days', contribution: 30, details: '7 consecutive days' },
-      { factor: 'Night Shifts', contribution: 20, details: '5 night shifts' },
-      { factor: 'Rest Between Shifts', contribution: 7, details: 'One 8-hour gap detected' },
-    ],
-    lastUpdated: new Date().toISOString(),
-    recommendations: [
-      'CRITICAL: Immediate intervention required',
-      'Cancel next scheduled shift',
-      'Mandatory 48-hour rest period',
-      'Manager review required',
-    ],
-    projectedScoreNextWeek: 85,
-  },
-];
-
-const mockViolations: FatigueViolation[] = [
-  {
-    id: 'viol-1',
-    staffId: 'staff-4',
-    staffName: 'David Liu',
-    violationType: 'consecutive_days',
-    severity: 'critical',
-    description: 'Exceeded maximum consecutive work days',
-    currentValue: 7,
-    limitValue: 6,
-    shiftIds: ['shift-1', 'shift-2', 'shift-3'],
-    detectedAt: new Date().toISOString(),
-    acknowledged: false,
-  },
-  {
-    id: 'viol-2',
-    staffId: 'staff-3',
-    staffName: 'Emma Williams',
-    violationType: 'weekly_hours',
-    severity: 'violation',
-    description: 'Exceeded maximum weekly hours',
-    currentValue: 48,
-    limitValue: 40,
-    shiftIds: ['shift-4', 'shift-5'],
-    detectedAt: new Date().toISOString(),
-    acknowledged: true,
-    acknowledgedBy: 'admin',
-  },
-  {
-    id: 'viol-3',
-    staffId: 'staff-4',
-    staffName: 'David Liu',
-    violationType: 'rest_break',
-    severity: 'warning',
-    description: 'Insufficient rest between shifts',
-    currentValue: 8,
-    limitValue: 10,
-    shiftIds: ['shift-6', 'shift-7'],
-    detectedAt: new Date().toISOString(),
-    acknowledged: false,
-  },
-];
-
-const mockRules: FatigueRule[] = [
-  {
-    id: 'rule-1',
-    name: 'Standard Fatigue Management',
-    description: 'Default fatigue rules based on Fair Work guidelines',
-    maxConsecutiveDays: 6,
-    maxWeeklyHours: 40,
-    minRestBetweenShifts: 10,
-    maxNightShiftsConsecutive: 3,
-    nightShiftStart: '22:00',
-    nightShiftEnd: '06:00',
-    fatigueScoreThreshold: 80,
-    isActive: true,
-  },
-];
-
 interface FatigueManagementPanelProps {
   staff?: StaffMember[];
   shifts?: Shift[];
 }
 
-export function FatigueManagementPanel({ staff, shifts }: FatigueManagementPanelProps) {
-  const [scores] = useState(mockFatigueScores);
-  const [violations, setViolations] = useState(mockViolations);
+export function FatigueManagementPanel({ staff = [], shifts = [] }: FatigueManagementPanelProps) {
   const [selectedStaff, setSelectedStaff] = useState<FatigueScore | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [acknowledgedViolations, setAcknowledgedViolations] = useState<Set<string>>(new Set());
+
+  // Calculate real fatigue scores from actual data
+  const { scores, violations: rawViolations } = useMemo(() => {
+    if (staff.length === 0) {
+      return { scores: [], violations: [] };
+    }
+    return calculateAllFatigueScores(staff, shifts, defaultFatigueRules);
+  }, [staff, shifts]);
+
+  // Apply acknowledgments to violations
+  const violations = useMemo(() => {
+    return rawViolations.map(v => ({
+      ...v,
+      acknowledged: acknowledgedViolations.has(v.id),
+      acknowledgedBy: acknowledgedViolations.has(v.id) ? 'admin' : undefined,
+    }));
+  }, [rawViolations, acknowledgedViolations]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Simulate recalculation delay for UX
+    await new Promise(resolve => setTimeout(resolve, 800));
     setIsRefreshing(false);
-    toast.success('Fatigue scores recalculated');
+    toast.success('Fatigue scores recalculated from current shift data');
   };
 
   const handleAcknowledge = (violationId: string) => {
-    setViolations(prev =>
-      prev.map(v =>
-        v.id === violationId ? { ...v, acknowledged: true, acknowledgedBy: 'admin' } : v
-      )
-    );
+    setAcknowledgedViolations(prev => new Set([...prev, violationId]));
     toast.success('Violation acknowledged');
   };
 
@@ -224,6 +102,39 @@ export function FatigueManagementPanel({ staff, shifts }: FatigueManagementPanel
   const highCount = scores.filter(s => s.riskLevel === 'high').length;
   const unacknowledgedViolations = violations.filter(v => !v.acknowledged).length;
 
+  // No data state
+  if (staff.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="card-material-elevated border-l-4 border-l-orange-500">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                <Activity className="h-6 w-6 text-orange-600" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Fatigue Management</CardTitle>
+                <CardDescription>
+                  Monitor staff fatigue levels and ensure compliance with rest requirements
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+        
+        <Card className="card-material">
+          <CardContent className="py-12">
+            <div className="text-center text-muted-foreground">
+              <Users className="h-16 w-16 mx-auto mb-4 opacity-30" />
+              <p className="text-lg font-medium">No Staff Data Available</p>
+              <p className="text-sm mt-2">Add staff members and assign shifts to see fatigue analysis</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -237,7 +148,7 @@ export function FatigueManagementPanel({ staff, shifts }: FatigueManagementPanel
               <div>
                 <CardTitle className="text-xl">Fatigue Management</CardTitle>
                 <CardDescription>
-                  Monitor staff fatigue levels and ensure compliance with rest requirements
+                  Real-time fatigue monitoring from {shifts.length} shifts across {staff.length} staff
                 </CardDescription>
               </div>
             </div>
@@ -255,13 +166,13 @@ export function FatigueManagementPanel({ staff, shifts }: FatigueManagementPanel
 
       {/* Alert Banner */}
       {(criticalCount > 0 || unacknowledgedViolations > 0) && (
-        <Card className="card-material border-l-4 border-l-red-500 bg-red-50">
+        <Card className="card-material border-l-4 border-l-red-500 bg-red-50 dark:bg-red-950/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-6 w-6 text-red-600" />
               <div>
-                <p className="font-medium text-red-800">Immediate Attention Required</p>
-                <p className="text-sm text-red-700">
+                <p className="font-medium text-red-800 dark:text-red-200">Immediate Attention Required</p>
+                <p className="text-sm text-red-700 dark:text-red-300">
                   {criticalCount} staff at critical fatigue level, {unacknowledgedViolations} unacknowledged violations
                 </p>
               </div>
@@ -362,7 +273,9 @@ export function FatigueManagementPanel({ staff, shifts }: FatigueManagementPanel
                 <div
                   key={violation.id}
                   className={`p-4 rounded-lg border ${
-                    violation.acknowledged ? 'bg-muted/30' : 'bg-orange-50 border-orange-200'
+                    violation.acknowledged 
+                      ? 'bg-muted/30' 
+                      : 'bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800'
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -466,7 +379,7 @@ export function FatigueManagementPanel({ staff, shifts }: FatigueManagementPanel
                         {score.projectedScoreNextWeek < score.currentScore ? (
                           <TrendingDown className="h-4 w-4 text-emerald-500" />
                         ) : (
-                          <TrendingUp className="h-4 w-4 text-red-500" />
+                          <TrendingUp className="h-4 w-4 text-orange-500" />
                         )}
                         <span className="text-sm">{score.projectedScoreNextWeek}</span>
                       </div>
@@ -477,60 +390,71 @@ export function FatigueManagementPanel({ staff, shifts }: FatigueManagementPanel
                         size="sm"
                         onClick={() => setSelectedStaff(score)}
                       >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Details
+                        <Eye className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
             </TableBody>
           </Table>
+          
+          {scores.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <Activity className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>No fatigue data to display</p>
+              <p className="text-sm">Assign shifts to staff to generate fatigue scores</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Staff Detail Sheet */}
       <Sheet open={!!selectedStaff} onOpenChange={() => setSelectedStaff(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           {selectedStaff && (
             <>
               <SheetHeader>
-                <SheetTitle>{selectedStaff.staffName}</SheetTitle>
-                <SheetDescription>Fatigue Analysis Details</SheetDescription>
+                <SheetTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  {selectedStaff.staffName}
+                </SheetTitle>
+                <SheetDescription>
+                  Detailed fatigue analysis
+                </SheetDescription>
               </SheetHeader>
-
-              <Separator className="my-4" />
-
-              <div className="space-y-6">
-                {/* Score Summary */}
+              
+              <div className="mt-6 space-y-6">
+                {/* Overall Score */}
                 <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Current Score</p>
+                        <p className="text-sm text-muted-foreground">Fatigue Score</p>
                         <p className={`text-4xl font-bold ${getScoreColor(selectedStaff.currentScore)}`}>
                           {selectedStaff.currentScore}
                         </p>
                       </div>
-                      <div>{getRiskBadge(selectedStaff.riskLevel)}</div>
+                      {getRiskBadge(selectedStaff.riskLevel)}
                     </div>
-                    <Progress value={selectedStaff.currentScore} className="h-3 mt-4" />
+                    <Progress value={selectedStaff.currentScore} className="h-3" />
                   </CardContent>
                 </Card>
 
-                {/* Contributing Factors */}
+                {/* Factor Breakdown */}
                 <Card>
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-3">
                     <CardTitle className="text-base">Contributing Factors</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {selectedStaff.factors.map((factor, idx) => (
-                        <div key={idx} className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{factor.factor}</p>
-                            <p className="text-xs text-muted-foreground">{factor.details}</p>
+                        <div key={idx}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium">{factor.factor}</span>
+                            <span className="text-sm text-muted-foreground">+{factor.contribution}</span>
                           </div>
-                          <Badge variant="outline">+{factor.contribution}</Badge>
+                          <Progress value={(factor.contribution / 35) * 100} className="h-2" />
+                          <p className="text-xs text-muted-foreground mt-1">{factor.details}</p>
                         </div>
                       ))}
                     </div>
@@ -539,15 +463,19 @@ export function FatigueManagementPanel({ staff, shifts }: FatigueManagementPanel
 
                 {/* Recommendations */}
                 <Card>
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-3">
                     <CardTitle className="text-base">Recommendations</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2">
                       {selectedStaff.recommendations.map((rec, idx) => (
                         <li key={idx} className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
-                          <span>{rec}</span>
+                          {rec.includes('URGENT') || rec.includes('CRITICAL') ? (
+                            <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                          )}
+                          {rec}
                         </li>
                       ))}
                     </ul>
@@ -556,39 +484,35 @@ export function FatigueManagementPanel({ staff, shifts }: FatigueManagementPanel
 
                 {/* Projection */}
                 <Card>
-                  <CardContent className="p-4">
+                  <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Projected Next Week</p>
-                        <p className="text-2xl font-bold">{selectedStaff.projectedScoreNextWeek}</p>
+                        <p className="text-sm text-muted-foreground">Next Week Projection</p>
+                        <p className={`text-2xl font-bold ${getScoreColor(selectedStaff.projectedScoreNextWeek)}`}>
+                          {selectedStaff.projectedScoreNextWeek}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         {selectedStaff.projectedScoreNextWeek < selectedStaff.currentScore ? (
                           <>
-                            <TrendingDown className="h-5 w-5 text-emerald-500" />
-                            <span className="text-emerald-600">Improving</span>
+                            <TrendingDown className="h-6 w-6 text-emerald-500" />
+                            <span className="text-emerald-600 font-medium">Improving</span>
                           </>
                         ) : (
                           <>
-                            <TrendingUp className="h-5 w-5 text-red-500" />
-                            <span className="text-red-600">Worsening</span>
+                            <TrendingUp className="h-6 w-6 text-orange-500" />
+                            <span className="text-orange-600 font-medium">Worsening</span>
                           </>
                         )}
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              </div>
 
-              <SheetFooter className="mt-6">
-                <Button variant="outline" onClick={() => setSelectedStaff(null)}>
-                  Close
-                </Button>
-                <Button>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  View Schedule
-                </Button>
-              </SheetFooter>
+                <p className="text-xs text-muted-foreground text-center">
+                  Last updated: {format(new Date(selectedStaff.lastUpdated), 'PPp')}
+                </p>
+              </div>
             </>
           )}
         </SheetContent>
