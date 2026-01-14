@@ -48,6 +48,8 @@ import {
   Umbrella,
   FileStack,
   ClipboardCheck,
+  Scale,
+  Globe,
 } from 'lucide-react';
 import { australianAwards, AustralianAward, AwardClassification, calculateRates } from '@/data/australianAwards';
 import { CustomRateOverridesPanel } from './awards/CustomRateOverridesPanel';
@@ -69,6 +71,8 @@ import { ModuleDependencyExplorer } from './architecture/ModuleDependencyExplore
 import { LeaveBalanceDashboard } from './awards/LeaveBalanceDashboard';
 import { EnterpriseAgreementPanel } from './awards/EnterpriseAgreementPanel';
 import { AuditTrailViewer } from './awards/AuditTrailViewer';
+import { BOOTCalculatorPanel } from './awards/BOOTCalculatorPanel';
+import { FWCIntegrationPanel } from './awards/FWCIntegrationPanel';
 
 interface EnabledAward {
   awardId: string;
@@ -808,6 +812,20 @@ export function AwardsConfigurationTab() {
               <ClipboardCheck className="h-4 w-4" />
               <span className="hidden sm:inline">Audit</span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="boot-calculator" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Scale className="h-4 w-4" />
+              <span className="hidden sm:inline">BOOT</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="fwc-integration" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Globe className="h-4 w-4" />
+              <span className="hidden sm:inline">FWC</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -881,6 +899,14 @@ export function AwardsConfigurationTab() {
 
         <TabsContent value="audit-trail" className="mt-0">
           <AuditTrailViewer />
+        </TabsContent>
+
+        <TabsContent value="boot-calculator" className="mt-0">
+          <BOOTCalculatorPanel />
+        </TabsContent>
+
+        <TabsContent value="fwc-integration" className="mt-0">
+          <FWCIntegrationPanel />
         </TabsContent>
       </Tabs>
     </div>
