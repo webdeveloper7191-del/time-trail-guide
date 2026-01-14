@@ -18,6 +18,7 @@ import {
   FileText,
   Settings,
   ChevronRight,
+  ChevronDown,
   Activity,
   Layers,
   GitBranch,
@@ -28,6 +29,28 @@ import {
   Play,
   Pause,
   RotateCcw,
+  Network,
+  LayoutDashboard,
+  Building2,
+  UserCheck,
+  ClipboardCheck,
+  Wallet,
+  BarChart3,
+  Bell,
+  Lock,
+  Upload,
+  Download,
+  Printer,
+  History,
+  CalendarDays,
+  AlertTriangle,
+  CheckCircle2,
+  Target,
+  Sparkles,
+  Briefcase,
+  GraduationCap,
+  Home,
+  LucideIcon,
 } from 'lucide-react';
 
 interface ModuleNode {
@@ -175,12 +198,284 @@ const DATA_FLOWS: DataFlow[] = [
   { id: 'f14', from: 'compliance', to: 'timesheet', dataType: 'Compliance Reports', description: 'Compliance status for approval workflow', frequency: 'on-demand' },
 ];
 
+// Mind Map Data Structure
+interface MindMapNode {
+  id: string;
+  name: string;
+  icon: LucideIcon;
+  color: string;
+  children?: MindMapNode[];
+}
+
+const PRODUCT_MIND_MAP: MindMapNode = {
+  id: 'root',
+  name: 'Time Trail Guide',
+  icon: Home,
+  color: 'from-indigo-500 to-purple-500',
+  children: [
+    {
+      id: 'roster',
+      name: 'Roster & Scheduling',
+      icon: Calendar,
+      color: 'from-emerald-500 to-teal-500',
+      children: [
+        {
+          id: 'roster-timeline',
+          name: 'Timeline Grid',
+          icon: LayoutDashboard,
+          color: 'from-emerald-400 to-teal-400',
+          children: [
+            { id: 'shift-cards', name: 'Shift Cards', icon: Box, color: 'from-emerald-300 to-teal-300' },
+            { id: 'day-timeline', name: 'Day Timeline', icon: CalendarDays, color: 'from-emerald-300 to-teal-300' },
+            { id: 'staff-timeline', name: 'Staff Timeline Grid', icon: Users, color: 'from-emerald-300 to-teal-300' },
+          ]
+        },
+        {
+          id: 'roster-management',
+          name: 'Shift Management',
+          icon: Settings,
+          color: 'from-emerald-400 to-teal-400',
+          children: [
+            { id: 'shift-detail', name: 'Shift Detail Panel', icon: FileText, color: 'from-emerald-300 to-teal-300' },
+            { id: 'shift-templates', name: 'Shift Templates', icon: Layers, color: 'from-emerald-300 to-teal-300' },
+            { id: 'bulk-assign', name: 'Bulk Assignment', icon: Users, color: 'from-emerald-300 to-teal-300' },
+            { id: 'shift-copy', name: 'Shift Copy/Move', icon: Box, color: 'from-emerald-300 to-teal-300' },
+            { id: 'open-shifts', name: 'Open Shifts', icon: AlertTriangle, color: 'from-emerald-300 to-teal-300' },
+          ]
+        },
+        {
+          id: 'roster-analytics',
+          name: 'Analytics & Tracking',
+          icon: BarChart3,
+          color: 'from-emerald-400 to-teal-400',
+          children: [
+            { id: 'budget-tracker', name: 'Budget Tracker', icon: Wallet, color: 'from-emerald-300 to-teal-300' },
+            { id: 'demand-histogram', name: 'Demand Histogram', icon: BarChart3, color: 'from-emerald-300 to-teal-300' },
+            { id: 'staffing-insights', name: 'Staffing Insights', icon: Target, color: 'from-emerald-300 to-teal-300' },
+            { id: 'room-analytics', name: 'Room Analytics', icon: Building2, color: 'from-emerald-300 to-teal-300' },
+          ]
+        },
+        {
+          id: 'roster-tools',
+          name: 'Tools & Export',
+          icon: Sparkles,
+          color: 'from-emerald-400 to-teal-400',
+          children: [
+            { id: 'apply-template', name: 'Apply Template', icon: Layers, color: 'from-emerald-300 to-teal-300' },
+            { id: 'save-template', name: 'Save Template', icon: Download, color: 'from-emerald-300 to-teal-300' },
+            { id: 'print-view', name: 'Print View', icon: Printer, color: 'from-emerald-300 to-teal-300' },
+            { id: 'history', name: 'Roster History', icon: History, color: 'from-emerald-300 to-teal-300' },
+          ]
+        },
+      ]
+    },
+    {
+      id: 'staff',
+      name: 'Staff Management',
+      icon: Users,
+      color: 'from-blue-500 to-cyan-500',
+      children: [
+        {
+          id: 'staff-profiles',
+          name: 'Profile Management',
+          icon: UserCheck,
+          color: 'from-blue-400 to-cyan-400',
+          children: [
+            { id: 'personal-info', name: 'Personal Information', icon: Users, color: 'from-blue-300 to-cyan-300' },
+            { id: 'qualifications', name: 'Qualifications', icon: GraduationCap, color: 'from-blue-300 to-cyan-300' },
+            { id: 'availability', name: 'Availability', icon: Calendar, color: 'from-blue-300 to-cyan-300' },
+          ]
+        },
+        {
+          id: 'staff-pay',
+          name: 'Pay Configuration',
+          icon: DollarSign,
+          color: 'from-blue-400 to-cyan-400',
+          children: [
+            { id: 'pay-conditions', name: 'Pay Conditions', icon: FileText, color: 'from-blue-300 to-cyan-300' },
+            { id: 'bank-details', name: 'Bank Details', icon: Wallet, color: 'from-blue-300 to-cyan-300' },
+            { id: 'award-rules', name: 'Award Rules', icon: Award, color: 'from-blue-300 to-cyan-300' },
+            { id: 'pay-comparison', name: 'Pay Rate Comparison', icon: BarChart3, color: 'from-blue-300 to-cyan-300' },
+          ]
+        },
+      ]
+    },
+    {
+      id: 'awards',
+      name: 'Awards & Compliance',
+      icon: Award,
+      color: 'from-amber-500 to-orange-500',
+      children: [
+        {
+          id: 'award-management',
+          name: 'Award Management',
+          icon: Briefcase,
+          color: 'from-amber-400 to-orange-400',
+          children: [
+            { id: 'awards-master', name: 'Awards Master Table', icon: Database, color: 'from-amber-300 to-orange-300' },
+            { id: 'award-detail', name: 'Award Details', icon: FileText, color: 'from-amber-300 to-orange-300' },
+            { id: 'award-comparison', name: 'Award Comparison', icon: BarChart3, color: 'from-amber-300 to-orange-300' },
+            { id: 'award-updates', name: 'Award Updates', icon: Bell, color: 'from-amber-300 to-orange-300' },
+          ]
+        },
+        {
+          id: 'rates',
+          name: 'Rates & Loadings',
+          icon: DollarSign,
+          color: 'from-amber-400 to-orange-400',
+          children: [
+            { id: 'penalty-rates', name: 'Penalty Rates', icon: Clock, color: 'from-amber-300 to-orange-300' },
+            { id: 'allowance-rates', name: 'Allowance Rates', icon: DollarSign, color: 'from-amber-300 to-orange-300' },
+            { id: 'overtime-rates', name: 'Overtime Rates', icon: Zap, color: 'from-amber-300 to-orange-300' },
+            { id: 'rate-overrides', name: 'Custom Overrides', icon: Settings, color: 'from-amber-300 to-orange-300' },
+          ]
+        },
+        {
+          id: 'compliance-rules',
+          name: 'Compliance Rules',
+          icon: Shield,
+          color: 'from-amber-400 to-orange-400',
+          children: [
+            { id: 'custom-rules', name: 'Custom Rule Builder', icon: Settings, color: 'from-amber-300 to-orange-300' },
+            { id: 'leave-loading', name: 'Leave Loading', icon: Calendar, color: 'from-amber-300 to-orange-300' },
+            { id: 'shift-differential', name: 'Shift Differential', icon: Clock, color: 'from-amber-300 to-orange-300' },
+          ]
+        },
+        {
+          id: 'simulation',
+          name: 'Simulation & Analysis',
+          icon: BarChart3,
+          color: 'from-amber-400 to-orange-400',
+          children: [
+            { id: 'rate-simulation', name: 'Rate Simulation', icon: Sparkles, color: 'from-amber-300 to-orange-300' },
+            { id: 'rate-history', name: 'Rate Change History', icon: History, color: 'from-amber-300 to-orange-300' },
+            { id: 'bulk-import', name: 'Bulk Import/Export', icon: Upload, color: 'from-amber-300 to-orange-300' },
+          ]
+        },
+      ]
+    },
+    {
+      id: 'timesheet',
+      name: 'Timesheet Processing',
+      icon: Clock,
+      color: 'from-purple-500 to-pink-500',
+      children: [
+        {
+          id: 'timesheet-entry',
+          name: 'Time Entry',
+          icon: ClipboardCheck,
+          color: 'from-purple-400 to-pink-400',
+          children: [
+            { id: 'timesheet-table', name: 'Timesheet Table', icon: FileText, color: 'from-purple-300 to-pink-300' },
+            { id: 'timesheet-detail', name: 'Timesheet Detail', icon: FileText, color: 'from-purple-300 to-pink-300' },
+            { id: 'timesheet-edit', name: 'Timesheet Edit', icon: Settings, color: 'from-purple-300 to-pink-300' },
+            { id: 'calendar-view', name: 'Calendar View', icon: Calendar, color: 'from-purple-300 to-pink-300' },
+          ]
+        },
+        {
+          id: 'approval',
+          name: 'Approval Workflow',
+          icon: CheckCircle2,
+          color: 'from-purple-400 to-pink-400',
+          children: [
+            { id: 'approval-workflow', name: 'Approval Workflow', icon: GitBranch, color: 'from-purple-300 to-pink-300' },
+            { id: 'approval-delegation', name: 'Delegation', icon: Users, color: 'from-purple-300 to-pink-300' },
+            { id: 'audit-trail', name: 'Audit Trail', icon: History, color: 'from-purple-300 to-pink-300' },
+          ]
+        },
+        {
+          id: 'timesheet-compliance',
+          name: 'Compliance & Pay',
+          icon: Shield,
+          color: 'from-purple-400 to-pink-400',
+          children: [
+            { id: 'compliance-panel', name: 'Compliance Panel', icon: Shield, color: 'from-purple-300 to-pink-300' },
+            { id: 'compliance-scorecard', name: 'Compliance Scorecard', icon: Target, color: 'from-purple-300 to-pink-300' },
+            { id: 'overtime-breakdown', name: 'Overtime Breakdown', icon: Clock, color: 'from-purple-300 to-pink-300' },
+            { id: 'allowances-panel', name: 'Allowances Panel', icon: DollarSign, color: 'from-purple-300 to-pink-300' },
+          ]
+        },
+        {
+          id: 'export-analytics',
+          name: 'Export & Analytics',
+          icon: BarChart3,
+          color: 'from-purple-400 to-pink-400',
+          children: [
+            { id: 'export-dialog', name: 'Export Dialog', icon: Download, color: 'from-purple-300 to-pink-300' },
+            { id: 'timesheet-analytics', name: 'Analytics', icon: BarChart3, color: 'from-purple-300 to-pink-300' },
+            { id: 'notifications', name: 'Notification Center', icon: Bell, color: 'from-purple-300 to-pink-300' },
+          ]
+        },
+      ]
+    },
+    {
+      id: 'engines',
+      name: 'Core Engines',
+      icon: Zap,
+      color: 'from-red-500 to-rose-500',
+      children: [
+        {
+          id: 'calculation-engine',
+          name: 'Calculation Engine',
+          icon: DollarSign,
+          color: 'from-green-400 to-lime-400',
+          children: [
+            { id: 'award-interpreter', name: 'Award Interpreter', icon: Award, color: 'from-green-300 to-lime-300' },
+            { id: 'labour-forecasting', name: 'Labour Forecasting', icon: BarChart3, color: 'from-green-300 to-lime-300' },
+            { id: 'shift-type-detection', name: 'Shift Type Detection', icon: Target, color: 'from-green-300 to-lime-300' },
+          ]
+        },
+        {
+          id: 'compliance-engine',
+          name: 'Compliance Engine',
+          icon: Shield,
+          color: 'from-red-400 to-rose-400',
+          children: [
+            { id: 'conflict-detection', name: 'Conflict Detection', icon: AlertTriangle, color: 'from-red-300 to-rose-300' },
+            { id: 'ratio-compliance', name: 'Ratio Compliance', icon: Target, color: 'from-red-300 to-rose-300' },
+            { id: 'validation-schemas', name: 'Validation Schemas', icon: CheckCircle2, color: 'from-red-300 to-rose-300' },
+          ]
+        },
+      ]
+    },
+    {
+      id: 'integrations',
+      name: 'Integrations & Settings',
+      icon: Settings,
+      color: 'from-gray-500 to-slate-500',
+      children: [
+        {
+          id: 'data-management',
+          name: 'Data Management',
+          icon: Database,
+          color: 'from-gray-400 to-slate-400',
+          children: [
+            { id: 'demand-settings', name: 'Demand Settings', icon: BarChart3, color: 'from-gray-300 to-slate-300' },
+            { id: 'demand-import', name: 'CSV Import/Export', icon: Upload, color: 'from-gray-300 to-slate-300' },
+            { id: 'industry-config', name: 'Industry Config', icon: Building2, color: 'from-gray-300 to-slate-300' },
+          ]
+        },
+        {
+          id: 'external-integrations',
+          name: 'External Integrations',
+          icon: Link2,
+          color: 'from-gray-400 to-slate-400',
+          children: [
+            { id: 'integration-manager', name: 'Integration Manager', icon: Settings, color: 'from-gray-300 to-slate-300' },
+            { id: 'on-call-settings', name: 'On-Call Settings', icon: Clock, color: 'from-gray-300 to-slate-300' },
+          ]
+        },
+      ]
+    },
+  ]
+};
+
 export function ModuleDependencyExplorer() {
   const [selectedModule, setSelectedModule] = useState<ModuleNode | null>(null);
   const [highlightedFlows, setHighlightedFlows] = useState<string[]>([]);
   const [isAnimating, setIsAnimating] = useState(true);
   const [showAllFlows, setShowAllFlows] = useState(true);
-  const [activeView, setActiveView] = useState<'graph' | 'matrix' | 'list'>('graph');
+  const [activeView, setActiveView] = useState<'graph' | 'matrix' | 'list' | 'mindmap'>('graph');
 
   const handleModuleClick = useCallback((module: ModuleNode) => {
     setSelectedModule(module);
@@ -254,6 +549,10 @@ export function ModuleDependencyExplorer() {
           <TabsTrigger value="graph" className="gap-2">
             <GitBranch className="h-4 w-4" />
             Graph View
+          </TabsTrigger>
+          <TabsTrigger value="mindmap" className="gap-2">
+            <Network className="h-4 w-4" />
+            Mind Map
           </TabsTrigger>
           <TabsTrigger value="matrix" className="gap-2">
             <Layers className="h-4 w-4" />
@@ -400,6 +699,10 @@ export function ModuleDependencyExplorer() {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="mindmap" className="mt-4">
+          <ProductMindMap />
         </TabsContent>
 
         <TabsContent value="matrix" className="mt-4">
@@ -821,6 +1124,317 @@ function DataFlowList({ flows, modules }: { flows: DataFlow[], modules: ModuleNo
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Mind Map Tree Node Component
+interface MindMapTreeNodeProps {
+  node: MindMapNode;
+  level: number;
+  expandedNodes: Set<string>;
+  onToggle: (id: string) => void;
+  selectedNode: string | null;
+  onSelect: (id: string) => void;
+}
+
+function MindMapTreeNode({ node, level, expandedNodes, onToggle, selectedNode, onSelect }: MindMapTreeNodeProps) {
+  const hasChildren = node.children && node.children.length > 0;
+  const isExpanded = expandedNodes.has(node.id);
+  const isSelected = selectedNode === node.id;
+  const Icon = node.icon;
+  
+  const levelStyles = [
+    'pl-0',
+    'pl-6',
+    'pl-12',
+    'pl-18',
+    'pl-24',
+  ];
+
+  return (
+    <div className="select-none">
+      <div 
+        className={`
+          flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer transition-all duration-200
+          ${isSelected ? 'bg-primary/10 ring-2 ring-primary/50' : 'hover:bg-muted/50'}
+          ${levelStyles[Math.min(level, 4)]}
+        `}
+        onClick={() => {
+          onSelect(node.id);
+          if (hasChildren) onToggle(node.id);
+        }}
+      >
+        {hasChildren && (
+          <button 
+            className="p-0.5 rounded hover:bg-muted"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(node.id);
+            }}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+        )}
+        {!hasChildren && <div className="w-5" />}
+        
+        <div className={`
+          w-8 h-8 rounded-lg bg-gradient-to-br ${node.color} 
+          flex items-center justify-center flex-shrink-0
+          ${level === 0 ? 'w-10 h-10' : level === 1 ? 'w-9 h-9' : 'w-8 h-8'}
+        `}>
+          <Icon className={`text-white ${level === 0 ? 'h-5 w-5' : level === 1 ? 'h-4 w-4' : 'h-3.5 w-3.5'}`} />
+        </div>
+        
+        <span className={`
+          font-medium
+          ${level === 0 ? 'text-lg' : level === 1 ? 'text-base' : 'text-sm'}
+        `}>
+          {node.name}
+        </span>
+        
+        {hasChildren && (
+          <Badge variant="secondary" className="ml-auto text-xs">
+            {node.children!.length}
+          </Badge>
+        )}
+      </div>
+      
+      {hasChildren && isExpanded && (
+        <div className="relative">
+          <div className="absolute left-[1.1rem] top-0 bottom-2 w-px bg-border" style={{ marginLeft: `${level * 24}px` }} />
+          {node.children!.map((child) => (
+            <MindMapTreeNode
+              key={child.id}
+              node={child}
+              level={level + 1}
+              expandedNodes={expandedNodes}
+              onToggle={onToggle}
+              selectedNode={selectedNode}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Product Mind Map Component
+function ProductMindMap() {
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root', 'roster', 'staff', 'awards', 'timesheet', 'engines', 'integrations']));
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  
+  const toggleNode = (id: string) => {
+    setExpandedNodes(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const expandAll = () => {
+    const allIds = new Set<string>();
+    const collectIds = (node: MindMapNode) => {
+      allIds.add(node.id);
+      node.children?.forEach(collectIds);
+    };
+    collectIds(PRODUCT_MIND_MAP);
+    setExpandedNodes(allIds);
+  };
+
+  const collapseAll = () => {
+    setExpandedNodes(new Set(['root']));
+  };
+
+  const findNode = (id: string, node: MindMapNode = PRODUCT_MIND_MAP): MindMapNode | null => {
+    if (node.id === id) return node;
+    for (const child of node.children || []) {
+      const found = findNode(id, child);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const selectedNodeData = selectedNode ? findNode(selectedNode) : null;
+
+  const countDescendants = (node: MindMapNode): number => {
+    if (!node.children) return 0;
+    return node.children.reduce((acc, child) => acc + 1 + countDescendants(child), 0);
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Mind Map Tree */}
+      <div className="lg:col-span-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Network className="h-5 w-5" />
+                  Product Mind Map
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Complete hierarchical view of all features and components
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={expandAll}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Expand All
+                </Button>
+                <Button variant="outline" size="sm" onClick={collapseAll}>
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Collapse
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[600px] pr-4">
+              <MindMapTreeNode
+                node={PRODUCT_MIND_MAP}
+                level={0}
+                expandedNodes={expandedNodes}
+                onToggle={toggleNode}
+                selectedNode={selectedNode}
+                onSelect={setSelectedNode}
+              />
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Selected Node Details */}
+      <div>
+        <Card className="sticky top-4">
+          <CardHeader>
+            <CardTitle className="text-lg">
+              {selectedNodeData ? selectedNodeData.name : 'Feature Details'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedNodeData ? (
+              <div className="space-y-6">
+                {/* Icon and Name */}
+                <div className="flex items-start gap-4">
+                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${selectedNodeData.color} flex items-center justify-center flex-shrink-0`}>
+                    <selectedNodeData.icon className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">{selectedNodeData.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedNodeData.children ? `${selectedNodeData.children.length} direct children` : 'Leaf node'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Statistics */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="text-2xl font-bold">{selectedNodeData.children?.length || 0}</div>
+                    <div className="text-xs text-muted-foreground">Direct Children</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="text-2xl font-bold">{countDescendants(selectedNodeData)}</div>
+                    <div className="text-xs text-muted-foreground">Total Descendants</div>
+                  </div>
+                </div>
+
+                {/* Children List */}
+                {selectedNodeData.children && selectedNodeData.children.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <Layers className="h-4 w-4" />
+                      Child Features ({selectedNodeData.children.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {selectedNodeData.children.map(child => {
+                        const ChildIcon = child.icon;
+                        return (
+                          <div 
+                            key={child.id}
+                            className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
+                            onClick={() => {
+                              setSelectedNode(child.id);
+                              setExpandedNodes(prev => new Set([...prev, selectedNodeData.id]));
+                            }}
+                          >
+                            <div className={`w-6 h-6 rounded bg-gradient-to-br ${child.color} flex items-center justify-center`}>
+                              <ChildIcon className="h-3 w-3 text-white" />
+                            </div>
+                            <span className="text-sm font-medium">{child.name}</span>
+                            {child.children && (
+                              <Badge variant="outline" className="ml-auto text-xs">
+                                {child.children.length}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Breadcrumb */}
+                <div>
+                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <GitBranch className="h-4 w-4" />
+                    Path
+                  </h4>
+                  <div className="flex flex-wrap items-center gap-1 text-xs">
+                    {(() => {
+                      const path: MindMapNode[] = [];
+                      const findPath = (node: MindMapNode, target: string, current: MindMapNode[]): boolean => {
+                        current.push(node);
+                        if (node.id === target) {
+                          path.push(...current);
+                          return true;
+                        }
+                        for (const child of node.children || []) {
+                          if (findPath(child, target, [...current])) return true;
+                        }
+                        return false;
+                      };
+                      findPath(PRODUCT_MIND_MAP, selectedNodeData.id, []);
+                      
+                      return path.map((p, idx) => (
+                        <React.Fragment key={p.id}>
+                          <span 
+                            className={`px-2 py-1 rounded cursor-pointer transition-colors ${
+                              p.id === selectedNodeData.id 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-muted hover:bg-muted/80'
+                            }`}
+                            onClick={() => setSelectedNode(p.id)}
+                          >
+                            {p.name}
+                          </span>
+                          {idx < path.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+                        </React.Fragment>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                <Network className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Click on a node to view details</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 
