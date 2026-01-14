@@ -852,10 +852,18 @@ export default function RosterScheduler() {
         weeklyBudget={weeklyBudget}
         openShiftCount={centreOpenShifts.length}
         alertCount={centreFlags.length}
+        conflictCount={conflictCount}
         canUndo={canUndo}
         canRedo={canRedo}
         showDemandOverlay={showDemandOverlay}
         emptyShiftsCount={emptyShifts.filter(s => s.centreId === selectedCentreId).length}
+        isDarkMode={resolvedMode === 'dark'}
+        centres={mockCentres.map(c => ({ id: c.id, name: c.name }))}
+        selectedCentreId={selectedCentreId}
+        roleOptions={roleOptions}
+        selectedRole={roleFilter}
+        onCentreChange={setSelectedCentreId}
+        onRoleChange={setRoleFilter}
         onNavigateDate={navigateDate}
         onToday={() => setCurrentDate(new Date())}
         onViewModeChange={setViewMode}
@@ -863,19 +871,38 @@ export default function RosterScheduler() {
         onAddOpenShift={() => setShowAddOpenShiftModal(true)}
         onBulkAssign={() => setShowBulkAssignmentModal(true)}
         onAutoAssign={() => setShowAutoAssignModal(true)}
+        onAddEmptyShift={() => setShowAddEmptyShiftModal(true)}
+        onCopyWeek={handleCopyWeek}
         onExportPDF={handleExportPDF}
         onExportExcel={handleExportExcel}
         onPrint={handlePrint}
         onShowSummary={() => setShowWeeklySummary(true)}
         onShowOptimize={() => setShowOptimizationReport(true)}
         onShowAlerts={() => setShowAlerts(true)}
+        onShowConflicts={() => setShowConflicts(true)}
+        onShowNotifications={() => setShowNotifications(true)}
         onShowBudgetSettings={() => setShowBudgetSettings(true)}
+        onShowHistory={() => setShowHistoryPanel(true)}
+        onSaveTemplate={() => setShowSaveTemplateModal(true)}
+        onApplyTemplate={() => setShowApplyTemplateModal(true)}
+        onManageShiftTemplates={() => setShowShiftTemplateManager(true)}
+        onIndustrySettings={() => setShowIndustryConfig(true)}
+        onDemandSettings={() => setShowDemandSettings(true)}
+        onDemandDataEntry={() => setShowDemandDataEntry(true)}
+        onIntegrationManager={() => setShowIntegrationManager(true)}
+        onShowHolidays={() => setShowHolidayCalendar(true)}
+        onShowAvailability={() => setShowAvailabilityModal(true)}
+        onShowLeaveRequests={() => setShowLeaveModal(true)}
+        onShowStaffPreferences={() => {
+          if (allStaff.length > 0) openPreferencesForStaff(allStaff[0]);
+        }}
         onUndo={undoShifts}
         onRedo={redoShifts}
         onToggleDemand={() => {
           setShowAnalyticsCharts(prev => !prev);
           setShowDemandOverlay(prev => !prev);
         }}
+        onToggleTheme={() => setMode(resolvedMode === 'dark' ? 'light' : 'dark')}
         onToggleStaffPanel={() => setShowMobileStaffPanel(true)}
       />
 
