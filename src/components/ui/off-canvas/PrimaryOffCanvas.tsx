@@ -38,7 +38,7 @@ interface PrimaryOffCanvasProps {
 const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
   title,
   description,
-  width = '500px',
+  width = '720px',
   side = 'right',
   open,
   onClose,

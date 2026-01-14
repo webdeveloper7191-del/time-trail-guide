@@ -108,7 +108,7 @@ export function ShiftDetailPanel({
   const shiftTypeIndicator = getShiftTypeIndicator();
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[480px] bg-card border-l border-border shadow-xl z-50 flex flex-col">
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[640px] lg:w-[760px] bg-card border-l border-border shadow-xl z-50 flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-border bg-muted/30">
         <div className="flex items-center justify-between mb-2">
