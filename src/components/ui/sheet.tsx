@@ -92,17 +92,20 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
     
     const anchor = side === 'left' ? 'left' : side === 'top' ? 'top' : side === 'bottom' ? 'bottom' : 'right';
     
-    // Parse width from className - use conservative widths that won't overflow
+    // Parse width from className
     const getWidthFromClassName = (className: string | undefined) => {
-      if (!className) return { xs: '100%', sm: '450px' };
-      
-      if (className.includes('max-w-3xl')) return { xs: '100%', sm: '550px', md: '650px' };
-      if (className.includes('max-w-2xl')) return { xs: '100%', sm: '500px', md: '580px' };
-      if (className.includes('max-w-xl')) return { xs: '100%', sm: '450px', md: '520px' };
-      if (className.includes('max-w-lg')) return { xs: '100%', sm: '420px', md: '480px' };
-      if (className.includes('max-w-md')) return { xs: '100%', sm: '380px', md: '420px' };
-      
-      return { xs: '100%', sm: '450px' };
+      // Wider defaults for content-heavy side panels
+      if (!className) return { xs: '100%', sm: '640px', md: '760px' };
+
+      if (className.includes('max-w-5xl')) return { xs: '100%', sm: '1120px', md: '1280px' };
+      if (className.includes('max-w-4xl')) return { xs: '100%', sm: '960px', md: '1120px' };
+      if (className.includes('max-w-3xl')) return { xs: '100%', sm: '820px', md: '980px' };
+      if (className.includes('max-w-2xl')) return { xs: '100%', sm: '720px', md: '860px' };
+      if (className.includes('max-w-xl')) return { xs: '100%', sm: '640px', md: '760px' };
+      if (className.includes('max-w-lg')) return { xs: '100%', sm: '560px', md: '680px' };
+      if (className.includes('max-w-md')) return { xs: '100%', sm: '480px', md: '560px' };
+
+      return { xs: '100%', sm: '640px', md: '760px' };
     };
     
     const widthConfig = side === 'left' || side === 'right' 

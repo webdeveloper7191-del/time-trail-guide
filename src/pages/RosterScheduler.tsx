@@ -1861,7 +1861,7 @@ export default function RosterScheduler() {
 
       {/* Advanced Features Panels */}
       <Sheet open={showRecurringPatterns} onOpenChange={setShowRecurringPatterns}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Repeat className="h-5 w-5" />
@@ -1875,7 +1875,7 @@ export default function RosterScheduler() {
       </Sheet>
 
       <Sheet open={showBreakScheduling} onOpenChange={setShowBreakScheduling}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Coffee className="h-5 w-5" />
@@ -1889,7 +1889,7 @@ export default function RosterScheduler() {
       </Sheet>
 
       <Sheet open={showSkillMatrix} onOpenChange={setShowSkillMatrix}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Target className="h-5 w-5" />
@@ -1903,7 +1903,7 @@ export default function RosterScheduler() {
       </Sheet>
 
       <Sheet open={showFatigueManagement} onOpenChange={setShowFatigueManagement}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5" />
@@ -1917,7 +1917,7 @@ export default function RosterScheduler() {
       </Sheet>
 
       <Sheet open={showGPSClockIn} onOpenChange={setShowGPSClockIn}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
@@ -1931,7 +1931,7 @@ export default function RosterScheduler() {
       </Sheet>
 
       <Sheet open={showWeatherIntegration} onOpenChange={setShowWeatherIntegration}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <CloudSun className="h-5 w-5" />
