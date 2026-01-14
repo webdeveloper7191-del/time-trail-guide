@@ -58,6 +58,7 @@ import { AwardComparisonPanel } from './awards/AwardComparisonPanel';
 import { ShiftDifferentialCalculator } from './awards/ShiftDifferentialCalculator';
 import { RateSimulationPanel } from './awards/RateSimulationPanel';
 import { AwardsMasterTable } from './awards/AwardsMasterTable';
+import { AwardUpdatesPanel } from './awards/AwardUpdatesPanel';
 import { OnCallSettingsEditor } from './OnCallSettingsEditor';
 import { OnCallConfiguration, DEFAULT_ON_CALL_CONFIGS, AwardType, AWARD_NAMES } from '@/types/allowances';
 
@@ -132,7 +133,7 @@ export function AwardsConfigurationTab() {
   const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
   const formatPercentage = (value: number) => `${value}%`;
 
-  const [activeTab, setActiveTab] = useState('awards');
+  const [activeTab, setActiveTab] = useState('updates');
   const [onCallConfigs, setOnCallConfigs] = useState<Record<AwardType, OnCallConfiguration>>(DEFAULT_ON_CALL_CONFIGS);
   const [editingOnCallAward, setEditingOnCallAward] = useState<AwardType | null>(null);
 
@@ -674,6 +675,13 @@ export function AwardsConfigurationTab() {
         <div className="bg-card border rounded-lg p-1 mb-6 overflow-x-auto">
           <TabsList className="w-full flex flex-nowrap h-auto gap-1 bg-transparent p-0 min-w-max">
             <TabsTrigger 
+              value="updates" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Updates</span>
+            </TabsTrigger>
+            <TabsTrigger 
               value="awards" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
@@ -766,6 +774,10 @@ export function AwardsConfigurationTab() {
             </TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="updates" className="mt-0">
+          <AwardUpdatesPanel />
+        </TabsContent>
 
         <TabsContent value="awards" className="mt-0">
           <AwardsMasterTable />
