@@ -29,6 +29,8 @@ import { ApplyTemplateModal } from '@/components/roster/ApplyTemplateModal';
 import { BulkShiftAssignmentModal } from '@/components/roster/BulkShiftAssignmentModal';
 import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { RosterHistoryPanel } from '@/components/roster/RosterHistoryPanel';
+import { AddEmptyShiftModal } from '@/components/roster/AddEmptyShiftModal';
+import { AutoAssignStaffModal } from '@/components/roster/AutoAssignStaffModal';
 import { IndustryConfigurationModal } from '@/components/settings/IndustryConfigurationModal';
 import { DemandMasterSettingsModal } from '@/components/settings/DemandMasterSettingsModal';
 import { DemandDataEntryModal } from '@/components/settings/DemandDataEntryModal';
@@ -100,6 +102,7 @@ import {
   Redo2,
   History,
   Save,
+  Zap,
   TrendingUp,
   Plug,
   Flag,
@@ -183,6 +186,21 @@ export default function RosterScheduler() {
   const [showDemandDataEntry, setShowDemandDataEntry] = useState(false);
   const [showIntegrationManager, setShowIntegrationManager] = useState(false);
   const [showHolidayCalendar, setShowHolidayCalendar] = useState(false);
+  const [showAddEmptyShiftModal, setShowAddEmptyShiftModal] = useState(false);
+  const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
+  const [emptyShifts, setEmptyShifts] = useState<Array<{
+    id: string;
+    centreId: string;
+    roomId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    breakMinutes: number;
+    template?: ShiftTemplate;
+    requiredQualifications?: any[];
+    minimumClassification?: string;
+    preferredRole?: any;
+  }>>([]);
   
   // Shift copy state
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -768,6 +786,38 @@ export default function RosterScheduler() {
     toast.success('Shift templates saved');
   };
 
+  // Empty shift and auto-assign handlers
+  const handleAddEmptyShifts = (newEmptyShifts: typeof emptyShifts) => {
+    setEmptyShifts(prev => [...prev, ...newEmptyShifts]);
+    toast.success(`Created ${newEmptyShifts.length} empty shift(s) - ready for auto-assignment`);
+  };
+
+  const handleAutoAssign = (assignments: { shiftId: string; staffId: string }[]) => {
+    // Convert empty shifts to real shifts with assigned staff
+    const newShifts: Shift[] = assignments.map(({ shiftId, staffId }) => {
+      const emptyShift = emptyShifts.find(s => s.id === shiftId);
+      if (!emptyShift) return null;
+      return {
+        id: `shift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        staffId,
+        centreId: emptyShift.centreId,
+        roomId: emptyShift.roomId,
+        date: emptyShift.date,
+        startTime: emptyShift.startTime,
+        endTime: emptyShift.endTime,
+        breakMinutes: emptyShift.breakMinutes,
+        status: 'draft' as const,
+        isOpenShift: false,
+      };
+    }).filter(Boolean) as Shift[];
+
+    setShifts(prev => [...prev, ...newShifts], `Auto-assigned ${newShifts.length} shifts`, 'bulk');
+    // Remove assigned empty shifts
+    const assignedIds = new Set(assignments.map(a => a.shiftId));
+    setEmptyShifts(prev => prev.filter(s => !assignedIds.has(s.id)));
+    toast.success(`Auto-assigned ${newShifts.length} shift(s)`);
+  };
+
   const allShiftTemplates = [...defaultShiftTemplates, ...shiftTemplates];
 
   const centreOptions = mockCentres.map(centre => ({
@@ -1041,12 +1091,30 @@ export default function RosterScheduler() {
                   <UserPlus size={18} />
                 </IconButton>
               </Tooltip>
+              <Tooltip content="Create Empty Shifts">
+                <IconButton size="small" onClick={() => setShowAddEmptyShiftModal(true)} sx={{ color: 'text.secondary' }}>
+                  <Layers size={18} />
+                </IconButton>
+              </Tooltip>
               <Tooltip content="Copy Week">
                 <IconButton size="small" onClick={handleCopyWeek} sx={{ color: 'text.secondary' }}>
                   <Copy size={18} />
                 </IconButton>
               </Tooltip>
             </Stack>
+
+            {/* Auto-Assign Button - Shows when empty shifts exist */}
+            {emptyShifts.filter(s => s.centreId === selectedCentreId).length > 0 && (
+              <Button
+                variant="contained"
+                color="secondary"
+                size="small"
+                onClick={() => setShowAutoAssignModal(true)}
+                startIcon={<Zap size={16} />}
+              >
+                Auto-Assign ({emptyShifts.filter(s => s.centreId === selectedCentreId).length})
+              </Button>
+            )}
 
             {/* Dropdown Menus Group */}
             <Stack 
