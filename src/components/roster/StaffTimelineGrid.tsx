@@ -41,6 +41,21 @@ import {
   eventTypeConfig 
 } from '@/data/mockHolidaysEvents';
 
+// Empty shift type for unassigned shifts
+interface EmptyShift {
+  id: string;
+  centreId: string;
+  roomId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  breakMinutes: number;
+  template?: ShiftTemplate;
+  requiredQualifications?: any[];
+  minimumClassification?: string;
+  preferredRole?: any;
+}
+
 interface StaffTimelineGridProps {
   centre: Centre;
   shifts: Shift[];
@@ -55,6 +70,7 @@ interface StaffTimelineGridProps {
   demandAnalytics?: DemandAnalyticsData[];
   staffAbsences?: StaffAbsence[];
   shiftTemplates: ShiftTemplate[];
+  emptyShifts?: EmptyShift[];
 
   /** Creates a shift by dropping staff onto a specific day cell */
   onDropStaff: (staffId: string, roomId: string, date: string) => void;
@@ -78,6 +94,8 @@ interface StaffTimelineGridProps {
   onShiftReassign?: (shiftId: string, newStaffId: string, newDate: string, newRoomId: string) => void;
   onStaffClick?: (staff: StaffMember) => void;
   onOpenShiftTemplateManager?: () => void;
+  onEmptyShiftClick?: (emptyShift: EmptyShift) => void;
+  onDeleteEmptyShift?: (emptyShiftId: string) => void;
 }
 
 export function StaffTimelineGrid({
@@ -91,6 +109,7 @@ export function StaffTimelineGrid({
   demandAnalytics = [],
   staffAbsences = [],
   shiftTemplates,
+  emptyShifts = [],
   onDropStaff,
   staffRoomAssignments = {},
   onAssignStaffToRoom,
@@ -108,6 +127,8 @@ export function StaffTimelineGrid({
   onShiftReassign,
   onStaffClick,
   onOpenShiftTemplateManager,
+  onEmptyShiftClick,
+  onDeleteEmptyShift,
 }: StaffTimelineGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -166,6 +187,22 @@ export function StaffTimelineGrid({
     });
     return grouped;
   }, [openShifts]);
+
+  // Group empty shifts by room and date
+  const emptyShiftsByRoomDate = useMemo(() => {
+    const grouped: Record<string, Record<string, EmptyShift[]>> = {};
+    emptyShifts.forEach(es => {
+      if (es.centreId !== centre.id) return;
+      if (!grouped[es.roomId]) grouped[es.roomId] = {};
+      if (!grouped[es.roomId][es.date]) grouped[es.roomId][es.date] = [];
+      grouped[es.roomId][es.date].push(es);
+    });
+    return grouped;
+  }, [emptyShifts, centre.id]);
+
+  const getEmptyShiftsForRoomDay = (roomId: string, date: string) => {
+    return emptyShiftsByRoomDate[roomId]?.[date] || [];
+  };
 
   const getShiftsForStaffDay = (staffId: string, date: string, roomId: string) => {
     return shifts.filter(s => 
@@ -961,6 +998,71 @@ export function StaffTimelineGrid({
                   </div>
                 )}
 
+                {/* Empty Shifts row - shifts without staff assigned */}
+                {(() => {
+                  const roomEmptyShifts = emptyShifts.filter(es => es.roomId === room.id && es.centreId === centre.id);
+                  if (roomEmptyShifts.length === 0) return null;
+                  
+                  return (
+                    <div className="flex border-b border-border bg-purple-500/5 hover:bg-purple-500/10 transition-colors">
+                      <div className="w-64 shrink-0 p-2 border-r border-border flex items-center gap-2">
+                        <div className="h-9 w-9 rounded-full flex items-center justify-center bg-purple-500/20 border-2 border-dashed border-purple-500/50">
+                          <Zap className="h-4 w-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-purple-700 dark:text-purple-300">Empty Shifts</p>
+                          <p className="text-[10px] text-purple-600 dark:text-purple-400">Auto-assign or drop staff</p>
+                        </div>
+                      </div>
+
+                      {dates.map((date) => {
+                        const dateStr = format(date, 'yyyy-MM-dd');
+                        const dayEmptyShifts = getEmptyShiftsForRoomDay(room.id, dateStr);
+                        const cellKey = `empty-${room.id}-${dateStr}`;
+                        const isDragOver = dragOverCell === cellKey;
+
+                        return (
+                          <div
+                            key={cellKey}
+                            data-drop-zone
+                            className={cn(
+                              "flex-1 min-w-[120px] p-1 border-r border-border relative",
+                              "transition-all duration-200 ease-out",
+                              isCompact && "min-w-[80px]",
+                              isDragging && dayEmptyShifts.length > 0 && "bg-purple-500/5",
+                              isDragOver && dayEmptyShifts.length > 0 && "bg-purple-500/20 ring-2 ring-inset ring-purple-500/50"
+                            )}
+                            onDragOver={(e) => dayEmptyShifts.length > 0 && handleDragOver(e, cellKey)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => {
+                              if (dayEmptyShifts.length > 0) {
+                                e.preventDefault();
+                                const staffId = e.dataTransfer.getData('staffId');
+                                if (staffId && onEmptyShiftClick) {
+                                  // Clicking empty shift will open auto-assign
+                                  onEmptyShiftClick(dayEmptyShifts[0]);
+                                }
+                              }
+                            }}
+                          >
+                            {dayEmptyShifts.map((emptyShift) => (
+                              <EmptyShiftCard 
+                                key={emptyShift.id} 
+                                emptyShift={emptyShift} 
+                                isCompact={isCompact}
+                                onClick={() => onEmptyShiftClick?.(emptyShift)}
+                                onDelete={onDeleteEmptyShift ? () => onDeleteEmptyShift(emptyShift.id) : undefined}
+                              />
+                            ))}
+                          </div>
+                        );
+                      })}
+
+                      <div className="w-24 shrink-0 border-r border-border" />
+                    </div>
+                  );
+                })()}
+
                 {/* Drop zone row for adding new staff to this room - ALWAYS visible */}
                 <div 
                   className={cn(
@@ -1476,6 +1578,92 @@ function OpenShiftCard({ openShift, isCompact, isDragOver, onDelete }: { openShi
               ))}
             </div>
             <Badge variant={openShift.urgency === 'critical' ? 'destructive' : 'outline'} className="text-[8px] mt-1 capitalize">{openShift.urgency}</Badge>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Empty Shift Card component for unassigned shifts
+function EmptyShiftCard({ 
+  emptyShift, 
+  isCompact, 
+  onClick, 
+  onDelete 
+}: { 
+  emptyShift: {
+    id: string;
+    startTime: string;
+    endTime: string;
+    template?: { name: string; color: string };
+    requiredQualifications?: any[];
+    minimumClassification?: string;
+  }; 
+  isCompact?: boolean; 
+  onClick?: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <div 
+      className={cn(
+        "group relative rounded-lg border-2 border-dashed overflow-hidden transition-all duration-200 cursor-pointer",
+        "bg-purple-50 dark:bg-purple-950/40 border-purple-300 dark:border-purple-700",
+        "hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:border-purple-400 dark:hover:border-purple-600"
+      )}
+      onClick={onClick}
+    >
+      <div 
+        className="absolute left-0 top-0 bottom-0 w-1" 
+        style={{ backgroundColor: emptyShift.template?.color || 'hsl(280, 60%, 50%)' }}
+      />
+      
+      {/* Delete button */}
+      {onDelete && (
+        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 hover:bg-destructive/20 hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Delete empty shift</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
+      
+      <div className="pl-3 pr-7 py-1.5">
+        <div className="text-xs font-semibold text-purple-700 dark:text-purple-300">
+          {emptyShift.startTime}-{emptyShift.endTime}
+        </div>
+        {!isCompact && (
+          <>
+            {emptyShift.template && (
+              <div className="text-[10px] text-purple-600 dark:text-purple-400 truncate">
+                {emptyShift.template.name}
+              </div>
+            )}
+            <div className="flex items-center gap-1 mt-1">
+              <Badge 
+                variant="outline" 
+                className="text-[8px] px-1 py-0 h-3.5 bg-purple-100 dark:bg-purple-900 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300"
+              >
+                <Zap className="h-2 w-2 mr-0.5" />
+                Auto-assign
+              </Badge>
+            </div>
           </>
         )}
       </div>
