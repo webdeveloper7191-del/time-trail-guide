@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -13,9 +13,29 @@ import {
   Box,
   Typography,
   FormHelperText,
+  Switch,
+  FormControlLabel,
+  Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Alert,
 } from '@mui/material';
-import { Room, OpenShift, QualificationType, qualificationLabels, ageGroupLabels } from '@/types/roster';
-import { Plus, X, AlertCircle } from 'lucide-react';
+import { 
+  Room, 
+  OpenShift, 
+  QualificationType, 
+  qualificationLabels, 
+  ageGroupLabels,
+  ShiftTemplate,
+  ShiftSpecialType,
+  shiftTypeLabels,
+  shiftTypeDescriptions,
+  roleLabels,
+  StaffMember,
+  defaultShiftTemplates,
+} from '@/types/roster';
+import { Plus, X, AlertCircle, Clock, Moon, Phone, Split, ChevronDown, FileText, Car, Award } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { openShiftSchema, OpenShiftFormValues } from '@/lib/validationSchemas';
@@ -29,7 +49,25 @@ interface AddOpenShiftModalProps {
   selectedDate?: string;
   selectedRoomId?: string;
   onAdd: (openShift: Omit<OpenShift, 'id'>) => void;
+  shiftTemplates?: ShiftTemplate[];
 }
+
+const shiftTypeIcons: Record<ShiftSpecialType, React.ReactNode> = {
+  regular: <Clock size={16} />,
+  on_call: <Phone size={16} />,
+  sleepover: <Moon size={16} />,
+  broken: <Split size={16} />,
+  recall: <Phone size={16} />,
+  emergency: <AlertCircle size={16} />,
+};
+
+const classificationLevels = [
+  'Level 2.1', 'Level 2.2', 'Level 2.3',
+  'Level 3.1', 'Level 3.2', 'Level 3.3',
+  'Level 4.1', 'Level 4.2', 'Level 4.3',
+  'Level 5.1', 'Level 5.2', 'Level 5.3',
+  'Level 6.1', 'Level 6.2', 'Level 6.3',
+];
 
 export function AddOpenShiftModal({ 
   open, 
@@ -38,9 +76,18 @@ export function AddOpenShiftModal({
   centreId, 
   selectedDate,
   selectedRoomId,
-  onAdd 
+  onAdd,
+  shiftTemplates = defaultShiftTemplates,
 }: AddOpenShiftModalProps) {
   const [selectedQualifications, setSelectedQualifications] = useState<QualificationType[]>([]);
+  const [selectedAllowances, setSelectedAllowances] = useState<string[]>([]);
+  const [useTemplate, setUseTemplate] = useState(true);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+
+  const allTemplates = useMemo(() => {
+    const custom = shiftTemplates.filter(t => !defaultShiftTemplates.some(d => d.id === t.id));
+    return [...defaultShiftTemplates, ...custom];
+  }, [shiftTemplates]);
 
   const methods = useForm<OpenShiftFormValues>({
     resolver: zodResolver(openShiftSchema),
@@ -53,6 +100,14 @@ export function AddOpenShiftModal({
       urgency: 'medium',
       requiredQualifications: [],
       notes: '',
+      breakMinutes: 30,
+      shiftType: 'regular',
+      minimumClassification: '',
+      preferredRole: undefined,
+      templateId: '',
+      selectedAllowances: [],
+      isRemoteLocation: false,
+      defaultTravelKilometres: 0,
     },
     mode: 'onChange',
   });
@@ -67,6 +122,7 @@ export function AddOpenShiftModal({
   } = methods;
 
   const urgency = watch('urgency');
+  const shiftType = watch('shiftType');
 
   // Reset form when modal opens
   useEffect(() => {
@@ -80,14 +136,81 @@ export function AddOpenShiftModal({
         urgency: 'medium',
         requiredQualifications: [],
         notes: '',
+        breakMinutes: 30,
+        shiftType: 'regular',
+        minimumClassification: '',
+        preferredRole: undefined,
+        templateId: '',
+        selectedAllowances: [],
+        isRemoteLocation: false,
+        defaultTravelKilometres: 0,
       });
       setSelectedQualifications([]);
+      setSelectedAllowances([]);
+      setSelectedTemplateId('');
+      setUseTemplate(true);
     }
   }, [open, reset, centreId, selectedRoomId, selectedDate]);
+
+  // Apply template when selected
+  useEffect(() => {
+    if (selectedTemplateId && useTemplate) {
+      const template = allTemplates.find(t => t.id === selectedTemplateId);
+      if (template) {
+        setValue('startTime', template.startTime);
+        setValue('endTime', template.endTime);
+        setValue('breakMinutes', template.breakMinutes);
+        setValue('shiftType', template.shiftType || 'regular');
+        setValue('minimumClassification', template.minimumClassification || '');
+        setValue('preferredRole', template.preferredRole);
+        setValue('templateId', template.id);
+        
+        if (template.requiredQualifications) {
+          setSelectedQualifications(template.requiredQualifications);
+          setValue('requiredQualifications', template.requiredQualifications);
+        }
+        
+        if (template.selectedAllowances) {
+          setSelectedAllowances(template.selectedAllowances);
+          setValue('selectedAllowances', template.selectedAllowances);
+        }
+
+        // Apply special shift settings
+        if (template.onCallSettings) {
+          setValue('onCallStandbyRate', template.onCallSettings.standbyRate);
+          setValue('onCallStandbyRateType', template.onCallSettings.standbyRateType);
+          setValue('onCallCallbackMinimumHours', template.onCallSettings.callbackMinimumHours);
+        }
+        if (template.sleepoverSettings) {
+          setValue('sleepoverBedtimeStart', template.sleepoverSettings.bedtimeStart);
+          setValue('sleepoverBedtimeEnd', template.sleepoverSettings.bedtimeEnd);
+          setValue('sleepoverFlatRate', template.sleepoverSettings.flatRate);
+        }
+        if (template.brokenShiftSettings) {
+          setValue('brokenFirstShiftEnd', template.brokenShiftSettings.firstShiftEnd);
+          setValue('brokenSecondShiftStart', template.brokenShiftSettings.secondShiftStart);
+          setValue('brokenUnpaidGapMinutes', template.brokenShiftSettings.unpaidGapMinutes);
+        }
+        
+        setValue('higherDutiesClassification', template.higherDutiesClassification || '');
+        setValue('isRemoteLocation', template.isRemoteLocation || false);
+        setValue('defaultTravelKilometres', template.defaultTravelKilometres || 0);
+      }
+    }
+  }, [selectedTemplateId, useTemplate, allTemplates, setValue]);
 
   const availableQualifications: QualificationType[] = [
     'diploma_ece', 'certificate_iii', 'first_aid', 'food_safety', 
     'working_with_children', 'bachelor_ece', 'masters_ece'
+  ];
+
+  const availableAllowances = [
+    { id: 'first_aid_allowance', name: 'First Aid Allowance' },
+    { id: 'vehicle_allowance', name: 'Vehicle Allowance' },
+    { id: 'phone_allowance', name: 'Phone Allowance' },
+    { id: 'uniform_allowance', name: 'Uniform Allowance' },
+    { id: 'meal_allowance', name: 'Meal Allowance' },
+    { id: 'laundry_allowance', name: 'Laundry Allowance' },
   ];
 
   const toggleQualification = (qual: QualificationType) => {
@@ -98,8 +221,16 @@ export function AddOpenShiftModal({
     setValue('requiredQualifications', newQuals);
   };
 
+  const toggleAllowance = (allowanceId: string) => {
+    const newAllowances = selectedAllowances.includes(allowanceId)
+      ? selectedAllowances.filter(a => a !== allowanceId)
+      : [...selectedAllowances, allowanceId];
+    setSelectedAllowances(newAllowances);
+    setValue('selectedAllowances', newAllowances);
+  };
+
   const onSubmit = (data: OpenShiftFormValues) => {
-    onAdd({
+    const openShift: Omit<OpenShift, 'id'> = {
       centreId: data.centreId,
       roomId: data.roomId,
       date: data.date,
@@ -108,8 +239,42 @@ export function AddOpenShiftModal({
       requiredQualifications: selectedQualifications,
       urgency: data.urgency,
       applicants: [],
-    });
+      breakMinutes: data.breakMinutes,
+      shiftType: data.shiftType,
+      minimumClassification: data.minimumClassification || undefined,
+      preferredRole: data.preferredRole,
+      templateId: data.templateId || undefined,
+      selectedAllowances: selectedAllowances.length > 0 ? selectedAllowances : undefined,
+      notes: data.notes || undefined,
+      higherDutiesClassification: data.higherDutiesClassification || undefined,
+      isRemoteLocation: data.isRemoteLocation || undefined,
+      defaultTravelKilometres: data.defaultTravelKilometres || undefined,
+    };
 
+    // Add special shift settings
+    if (data.shiftType === 'on_call' && data.onCallStandbyRate) {
+      openShift.onCallSettings = {
+        standbyRate: data.onCallStandbyRate,
+        standbyRateType: data.onCallStandbyRateType,
+        callbackMinimumHours: data.onCallCallbackMinimumHours,
+      };
+    }
+    if (data.shiftType === 'sleepover' && data.sleepoverBedtimeStart) {
+      openShift.sleepoverSettings = {
+        bedtimeStart: data.sleepoverBedtimeStart,
+        bedtimeEnd: data.sleepoverBedtimeEnd,
+        flatRate: data.sleepoverFlatRate,
+      };
+    }
+    if (data.shiftType === 'broken' && data.brokenFirstShiftEnd) {
+      openShift.brokenShiftSettings = {
+        firstShiftEnd: data.brokenFirstShiftEnd,
+        secondShiftStart: data.brokenSecondShiftStart,
+        unpaidGapMinutes: data.brokenUnpaidGapMinutes,
+      };
+    }
+
+    onAdd(openShift);
     toast.success('Open shift added');
     handleClose();
   };
@@ -117,6 +282,8 @@ export function AddOpenShiftModal({
   const handleClose = () => {
     reset();
     setSelectedQualifications([]);
+    setSelectedAllowances([]);
+    setSelectedTemplateId('');
     onClose();
   };
 
@@ -132,13 +299,189 @@ export function AddOpenShiftModal({
     { label: 'Add Open Shift', onClick: handleSubmit(onSubmit), variant: 'primary', disabled: !isValid },
   ];
 
+  const renderShiftTypeSettings = () => {
+    switch (shiftType) {
+      case 'on_call':
+        return (
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'warning.50', borderRadius: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Phone size={16} /> On-Call Settings
+            </Typography>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={2}>
+                <Controller
+                  name="onCallStandbyRate"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Standby Rate ($)"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    />
+                  )}
+                />
+                <Controller
+                  name="onCallStandbyRateType"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Rate Type</InputLabel>
+                      <Select {...field} label="Rate Type">
+                        <MenuItem value="per_hour">Per Hour</MenuItem>
+                        <MenuItem value="per_period">Per Period</MenuItem>
+                        <MenuItem value="daily">Daily</MenuItem>
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+              </Stack>
+              <Controller
+                name="onCallCallbackMinimumHours"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Callback Minimum Hours"
+                    type="number"
+                    size="small"
+                    fullWidth
+                    InputProps={{ inputProps: { min: 0, max: 8, step: 0.5 } }}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                  />
+                )}
+              />
+            </Stack>
+          </Box>
+        );
+
+      case 'sleepover':
+        return (
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'primary.50', borderRadius: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Moon size={16} /> Sleepover Settings
+            </Typography>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={2}>
+                <Controller
+                  name="sleepoverBedtimeStart"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Bedtime Start"
+                      type="time"
+                      size="small"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="sleepoverBedtimeEnd"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Bedtime End"
+                      type="time"
+                      size="small"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  )}
+                />
+              </Stack>
+              <Controller
+                name="sleepoverFlatRate"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Flat Rate ($)"
+                    type="number"
+                    size="small"
+                    fullWidth
+                    InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                  />
+                )}
+              />
+            </Stack>
+          </Box>
+        );
+
+      case 'broken':
+        return (
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'secondary.50', borderRadius: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Split size={16} /> Split Shift Settings
+            </Typography>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={2}>
+                <Controller
+                  name="brokenFirstShiftEnd"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="First Shift Ends"
+                      type="time"
+                      size="small"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="brokenSecondShiftStart"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Second Shift Starts"
+                      type="time"
+                      size="small"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  )}
+                />
+              </Stack>
+              <Controller
+                name="brokenUnpaidGapMinutes"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Unpaid Gap (minutes)"
+                    type="number"
+                    size="small"
+                    fullWidth
+                    InputProps={{ inputProps: { min: 60, max: 480, step: 15 } }}
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                  />
+                )}
+              />
+            </Stack>
+          </Box>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <PrimaryOffCanvas
           title="Add Open Shift"
           description="Create a new open shift that needs to be filled"
-          width="500px"
+          width="550px"
           open={open}
           onClose={handleClose}
           actions={actions}
@@ -146,6 +489,60 @@ export function AddOpenShiftModal({
         >
           <ScrollArea className="h-[calc(100vh-280px)]">
             <Stack spacing={3}>
+              {/* Template Selection */}
+              <Box>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={useTemplate}
+                      onChange={(e) => setUseTemplate(e.target.checked)}
+                    />
+                  }
+                  label="Use Shift Template"
+                />
+                {useTemplate && (
+                  <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                    <InputLabel>Select Template</InputLabel>
+                    <Select
+                      value={selectedTemplateId}
+                      onChange={(e) => setSelectedTemplateId(e.target.value)}
+                      label="Select Template"
+                    >
+                      <MenuItem value="">
+                        <em>Custom</em>
+                      </MenuItem>
+                      {allTemplates.map((template) => (
+                        <MenuItem key={template.id} value={template.id}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                bgcolor: template.color,
+                              }}
+                            />
+                            <span>{template.name}</span>
+                            <Typography variant="caption" color="text.secondary">
+                              {template.startTime} - {template.endTime}
+                            </Typography>
+                            {template.shiftType && template.shiftType !== 'regular' && (
+                              <Chip
+                                size="small"
+                                label={shiftTypeLabels[template.shiftType]}
+                                sx={{ ml: 1 }}
+                              />
+                            )}
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              </Box>
+
+              <Divider />
+
               {/* Room Selection */}
               <Controller
                 name="roomId"
@@ -229,6 +626,54 @@ export function AddOpenShiftModal({
                 />
               </Stack>
 
+              {/* Break and Shift Type */}
+              <Stack direction="row" spacing={2}>
+                <Controller
+                  name="breakMinutes"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Break (mins)"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      InputProps={{ inputProps: { min: 0, max: 120, step: 15 } }}
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                    />
+                  )}
+                />
+                <Controller
+                  name="shiftType"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Shift Type</InputLabel>
+                      <Select {...field} label="Shift Type">
+                        {(Object.keys(shiftTypeLabels) as ShiftSpecialType[]).map((type) => (
+                          <MenuItem key={type} value={type}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              {shiftTypeIcons[type]}
+                              <span>{shiftTypeLabels[type]}</span>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+              </Stack>
+
+              {/* Shift Type Description */}
+              {shiftType && shiftType !== 'regular' && (
+                <Alert severity="info" sx={{ py: 0.5 }}>
+                  {shiftTypeDescriptions[shiftType]}
+                </Alert>
+              )}
+
+              {/* Shift Type Specific Settings */}
+              {renderShiftTypeSettings()}
+
               {/* Urgency */}
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -259,26 +704,169 @@ export function AddOpenShiftModal({
                 />
               </Box>
 
-              {/* Required Qualifications */}
-              <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Required Qualifications (Optional)
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {availableQualifications.map((qual) => (
-                    <Chip
-                      key={qual}
-                      label={qualificationLabels[qual]}
-                      onClick={() => toggleQualification(qual)}
-                      color={selectedQualifications.includes(qual) ? 'primary' : 'default'}
-                      variant={selectedQualifications.includes(qual) ? 'filled' : 'outlined'}
-                      size="small"
-                      deleteIcon={selectedQualifications.includes(qual) ? <X size={14} /> : undefined}
-                      onDelete={selectedQualifications.includes(qual) ? () => toggleQualification(qual) : undefined}
+              <Divider />
+
+              {/* Requirements Accordion */}
+              <Accordion defaultExpanded sx={{ boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
+                <AccordionSummary expandIcon={<ChevronDown size={18} />}>
+                  <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Award size={16} /> Requirements & Classification
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Stack spacing={2}>
+                    {/* Preferred Role */}
+                    <Controller
+                      name="preferredRole"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Preferred Role</InputLabel>
+                          <Select {...field} label="Preferred Role" value={field.value || ''}>
+                            <MenuItem value="">
+                              <em>Any</em>
+                            </MenuItem>
+                            {(Object.keys(roleLabels) as StaffMember['role'][]).map((role) => (
+                              <MenuItem key={role} value={role}>
+                                {roleLabels[role]}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
                     />
-                  ))}
-                </Box>
-              </Box>
+
+                    {/* Minimum Classification */}
+                    <Controller
+                      name="minimumClassification"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Minimum Classification</InputLabel>
+                          <Select {...field} label="Minimum Classification">
+                            <MenuItem value="">
+                              <em>No minimum</em>
+                            </MenuItem>
+                            {classificationLevels.map((level) => (
+                              <MenuItem key={level} value={level}>
+                                {level}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
+
+                    {/* Higher Duties */}
+                    <Controller
+                      name="higherDutiesClassification"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Higher Duties Classification</InputLabel>
+                          <Select {...field} label="Higher Duties Classification">
+                            <MenuItem value="">
+                              <em>None</em>
+                            </MenuItem>
+                            {classificationLevels.map((level) => (
+                              <MenuItem key={level} value={level}>
+                                {level}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
+
+                    {/* Required Qualifications */}
+                    <Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        Required Qualifications
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {availableQualifications.map((qual) => (
+                          <Chip
+                            key={qual}
+                            label={qualificationLabels[qual]}
+                            onClick={() => toggleQualification(qual)}
+                            color={selectedQualifications.includes(qual) ? 'primary' : 'default'}
+                            variant={selectedQualifications.includes(qual) ? 'filled' : 'outlined'}
+                            size="small"
+                            deleteIcon={selectedQualifications.includes(qual) ? <X size={14} /> : undefined}
+                            onDelete={selectedQualifications.includes(qual) ? () => toggleQualification(qual) : undefined}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  </Stack>
+                </AccordionDetails>
+              </Accordion>
+
+              {/* Allowances Accordion */}
+              <Accordion sx={{ boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
+                <AccordionSummary expandIcon={<ChevronDown size={18} />}>
+                  <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FileText size={16} /> Allowances
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {availableAllowances.map((allowance) => (
+                      <Chip
+                        key={allowance.id}
+                        label={allowance.name}
+                        onClick={() => toggleAllowance(allowance.id)}
+                        color={selectedAllowances.includes(allowance.id) ? 'success' : 'default'}
+                        variant={selectedAllowances.includes(allowance.id) ? 'filled' : 'outlined'}
+                        size="small"
+                      />
+                    ))}
+                  </Box>
+                </AccordionDetails>
+              </Accordion>
+
+              {/* Travel/Remote Accordion */}
+              <Accordion sx={{ boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
+                <AccordionSummary expandIcon={<ChevronDown size={18} />}>
+                  <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Car size={16} /> Travel & Remote
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Stack spacing={2}>
+                    <Controller
+                      name="isRemoteLocation"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={field.value || false}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                            />
+                          }
+                          label="Remote Location"
+                        />
+                      )}
+                    />
+                    <Controller
+                      name="defaultTravelKilometres"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Travel Distance (km)"
+                          type="number"
+                          size="small"
+                          fullWidth
+                          InputProps={{ inputProps: { min: 0, step: 1 } }}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
+                      )}
+                    />
+                  </Stack>
+                </AccordionDetails>
+              </Accordion>
 
               {/* Notes */}
               <Controller

@@ -51,10 +51,40 @@ export const openShiftSchema = z.object({
   urgency: z.enum(['low', 'medium', 'high', 'critical']),
   requiredQualifications: z.array(z.string()),
   notes: z.string().max(500).optional(),
+  
+  // Template-based fields
+  breakMinutes: z.number().min(0).max(120).optional(),
+  shiftType: z.enum(['regular', 'on_call', 'sleepover', 'broken', 'recall', 'emergency']).optional(),
+  minimumClassification: z.string().optional(),
+  preferredRole: z.enum(['lead_educator', 'educator', 'assistant', 'cook', 'admin']).optional(),
+  templateId: z.string().optional(),
+  selectedAllowances: z.array(z.string()).optional(),
+  
+  // On-call settings
+  onCallStandbyRate: z.number().optional(),
+  onCallStandbyRateType: z.enum(['per_period', 'per_hour', 'daily']).optional(),
+  onCallCallbackMinimumHours: z.number().optional(),
+  
+  // Sleepover settings
+  sleepoverBedtimeStart: z.string().optional(),
+  sleepoverBedtimeEnd: z.string().optional(),
+  sleepoverFlatRate: z.number().optional(),
+  
+  // Broken shift settings
+  brokenFirstShiftEnd: z.string().optional(),
+  brokenSecondShiftStart: z.string().optional(),
+  brokenUnpaidGapMinutes: z.number().optional(),
+  
+  // Higher duties and travel
+  higherDutiesClassification: z.string().optional(),
+  isRemoteLocation: z.boolean().optional(),
+  defaultTravelKilometres: z.number().optional(),
 }).refine(
   (data) => {
     const [startH, startM] = data.startTime.split(':').map(Number);
     const [endH, endM] = data.endTime.split(':').map(Number);
+    // Allow overnight shifts (end time before start time)
+    if (data.shiftType === 'on_call' || data.shiftType === 'sleepover') return true;
     return (endH * 60 + endM) > (startH * 60 + startM);
   },
   { message: 'End time must be after start time', path: ['endTime'] }
