@@ -43,7 +43,6 @@ import {
 } from '@/types/roster';
 import { Plus, X, AlertCircle, Clock, Moon, Phone, Split, ChevronDown, FileText, Car, Award, Layers, Calendar } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { openShiftSchema, OpenShiftFormValues } from '@/lib/validationSchemas';
 import { toast } from 'sonner';
 import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
@@ -601,8 +600,7 @@ export function AddOpenShiftModal({
           actions={actions}
           showFooter
         >
-          <ScrollArea className="h-[calc(100vh-280px)]">
-            <Stack spacing={3}>
+          <Stack spacing={3}>
               {/* Create Mode Toggle */}
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -1136,7 +1134,6 @@ export function AddOpenShiftModal({
                 )}
               />
             </Stack>
-          </ScrollArea>
         </PrimaryOffCanvas>
       </form>
     </FormProvider>
