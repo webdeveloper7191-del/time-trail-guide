@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import {
@@ -20,8 +18,6 @@ import {
   AlertTriangle,
   Smartphone,
   RefreshCw,
-  Eye,
-  Settings,
   Shield,
   Locate,
   Edit,
@@ -32,8 +28,8 @@ import { format } from 'date-fns';
 import {
   GeofenceZone,
   ClockEvent,
-  AttendanceValidation,
 } from '@/types/advancedRoster';
+import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 
 // Mock data
 const mockGeofences: GeofenceZone[] = [
@@ -241,6 +237,11 @@ export function GPSClockInPanel() {
   const validCount = clockEvents.filter(e => e.validationStatus === 'valid').length;
   const warningCount = clockEvents.filter(e => e.validationStatus === 'warning').length;
   const invalidCount = clockEvents.filter(e => e.validationStatus === 'invalid').length;
+
+  const createGeofenceActions: OffCanvasAction[] = [
+    { label: 'Cancel', onClick: () => setShowCreatePanel(false), variant: 'outlined' },
+    { label: 'Create Geofence', onClick: handleCreateGeofence, variant: 'primary' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -476,101 +477,89 @@ export function GPSClockInPanel() {
         </CardContent>
       </Card>
 
-      {/* Create Geofence Sheet */}
-      <Sheet open={showCreatePanel} onOpenChange={setShowCreatePanel}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Add Geofence Zone</SheetTitle>
-            <SheetDescription>
-              Define a GPS boundary for clock-in validation
-            </SheetDescription>
-          </SheetHeader>
+      {/* Create Geofence OffCanvas */}
+      <PrimaryOffCanvas
+        open={showCreatePanel}
+        onClose={() => setShowCreatePanel(false)}
+        title="Add Geofence Zone"
+        description="Define a GPS boundary for clock-in validation"
+        icon={MapPin}
+        size="md"
+        actions={createGeofenceActions}
+      >
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label>Centre Name *</Label>
+            <Input
+              placeholder="e.g., Sydney CBD Centre"
+              value={newGeofence.name}
+              onChange={e => setNewGeofence(prev => ({ ...prev, name: e.target.value }))}
+            />
+          </div>
 
-          <Separator className="my-4" />
-
-          <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Centre Name *</Label>
+              <Label>Latitude *</Label>
               <Input
-                placeholder="e.g., Sydney CBD Centre"
-                value={newGeofence.name}
-                onChange={e => setNewGeofence(prev => ({ ...prev, name: e.target.value }))}
+                type="number"
+                step="0.0001"
+                placeholder="-33.8688"
+                value={newGeofence.latitude}
+                onChange={e =>
+                  setNewGeofence(prev => ({ ...prev, latitude: parseFloat(e.target.value) }))
+                }
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Latitude *</Label>
-                <Input
-                  type="number"
-                  step="0.0001"
-                  placeholder="-33.8688"
-                  value={newGeofence.latitude}
-                  onChange={e =>
-                    setNewGeofence(prev => ({ ...prev, latitude: parseFloat(e.target.value) }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Longitude *</Label>
-                <Input
-                  type="number"
-                  step="0.0001"
-                  placeholder="151.2093"
-                  value={newGeofence.longitude}
-                  onChange={e =>
-                    setNewGeofence(prev => ({ ...prev, longitude: parseFloat(e.target.value) }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground mb-2">
-                Tip: You can get coordinates from Google Maps by right-clicking on a location
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Radius (meters) *</Label>
-                <Input
-                  type="number"
-                  value={newGeofence.radiusMeters}
-                  onChange={e =>
-                    setNewGeofence(prev => ({ ...prev, radiusMeters: parseInt(e.target.value) }))
-                  }
-                />
-                <p className="text-xs text-muted-foreground">
-                  Staff must be within this distance
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Buffer (meters)</Label>
-                <Input
-                  type="number"
-                  value={newGeofence.allowedBuffer}
-                  onChange={e =>
-                    setNewGeofence(prev => ({ ...prev, allowedBuffer: parseInt(e.target.value) }))
-                  }
-                />
-                <p className="text-xs text-muted-foreground">
-                  Extra allowance for GPS accuracy
-                </p>
-              </div>
+            <div className="space-y-2">
+              <Label>Longitude *</Label>
+              <Input
+                type="number"
+                step="0.0001"
+                placeholder="151.2093"
+                value={newGeofence.longitude}
+                onChange={e =>
+                  setNewGeofence(prev => ({ ...prev, longitude: parseFloat(e.target.value) }))
+                }
+              />
             </div>
           </div>
 
-          <SheetFooter className="mt-6">
-            <Button variant="outline" onClick={() => setShowCreatePanel(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateGeofence}>
-              Create Geofence
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          <div className="p-4 rounded-lg bg-muted/50">
+            <p className="text-sm text-muted-foreground mb-2">
+              Tip: You can get coordinates from Google Maps by right-clicking on a location
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Radius (meters) *</Label>
+              <Input
+                type="number"
+                value={newGeofence.radiusMeters}
+                onChange={e =>
+                  setNewGeofence(prev => ({ ...prev, radiusMeters: parseInt(e.target.value) }))
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Staff must be within this distance
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Buffer (meters)</Label>
+              <Input
+                type="number"
+                value={newGeofence.allowedBuffer}
+                onChange={e =>
+                  setNewGeofence(prev => ({ ...prev, allowedBuffer: parseInt(e.target.value) }))
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Extra allowance for GPS accuracy
+              </p>
+            </div>
+          </div>
+        </div>
+      </PrimaryOffCanvas>
     </div>
   );
 }
