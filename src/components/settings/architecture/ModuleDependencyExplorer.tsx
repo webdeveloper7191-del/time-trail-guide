@@ -63,6 +63,8 @@ interface ModuleNode {
   dataProvides: string[];
   dataConsumes: string[];
   apis: string[];
+  businessRules: string[];
+  developerNotes: string[];
 }
 
 interface DataFlow {
@@ -72,6 +74,8 @@ interface DataFlow {
   dataType: string;
   description: string;
   frequency: 'realtime' | 'on-demand' | 'scheduled';
+  businessRules?: string[];
+  technicalNotes?: string;
 }
 
 const MODULES: ModuleNode[] = [
@@ -80,7 +84,7 @@ const MODULES: ModuleNode[] = [
     name: 'Awards Module',
     icon: Award,
     color: 'from-amber-500 to-orange-500',
-    description: 'Manages Australian Modern Awards, penalty rates, allowances, and rate updates',
+    description: 'Manages Australian Modern Awards, penalty rates, allowances, and rate updates. Central source of truth for all pay calculations.',
     components: [
       'AwardsMasterTable',
       'PenaltyRatesEditorPanel',
@@ -92,13 +96,25 @@ const MODULES: ModuleNode[] = [
     dataProvides: ['Penalty Rates', 'Allowance Types', 'Award Classifications', 'Rate Multipliers'],
     dataConsumes: ['External Award Updates'],
     apis: ['getAwardsByIndustry', 'getPenaltyRates', 'getAllowanceTypes', 'installAwardUpdate'],
+    businessRules: [
+      'Award rates must be updated within 30 days of FWC announcement',
+      'Penalty rates cascade to all affected staff automatically',
+      'Rate changes require manager approval before activation',
+      'Historical rates must be preserved for audit compliance',
+    ],
+    developerNotes: [
+      'Use awardInterpreter.ts for all rate calculations',
+      'Cache award data - it changes infrequently',
+      'Always validate against australianAwards.ts for industry standards',
+      'Rate updates trigger recalculation of all pending timesheets',
+    ],
   },
   {
     id: 'staff',
     name: 'Staff Module',
     icon: Users,
     color: 'from-blue-500 to-cyan-500',
-    description: 'Manages staff profiles, qualifications, pay conditions, and availability',
+    description: 'Manages staff profiles, qualifications, pay conditions, and availability. Links employees to their applicable awards and classifications.',
     components: [
       'StaffPanel',
       'StaffProfileModal',
@@ -110,13 +126,26 @@ const MODULES: ModuleNode[] = [
     dataProvides: ['Staff Members', 'Qualifications', 'Pay Rates', 'Availability', 'Bank Details'],
     dataConsumes: ['Award Classifications', 'Allowance Types'],
     apis: ['fetchAllStaff', 'getStaffById', 'updatePayConditions', 'updateAvailability'],
+    businessRules: [
+      'All staff must have a valid award classification',
+      'Qualifications must be verified before room assignment',
+      'Pay rate changes must be scheduled, not immediate',
+      'Availability conflicts block shift assignment',
+      'Bank details require dual-authorization to update',
+    ],
+    developerNotes: [
+      'Staff data is cached in useStaffData hook',
+      'Use validationSchemas.ts for all staff form validation',
+      'Qualification expiry dates must be monitored',
+      'Pay condition history is immutable - create new records',
+    ],
   },
   {
     id: 'roster',
     name: 'Roster Module',
     icon: Calendar,
     color: 'from-emerald-500 to-teal-500',
-    description: 'Handles shift scheduling, templates, compliance checking, and cost tracking',
+    description: 'Handles shift scheduling, templates, compliance checking, and cost tracking. Core scheduling interface for managers.',
     components: [
       'TimelineGrid',
       'ShiftCard',
@@ -129,13 +158,28 @@ const MODULES: ModuleNode[] = [
     dataProvides: ['Shifts', 'Shift Costs', 'Compliance Flags', 'Open Shifts'],
     dataConsumes: ['Staff Members', 'Penalty Rates', 'Allowance Types', 'Availability'],
     apis: ['fetchShifts', 'createShift', 'updateShift', 'publishRoster', 'bulkCreateShifts'],
+    businessRules: [
+      'Shifts cannot overlap for the same staff member',
+      'Minimum 10-hour break between shifts required',
+      'Room ratios must be maintained at all times',
+      'Published rosters lock 48 hours before start',
+      'Budget warnings trigger at 80% threshold',
+      'Open shifts require 24-hour notice period',
+    ],
+    developerNotes: [
+      'Use useRosterData hook for all roster operations',
+      'Shift conflicts detected via shiftConflictDetection.ts',
+      'Cost calculations are async - show loading states',
+      'Undo/redo supported via useUndoRedo hook',
+      'Demand data drives staffing recommendations',
+    ],
   },
   {
     id: 'timesheet',
     name: 'Timesheet Module',
     icon: Clock,
     color: 'from-purple-500 to-pink-500',
-    description: 'Processes timesheet submissions, approvals, compliance validation, and payroll export',
+    description: 'Processes timesheet submissions, approvals, compliance validation, and payroll export. Final stage before payroll.',
     components: [
       'TimesheetTable',
       'TimesheetDetailModal',
@@ -147,13 +191,28 @@ const MODULES: ModuleNode[] = [
     dataProvides: ['Approved Hours', 'Pay Calculations', 'Compliance Reports'],
     dataConsumes: ['Shifts', 'Staff Members', 'Penalty Rates', 'Allowance Types'],
     apis: ['fetchTimesheets', 'approveTimesheet', 'rejectTimesheet', 'exportTimesheets'],
+    businessRules: [
+      'Timesheets must be submitted within 7 days of shift',
+      'Approval requires matching against rostered shifts',
+      'Variance > 15 minutes requires manager justification',
+      'Rejected timesheets must include reason',
+      'Export locks timesheet from further edits',
+      'Overtime requires pre-approval or post-justification',
+    ],
+    developerNotes: [
+      'Use useTimesheetData hook for all operations',
+      'Approval workflow state machine in ApprovalWorkflow.tsx',
+      'Compliance checks run on every status change',
+      'Export format must match payroll system requirements',
+      'Audit trail is append-only - never delete records',
+    ],
   },
   {
     id: 'compliance',
     name: 'Compliance Engine',
     icon: Shield,
     color: 'from-red-500 to-rose-500',
-    description: 'Validates schedules against regulations, awards, and business rules',
+    description: 'Validates schedules against regulations, awards, and business rules. Runs continuously to flag violations.',
     components: [
       'ComplianceEngine',
       'ShiftConflictDetection',
@@ -163,13 +222,28 @@ const MODULES: ModuleNode[] = [
     dataProvides: ['Compliance Flags', 'Conflict Warnings', 'Ratio Breaches'],
     dataConsumes: ['Shifts', 'Staff Qualifications', 'Room Requirements', 'Award Rules'],
     apis: ['validateShift', 'checkRatioCompliance', 'detectConflicts'],
+    businessRules: [
+      'Child-to-staff ratios must never be breached',
+      'Qualified staff must be present at all times',
+      'Maximum weekly hours: 38 ordinary + 12 overtime',
+      'Break requirements: 10min per 4hrs, 30min per 6hrs',
+      'Consecutive shift warnings after 5 days',
+      'Fatigue management: max 10 hours per shift',
+    ],
+    developerNotes: [
+      'complianceEngine.ts is the core validation module',
+      'Ratio checks use ratioCompliance.ts',
+      'All violations have severity levels: error/warning/info',
+      'Compliance runs synchronously on shift changes',
+      'Cache room requirements - they rarely change',
+    ],
   },
   {
     id: 'calculation',
     name: 'Calculation Engine',
     icon: DollarSign,
     color: 'from-green-500 to-lime-500',
-    description: 'Computes shift costs, penalties, overtime, and allowances based on awards',
+    description: 'Computes shift costs, penalties, overtime, and allowances based on awards. Powers all financial projections.',
     components: [
       'AwardInterpreter',
       'LabourForecasting',
@@ -178,25 +252,167 @@ const MODULES: ModuleNode[] = [
     dataProvides: ['Shift Cost Breakdowns', 'Weekly Cost Summaries', 'Roster Costs'],
     dataConsumes: ['Shifts', 'Staff Pay Rates', 'Penalty Rates', 'Allowance Types'],
     apis: ['calculateShiftCost', 'calculateWeeklyCost', 'calculateRosterCost'],
+    businessRules: [
+      'Overtime calculated weekly, not daily',
+      'Penalty rates compound (weekend + evening)',
+      'Public holidays: 250% base rate',
+      'Allowances applied per-shift, not per-hour',
+      'On-call: activation triggers full shift calculation',
+      'Broken shifts include gap compensation',
+    ],
+    developerNotes: [
+      'awardInterpreter.ts handles all rate lookups',
+      'labourForecasting.ts for budget projections',
+      'shiftTypeDetection.ts classifies shift patterns',
+      'All currency in cents internally, display in dollars',
+      'Cache calculation results with shift hash key',
+    ],
   },
 ];
 
 const DATA_FLOWS: DataFlow[] = [
-  { id: 'f1', from: 'awards', to: 'staff', dataType: 'Award Classifications', description: 'Staff members are assigned award levels and classifications', frequency: 'on-demand' },
-  { id: 'f2', from: 'awards', to: 'calculation', dataType: 'Penalty Rates', description: 'Penalty rate multipliers for cost calculations', frequency: 'realtime' },
-  { id: 'f3', from: 'awards', to: 'calculation', dataType: 'Allowance Types', description: 'Allowance definitions and rates', frequency: 'realtime' },
-  { id: 'f4', from: 'staff', to: 'roster', dataType: 'Staff Members', description: 'Available staff for shift assignment', frequency: 'realtime' },
-  { id: 'f5', from: 'staff', to: 'roster', dataType: 'Availability', description: 'Staff availability constraints', frequency: 'realtime' },
-  { id: 'f6', from: 'staff', to: 'calculation', dataType: 'Pay Rates', description: 'Base hourly rates for cost calculation', frequency: 'realtime' },
-  { id: 'f7', from: 'staff', to: 'compliance', dataType: 'Qualifications', description: 'Staff qualifications for ratio compliance', frequency: 'realtime' },
-  { id: 'f8', from: 'roster', to: 'timesheet', dataType: 'Shifts', description: 'Scheduled shifts become timesheet entries', frequency: 'scheduled' },
-  { id: 'f9', from: 'roster', to: 'compliance', dataType: 'Shifts', description: 'Shifts validated against compliance rules', frequency: 'realtime' },
-  { id: 'f10', from: 'roster', to: 'calculation', dataType: 'Shifts', description: 'Shift details for cost calculation', frequency: 'realtime' },
-  { id: 'f11', from: 'calculation', to: 'roster', dataType: 'Shift Costs', description: 'Cost breakdowns displayed in roster', frequency: 'realtime' },
-  { id: 'f12', from: 'calculation', to: 'timesheet', dataType: 'Pay Calculations', description: 'Final pay amounts for timesheets', frequency: 'on-demand' },
-  { id: 'f13', from: 'compliance', to: 'roster', dataType: 'Compliance Flags', description: 'Warnings and errors displayed in roster', frequency: 'realtime' },
-  { id: 'f14', from: 'compliance', to: 'timesheet', dataType: 'Compliance Reports', description: 'Compliance status for approval workflow', frequency: 'on-demand' },
+  { 
+    id: 'f1', 
+    from: 'awards', 
+    to: 'staff', 
+    dataType: 'Award Classifications', 
+    description: 'Staff members are assigned award levels and classifications',
+    frequency: 'on-demand',
+    businessRules: ['Classification changes require HR approval', 'Backpay may apply for upgrades'],
+    technicalNotes: 'Use StaffAwardRuleSection.tsx for assignment UI',
+  },
+  { 
+    id: 'f2', 
+    from: 'awards', 
+    to: 'calculation', 
+    dataType: 'Penalty Rates', 
+    description: 'Penalty rate multipliers for cost calculations',
+    frequency: 'realtime',
+    businessRules: ['Rates effective from FWC determination date'],
+    technicalNotes: 'getPenaltyRates() returns cached values',
+  },
+  { 
+    id: 'f3', 
+    from: 'awards', 
+    to: 'calculation', 
+    dataType: 'Allowance Types', 
+    description: 'Allowance definitions and rates',
+    frequency: 'realtime',
+    businessRules: ['Some allowances are taxable, others not'],
+    technicalNotes: 'Allowance eligibility checked per-shift',
+  },
+  { 
+    id: 'f4', 
+    from: 'staff', 
+    to: 'roster', 
+    dataType: 'Staff Members', 
+    description: 'Available staff for shift assignment',
+    frequency: 'realtime',
+    businessRules: ['Only active staff appear in roster', 'Probationary staff marked separately'],
+    technicalNotes: 'fetchAllStaff() filters by status',
+  },
+  { 
+    id: 'f5', 
+    from: 'staff', 
+    to: 'roster', 
+    dataType: 'Availability', 
+    description: 'Staff availability constraints',
+    frequency: 'realtime',
+    businessRules: ['Availability blocks prevent assignment', 'Leave requests override availability'],
+    technicalNotes: 'StaffAvailabilitySection.tsx manages patterns',
+  },
+  { 
+    id: 'f6', 
+    from: 'staff', 
+    to: 'calculation', 
+    dataType: 'Pay Rates', 
+    description: 'Base hourly rates for cost calculation',
+    frequency: 'realtime',
+    businessRules: ['Scheduled rate changes apply from effective date', 'Current rate used for projections'],
+    technicalNotes: 'StaffPayConditionsSection.tsx shows history',
+  },
+  { 
+    id: 'f7', 
+    from: 'staff', 
+    to: 'compliance', 
+    dataType: 'Qualifications', 
+    description: 'Staff qualifications for ratio compliance',
+    frequency: 'realtime',
+    businessRules: ['Expired qualifications = unqualified', 'Grace period: 30 days for renewal'],
+    technicalNotes: 'ratioCompliance.ts checks qual validity',
+  },
+  { 
+    id: 'f8', 
+    from: 'roster', 
+    to: 'timesheet', 
+    dataType: 'Shifts', 
+    description: 'Scheduled shifts become timesheet entries',
+    frequency: 'scheduled',
+    businessRules: ['Shift becomes timesheet at start time', 'Actual times may differ from scheduled'],
+    technicalNotes: 'Batch job runs hourly to sync',
+  },
+  { 
+    id: 'f9', 
+    from: 'roster', 
+    to: 'compliance', 
+    dataType: 'Shifts', 
+    description: 'Shifts validated against compliance rules',
+    frequency: 'realtime',
+    businessRules: ['Validation runs on every shift change', 'Errors block publishing'],
+    technicalNotes: 'complianceEngine.ts validateShift()',
+  },
+  { 
+    id: 'f10', 
+    from: 'roster', 
+    to: 'calculation', 
+    dataType: 'Shifts', 
+    description: 'Shift details for cost calculation',
+    frequency: 'realtime',
+    businessRules: ['Projected costs update live', 'Published shifts lock calculation'],
+    technicalNotes: 'calculateShiftCost() is async',
+  },
+  { 
+    id: 'f11', 
+    from: 'calculation', 
+    to: 'roster', 
+    dataType: 'Shift Costs', 
+    description: 'Cost breakdowns displayed in roster',
+    frequency: 'realtime',
+    businessRules: ['Costs shown in AUD', 'Budget warnings at thresholds'],
+    technicalNotes: 'BudgetTracker.tsx displays aggregates',
+  },
+  { 
+    id: 'f12', 
+    from: 'calculation', 
+    to: 'timesheet', 
+    dataType: 'Pay Calculations', 
+    description: 'Final pay amounts for timesheets',
+    frequency: 'on-demand',
+    businessRules: ['Recalculated on approval', 'Locked on export'],
+    technicalNotes: 'TimesheetDetailModal.tsx shows breakdown',
+  },
+  { 
+    id: 'f13', 
+    from: 'compliance', 
+    to: 'roster', 
+    dataType: 'Compliance Flags', 
+    description: 'Warnings and errors displayed in roster',
+    frequency: 'realtime',
+    businessRules: ['Errors prevent publish', 'Warnings require acknowledgment'],
+    technicalNotes: 'ShiftConflictPanel.tsx displays issues',
+  },
+  { 
+    id: 'f14', 
+    from: 'compliance', 
+    to: 'timesheet', 
+    dataType: 'Compliance Reports', 
+    description: 'Compliance status for approval workflow',
+    frequency: 'on-demand',
+    businessRules: ['Non-compliant timesheets flagged', 'Approver must justify override'],
+    technicalNotes: 'ComplianceScorecard.tsx shows summary',
+  },
 ];
+
 
 // Mind Map Data Structure
 interface MindMapNode {
@@ -204,6 +420,10 @@ interface MindMapNode {
   name: string;
   icon: LucideIcon;
   color: string;
+  description?: string;
+  businessRules?: string[];
+  apis?: string[];
+  developerNotes?: string[];
   children?: MindMapNode[];
 }
 
@@ -212,22 +432,57 @@ const PRODUCT_MIND_MAP: MindMapNode = {
   name: 'Time Trail Guide',
   icon: Home,
   color: 'from-indigo-500 to-purple-500',
+  description: 'Comprehensive workforce management system for Australian childcare and healthcare industries',
+  businessRules: ['System must comply with Australian Fair Work regulations', 'All data must be auditable for 7 years'],
+  developerNotes: ['Main entry point: src/pages/Index.tsx', 'Global state managed via React context'],
   children: [
     {
       id: 'roster',
       name: 'Roster & Scheduling',
       icon: Calendar,
       color: 'from-emerald-500 to-teal-500',
+      description: 'Complete shift scheduling and management with compliance checking and cost tracking',
+      businessRules: ['Rosters must be published 7 days in advance', 'Shift changes require 24-hour notice'],
+      apis: ['fetchShifts', 'createShift', 'updateShift', 'publishRoster'],
+      developerNotes: ['Entry: src/pages/RosterScheduler.tsx', 'Uses useRosterData hook for data management'],
       children: [
         {
           id: 'roster-timeline',
           name: 'Timeline Grid',
           icon: LayoutDashboard,
           color: 'from-emerald-400 to-teal-400',
+          description: 'Visual timeline for viewing and managing shifts across staff and rooms',
+          businessRules: ['Display 24-hour view with configurable zoom levels'],
+          apis: ['fetchShifts', 'updateShiftTimes'],
+          developerNotes: ['Component: TimelineGrid.tsx', 'Uses CSS Grid for layout'],
           children: [
-            { id: 'shift-cards', name: 'Shift Cards', icon: Box, color: 'from-emerald-300 to-teal-300' },
-            { id: 'day-timeline', name: 'Day Timeline', icon: CalendarDays, color: 'from-emerald-300 to-teal-300' },
-            { id: 'staff-timeline', name: 'Staff Timeline Grid', icon: Users, color: 'from-emerald-300 to-teal-300' },
+            { 
+              id: 'shift-cards', 
+              name: 'Shift Cards', 
+              icon: Box, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Individual shift display cards showing staff, time, and status',
+              businessRules: ['Color-coded by room/department', 'Show compliance warnings'],
+              developerNotes: ['Component: ShiftCard.tsx', 'Draggable for reassignment'],
+            },
+            { 
+              id: 'day-timeline', 
+              name: 'Day Timeline', 
+              icon: CalendarDays, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Single-day focused view with hour-by-hour breakdown',
+              businessRules: ['Highlight peak demand periods', 'Show break times'],
+              developerNotes: ['Component: DayTimelineView.tsx'],
+            },
+            { 
+              id: 'staff-timeline', 
+              name: 'Staff Timeline Grid', 
+              icon: Users, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Staff-centric view showing individual schedules',
+              businessRules: ['Show consecutive day warnings', 'Display availability blocks'],
+              developerNotes: ['Component: StaffTimelineGrid.tsx'],
+            },
           ]
         },
         {
@@ -235,12 +490,57 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Shift Management',
           icon: Settings,
           color: 'from-emerald-400 to-teal-400',
+          description: 'Tools for creating, editing, and managing individual shifts',
+          businessRules: ['All changes logged for audit', 'Conflict detection runs on save'],
+          apis: ['createShift', 'updateShift', 'deleteShift', 'bulkCreateShifts'],
+          developerNotes: ['Uses shiftConflictDetection.ts for validation'],
           children: [
-            { id: 'shift-detail', name: 'Shift Detail Panel', icon: FileText, color: 'from-emerald-300 to-teal-300' },
-            { id: 'shift-templates', name: 'Shift Templates', icon: Layers, color: 'from-emerald-300 to-teal-300' },
-            { id: 'bulk-assign', name: 'Bulk Assignment', icon: Users, color: 'from-emerald-300 to-teal-300' },
-            { id: 'shift-copy', name: 'Shift Copy/Move', icon: Box, color: 'from-emerald-300 to-teal-300' },
-            { id: 'open-shifts', name: 'Open Shifts', icon: AlertTriangle, color: 'from-emerald-300 to-teal-300' },
+            { 
+              id: 'shift-detail', 
+              name: 'Shift Detail Panel', 
+              icon: FileText, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Detailed shift view with cost breakdown, allowances, and notes',
+              businessRules: ['Show real-time cost calculation', 'Display applicable award rates'],
+              apis: ['calculateShiftCost', 'getShiftAllowances'],
+              developerNotes: ['Component: ShiftDetailPanel.tsx', 'Integrates with AwardInterpreter'],
+            },
+            { 
+              id: 'shift-templates', 
+              name: 'Shift Templates', 
+              icon: Layers, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Pre-defined shift patterns for quick roster creation',
+              businessRules: ['Templates inherit current award rates', 'Validate on application'],
+              developerNotes: ['Component: ShiftTemplateManager.tsx'],
+            },
+            { 
+              id: 'bulk-assign', 
+              name: 'Bulk Assignment', 
+              icon: Users, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Assign multiple staff to shifts in a single operation',
+              businessRules: ['Respect availability constraints', 'Check qualification requirements'],
+              developerNotes: ['Component: BulkShiftAssignmentModal.tsx'],
+            },
+            { 
+              id: 'shift-copy', 
+              name: 'Shift Copy/Move', 
+              icon: Box, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Duplicate or move shifts between days or weeks',
+              businessRules: ['Recalculate costs on copy', 'Preserve allowances if applicable'],
+              developerNotes: ['Component: ShiftCopyModal.tsx'],
+            },
+            { 
+              id: 'open-shifts', 
+              name: 'Open Shifts', 
+              icon: AlertTriangle, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Unfilled shifts available for staff to claim',
+              businessRules: ['24-hour minimum notice', 'First-come-first-served or manager approval'],
+              developerNotes: ['Component: AddOpenShiftModal.tsx'],
+            },
           ]
         },
         {
@@ -248,11 +548,47 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Analytics & Tracking',
           icon: BarChart3,
           color: 'from-emerald-400 to-teal-400',
+          description: 'Budget, demand, and staffing analytics for roster optimization',
+          businessRules: ['Budget alerts at 80% threshold', 'Track forecast vs actual'],
+          apis: ['calculateRosterCost', 'getDemandAnalytics'],
+          developerNotes: ['Uses labourForecasting.ts for projections'],
           children: [
-            { id: 'budget-tracker', name: 'Budget Tracker', icon: Wallet, color: 'from-emerald-300 to-teal-300' },
-            { id: 'demand-histogram', name: 'Demand Histogram', icon: BarChart3, color: 'from-emerald-300 to-teal-300' },
-            { id: 'staffing-insights', name: 'Staffing Insights', icon: Target, color: 'from-emerald-300 to-teal-300' },
-            { id: 'room-analytics', name: 'Room Analytics', icon: Building2, color: 'from-emerald-300 to-teal-300' },
+            { 
+              id: 'budget-tracker', 
+              name: 'Budget Tracker', 
+              icon: Wallet, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Real-time labor cost tracking against budget',
+              businessRules: ['Warning at 80%, alert at 100%', 'Show projected vs actual'],
+              developerNotes: ['Components: BudgetTracker.tsx, BudgetTrackerBar.tsx'],
+            },
+            { 
+              id: 'demand-histogram', 
+              name: 'Demand Histogram', 
+              icon: BarChart3, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Visual representation of staffing demand by time',
+              businessRules: ['Historical data informs recommendations', 'Account for events/holidays'],
+              developerNotes: ['Component: DemandHistogram.tsx', 'Uses recharts'],
+            },
+            { 
+              id: 'staffing-insights', 
+              name: 'Staffing Insights', 
+              icon: Target, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'AI-powered recommendations for optimal staffing',
+              businessRules: ['Consider qualifications and ratios', 'Factor in leave patterns'],
+              developerNotes: ['Component: StaffingInsightsBar.tsx'],
+            },
+            { 
+              id: 'room-analytics', 
+              name: 'Room Analytics', 
+              icon: Building2, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Per-room occupancy and staffing analysis',
+              businessRules: ['Maintain required ratios', 'Track room utilization'],
+              developerNotes: ['Component: RoomAnalyticsCard.tsx'],
+            },
           ]
         },
         {
@@ -260,11 +596,46 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Tools & Export',
           icon: Sparkles,
           color: 'from-emerald-400 to-teal-400',
+          description: 'Roster templates, print views, and history tracking',
+          apis: ['exportRoster', 'applyTemplate', 'saveTemplate'],
+          developerNotes: ['Export uses rosterExport.ts'],
           children: [
-            { id: 'apply-template', name: 'Apply Template', icon: Layers, color: 'from-emerald-300 to-teal-300' },
-            { id: 'save-template', name: 'Save Template', icon: Download, color: 'from-emerald-300 to-teal-300' },
-            { id: 'print-view', name: 'Print View', icon: Printer, color: 'from-emerald-300 to-teal-300' },
-            { id: 'history', name: 'Roster History', icon: History, color: 'from-emerald-300 to-teal-300' },
+            { 
+              id: 'apply-template', 
+              name: 'Apply Template', 
+              icon: Layers, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Apply saved roster templates to selected weeks',
+              businessRules: ['Validate template against current staff', 'Preserve existing shifts option'],
+              developerNotes: ['Component: ApplyTemplateModal.tsx'],
+            },
+            { 
+              id: 'save-template', 
+              name: 'Save Template', 
+              icon: Download, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Save current roster as a reusable template',
+              businessRules: ['Strip personal data', 'Include shift patterns only'],
+              developerNotes: ['Component: SaveRosterTemplateModal.tsx'],
+            },
+            { 
+              id: 'print-view', 
+              name: 'Print View', 
+              icon: Printer, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Printer-friendly roster layout for posting',
+              businessRules: ['Include all required compliance info', 'A4/Letter format support'],
+              developerNotes: ['Component: RosterPrintView.tsx'],
+            },
+            { 
+              id: 'history', 
+              name: 'Roster History', 
+              icon: History, 
+              color: 'from-emerald-300 to-teal-300',
+              description: 'Version history and change tracking',
+              businessRules: ['Audit trail for all changes', 'Rollback capability'],
+              developerNotes: ['Component: RosterHistoryPanel.tsx'],
+            },
           ]
         },
       ]
@@ -274,16 +645,48 @@ const PRODUCT_MIND_MAP: MindMapNode = {
       name: 'Staff Management',
       icon: Users,
       color: 'from-blue-500 to-cyan-500',
+      description: 'Complete employee profile management including pay, qualifications, and availability',
+      businessRules: ['Personal data protected under Privacy Act', 'Pay changes require dual approval'],
+      apis: ['fetchAllStaff', 'getStaffById', 'updateStaff'],
+      developerNotes: ['Entry: src/pages/StaffList.tsx', 'Detail: src/pages/StaffDetail.tsx'],
       children: [
         {
           id: 'staff-profiles',
           name: 'Profile Management',
           icon: UserCheck,
           color: 'from-blue-400 to-cyan-400',
+          description: 'Personal information, contact details, and employment records',
+          businessRules: ['Emergency contact required', 'ID verification mandatory'],
+          developerNotes: ['Uses validationSchemas.ts for form validation'],
           children: [
-            { id: 'personal-info', name: 'Personal Information', icon: Users, color: 'from-blue-300 to-cyan-300' },
-            { id: 'qualifications', name: 'Qualifications', icon: GraduationCap, color: 'from-blue-300 to-cyan-300' },
-            { id: 'availability', name: 'Availability', icon: Calendar, color: 'from-blue-300 to-cyan-300' },
+            { 
+              id: 'personal-info', 
+              name: 'Personal Information', 
+              icon: Users, 
+              color: 'from-blue-300 to-cyan-300',
+              description: 'Name, address, contact details, emergency contacts',
+              businessRules: ['Encrypted at rest', 'Access logged'],
+              developerNotes: ['Component: StaffPersonalSection.tsx'],
+            },
+            { 
+              id: 'qualifications', 
+              name: 'Qualifications', 
+              icon: GraduationCap, 
+              color: 'from-blue-300 to-cyan-300',
+              description: 'Certifications, training records, and expiry tracking',
+              businessRules: ['30-day expiry warning', 'Block assignment if expired'],
+              apis: ['addQualification', 'updateQualification'],
+              developerNotes: ['Components: StaffQualificationsSection.tsx, AddQualificationSheet.tsx'],
+            },
+            { 
+              id: 'availability', 
+              name: 'Availability', 
+              icon: Calendar, 
+              color: 'from-blue-300 to-cyan-300',
+              description: 'Regular availability patterns and leave calendar',
+              businessRules: ['Minimum 2 weeks notice for changes', 'Block conflicting assignments'],
+              developerNotes: ['Component: StaffAvailabilitySection.tsx'],
+            },
           ]
         },
         {
@@ -291,11 +694,47 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Pay Configuration',
           icon: DollarSign,
           color: 'from-blue-400 to-cyan-400',
+          description: 'Pay rates, award classifications, and banking details',
+          businessRules: ['Rate changes must be scheduled', 'Bank details require verification'],
+          apis: ['updatePayConditions', 'updateBankDetails'],
+          developerNotes: ['Pay history is immutable - create new records'],
           children: [
-            { id: 'pay-conditions', name: 'Pay Conditions', icon: FileText, color: 'from-blue-300 to-cyan-300' },
-            { id: 'bank-details', name: 'Bank Details', icon: Wallet, color: 'from-blue-300 to-cyan-300' },
-            { id: 'award-rules', name: 'Award Rules', icon: Award, color: 'from-blue-300 to-cyan-300' },
-            { id: 'pay-comparison', name: 'Pay Rate Comparison', icon: BarChart3, color: 'from-blue-300 to-cyan-300' },
+            { 
+              id: 'pay-conditions', 
+              name: 'Pay Conditions', 
+              icon: FileText, 
+              color: 'from-blue-300 to-cyan-300',
+              description: 'Base rate, loadings, and pay classification',
+              businessRules: ['Effective date required', 'Cannot backdate reductions'],
+              developerNotes: ['Components: StaffPayConditionsSection.tsx, EditPayConditionsSheet.tsx'],
+            },
+            { 
+              id: 'bank-details', 
+              name: 'Bank Details', 
+              icon: Wallet, 
+              color: 'from-blue-300 to-cyan-300',
+              description: 'Bank account for payroll deposits',
+              businessRules: ['BSB and account validation', 'Change notification to employee'],
+              developerNotes: ['Components: StaffBankDetailsSection.tsx, EditBankDetailsSheet.tsx'],
+            },
+            { 
+              id: 'award-rules', 
+              name: 'Award Rules', 
+              icon: Award, 
+              color: 'from-blue-300 to-cyan-300',
+              description: 'Applicable award and classification level',
+              businessRules: ['All staff must have valid classification', 'Drives all pay calculations'],
+              developerNotes: ['Component: StaffAwardRuleSection.tsx'],
+            },
+            { 
+              id: 'pay-comparison', 
+              name: 'Pay Rate Comparison', 
+              icon: BarChart3, 
+              color: 'from-blue-300 to-cyan-300',
+              description: 'Compare staff rates against award minimums',
+              businessRules: ['Flag under-award payments', 'Show market rate comparisons'],
+              developerNotes: ['Component: PayRateComparisonSheet.tsx'],
+            },
           ]
         },
       ]
@@ -305,17 +744,56 @@ const PRODUCT_MIND_MAP: MindMapNode = {
       name: 'Awards & Compliance',
       icon: Award,
       color: 'from-amber-500 to-orange-500',
+      description: 'Australian Modern Award management with penalty rates, allowances, and compliance rules',
+      businessRules: ['Updates within 30 days of FWC announcement', 'Historical rates preserved'],
+      apis: ['getAwardsByIndustry', 'getPenaltyRates', 'getAllowanceTypes'],
+      developerNotes: ['Core module: awardInterpreter.ts', 'Data: australianAwards.ts'],
       children: [
         {
           id: 'award-management',
           name: 'Award Management',
           icon: Briefcase,
           color: 'from-amber-400 to-orange-400',
+          description: 'Award configuration and update management',
+          apis: ['installAwardUpdate', 'getAwardHistory'],
+          developerNotes: ['Component: AwardsMasterTable.tsx'],
           children: [
-            { id: 'awards-master', name: 'Awards Master Table', icon: Database, color: 'from-amber-300 to-orange-300' },
-            { id: 'award-detail', name: 'Award Details', icon: FileText, color: 'from-amber-300 to-orange-300' },
-            { id: 'award-comparison', name: 'Award Comparison', icon: BarChart3, color: 'from-amber-300 to-orange-300' },
-            { id: 'award-updates', name: 'Award Updates', icon: Bell, color: 'from-amber-300 to-orange-300' },
+            { 
+              id: 'awards-master', 
+              name: 'Awards Master Table', 
+              icon: Database, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Central repository of all award configurations',
+              businessRules: ['Read-only for standard awards', 'Custom overrides tracked separately'],
+              developerNotes: ['Component: AwardsMasterTable.tsx'],
+            },
+            { 
+              id: 'award-detail', 
+              name: 'Award Details', 
+              icon: FileText, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Detailed view of specific award with all rates and rules',
+              businessRules: ['Show effective dates', 'Link to official FWC documents'],
+              developerNotes: ['Component: AwardDetailModal.tsx'],
+            },
+            { 
+              id: 'award-comparison', 
+              name: 'Award Comparison', 
+              icon: BarChart3, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Side-by-side comparison of awards',
+              businessRules: ['Compare penalty structures', 'Highlight key differences'],
+              developerNotes: ['Component: AwardComparisonPanel.tsx'],
+            },
+            { 
+              id: 'award-updates', 
+              name: 'Award Updates', 
+              icon: Bell, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Manage and apply Fair Work Commission updates',
+              businessRules: ['Approval required before activation', 'Notification to affected staff'],
+              developerNotes: ['Component: AwardUpdatesPanel.tsx'],
+            },
           ]
         },
         {
@@ -323,11 +801,45 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Rates & Loadings',
           icon: DollarSign,
           color: 'from-amber-400 to-orange-400',
+          description: 'Penalty rates, allowances, overtime, and loading configurations',
+          developerNotes: ['All rates cached for performance'],
           children: [
-            { id: 'penalty-rates', name: 'Penalty Rates', icon: Clock, color: 'from-amber-300 to-orange-300' },
-            { id: 'allowance-rates', name: 'Allowance Rates', icon: DollarSign, color: 'from-amber-300 to-orange-300' },
-            { id: 'overtime-rates', name: 'Overtime Rates', icon: Zap, color: 'from-amber-300 to-orange-300' },
-            { id: 'rate-overrides', name: 'Custom Overrides', icon: Settings, color: 'from-amber-300 to-orange-300' },
+            { 
+              id: 'penalty-rates', 
+              name: 'Penalty Rates', 
+              icon: Clock, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Weekend, evening, public holiday rate multipliers',
+              businessRules: ['Rates compound (weekend + evening)', 'Public holidays: 250% minimum'],
+              developerNotes: ['Component: PenaltyRatesEditorPanel.tsx'],
+            },
+            { 
+              id: 'allowance-rates', 
+              name: 'Allowance Rates', 
+              icon: DollarSign, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Meal, uniform, travel, and other allowances',
+              businessRules: ['Some taxable, some not', 'Applied per-shift or per-hour'],
+              developerNotes: ['Component: AllowanceRatesEditorPanel.tsx'],
+            },
+            { 
+              id: 'overtime-rates', 
+              name: 'Overtime Rates', 
+              icon: Zap, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Overtime calculation rules and rates',
+              businessRules: ['Calculated weekly not daily', 'First 2 hours at 150%, then 200%'],
+              developerNotes: ['Component: CustomOvertimeRatesPanel.tsx'],
+            },
+            { 
+              id: 'rate-overrides', 
+              name: 'Custom Overrides', 
+              icon: Settings, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Organization-specific rate customizations',
+              businessRules: ['Must meet or exceed award minimums', 'Audit trail required'],
+              developerNotes: ['Component: CustomRateOverridesPanel.tsx'],
+            },
           ]
         },
         {
@@ -335,10 +847,36 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Compliance Rules',
           icon: Shield,
           color: 'from-amber-400 to-orange-400',
+          description: 'Custom rules for award interpretation and compliance',
+          developerNotes: ['Engine: complianceEngine.ts'],
           children: [
-            { id: 'custom-rules', name: 'Custom Rule Builder', icon: Settings, color: 'from-amber-300 to-orange-300' },
-            { id: 'leave-loading', name: 'Leave Loading', icon: Calendar, color: 'from-amber-300 to-orange-300' },
-            { id: 'shift-differential', name: 'Shift Differential', icon: Clock, color: 'from-amber-300 to-orange-300' },
+            { 
+              id: 'custom-rules', 
+              name: 'Custom Rule Builder', 
+              icon: Settings, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Create organization-specific compliance rules',
+              businessRules: ['Cannot contradict award requirements', 'Test before activation'],
+              developerNotes: ['Component: CustomRuleBuilderPanel.tsx'],
+            },
+            { 
+              id: 'leave-loading', 
+              name: 'Leave Loading', 
+              icon: Calendar, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Annual leave loading calculation rules',
+              businessRules: ['17.5% standard', 'Pro-rata for part-time'],
+              developerNotes: ['Component: CustomLeaveLoadingPanel.tsx'],
+            },
+            { 
+              id: 'shift-differential', 
+              name: 'Shift Differential', 
+              icon: Clock, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Time-of-day based pay differentials',
+              businessRules: ['Evening: after 6pm', 'Night: after 12am'],
+              developerNotes: ['Component: ShiftDifferentialCalculator.tsx'],
+            },
           ]
         },
         {
@@ -346,10 +884,37 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Simulation & Analysis',
           icon: BarChart3,
           color: 'from-amber-400 to-orange-400',
+          description: 'Rate simulation and impact analysis tools',
+          apis: ['simulateRateChange', 'getRateHistory'],
+          developerNotes: ['Used for budget planning'],
           children: [
-            { id: 'rate-simulation', name: 'Rate Simulation', icon: Sparkles, color: 'from-amber-300 to-orange-300' },
-            { id: 'rate-history', name: 'Rate Change History', icon: History, color: 'from-amber-300 to-orange-300' },
-            { id: 'bulk-import', name: 'Bulk Import/Export', icon: Upload, color: 'from-amber-300 to-orange-300' },
+            { 
+              id: 'rate-simulation', 
+              name: 'Rate Simulation', 
+              icon: Sparkles, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Model impact of rate changes on labor costs',
+              businessRules: ['Compare scenarios', 'Export for reporting'],
+              developerNotes: ['Component: RateSimulationPanel.tsx'],
+            },
+            { 
+              id: 'rate-history', 
+              name: 'Rate Change History', 
+              icon: History, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Historical record of all rate changes',
+              businessRules: ['Immutable audit trail', '7-year retention'],
+              developerNotes: ['Component: RateChangeHistoryPanel.tsx'],
+            },
+            { 
+              id: 'bulk-import', 
+              name: 'Bulk Import/Export', 
+              icon: Upload, 
+              color: 'from-amber-300 to-orange-300',
+              description: 'Import/export award data in bulk',
+              businessRules: ['Validate on import', 'Format: CSV/Excel'],
+              developerNotes: ['Component: BulkImportExportPanel.tsx', 'Uses awardExport.ts'],
+            },
           ]
         },
       ]
@@ -359,17 +924,55 @@ const PRODUCT_MIND_MAP: MindMapNode = {
       name: 'Timesheet Processing',
       icon: Clock,
       color: 'from-purple-500 to-pink-500',
+      description: 'Time tracking, approval workflows, compliance validation, and payroll export',
+      businessRules: ['Submit within 7 days', 'Variance over 15 min needs justification'],
+      apis: ['fetchTimesheets', 'approveTimesheet', 'exportTimesheets'],
+      developerNotes: ['Entry: src/pages/TimesheetAdmin.tsx', 'Uses useTimesheetData hook'],
       children: [
         {
           id: 'timesheet-entry',
           name: 'Time Entry',
           icon: ClipboardCheck,
           color: 'from-purple-400 to-pink-400',
+          description: 'Timesheet submission and editing interfaces',
+          developerNotes: ['Syncs with roster data'],
           children: [
-            { id: 'timesheet-table', name: 'Timesheet Table', icon: FileText, color: 'from-purple-300 to-pink-300' },
-            { id: 'timesheet-detail', name: 'Timesheet Detail', icon: FileText, color: 'from-purple-300 to-pink-300' },
-            { id: 'timesheet-edit', name: 'Timesheet Edit', icon: Settings, color: 'from-purple-300 to-pink-300' },
-            { id: 'calendar-view', name: 'Calendar View', icon: Calendar, color: 'from-purple-300 to-pink-300' },
+            { 
+              id: 'timesheet-table', 
+              name: 'Timesheet Table', 
+              icon: FileText, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Tabular view of all timesheets with filtering',
+              businessRules: ['Sort by status, date, staff', 'Bulk actions for approvers'],
+              developerNotes: ['Component: TimesheetTable.tsx'],
+            },
+            { 
+              id: 'timesheet-detail', 
+              name: 'Timesheet Detail', 
+              icon: FileText, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Detailed timesheet view with pay breakdown',
+              businessRules: ['Show rostered vs actual', 'Display all allowances'],
+              developerNotes: ['Component: TimesheetDetailModal.tsx'],
+            },
+            { 
+              id: 'timesheet-edit', 
+              name: 'Timesheet Edit', 
+              icon: Settings, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Edit timesheet entries with change tracking',
+              businessRules: ['All edits logged', 'Reason required for changes'],
+              developerNotes: ['Component: TimesheetEditModal.tsx'],
+            },
+            { 
+              id: 'calendar-view', 
+              name: 'Calendar View', 
+              icon: Calendar, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Calendar-based timesheet visualization',
+              businessRules: ['Color-code by status', 'Click to expand details'],
+              developerNotes: ['Component: TimesheetCalendarView.tsx'],
+            },
           ]
         },
         {
@@ -377,10 +980,38 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Approval Workflow',
           icon: CheckCircle2,
           color: 'from-purple-400 to-pink-400',
+          description: 'Multi-stage approval process with delegation',
+          businessRules: ['Manager approval required', 'Escalation after 48 hours'],
+          apis: ['approveTimesheet', 'rejectTimesheet', 'delegateApproval'],
+          developerNotes: ['State machine in ApprovalWorkflow.tsx'],
           children: [
-            { id: 'approval-workflow', name: 'Approval Workflow', icon: GitBranch, color: 'from-purple-300 to-pink-300' },
-            { id: 'approval-delegation', name: 'Delegation', icon: Users, color: 'from-purple-300 to-pink-300' },
-            { id: 'audit-trail', name: 'Audit Trail', icon: History, color: 'from-purple-300 to-pink-300' },
+            { 
+              id: 'approval-workflow', 
+              name: 'Approval Workflow', 
+              icon: GitBranch, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Visual workflow status and actions',
+              businessRules: ['Draft → Submitted → Approved → Exported', 'Reject returns to draft'],
+              developerNotes: ['Component: ApprovalWorkflow.tsx'],
+            },
+            { 
+              id: 'approval-delegation', 
+              name: 'Delegation', 
+              icon: Users, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Delegate approval authority during absence',
+              businessRules: ['Time-limited delegation', 'Audit trail preserved'],
+              developerNotes: ['Component: ApprovalDelegationModal.tsx'],
+            },
+            { 
+              id: 'audit-trail', 
+              name: 'Audit Trail', 
+              icon: History, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Complete history of all timesheet actions',
+              businessRules: ['Immutable records', 'Who, what, when captured'],
+              developerNotes: ['Component: TimesheetAuditTrail.tsx'],
+            },
           ]
         },
         {
@@ -388,11 +1019,45 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Compliance & Pay',
           icon: Shield,
           color: 'from-purple-400 to-pink-400',
+          description: 'Award compliance validation and pay calculations',
+          developerNotes: ['Uses awardInterpreter.ts for calculations'],
           children: [
-            { id: 'compliance-panel', name: 'Compliance Panel', icon: Shield, color: 'from-purple-300 to-pink-300' },
-            { id: 'compliance-scorecard', name: 'Compliance Scorecard', icon: Target, color: 'from-purple-300 to-pink-300' },
-            { id: 'overtime-breakdown', name: 'Overtime Breakdown', icon: Clock, color: 'from-purple-300 to-pink-300' },
-            { id: 'allowances-panel', name: 'Allowances Panel', icon: DollarSign, color: 'from-purple-300 to-pink-300' },
+            { 
+              id: 'compliance-panel', 
+              name: 'Compliance Panel', 
+              icon: Shield, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Compliance status and violation details',
+              businessRules: ['Block export if non-compliant', 'Override requires justification'],
+              developerNotes: ['Component: CompliancePanel.tsx'],
+            },
+            { 
+              id: 'compliance-scorecard', 
+              name: 'Compliance Scorecard', 
+              icon: Target, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Summary compliance metrics and trends',
+              businessRules: ['Track by department, manager', 'Flag recurring issues'],
+              developerNotes: ['Component: ComplianceScorecard.tsx'],
+            },
+            { 
+              id: 'overtime-breakdown', 
+              name: 'Overtime Breakdown', 
+              icon: Clock, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Detailed overtime calculations and rates',
+              businessRules: ['Weekly calculation', 'Show tier breakdowns'],
+              developerNotes: ['Component: OvertimeBreakdown.tsx'],
+            },
+            { 
+              id: 'allowances-panel', 
+              name: 'Allowances Panel', 
+              icon: DollarSign, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Applied allowances for the timesheet period',
+              businessRules: ['Auto-apply eligible allowances', 'Manual addition option'],
+              developerNotes: ['Component: AllowancesPanel.tsx'],
+            },
           ]
         },
         {
@@ -400,10 +1065,37 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Export & Analytics',
           icon: BarChart3,
           color: 'from-purple-400 to-pink-400',
+          description: 'Payroll export and workforce analytics',
+          apis: ['exportTimesheets', 'getTimesheetAnalytics'],
+          developerNotes: ['Export format configurable for payroll systems'],
           children: [
-            { id: 'export-dialog', name: 'Export Dialog', icon: Download, color: 'from-purple-300 to-pink-300' },
-            { id: 'timesheet-analytics', name: 'Analytics', icon: BarChart3, color: 'from-purple-300 to-pink-300' },
-            { id: 'notifications', name: 'Notification Center', icon: Bell, color: 'from-purple-300 to-pink-300' },
+            { 
+              id: 'export-dialog', 
+              name: 'Export Dialog', 
+              icon: Download, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Configure and execute payroll exports',
+              businessRules: ['Locks exported timesheets', 'Format: CSV, Excel, API'],
+              developerNotes: ['Component: ExportDialog.tsx'],
+            },
+            { 
+              id: 'timesheet-analytics', 
+              name: 'Analytics', 
+              icon: BarChart3, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Hours, costs, and trends analysis',
+              businessRules: ['Compare periods', 'Drill-down by department'],
+              developerNotes: ['Component: TimesheetAnalytics.tsx'],
+            },
+            { 
+              id: 'notifications', 
+              name: 'Notification Center', 
+              icon: Bell, 
+              color: 'from-purple-300 to-pink-300',
+              description: 'Timesheet reminders and alerts',
+              businessRules: ['Reminder at day 5', 'Escalate overdue'],
+              developerNotes: ['Component: NotificationCenter.tsx'],
+            },
           ]
         },
       ]
@@ -413,16 +1105,46 @@ const PRODUCT_MIND_MAP: MindMapNode = {
       name: 'Core Engines',
       icon: Zap,
       color: 'from-red-500 to-rose-500',
+      description: 'Background calculation and validation engines',
+      developerNotes: ['Pure functions in src/lib/', 'No direct UI - consumed by other modules'],
       children: [
         {
           id: 'calculation-engine',
           name: 'Calculation Engine',
           icon: DollarSign,
           color: 'from-green-400 to-lime-400',
+          description: 'Pay calculation based on awards, shifts, and staff rates',
+          apis: ['calculateShiftCost', 'calculateWeeklyCost', 'calculateRosterCost'],
+          businessRules: ['All currency in cents internally', 'Results cached with hash key'],
+          developerNotes: ['Core: awardInterpreter.ts', 'Forecasting: labourForecasting.ts'],
           children: [
-            { id: 'award-interpreter', name: 'Award Interpreter', icon: Award, color: 'from-green-300 to-lime-300' },
-            { id: 'labour-forecasting', name: 'Labour Forecasting', icon: BarChart3, color: 'from-green-300 to-lime-300' },
-            { id: 'shift-type-detection', name: 'Shift Type Detection', icon: Target, color: 'from-green-300 to-lime-300' },
+            { 
+              id: 'award-interpreter', 
+              name: 'Award Interpreter', 
+              icon: Award, 
+              color: 'from-green-300 to-lime-300',
+              description: 'Interprets award rules for pay calculations',
+              businessRules: ['Handles all award types', 'Compounds applicable rates'],
+              developerNotes: ['File: awardInterpreter.ts', 'Main function: calculateShiftCost()'],
+            },
+            { 
+              id: 'labour-forecasting', 
+              name: 'Labour Forecasting', 
+              icon: BarChart3, 
+              color: 'from-green-300 to-lime-300',
+              description: 'Projects future labor costs based on roster',
+              businessRules: ['Uses current award rates', 'Accounts for scheduled changes'],
+              developerNotes: ['File: labourForecasting.ts'],
+            },
+            { 
+              id: 'shift-type-detection', 
+              name: 'Shift Type Detection', 
+              icon: Target, 
+              color: 'from-green-300 to-lime-300',
+              description: 'Classifies shifts (standard, on-call, sleepover, etc.)',
+              businessRules: ['Determines applicable allowances', 'Affects penalty calculations'],
+              developerNotes: ['File: shiftTypeDetection.ts'],
+            },
           ]
         },
         {
@@ -430,10 +1152,38 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'Compliance Engine',
           icon: Shield,
           color: 'from-red-400 to-rose-400',
+          description: 'Validates shifts and timesheets against regulations',
+          apis: ['validateShift', 'checkRatioCompliance', 'detectConflicts'],
+          businessRules: ['Runs on every change', 'Error/warning/info severity levels'],
+          developerNotes: ['Core: complianceEngine.ts', 'Ratios: ratioCompliance.ts'],
           children: [
-            { id: 'conflict-detection', name: 'Conflict Detection', icon: AlertTriangle, color: 'from-red-300 to-rose-300' },
-            { id: 'ratio-compliance', name: 'Ratio Compliance', icon: Target, color: 'from-red-300 to-rose-300' },
-            { id: 'validation-schemas', name: 'Validation Schemas', icon: CheckCircle2, color: 'from-red-300 to-rose-300' },
+            { 
+              id: 'conflict-detection', 
+              name: 'Conflict Detection', 
+              icon: AlertTriangle, 
+              color: 'from-red-300 to-rose-300',
+              description: 'Detects scheduling conflicts and violations',
+              businessRules: ['Overlap detection', 'Minimum break requirements'],
+              developerNotes: ['File: shiftConflictDetection.ts'],
+            },
+            { 
+              id: 'ratio-compliance', 
+              name: 'Ratio Compliance', 
+              icon: Target, 
+              color: 'from-red-300 to-rose-300',
+              description: 'Validates staff-to-child ratios',
+              businessRules: ['Industry-specific ratios', 'Qualification requirements'],
+              developerNotes: ['File: ratioCompliance.ts'],
+            },
+            { 
+              id: 'validation-schemas', 
+              name: 'Validation Schemas', 
+              icon: CheckCircle2, 
+              color: 'from-red-300 to-rose-300',
+              description: 'Form and data validation rules',
+              businessRules: ['Zod schemas for all forms', 'Consistent error messages'],
+              developerNotes: ['File: validationSchemas.ts', 'Uses zod library'],
+            },
           ]
         },
       ]
@@ -443,16 +1193,45 @@ const PRODUCT_MIND_MAP: MindMapNode = {
       name: 'Integrations & Settings',
       icon: Settings,
       color: 'from-gray-500 to-slate-500',
+      description: 'System configuration, data management, and external integrations',
+      developerNotes: ['Settings accessible via /settings route'],
       children: [
         {
           id: 'data-management',
           name: 'Data Management',
           icon: Database,
           color: 'from-gray-400 to-slate-400',
+          description: 'Import, export, and configuration of system data',
+          apis: ['importDemandData', 'exportDemandData'],
+          developerNotes: ['Uses ETL pipeline: demandETL.ts'],
           children: [
-            { id: 'demand-settings', name: 'Demand Settings', icon: BarChart3, color: 'from-gray-300 to-slate-300' },
-            { id: 'demand-import', name: 'CSV Import/Export', icon: Upload, color: 'from-gray-300 to-slate-300' },
-            { id: 'industry-config', name: 'Industry Config', icon: Building2, color: 'from-gray-300 to-slate-300' },
+            { 
+              id: 'demand-settings', 
+              name: 'Demand Settings', 
+              icon: BarChart3, 
+              color: 'from-gray-300 to-slate-300',
+              description: 'Configure demand forecasting parameters',
+              businessRules: ['Historical data weighting', 'Seasonal adjustments'],
+              developerNotes: ['Component: DemandMasterSettingsModal.tsx'],
+            },
+            { 
+              id: 'demand-import', 
+              name: 'CSV Import/Export', 
+              icon: Upload, 
+              color: 'from-gray-300 to-slate-300',
+              description: 'Bulk import and export of demand data',
+              businessRules: ['Validate format on import', 'Backup before overwrite'],
+              developerNotes: ['Component: DemandCsvImportExport.tsx'],
+            },
+            { 
+              id: 'industry-config', 
+              name: 'Industry Config', 
+              icon: Building2, 
+              color: 'from-gray-300 to-slate-300',
+              description: 'Industry-specific configurations and rules',
+              businessRules: ['Childcare, healthcare, etc.', 'Determines default ratios'],
+              developerNotes: ['Component: IndustryConfigurationModal.tsx'],
+            },
           ]
         },
         {
@@ -460,9 +1239,27 @@ const PRODUCT_MIND_MAP: MindMapNode = {
           name: 'External Integrations',
           icon: Link2,
           color: 'from-gray-400 to-slate-400',
+          description: 'Connect with external systems and services',
+          developerNotes: ['API credentials stored securely'],
           children: [
-            { id: 'integration-manager', name: 'Integration Manager', icon: Settings, color: 'from-gray-300 to-slate-300' },
-            { id: 'on-call-settings', name: 'On-Call Settings', icon: Clock, color: 'from-gray-300 to-slate-300' },
+            { 
+              id: 'integration-manager', 
+              name: 'Integration Manager', 
+              icon: Settings, 
+              color: 'from-gray-300 to-slate-300',
+              description: 'Configure external system connections',
+              businessRules: ['Test connection before save', 'Retry logic for failures'],
+              developerNotes: ['Component: IntegrationManagerModal.tsx'],
+            },
+            { 
+              id: 'on-call-settings', 
+              name: 'On-Call Settings', 
+              icon: Clock, 
+              color: 'from-gray-300 to-slate-300',
+              description: 'On-call and sleepover configuration',
+              businessRules: ['Activation thresholds', 'Minimum payment rules'],
+              developerNotes: ['Component: OnCallSettingsEditor.tsx'],
+            },
           ]
         },
       ]
@@ -948,6 +1745,38 @@ function ModuleDetailsPanel({ module }: { module: ModuleNode }) {
           </div>
         )}
 
+        {/* Business Rules */}
+        <div>
+          <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-amber-600">
+            <Shield className="h-4 w-4" />
+            Business Rules ({module.businessRules.length})
+          </h4>
+          <div className="space-y-1.5">
+            {module.businessRules.map((rule, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-sm p-2 rounded bg-amber-50 dark:bg-amber-950/30">
+                <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                <span className="text-amber-900 dark:text-amber-100">{rule}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Developer Notes */}
+        <div>
+          <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-purple-600">
+            <FileText className="h-4 w-4" />
+            Developer Notes ({module.developerNotes.length})
+          </h4>
+          <div className="space-y-1.5">
+            {module.developerNotes.map((note, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-sm p-2 rounded bg-purple-50 dark:bg-purple-950/30">
+                <ChevronRight className="h-3 w-3 text-purple-500 mt-0.5 flex-shrink-0" />
+                <span className="text-purple-900 dark:text-purple-100 font-mono text-xs">{note}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* APIs */}
         <div>
           <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -956,8 +1785,8 @@ function ModuleDetailsPanel({ module }: { module: ModuleNode }) {
           </h4>
           <div className="space-y-1">
             {module.apis.map(api => (
-              <div key={api} className="flex items-center gap-2 text-sm font-mono text-xs">
-                <span className="text-muted-foreground">→</span>
+              <div key={api} className="flex items-center gap-2 text-sm font-mono text-xs p-1.5 rounded bg-muted/50">
+                <span className="text-primary">→</span>
                 {api}()
               </div>
             ))}
@@ -1071,6 +1900,7 @@ function FrequencyDot({ frequency }: { frequency: DataFlow['frequency'] }) {
 }
 
 function DataFlowList({ flows, modules }: { flows: DataFlow[], modules: ModuleNode[] }) {
+  const [expandedFlow, setExpandedFlow] = useState<string | null>(null);
   const getModule = (id: string) => modules.find(m => m.id === id);
 
   return (
@@ -1078,7 +1908,7 @@ function DataFlowList({ flows, modules }: { flows: DataFlow[], modules: ModuleNo
       <CardHeader>
         <CardTitle className="text-lg">All Data Flows</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Complete list of data dependencies between modules
+          Complete list of data dependencies between modules with business rules and technical notes
         </p>
       </CardHeader>
       <CardContent>
@@ -1086,38 +1916,121 @@ function DataFlowList({ flows, modules }: { flows: DataFlow[], modules: ModuleNo
           {flows.map(flow => {
             const fromModule = getModule(flow.from);
             const toModule = getModule(flow.to);
+            const isExpanded = expandedFlow === flow.id;
             
             if (!fromModule || !toModule) return null;
             
             return (
-              <div key={flow.id} className="flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-2 min-w-[140px]">
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${fromModule.color} flex items-center justify-center`}>
-                    <fromModule.icon className="h-4 w-4 text-white" />
+              <div 
+                key={flow.id} 
+                className={`rounded-lg border bg-card transition-all duration-200 ${isExpanded ? 'ring-2 ring-primary/50' : 'hover:bg-muted/50'}`}
+              >
+                <div 
+                  className="flex items-center gap-4 p-3 cursor-pointer"
+                  onClick={() => setExpandedFlow(isExpanded ? null : flow.id)}
+                >
+                  <div className="flex items-center gap-2 min-w-[140px]">
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${fromModule.color} flex items-center justify-center`}>
+                      <fromModule.icon className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-medium text-sm">{fromModule.name.replace(' Module', '').replace(' Engine', '')}</span>
                   </div>
-                  <span className="font-medium text-sm">{fromModule.name.replace(' Module', '').replace(' Engine', '')}</span>
-                </div>
-                
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <ArrowRight className="h-4 w-4" />
-                  <Badge variant="outline" className="font-mono text-xs">
-                    {flow.dataType}
-                  </Badge>
-                  <ArrowRight className="h-4 w-4" />
-                </div>
-                
-                <div className="flex items-center gap-2 min-w-[140px]">
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${toModule.color} flex items-center justify-center`}>
-                    <toModule.icon className="h-4 w-4 text-white" />
+                  
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <ArrowRight className="h-4 w-4" />
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {flow.dataType}
+                    </Badge>
+                    <ArrowRight className="h-4 w-4" />
                   </div>
-                  <span className="font-medium text-sm">{toModule.name.replace(' Module', '').replace(' Engine', '')}</span>
+                  
+                  <div className="flex items-center gap-2 min-w-[140px]">
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${toModule.color} flex items-center justify-center`}>
+                      <toModule.icon className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-medium text-sm">{toModule.name.replace(' Module', '').replace(' Engine', '')}</span>
+                  </div>
+                  
+                  <div className="flex-1 text-sm text-muted-foreground">
+                    {flow.description}
+                  </div>
+                  
+                  <FrequencyBadge frequency={flow.frequency} />
+                  
+                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
                 
-                <div className="flex-1 text-sm text-muted-foreground">
-                  {flow.description}
-                </div>
-                
-                <FrequencyBadge frequency={flow.frequency} />
+                {isExpanded && (
+                  <div className="px-3 pb-3 border-t pt-3 space-y-3">
+                    {/* Business Rules */}
+                    {flow.businessRules && flow.businessRules.length > 0 && (
+                      <div>
+                        <h5 className="font-semibold text-xs mb-2 flex items-center gap-1 text-amber-600">
+                          <Shield className="h-3 w-3" />
+                          Business Rules
+                        </h5>
+                        <div className="space-y-1">
+                          {flow.businessRules.map((rule, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-xs p-2 rounded bg-amber-50 dark:bg-amber-950/30">
+                              <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-amber-900 dark:text-amber-100">{rule}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Technical Notes */}
+                    {flow.technicalNotes && (
+                      <div>
+                        <h5 className="font-semibold text-xs mb-2 flex items-center gap-1 text-purple-600">
+                          <FileText className="h-3 w-3" />
+                          Developer Notes
+                        </h5>
+                        <div className="flex items-start gap-2 text-xs p-2 rounded bg-purple-50 dark:bg-purple-950/30">
+                          <ChevronRight className="h-3 w-3 text-purple-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-purple-900 dark:text-purple-100 font-mono">{flow.technicalNotes}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Source Module Info */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h5 className="font-semibold text-xs mb-2 flex items-center gap-1 text-green-600">
+                          <ArrowRight className="h-3 w-3" />
+                          Source: {fromModule.name}
+                        </h5>
+                        <div className="text-xs text-muted-foreground">
+                          <p className="mb-1">{fromModule.description}</p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {fromModule.apis.slice(0, 3).map(api => (
+                              <Badge key={api} variant="secondary" className="text-xs font-mono">
+                                {api}()
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <h5 className="font-semibold text-xs mb-2 flex items-center gap-1 text-blue-600">
+                          <ArrowRight className="h-3 w-3 rotate-180" />
+                          Target: {toModule.name}
+                        </h5>
+                        <div className="text-xs text-muted-foreground">
+                          <p className="mb-1">{toModule.description}</p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {toModule.apis.slice(0, 3).map(api => (
+                              <Badge key={api} variant="secondary" className="text-xs font-mono">
+                                {api}()
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
