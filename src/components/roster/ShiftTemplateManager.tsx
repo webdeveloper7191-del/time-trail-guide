@@ -16,8 +16,8 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
-import { ShiftTemplate, ShiftSpecialType, defaultShiftTemplates, shiftTypeLabels, shiftTypeDescriptions } from '@/types/roster';
-import { Clock, Plus, Edit2, Trash2, Save, X, Check, Phone, Moon, ArrowLeftRight, AlertTriangle, ChevronDown, Zap, Car, TrendingUp } from 'lucide-react';
+import { ShiftTemplate, ShiftSpecialType, QualificationType, defaultShiftTemplates, shiftTypeLabels, shiftTypeDescriptions, qualificationLabels, roleLabels, StaffMember } from '@/types/roster';
+import { Clock, Plus, Edit2, Trash2, Save, X, Check, Phone, Moon, ArrowLeftRight, AlertTriangle, ChevronDown, Zap, Car, TrendingUp, GraduationCap, Award } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -65,6 +65,14 @@ const shiftTypeIcons: Record<ShiftSpecialType, React.ReactNode> = {
   emergency: <Zap size={14} />,
 };
 
+const classificationLevels = [
+  'Level 2.1', 'Level 2.2', 'Level 2.3',
+  'Level 3.1', 'Level 3.2', 'Level 3.3',
+  'Level 4.1', 'Level 4.2', 'Level 4.3',
+  'Level 5.1', 'Level 5.2', 'Level 5.3',
+  'Level 6.1', 'Level 6.2', 'Level 6.3',
+];
+
 const getEmptyTemplate = (): Partial<ShiftTemplate> => ({
   name: '',
   startTime: '09:00',
@@ -72,6 +80,9 @@ const getEmptyTemplate = (): Partial<ShiftTemplate> => ({
   breakMinutes: 30,
   color: colorOptions[0],
   shiftType: 'regular',
+  requiredQualifications: [],
+  minimumClassification: undefined,
+  preferredRole: undefined,
   onCallSettings: undefined,
   sleepoverSettings: undefined,
   brokenShiftSettings: undefined,
@@ -108,6 +119,9 @@ export function ShiftTemplateManager({
       breakMinutes: newTemplate.breakMinutes || 30,
       color: newTemplate.color || colorOptions[0],
       shiftType: newTemplate.shiftType || 'regular',
+      requiredQualifications: newTemplate.requiredQualifications || [],
+      minimumClassification: newTemplate.minimumClassification,
+      preferredRole: newTemplate.preferredRole,
       onCallSettings: newTemplate.shiftType === 'on_call' ? newTemplate.onCallSettings : undefined,
       sleepoverSettings: newTemplate.shiftType === 'sleepover' ? newTemplate.sleepoverSettings : undefined,
       brokenShiftSettings: newTemplate.shiftType === 'broken' ? newTemplate.brokenShiftSettings : undefined,
@@ -723,8 +737,9 @@ export function ShiftTemplateManager({
                   {editingId === template.id ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <Tabs defaultValue="basic" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3 mb-4">
+                        <TabsList className="grid w-full grid-cols-4 mb-4">
                           <TabsTrigger value="basic">Basic</TabsTrigger>
+                          <TabsTrigger value="requirements">Requirements</TabsTrigger>
                           <TabsTrigger value="type">Shift Type</TabsTrigger>
                           <TabsTrigger value="appearance">Appearance</TabsTrigger>
                         </TabsList>
@@ -765,6 +780,102 @@ export function ShiftTemplateManager({
                               size="small"
                               inputProps={{ min: 0, max: 120 }}
                             />
+                          </Box>
+                        </TabsContent>
+
+                        <TabsContent value="requirements" className="space-y-4">
+                          {/* Qualifications */}
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <GraduationCap size={14} />
+                              Required Qualifications
+                            </Typography>
+                            <FormControl fullWidth size="small">
+                              <InputLabel>Qualifications</InputLabel>
+                              <Select
+                                multiple
+                                value={template.requiredQualifications || []}
+                                onChange={(e) => handleUpdate(template.id, { 
+                                  requiredQualifications: e.target.value as QualificationType[] 
+                                })}
+                                label="Qualifications"
+                                renderValue={(selected) => (
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {(selected as QualificationType[]).map((value) => (
+                                      <Chip key={value} label={qualificationLabels[value]} size="small" />
+                                    ))}
+                                  </Box>
+                                )}
+                              >
+                                {(Object.keys(qualificationLabels) as QualificationType[]).map((qual) => (
+                                  <MenuItem key={qual} value={qual}>
+                                    {qualificationLabels[qual]}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                              Staff must have all selected qualifications
+                            </Typography>
+                          </Box>
+
+                          {/* Classification Level */}
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Award size={14} />
+                              Minimum Classification
+                            </Typography>
+                            <FormControl fullWidth size="small">
+                              <InputLabel>Classification Level</InputLabel>
+                              <Select
+                                value={template.minimumClassification || ''}
+                                onChange={(e) => handleUpdate(template.id, { 
+                                  minimumClassification: e.target.value || undefined 
+                                })}
+                                label="Classification Level"
+                              >
+                                <MenuItem value="">
+                                  <em>No minimum</em>
+                                </MenuItem>
+                                {classificationLevels.map((level) => (
+                                  <MenuItem key={level} value={level}>
+                                    {level}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                              Minimum award classification required for this shift
+                            </Typography>
+                          </Box>
+
+                          {/* Preferred Role */}
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                              Preferred Role
+                            </Typography>
+                            <FormControl fullWidth size="small">
+                              <InputLabel>Role</InputLabel>
+                              <Select
+                                value={template.preferredRole || ''}
+                                onChange={(e) => handleUpdate(template.id, { 
+                                  preferredRole: (e.target.value || undefined) as StaffMember['role'] | undefined
+                                })}
+                                label="Role"
+                              >
+                                <MenuItem value="">
+                                  <em>Any role</em>
+                                </MenuItem>
+                                {(Object.keys(roleLabels) as StaffMember['role'][]).map((role) => (
+                                  <MenuItem key={role} value={role}>
+                                    {roleLabels[role]}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                              Preferred staff role for this shift type
+                            </Typography>
                           </Box>
                         </TabsContent>
 
@@ -817,12 +928,33 @@ export function ShiftTemplateManager({
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Box sx={{ height: 20, width: 20, borderRadius: '50%', flexShrink: 0, bgcolor: template.color }} />
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
                           <Typography variant="body2" fontWeight={600}>{template.name}</Typography>
                           {getShiftTypeChip(template.shiftType)}
+                          {template.requiredQualifications && template.requiredQualifications.length > 0 && (
+                            <Chip 
+                              size="small" 
+                              icon={<GraduationCap size={12} />}
+                              label={`${template.requiredQualifications.length} qual${template.requiredQualifications.length > 1 ? 's' : ''}`} 
+                              variant="outlined"
+                              color="info"
+                              sx={{ fontSize: '0.7rem' }}
+                            />
+                          )}
+                          {template.minimumClassification && (
+                            <Chip 
+                              size="small" 
+                              icon={<Award size={12} />}
+                              label={template.minimumClassification} 
+                              variant="outlined"
+                              color="secondary"
+                              sx={{ fontSize: '0.7rem' }}
+                            />
+                          )}
                         </Box>
                         <Typography variant="caption" color="text.secondary">
                           {template.startTime} - {template.endTime} • {template.breakMinutes}min break
+                          {template.preferredRole && ` • ${roleLabels[template.preferredRole]}`}
                           {template.higherDutiesClassification && ` • HD: ${template.higherDutiesClassification}`}
                           {template.isRemoteLocation && ` • Remote`}
                         </Typography>
@@ -852,8 +984,9 @@ export function ShiftTemplateManager({
                 >
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Tabs defaultValue="basic" className="w-full">
-                      <TabsList className="grid w-full grid-cols-3 mb-4">
+                      <TabsList className="grid w-full grid-cols-4 mb-4">
                         <TabsTrigger value="basic">Basic</TabsTrigger>
+                        <TabsTrigger value="requirements">Requirements</TabsTrigger>
                         <TabsTrigger value="type">Shift Type</TabsTrigger>
                         <TabsTrigger value="appearance">Appearance</TabsTrigger>
                       </TabsList>
@@ -896,6 +1029,105 @@ export function ShiftTemplateManager({
                             size="small"
                             inputProps={{ min: 0, max: 120 }}
                           />
+                        </Box>
+                      </TabsContent>
+
+                      <TabsContent value="requirements" className="space-y-4">
+                        {/* Qualifications */}
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <GraduationCap size={14} />
+                            Required Qualifications
+                          </Typography>
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Qualifications</InputLabel>
+                            <Select
+                              multiple
+                              value={newTemplate.requiredQualifications || []}
+                              onChange={(e) => setNewTemplate(prev => ({ 
+                                ...prev, 
+                                requiredQualifications: e.target.value as QualificationType[] 
+                              }))}
+                              label="Qualifications"
+                              renderValue={(selected) => (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                  {(selected as QualificationType[]).map((value) => (
+                                    <Chip key={value} label={qualificationLabels[value]} size="small" />
+                                  ))}
+                                </Box>
+                              )}
+                            >
+                              {(Object.keys(qualificationLabels) as QualificationType[]).map((qual) => (
+                                <MenuItem key={qual} value={qual}>
+                                  {qualificationLabels[qual]}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                            Staff must have all selected qualifications
+                          </Typography>
+                        </Box>
+
+                        {/* Classification Level */}
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Award size={14} />
+                            Minimum Classification
+                          </Typography>
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Classification Level</InputLabel>
+                            <Select
+                              value={newTemplate.minimumClassification || ''}
+                              onChange={(e) => setNewTemplate(prev => ({ 
+                                ...prev, 
+                                minimumClassification: e.target.value || undefined 
+                              }))}
+                              label="Classification Level"
+                            >
+                              <MenuItem value="">
+                                <em>No minimum</em>
+                              </MenuItem>
+                              {classificationLevels.map((level) => (
+                                <MenuItem key={level} value={level}>
+                                  {level}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                            Minimum award classification required for this shift
+                          </Typography>
+                        </Box>
+
+                        {/* Preferred Role */}
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                            Preferred Role
+                          </Typography>
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Role</InputLabel>
+                            <Select
+                              value={newTemplate.preferredRole || ''}
+                              onChange={(e) => setNewTemplate(prev => ({ 
+                                ...prev, 
+                                preferredRole: (e.target.value || undefined) as StaffMember['role'] | undefined
+                              }))}
+                              label="Role"
+                            >
+                              <MenuItem value="">
+                                <em>Any role</em>
+                              </MenuItem>
+                              {(Object.keys(roleLabels) as StaffMember['role'][]).map((role) => (
+                                <MenuItem key={role} value={role}>
+                                  {roleLabels[role]}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                            Preferred staff role for this shift type
+                          </Typography>
                         </Box>
                       </TabsContent>
 

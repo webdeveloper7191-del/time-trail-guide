@@ -42,6 +42,11 @@ export interface ShiftTemplate {
   // Special shift type configuration
   shiftType?: ShiftSpecialType;
   
+  // Qualification and classification requirements
+  requiredQualifications?: QualificationType[];
+  minimumClassification?: string; // e.g. "Level 3.1", "Level 4.2"
+  preferredRole?: StaffMember['role'];
+  
   // On-call template settings
   onCallSettings?: {
     defaultStartTime?: string;
