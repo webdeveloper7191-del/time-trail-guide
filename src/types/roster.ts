@@ -59,6 +59,13 @@ export interface ShiftTemplate {
   sleepoverSettings?: {
     bedtimeStart?: string;
     bedtimeEnd?: string;
+    // Pay configuration
+    flatRate?: number;
+    disturbanceRatePerHour?: number;
+    disturbanceMinimumHours?: number;
+    disturbanceRateMultiplier?: number;
+    weekendFlatRate?: number;
+    publicHolidayFlatRate?: number;
   };
   
   // Broken/split shift settings
@@ -66,6 +73,11 @@ export interface ShiftTemplate {
     firstShiftEnd?: string;
     secondShiftStart?: string;
     unpaidGapMinutes?: number;
+    // Pay configuration
+    allowanceRate?: number;
+    minimumGapMinutes?: number;
+    maximumGapMinutes?: number;
+    gapBonusRate?: number;
   };
   
   // Higher duties preset

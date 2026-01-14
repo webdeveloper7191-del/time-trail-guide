@@ -58,6 +58,24 @@ export interface OnCallConfiguration {
   maximumCallbacksPerPeriod?: number; // Maximum separate callbacks in one on-call period
 }
 
+// Sleepover specific configuration for award settings
+export interface SleepoverConfiguration {
+  flatRate: number; // Flat payment for sleepover shift
+  disturbanceRatePerHour: number; // Hourly rate when disturbed
+  disturbanceMinimumHours: number; // Minimum hours paid for any disturbance
+  disturbanceRateMultiplier: number; // Multiplier (e.g., 1.5 for overtime rates)
+  weekendFlatRate?: number; // Different flat rate for weekends
+  publicHolidayFlatRate?: number; // Different flat rate for public holidays
+}
+
+// Broken/split shift configuration for award settings
+export interface BrokenShiftConfiguration {
+  allowanceRate: number; // Flat allowance for working a broken shift
+  minimumGapMinutes: number; // Minimum unpaid gap to qualify (typically 60+ mins)
+  maximumGapMinutes?: number; // Maximum gap before it's treated differently
+  gapBonusRate?: number; // Additional rate per hour of gap over minimum
+}
+
 // Conditions that trigger automatic allowance application
 export interface AllowanceTriggerConditions {
   shiftTypes?: ('on_call' | 'sleepover' | 'broken' | 'recall' | 'emergency')[];
@@ -353,6 +371,75 @@ export const DEFAULT_ON_CALL_CONFIGS: Record<AwardType, OnCallConfiguration> = {
     callbackMinimumHours: 2,
     callbackRateMultiplier: 1.5,
     publicHolidayStandbyMultiplier: 2.0,
+  },
+};
+
+// Default sleepover configuration for different awards
+export const DEFAULT_SLEEPOVER_CONFIGS: Record<AwardType, SleepoverConfiguration> = {
+  children_services: {
+    flatRate: 69.85,
+    disturbanceRatePerHour: 45.50,
+    disturbanceMinimumHours: 1,
+    disturbanceRateMultiplier: 1.5,
+    weekendFlatRate: 87.31,
+    publicHolidayFlatRate: 139.70,
+  },
+  healthcare: {
+    flatRate: 82.50,
+    disturbanceRatePerHour: 52.00,
+    disturbanceMinimumHours: 1,
+    disturbanceRateMultiplier: 1.5,
+    weekendFlatRate: 103.13,
+    publicHolidayFlatRate: 165.00,
+  },
+  hospitality: {
+    flatRate: 55.00,
+    disturbanceRatePerHour: 38.00,
+    disturbanceMinimumHours: 1,
+    disturbanceRateMultiplier: 1.5,
+  },
+  retail: {
+    flatRate: 50.00,
+    disturbanceRatePerHour: 35.00,
+    disturbanceMinimumHours: 1,
+    disturbanceRateMultiplier: 1.5,
+  },
+  general: {
+    flatRate: 65.00,
+    disturbanceRatePerHour: 42.00,
+    disturbanceMinimumHours: 1,
+    disturbanceRateMultiplier: 1.5,
+  },
+};
+
+// Default broken shift configuration for different awards
+export const DEFAULT_BROKEN_SHIFT_CONFIGS: Record<AwardType, BrokenShiftConfiguration> = {
+  children_services: {
+    allowanceRate: 18.46,
+    minimumGapMinutes: 60,
+    maximumGapMinutes: 480,
+    gapBonusRate: 2.50,
+  },
+  healthcare: {
+    allowanceRate: 22.00,
+    minimumGapMinutes: 60,
+    maximumGapMinutes: 480,
+    gapBonusRate: 3.00,
+  },
+  hospitality: {
+    allowanceRate: 15.00,
+    minimumGapMinutes: 60,
+    maximumGapMinutes: 360,
+  },
+  retail: {
+    allowanceRate: 14.00,
+    minimumGapMinutes: 60,
+    maximumGapMinutes: 360,
+  },
+  general: {
+    allowanceRate: 16.00,
+    minimumGapMinutes: 60,
+    maximumGapMinutes: 480,
   },
 };
 
