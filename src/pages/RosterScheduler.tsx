@@ -109,6 +109,7 @@ import {
   TrendingUp,
   Plug,
   Flag,
+  Users,
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
 
@@ -890,6 +891,28 @@ export default function RosterScheduler() {
         onGenerateAI={handleGenerateAIShifts}
         isGenerating={isGenerating}
       />
+
+      {/* Mobile FAB for Staff Panel */}
+      {isMobile && (
+        <Button
+          onClick={() => setShowMobileStaffPanel(true)}
+          sx={{
+            position: 'fixed',
+            bottom: 80,
+            right: 16,
+            zIndex: 40,
+            borderRadius: '50%',
+            minWidth: 56,
+            width: 56,
+            height: 56,
+            boxShadow: 3,
+          }}
+          variant="contained"
+          color="primary"
+        >
+          <Users className="h-6 w-6" />
+        </Button>
+      )}
 
       {/* Desktop Header - Material Style */}
       <Box component="header" sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0, boxShadow: 1, display: { xs: 'none', md: 'block' } }}>
