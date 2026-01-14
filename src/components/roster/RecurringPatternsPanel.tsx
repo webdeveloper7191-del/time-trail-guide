@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,8 @@ import {
   GeneratedShift,
   recurrencePatternLabels,
 } from '@/types/advancedRoster';
+import { Shift, StaffMember, Room, Centre } from '@/types/roster';
+import { generateShiftsFromPattern, generateBulkShiftsFromPatterns, convertGeneratedShiftsToRosterShifts } from '@/lib/shiftGenerator';
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Sun' },
@@ -45,7 +47,7 @@ const DAYS_OF_WEEK = [
   { value: 6, label: 'Sat' },
 ];
 
-// Mock data
+// Mock data for initial patterns
 const mockPatterns: RecurringShiftPattern[] = [
   {
     id: 'pattern-1',
@@ -119,17 +121,27 @@ const mockRoles = [
   { id: 'cleaning', name: 'Cleaner' },
 ];
 
-const mockCentres = [
-  { id: 'centre-1', name: 'Sydney CBD Centre' },
-  { id: 'centre-2', name: 'Melbourne Central' },
-  { id: 'centre-3', name: 'Brisbane North' },
-];
+interface RecurringPatternsPanelProps {
+  centreId?: string;
+  centre?: Centre;
+  staff?: StaffMember[];
+  existingShifts?: Shift[];
+  onGenerateShifts?: (shifts: Omit<Shift, 'id'>[]) => void;
+}
 
-export function RecurringPatternsPanel() {
+export function RecurringPatternsPanel({ 
+  centreId = 'centre-1',
+  centre,
+  staff = [],
+  existingShifts = [],
+  onGenerateShifts,
+}: RecurringPatternsPanelProps) {
   const [patterns, setPatterns] = useState(mockPatterns);
   const [showCreatePanel, setShowCreatePanel] = useState(false);
   const [selectedPattern, setSelectedPattern] = useState<RecurringShiftPattern | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [weeksToGenerate, setWeeksToGenerate] = useState(4);
+  const [lastGeneratedCount, setLastGeneratedCount] = useState(0);
 
   // Form state
   const [newPattern, setNewPattern] = useState<Partial<RecurringShiftPattern>>({
@@ -202,22 +214,66 @@ export function RecurringPatternsPanel() {
     toast.success('Pattern deleted');
   };
 
-  const handleGenerateShifts = async (patternId: string, weeks: number = 4) => {
+  const handleGenerateShifts = async (patternId: string, weeks: number = weeksToGenerate) => {
     setIsGenerating(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const pattern = patterns.find(p => p.id === patternId);
+    if (!pattern) {
+      setIsGenerating(false);
+      return;
+    }
+    
+    const defaultRoomId = centre?.rooms?.[0]?.id || 'room-1';
+    const generated = generateShiftsFromPattern(pattern, new Date(), weeks, existingShifts);
+    const shifts = convertGeneratedShiftsToRosterShifts(generated, defaultRoomId);
+    
+    if (onGenerateShifts && shifts.length > 0) {
+      onGenerateShifts(shifts);
+      setLastGeneratedCount(shifts.length);
+      toast.success(`Generated ${shifts.length} shifts from "${pattern.name}"`, {
+        description: 'Shifts have been added to the roster as drafts',
+      });
+    } else if (shifts.length === 0) {
+      toast.info('No new shifts to generate', {
+        description: 'All shifts for this period already exist',
+      });
+    } else {
+      // Demo mode - no callback provided
+      toast.success(`Would generate ${shifts.length} shifts`, {
+        description: 'Connect the panel to enable real generation',
+      });
+    }
+    
     setIsGenerating(false);
-    toast.success(`Generated ${weeks * 5} shifts`, {
-      description: 'Shifts have been added to the roster',
-    });
   };
 
   const handleBulkGenerate = async () => {
     setIsGenerating(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const defaultRoomId = centre?.rooms?.[0]?.id || 'room-1';
+    const { shifts, summary } = generateBulkShiftsFromPatterns(
+      patterns,
+      new Date(),
+      weeksToGenerate,
+      existingShifts,
+      defaultRoomId
+    );
+    
+    if (onGenerateShifts && shifts.length > 0) {
+      onGenerateShifts(shifts);
+      setLastGeneratedCount(shifts.length);
+      toast.success(`Bulk generation complete - ${shifts.length} shifts created`, {
+        description: `From ${summary.filter(s => s.count > 0).length} active patterns`,
+      });
+    } else if (shifts.length === 0) {
+      toast.info('No new shifts to generate');
+    } else {
+      toast.success(`Would generate ${shifts.length} shifts`, {
+        description: 'Connect the panel to enable real generation',
+      });
+    }
+    
     setIsGenerating(false);
-    toast.success('Bulk generation complete', {
-      description: `Generated shifts for ${patterns.filter(p => p.isActive).length} active patterns`,
-    });
   };
 
   const getDaysLabel = (days: number[] | undefined) => {
@@ -555,11 +611,15 @@ export function RecurringPatternsPanel() {
                   <SelectValue placeholder="Select centre" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockCentres.map(centre => (
-                    <SelectItem key={centre.id} value={centre.id}>
-                      {centre.name}
-                    </SelectItem>
-                  ))}
+                  {centre ? (
+                    <SelectItem value={centre.id}>{centre.name}</SelectItem>
+                  ) : (
+                    <>
+                      <SelectItem value="centre-1">Sydney CBD Centre</SelectItem>
+                      <SelectItem value="centre-2">Melbourne Central</SelectItem>
+                      <SelectItem value="centre-3">Brisbane North</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

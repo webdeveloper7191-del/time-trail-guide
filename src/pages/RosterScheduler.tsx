@@ -1869,7 +1869,19 @@ export default function RosterScheduler() {
             </SheetTitle>
           </SheetHeader>
           <div className="mt-4">
-            <RecurringPatternsPanel />
+            <RecurringPatternsPanel 
+              centreId={selectedCentreId}
+              centre={selectedCentre}
+              staff={allStaff}
+              existingShifts={shifts}
+              onGenerateShifts={(newShifts) => {
+                const shiftsWithIds = newShifts.map((s, idx) => ({
+                  ...s,
+                  id: `shift-pattern-${Date.now()}-${idx}`,
+                }));
+                setShifts(prev => [...prev, ...shiftsWithIds], `Generated ${shiftsWithIds.length} recurring shifts`, 'bulk');
+              }}
+            />
           </div>
         </SheetContent>
       </Sheet>
@@ -1897,7 +1909,12 @@ export default function RosterScheduler() {
             </SheetTitle>
           </SheetHeader>
           <div className="mt-4">
-            <SkillMatrixPanel />
+            <SkillMatrixPanel 
+              centreId={selectedCentreId}
+              onAssignStaff={(staffId, shiftId) => {
+                toast.success(`Staff assigned to shift`);
+              }}
+            />
           </div>
         </SheetContent>
       </Sheet>
@@ -1911,7 +1928,10 @@ export default function RosterScheduler() {
             </SheetTitle>
           </SheetHeader>
           <div className="mt-4">
-            <FatigueManagementPanel />
+            <FatigueManagementPanel 
+              staff={allStaff}
+              shifts={shifts}
+            />
           </div>
         </SheetContent>
       </Sheet>

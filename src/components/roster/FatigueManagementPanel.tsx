@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,8 @@ import {
   FatigueRule,
   fatigueRiskColors,
 } from '@/types/advancedRoster';
+import { StaffMember, Shift } from '@/types/roster';
+import { calculateAllFatigueScores, defaultFatigueRules } from '@/lib/fatigueCalculator';
 
 // Mock data
 const mockFatigueScores: FatigueScore[] = [
@@ -169,7 +171,12 @@ const mockRules: FatigueRule[] = [
   },
 ];
 
-export function FatigueManagementPanel() {
+interface FatigueManagementPanelProps {
+  staff?: StaffMember[];
+  shifts?: Shift[];
+}
+
+export function FatigueManagementPanel({ staff, shifts }: FatigueManagementPanelProps) {
   const [scores] = useState(mockFatigueScores);
   const [violations, setViolations] = useState(mockViolations);
   const [selectedStaff, setSelectedStaff] = useState<FatigueScore | null>(null);
