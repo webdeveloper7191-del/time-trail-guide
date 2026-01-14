@@ -92,20 +92,25 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
     
     const anchor = side === 'left' ? 'left' : side === 'top' ? 'top' : side === 'bottom' ? 'bottom' : 'right';
     
-    // Parse width from className
+    // Parse width from className (align to Tailwind's default max-w scale)
     const getWidthFromClassName = (className: string | undefined) => {
       // Wider defaults for content-heavy side panels
-      if (!className) return { xs: '100%', sm: '640px', md: '760px' };
+      if (!className) return { xs: '100%', sm: 'min(720px, 95vw)' };
 
-      if (className.includes('max-w-5xl')) return { xs: '100%', sm: '1120px', md: '1280px' };
-      if (className.includes('max-w-4xl')) return { xs: '100%', sm: '960px', md: '1120px' };
-      if (className.includes('max-w-3xl')) return { xs: '100%', sm: '820px', md: '980px' };
-      if (className.includes('max-w-2xl')) return { xs: '100%', sm: '720px', md: '860px' };
-      if (className.includes('max-w-xl')) return { xs: '100%', sm: '640px', md: '760px' };
-      if (className.includes('max-w-lg')) return { xs: '100%', sm: '560px', md: '680px' };
-      if (className.includes('max-w-md')) return { xs: '100%', sm: '480px', md: '560px' };
+      // Tailwind defaults (px):
+      //  sm 384, md 448, lg 512, xl 576, 2xl 672, 3xl 768, 4xl 896, 5xl 1024, 6xl 1152, 7xl 1280
+      if (className.includes('max-w-7xl')) return { xs: '100%', sm: 'min(1280px, 95vw)' };
+      if (className.includes('max-w-6xl')) return { xs: '100%', sm: 'min(1152px, 95vw)' };
+      if (className.includes('max-w-5xl')) return { xs: '100%', sm: 'min(1024px, 95vw)' };
+      if (className.includes('max-w-4xl')) return { xs: '100%', sm: 'min(896px, 95vw)' };
+      if (className.includes('max-w-3xl')) return { xs: '100%', sm: 'min(768px, 95vw)' };
+      if (className.includes('max-w-2xl')) return { xs: '100%', sm: 'min(672px, 95vw)' };
+      if (className.includes('max-w-xl')) return { xs: '100%', sm: 'min(576px, 95vw)' };
+      if (className.includes('max-w-lg')) return { xs: '100%', sm: 'min(512px, 95vw)' };
+      if (className.includes('max-w-md')) return { xs: '100%', sm: 'min(448px, 95vw)' };
+      if (className.includes('max-w-sm')) return { xs: '100%', sm: 'min(384px, 95vw)' };
 
-      return { xs: '100%', sm: '640px', md: '760px' };
+      return { xs: '100%', sm: 'min(720px, 95vw)' };
     };
     
     const widthConfig = side === 'left' || side === 'right' 
@@ -142,7 +147,11 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
       >
         <div
           ref={ref}
-          className={cn("relative h-full flex flex-col overflow-hidden", className)}
+          className={cn(
+            // Default padding for all sheets; can be overridden with e.g. "!p-0"
+            "relative h-full w-full flex flex-col overflow-hidden box-border p-6",
+            className
+          )}
           style={style}
           {...props}
         >
