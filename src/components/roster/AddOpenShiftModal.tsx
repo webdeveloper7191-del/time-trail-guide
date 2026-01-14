@@ -20,6 +20,12 @@ import {
   AccordionSummary,
   AccordionDetails,
   Alert,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
+  ToggleButton,
+  ToggleButtonGroup,
+  Badge,
 } from '@mui/material';
 import { 
   Room, 
@@ -35,11 +41,12 @@ import {
   StaffMember,
   defaultShiftTemplates,
 } from '@/types/roster';
-import { Plus, X, AlertCircle, Clock, Moon, Phone, Split, ChevronDown, FileText, Car, Award } from 'lucide-react';
+import { Plus, X, AlertCircle, Clock, Moon, Phone, Split, ChevronDown, FileText, Car, Award, Layers, Calendar } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { openShiftSchema, OpenShiftFormValues } from '@/lib/validationSchemas';
 import { toast } from 'sonner';
+import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
 
 interface AddOpenShiftModalProps {
   open: boolean;
@@ -48,9 +55,12 @@ interface AddOpenShiftModalProps {
   centreId: string;
   selectedDate?: string;
   selectedRoomId?: string;
-  onAdd: (openShift: Omit<OpenShift, 'id'>) => void;
+  onAdd: (openShifts: Omit<OpenShift, 'id'>[]) => void;
   shiftTemplates?: ShiftTemplate[];
+  availableDates?: Date[];
 }
+
+type CreateMode = 'single' | 'bulk';
 
 const shiftTypeIcons: Record<ShiftSpecialType, React.ReactNode> = {
   regular: <Clock size={16} />,
@@ -78,11 +88,26 @@ export function AddOpenShiftModal({
   selectedRoomId,
   onAdd,
   shiftTemplates = defaultShiftTemplates,
+  availableDates,
 }: AddOpenShiftModalProps) {
+  const [createMode, setCreateMode] = useState<CreateMode>('single');
   const [selectedQualifications, setSelectedQualifications] = useState<QualificationType[]>([]);
   const [selectedAllowances, setSelectedAllowances] = useState<string[]>([]);
   const [useTemplate, setUseTemplate] = useState(true);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  
+  // Bulk mode selections
+  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+
+  // Generate default dates for the next 2 weeks if not provided
+  const dateOptions = useMemo(() => {
+    if (availableDates && availableDates.length > 0) {
+      return availableDates;
+    }
+    const start = startOfWeek(new Date(), { weekStartsOn: 1 });
+    return eachDayOfInterval({ start, end: addDays(start, 13) });
+  }, [availableDates]);
 
   const allTemplates = useMemo(() => {
     const custom = shiftTemplates.filter(t => !defaultShiftTemplates.some(d => d.id === t.id));
@@ -149,6 +174,9 @@ export function AddOpenShiftModal({
       setSelectedAllowances([]);
       setSelectedTemplateId('');
       setUseTemplate(true);
+      setCreateMode('single');
+      setSelectedRoomIds(selectedRoomId ? [selectedRoomId] : []);
+      setSelectedDates(selectedDate ? [selectedDate] : []);
     }
   }, [open, reset, centreId, selectedRoomId, selectedDate]);
 
@@ -229,11 +257,11 @@ export function AddOpenShiftModal({
     setValue('selectedAllowances', newAllowances);
   };
 
-  const onSubmit = (data: OpenShiftFormValues) => {
+  const buildOpenShift = (data: OpenShiftFormValues, roomId: string, date: string): Omit<OpenShift, 'id'> => {
     const openShift: Omit<OpenShift, 'id'> = {
       centreId: data.centreId,
-      roomId: data.roomId,
-      date: data.date,
+      roomId,
+      date,
       startTime: data.startTime,
       endTime: data.endTime,
       requiredQualifications: selectedQualifications,
@@ -274,8 +302,30 @@ export function AddOpenShiftModal({
       };
     }
 
-    onAdd(openShift);
-    toast.success('Open shift added');
+    return openShift;
+  };
+
+  const onSubmit = (data: OpenShiftFormValues) => {
+    let openShifts: Omit<OpenShift, 'id'>[] = [];
+
+    if (createMode === 'single') {
+      openShifts = [buildOpenShift(data, data.roomId, data.date)];
+    } else {
+      // Bulk mode - create shifts for all selected room/date combinations
+      if (selectedRoomIds.length === 0 || selectedDates.length === 0) {
+        toast.error('Please select at least one room and one date');
+        return;
+      }
+
+      for (const roomId of selectedRoomIds) {
+        for (const date of selectedDates) {
+          openShifts.push(buildOpenShift(data, roomId, date));
+        }
+      }
+    }
+
+    onAdd(openShifts);
+    toast.success(`Created ${openShifts.length} open shift${openShifts.length > 1 ? 's' : ''}`);
     handleClose();
   };
 
@@ -284,6 +334,9 @@ export function AddOpenShiftModal({
     setSelectedQualifications([]);
     setSelectedAllowances([]);
     setSelectedTemplateId('');
+    setSelectedRoomIds([]);
+    setSelectedDates([]);
+    setCreateMode('single');
     onClose();
   };
 
@@ -294,10 +347,52 @@ export function AddOpenShiftModal({
     critical: { bgcolor: 'error.light', color: 'error.dark' },
   };
 
+  const bulkCount = selectedRoomIds.length * selectedDates.length;
+
   const actions: OffCanvasAction[] = [
     { label: 'Cancel', onClick: handleClose, variant: 'outlined' },
-    { label: 'Add Open Shift', onClick: handleSubmit(onSubmit), variant: 'primary', disabled: !isValid },
+    { 
+      label: createMode === 'bulk' && bulkCount > 1 
+        ? `Create ${bulkCount} Open Shifts` 
+        : 'Add Open Shift', 
+      onClick: handleSubmit(onSubmit), 
+      variant: 'primary', 
+      disabled: createMode === 'single' ? !isValid : (selectedRoomIds.length === 0 || selectedDates.length === 0)
+    },
   ];
+
+  const handleRoomToggle = (roomId: string) => {
+    setSelectedRoomIds(prev => 
+      prev.includes(roomId) 
+        ? prev.filter(id => id !== roomId)
+        : [...prev, roomId]
+    );
+  };
+
+  const handleDateToggle = (date: string) => {
+    setSelectedDates(prev => 
+      prev.includes(date)
+        ? prev.filter(d => d !== date)
+        : [...prev, date]
+    );
+  };
+
+  const handleSelectAllRooms = () => {
+    if (selectedRoomIds.length === rooms.length) {
+      setSelectedRoomIds([]);
+    } else {
+      setSelectedRoomIds(rooms.map(r => r.id));
+    }
+  };
+
+  const handleSelectAllDates = () => {
+    const allDateStrings = dateOptions.map(d => format(d, 'yyyy-MM-dd'));
+    if (selectedDates.length === allDateStrings.length) {
+      setSelectedDates([]);
+    } else {
+      setSelectedDates(allDateStrings);
+    }
+  };
 
   const renderShiftTypeSettings = () => {
     switch (shiftType) {
@@ -480,8 +575,8 @@ export function AddOpenShiftModal({
       <form onSubmit={handleSubmit(onSubmit)}>
         <PrimaryOffCanvas
           title="Add Open Shift"
-          description="Create a new open shift that needs to be filled"
-          width="550px"
+          description="Create open shifts that need to be filled"
+          width="600px"
           open={open}
           onClose={handleClose}
           actions={actions}
@@ -489,6 +584,31 @@ export function AddOpenShiftModal({
         >
           <ScrollArea className="h-[calc(100vh-280px)]">
             <Stack spacing={3}>
+              {/* Create Mode Toggle */}
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Creation Mode
+                </Typography>
+                <ToggleButtonGroup
+                  value={createMode}
+                  exclusive
+                  onChange={(_, value) => value && setCreateMode(value)}
+                  size="small"
+                  fullWidth
+                >
+                  <ToggleButton value="single" sx={{ flex: 1 }}>
+                    <Clock size={16} style={{ marginRight: 8 }} />
+                    Single Shift
+                  </ToggleButton>
+                  <ToggleButton value="bulk" sx={{ flex: 1 }}>
+                    <Badge badgeContent={bulkCount > 0 ? bulkCount : undefined} color="primary">
+                      <Layers size={16} style={{ marginRight: 8 }} />
+                    </Badge>
+                    Bulk Create
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+
               {/* Template Selection */}
               <Box>
                 <FormControlLabel
@@ -543,52 +663,145 @@ export function AddOpenShiftModal({
 
               <Divider />
 
-              {/* Room Selection */}
-              <Controller
-                name="roomId"
-                control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth size="small" error={!!errors.roomId}>
-                    <InputLabel>Room / Area *</InputLabel>
-                    <Select
-                      {...field}
-                      label="Room / Area *"
-                    >
-                      {rooms.map((room) => (
-                        <MenuItem key={room.id} value={room.id}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {/* Room Selection - Different UI for single vs bulk */}
+              {createMode === 'single' ? (
+                <Controller
+                  name="roomId"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth size="small" error={!!errors.roomId}>
+                      <InputLabel>Room / Area *</InputLabel>
+                      <Select
+                        {...field}
+                        label="Room / Area *"
+                      >
+                        {rooms.map((room) => (
+                          <MenuItem key={room.id} value={room.id}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <span>{room.name}</span>
+                              <Typography variant="caption" color="text.secondary">
+                                {ageGroupLabels[room.ageGroup]}
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {errors.roomId && (
+                        <FormHelperText>{errors.roomId.message}</FormHelperText>
+                      )}
+                    </FormControl>
+                  )}
+                />
+              ) : (
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Select Rooms * ({selectedRoomIds.length} selected)
+                    </Typography>
+                    <Button size="small" onClick={handleSelectAllRooms}>
+                      {selectedRoomIds.length === rooms.length ? 'Deselect All' : 'Select All'}
+                    </Button>
+                  </Box>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, maxHeight: 120, overflow: 'auto' }}>
+                    {rooms.map((room) => (
+                      <Chip
+                        key={room.id}
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <span>{room.name}</span>
                             <Typography variant="caption" color="text.secondary">
-                              {ageGroupLabels[room.ageGroup]}
+                              ({ageGroupLabels[room.ageGroup]})
                             </Typography>
                           </Box>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.roomId && (
-                      <FormHelperText>{errors.roomId.message}</FormHelperText>
-                    )}
-                  </FormControl>
-                )}
-              />
+                        }
+                        onClick={() => handleRoomToggle(room.id)}
+                        color={selectedRoomIds.includes(room.id) ? 'primary' : 'default'}
+                        variant={selectedRoomIds.includes(room.id) ? 'filled' : 'outlined'}
+                        size="small"
+                      />
+                    ))}
+                  </Box>
+                  {selectedRoomIds.length === 0 && (
+                    <FormHelperText error>Please select at least one room</FormHelperText>
+                  )}
+                </Box>
+              )}
 
-              {/* Date */}
-              <Controller
-                name="date"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Date *"
-                    type="date"
-                    size="small"
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                    error={!!errors.date}
-                    helperText={errors.date?.message}
-                  />
-                )}
-              />
+              {/* Date Selection - Different UI for single vs bulk */}
+              {createMode === 'single' ? (
+                <Controller
+                  name="date"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Date *"
+                      type="date"
+                      size="small"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                      error={!!errors.date}
+                      helperText={errors.date?.message}
+                    />
+                  )}
+                />
+              ) : (
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Select Dates * ({selectedDates.length} selected)
+                    </Typography>
+                    <Button size="small" onClick={handleSelectAllDates}>
+                      {selectedDates.length === dateOptions.length ? 'Deselect All' : 'Select All'}
+                    </Button>
+                  </Box>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, maxHeight: 150, overflow: 'auto' }}>
+                    {dateOptions.map((date) => {
+                      const dateStr = format(date, 'yyyy-MM-dd');
+                      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                      return (
+                        <Chip
+                          key={dateStr}
+                          label={
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 0.25 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                                {format(date, 'EEE')}
+                              </Typography>
+                              <Typography variant="caption" sx={{ lineHeight: 1.2 }}>
+                                {format(date, 'd MMM')}
+                              </Typography>
+                            </Box>
+                          }
+                          onClick={() => handleDateToggle(dateStr)}
+                          color={selectedDates.includes(dateStr) ? 'primary' : 'default'}
+                          variant={selectedDates.includes(dateStr) ? 'filled' : 'outlined'}
+                          size="small"
+                          sx={{ 
+                            minWidth: 60,
+                            height: 'auto',
+                            py: 0.5,
+                            ...(isWeekend && !selectedDates.includes(dateStr) && {
+                              borderColor: 'warning.main',
+                              bgcolor: 'warning.50',
+                            }),
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                  {selectedDates.length === 0 && (
+                    <FormHelperText error>Please select at least one date</FormHelperText>
+                  )}
+                </Box>
+              )}
+
+              {/* Bulk Summary */}
+              {createMode === 'bulk' && bulkCount > 0 && (
+                <Alert severity="info" icon={<Layers size={18} />}>
+                  This will create <strong>{bulkCount}</strong> open shift{bulkCount > 1 ? 's' : ''} 
+                  ({selectedRoomIds.length} room{selectedRoomIds.length > 1 ? 's' : ''} × {selectedDates.length} date{selectedDates.length > 1 ? 's' : ''})
+                </Alert>
+              )}
 
               {/* Time */}
               <Stack direction="row" spacing={2}>
