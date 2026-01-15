@@ -55,6 +55,7 @@ import { BreakSchedulingPanel } from '@/components/roster/BreakSchedulingPanel';
 import { SkillMatrixPanel } from '@/components/roster/SkillMatrixPanel';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { SendToAgencyModal, BroadcastConfig } from '@/components/roster/SendToAgencyModal';
+import { AgencyResponseTracker } from '@/components/roster/AgencyResponseTracker';
 
 // MUI Components
 import {
@@ -226,6 +227,7 @@ export default function RosterScheduler() {
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
   const [shiftForAgency, setShiftForAgency] = useState<OpenShift | Shift | null>(null);
+  const [showAgencyTracker, setShowAgencyTracker] = useState(false);
   const [emptyShifts, setEmptyShifts] = useState<Array<{
     id: string;
     centreId: string;
@@ -1605,6 +1607,10 @@ export default function RosterScheduler() {
               setEmptyShifts(prev => prev.filter(es => es.id !== id));
               toast.success('Empty shift deleted');
             }}
+            onSendToAgency={(openShift) => {
+              setShiftForAgency(openShift);
+              setShowSendToAgencyModal(true);
+            }}
           />
         )}
 
@@ -2038,7 +2044,14 @@ export default function RosterScheduler() {
         onSend={(config: BroadcastConfig) => {
           console.log('Agency broadcast config:', config);
           toast.success(`Shift broadcast sent to ${config.agencyRules.length} agencies`);
+          setShowAgencyTracker(true);
         }}
+      />
+
+      {/* Agency Response Tracker */}
+      <AgencyResponseTracker
+        open={showAgencyTracker}
+        onClose={() => setShowAgencyTracker(false)}
       />
 
       {/* Hidden Print View */}
