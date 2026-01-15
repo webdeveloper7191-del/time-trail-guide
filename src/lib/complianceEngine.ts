@@ -8,9 +8,19 @@ import {
   ApprovalRule,
   ApprovalStep
 } from '@/types/compliance';
+import { 
+  australianJurisdiction, 
+  getJurisdictionByAward, 
+  getJurisdictionByAwardId,
+  AwardType 
+} from './australianJurisdiction';
+import { calculateTimesheetOvertime, TimesheetEntry } from './unifiedOvertimeCalculator';
 
-// Default US jurisdiction rules
-export const defaultJurisdiction: Jurisdiction = {
+// Re-export Australian jurisdiction as default
+export const defaultJurisdiction: Jurisdiction = australianJurisdiction;
+
+// Legacy US jurisdiction (kept for backwards compatibility)
+export const usJurisdiction: Jurisdiction = {
   id: 'us-federal',
   name: 'US Federal',
   code: 'US-FED',
@@ -26,6 +36,20 @@ export const defaultJurisdiction: Jurisdiction = {
   doubleTimeThreshold: 12,
   doubleTimeMultiplier: 2,
 };
+
+// Get jurisdiction by country code
+export function getJurisdiction(countryCode: string = 'AU', awardId?: string): Jurisdiction {
+  if (countryCode === 'AU' && awardId) {
+    return getJurisdictionByAwardId(awardId);
+  }
+  if (countryCode === 'AU') {
+    return australianJurisdiction;
+  }
+  if (countryCode === 'US') {
+    return usJurisdiction;
+  }
+  return australianJurisdiction; // Default to AU
+}
 
 export const defaultApprovalRules: ApprovalRule[] = [
   { id: 'ar1', name: 'Normal Hours Auto-Approve', condition: 'all', requiredTier: 'auto' },
@@ -214,51 +238,56 @@ export function validateCompliance(
 }
 
 // Calculate overtime with stacked rates
+/**
+ * Calculate overtime using the unified overtime calculator
+ * This uses Australian award rules by default
+ */
 export function calculateOvertime(
   timesheet: Timesheet,
   hourlyRate: number,
-  jurisdiction: Jurisdiction = defaultJurisdiction
+  jurisdiction: Jurisdiction = defaultJurisdiction,
+  isCasual: boolean = false,
+  awardType: AwardType = 'general'
 ): OvertimeCalculation {
-  let regularHours = 0;
-  let dailyOvertimeHours = 0;
-  let doubleTimeHours = 0;
-
-  timesheet.entries.forEach((entry) => {
-    const dailyHours = entry.netHours;
-    
-    if (dailyHours <= jurisdiction.overtimeThresholdDaily) {
-      regularHours += dailyHours;
-    } else if (jurisdiction.doubleTimeThreshold && dailyHours > jurisdiction.doubleTimeThreshold) {
-      regularHours += jurisdiction.overtimeThresholdDaily;
-      dailyOvertimeHours += jurisdiction.doubleTimeThreshold - jurisdiction.overtimeThresholdDaily;
-      doubleTimeHours += dailyHours - jurisdiction.doubleTimeThreshold;
-    } else {
-      regularHours += jurisdiction.overtimeThresholdDaily;
-      dailyOvertimeHours += dailyHours - jurisdiction.overtimeThresholdDaily;
-    }
-  });
-
-  // Cap regular hours at weekly threshold
-  const weeklyOvertime = Math.max(0, regularHours - jurisdiction.overtimeThresholdWeekly);
-  regularHours = Math.min(regularHours, jurisdiction.overtimeThresholdWeekly);
-  const weeklyOvertimeHours = weeklyOvertime;
-
-  const totalOvertimeHours = dailyOvertimeHours + weeklyOvertimeHours;
-
-  const regularPay = regularHours * hourlyRate;
-  const overtimePay = totalOvertimeHours * hourlyRate * jurisdiction.overtimeMultiplier;
-  const doubleTimePay = doubleTimeHours * hourlyRate * (jurisdiction.doubleTimeMultiplier || 2);
-
+  // Convert timesheet entries to unified format
+  const entries: TimesheetEntry[] = timesheet.entries.map(entry => ({
+    date: entry.date,
+    netHours: entry.netHours,
+    // Determine day type based on date
+    dayType: getDayTypeFromDate(entry.date),
+  }));
+  
+  // Use unified calculator
+  const breakdown = calculateTimesheetOvertime(entries, hourlyRate, isCasual, awardType, jurisdiction);
+  
+  // Map to legacy OvertimeCalculation format for backwards compatibility
+  const dailyOvertimeHours = breakdown.dailyBreakdowns.reduce(
+    (sum, d) => sum + d.overtime15Hours, 0
+  );
+  const doubleTimeHours = breakdown.dailyBreakdowns.reduce(
+    (sum, d) => sum + d.overtime20Hours, 0
+  );
+  
   return {
-    regularHours,
+    regularHours: breakdown.weeklyOrdinaryHours,
     dailyOvertimeHours,
-    weeklyOvertimeHours,
+    weeklyOvertimeHours: breakdown.weeklyOvertimeHoursFromThreshold,
     doubleTimeHours,
-    regularPay,
-    overtimePay,
-    doubleTimePay,
-    totalPay: regularPay + overtimePay + doubleTimePay,
+    regularPay: breakdown.totalOrdinaryPay,
+    overtimePay: breakdown.totalOvertimePay,
+    doubleTimePay: doubleTimeHours * hourlyRate * (jurisdiction.doubleTimeMultiplier || 2),
+    totalPay: breakdown.grossPay,
   };
+}
+
+// Helper to determine day type from date string
+function getDayTypeFromDate(dateStr: string): 'weekday' | 'saturday' | 'sunday' | 'public_holiday' {
+  const date = new Date(dateStr);
+  const day = date.getDay();
+  if (day === 0) return 'sunday';
+  if (day === 6) return 'saturday';
+  // TODO: Check against public holiday calendar
+  return 'weekday';
 }
 
 // Determine approval chain based on rules
