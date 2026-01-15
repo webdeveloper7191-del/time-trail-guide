@@ -56,6 +56,7 @@ import { SkillMatrixPanel } from '@/components/roster/SkillMatrixPanel';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { SendToAgencyModal, BroadcastConfig } from '@/components/roster/SendToAgencyModal';
 import { AgencyResponseTracker } from '@/components/roster/AgencyResponseTracker';
+import { AgencyNotificationTemplates } from '@/components/roster/AgencyNotificationTemplates';
 
 // MUI Components
 import {
@@ -129,6 +130,8 @@ import {
   Coffee,
   Target,
   Palette,
+  Building2,
+  Radio,
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
 
@@ -228,6 +231,7 @@ export default function RosterScheduler() {
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
   const [shiftForAgency, setShiftForAgency] = useState<OpenShift | Shift | null>(null);
   const [showAgencyTracker, setShowAgencyTracker] = useState(false);
+  const [showNotificationTemplates, setShowNotificationTemplates] = useState(false);
   const [emptyShifts, setEmptyShifts] = useState<Array<{
     id: string;
     centreId: string;
@@ -1258,6 +1262,11 @@ export default function RosterScheduler() {
                   <Copy size={18} />
                 </IconButton>
               </Tooltip>
+              <Tooltip content="View Agency Broadcasts">
+                <IconButton size="small" onClick={() => setShowAgencyTracker(true)} sx={{ color: 'text.secondary' }}>
+                  <Building2 size={18} />
+                </IconButton>
+              </Tooltip>
             </Stack>
 
             {/* Auto-Assign Button - Shows when empty shifts exist */}
@@ -1395,6 +1404,13 @@ export default function RosterScheduler() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setShowWeatherIntegration(true)} icon={<CloudSun size={16} />}>
                     Weather Integration
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowAgencyTracker(true)} icon={<Radio size={16} />}>
+                    View Agency Broadcasts
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowNotificationTemplates(true)} icon={<Mail size={16} />}>
+                    Notification Templates
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -2052,6 +2068,12 @@ export default function RosterScheduler() {
       <AgencyResponseTracker
         open={showAgencyTracker}
         onClose={() => setShowAgencyTracker(false)}
+      />
+
+      {/* Agency Notification Templates */}
+      <AgencyNotificationTemplates
+        open={showNotificationTemplates}
+        onClose={() => setShowNotificationTemplates(false)}
       />
 
       {/* Hidden Print View */}
