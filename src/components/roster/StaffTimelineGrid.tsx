@@ -778,76 +778,80 @@ export function StaffTimelineGrid({
                     const hasOpenShifts = dayOpenShifts.length > 0;
                     
                     // Calculate if understaffed based on room ratio and capacity
-                    // Required staff = capacity / ratio (e.g., 20 kids / 4 ratio = 5 staff)
                     const requiredStaff = Math.ceil(room.capacity / room.requiredRatio);
                     const isUnderstaffed = uniqueStaff < requiredStaff && uniqueStaff > 0;
-                    const hasNoStaff = dayShifts.length === 0;
                     
                     return (
                       <div 
                         key={dateStr} 
                         className={cn(
-                          "flex-1 p-2 border-r flex flex-col items-center justify-center gap-1 relative",
+                          "flex-1 border-r flex items-center justify-center",
                           viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
                           isUnderstaffed && "bg-destructive/5"
                         )}
                         style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {/* Understaffed warning indicator */}
-                        {isUnderstaffed && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="absolute top-1 right-1">
-                                  <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs font-medium text-destructive">Understaffed</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {uniqueStaff} of {requiredStaff} required staff
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                        
                         {dayShifts.length > 0 ? (
-                          <>
-                            <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2 py-2 px-1">
+                            {/* Warning icon for understaffed */}
+                            {isUnderstaffed && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs font-medium text-destructive">Understaffed</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {uniqueStaff} of {requiredStaff} required
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            
+                            {/* Shift and staff info */}
+                            <div className="flex flex-col items-center min-w-0">
+                              <div className="flex items-baseline gap-0.5">
+                                <span className={cn(
+                                  "text-sm font-semibold leading-none",
+                                  isUnderstaffed && "text-destructive"
+                                )}>
+                                  {dayShifts.length}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground leading-none">shifts</span>
+                              </div>
                               <span className={cn(
-                                "text-sm font-semibold",
-                                isUnderstaffed && "text-destructive"
+                                "text-[10px] leading-tight mt-0.5",
+                                isUnderstaffed ? "text-destructive font-medium" : "text-muted-foreground"
                               )}>
-                                {dayShifts.length}
+                                {uniqueStaff}/{requiredStaff} staff
                               </span>
-                              <span className="text-[10px] text-muted-foreground">shifts</span>
+                              {hasOpenShifts && (
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-[9px] px-1.5 py-0 h-4 mt-1 border-amber-400 text-amber-600 bg-amber-50"
+                                >
+                                  {dayOpenShifts.length} open
+                                </Badge>
+                              )}
                             </div>
-                            <span className={cn(
-                              "text-[10px]",
-                              isUnderstaffed ? "text-destructive font-medium" : "text-muted-foreground"
-                            )}>
-                              {uniqueStaff}/{requiredStaff} staff
-                            </span>
-                          </>
+                          </div>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground">—</span>
-                        )}
-                        {hasOpenShifts && (
-                          <Badge 
-                            variant="outline" 
-                            className="text-[9px] px-1 py-0 h-4 border-amber-400 text-amber-600 bg-amber-50"
-                          >
-                            {dayOpenShifts.length} open
-                          </Badge>
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </div>
                     );
                   })}
                   {isCollapsed && (
-                    <div className="w-24 shrink-0 flex items-center justify-center border-r" style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}>
-                      <span className="text-xs font-medium text-muted-foreground">{roomStaff.length} staff</span>
+                    <div 
+                      className="w-24 shrink-0 flex items-center justify-center border-r" 
+                      style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
+                    >
+                      <Badge variant="secondary" className="text-xs font-medium">
+                        {roomStaff.length} staff
+                      </Badge>
                     </div>
                   )}
                 </div>
