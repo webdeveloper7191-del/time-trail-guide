@@ -750,11 +750,39 @@ export function AwardsConfigurationTab() {
               <span className="hidden sm:inline">On-Call</span>
             </TabsTrigger>
             <TabsTrigger 
+              value="enterprise-agreements" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <FileStack className="h-4 w-4" />
+              <span className="hidden sm:inline">EBA</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="boot-calculator" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Scale className="h-4 w-4" />
+              <span className="hidden sm:inline">BOOT</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="fwc-integration" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Globe className="h-4 w-4" />
+              <span className="hidden sm:inline">FWC</span>
+            </TabsTrigger>
+            <TabsTrigger 
               value="leave-loading" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Percent className="h-4 w-4" />
               <span className="hidden sm:inline">Leave</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="leave-balances" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Umbrella className="h-4 w-4" />
+              <span className="hidden sm:inline">Leave & LSL</span>
             </TabsTrigger>
             <TabsTrigger 
               value="calculator" 
@@ -792,39 +820,11 @@ export function AwardsConfigurationTab() {
               <span className="hidden sm:inline">Architecture</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="leave-balances" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Umbrella className="h-4 w-4" />
-              <span className="hidden sm:inline">Leave & LSL</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="enterprise-agreements" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <FileStack className="h-4 w-4" />
-              <span className="hidden sm:inline">EBA</span>
-            </TabsTrigger>
-            <TabsTrigger 
               value="audit-trail" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <ClipboardCheck className="h-4 w-4" />
               <span className="hidden sm:inline">Audit</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="boot-calculator" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Scale className="h-4 w-4" />
-              <span className="hidden sm:inline">BOOT</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="fwc-integration" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Globe className="h-4 w-4" />
-              <span className="hidden sm:inline">FWC</span>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -865,8 +865,24 @@ export function AwardsConfigurationTab() {
           <OnCallRatesPanel />
         </TabsContent>
 
+        <TabsContent value="enterprise-agreements" className="mt-0">
+          <EnterpriseAgreementPanel />
+        </TabsContent>
+
+        <TabsContent value="boot-calculator" className="mt-0">
+          <BOOTCalculatorPanel />
+        </TabsContent>
+
+        <TabsContent value="fwc-integration" className="mt-0">
+          <FWCIntegrationPanel />
+        </TabsContent>
+
         <TabsContent value="leave-loading" className="mt-0">
           <CustomLeaveLoadingPanel />
+        </TabsContent>
+
+        <TabsContent value="leave-balances" className="mt-0">
+          <LeaveBalanceDashboard />
         </TabsContent>
 
         <TabsContent value="calculator" className="mt-0">
@@ -889,24 +905,8 @@ export function AwardsConfigurationTab() {
           <ModuleDependencyExplorer />
         </TabsContent>
 
-        <TabsContent value="leave-balances" className="mt-0">
-          <LeaveBalanceDashboard />
-        </TabsContent>
-
-        <TabsContent value="enterprise-agreements" className="mt-0">
-          <EnterpriseAgreementPanel />
-        </TabsContent>
-
         <TabsContent value="audit-trail" className="mt-0">
           <AuditTrailViewer />
-        </TabsContent>
-
-        <TabsContent value="boot-calculator" className="mt-0">
-          <BOOTCalculatorPanel />
-        </TabsContent>
-
-        <TabsContent value="fwc-integration" className="mt-0">
-          <FWCIntegrationPanel />
         </TabsContent>
       </Tabs>
     </div>
