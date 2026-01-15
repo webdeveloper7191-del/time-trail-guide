@@ -136,7 +136,7 @@ export function FatigueManagementPanel({ staff = [], shifts = [] }: FatigueManag
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {/* Header */}
       <Card className="card-material-elevated border-l-4 border-l-orange-500">
         <CardHeader>
