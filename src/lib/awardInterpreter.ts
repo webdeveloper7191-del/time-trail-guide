@@ -2,6 +2,11 @@
  * Award Interpreter Engine
  * Comprehensive calculation of pay rates, penalties, overtime, and allowances
  * based on Australian Modern Awards, specifically Children's Services Award 2020
+ * 
+ * Now integrated with:
+ * - Unified Overtime Calculator for consistent OT calculations
+ * - Australian Jurisdiction config for proper break/penalty rules
+ * - Custom rules from AwardConfigContext for rate overrides
  */
 
 import { Shift, StaffMember } from '@/types/roster';
@@ -23,6 +28,40 @@ import {
   calculateTravelAllowance,
   enrichShiftWithDetectedConditions,
 } from './shiftTypeDetection';
+import { 
+  calculateDailyOvertime, 
+  OvertimeBreakdown 
+} from './unifiedOvertimeCalculator';
+import { 
+  getJurisdictionByAwardId, 
+  AwardType,
+  SUPERANNUATION_RATE 
+} from './australianJurisdiction';
+
+// Custom rule interface (simplified for shift cost calculation)
+export interface AppliedCustomRule {
+  id: string;
+  name: string;
+  type: 'overtime' | 'penalty' | 'allowance' | 'leave_loading';
+  adjustment: number;
+  description: string;
+}
+
+// Rate override interface
+export interface RateOverrideConfig {
+  awardId: string;
+  classificationId: string;
+  newRate?: number;
+  casualLoadingOverride?: number;
+  penaltyOverrides?: Record<string, number>;
+}
+
+// Context for applying custom rules (passed from React context)
+export interface ShiftCostContext {
+  rateOverrides?: RateOverrideConfig[];
+  customRules?: AppliedCustomRule[];
+  getEffectiveRate?: (awardId: string, classificationId: string, baseRate: number) => number;
+}
 
 // Time period definitions
 export interface TimePeriod {
@@ -144,6 +183,17 @@ export function getDayType(dateStr: string): DayType {
   return 'weekday';
 }
 
+// Map award ID to AwardType for jurisdiction lookup
+function getAwardTypeFromId(awardId: string): AwardType {
+  const mapping: Record<string, AwardType> = {
+    'children-services-2020': 'children_services',
+    'healthcare-2020': 'healthcare',
+    'hospitality-2020': 'hospitality',
+    'retail-2020': 'retail',
+  };
+  return mapping[awardId] || 'general';
+}
+
 // Parse time string to minutes from midnight
 function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
@@ -176,13 +226,16 @@ function hoursInPeriod(
 }
 
 // Calculate shift cost breakdown
+// Now accepts optional context for custom rules and rate overrides
 export function calculateShiftCost(
   shift: Shift,
   staff: StaffMember,
   award: AustralianAward = getAwardById('children-services-2020')!,
-  classification?: AwardClassification
+  classification?: AwardClassification,
+  context?: ShiftCostContext
 ): ShiftCostBreakdown {
   const warnings: string[] = [];
+  const appliedRules: AppliedCustomRule[] = [];
   const dateStr = shift.date;
   const date = parseISO(dateStr);
   const dayOfWeek = format(date, 'EEEE');
@@ -202,10 +255,56 @@ export function calculateShiftCost(
   const classLevel = classification || award.classifications.find(c => c.level === 'Level 3.1') || award.classifications[6];
   const isCasual = staff.employmentType === 'casual';
   
-  // Calculate effective hourly rate
-  const baseHourlyRate = staff.hourlyRate || classLevel.baseHourlyRate;
+  // Calculate effective hourly rate (with custom rate overrides if provided)
+  let baseHourlyRate = staff.hourlyRate || classLevel.baseHourlyRate;
+  
+  // Apply rate override from context if available
+  if (context?.getEffectiveRate) {
+    baseHourlyRate = context.getEffectiveRate(award.id, classLevel.id, baseHourlyRate);
+  } else if (context?.rateOverrides) {
+    const override = context.rateOverrides.find(
+      o => o.awardId === award.id && o.classificationId === classLevel.id
+    );
+    if (override?.newRate) {
+      baseHourlyRate = override.newRate;
+      warnings.push(`Rate override applied: $${override.newRate}/hr`);
+    }
+  }
+  
   const casualLoading = isCasual ? award.casualLoading / 100 : 0;
   const effectiveHourlyRate = baseHourlyRate * (1 + casualLoading);
+  
+  // Use unified overtime calculator for consistent calculations
+  const jurisdiction = getJurisdictionByAwardId(award.id);
+  const awardType = getAwardTypeFromId(award.id);
+  
+  // Determine if evening or night shift
+  const isEveningShift = hoursInPeriod(shift.startTime, shift.endTime, '18:00', '21:00') > 2;
+  const isNightShift = (hoursInPeriod(shift.startTime, shift.endTime, '21:00', '24:00') +
+                        hoursInPeriod(shift.startTime, shift.endTime, '00:00', '06:00')) > 2;
+  
+  // Calculate using unified overtime calculator
+  const overtimeBreakdown = calculateDailyOvertime({
+    hoursWorked: netHours,
+    baseHourlyRate,
+    isCasual,
+    casualLoading: award.casualLoading,
+    awardType,
+    dayType,
+    isEveningShift,
+    isNightShift,
+  }, jurisdiction);
+  
+  // Apply any custom overtime rules from context
+  let adjustedOvertimePay = overtimeBreakdown.totalOvertimePay;
+  if (context?.customRules) {
+    const overtimeRules = context.customRules.filter(r => r.type === 'overtime');
+    overtimeRules.forEach(rule => {
+      adjustedOvertimePay += rule.adjustment;
+      appliedRules.push(rule);
+      warnings.push(`Custom rule applied: ${rule.name}`);
+    });
+  }
   
   // Initialize breakdown
   let ordinaryHours = 0;
