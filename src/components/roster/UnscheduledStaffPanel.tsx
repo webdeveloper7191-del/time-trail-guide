@@ -24,7 +24,8 @@ import {
   PanelRightOpen,
   MapPin,
   Navigation,
-  Home
+  Home,
+  Settings2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -40,6 +41,7 @@ interface UnscheduledStaffPanelProps {
   isGenerating: boolean;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onConfigureConstraints?: () => void;
 }
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -54,7 +56,8 @@ export function UnscheduledStaffPanel({
   onGenerateAI,
   isGenerating,
   isCollapsed = false,
-  onToggleCollapse
+  onToggleCollapse,
+  onConfigureConstraints
 }: UnscheduledStaffPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [qualificationFilter, setQualificationFilter] = useState<string>('all');
@@ -440,15 +443,32 @@ export function UnscheduledStaffPanel({
           </SelectContent>
         </Select>
 
-        <Button 
-          onClick={onGenerateAI} 
-          disabled={isGenerating}
-          className="w-full mt-2 gap-2"
-          size="sm"
-        >
-          <Sparkles className={cn("h-4 w-4", isGenerating && "animate-spin")} />
-          {isGenerating ? 'Generating...' : 'Generate AI Shifts'}
-        </Button>
+        <div className="flex gap-2 mt-2">
+          <Button 
+            onClick={onGenerateAI} 
+            disabled={isGenerating}
+            className="flex-1 gap-2"
+            size="sm"
+          >
+            <Sparkles className={cn("h-4 w-4", isGenerating && "animate-spin")} />
+            {isGenerating ? 'Generating...' : 'Generate AI Shifts'}
+          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={onConfigureConstraints}
+                variant="outline"
+                size="sm"
+                className="px-2"
+              >
+                <Settings2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <p>Configure Timefold Constraints</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
