@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Shift, StaffMember, OpenShift, qualificationLabels, ShiftSpecialType } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
-import { Clock, MoreHorizontal, X, AlertCircle, Users, Copy, ArrowLeftRight, Edit, Phone, Moon, Zap, Car, ArrowUpCircle, PhoneCall } from 'lucide-react';
+import { Clock, MoreHorizontal, X, AlertCircle, Users, Copy, ArrowLeftRight, Edit, Phone, Moon, Zap, Car, ArrowUpCircle, PhoneCall, Sparkles, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -137,6 +137,30 @@ export function ShiftCard({
               >
                 {staff?.name || 'Unassigned'}
               </span>
+              
+              {/* AI Generated indicator */}
+              {shift.isAIGenerated && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="p-0.5 rounded bg-purple-500/20">
+                        <Bot className="h-3 w-3 text-purple-500" />
+                      </div>
+                    </TooltipTrigger>
+                    {showTooltipContent && (
+                      <TooltipContent>
+                        <p>AI-Assigned Shift</p>
+                        {shift.aiGeneratedAt && (
+                          <p className="text-xs text-muted-foreground">
+                            Generated: {new Date(shift.aiGeneratedAt).toLocaleString()}
+                          </p>
+                        )}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              
               {currentType !== 'regular' && (
                 <TooltipProvider>
                   <Tooltip>

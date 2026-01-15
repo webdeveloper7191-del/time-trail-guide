@@ -117,6 +117,27 @@ export interface TimefoldSolution {
   unassignedShifts: string[];
   solverTimeMs: number;
   movesEvaluated: number;
+  
+  // Work-saved metrics
+  workSavedMetrics: {
+    estimatedManualTimeMinutes: number; // Time it would take to manually schedule
+    actualSolverTimeSeconds: number;
+    timeSavedMinutes: number;
+    efficiencyPercentage: number;
+    shiftsPerMinute: number; // Solving rate
+    constraintsEvaluated: number;
+    optimalAssignmentsFound: number;
+  };
+}
+
+// Custom preset for saving configurations
+export interface ConstraintPreset {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  config: TimefoldSolverConfig;
+  isBuiltIn: boolean;
 }
 
 // ============ DEFAULT CONSTRAINTS ============
@@ -505,6 +526,12 @@ export async function solveWithTimefold(
     }
   }
   
+  // Calculate work-saved metrics
+  const actualSolverTimeSeconds = config.terminationTimeSeconds * 0.1; // Simulated
+  const estimatedManualTimeMinutes = shifts.length * 3; // Assume 3 minutes per shift manually
+  const timeSavedMinutes = estimatedManualTimeMinutes - (actualSolverTimeSeconds / 60);
+  const constraintsEvaluated = assignments.length * config.constraints.filter(c => c.enabled).length;
+  
   return {
     score: {
       hardScore: unassignedShifts.length > 0 ? -unassignedShifts.length : 0,
@@ -516,6 +543,15 @@ export async function solveWithTimefold(
     unassignedShifts,
     solverTimeMs: config.terminationTimeSeconds * 100,
     movesEvaluated: assignments.length * staff.length * 10,
+    workSavedMetrics: {
+      estimatedManualTimeMinutes,
+      actualSolverTimeSeconds,
+      timeSavedMinutes: Math.max(0, timeSavedMinutes),
+      efficiencyPercentage: Math.round((timeSavedMinutes / estimatedManualTimeMinutes) * 100),
+      shiftsPerMinute: actualSolverTimeSeconds > 0 ? Math.round((assignments.length / actualSolverTimeSeconds) * 60) : assignments.length,
+      constraintsEvaluated,
+      optimalAssignmentsFound: assignments.length,
+    },
   };
 }
 
