@@ -125,6 +125,7 @@ import {
   CloudSun,
   Coffee,
   Target,
+  Palette,
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
 
@@ -512,9 +513,19 @@ export default function RosterScheduler() {
     toast.success(`Copied ${newShifts.length} shifts from previous week`);
   };
 
-  const handleExportPDF = () => {
-    exportToPDF({ shifts, staff: allStaff, centre: selectedCentre, dates, weeklyBudget });
-    toast.success('PDF exported successfully');
+  const handleExportPDF = (useColors: boolean = false) => {
+    const roomColors = selectedCentre.rooms.map((_, idx) => {
+      // Get colors from the current palette - default to ocean palette colors
+      const paletteColors = [
+        'hsl(200, 75%, 50%)',
+        'hsl(185, 70%, 45%)',
+        'hsl(220, 70%, 55%)',
+        'hsl(195, 80%, 40%)',
+      ];
+      return paletteColors[idx % paletteColors.length];
+    });
+    exportToPDF({ shifts, staff: allStaff, centre: selectedCentre, dates, weeklyBudget, roomColors }, useColors);
+    toast.success(useColors ? 'Color PDF exported successfully' : 'PDF exported successfully');
   };
 
   const handleExportExcel = () => {
@@ -1293,8 +1304,11 @@ export default function RosterScheduler() {
                   </IconButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={handleExportPDF} icon={<FileText size={16} />}>
+                  <DropdownMenuItem onClick={() => handleExportPDF(false)} icon={<FileText size={16} />}>
                     Export to PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportPDF(true)} icon={<Palette size={16} />}>
+                    Export Color PDF
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportExcel} icon={<FileSpreadsheet size={16} />}>
                     Export to Excel

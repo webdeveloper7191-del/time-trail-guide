@@ -92,6 +92,7 @@ interface StaffTimelineGridProps {
   onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   onOpenShiftFill: (openShift: OpenShift) => void;
   onOpenShiftDelete?: (openShiftId: string) => void;
+  onAddOpenShift?: (roomId: string, date: string) => void;
   onAddShift: (staffId: string, date: string, roomId: string, template?: ShiftTemplate) => void;
   onDragStart: (e: React.DragEvent, staff: StaffMember) => void;
   onOpenShiftDrop: (staffId: string, openShift: OpenShift) => void;
@@ -125,6 +126,7 @@ export function StaffTimelineGrid({
   onShiftSwap,
   onShiftTypeChange,
   onOpenShiftDelete,
+  onAddOpenShift,
   onAddShift,
   onDragStart,
   onOpenShiftDrop,
@@ -140,7 +142,7 @@ export function StaffTimelineGrid({
   const [dragType, setDragType] = useState<'staff' | 'shift' | null>(null);
   const [staffSearch, setStaffSearch] = useState('');
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
-  const [colorPalette, setColorPalette] = useState<ColorPalette>('cool');
+  const [colorPalette, setColorPalette] = useState<ColorPalette>('ocean');
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
 
   // Get dynamic room color based on selected palette
@@ -868,9 +870,15 @@ export function StaffTimelineGrid({
                   )}
                 </div>
 
-                {/* Collapsible content */}
-                {!isCollapsed && (
-                  <>
+                {/* Collapsible content with animation */}
+                <div 
+                  className={cn(
+                    "overflow-hidden transition-all duration-300 ease-in-out",
+                    isCollapsed ? "max-h-0 opacity-0" : "max-h-[5000px] opacity-100"
+                  )}
+                >
+                  {!isCollapsed && (
+                    <>
                 {roomStaff.map((member) => {
                   const costs = calculateStaffCosts(member.id);
                   const topQualifications = member.qualifications.slice(0, 2);
@@ -1413,8 +1421,9 @@ export function StaffTimelineGrid({
 
                   <div className="w-24 shrink-0 border-r border-border/30" />
                 </div>
-                </>
-                )}
+                  </>
+                  )}
+                </div>
               </div>
             );
           })}
