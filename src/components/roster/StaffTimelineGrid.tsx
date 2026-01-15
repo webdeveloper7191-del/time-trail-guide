@@ -14,10 +14,13 @@ import {
   GripVertical,
   User,
   AlertCircle,
+  AlertTriangle,
   DollarSign,
   Palmtree,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Search,
   Coffee,
   Settings,
@@ -148,6 +151,16 @@ export function StaffTimelineGrid({
       }
       return newSet;
     });
+  };
+
+  const allRoomsCollapsed = centre.rooms.length > 0 && centre.rooms.every(room => collapsedRooms.has(room.id));
+
+  const toggleAllRooms = () => {
+    if (allRoomsCollapsed) {
+      setCollapsedRooms(new Set());
+    } else {
+      setCollapsedRooms(new Set(centre.rooms.map(room => room.id)));
+    }
   };
 
   // Delete confirmation state
@@ -458,15 +471,38 @@ export function StaffTimelineGrid({
           {/* Header */}
           <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
             <div className="w-64 shrink-0 p-2 font-medium text-sm text-muted-foreground border-r border-border bg-muted/50">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search staff..."
-                  value={staffSearch}
-                  onChange={(e) => setStaffSearch(e.target.value)}
-                  className="h-8 pl-7 pr-2 text-xs bg-background border-border"
-                />
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search staff..."
+                    value={staffSearch}
+                    onChange={(e) => setStaffSearch(e.target.value)}
+                    className="h-8 pl-7 pr-2 text-xs bg-background border-border"
+                  />
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleAllRooms}
+                        className="h-8 w-8 p-0 shrink-0"
+                      >
+                        {allRoomsCollapsed ? (
+                          <ChevronsUpDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronsDownUp className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">{allRoomsCollapsed ? 'Expand All Rooms' : 'Collapse All Rooms'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
             {dates.map((date) => {
@@ -741,23 +777,59 @@ export function StaffTimelineGrid({
                     const uniqueStaff = new Set(dayShifts.map(s => s.staffId)).size;
                     const hasOpenShifts = dayOpenShifts.length > 0;
                     
+                    // Calculate if understaffed based on room ratio and capacity
+                    // Required staff = capacity / ratio (e.g., 20 kids / 4 ratio = 5 staff)
+                    const requiredStaff = Math.ceil(room.capacity / room.requiredRatio);
+                    const isUnderstaffed = uniqueStaff < requiredStaff && uniqueStaff > 0;
+                    const hasNoStaff = dayShifts.length === 0;
+                    
                     return (
                       <div 
                         key={dateStr} 
                         className={cn(
-                          "flex-1 p-2 border-r flex flex-col items-center justify-center gap-1",
-                          viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]"
+                          "flex-1 p-2 border-r flex flex-col items-center justify-center gap-1 relative",
+                          viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
+                          isUnderstaffed && "bg-destructive/5"
                         )}
                         style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                         onClick={(e) => e.stopPropagation()}
                       >
+                        {/* Understaffed warning indicator */}
+                        {isUnderstaffed && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="absolute top-1 right-1">
+                                  <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs font-medium text-destructive">Understaffed</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {uniqueStaff} of {requiredStaff} required staff
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        
                         {dayShifts.length > 0 ? (
                           <>
                             <div className="flex items-center gap-1">
-                              <span className="text-sm font-semibold">{dayShifts.length}</span>
+                              <span className={cn(
+                                "text-sm font-semibold",
+                                isUnderstaffed && "text-destructive"
+                              )}>
+                                {dayShifts.length}
+                              </span>
                               <span className="text-[10px] text-muted-foreground">shifts</span>
                             </div>
-                            <span className="text-[10px] text-muted-foreground">{uniqueStaff} staff</span>
+                            <span className={cn(
+                              "text-[10px]",
+                              isUnderstaffed ? "text-destructive font-medium" : "text-muted-foreground"
+                            )}>
+                              {uniqueStaff}/{requiredStaff} staff
+                            </span>
                           </>
                         ) : (
                           <span className="text-[10px] text-muted-foreground">—</span>
