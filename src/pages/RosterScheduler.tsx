@@ -180,6 +180,7 @@ export default function RosterScheduler() {
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [shiftToSwap, setShiftToSwap] = useState<Shift | null>(null);
   const [showAddOpenShiftModal, setShowAddOpenShiftModal] = useState(false);
+  const [quickAddOpenShiftContext, setQuickAddOpenShiftContext] = useState<{ roomId: string; date: string } | null>(null);
   const [showBudgetBar, setShowBudgetBar] = useState(false);
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
@@ -1604,6 +1605,10 @@ export default function RosterScheduler() {
             onShiftTypeChange={handleShiftTypeChange}
             onOpenShiftFill={(os) => toast.info('Drag a staff member to fill this shift')}
             onOpenShiftDelete={handleDeleteOpenShift}
+            onAddOpenShift={(roomId, date) => {
+              setQuickAddOpenShiftContext({ roomId, date });
+              setShowAddOpenShiftModal(true);
+            }}
             onAddShift={handleAddShift}
             onDragStart={handleDragStart}
             onOpenShiftDrop={handleOpenShiftDrop}
@@ -1691,10 +1696,16 @@ export default function RosterScheduler() {
 
       <AddOpenShiftModal
         open={showAddOpenShiftModal}
-        onClose={() => setShowAddOpenShiftModal(false)}
+        onClose={() => {
+          setShowAddOpenShiftModal(false);
+          setQuickAddOpenShiftContext(null);
+        }}
         rooms={selectedCentre.rooms}
         centreId={selectedCentreId}
+        selectedRoomId={quickAddOpenShiftContext?.roomId}
+        selectedDate={quickAddOpenShiftContext?.date}
         onAdd={handleAddOpenShift}
+        availableDates={dates}
       />
 
       <AvailabilityCalendarModal
