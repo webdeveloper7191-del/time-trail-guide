@@ -1660,6 +1660,7 @@ export default function RosterScheduler() {
             agencyStaff={mockAgencyStaff}
             shifts={shifts}
             selectedCentreId={selectedCentreId}
+            centres={mockCentres}
             onDragStart={handleDragStart}
             onGenerateAI={handleGenerateAIShifts}
             isGenerating={isGenerating}
