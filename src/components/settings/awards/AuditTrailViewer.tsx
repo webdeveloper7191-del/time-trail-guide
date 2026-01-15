@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
   AlertCircle,
@@ -45,6 +47,7 @@ import {
   alertPriorityLabels,
   alertStatusLabels,
 } from '@/types/awardAudit';
+import { useAwardConfig } from '@/contexts/AwardConfigContext';
 
 // Mock audit events
 const mockAuditEvents: AuditEvent[] = [
@@ -268,43 +271,109 @@ const eventTypeIcons: Record<string, typeof History> = {
 };
 
 export function AuditTrailViewer() {
+  // Use context for real data from awardAuditService
+  const { 
+    auditEvents, 
+    alerts, 
+    awardVersions,
+    refreshAuditData,
+    acknowledgeAlert: contextAcknowledgeAlert,
+    actionAlert: contextActionAlert,
+    dismissAlert: contextDismissAlert,
+  } = useAwardConfig();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEventType, setSelectedEventType] = useState<string>('all');
   const [selectedAlert, setSelectedAlert] = useState<RateChangeAlert | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<AwardVersion | null>(null);
+  const [alertStatusFilter, setAlertStatusFilter] = useState<string>('all');
+  const [dismissReason, setDismissReason] = useState('');
+  const [showDismissDialog, setShowDismissDialog] = useState(false);
+  const [alertToDismiss, setAlertToDismiss] = useState<string | null>(null);
+  
+  // Combine context data with mock data for display
+  const allAuditEvents = useMemo(() => {
+    // If context has events, use them; otherwise fall back to mock
+    return auditEvents.length > 0 ? auditEvents : mockAuditEvents;
+  }, [auditEvents]);
+  
+  const allAlerts = useMemo(() => {
+    return alerts.length > 0 ? alerts : mockAlerts;
+  }, [alerts]);
+  
+  const allVersions = useMemo(() => {
+    return awardVersions.length > 0 ? awardVersions : mockAwardVersions;
+  }, [awardVersions]);
 
-  const pendingAlerts = mockAlerts.filter(a => a.status === 'pending');
+  const pendingAlerts = allAlerts.filter(a => a.status === 'pending');
   const criticalAlerts = pendingAlerts.filter(a => a.priority === 'critical');
+  
+  const filteredAlerts = useMemo(() => {
+    if (alertStatusFilter === 'all') return allAlerts;
+    return allAlerts.filter(a => a.status === alertStatusFilter);
+  }, [allAlerts, alertStatusFilter]);
 
   const filteredEvents = useMemo(() => {
-    return mockAuditEvents.filter(event => {
+    return allAuditEvents.filter(event => {
       const matchesSearch = 
         event.entityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.performedByName?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = selectedEventType === 'all' || event.eventType === selectedEventType;
       return matchesSearch && matchesType;
     });
-  }, [searchQuery, selectedEventType]);
+  }, [allAuditEvents, searchQuery, selectedEventType]);
 
   const handleAcknowledgeAlert = (alertId: string) => {
-    toast.success('Alert acknowledged');
-    // In real app, call API
+    contextAcknowledgeAlert(alertId);
   };
 
   const handleActionAlert = (alertId: string) => {
-    toast.success('Alert marked as actioned');
-    // In real app, call API
+    contextActionAlert(alertId);
   };
 
   const handleDismissAlert = (alertId: string) => {
-    toast.success('Alert dismissed');
-    // In real app, call API
+    setAlertToDismiss(alertId);
+    setShowDismissDialog(true);
+  };
+  
+  const confirmDismissAlert = () => {
+    if (alertToDismiss && dismissReason) {
+      contextDismissAlert(alertToDismiss, dismissReason);
+      setShowDismissDialog(false);
+      setDismissReason('');
+      setAlertToDismiss(null);
+    }
   };
 
   const handleExportAudit = () => {
+    // Export to CSV
+    const csvContent = [
+      ['Date', 'Event Type', 'Entity', 'Action', 'Performed By', 'Reason'].join(','),
+      ...allAuditEvents.map(e => [
+        format(new Date(e.performedAt), 'yyyy-MM-dd HH:mm'),
+        auditEventTypeLabels[e.eventType],
+        e.entityName,
+        e.action,
+        e.performedByName || e.performedBy,
+        e.reason || ''
+      ].map(v => `"${v}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-trail-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    
     toast.success('Audit trail exported', {
-      description: 'CSV file download will begin shortly',
+      description: 'CSV file download started',
     });
+  };
+  
+  const handleRefresh = () => {
+    refreshAuditData();
+    toast.success('Data refreshed');
   };
 
   return (
