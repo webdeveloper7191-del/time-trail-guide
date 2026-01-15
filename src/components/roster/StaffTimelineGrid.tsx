@@ -1201,7 +1201,7 @@ export function StaffTimelineGrid({
                           key={cellKey}
                           data-drop-zone
                           className={cn(
-                            "flex-1 p-1.5 border-r border-amber-200/30 relative",
+                            "flex-1 p-1.5 border-r border-amber-200/30 relative group/open-cell",
                             "transition-all duration-200 ease-out",
                             viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
                             isDragging && hasOpenShifts && "bg-emerald-50/50 dark:bg-emerald-950/20",
@@ -1229,6 +1229,31 @@ export function StaffTimelineGrid({
                               />
                             ))}
                           </div>
+                          
+                          {/* Quick-add button */}
+                          {onAddOpenShift && !isDragging && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => onAddOpenShift(room.id, dateStr)}
+                                    className={cn(
+                                      "absolute bottom-1 right-1 h-5 w-5 rounded flex items-center justify-center",
+                                      "bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/50 dark:hover:bg-amber-800/70",
+                                      "text-amber-600 dark:text-amber-400 transition-all duration-200",
+                                      "opacity-0 group-hover/open-cell:opacity-100 focus:opacity-100",
+                                      "shadow-sm hover:shadow"
+                                    )}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="text-xs">Add open shift</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </div>
                       );
                     })}
