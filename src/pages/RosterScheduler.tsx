@@ -14,6 +14,7 @@ import { RosterSummaryBar } from '@/components/roster/RosterSummaryBar';
 import { LeaveRequestModal } from '@/components/roster/LeaveRequestModal';
 import { ShiftSwapModal } from '@/components/roster/ShiftSwapModal';
 import { ShiftCopyModal } from '@/components/roster/ShiftCopyModal';
+import { CopyWeekModal } from '@/components/roster/CopyWeekModal';
 import { BudgetTrackerBar } from '@/components/roster/BudgetTrackerBar';
 import { AddOpenShiftModal } from '@/components/roster/AddOpenShiftModal';
 import { AvailabilityCalendarModal } from '@/components/roster/AvailabilityCalendarModal';
@@ -204,6 +205,7 @@ export default function RosterScheduler() {
   const [showBulkAssignmentModal, setShowBulkAssignmentModal] = useState(false);
   const [showShiftTemplateManager, setShowShiftTemplateManager] = useState(false);
   const [showIndustryConfig, setShowIndustryConfig] = useState(false);
+  const [showCopyWeekModal, setShowCopyWeekModal] = useState(false);
   const [isStaffPanelCollapsed, setIsStaffPanelCollapsed] = useState(false);
   
   // Demand settings modals
@@ -482,36 +484,15 @@ export default function RosterScheduler() {
   };
 
   const handleCopyWeek = () => {
-    const previousWeekStart = startOfWeek(subWeeks(currentDate, 1), { weekStartsOn: 1 });
-    const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-    
-    const previousWeekShifts = shifts.filter(s => {
-      const shiftDate = new Date(s.date);
-      return s.centreId === selectedCentreId && 
-        shiftDate >= previousWeekStart && 
-        shiftDate < currentWeekStart;
-    });
+    setShowCopyWeekModal(true);
+  };
 
-    if (previousWeekShifts.length === 0) {
-      toast.info('No shifts found in previous week to copy');
-      return;
-    }
-
-    const newShifts = previousWeekShifts.map((shift, idx) => {
-      const originalDate = new Date(shift.date);
-      const dayOfWeek = originalDate.getDay();
-      const newDate = addDays(currentWeekStart, dayOfWeek === 0 ? 6 : dayOfWeek - 1);
-      
-      return {
-        ...shift,
-        id: `shift-copy-${Date.now()}-${idx}`,
-        date: format(newDate, 'yyyy-MM-dd'),
-        status: 'draft' as const,
-      };
-    });
-
-    setShifts(prev => [...prev, ...newShifts], `Copied ${newShifts.length} shifts from last week`, 'copy');
-    toast.success(`Copied ${newShifts.length} shifts from previous week`);
+  const handleCopyWeekShifts = (newShifts: Omit<Shift, 'id'>[]) => {
+    const shiftsWithIds = newShifts.map((s, idx) => ({
+      ...s,
+      id: `shift-copy-${Date.now()}-${idx}`,
+    }));
+    setShifts(prev => [...prev, ...shiftsWithIds], `Copied ${shiftsWithIds.length} shifts`, 'copy');
   };
 
   const handleExportPDF = (useColors: boolean = false) => {
@@ -1706,6 +1687,17 @@ export default function RosterScheduler() {
         selectedDate={quickAddOpenShiftContext?.date}
         onAdd={handleAddOpenShift}
         availableDates={dates}
+      />
+
+      <CopyWeekModal
+        open={showCopyWeekModal}
+        onClose={() => setShowCopyWeekModal(false)}
+        shifts={shifts}
+        rooms={selectedCentre.rooms}
+        staff={allStaff}
+        centreId={selectedCentreId}
+        currentDate={currentDate}
+        onCopy={handleCopyWeekShifts}
       />
 
       <AvailabilityCalendarModal
