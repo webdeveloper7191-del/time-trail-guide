@@ -83,13 +83,14 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
           <X className="h-4 w-4" />
         </Button>
         
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 w-full">
           {/* Header with Gradient Background */}
           <Box
             sx={{
               background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(199, 89%, 38%) 100%)',
               color: 'white',
-              p: 3,
+              p: 2,
+              pr: 5, // Extra padding for close button
             }}
           >
         <Stack direction="row" spacing={2.5} alignItems="center">
@@ -178,7 +179,7 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
       </Stack>
 
       {/* Hours Progress */}
-      <Box sx={{ py: 2, px: 3 }}>
+      <Box sx={{ py: 2, px: 2 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
           <Typography variant="caption" color="text.secondary" fontWeight={500}>
             Weekly Hours Progress
@@ -223,7 +224,7 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
         <Tab label="Quals" icon={<Award size={14} />} iconPosition="start" />
       </Tabs>
 
-      <Box sx={{ pt: 2, px: 3, pb: 3 }}>
+      <Box sx={{ pt: 2, px: 2, pb: 3 }}>
         {/* Contact Tab */}
         {tabValue === 0 && (
           <Stack spacing={2}>
