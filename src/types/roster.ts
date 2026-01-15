@@ -218,6 +218,10 @@ export interface Shift {
   isOpenShift: boolean;
   notes?: string;
   
+  // AI/Solver generated indicator
+  isAIGenerated?: boolean;
+  aiGeneratedAt?: string; // ISO timestamp when AI created this assignment
+  
   // Special shift flags for allowance calculation
   shiftType?: ShiftSpecialType;
   

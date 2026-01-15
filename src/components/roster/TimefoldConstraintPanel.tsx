@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -23,6 +23,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   Settings,
   Save,
@@ -46,6 +47,14 @@ import {
   Play,
   Pause,
   GripVertical,
+  Download,
+  Upload,
+  Bookmark,
+  BookmarkPlus,
+  TrendingUp,
+  Timer,
+  Activity,
+  Sparkles,
 } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { toast } from 'sonner';
@@ -59,6 +68,8 @@ import {
   defaultConstraints,
   solverPresets,
   validateConstraintConfig,
+  ConstraintPreset,
+  TimefoldSolution,
 } from '@/lib/timefoldSolver';
 
 interface TimefoldConstraintPanelProps {
@@ -68,6 +79,7 @@ interface TimefoldConstraintPanelProps {
   onConfigChange: (config: TimefoldSolverConfig) => void;
   onSolve?: () => void;
   isSolving?: boolean;
+  lastSolution?: TimefoldSolution | null;
 }
 
 const categoryIcons: Record<ConstraintCategory, typeof Clock> = {
@@ -111,12 +123,25 @@ export function TimefoldConstraintPanel({
   onConfigChange,
   onSolve,
   isSolving = false,
+  lastSolution,
 }: TimefoldConstraintPanelProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<ConstraintCategory>>(
     new Set(['availability', 'qualification', 'capacity'])
   );
   const [editingConstraint, setEditingConstraint] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showSavePresetDialog, setShowSavePresetDialog] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [newPresetDescription, setNewPresetDescription] = useState('');
+  const [savedPresets, setSavedPresets] = useState<ConstraintPreset[]>(() => {
+    const stored = localStorage.getItem('timefold-presets');
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  // Save presets to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('timefold-presets', JSON.stringify(savedPresets));
+  }, [savedPresets]);
 
   const validationErrors = useMemo(() => validateConstraintConfig(config), [config]);
 
@@ -192,6 +217,38 @@ export function TimefoldConstraintPanel({
   const resetToDefaults = () => {
     onConfigChange(defaultSolverConfig);
     toast.success('Reset to default configuration');
+  };
+
+  const saveAsPreset = () => {
+    if (!newPresetName.trim()) {
+      toast.error('Please enter a preset name');
+      return;
+    }
+    
+    const newPreset: ConstraintPreset = {
+      id: `custom-${Date.now()}`,
+      name: newPresetName.trim(),
+      description: newPresetDescription.trim() || undefined,
+      createdAt: new Date().toISOString(),
+      config: { ...config },
+      isBuiltIn: false,
+    };
+    
+    setSavedPresets(prev => [...prev, newPreset]);
+    setNewPresetName('');
+    setNewPresetDescription('');
+    setShowSavePresetDialog(false);
+    toast.success(`Preset "${newPreset.name}" saved`);
+  };
+
+  const loadSavedPreset = (preset: ConstraintPreset) => {
+    onConfigChange(preset.config);
+    toast.success(`Loaded preset "${preset.name}"`);
+  };
+
+  const deleteSavedPreset = (presetId: string) => {
+    setSavedPresets(prev => prev.filter(p => p.id !== presetId));
+    toast.success('Preset deleted');
   };
 
   const renderParameterInput = (constraint: TimefoldConstraint, param: ConstraintParameter) => {
@@ -428,11 +485,66 @@ export function TimefoldConstraintPanel({
           </Alert>
         )}
 
+        {/* Work Saved Metrics - Show after solving */}
+        {lastSolution && (
+          <Paper variant="outlined" sx={{ p: 2, bgcolor: 'success.main', color: 'success.contrastText' }}>
+            <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+              <Sparkles size={20} />
+              <Typography variant="subtitle2">AI Optimization Results</Typography>
+            </Stack>
+            
+            <Box display="grid" gridTemplateColumns="repeat(4, 1fr)" gap={2}>
+              <Box textAlign="center" sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
+                <Timer size={20} className="mx-auto mb-1" />
+                <Typography variant="h5" fontWeight="bold">
+                  {lastSolution.workSavedMetrics.timeSavedMinutes}
+                </Typography>
+                <Typography variant="caption" display="block">Minutes Saved</Typography>
+              </Box>
+              
+              <Box textAlign="center" sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
+                <TrendingUp size={20} className="mx-auto mb-1" />
+                <Typography variant="h5" fontWeight="bold">
+                  {lastSolution.workSavedMetrics.efficiencyPercentage}%
+                </Typography>
+                <Typography variant="caption" display="block">Efficiency Gain</Typography>
+              </Box>
+              
+              <Box textAlign="center" sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
+                <Activity size={20} className="mx-auto mb-1" />
+                <Typography variant="h5" fontWeight="bold">
+                  {lastSolution.workSavedMetrics.shiftsPerMinute}
+                </Typography>
+                <Typography variant="caption" display="block">Shifts/Minute</Typography>
+              </Box>
+              
+              <Box textAlign="center" sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
+                <CheckCircle2 size={20} className="mx-auto mb-1" />
+                <Typography variant="h5" fontWeight="bold">
+                  {lastSolution.workSavedMetrics.optimalAssignmentsFound}
+                </Typography>
+                <Typography variant="caption" display="block">Assigned</Typography>
+              </Box>
+            </Box>
+            
+            <Stack direction="row" justifyContent="space-between" mt={2} sx={{ fontSize: '0.75rem', opacity: 0.9 }}>
+              <span>Manual time: ~{lastSolution.workSavedMetrics.estimatedManualTimeMinutes} min</span>
+              <span>Solver time: {lastSolution.workSavedMetrics.actualSolverTimeSeconds.toFixed(1)}s</span>
+              <span>Moves: {lastSolution.movesEvaluated.toLocaleString()}</span>
+              <span>Constraints: {lastSolution.workSavedMetrics.constraintsEvaluated}</span>
+            </Stack>
+          </Paper>
+        )}
+
         {/* Quick Presets */}
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Quick Presets
-          </Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+            <Typography variant="subtitle2">Quick Presets</Typography>
+            <Button variant="outline" size="sm" onClick={() => setShowSavePresetDialog(true)}>
+              <BookmarkPlus size={14} className="mr-1" />
+              Save Current
+            </Button>
+          </Stack>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <Chip
               label="Balanced"
@@ -459,6 +571,28 @@ export function TimefoldConstraintPanel({
               icon={<Shield size={14} />}
             />
           </Stack>
+          
+          {/* Saved Custom Presets */}
+          {savedPresets.length > 0 && (
+            <Box mt={2}>
+              <Typography variant="caption" color="text.secondary" gutterBottom>
+                Saved Presets
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {savedPresets.map(preset => (
+                  <Chip
+                    key={preset.id}
+                    label={preset.name}
+                    variant="outlined"
+                    onClick={() => loadSavedPreset(preset)}
+                    onDelete={() => deleteSavedPreset(preset.id)}
+                    icon={<Bookmark size={14} />}
+                    title={preset.description || `Created ${new Date(preset.createdAt).toLocaleDateString()}`}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          )}
         </Paper>
 
         {/* Category Weights */}
@@ -629,6 +763,47 @@ export function TimefoldConstraintPanel({
           </Typography>
         </Alert>
       </Stack>
+      
+      {/* Save Preset Dialog */}
+      <Dialog open={showSavePresetDialog} onOpenChange={setShowSavePresetDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Constraint Preset</DialogTitle>
+            <DialogDescription>
+              Save your current constraint configuration as a reusable preset.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="preset-name">Preset Name</Label>
+              <Input
+                id="preset-name"
+                placeholder="e.g., Holiday Season Config"
+                value={newPresetName}
+                onChange={(e) => setNewPresetName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="preset-description">Description (optional)</Label>
+              <Input
+                id="preset-description"
+                placeholder="e.g., Optimized for high staff availability..."
+                value={newPresetDescription}
+                onChange={(e) => setNewPresetDescription(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSavePresetDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveAsPreset}>
+              <Save size={16} className="mr-2" />
+              Save Preset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PrimaryOffCanvas>
   );
 }

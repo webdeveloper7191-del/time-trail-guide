@@ -67,6 +67,7 @@ import {
   solveWithTimefold,
   ShiftPlanningEntity,
   StaffPlanningEntity,
+  TimefoldSolution,
 } from '@/lib/timefoldSolver';
 
 // MUI Components
@@ -275,6 +276,7 @@ export default function RosterScheduler() {
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
   const [timefoldConfig, setTimefoldConfig] = useState<TimefoldSolverConfig>(defaultSolverConfig);
   const [isSolvingTimefold, setIsSolvingTimefold] = useState(false);
+  const [lastTimefoldSolution, setLastTimefoldSolution] = useState<TimefoldSolution | null>(null);
   
   // Shift copy state
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -2154,6 +2156,7 @@ export default function RosterScheduler() {
         onClose={() => setShowTimefoldPanel(false)}
         config={timefoldConfig}
         onConfigChange={setTimefoldConfig}
+        lastSolution={lastTimefoldSolution}
         onSolve={async () => {
           setIsSolvingTimefold(true);
           toast.info('Running Timefold Solver...');
@@ -2187,6 +2190,9 @@ export default function RosterScheduler() {
               leavesDates: s.timeOff?.filter(t => t.status === 'approved').map(t => t.startDate) || [],
             }));
             const solution = await solveWithTimefold(timefoldConfig, shiftEntities, staffEntities);
+            setLastTimefoldSolution(solution);
+            
+            const aiGeneratedTimestamp = new Date().toISOString();
             const newShifts: Shift[] = solution.assignments.map((a, idx) => {
               const openShift = centreOpenShifts.find(os => os.id === a.shiftId)!;
               return {
@@ -2200,11 +2206,20 @@ export default function RosterScheduler() {
                 breakMinutes: 30,
                 status: 'draft',
                 isOpenShift: false,
+                isAIGenerated: true,
+                aiGeneratedAt: aiGeneratedTimestamp,
               };
             });
             setShifts(prev => [...prev, ...newShifts], `Timefold assigned ${newShifts.length} shifts`, 'bulk');
             setOpenShifts(prev => prev.filter(os => !solution.assignments.some(a => a.shiftId === os.id)));
-            toast.success(`Timefold assigned ${solution.assignments.length} shifts (Score: ${solution.score.softScore})`);
+            
+            // Show work saved metrics in the toast
+            const metrics = solution.workSavedMetrics;
+            toast.success(
+              `AI assigned ${solution.assignments.length} shifts! Saved ~${metrics.timeSavedMinutes} min of manual work (${metrics.efficiencyPercentage}% faster)`,
+              { duration: 5000 }
+            );
+            
             if (solution.unassignedShifts.length > 0) {
               toast.warning(`${solution.unassignedShifts.length} shifts could not be assigned`);
             }
