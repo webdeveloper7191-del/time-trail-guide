@@ -1,5 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { format, addDays, startOfWeek, subWeeks, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
+import { format, addDays, startOfWeek, subWeeks, startOfMonth, endOfMonth, getDaysInMonth, setMonth, setYear, getYear, getMonth } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff, SchedulingPreferences } from '@/types/roster';
 import { RosterTemplate } from '@/types/rosterTemplates';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags, mockAgencyStaff } from '@/data/mockRosterData';
@@ -1089,9 +1091,39 @@ export default function RosterScheduler() {
               </IconButton>
             </Stack>
             
-            <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ minWidth: 150 }}>
-              {format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d, yyyy')}
-            </Typography>
+            {/* Date Range Display with Calendar Picker */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  size="small"
+                  variant="outlined"
+                  sx={{ 
+                    minWidth: 160, 
+                    justifyContent: 'flex-start',
+                    gap: 1,
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    borderColor: 'divider',
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                      borderColor: 'primary.main',
+                    }
+                  }}
+                >
+                  <Calendar size={16} />
+                  {format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d, yyyy')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-0">
+                <CalendarComponent
+                  mode="single"
+                  selected={currentDate}
+                  onSelect={(date) => date && setCurrentDate(date)}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
 
             {/* View Mode Tabs - Styled */}
             <Stack direction="row" sx={{ bgcolor: 'grey.100', borderRadius: 1.5, p: 0.5 }}>
