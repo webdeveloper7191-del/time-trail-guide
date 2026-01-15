@@ -85,7 +85,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
   return (
     <>
       {/* Desktop Summary Bar */}
-      <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-card border-t border-border overflow-x-auto">
+      <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-card border-t border-border overflow-x-hidden w-full">
         {items.map((item) => (
           <div key={item.label} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
             <div className={`h-3 w-3 rounded-sm ${item.color} ${item.bgColor}`} />
@@ -113,7 +113,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
       </div>
 
       {/* Mobile Summary Bar - Condensed */}
-      <div className="md:hidden flex items-center gap-3 px-3 py-2 bg-card border-t border-border overflow-x-auto">
+      <div className="md:hidden flex items-center gap-3 px-4 py-2 bg-card border-t border-border overflow-x-hidden w-full">
         {mobileItems.length > 0 ? (
           mobileItems.map((item) => (
             <div key={item.label} className="flex items-center gap-1 text-[10px] whitespace-nowrap">

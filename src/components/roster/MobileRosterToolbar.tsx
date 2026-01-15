@@ -188,11 +188,11 @@ export function MobileRosterToolbar({
   ];
 
   return (
-    <div className="md:hidden bg-card border-b border-border">
+    <div className="md:hidden bg-card border-b border-border w-full overflow-x-hidden">
       {/* Top Row - Centre & Role Selectors */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-border w-full">
         <Select value={selectedCentreId} onValueChange={onCentreChange}>
-          <SelectTrigger className="h-8 flex-1 text-xs">
+          <SelectTrigger className="h-8 flex-1 min-w-0 text-xs">
             <SelectValue placeholder="Select centre" />
           </SelectTrigger>
           <SelectContent>
@@ -205,7 +205,7 @@ export function MobileRosterToolbar({
         </Select>
 
         <Select value={selectedRole} onValueChange={onRoleChange}>
-          <SelectTrigger className="h-8 w-[100px] text-xs">
+          <SelectTrigger className="h-8 w-[100px] shrink-0 text-xs">
             <SelectValue placeholder="Role" />
           </SelectTrigger>
           <SelectContent>
@@ -219,7 +219,7 @@ export function MobileRosterToolbar({
       </div>
 
       {/* Second Row - Date Navigation */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border w-full">
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -305,11 +305,11 @@ export function MobileRosterToolbar({
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] p-0">
-              <SheetHeader className="p-4 border-b border-border">
+            <SheetContent side="right" className="w-[300px] max-w-[85vw] p-0 overflow-x-hidden">
+              <SheetHeader className="px-4 py-4 border-b border-border">
                 <SheetTitle className="text-sm">Actions & Settings</SheetTitle>
               </SheetHeader>
-              <div className="p-2 space-y-1 max-h-[calc(100vh-100px)] overflow-y-auto">
+              <div className="px-4 py-2 space-y-1 max-h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden">
                 {/* Budget Info */}
                 <div className="p-3 bg-muted/50 rounded-lg mb-3">
                   <div className="flex items-center gap-2 text-sm font-medium mb-1">
@@ -718,9 +718,9 @@ export function MobileRosterToolbar({
       </div>
 
       {/* Third Row - View Mode & Publish */}
-      <div className="flex items-center justify-between px-2 py-2 gap-2">
+      <div className="flex items-center justify-between px-4 py-2 gap-2 w-full">
         {/* View Mode Tabs */}
-        <div className="flex bg-muted rounded-lg p-0.5 overflow-x-auto">
+        <div className="flex bg-muted rounded-lg p-0.5 shrink-0">
           {viewModes.map((mode) => (
             <Button
               key={mode.value}

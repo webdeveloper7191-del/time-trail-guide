@@ -65,7 +65,7 @@ export function MobileShiftCard({
     <div
       onClick={handleCardTap}
       className={cn(
-        "relative rounded-lg border overflow-hidden transition-all duration-200",
+        "relative rounded-lg border overflow-hidden transition-all duration-200 w-full",
         "active:scale-[0.98]",
         isExpanded && "ring-2 ring-primary/30 shadow-md",
         shift.status === 'draft' && "border-dashed opacity-80"
