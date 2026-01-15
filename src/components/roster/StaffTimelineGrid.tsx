@@ -37,6 +37,8 @@ import {
   Moon,
   Zap,
   PhoneCall,
+  Building2,
+  Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -102,6 +104,7 @@ interface StaffTimelineGridProps {
   onOpenShiftTemplateManager?: () => void;
   onEmptyShiftClick?: (emptyShift: EmptyShift) => void;
   onDeleteEmptyShift?: (emptyShiftId: string) => void;
+  onSendToAgency?: (openShift: OpenShift) => void;
 }
 
 export function StaffTimelineGrid({
@@ -136,6 +139,7 @@ export function StaffTimelineGrid({
   onOpenShiftTemplateManager,
   onEmptyShiftClick,
   onDeleteEmptyShift,
+  onSendToAgency,
 }: StaffTimelineGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -1225,7 +1229,8 @@ export function StaffTimelineGrid({
                                 openShift={openShift} 
                                 isCompact={isCompact} 
                                 isDragOver={isDragOver} 
-                                onDelete={onOpenShiftDelete ? () => handleRequestDeleteOpenShift(openShift, room.name) : undefined} 
+                                onDelete={onOpenShiftDelete ? () => handleRequestDeleteOpenShift(openShift, room.name) : undefined}
+                                onSendToAgency={onSendToAgency ? () => onSendToAgency(openShift) : undefined}
                               />
                             ))}
                           </div>
@@ -1769,7 +1774,19 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onShif
   );
 }
 
-function OpenShiftCard({ openShift, isCompact, isDragOver, onDelete }: { openShift: OpenShift; isCompact?: boolean; isDragOver?: boolean; onDelete?: () => void; }) {
+function OpenShiftCard({ 
+  openShift, 
+  isCompact, 
+  isDragOver, 
+  onDelete,
+  onSendToAgency 
+}: { 
+  openShift: OpenShift; 
+  isCompact?: boolean; 
+  isDragOver?: boolean; 
+  onDelete?: () => void;
+  onSendToAgency?: () => void;
+}) {
   const urgencyStyles = {
     low: {
       bg: 'bg-slate-50 dark:bg-slate-900/50',
@@ -1808,31 +1825,45 @@ function OpenShiftCard({ openShift, isCompact, isDragOver, onDelete }: { openShi
     )}>
       <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
       
-      {/* Delete button */}
-      {onDelete && (
-        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 hover:bg-destructive/20 hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete();
-                  }}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">Delete open shift</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      )}
+      {/* Action buttons */}
+      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 hover:bg-background/80"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {onSendToAgency && (
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation();
+                onSendToAgency();
+              }}>
+                <Building2 className="h-4 w-4 mr-2 text-primary" />
+                Send to Agency
+              </DropdownMenuItem>
+            )}
+            {onSendToAgency && onDelete && <DropdownMenuSeparator />}
+            {onDelete && (
+              <DropdownMenuItem 
+                className="text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Open Shift
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       
       <div className="pl-3 pr-7 py-2">
         <div className="text-xs font-semibold text-foreground">{openShift.startTime}-{openShift.endTime}</div>
