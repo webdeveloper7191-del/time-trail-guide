@@ -52,13 +52,27 @@ import {
 } from '@/lib/agencyEscalationService';
 import { toast } from 'sonner';
 
+interface PlacementForRating {
+  id: string;
+  agencyId: string;
+  agencyName: string;
+  workerId: string;
+  workerName: string;
+  centreId: string;
+  centreName: string;
+  shiftDate: string;
+  shiftTime?: string;
+  role?: string;
+}
+
 interface AgencyResponseTrackerProps {
   open: boolean;
   onClose: () => void;
   broadcastId?: string;
+  onPlacementAccepted?: (placement: PlacementForRating) => void;
 }
 
-export function AgencyResponseTracker({ open, onClose, broadcastId }: AgencyResponseTrackerProps) {
+export function AgencyResponseTracker({ open, onClose, broadcastId, onPlacementAccepted }: AgencyResponseTrackerProps) {
   const [records, setRecords] = useState<BroadcastTrackingRecord[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<BroadcastTrackingRecord | null>(null);
   const [expandedAgencies, setExpandedAgencies] = useState<Set<string>>(new Set());
@@ -200,6 +214,10 @@ export function AgencyResponseTracker({ open, onClose, broadcastId }: AgencyResp
   };
 
   const handleAcceptCandidate = (record: BroadcastTrackingRecord, submission: CandidateSubmission) => {
+    const agency = record.responses.find(res => res.candidates.some(c => c.id === submission.id));
+    const agencyId = agency?.agencyId || '';
+    const agencyName = agency?.agencyName || '';
+
     // Update the record to mark as filled
     setRecords(prev => prev.map(r => 
       r.id === record.id 
@@ -208,15 +226,32 @@ export function AgencyResponseTracker({ open, onClose, broadcastId }: AgencyResp
             status: 'filled' as const, 
             filledAt: new Date().toISOString(),
             filledBy: {
-              agencyId: record.responses.find(res => res.candidates.some(c => c.id === submission.id))?.agencyId || '',
-              agencyName: record.responses.find(res => res.candidates.some(c => c.id === submission.id))?.agencyName || '',
+              agencyId,
+              agencyName,
               candidateId: submission.candidateId,
               candidateName: submission.candidateName,
             }
           }
         : r
     ));
+    
     toast.success(`${submission.candidateName} assigned to ${record.shiftTime} shift. Roster updated.`);
+
+    // Trigger rating modal callback
+    if (onPlacementAccepted) {
+      onPlacementAccepted({
+        id: `placement-${Date.now()}`,
+        agencyId,
+        agencyName,
+        workerId: submission.candidateId,
+        workerName: submission.candidateName,
+        centreId: record.centreId,
+        centreName: record.centreName,
+        shiftDate: record.shiftDate,
+        shiftTime: record.shiftTime,
+        role: record.role,
+      });
+    }
   };
 
   const handleRejectCandidate = (submission: CandidateSubmission) => {

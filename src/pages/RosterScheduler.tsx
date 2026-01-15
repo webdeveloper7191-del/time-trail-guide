@@ -2091,6 +2091,10 @@ export default function RosterScheduler() {
       <AgencyResponseTracker
         open={showAgencyTracker}
         onClose={() => setShowAgencyTracker(false)}
+        onPlacementAccepted={(placement) => {
+          setPlacementToRate(placement);
+          setShowRatingModal(true);
+        }}
       />
 
       {/* Agency Notification Templates */}
