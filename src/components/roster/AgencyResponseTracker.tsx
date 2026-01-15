@@ -107,8 +107,23 @@ export function AgencyResponseTracker({ open, onClose, broadcastId }: AgencyResp
   };
 
   const handleAcceptCandidate = (record: BroadcastTrackingRecord, submission: CandidateSubmission) => {
-    toast.success(`${submission.candidateName} accepted for ${record.shiftTime} shift`);
-    // In real implementation, update the record
+    // Update the record to mark as filled
+    setRecords(prev => prev.map(r => 
+      r.id === record.id 
+        ? { 
+            ...r, 
+            status: 'filled' as const, 
+            filledAt: new Date().toISOString(),
+            filledBy: {
+              agencyId: record.responses.find(res => res.candidates.some(c => c.id === submission.id))?.agencyId || '',
+              agencyName: record.responses.find(res => res.candidates.some(c => c.id === submission.id))?.agencyName || '',
+              candidateId: submission.candidateId,
+              candidateName: submission.candidateName,
+            }
+          }
+        : r
+    ));
+    toast.success(`${submission.candidateName} assigned to ${record.shiftTime} shift. Roster updated.`);
   };
 
   const handleRejectCandidate = (submission: CandidateSubmission) => {

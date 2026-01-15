@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Button,
   TextField,
@@ -25,6 +25,7 @@ import {
   LinearProgress,
   Paper,
   Collapse,
+  Avatar,
 } from '@mui/material';
 import { 
   Building2, 
@@ -57,6 +58,7 @@ import {
   Filter,
   ArrowRight,
   Info,
+  UserCheck,
 } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { OpenShift, Shift, StaffMember } from '@/types/roster';
@@ -64,6 +66,10 @@ import { Agency, ShiftUrgency, FillMode } from '@/types/agency';
 import { format, parseISO, addHours, differenceInHours } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { 
+  PreviousWorkerRecord, 
+  generateMockPreviousWorkers 
+} from '@/lib/agencyNotificationService';
 
 // ============ TYPES ============
 
@@ -257,8 +263,21 @@ export function SendToAgencyModal({
   const [selectedAgencies, setSelectedAgencies] = useState<Map<string, AgencySelectionRule>>(new Map());
   const [showAdvancedRules, setShowAdvancedRules] = useState<string | null>(null);
   
+  // Previous workers
+  const [previousWorkers, setPreviousWorkers] = useState<PreviousWorkerRecord[]>([]);
+  const [selectedPreviousWorkers, setSelectedPreviousWorkers] = useState<Set<string>>(new Set());
+  const [showPreviousWorkers, setShowPreviousWorkers] = useState(false);
+  
   // Expanded sections
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['timing', 'acceptance']));
+  
+  // Load previous workers when modal opens
+  useEffect(() => {
+    if (open && centreId) {
+      const workers = generateMockPreviousWorkers(centreId);
+      setPreviousWorkers(workers);
+    }
+  }, [open, centreId]);
 
   // ============ COMPUTED ============
   const shiftDetails = useMemo(() => {
@@ -932,8 +951,170 @@ export function SendToAgencyModal({
     </Stack>
   );
 
+  const togglePreviousWorker = (workerId: string) => {
+    setSelectedPreviousWorkers(prev => {
+      const next = new Set(prev);
+      if (next.has(workerId)) {
+        next.delete(workerId);
+      } else {
+        next.add(workerId);
+      }
+      return next;
+    });
+  };
+
+  const renderPreviousWorkerCard = (worker: PreviousWorkerRecord) => {
+    const isSelected = selectedPreviousWorkers.has(worker.workerId);
+    return (
+      <Paper
+        key={worker.workerId}
+        elevation={0}
+        sx={{
+          p: 2,
+          border: '2px solid',
+          borderColor: isSelected ? 'success.main' : 'divider',
+          borderRadius: 2,
+          bgcolor: isSelected ? 'success.50' : 'background.paper',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          '&:hover': {
+            borderColor: isSelected ? 'success.dark' : 'primary.light',
+          },
+        }}
+        onClick={() => togglePreviousWorker(worker.workerId)}
+      >
+        <Stack direction="row" alignItems="flex-start" spacing={2}>
+          <Checkbox
+            checked={isSelected}
+            onChange={() => togglePreviousWorker(worker.workerId)}
+            onClick={(e) => e.stopPropagation()}
+            color="success"
+          />
+          
+          <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+            {worker.workerName.split(' ').map(n => n[0]).join('')}
+          </Avatar>
+          
+          <Box flex={1}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {worker.workerName}
+                </Typography>
+                {worker.preferredByLocation && (
+                  <Chip
+                    size="small"
+                    icon={<Star size={10} />}
+                    label="Preferred"
+                    color="warning"
+                    sx={{ fontSize: '0.6rem', height: 18 }}
+                  />
+                )}
+              </Stack>
+              <Stack direction="row" spacing={0.5}>
+                <Chip
+                  size="small"
+                  label={`${worker.reliabilityScore}%`}
+                  color={worker.reliabilityScore >= 95 ? 'success' : worker.reliabilityScore >= 85 ? 'warning' : 'default'}
+                  sx={{ fontSize: '0.65rem', height: 20 }}
+                />
+                <Chip
+                  size="small"
+                  icon={<Star size={10} />}
+                  label={worker.averageRating.toFixed(1)}
+                  variant="outlined"
+                  sx={{ fontSize: '0.65rem', height: 20 }}
+                />
+              </Stack>
+            </Stack>
+            
+            <Stack direction="row" spacing={2} mb={0.5}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Building2 size={10} /> {worker.agencyName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <History size={10} /> {worker.shiftsWorked} shifts
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Clock size={10} /> Last: {format(parseISO(worker.lastShiftDate), 'd MMM')}
+              </Typography>
+            </Stack>
+            
+            {worker.notes && (
+              <Typography variant="caption" color="text.secondary" fontStyle="italic">
+                "{worker.notes}"
+              </Typography>
+            )}
+          </Box>
+        </Stack>
+      </Paper>
+    );
+  };
+
   const renderAgenciesStep = () => (
-    <Stack spacing={2}>
+    <Stack spacing={3}>
+      {/* Previous Workers Section */}
+      {preferPreviousWorkers && previousWorkers.length > 0 && (
+        <Box>
+          <Button
+            fullWidth
+            variant="text"
+            onClick={() => setShowPreviousWorkers(!showPreviousWorkers)}
+            endIcon={showPreviousWorkers ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary', mb: 1 }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <UserCheck size={18} className="text-success" />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Request Specific Workers
+              </Typography>
+              <Chip
+                size="small"
+                label={`${previousWorkers.length} have worked here before`}
+                color="success"
+                variant="outlined"
+                sx={{ fontSize: '0.65rem' }}
+              />
+            </Stack>
+          </Button>
+          
+          <Collapse in={showPreviousWorkers}>
+            <Paper sx={{ p: 2, bgcolor: 'success.50', border: '1px solid', borderColor: 'success.200', borderRadius: 2, mb: 2 }}>
+              <Alert severity="success" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  Select workers who have previously worked at {centreName}. Their agencies will be prioritized and asked to assign these specific workers.
+                </Typography>
+              </Alert>
+              
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="caption" color="text.secondary">
+                  {selectedPreviousWorkers.size} worker(s) selected
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    if (selectedPreviousWorkers.size === previousWorkers.length) {
+                      setSelectedPreviousWorkers(new Set());
+                    } else {
+                      setSelectedPreviousWorkers(new Set(previousWorkers.map(w => w.workerId)));
+                    }
+                  }}
+                >
+                  {selectedPreviousWorkers.size === previousWorkers.length ? 'Deselect All' : 'Select All Preferred'}
+                </Button>
+              </Stack>
+              
+              <Stack spacing={1.5} sx={{ maxHeight: 300, overflow: 'auto' }}>
+                {previousWorkers
+                  .sort((a, b) => (b.preferredByLocation ? 1 : 0) - (a.preferredByLocation ? 1 : 0) || b.reliabilityScore - a.reliabilityScore)
+                  .map(worker => renderPreviousWorkerCard(worker))}
+              </Stack>
+            </Paper>
+          </Collapse>
+        </Box>
+      )}
+
       {/* Quick Actions */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Typography variant="subtitle2">
@@ -962,7 +1143,22 @@ export function SendToAgencyModal({
         {mockAgencies.map(agency => {
           const isSelected = selectedAgencies.has(agency.id);
           const rule = selectedAgencies.get(agency.id);
-          return renderAgencyCard(agency, isSelected, rule);
+          // Check if any selected workers belong to this agency
+          const requestedWorkers = previousWorkers.filter(
+            w => w.agencyId === agency.id && selectedPreviousWorkers.has(w.workerId)
+          );
+          return (
+            <Box key={agency.id}>
+              {renderAgencyCard(agency, isSelected, rule)}
+              {requestedWorkers.length > 0 && isSelected && (
+                <Alert severity="info" sx={{ mx: 2, mb: 1.5, mt: -1 }}>
+                  <Typography variant="caption">
+                    Requesting: {requestedWorkers.map(w => w.workerName).join(', ')}
+                  </Typography>
+                </Alert>
+              )}
+            </Box>
+          );
         })}
       </Box>
 
