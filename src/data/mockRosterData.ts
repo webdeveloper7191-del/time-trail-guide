@@ -61,6 +61,9 @@ export const mockStaff: StaffMember[] = [
     maxHoursPerWeek: 38,
     currentWeeklyHours: 32,
     preferredCentres: ['centre-1', 'centre-2'],
+    defaultCentreId: 'centre-1',
+    willingToWorkMultipleLocations: true,
+    maxTravelDistanceKm: 25,
     availability: [
       { dayOfWeek: 1, available: true, startTime: '07:00', endTime: '17:00' },
       { dayOfWeek: 2, available: true, startTime: '07:00', endTime: '17:00' },
@@ -90,6 +93,8 @@ export const mockStaff: StaffMember[] = [
     maxHoursPerWeek: 38,
     currentWeeklyHours: 38,
     preferredCentres: ['centre-1'],
+    defaultCentreId: 'centre-1',
+    willingToWorkMultipleLocations: false,
     availability: [
       { dayOfWeek: 1, available: true, startTime: '06:30', endTime: '18:30' },
       { dayOfWeek: 2, available: true, startTime: '06:30', endTime: '18:30' },
@@ -117,6 +122,10 @@ export const mockStaff: StaffMember[] = [
     maxHoursPerWeek: 30,
     currentWeeklyHours: 24,
     preferredCentres: ['centre-1', 'centre-3'],
+    defaultCentreId: 'centre-1',
+    willingToWorkMultipleLocations: true,
+    maxTravelDistanceKm: 40,
+    crossLocationNotes: 'Happy to travel between Sydney and Brisbane locations',
     availability: [
       { dayOfWeek: 1, available: true, startTime: '08:00', endTime: '16:00' },
       { dayOfWeek: 2, available: true, startTime: '08:00', endTime: '16:00' },
@@ -144,6 +153,8 @@ export const mockStaff: StaffMember[] = [
     maxHoursPerWeek: 38,
     currentWeeklyHours: 36,
     preferredCentres: ['centre-2'],
+    defaultCentreId: 'centre-2',
+    willingToWorkMultipleLocations: false,
     availability: [
       { dayOfWeek: 1, available: true, startTime: '07:00', endTime: '18:00' },
       { dayOfWeek: 2, available: true, startTime: '07:00', endTime: '18:00' },
@@ -169,6 +180,10 @@ export const mockStaff: StaffMember[] = [
     maxHoursPerWeek: 25,
     currentWeeklyHours: 20,
     preferredCentres: ['centre-1', 'centre-2', 'centre-3'],
+    defaultCentreId: 'centre-1',
+    willingToWorkMultipleLocations: true,
+    maxTravelDistanceKm: 50,
+    crossLocationNotes: 'Available for any location, has own transport',
     availability: [
       { dayOfWeek: 1, available: true, startTime: '09:00', endTime: '15:00' },
       { dayOfWeek: 2, available: true, startTime: '09:00', endTime: '15:00' },

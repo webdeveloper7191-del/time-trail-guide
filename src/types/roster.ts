@@ -128,6 +128,12 @@ export interface StaffMember {
   email?: string;
   phone?: string;
   schedulingPreferences?: SchedulingPreferences;
+  
+  // Cross-location scheduling fields
+  defaultCentreId?: string; // Primary/home location
+  willingToWorkMultipleLocations?: boolean; // Indicates flexibility
+  maxTravelDistanceKm?: number; // Maximum travel distance willing to travel
+  crossLocationNotes?: string; // Notes about location preferences
 }
 
 export type ShiftConflictType = 

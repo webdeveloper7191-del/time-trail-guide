@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { StaffMember, Shift, qualificationLabels, roleLabels, employmentTypeLabels, EmploymentType, AgencyType, agencyLabels, agencyColors } from '@/types/roster';
+import { StaffMember, Shift, qualificationLabels, roleLabels, employmentTypeLabels, EmploymentType, AgencyType, agencyLabels, agencyColors, Centre } from '@/types/roster';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,10 @@ import {
   Building2,
   Sparkles,
   PanelRightClose,
-  PanelRightOpen
+  PanelRightOpen,
+  MapPin,
+  Navigation,
+  Home
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -31,6 +34,7 @@ interface UnscheduledStaffPanelProps {
   agencyStaff: StaffMember[];
   shifts: Shift[];
   selectedCentreId: string;
+  centres: Centre[];
   onDragStart: (e: React.DragEvent, staffMember: StaffMember) => void;
   onGenerateAI: () => void;
   isGenerating: boolean;
@@ -44,7 +48,8 @@ export function UnscheduledStaffPanel({
   staff, 
   agencyStaff,
   shifts, 
-  selectedCentreId, 
+  selectedCentreId,
+  centres,
   onDragStart,
   onGenerateAI,
   isGenerating,
@@ -167,11 +172,32 @@ export function UnscheduledStaffPanel({
       .join(', ');
   };
 
+  const getCentreName = (centreId: string) => {
+    return centres.find(c => c.id === centreId)?.name || centreId;
+  };
+
+  const getDefaultCentreName = (member: StaffMember) => {
+    if (member.defaultCentreId) {
+      return getCentreName(member.defaultCentreId);
+    }
+    if (member.preferredCentres.length > 0) {
+      return getCentreName(member.preferredCentres[0]);
+    }
+    return 'No default';
+  };
+
+  const isAtDefaultLocation = (member: StaffMember) => {
+    return member.defaultCentreId === selectedCentreId || 
+           (!member.defaultCentreId && member.preferredCentres[0] === selectedCentreId);
+  };
+
   const renderStaffCard = (member: StaffMember) => {
     const overtimeStatus = getOvertimeStatus(member);
     const hasCertIssues = hasExpiringCertificates(member);
     const hoursRemaining = member.maxHoursPerWeek - member.currentWeeklyHours;
     const availableDays = getAvailableDays(member);
+    const defaultCentreName = getDefaultCentreName(member);
+    const atDefaultLocation = isAtDefaultLocation(member);
     
     return (
       <TooltipProvider key={member.id}>
@@ -227,6 +253,27 @@ export function UnscheduledStaffPanel({
                     <span className="truncate">{availableDays || 'No availability'}</span>
                   </div>
                   
+                  {/* Location info */}
+                  <div className="flex items-center gap-1 text-[10px] mt-0.5">
+                    {atDefaultLocation ? (
+                      <Home className="h-2.5 w-2.5 text-emerald-500" />
+                    ) : (
+                      <MapPin className="h-2.5 w-2.5 text-blue-500" />
+                    )}
+                    <span className={cn(
+                      "truncate",
+                      atDefaultLocation ? "text-emerald-600" : "text-blue-600"
+                    )}>
+                      {atDefaultLocation ? 'Home location' : defaultCentreName}
+                    </span>
+                    {member.willingToWorkMultipleLocations && (
+                      <Badge variant="outline" className="text-[7px] px-1 py-0 h-3 ml-1 border-blue-400 text-blue-600">
+                        <Navigation className="h-2 w-2 mr-0.5" />
+                        Multi
+                      </Badge>
+                    )}
+                  </div>
+                  
                   {/* Qualification badges */}
                   <div className="flex flex-wrap gap-0.5 mt-1">
                     {member.qualifications.slice(0, 2).map((q, idx) => (
@@ -260,6 +307,46 @@ export function UnscheduledStaffPanel({
               <div className="text-xs">
                 <span className="text-muted-foreground">Rate:</span> ${member.hourlyRate}/hr
                 <span className="text-muted-foreground ml-2">OT:</span> ${member.overtimeRate}/hr
+              </div>
+              
+              {/* Location details in tooltip */}
+              <div className="text-xs border-t border-border pt-2">
+                <div className="flex items-center gap-1 mb-1">
+                  <Home className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Default:</span>
+                  <span className="font-medium">{defaultCentreName}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Navigation className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Multi-location:</span>
+                  <span className={member.willingToWorkMultipleLocations ? "text-emerald-600 font-medium" : "text-muted-foreground"}>
+                    {member.willingToWorkMultipleLocations ? 'Yes' : 'No'}
+                  </span>
+                </div>
+                {member.maxTravelDistanceKm && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">Max travel:</span>
+                    <span>{member.maxTravelDistanceKm}km</span>
+                  </div>
+                )}
+                {member.preferredCentres.length > 1 && (
+                  <div className="mt-1">
+                    <span className="text-muted-foreground">Preferred centres:</span>
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {member.preferredCentres.map(cId => (
+                        <Badge key={cId} variant="outline" className="text-[9px]">
+                          {getCentreName(cId)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {member.crossLocationNotes && (
+                  <div className="mt-1 text-[10px] text-muted-foreground italic">
+                    "{member.crossLocationNotes}"
+                  </div>
+                )}
               </div>
               <div className="text-xs">
                 <span className="text-muted-foreground">Hours:</span> {member.currentWeeklyHours}/{member.maxHoursPerWeek}h
