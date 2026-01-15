@@ -58,7 +58,7 @@ import { BulkImportExportPanel } from './awards/BulkImportExportPanel';
 import { CustomRuleBuilderPanel } from './awards/CustomRuleBuilderPanel';
 import { AllowanceRatesEditorPanel } from './awards/AllowanceRatesEditorPanel';
 import { CustomOvertimeRatesPanel } from './awards/CustomOvertimeRatesPanel';
-import { CustomLeaveLoadingPanel } from './awards/CustomLeaveLoadingPanel';
+
 import { PenaltyRatesEditorPanel } from './awards/PenaltyRatesEditorPanel';
 import { AwardComparisonPanel } from './awards/AwardComparisonPanel';
 import { ShiftDifferentialCalculator } from './awards/ShiftDifferentialCalculator';
@@ -68,7 +68,7 @@ import { AwardUpdatesPanel } from './awards/AwardUpdatesPanel';
 import { OnCallSettingsEditor } from './OnCallSettingsEditor';
 import { OnCallConfiguration, DEFAULT_ON_CALL_CONFIGS, AwardType, AWARD_NAMES } from '@/types/allowances';
 import { ModuleDependencyExplorer } from './architecture/ModuleDependencyExplorer';
-import { LeaveBalanceDashboard } from './awards/LeaveBalanceDashboard';
+
 import { EnterpriseAgreementPanel } from './awards/EnterpriseAgreementPanel';
 import { AuditTrailViewer } from './awards/AuditTrailViewer';
 import { BOOTCalculatorPanel } from './awards/BOOTCalculatorPanel';
@@ -771,20 +771,6 @@ export function AwardsConfigurationTab() {
               <span className="hidden sm:inline">BOOT</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="leave-loading" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Percent className="h-4 w-4" />
-              <span className="hidden sm:inline">Leave</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="leave-balances" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Umbrella className="h-4 w-4" />
-              <span className="hidden sm:inline">Leave & LSL</span>
-            </TabsTrigger>
-            <TabsTrigger 
               value="calculator" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
@@ -877,9 +863,6 @@ export function AwardsConfigurationTab() {
           <AwardComparisonPanel />
         </TabsContent>
 
-        <TabsContent value="leave-balances" className="mt-0">
-          <LeaveBalanceDashboard />
-        </TabsContent>
 
         <TabsContent value="calculator" className="mt-0">
           <ShiftDifferentialCalculator />
