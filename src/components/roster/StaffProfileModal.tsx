@@ -90,7 +90,6 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
               background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(199, 89%, 38%) 100%)',
               color: 'white',
               p: 2,
-              pr: 5, // Extra padding for close button
             }}
           >
         <Stack direction="row" spacing={2.5} alignItems="center">
