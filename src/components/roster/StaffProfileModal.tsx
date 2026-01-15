@@ -69,9 +69,10 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent 
-        side="right" 
-        className="!p-0 flex flex-col h-full overflow-hidden w-[500px] max-w-[95vw] [&>button]:hidden"
+      <SheetContent
+        side="right"
+        style={{ width: '500px', maxWidth: '95vw' }}
+        className="!p-0 flex flex-col h-full overflow-hidden w-full [&>button]:hidden"
       >
         {/* Close button */}
         <Button 
