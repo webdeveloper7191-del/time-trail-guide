@@ -6,7 +6,7 @@ import { Button } from '@/components/mui/Button';
 import { 
   Building2, Users, Calendar, FileText, BarChart3, 
   Shield, AlertTriangle, TrendingUp, Clock, CheckCircle2,
-  ArrowLeft, Plus, UserPlus, Zap, Receipt
+  ArrowLeft, Plus, UserPlus, Zap, Receipt, ClipboardCheck, Briefcase
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockAgency, mockCandidates, mockShiftRequests, mockInvoices, mockAgencyAnalytics } from '@/data/mockAgencyData';
@@ -15,6 +15,9 @@ import AgencyOnboardingWizard from '@/components/agency/AgencyOnboardingWizard';
 import ShiftMatchingPanel from '@/components/agency/ShiftMatchingPanel';
 import CandidateOnboardingForm from '@/components/agency/CandidateOnboardingForm';
 import InvoiceGenerator from '@/components/agency/InvoiceGenerator';
+import CandidateAvailabilityCalendar from '@/components/agency/CandidateAvailabilityCalendar';
+import TimesheetApprovalWorkflow from '@/components/agency/TimesheetApprovalWorkflow';
+import ClientManagementPanel from '@/components/agency/ClientManagementPanel';
 
 const AgencyPortal = () => {
   const navigate = useNavigate();
@@ -23,6 +26,8 @@ const AgencyPortal = () => {
   const [showCandidateForm, setShowCandidateForm] = useState(false);
   const [showInvoiceGenerator, setShowInvoiceGenerator] = useState(false);
   const [selectedShiftForMatching, setSelectedShiftForMatching] = useState<string | null>(null);
+  const [showAvailabilityCalendar, setShowAvailabilityCalendar] = useState(false);
+  const [selectedCandidateForAvailability, setSelectedCandidateForAvailability] = useState<{ id: string; name: string } | null>(null);
 
   const openShifts = mockShiftRequests.filter(s => s.status === 'open' || s.status === 'partially_filled');
   const urgentShifts = mockShiftRequests.filter(s => s.urgency === 'critical' || s.urgency === 'urgent');
@@ -69,7 +74,7 @@ const AgencyPortal = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
             <TabsTrigger value="dashboard" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -78,9 +83,17 @@ const AgencyPortal = () => {
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Candidates</span>
             </TabsTrigger>
+            <TabsTrigger value="clients" className="gap-2">
+              <Briefcase className="h-4 w-4" />
+              <span className="hidden sm:inline">Clients</span>
+            </TabsTrigger>
             <TabsTrigger value="shifts" className="gap-2">
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">Shifts</span>
+            </TabsTrigger>
+            <TabsTrigger value="timesheets" className="gap-2">
+              <ClipboardCheck className="h-4 w-4" />
+              <span className="hidden sm:inline">Timesheets</span>
             </TabsTrigger>
             <TabsTrigger value="invoices" className="gap-2">
               <FileText className="h-4 w-4" />
@@ -232,12 +245,28 @@ const AgencyPortal = () => {
                           {candidate.status}
                         </Badge>
                         <span className="text-sm">⭐ {candidate.averageRating}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCandidateForAvailability({ id: candidate.id, name: `${candidate.firstName} ${candidate.lastName}` });
+                            setShowAvailabilityCalendar(true);
+                          }}
+                        >
+                          <Calendar className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Clients Tab */}
+          <TabsContent value="clients">
+            <ClientManagementPanel />
           </TabsContent>
 
           {/* Shifts Tab */}
@@ -297,7 +326,12 @@ const AgencyPortal = () => {
                     ))}
                   </div>
                 </CardContent>
-              </Card>
+            </Card>
+          </TabsContent>
+
+          {/* Timesheets Tab */}
+          <TabsContent value="timesheets">
+            <TimesheetApprovalWorkflow />
             )}
           </TabsContent>
 
@@ -403,6 +437,23 @@ const AgencyPortal = () => {
           setShowInvoiceGenerator(false);
         }}
       />
+      
+      {selectedCandidateForAvailability && (
+        <CandidateAvailabilityCalendar
+          open={showAvailabilityCalendar}
+          onClose={() => {
+            setShowAvailabilityCalendar(false);
+            setSelectedCandidateForAvailability(null);
+          }}
+          candidateId={selectedCandidateForAvailability.id}
+          candidateName={selectedCandidateForAvailability.name}
+          onSave={(data) => {
+            console.log('Availability saved:', data);
+            setShowAvailabilityCalendar(false);
+            setSelectedCandidateForAvailability(null);
+          }}
+        />
+      )}
     </div>
   );
 };
