@@ -609,7 +609,23 @@ export function StaffTimelineGrid({
             const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
             const roomOpenShifts = openShiftsByRoomDate[room.id] || [];
             const isCollapsed = collapsedRooms.has(room.id);
-            const roomColor = room.color || 'hsl(var(--primary))';
+            const roomColor = room.color || 'hsl(220, 70%, 55%)';
+
+            // Calculate shifts per day for collapsed view
+            const getRoomShiftsForDay = (dateStr: string) => {
+              return shifts.filter(s => 
+                s.centreId === centre.id && 
+                s.roomId === room.id && 
+                s.date === dateStr
+              );
+            };
+
+            const getRoomOpenShiftsForDay = (dateStr: string) => {
+              return openShifts.filter(os => 
+                os.roomId === room.id && 
+                os.date === dateStr
+              );
+            };
 
             return (
               <div 
@@ -621,17 +637,20 @@ export function StaffTimelineGrid({
               >
                 {/* Room header */}
                 <div 
-                  className="flex border-b sticky top-[53px] z-20 shadow-sm cursor-pointer transition-colors hover:brightness-95"
+                  className={cn(
+                    "flex border-b sticky top-[53px] z-20 shadow-sm cursor-pointer transition-colors",
+                    !isCollapsed && "hover:brightness-95"
+                  )}
                   style={{ 
-                    backgroundColor: `color-mix(in srgb, ${roomColor} 15%, transparent)`,
-                    borderBottomColor: `color-mix(in srgb, ${roomColor} 30%, transparent)`,
+                    backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`,
+                    borderBottomColor: `color-mix(in srgb, ${roomColor} 25%, transparent)`,
                   }}
                   onClick={() => toggleRoomCollapse(room.id)}
                 >
                   <div
                     data-drop-zone
-                    className="w-64 shrink-0 px-4 py-2 flex items-center gap-3 border-r"
-                    style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 30%, transparent)` }}
+                    className="w-64 shrink-0 px-3 py-2 flex items-center gap-2 border-r"
+                    style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                     onDragOver={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -657,7 +676,7 @@ export function StaffTimelineGrid({
                         e.stopPropagation();
                         toggleRoomCollapse(room.id);
                       }}
-                      className="p-1 rounded hover:bg-black/5 transition-all"
+                      className="p-0.5 rounded hover:bg-black/10 transition-all"
                     >
                       {isCollapsed ? (
                         <ChevronRightIcon className="h-4 w-4 transition-transform" />
@@ -667,25 +686,23 @@ export function StaffTimelineGrid({
                     </button>
                     <Badge 
                       variant="secondary" 
-                      className="font-semibold"
+                      className="font-semibold text-xs px-2 py-0.5"
                       style={{ 
-                        backgroundColor: `color-mix(in srgb, ${roomColor} 25%, white)`,
-                        color: `color-mix(in srgb, ${roomColor} 80%, black)`,
+                        backgroundColor: roomColor,
+                        color: 'white',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.2)',
                       }}
                     >
                       {room.name}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {ageGroupLabels[room.ageGroup]} • 1:{room.requiredRatio} • Cap: {room.capacity}
-                    </span>
-                    {isCollapsed && roomStaff.length > 0 && (
-                      <Badge variant="outline" className="text-xs">
-                        {roomStaff.length} staff
-                      </Badge>
-                    )}
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {ageGroupLabels[room.ageGroup]} • 1:{room.requiredRatio} • Cap: {room.capacity}
+                      </span>
+                    </div>
                   </div>
                   
-                  {/* Analytics charts in header row when enabled */}
+                  {/* Analytics charts in header row when enabled - only when expanded */}
                   {!isCollapsed && showAnalyticsCharts && demandAnalytics.length > 0 && dates.map((date) => {
                     const dateStr = format(date, 'yyyy-MM-dd');
                     return (
@@ -695,7 +712,7 @@ export function StaffTimelineGrid({
                           "flex-1 p-1 border-r",
                           viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]"
                         )}
-                        style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 30%, transparent)` }}
+                        style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <InlineDemandChart
@@ -712,22 +729,55 @@ export function StaffTimelineGrid({
                   {!isCollapsed && showAnalyticsCharts && (
                     <div 
                       className="w-24 shrink-0 border-r"
-                      style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 30%, transparent)` }}
+                      style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                     />
                   )}
                   
-                  {/* Collapsed date cells */}
-                  {isCollapsed && dates.map((date) => (
-                    <div 
-                      key={format(date, 'yyyy-MM-dd')} 
-                      className={cn(
-                        "flex-1 p-2 border-r",
-                        viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]"
-                      )}
-                      style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 30%, transparent)` }}
-                    />
-                  ))}
-                  {isCollapsed && <div className="w-24 shrink-0" />}
+                  {/* Collapsed day summaries */}
+                  {isCollapsed && dates.map((date) => {
+                    const dateStr = format(date, 'yyyy-MM-dd');
+                    const dayShifts = getRoomShiftsForDay(dateStr);
+                    const dayOpenShifts = getRoomOpenShiftsForDay(dateStr);
+                    const uniqueStaff = new Set(dayShifts.map(s => s.staffId)).size;
+                    const hasOpenShifts = dayOpenShifts.length > 0;
+                    
+                    return (
+                      <div 
+                        key={dateStr} 
+                        className={cn(
+                          "flex-1 p-2 border-r flex flex-col items-center justify-center gap-1",
+                          viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]"
+                        )}
+                        style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {dayShifts.length > 0 ? (
+                          <>
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm font-semibold">{dayShifts.length}</span>
+                              <span className="text-[10px] text-muted-foreground">shifts</span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">{uniqueStaff} staff</span>
+                          </>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        )}
+                        {hasOpenShifts && (
+                          <Badge 
+                            variant="outline" 
+                            className="text-[9px] px-1 py-0 h-4 border-amber-400 text-amber-600 bg-amber-50"
+                          >
+                            {dayOpenShifts.length} open
+                          </Badge>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {isCollapsed && (
+                    <div className="w-24 shrink-0 flex items-center justify-center border-r" style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}>
+                      <span className="text-xs font-medium text-muted-foreground">{roomStaff.length} staff</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Collapsible content */}

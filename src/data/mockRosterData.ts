@@ -12,10 +12,10 @@ export const mockCentres: Centre[] = [
     address: '123 Main Street, Sydney NSW 2000',
     operatingHours: { start: '06:30', end: '18:30' },
     rooms: [
-      { id: 'room-1a', name: 'Joeys', centreId: 'centre-1', ageGroup: 'nursery', capacity: 12, requiredRatio: 4, minQualifiedStaff: 2, color: 'hsl(35, 90%, 55%)' },
-      { id: 'room-1b', name: 'Possums', centreId: 'centre-1', ageGroup: 'toddler', capacity: 15, requiredRatio: 5, minQualifiedStaff: 2, color: 'hsl(25, 95%, 55%)' },
-      { id: 'room-1c', name: 'Koalas', centreId: 'centre-1', ageGroup: 'preschool', capacity: 22, requiredRatio: 10, minQualifiedStaff: 2, color: 'hsl(350, 80%, 55%)' },
-      { id: 'room-1d', name: 'Kangaroos', centreId: 'centre-1', ageGroup: 'kindy', capacity: 22, requiredRatio: 11, minQualifiedStaff: 2, color: 'hsl(260, 70%, 60%)' },
+      { id: 'room-1a', name: 'Joeys', centreId: 'centre-1', ageGroup: 'nursery', capacity: 12, requiredRatio: 4, minQualifiedStaff: 2, color: 'hsl(45, 93%, 58%)' },
+      { id: 'room-1b', name: 'Possums', centreId: 'centre-1', ageGroup: 'toddler', capacity: 15, requiredRatio: 5, minQualifiedStaff: 2, color: 'hsl(25, 95%, 60%)' },
+      { id: 'room-1c', name: 'Koalas', centreId: 'centre-1', ageGroup: 'preschool', capacity: 22, requiredRatio: 10, minQualifiedStaff: 2, color: 'hsl(340, 82%, 59%)' },
+      { id: 'room-1d', name: 'Kangaroos', centreId: 'centre-1', ageGroup: 'kindy', capacity: 22, requiredRatio: 11, minQualifiedStaff: 2, color: 'hsl(250, 70%, 65%)' },
     ],
   },
   {
