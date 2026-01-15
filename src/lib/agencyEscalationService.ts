@@ -34,8 +34,10 @@ export interface BroadcastTrackingRecord {
   shiftId: string;
   shiftDate: string;
   shiftTime: string;
+  centreId: string;
   centreName: string;
   roomName?: string;
+  role?: string;
   
   // Broadcast settings
   broadcastedAt: string;
@@ -245,8 +247,10 @@ export function generateMockBroadcastRecords(): BroadcastTrackingRecord[] {
       shiftId: 'open-1',
       shiftDate: '2024-01-16',
       shiftTime: '07:00 - 15:00',
+      centreId: 'centre-1',
       centreName: 'Sunshine Early Learning',
       roomName: 'Toddlers',
+      role: 'Early Childhood Educator',
       broadcastedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
       urgency: 'urgent',
       responseDeadline: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
@@ -357,8 +361,10 @@ export function generateMockBroadcastRecords(): BroadcastTrackingRecord[] {
       shiftId: 'open-2',
       shiftDate: '2024-01-16',
       shiftTime: '12:00 - 18:00',
+      centreId: 'centre-1',
       centreName: 'Sunshine Early Learning',
       roomName: 'Preschool',
+      role: 'Lead Educator',
       broadcastedAt: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
       urgency: 'critical',
       responseDeadline: new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString(),
@@ -487,8 +493,10 @@ export function generateMockBroadcastRecords(): BroadcastTrackingRecord[] {
       shiftId: 'open-3',
       shiftDate: '2024-01-17',
       shiftTime: '08:00 - 16:00',
+      centreId: 'centre-2',
       centreName: 'Little Stars Centre',
       roomName: 'Babies',
+      role: 'Certificate III Educator',
       broadcastedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
       urgency: 'standard',
       responseDeadline: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
