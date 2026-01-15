@@ -70,6 +70,14 @@ import {
   PreviousWorkerRecord, 
   generateMockPreviousWorkers 
 } from '@/lib/agencyNotificationService';
+import {
+  getCentreAgencyPreferences,
+  isAgencyBlacklisted,
+  isAgencyPreferred,
+  getPreferredAgencies,
+  sortAgenciesByPreference,
+  CentreAgencyPreference,
+} from '@/lib/centreAgencyPreferences';
 
 // ============ TYPES ============
 
@@ -267,19 +275,62 @@ export function SendToAgencyModal({
   const [previousWorkers, setPreviousWorkers] = useState<PreviousWorkerRecord[]>([]);
   const [selectedPreviousWorkers, setSelectedPreviousWorkers] = useState<Set<string>>(new Set());
   const [showPreviousWorkers, setShowPreviousWorkers] = useState(false);
+  // Agency preferences
+  const [centrePreferences, setCentrePreferences] = useState<Record<string, CentreAgencyPreference>>({});
   
   // Expanded sections
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['timing', 'acceptance']));
   
-  // Load previous workers when modal opens
+  // Load previous workers and agency preferences when modal opens
   useEffect(() => {
     if (open && centreId) {
       const workers = generateMockPreviousWorkers(centreId);
       setPreviousWorkers(workers);
+      
+      // Load agency preferences
+      const prefs = getCentreAgencyPreferences(centreId);
+      setCentrePreferences(prefs);
+      
+      // Auto-select preferred agencies
+      const preferredIds = getPreferredAgencies(centreId);
+      if (preferredIds.length > 0) {
+        const newMap = new Map<string, AgencySelectionRule>();
+        preferredIds.forEach((agencyId, index) => {
+          newMap.set(agencyId, {
+            agencyId,
+            priority: index + 1,
+            autoAccept: false,
+            maxCandidates: 3,
+            delayMinutes: 0,
+            channels: ['email', 'app_push'],
+          });
+        });
+        setSelectedAgencies(newMap);
+      }
     }
   }, [open, centreId]);
 
   // ============ COMPUTED ============
+  
+  // Sort agencies: preferred first, blacklisted last (but still hidden if blacklisted)
+  const sortedAgencies = useMemo(() => {
+    return sortAgenciesByPreference(mockAgencies, centreId);
+  }, [centreId]);
+  
+  // Filter out blacklisted agencies from display (with option to show)
+  const [showBlacklisted, setShowBlacklisted] = useState(false);
+  
+  const visibleAgencies = useMemo(() => {
+    if (showBlacklisted) {
+      return sortedAgencies;
+    }
+    return sortedAgencies.filter(agency => !isAgencyBlacklisted(centreId, agency.id));
+  }, [sortedAgencies, showBlacklisted, centreId]);
+  
+  const blacklistedCount = useMemo(() => {
+    return mockAgencies.filter(agency => isAgencyBlacklisted(centreId, agency.id)).length;
+  }, [centreId]);
+
   const shiftDetails = useMemo(() => {
     if (!shift) return null;
     const isOpenShift = 'applicants' in shift;
@@ -440,57 +491,93 @@ export function SendToAgencyModal({
     );
   };
 
-  const renderAgencyCard = (agency: Agency, isSelected: boolean, rule?: AgencySelectionRule) => (
-    <Paper
-      key={agency.id}
-      elevation={isSelected ? 3 : 1}
-      sx={{
-        p: 2,
-        mb: 1.5,
-        border: isSelected ? '2px solid' : '1px solid',
-        borderColor: isSelected ? 'primary.main' : 'divider',
-        borderRadius: 2,
-        cursor: 'pointer',
-        transition: 'all 0.2s',
-        '&:hover': {
-          borderColor: 'primary.light',
-          transform: 'translateY(-1px)',
-        },
-      }}
-      onClick={() => toggleAgency(agency.id)}
-    >
-      <Stack direction="row" alignItems="flex-start" spacing={2}>
-        <Checkbox
-          checked={isSelected}
-          onChange={() => toggleAgency(agency.id)}
-          onClick={(e) => e.stopPropagation()}
-        />
-        
-        <Box flex={1}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Building2 size={18} className="text-primary" />
-              <Typography variant="subtitle2" fontWeight={600}>
-                {agency.name}
-              </Typography>
-              {rule && (
-                <Chip
-                  size="small"
-                  label={`Priority ${rule.priority}`}
-                  color="primary"
-                  variant="outlined"
-                  sx={{ fontSize: '0.65rem', height: 20 }}
-                />
-              )}
+  const renderAgencyCard = (agency: Agency, isSelected: boolean, rule?: AgencySelectionRule) => {
+    const isPreferred = isAgencyPreferred(centreId, agency.id);
+    const isBlacklisted = isAgencyBlacklisted(centreId, agency.id);
+    const preference = centrePreferences[agency.id];
+    
+    return (
+      <Paper
+        key={agency.id}
+        elevation={isSelected ? 3 : 1}
+        sx={{
+          p: 2,
+          mb: 1.5,
+          border: isSelected ? '2px solid' : isPreferred ? '2px solid' : isBlacklisted ? '1px dashed' : '1px solid',
+          borderColor: isSelected ? 'primary.main' : isPreferred ? 'warning.main' : isBlacklisted ? 'error.main' : 'divider',
+          borderRadius: 2,
+          cursor: isBlacklisted ? 'not-allowed' : 'pointer',
+          opacity: isBlacklisted ? 0.6 : 1,
+          bgcolor: isBlacklisted ? 'error.50' : isPreferred && !isSelected ? 'warning.50' : 'background.paper',
+          transition: 'all 0.2s',
+          '&:hover': {
+            borderColor: isBlacklisted ? 'error.main' : 'primary.light',
+            transform: isBlacklisted ? 'none' : 'translateY(-1px)',
+          },
+        }}
+        onClick={() => !isBlacklisted && toggleAgency(agency.id)}
+      >
+        <Stack direction="row" alignItems="flex-start" spacing={2}>
+          <Checkbox
+            checked={isSelected}
+            disabled={isBlacklisted}
+            onChange={() => !isBlacklisted && toggleAgency(agency.id)}
+            onClick={(e) => e.stopPropagation()}
+          />
+          
+          <Box flex={1}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Building2 size={18} className={isPreferred ? 'text-amber-500' : isBlacklisted ? 'text-red-500' : 'text-primary'} />
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {agency.name}
+                </Typography>
+                {isPreferred && (
+                  <Chip
+                    size="small"
+                    label="Preferred"
+                    color="warning"
+                    icon={<Star size={12} />}
+                    sx={{ fontSize: '0.65rem', height: 20 }}
+                  />
+                )}
+                {isBlacklisted && (
+                  <Chip
+                    size="small"
+                    label="Blacklisted"
+                    color="error"
+                    icon={<XCircle size={12} />}
+                    sx={{ fontSize: '0.65rem', height: 20 }}
+                  />
+                )}
+                {rule && !isPreferred && !isBlacklisted && (
+                  <Chip
+                    size="small"
+                    label={`Priority ${rule.priority}`}
+                    color="primary"
+                    variant="outlined"
+                    sx={{ fontSize: '0.65rem', height: 20 }}
+                  />
+                )}
+              </Stack>
+              
+              <Stack direction="row" spacing={0.5}>
+                {renderScoreBadge(agency.fillRate, 'Fill Rate')}
+                {renderScoreBadge(agency.reliabilityScore, 'Reliability')}
+              </Stack>
             </Stack>
             
-            <Stack direction="row" spacing={0.5}>
-              {renderScoreBadge(agency.fillRate, 'Fill Rate')}
-              {renderScoreBadge(agency.reliabilityScore, 'Reliability')}
-            </Stack>
-          </Stack>
+            {preference?.reason && (
+              <Alert 
+                severity={isPreferred ? 'success' : 'error'} 
+                sx={{ py: 0.25, px: 1, fontSize: '0.7rem', mb: 1 }}
+                icon={<Info size={12} />}
+              >
+                <Typography variant="caption">{preference.reason}</Typography>
+              </Alert>
+            )}
           
-          <Stack direction="row" spacing={3} mb={1}>
+            <Stack direction="row" spacing={3} mb={1}>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Timer size={12} /> Avg fill: {agency.avgTimeToFill} mins
             </Typography>
@@ -626,6 +713,7 @@ export function SendToAgencyModal({
       </Stack>
     </Paper>
   );
+  };
 
   const renderConfigStep = () => (
     <Stack spacing={3}>
