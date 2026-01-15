@@ -1679,6 +1679,7 @@ export default function RosterScheduler() {
             isGenerating={isGenerating}
             isCollapsed={isStaffPanelCollapsed}
             onToggleCollapse={() => setIsStaffPanelCollapsed(prev => !prev)}
+            onConfigureConstraints={() => setShowTimefoldPanel(true)}
           />
         </div>
       </Box>
