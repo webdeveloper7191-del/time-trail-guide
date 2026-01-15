@@ -150,11 +150,13 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
           </div>
         </SheetHeader>
 
-        {/* Content - flex-1 to fill remaining space */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className={cn("px-6 py-4", contentClassName)}>
-              {children}
+        {/* Content - flex-1 to fill remaining space, w-full ensures children stretch */}
+        <div className="flex-1 min-h-0 overflow-hidden w-full">
+          <ScrollArea className="h-full w-full">
+            <div className={cn("px-6 py-4 w-full", contentClassName)}>
+              <div className="w-full">
+                {children}
+              </div>
             </div>
           </ScrollArea>
         </div>

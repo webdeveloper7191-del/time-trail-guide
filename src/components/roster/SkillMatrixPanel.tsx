@@ -293,7 +293,7 @@ export function SkillMatrixPanel({
   }, [staffProfiles]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {/* Header Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>

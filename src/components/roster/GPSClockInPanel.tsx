@@ -244,7 +244,7 @@ export function GPSClockInPanel() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {/* Header */}
       <Card className="card-material-elevated border-l-4 border-l-blue-500">
         <CardHeader>

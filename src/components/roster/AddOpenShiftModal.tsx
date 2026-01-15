@@ -594,7 +594,7 @@ export function AddOpenShiftModal({
         <PrimaryOffCanvas
           title="Add Open Shift"
           description="Create open shifts that need to be filled"
-          width="600px"
+          size="lg"
           open={open}
           onClose={handleClose}
           actions={actions}

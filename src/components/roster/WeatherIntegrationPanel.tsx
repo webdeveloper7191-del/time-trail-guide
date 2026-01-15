@@ -244,7 +244,7 @@ export function WeatherIntegrationPanel() {
   const alertCount = forecast.filter(f => f.alerts.length > 0).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {/* Header */}
       <Card className="card-material-elevated border-l-4 border-l-cyan-500">
         <CardHeader>
