@@ -17,6 +17,7 @@ import {
   DollarSign,
   Palmtree,
   ChevronDown,
+  ChevronRight as ChevronRightIcon,
   Search,
   Coffee,
   Settings,
@@ -134,7 +135,20 @@ export function StaffTimelineGrid({
   const [isDragging, setIsDragging] = useState(false);
   const [dragType, setDragType] = useState<'staff' | 'shift' | null>(null);
   const [staffSearch, setStaffSearch] = useState('');
+  const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
+
+  const toggleRoomCollapse = (roomId: string) => {
+    setCollapsedRooms(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(roomId)) {
+        newSet.delete(roomId);
+      } else {
+        newSet.add(roomId);
+      }
+      return newSet;
+    });
+  };
 
   // Delete confirmation state
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
@@ -594,21 +608,39 @@ export function StaffTimelineGrid({
             const roomStaffIds = staffByRoom[room.id] || new Set();
             const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
             const roomOpenShifts = openShiftsByRoomDate[room.id] || [];
+            const isCollapsed = collapsedRooms.has(room.id);
+            const roomColor = room.color || 'hsl(var(--primary))';
 
             return (
-              <div key={room.id}>
+              <div 
+                key={room.id}
+                className="animate-fade-in"
+                style={{ 
+                  borderLeft: `4px solid ${roomColor}`,
+                }}
+              >
                 {/* Room header */}
-                <div className="flex bg-primary/10 border-b border-primary/20 sticky top-[53px] z-20 shadow-sm">
+                <div 
+                  className="flex border-b sticky top-[53px] z-20 shadow-sm cursor-pointer transition-colors hover:brightness-95"
+                  style={{ 
+                    backgroundColor: `color-mix(in srgb, ${roomColor} 15%, transparent)`,
+                    borderBottomColor: `color-mix(in srgb, ${roomColor} 30%, transparent)`,
+                  }}
+                  onClick={() => toggleRoomCollapse(room.id)}
+                >
                   <div
                     data-drop-zone
-                    className="w-64 shrink-0 px-4 py-2 flex items-center gap-3 border-r border-primary/20"
+                    className="w-64 shrink-0 px-4 py-2 flex items-center gap-3 border-r"
+                    style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 30%, transparent)` }}
                     onDragOver={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       handleDragOver(e, `room-header-${room.id}`);
                     }}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       const staffId = e.dataTransfer.getData('staffId');
                       const draggedType = e.dataTransfer.getData('dragType');
                       if (!staffId || draggedType === 'shift') return;
@@ -618,23 +650,53 @@ export function StaffTimelineGrid({
                       setDragType(null);
                       onAssignStaffToRoom?.(staffId, room.id);
                     }}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Badge variant="secondary" className="font-semibold">{room.name}</Badge>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleRoomCollapse(room.id);
+                      }}
+                      className="p-1 rounded hover:bg-black/5 transition-all"
+                    >
+                      {isCollapsed ? (
+                        <ChevronRightIcon className="h-4 w-4 transition-transform" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 transition-transform" />
+                      )}
+                    </button>
+                    <Badge 
+                      variant="secondary" 
+                      className="font-semibold"
+                      style={{ 
+                        backgroundColor: `color-mix(in srgb, ${roomColor} 25%, white)`,
+                        color: `color-mix(in srgb, ${roomColor} 80%, black)`,
+                      }}
+                    >
+                      {room.name}
+                    </Badge>
                     <span className="text-xs text-muted-foreground">
                       {ageGroupLabels[room.ageGroup]} • 1:{room.requiredRatio} • Cap: {room.capacity}
                     </span>
+                    {isCollapsed && roomStaff.length > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {roomStaff.length} staff
+                      </Badge>
+                    )}
                   </div>
                   
                   {/* Analytics charts in header row when enabled */}
-                  {showAnalyticsCharts && demandAnalytics.length > 0 && dates.map((date) => {
+                  {!isCollapsed && showAnalyticsCharts && demandAnalytics.length > 0 && dates.map((date) => {
                     const dateStr = format(date, 'yyyy-MM-dd');
                     return (
                       <div 
                         key={dateStr} 
                         className={cn(
-                          "flex-1 p-1 border-r border-primary/20",
+                          "flex-1 p-1 border-r",
                           viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]"
                         )}
+                        style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 30%, transparent)` }}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <InlineDemandChart
                           analyticsData={demandAnalytics}
@@ -647,10 +709,30 @@ export function StaffTimelineGrid({
                     );
                   })}
                   
-                  {showAnalyticsCharts && <div className="w-24 shrink-0 border-r border-primary/20" />}
+                  {!isCollapsed && showAnalyticsCharts && (
+                    <div 
+                      className="w-24 shrink-0 border-r"
+                      style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 30%, transparent)` }}
+                    />
+                  )}
+                  
+                  {/* Collapsed date cells */}
+                  {isCollapsed && dates.map((date) => (
+                    <div 
+                      key={format(date, 'yyyy-MM-dd')} 
+                      className={cn(
+                        "flex-1 p-2 border-r",
+                        viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]"
+                      )}
+                      style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 30%, transparent)` }}
+                    />
+                  ))}
+                  {isCollapsed && <div className="w-24 shrink-0" />}
                 </div>
 
-                {/* Staff rows */}
+                {/* Collapsible content */}
+                {!isCollapsed && (
+                  <>
                 {roomStaff.map((member) => {
                   const costs = calculateStaffCosts(member.id);
                   const topQualifications = member.qualifications.slice(0, 2);
@@ -1202,6 +1284,8 @@ export function StaffTimelineGrid({
 
                   <div className="w-24 shrink-0 border-r border-border" />
                 </div>
+                </>
+                )}
               </div>
             );
           })}

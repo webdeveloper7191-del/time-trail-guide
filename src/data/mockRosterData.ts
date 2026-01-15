@@ -12,10 +12,10 @@ export const mockCentres: Centre[] = [
     address: '123 Main Street, Sydney NSW 2000',
     operatingHours: { start: '06:30', end: '18:30' },
     rooms: [
-      { id: 'room-1a', name: 'Joeys', centreId: 'centre-1', ageGroup: 'nursery', capacity: 12, requiredRatio: 4, minQualifiedStaff: 2 },
-      { id: 'room-1b', name: 'Possums', centreId: 'centre-1', ageGroup: 'toddler', capacity: 15, requiredRatio: 5, minQualifiedStaff: 2 },
-      { id: 'room-1c', name: 'Koalas', centreId: 'centre-1', ageGroup: 'preschool', capacity: 22, requiredRatio: 10, minQualifiedStaff: 2 },
-      { id: 'room-1d', name: 'Kangaroos', centreId: 'centre-1', ageGroup: 'kindy', capacity: 22, requiredRatio: 11, minQualifiedStaff: 2 },
+      { id: 'room-1a', name: 'Joeys', centreId: 'centre-1', ageGroup: 'nursery', capacity: 12, requiredRatio: 4, minQualifiedStaff: 2, color: 'hsl(35, 90%, 55%)' },
+      { id: 'room-1b', name: 'Possums', centreId: 'centre-1', ageGroup: 'toddler', capacity: 15, requiredRatio: 5, minQualifiedStaff: 2, color: 'hsl(25, 95%, 55%)' },
+      { id: 'room-1c', name: 'Koalas', centreId: 'centre-1', ageGroup: 'preschool', capacity: 22, requiredRatio: 10, minQualifiedStaff: 2, color: 'hsl(350, 80%, 55%)' },
+      { id: 'room-1d', name: 'Kangaroos', centreId: 'centre-1', ageGroup: 'kindy', capacity: 22, requiredRatio: 11, minQualifiedStaff: 2, color: 'hsl(260, 70%, 60%)' },
     ],
   },
   {
@@ -25,9 +25,9 @@ export const mockCentres: Centre[] = [
     address: '456 Park Avenue, Melbourne VIC 3000',
     operatingHours: { start: '07:00', end: '18:00' },
     rooms: [
-      { id: 'room-2a', name: 'Butterflies', centreId: 'centre-2', ageGroup: 'nursery', capacity: 10, requiredRatio: 4, minQualifiedStaff: 2 },
-      { id: 'room-2b', name: 'Ladybugs', centreId: 'centre-2', ageGroup: 'toddler', capacity: 12, requiredRatio: 5, minQualifiedStaff: 2 },
-      { id: 'room-2c', name: 'Dragonflies', centreId: 'centre-2', ageGroup: 'preschool', capacity: 20, requiredRatio: 10, minQualifiedStaff: 2 },
+      { id: 'room-2a', name: 'Butterflies', centreId: 'centre-2', ageGroup: 'nursery', capacity: 10, requiredRatio: 4, minQualifiedStaff: 2, color: 'hsl(180, 70%, 45%)' },
+      { id: 'room-2b', name: 'Ladybugs', centreId: 'centre-2', ageGroup: 'toddler', capacity: 12, requiredRatio: 5, minQualifiedStaff: 2, color: 'hsl(0, 75%, 55%)' },
+      { id: 'room-2c', name: 'Dragonflies', centreId: 'centre-2', ageGroup: 'preschool', capacity: 20, requiredRatio: 10, minQualifiedStaff: 2, color: 'hsl(200, 80%, 50%)' },
     ],
   },
   {
@@ -37,10 +37,10 @@ export const mockCentres: Centre[] = [
     address: '789 Ocean Road, Brisbane QLD 4000',
     operatingHours: { start: '06:00', end: '19:00' },
     rooms: [
-      { id: 'room-3a', name: 'Starfish', centreId: 'centre-3', ageGroup: 'nursery', capacity: 8, requiredRatio: 4, minQualifiedStaff: 2 },
-      { id: 'room-3b', name: 'Dolphins', centreId: 'centre-3', ageGroup: 'toddler', capacity: 15, requiredRatio: 5, minQualifiedStaff: 2 },
-      { id: 'room-3c', name: 'Seahorses', centreId: 'centre-3', ageGroup: 'preschool', capacity: 22, requiredRatio: 10, minQualifiedStaff: 2 },
-      { id: 'room-3d', name: 'Turtles', centreId: 'centre-3', ageGroup: 'kindy', capacity: 24, requiredRatio: 11, minQualifiedStaff: 2 },
+      { id: 'room-3a', name: 'Starfish', centreId: 'centre-3', ageGroup: 'nursery', capacity: 8, requiredRatio: 4, minQualifiedStaff: 2, color: 'hsl(45, 90%, 50%)' },
+      { id: 'room-3b', name: 'Dolphins', centreId: 'centre-3', ageGroup: 'toddler', capacity: 15, requiredRatio: 5, minQualifiedStaff: 2, color: 'hsl(210, 85%, 55%)' },
+      { id: 'room-3c', name: 'Seahorses', centreId: 'centre-3', ageGroup: 'preschool', capacity: 22, requiredRatio: 10, minQualifiedStaff: 2, color: 'hsl(160, 60%, 45%)' },
+      { id: 'room-3d', name: 'Turtles', centreId: 'centre-3', ageGroup: 'kindy', capacity: 24, requiredRatio: 11, minQualifiedStaff: 2, color: 'hsl(120, 50%, 45%)' },
     ],
   },
 ];
