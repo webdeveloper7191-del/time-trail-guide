@@ -22,10 +22,13 @@ import {
   CheckCircle2,
   AlertCircle,
   User,
+  X,
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfWeek, endOfWeek } from 'date-fns';
 import { useState } from 'react';
-import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 
 interface StaffProfileModalProps {
   staff: StaffMember | null;
@@ -65,26 +68,30 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
     .slice(0, 5);
 
   return (
-    <PrimaryOffCanvas
-      open={isOpen}
-      onClose={onClose}
-      title={staff.name}
-      description={roleLabels[staff.role]}
-      icon={User}
-      size="md"
-      showFooter={false}
-      contentClassName="!p-0"
-    >
-      {/* Header with Gradient Background */}
-      <Box
-        sx={{
-          background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(199, 89%, 38%) 100%)',
-          color: 'white',
-          p: 3,
-          mx: -6,
-          mt: -4,
-        }}
+    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent 
+        side="right" 
+        className="!p-0 flex flex-col h-full overflow-hidden w-[500px] max-w-[95vw]"
       >
+        {/* Close button */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute top-3 right-3 z-10 text-white hover:bg-white/20"
+          onClick={onClose}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+        
+        <ScrollArea className="flex-1">
+          {/* Header with Gradient Background */}
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(199, 89%, 38%) 100%)',
+              color: 'white',
+              p: 3,
+            }}
+          >
         <Stack direction="row" spacing={2.5} alignItems="center">
           <Avatar 
             sx={{ 
@@ -139,7 +146,6 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
           bgcolor: 'grey.50', 
           borderBottom: 1, 
           borderColor: 'divider',
-          mx: -6,
         }}
       >
         <Box sx={{ flex: 1, p: 1.5, textAlign: 'center' }}>
@@ -172,7 +178,7 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
       </Stack>
 
       {/* Hours Progress */}
-      <Box sx={{ py: 2, mx: -6, px: 3 }}>
+      <Box sx={{ py: 2, px: 3 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
           <Typography variant="caption" color="text.secondary" fontWeight={500}>
             Weekly Hours Progress
@@ -196,7 +202,7 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
         />
       </Box>
 
-      <Divider sx={{ mx: -6 }} />
+      <Divider />
 
       {/* Tabs */}
       <Tabs 
@@ -204,7 +210,6 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
         onChange={(_, v) => setTabValue(v)} 
         variant="fullWidth"
         sx={{
-          mx: -6,
           '& .MuiTab-root': {
             textTransform: 'none',
             fontWeight: 500,
@@ -218,7 +223,7 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
         <Tab label="Quals" icon={<Award size={14} />} iconPosition="start" />
       </Tabs>
 
-      <Box sx={{ pt: 2 }}>
+      <Box sx={{ pt: 2, px: 3, pb: 3 }}>
         {/* Contact Tab */}
         {tabValue === 0 && (
           <Stack spacing={2}>
@@ -431,6 +436,8 @@ export function StaffProfileModal({ staff, shifts, isOpen, onClose }: StaffProfi
           </Stack>
         )}
       </Box>
-    </PrimaryOffCanvas>
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
   );
 }
