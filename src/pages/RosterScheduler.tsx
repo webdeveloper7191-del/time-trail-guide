@@ -58,6 +58,8 @@ import { SendToAgencyModal, BroadcastConfig } from '@/components/roster/SendToAg
 import { AgencyResponseTracker } from '@/components/roster/AgencyResponseTracker';
 import { AgencyNotificationTemplates } from '@/components/roster/AgencyNotificationTemplates';
 import { CentreAgencyPreferencesPanel } from '@/components/roster/CentreAgencyPreferencesPanel';
+import { PostPlacementRatingModal } from '@/components/roster/PostPlacementRatingModal';
+import { AgencyPerformanceDashboard } from '@/components/roster/AgencyPerformanceDashboard';
 
 // MUI Components
 import {
@@ -235,6 +237,18 @@ export default function RosterScheduler() {
   const [showAgencyTracker, setShowAgencyTracker] = useState(false);
   const [showNotificationTemplates, setShowNotificationTemplates] = useState(false);
   const [showAgencyPreferences, setShowAgencyPreferences] = useState(false);
+  const [showAgencyDashboard, setShowAgencyDashboard] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [placementToRate, setPlacementToRate] = useState<{
+    id: string;
+    agencyId: string;
+    agencyName: string;
+    workerId: string;
+    workerName: string;
+    centreId: string;
+    centreName: string;
+    shiftDate: string;
+  } | null>(null);
   const [emptyShifts, setEmptyShifts] = useState<Array<{
     id: string;
     centreId: string;
@@ -1418,6 +1432,9 @@ export default function RosterScheduler() {
                   <DropdownMenuItem onClick={() => setShowAgencyPreferences(true)} icon={<Star size={16} />}>
                     Agency Preferences
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowAgencyDashboard(true)} icon={<BarChart3 size={16} />}>
+                    Agency Performance
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </Stack>
@@ -2089,6 +2106,28 @@ export default function RosterScheduler() {
         centreId={selectedCentreId}
         centreName={selectedCentre.name}
       />
+
+      {/* Agency Performance Dashboard */}
+      <AgencyPerformanceDashboard
+        open={showAgencyDashboard}
+        onClose={() => setShowAgencyDashboard(false)}
+        centreId={selectedCentreId}
+      />
+
+      {/* Post-Placement Rating Modal */}
+      {placementToRate && (
+        <PostPlacementRatingModal
+          open={showRatingModal}
+          onClose={() => {
+            setShowRatingModal(false);
+            setPlacementToRate(null);
+          }}
+          placement={placementToRate}
+          onRatingSubmitted={(rating) => {
+            toast.success('Rating submitted successfully');
+          }}
+        />
+      )}
 
       {/* Hidden Print View */}
       <div className="hidden">
