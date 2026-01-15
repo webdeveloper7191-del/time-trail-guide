@@ -139,11 +139,10 @@ export function ShiftDetailPanel({
       size="xl"
       actions={actions}
       headerActions={headerActions}
-      contentClassName="!p-0"
     >
       {/* Shift Type Badge */}
       {shiftTypeIndicator && (
-        <div className="px-6 py-2 border-b border-border bg-muted/30 -mx-6 -mt-4 mb-4">
+        <div className="py-2 px-3 mb-4 -mt-2 rounded-lg bg-muted/50 border border-border">
           <Badge variant="outline" className={cn("flex items-center gap-1 w-fit", shiftTypeIndicator.color)}>
             <shiftTypeIndicator.icon className="h-3 w-3" />
             {shiftTypeIndicator.label}
@@ -153,7 +152,7 @@ export function ShiftDetailPanel({
 
       {/* Tabs for different sections */}
       <Tabs defaultValue="details" className="flex-1 flex flex-col">
-        <TabsList className="h-10 w-full justify-start -mx-6 px-6 rounded-none border-b bg-transparent">
+        <TabsList className="h-10 w-full justify-start rounded-none border-b bg-transparent mb-4">
           <TabsTrigger value="details" className="text-xs">Details</TabsTrigger>
           <TabsTrigger value="allowances" className="text-xs flex items-center gap-1">
             <Zap className="h-3 w-3" />
