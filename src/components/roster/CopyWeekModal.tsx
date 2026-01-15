@@ -99,9 +99,10 @@ export function CopyWeekModal({
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [filterByStaff, setFilterByStaff] = useState(false);
 
-  // Preview
+  // Preview - use explicit "select all" mode vs manual selection
   const [showPreview, setShowPreview] = useState(false);
-  const [previewSelection, setPreviewSelection] = useState<Set<string>>(new Set());
+  const [selectAllMode, setSelectAllMode] = useState(true);
+  const [manualDeselected, setManualDeselected] = useState<Set<string>>(new Set());
 
   // Calculate source date range
   const sourceDateRange = useMemo(() => {
@@ -192,18 +193,22 @@ export function CopyWeekModal({
         
         const previewId = `${shift.id}-${newDateStr}`;
         
+        // Selection logic: if selectAllMode, select all except manually deselected
+        // Otherwise, nothing is selected
+        const isSelected = action !== 'skip' && selectAllMode && !manualDeselected.has(previewId);
+        
         previews.push({
           original: shift,
           newDate: newDateStr,
           conflict,
           action,
-          selected: previewSelection.has(previewId) || (action !== 'skip' && previewSelection.size === 0),
+          selected: isSelected,
         });
       });
     });
     
     return previews;
-  }, [sourceShifts, targetDateRanges, sourceDateRange, shifts, centreId, conflictHandling, staffAssignment, previewSelection]);
+  }, [sourceShifts, targetDateRanges, sourceDateRange, shifts, centreId, conflictHandling, staffAssignment, selectAllMode, manualDeselected]);
 
   // Stats
   const stats = useMemo(() => {
@@ -251,7 +256,8 @@ export function CopyWeekModal({
 
   const handleClose = () => {
     setShowPreview(false);
-    setPreviewSelection(new Set());
+    setSelectAllMode(true);
+    setManualDeselected(new Set());
     onClose();
   };
 
@@ -276,24 +282,25 @@ export function CopyWeekModal({
   };
 
   const togglePreviewSelection = (previewId: string) => {
-    const newSet = new Set(previewSelection);
+    const newSet = new Set(manualDeselected);
     if (newSet.has(previewId)) {
+      // Was deselected, now re-select it
       newSet.delete(previewId);
     } else {
+      // Was selected, now deselect it
       newSet.add(previewId);
     }
-    setPreviewSelection(newSet);
+    setManualDeselected(newSet);
   };
 
   const selectAllPreviews = () => {
-    const allIds = shiftPreviews
-      .filter(p => p.action !== 'skip')
-      .map(p => `${p.original.id}-${p.newDate}`);
-    setPreviewSelection(new Set(allIds));
+    setSelectAllMode(true);
+    setManualDeselected(new Set());
   };
 
   const deselectAllPreviews = () => {
-    setPreviewSelection(new Set());
+    setSelectAllMode(false);
+    setManualDeselected(new Set());
   };
 
   const getStaffName = (staffId: string) => {
@@ -708,7 +715,7 @@ export function CopyWeekModal({
               <Stack spacing={1}>
                 {shiftPreviews.map((preview, idx) => {
                   const previewId = `${preview.original.id}-${preview.newDate}`;
-                  const isSelected = preview.selected || previewSelection.has(previewId);
+                  const isSelected = preview.selected;
                   
                   return (
                     <Box
