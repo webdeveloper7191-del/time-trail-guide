@@ -326,13 +326,13 @@ const AgencyPortal = () => {
                     ))}
                   </div>
                 </CardContent>
-            </Card>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Timesheets Tab */}
           <TabsContent value="timesheets">
             <TimesheetApprovalWorkflow />
-            )}
           </TabsContent>
 
           {/* Invoices Tab */}
