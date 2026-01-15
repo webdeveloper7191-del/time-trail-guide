@@ -57,6 +57,7 @@ import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { SendToAgencyModal, BroadcastConfig } from '@/components/roster/SendToAgencyModal';
 import { AgencyResponseTracker } from '@/components/roster/AgencyResponseTracker';
 import { AgencyNotificationTemplates } from '@/components/roster/AgencyNotificationTemplates';
+import { CentreAgencyPreferencesPanel } from '@/components/roster/CentreAgencyPreferencesPanel';
 
 // MUI Components
 import {
@@ -132,6 +133,7 @@ import {
   Palette,
   Building2,
   Radio,
+  Star,
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
 
@@ -232,6 +234,7 @@ export default function RosterScheduler() {
   const [shiftForAgency, setShiftForAgency] = useState<OpenShift | Shift | null>(null);
   const [showAgencyTracker, setShowAgencyTracker] = useState(false);
   const [showNotificationTemplates, setShowNotificationTemplates] = useState(false);
+  const [showAgencyPreferences, setShowAgencyPreferences] = useState(false);
   const [emptyShifts, setEmptyShifts] = useState<Array<{
     id: string;
     centreId: string;
@@ -1412,6 +1415,9 @@ export default function RosterScheduler() {
                   <DropdownMenuItem onClick={() => setShowNotificationTemplates(true)} icon={<Mail size={16} />}>
                     Notification Templates
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowAgencyPreferences(true)} icon={<Star size={16} />}>
+                    Agency Preferences
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </Stack>
@@ -2074,6 +2080,14 @@ export default function RosterScheduler() {
       <AgencyNotificationTemplates
         open={showNotificationTemplates}
         onClose={() => setShowNotificationTemplates(false)}
+      />
+
+      {/* Centre Agency Preferences */}
+      <CentreAgencyPreferencesPanel
+        open={showAgencyPreferences}
+        onClose={() => setShowAgencyPreferences(false)}
+        centreId={selectedCentreId}
+        centreName={selectedCentre.name}
       />
 
       {/* Hidden Print View */}
