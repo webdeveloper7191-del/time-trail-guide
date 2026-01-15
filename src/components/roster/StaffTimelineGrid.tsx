@@ -1170,14 +1170,14 @@ export function StaffTimelineGrid({
 
                 {/* Open Shifts row */}
                 {roomOpenShifts.length > 0 && (
-                  <div className="flex border-b border-border bg-amber-500/5 hover:bg-amber-500/10 transition-colors">
-                    <div className="w-64 shrink-0 p-2 border-r border-border flex items-center gap-2">
-                      <div className="h-9 w-9 rounded-full flex items-center justify-center bg-amber-500/20 border-2 border-dashed border-amber-500/50">
-                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <div className="flex border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10">
+                    <div className="w-64 shrink-0 p-3 border-r border-amber-200/50 flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-amber-100 dark:bg-amber-900/50 shadow-sm">
+                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-amber-700">Open Shift</p>
-                        <p className="text-[10px] text-amber-600">Drag staff to assign</p>
+                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Open Shifts</p>
+                        <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80">Drag staff to fill</p>
                       </div>
                     </div>
 
@@ -1193,24 +1193,19 @@ export function StaffTimelineGrid({
                           key={cellKey}
                           data-drop-zone
                           className={cn(
-                            "flex-1 min-w-[120px] p-1 border-r border-border relative",
+                            "flex-1 p-1.5 border-r border-amber-200/30 relative",
                             "transition-all duration-200 ease-out",
-                            isCompact && "min-w-[80px]",
-                            // Drop zone highlight states for open shifts
-                            isDragging && hasOpenShifts && "bg-green-500/5",
-                            isDragOver && hasOpenShifts && "bg-green-500/20 ring-2 ring-inset ring-green-500/50 scale-[1.02]"
+                            viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
+                            isDragging && hasOpenShifts && "bg-emerald-50/50 dark:bg-emerald-950/20",
+                            isDragOver && hasOpenShifts && "bg-emerald-100 dark:bg-emerald-900/40 ring-2 ring-inset ring-emerald-500/50"
                           )}
                           onDragOver={(e) => hasOpenShifts && handleDragOver(e, cellKey)}
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => hasOpenShifts && dayOpenShifts[0] && handleOpenShiftDrop(e, dayOpenShifts[0])}
                         >
-                          {/* Drop overlay for filling open shift */}
-                          {isDragging && hasOpenShifts && !isDragOver && (
-                            <div className="absolute inset-1 border-2 border-dashed border-green-500/40 rounded-md pointer-events-none" />
-                          )}
                           {isDragOver && hasOpenShifts && (
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                              <div className="bg-green-600 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg animate-scale-in">
+                              <div className="bg-emerald-600 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg animate-scale-in">
                                 Fill shift
                               </div>
                             </div>
@@ -1230,7 +1225,7 @@ export function StaffTimelineGrid({
                       );
                     })}
 
-                    <div className="w-24 shrink-0 border-r border-border" />
+                    <div className="w-24 shrink-0 border-r border-amber-200/30" />
                   </div>
                 )}
 
@@ -1302,19 +1297,19 @@ export function StaffTimelineGrid({
                 {/* Drop zone row for adding new staff to this room - ALWAYS visible */}
                 <div 
                   className={cn(
-                    "flex border-b border-border transition-colors",
+                    "flex border-b transition-colors",
                     isDragging && dragType === 'staff' 
-                      ? "bg-primary/10 border-primary/30" 
-                      : "bg-muted/20 hover:bg-muted/40"
+                      ? "bg-gradient-to-r from-sky-50/80 to-sky-50/40 dark:from-sky-950/30 dark:to-sky-950/10 border-sky-200/50" 
+                      : "bg-muted/30 border-border/50"
                   )}
                 >
                   <div 
                     data-drop-zone
                     className={cn(
-                      "w-64 shrink-0 p-2 border-r flex items-center gap-2 transition-colors",
+                      "w-64 shrink-0 p-3 border-r flex items-center gap-3 transition-colors",
                       isDragging && dragType === 'staff' 
-                        ? "border-primary/30 bg-primary/5" 
-                        : "border-border"
+                        ? "border-sky-200/50" 
+                        : "border-border/50"
                     )}
                     onDragOver={(e) => {
                       e.preventDefault();
@@ -1334,27 +1329,30 @@ export function StaffTimelineGrid({
                     }}
                   >
                     <div className={cn(
-                      "h-9 w-9 rounded-full flex items-center justify-center border-2 border-dashed transition-colors",
+                      "h-8 w-8 rounded-lg flex items-center justify-center transition-colors shadow-sm",
                       isDragging && dragType === 'staff'
-                        ? "bg-primary/20 border-primary/50"
-                        : "bg-primary/10 border-primary/30"
+                        ? "bg-sky-100 dark:bg-sky-900/50"
+                        : "bg-muted"
                     )}>
                       <User className={cn(
                         "h-4 w-4 transition-colors",
-                        isDragging && dragType === 'staff' ? "text-primary" : "text-primary/50"
+                        isDragging && dragType === 'staff' ? "text-sky-600 dark:text-sky-400" : "text-muted-foreground"
                       )} />
                     </div>
                     <div>
                       <p className={cn(
-                        "text-sm font-medium transition-colors",
-                        isDragging && dragType === 'staff' ? "text-primary" : "text-muted-foreground"
+                        "text-sm font-semibold transition-colors",
+                        isDragging && dragType === 'staff' ? "text-sky-800 dark:text-sky-200" : "text-muted-foreground"
                       )}>
-                        {isDragging && dragType === 'staff' ? "Drop staff here" : "Drop to Add Staff"}
+                        {isDragging && dragType === 'staff' ? "Drop here" : "Add Staff"}
                       </p>
-                      <p className="text-[10px] text-muted-foreground/70">
+                      <p className={cn(
+                        "text-[10px] transition-colors",
+                        isDragging && dragType === 'staff' ? "text-sky-600/80 dark:text-sky-400/80" : "text-muted-foreground/60"
+                      )}>
                         {isDragging && dragType === 'staff' 
                           ? `Assign to ${room.name}` 
-                          : `Drag staff here to assign to ${room.name}`}
+                          : `Drag staff to ${room.name}`}
                       </p>
                     </div>
                   </div>
@@ -1363,7 +1361,6 @@ export function StaffTimelineGrid({
                     const dateStr = format(date, 'yyyy-MM-dd');
                     const cellKey = `add-staff-${room.id}-${dateStr}`;
                     const isDragOver = dragOverCell === cellKey;
-                    // Show drop zone when dragging staff (not shifts)
                     const showDropZone = isDragging && dragType === 'staff';
 
                     return (
@@ -1371,16 +1368,15 @@ export function StaffTimelineGrid({
                         key={cellKey}
                         data-drop-zone
                         className={cn(
-                          "flex-1 p-1 border-r relative",
+                          "flex-1 p-1.5 border-r relative",
                           "transition-all duration-200 ease-out",
                           viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
-                          showDropZone && !isDragOver && "border-primary/20 bg-primary/5",
-                          isDragOver && "bg-primary/20 ring-2 ring-inset ring-primary/50 scale-[1.02]",
-                          !showDropZone && "border-border"
+                          showDropZone && !isDragOver && "border-sky-200/30 bg-sky-50/30 dark:bg-sky-950/10",
+                          isDragOver && "bg-sky-100 dark:bg-sky-900/40 ring-2 ring-inset ring-sky-500/50",
+                          !showDropZone && "border-border/30"
                         )}
                         onDragOver={(e) => {
                           e.preventDefault();
-                          // Accept any drag - we'll filter on drop
                           handleDragOver(e, cellKey);
                         }}
                         onDragLeave={handleDragLeave}
@@ -1388,7 +1384,6 @@ export function StaffTimelineGrid({
                           e.preventDefault();
                           const staffId = e.dataTransfer.getData('staffId');
                           const draggedType = e.dataTransfer.getData('dragType');
-                          // Only handle staff drops (assign to room), not shift moves
                           if (staffId && draggedType !== 'shift') {
                             setDragOverCell(null);
                             setIsDragging(false);
@@ -1397,22 +1392,18 @@ export function StaffTimelineGrid({
                           }
                         }}
                       >
-                        {/* Drop zone indicator - show when dragging staff */}
                         {showDropZone && !isDragOver && (
-                          <div className="absolute inset-1 border-2 border-dashed border-primary/40 rounded-md pointer-events-none flex items-center justify-center bg-primary/5">
-                            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                              <Plus className="h-3 w-3 text-primary" />
+                          <div className="absolute inset-1 rounded-md flex items-center justify-center">
+                            <div className="w-5 h-5 rounded-full bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
+                              <Plus className="h-3 w-3 text-sky-500" />
                             </div>
                           </div>
                         )}
                         
-                        {/* Active drop indicator */}
                         {isDragOver && (
-                          <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none animate-scale-in">
-                            <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-                              <div className="bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-medium shadow-lg">
-                                Add staff
-                              </div>
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                            <div className="bg-sky-600 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg animate-scale-in">
+                              Add staff
                             </div>
                           </div>
                         )}
@@ -1420,7 +1411,7 @@ export function StaffTimelineGrid({
                     );
                   })}
 
-                  <div className="w-24 shrink-0 border-r border-border" />
+                  <div className="w-24 shrink-0 border-r border-border/30" />
                 </div>
                 </>
                 )}
@@ -1772,10 +1763,13 @@ function OpenShiftCard({ openShift, isCompact, isDragOver, onDelete }: { openShi
 
   return (
     <div className={cn(
-      "group relative rounded-lg border-2 border-dashed overflow-hidden transition-all duration-200",
-      style.bg,
-      style.border,
-      isDragOver && "border-primary bg-primary/10 scale-[1.02]",
+      "group relative rounded-lg border overflow-hidden transition-all duration-200",
+      "bg-gradient-to-br",
+      openShift.urgency === 'low' && "from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border-slate-200 dark:border-slate-700",
+      openShift.urgency === 'medium' && "from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 border-amber-200 dark:border-amber-800",
+      openShift.urgency === 'high' && "from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30 border-orange-200 dark:border-orange-800",
+      openShift.urgency === 'critical' && "from-red-50 to-red-100/50 dark:from-red-950/50 dark:to-red-900/30 border-red-200 dark:border-red-800",
+      isDragOver && "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50",
       openShift.urgency === 'critical' && "animate-pulse"
     )}>
       <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
@@ -1806,17 +1800,24 @@ function OpenShiftCard({ openShift, isCompact, isDragOver, onDelete }: { openShi
         </div>
       )}
       
-      <div className="pl-3 pr-7 py-1.5">
+      <div className="pl-3 pr-7 py-2">
         <div className="text-xs font-semibold text-foreground">{openShift.startTime}-{openShift.endTime}</div>
         {!isCompact && (
-          <>
-            <div className="flex flex-wrap gap-0.5 mt-1">
+          <div className="mt-1.5 space-y-1">
+            <div className="flex flex-wrap gap-1">
               {openShift.requiredQualifications.slice(0, 2).map((qual) => (
-                <Badge key={qual} variant="outline" className="text-[8px] px-1 py-0 h-3.5">{qualificationLabels[qual].slice(0, 6)}</Badge>
+                <Badge key={qual} variant="secondary" className="text-[9px] px-1.5 py-0 h-4 font-medium">
+                  {qualificationLabels[qual].slice(0, 8)}
+                </Badge>
               ))}
             </div>
-            <Badge variant={openShift.urgency === 'critical' ? 'destructive' : 'outline'} className="text-[8px] mt-1 capitalize">{openShift.urgency}</Badge>
-          </>
+            <Badge 
+              variant={openShift.urgency === 'critical' ? 'destructive' : 'outline'} 
+              className="text-[9px] capitalize font-medium"
+            >
+              {openShift.urgency}
+            </Badge>
+          </div>
         )}
       </div>
     </div>
