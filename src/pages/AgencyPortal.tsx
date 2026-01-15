@@ -6,19 +6,31 @@ import { Button } from '@/components/mui/Button';
 import { 
   Building2, Users, Calendar, FileText, BarChart3, 
   Shield, AlertTriangle, TrendingUp, Clock, CheckCircle2,
-  ArrowLeft
+  ArrowLeft, Plus, UserPlus, Zap, Receipt
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockAgency, mockCandidates, mockShiftRequests, mockInvoices, mockAgencyAnalytics } from '@/data/mockAgencyData';
 import { format } from 'date-fns';
+import AgencyOnboardingWizard from '@/components/agency/AgencyOnboardingWizard';
+import ShiftMatchingPanel from '@/components/agency/ShiftMatchingPanel';
+import CandidateOnboardingForm from '@/components/agency/CandidateOnboardingForm';
+import InvoiceGenerator from '@/components/agency/InvoiceGenerator';
 
 const AgencyPortal = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
+  const [showCandidateForm, setShowCandidateForm] = useState(false);
+  const [showInvoiceGenerator, setShowInvoiceGenerator] = useState(false);
+  const [selectedShiftForMatching, setSelectedShiftForMatching] = useState<string | null>(null);
 
   const openShifts = mockShiftRequests.filter(s => s.status === 'open' || s.status === 'partially_filled');
   const urgentShifts = mockShiftRequests.filter(s => s.urgency === 'critical' || s.urgency === 'urgent');
   const overdueInvoices = mockInvoices.filter(i => i.status === 'overdue');
+
+  const selectedShift = selectedShiftForMatching 
+    ? mockShiftRequests.find(s => s.id === selectedShiftForMatching) 
+    : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,6 +49,10 @@ const AgencyPortal = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Button variant="outlined" size="small" onClick={() => setShowOnboardingWizard(true)}>
+                <Building2 className="h-4 w-4 mr-2" />
+                Agency Setup
+              </Button>
               <Badge variant="outline" className="text-green-600 border-green-600">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
                 Active
@@ -188,9 +204,15 @@ const AgencyPortal = () => {
           {/* Candidates Tab */}
           <TabsContent value="candidates">
             <Card>
-              <CardHeader>
-                <CardTitle>Candidate Pool</CardTitle>
-                <CardDescription>{mockCandidates.length} registered candidates</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Candidate Pool</CardTitle>
+                  <CardDescription>{mockCandidates.length} registered candidates</CardDescription>
+                </div>
+                <Button onClick={() => setShowCandidateForm(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Candidate
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -219,47 +241,78 @@ const AgencyPortal = () => {
           </TabsContent>
 
           {/* Shifts Tab */}
-          <TabsContent value="shifts">
-            <Card>
-              <CardHeader>
-                <CardTitle>Shift Requests</CardTitle>
-                <CardDescription>{mockShiftRequests.length} total requests</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {mockShiftRequests.map(shift => (
-                    <div key={shift.id} className="p-3 rounded-lg border">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="font-medium">{shift.clientName}</p>
-                          <p className="text-sm text-muted-foreground">{shift.locationName}</p>
+          <TabsContent value="shifts" className="space-y-6">
+            {selectedShift ? (
+              <div className="space-y-4">
+                <Button variant="ghost" onClick={() => setSelectedShiftForMatching(null)}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Shifts
+                </Button>
+                <ShiftMatchingPanel 
+                  shiftRequest={selectedShift} 
+                  onAssign={(placements) => {
+                    console.log('Assigned placements:', placements);
+                    setSelectedShiftForMatching(null);
+                  }}
+                  onClose={() => setSelectedShiftForMatching(null)} 
+                />
+              </div>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Shift Requests</CardTitle>
+                  <CardDescription>{mockShiftRequests.length} total requests</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {mockShiftRequests.map(shift => (
+                      <div key={shift.id} className="p-3 rounded-lg border">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="font-medium">{shift.clientName}</p>
+                            <p className="text-sm text-muted-foreground">{shift.locationName}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Badge variant={shift.urgency === 'critical' ? 'destructive' : shift.urgency === 'urgent' ? 'default' : 'outline'}>
+                              {shift.urgency}
+                            </Badge>
+                            <Badge variant="secondary">{shift.status.replace('_', ' ')}</Badge>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Badge variant={shift.urgency === 'critical' ? 'destructive' : shift.urgency === 'urgent' ? 'default' : 'outline'}>
-                            {shift.urgency}
-                          </Badge>
-                          <Badge variant="secondary">{shift.status.replace('_', ' ')}</Badge>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>{format(new Date(shift.date), 'MMM d, yyyy')}</span>
+                            <span>{shift.startTime} - {shift.endTime}</span>
+                            <span>{shift.filledPositions}/{shift.totalPositions} filled</span>
+                            <span className="text-green-600">${shift.chargeRate}/hr</span>
+                          </div>
+                          {(shift.status === 'open' || shift.status === 'partially_filled') && (
+                            <Button size="small" onClick={() => setSelectedShiftForMatching(shift.id)}>
+                              <Zap className="h-4 w-4 mr-1" />
+                              Match Candidates
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{format(new Date(shift.date), 'MMM d, yyyy')}</span>
-                        <span>{shift.startTime} - {shift.endTime}</span>
-                        <span>{shift.filledPositions}/{shift.totalPositions} filled</span>
-                        <span className="text-green-600">${shift.chargeRate}/hr</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Invoices Tab */}
           <TabsContent value="invoices">
             <Card>
-              <CardHeader>
-                <CardTitle>Invoices</CardTitle>
-                <CardDescription>{mockInvoices.length} invoices</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Invoices</CardTitle>
+                  <CardDescription>{mockInvoices.length} invoices</CardDescription>
+                </div>
+                <Button onClick={() => setShowInvoiceGenerator(true)}>
+                  <Receipt className="h-4 w-4 mr-2" />
+                  Generate Invoice
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -289,9 +342,14 @@ const AgencyPortal = () => {
           {/* Profile Tab */}
           <TabsContent value="profile">
             <Card>
-              <CardHeader>
-                <CardTitle>Agency Profile</CardTitle>
-                <CardDescription>Your agency details and compliance</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Agency Profile</CardTitle>
+                  <CardDescription>Your agency details and compliance</CardDescription>
+                </div>
+                <Button variant="outlined" onClick={() => setShowOnboardingWizard(true)}>
+                  Edit Profile
+                </Button>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
@@ -317,6 +375,34 @@ const AgencyPortal = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Modals and Dialogs */}
+      <AgencyOnboardingWizard 
+        open={showOnboardingWizard} 
+        onClose={() => setShowOnboardingWizard(false)}
+        onComplete={(data) => {
+          console.log('Agency onboarding completed:', data);
+          setShowOnboardingWizard(false);
+        }}
+      />
+      
+      <CandidateOnboardingForm 
+        open={showCandidateForm} 
+        onClose={() => setShowCandidateForm(false)}
+        onComplete={(candidate) => {
+          console.log('Candidate onboarding completed:', candidate);
+          setShowCandidateForm(false);
+        }}
+      />
+      
+      <InvoiceGenerator 
+        open={showInvoiceGenerator} 
+        onClose={() => setShowInvoiceGenerator(false)}
+        onSave={(invoice) => {
+          console.log('Invoice saved:', invoice);
+          setShowInvoiceGenerator(false);
+        }}
+      />
     </div>
   );
 };
