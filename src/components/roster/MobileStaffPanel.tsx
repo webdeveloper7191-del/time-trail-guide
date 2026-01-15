@@ -228,11 +228,11 @@ export function MobileStaffPanel({
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="h-[70vh] p-0 rounded-t-2xl">
-        <div className="flex flex-col h-full">
+      <SheetContent side="bottom" className="h-[70vh] p-0 rounded-t-2xl overflow-x-hidden">
+        <div className="flex flex-col h-full w-full overflow-x-hidden">
           {/* Header */}
-          <SheetHeader className="p-4 border-b border-border">
-            <div className="flex items-center justify-between">
+          <SheetHeader className="px-4 py-4 border-b border-border w-full">
+            <div className="flex items-center justify-between w-full">
               <SheetTitle className="text-base flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
                 Available Staff
@@ -243,13 +243,13 @@ export function MobileStaffPanel({
             </div>
             
             {/* Search */}
-            <div className="relative mt-3">
+            <div className="relative mt-3 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search staff..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-10"
+                className="pl-9 h-10 w-full"
               />
             </div>
 
@@ -266,8 +266,8 @@ export function MobileStaffPanel({
           </SheetHeader>
 
           {/* Staff List */}
-          <ScrollArea className="flex-1">
-            <div className="p-3 space-y-3">
+          <ScrollArea className="flex-1 w-full">
+            <div className="px-4 py-3 space-y-3 w-full">
               {/* Internal Staff */}
               <div>
                 <div className="flex items-center gap-2 px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
