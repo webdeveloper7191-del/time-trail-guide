@@ -256,6 +256,8 @@ export default function TimesheetSettings() {
     return labels[tier];
   };
 
+  const [activeSection, setActiveSection] = useState<'timesheet' | 'awards'>('timesheet');
+
   return (
     <div className="flex h-screen bg-background">
       <AdminSidebar />
@@ -268,10 +270,10 @@ export default function TimesheetSettings() {
               <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">
                   <Settings className="h-6 w-6 text-primary" />
-                  Auto-Approval Settings
+                  Settings
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Configure auto-approval conditions, flagging rules, and compliance thresholds
+                  Configure timesheet rules, approval workflows, and award interpretations
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -291,40 +293,59 @@ export default function TimesheetSettings() {
               </div>
             </div>
           </div>
+          
+          {/* Main Section Tabs */}
+          <div className="px-6 pb-2">
+            <div className="flex gap-2">
+              <Button
+                variant={activeSection === 'timesheet' ? 'default' : 'outline'}
+                onClick={() => setActiveSection('timesheet')}
+                className="gap-2"
+              >
+                <Clock className="h-4 w-4" />
+                Timesheet Settings
+              </Button>
+              <Button
+                variant={activeSection === 'awards' ? 'default' : 'outline'}
+                onClick={() => setActiveSection('awards')}
+                className="gap-2"
+              >
+                <Award className="h-4 w-4" />
+                Awards Configuration
+              </Button>
+            </div>
+          </div>
         </header>
 
         <div className="p-6">
-          <Tabs defaultValue="auto-approval" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-flex">
-              <TabsTrigger value="auto-approval" className="gap-2">
-                <Zap className="h-4 w-4" />
-                <span className="hidden sm:inline">Auto-Approval</span>
-              </TabsTrigger>
-              <TabsTrigger value="flagging" className="gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="hidden sm:inline">Flagging</span>
-              </TabsTrigger>
-              <TabsTrigger value="breaks" className="gap-2">
-                <Coffee className="h-4 w-4" />
-                <span className="hidden sm:inline">Breaks</span>
-              </TabsTrigger>
-              <TabsTrigger value="compliance" className="gap-2">
-                <Scale className="h-4 w-4" />
-                <span className="hidden sm:inline">Compliance</span>
-              </TabsTrigger>
-              <TabsTrigger value="workflow" className="gap-2">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Workflow</span>
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="gap-2">
-                <Bell className="h-4 w-4" />
-                <span className="hidden sm:inline">Alerts</span>
-              </TabsTrigger>
-              <TabsTrigger value="awards" className="gap-2">
-                <Award className="h-4 w-4" />
-                <span className="hidden sm:inline">Awards</span>
-              </TabsTrigger>
-            </TabsList>
+          {activeSection === 'timesheet' ? (
+            <Tabs defaultValue="auto-approval" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
+                <TabsTrigger value="auto-approval" className="gap-2">
+                  <Zap className="h-4 w-4" />
+                  <span className="hidden sm:inline">Auto-Approval</span>
+                </TabsTrigger>
+                <TabsTrigger value="flagging" className="gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Flagging</span>
+                </TabsTrigger>
+                <TabsTrigger value="breaks" className="gap-2">
+                  <Coffee className="h-4 w-4" />
+                  <span className="hidden sm:inline">Breaks</span>
+                </TabsTrigger>
+                <TabsTrigger value="compliance" className="gap-2">
+                  <Scale className="h-4 w-4" />
+                  <span className="hidden sm:inline">Compliance</span>
+                </TabsTrigger>
+                <TabsTrigger value="workflow" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">Workflow</span>
+                </TabsTrigger>
+                <TabsTrigger value="notifications" className="gap-2">
+                  <Bell className="h-4 w-4" />
+                  <span className="hidden sm:inline">Alerts</span>
+                </TabsTrigger>
+              </TabsList>
 
             {/* Auto-Approval Tab */}
             <TabsContent value="auto-approval" className="space-y-6">
@@ -1214,12 +1235,10 @@ export default function TimesheetSettings() {
                 </CardContent>
               </Card>
             </TabsContent>
-
-            {/* Awards Tab */}
-            <TabsContent value="awards" className="space-y-6">
-              <AwardsConfigurationTab />
-            </TabsContent>
-          </Tabs>
+            </Tabs>
+          ) : (
+            <AwardsConfigurationTab />
+          )}
         </div>
       </main>
     </div>
