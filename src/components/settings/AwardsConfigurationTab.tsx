@@ -73,6 +73,7 @@ import { EnterpriseAgreementPanel } from './awards/EnterpriseAgreementPanel';
 import { AuditTrailViewer } from './awards/AuditTrailViewer';
 import { BOOTCalculatorPanel } from './awards/BOOTCalculatorPanel';
 import { FWCIntegrationPanel } from './awards/FWCIntegrationPanel';
+import { OvertimeCalculatorTest } from './awards/OvertimeCalculatorTest';
 
 interface EnabledAward {
   awardId: string;
@@ -844,7 +845,7 @@ export function AwardsConfigurationTab() {
         </TabsContent>
 
         <TabsContent value="overtime" className="mt-0">
-          <CustomOvertimeRatesPanel />
+          <OvertimeCalculatorTest />
         </TabsContent>
 
         <TabsContent value="on-call" className="mt-0">
