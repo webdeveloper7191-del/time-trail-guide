@@ -187,6 +187,7 @@ export interface Room {
   capacity: number;
   requiredRatio: number; // children per educator
   minQualifiedStaff: number;
+  color?: string; // Color for room header border/accent
 }
 
 // Special shift types that trigger allowances
