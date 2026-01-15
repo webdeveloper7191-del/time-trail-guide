@@ -66,20 +66,113 @@ export function AgencyResponseTracker({ open, onClose, broadcastId }: AgencyResp
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
+  const [liveUpdates, setLiveUpdates] = useState<string[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+
   // Load mock data
   useEffect(() => {
     if (open) {
       setRecords(generateMockBroadcastRecords());
       setLastRefresh(new Date());
+      // Simulate WebSocket connection
+      setTimeout(() => setIsConnected(true), 500);
+    } else {
+      setIsConnected(false);
     }
   }, [open]);
+
+  // Simulate real-time WebSocket updates for new candidates
+  useEffect(() => {
+    if (!open || !autoRefresh || !isConnected) return;
+    
+    // Simulate incoming candidate submissions every 5-15 seconds
+    const simulateNewCandidate = () => {
+      const pendingRecords = records.filter(r => r.status === 'pending');
+      if (pendingRecords.length === 0) return;
+      
+      const randomRecord = pendingRecords[Math.floor(Math.random() * pendingRecords.length)];
+      const agencies = ['Premier Care Staff', 'Metro Health Agency', 'Quality Nursing Services', 'Elite Healthcare Staffing'];
+      const firstNames = ['Emma', 'James', 'Olivia', 'William', 'Sophia', 'Benjamin', 'Ava', 'Lucas'];
+      const lastNames = ['Thompson', 'Garcia', 'Wilson', 'Anderson', 'Taylor', 'Brown', 'Johnson', 'Lee'];
+      
+      const newCandidate: CandidateSubmission = {
+        id: `cand-live-${Date.now()}`,
+        candidateId: `staff-${Math.random().toString(36).substr(2, 9)}`,
+        candidateName: `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`,
+        submittedAt: new Date().toISOString(),
+        status: 'pending',
+        matchScore: Math.floor(Math.random() * 20) + 80,
+        skillMatch: Math.floor(Math.random() * 15) + 85,
+        proximityMatch: Math.floor(Math.random() * 30) + 70,
+        reliabilityScore: Math.floor(Math.random() * 15) + 85,
+        payRate: 35 + Math.floor(Math.random() * 15),
+        responseTimeMinutes: Math.floor(Math.random() * 10) + 1,
+      };
+      
+      const agencyName = agencies[Math.floor(Math.random() * agencies.length)];
+      
+      setRecords(prev => prev.map(r => {
+        if (r.id !== randomRecord.id) return r;
+        
+        // Find or create agency response
+        const existingAgency = r.responses.find(res => res.agencyName === agencyName);
+        if (existingAgency) {
+          return {
+            ...r,
+            totalCandidatesSubmitted: r.totalCandidatesSubmitted + 1,
+            responses: r.responses.map(res => 
+              res.agencyName === agencyName 
+                ? { 
+                    ...res, 
+                    candidatesSubmitted: res.candidatesSubmitted + 1,
+                    candidates: [...res.candidates, newCandidate]
+                  }
+                : res
+            ),
+          };
+        } else {
+          const newAgencyResponse: AgencyResponse = {
+            agencyId: `agency-live-${Date.now()}`,
+            agencyName,
+            respondedAt: new Date().toISOString(),
+            status: 'submitted',
+            candidatesSubmitted: 1,
+            candidates: [newCandidate],
+          };
+          return {
+            ...r,
+            agenciesResponded: r.agenciesResponded + 1,
+            totalCandidatesSubmitted: r.totalCandidatesSubmitted + 1,
+            responses: [...r.responses, newAgencyResponse],
+          };
+        }
+      }));
+      
+      // Show live update notification
+      const updateMsg = `${newCandidate.candidateName} submitted by ${agencyName}`;
+      setLiveUpdates(prev => [updateMsg, ...prev.slice(0, 4)]);
+      toast.info(`🔴 Live: ${updateMsg}`, { duration: 3000 });
+    };
+    
+    // Random interval between 5-15 seconds
+    const scheduleNextUpdate = () => {
+      const delay = 5000 + Math.random() * 10000;
+      return setTimeout(() => {
+        simulateNewCandidate();
+        timeoutRef.current = scheduleNextUpdate();
+      }, delay);
+    };
+    
+    const timeoutRef = { current: scheduleNextUpdate() };
+    
+    return () => clearTimeout(timeoutRef.current);
+  }, [open, autoRefresh, isConnected, records]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
     if (!open || !autoRefresh) return;
     
     const interval = setInterval(() => {
-      setRecords(generateMockBroadcastRecords());
       setLastRefresh(new Date());
     }, 30000);
     
@@ -601,8 +694,31 @@ export function AgencyResponseTracker({ open, onClose, broadcastId }: AgencyResp
       size="3xl"
       headerActions={
         <Stack direction="row" spacing={1} alignItems="center">
+          {/* Live Connection Indicator */}
+          <Chip
+            size="small"
+            icon={
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: isConnected ? 'success.main' : 'grey.400',
+                  animation: isConnected ? 'pulse 2s infinite' : 'none',
+                  '@keyframes pulse': {
+                    '0%, 100%': { opacity: 1 },
+                    '50%': { opacity: 0.5 },
+                  },
+                }}
+              />
+            }
+            label={isConnected ? 'Live' : 'Connecting...'}
+            color={isConnected ? 'success' : 'default'}
+            variant="outlined"
+            sx={{ fontSize: '0.7rem' }}
+          />
           <Typography variant="caption" color="text.secondary">
-            Last updated: {format(lastRefresh, 'HH:mm:ss')}
+            {format(lastRefresh, 'HH:mm:ss')}
           </Typography>
           <IconButton
             size="small"
@@ -621,6 +737,22 @@ export function AgencyResponseTracker({ open, onClose, broadcastId }: AgencyResp
       <Stack direction="row" spacing={3} sx={{ height: 'calc(100vh - 200px)' }}>
         {/* Left: Broadcast List */}
         <Box sx={{ width: 320, flexShrink: 0, overflow: 'auto' }}>
+          {/* Live Updates Feed */}
+          {liveUpdates.length > 0 && (
+            <Paper sx={{ p: 1.5, mb: 2, bgcolor: 'success.50', border: '1px solid', borderColor: 'success.200' }}>
+              <Typography variant="caption" fontWeight={600} color="success.main" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                <Zap size={12} /> Live Updates
+              </Typography>
+              <Stack spacing={0.5}>
+                {liveUpdates.slice(0, 3).map((update, idx) => (
+                  <Typography key={idx} variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                    • {update}
+                  </Typography>
+                ))}
+              </Stack>
+            </Paper>
+          )}
+          
           <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Send size={16} /> Active Broadcasts ({records.length})
           </Typography>
