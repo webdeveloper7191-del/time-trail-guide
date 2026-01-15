@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { InlineDemandChart } from './InlineDemandChart';
+import { RoomColorPaletteSelector, colorPalettes, ColorPalette } from './RoomColorPaletteSelector';
 import {
   Plus,
   Clock,
@@ -139,7 +140,14 @@ export function StaffTimelineGrid({
   const [dragType, setDragType] = useState<'staff' | 'shift' | null>(null);
   const [staffSearch, setStaffSearch] = useState('');
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
+  const [colorPalette, setColorPalette] = useState<ColorPalette>('cool');
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
+
+  // Get dynamic room color based on selected palette
+  const getRoomColor = (roomIndex: number): string => {
+    const colors = colorPalettes[colorPalette].colors;
+    return colors[roomIndex % colors.length];
+  };
 
   const toggleRoomCollapse = (roomId: string) => {
     setCollapsedRooms(prev => {
@@ -503,6 +511,10 @@ export function StaffTimelineGrid({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                <RoomColorPaletteSelector 
+                  selectedPalette={colorPalette} 
+                  onPaletteChange={setColorPalette} 
+                />
               </div>
             </div>
             {dates.map((date) => {
@@ -640,12 +652,12 @@ export function StaffTimelineGrid({
           </div>
 
           {/* Room sections */}
-          {centre.rooms.map((room) => {
+          {centre.rooms.map((room, roomIndex) => {
             const roomStaffIds = staffByRoom[room.id] || new Set();
             const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
             const roomOpenShifts = openShiftsByRoomDate[room.id] || [];
             const isCollapsed = collapsedRooms.has(room.id);
-            const roomColor = room.color || 'hsl(220, 70%, 55%)';
+            const roomColor = getRoomColor(roomIndex);
 
             // Calculate shifts per day for collapsed view
             const getRoomShiftsForDay = (dateStr: string) => {
