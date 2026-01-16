@@ -161,7 +161,7 @@ export function TimelineGrid({
         <div className={cn("min-w-full w-max xl:w-full")}>
           {/* Header row with dates */}
           <div className="flex sticky top-0 z-20 bg-background border-b border-border">
-            <div className="w-20 md:w-28 lg:w-36 shrink-0 p-2 lg:p-3 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/30">
+            <div className="w-20 md:w-28 lg:w-36 shrink-0 p-2 lg:p-3 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/30 sticky left-0 z-30">
               Room
             </div>
             {dates.map((date) => {
@@ -381,7 +381,7 @@ export function TimelineGrid({
           {centre.rooms.map((room) => (
             <div key={room.id} className="flex border-b border-border">
               {/* Room label */}
-              <div className="w-20 md:w-28 lg:w-36 shrink-0 p-1 md:p-2 border-r border-border bg-card">
+              <div className="w-20 md:w-28 lg:w-36 shrink-0 p-1 md:p-2 border-r border-border bg-card sticky left-0 z-20">
                 <div className="font-medium text-xs lg:text-sm text-foreground truncate">{room.name}</div>
                 <div className="text-[10px] lg:text-xs text-muted-foreground hidden md:block">
                   {ageGroupLabels[room.ageGroup]}
