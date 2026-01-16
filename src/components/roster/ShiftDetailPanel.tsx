@@ -345,19 +345,39 @@ export function ShiftDetailPanel({
 
               {assignedStaff && (
                 <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                      style={{ backgroundColor: assignedStaff.color }}
-                    >
-                      {assignedStaff.name.split(' ').map(n => n[0]).join('')}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                        style={{ backgroundColor: assignedStaff.color }}
+                      >
+                        {assignedStaff.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{assignedStaff.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          ${assignedStaff.hourlyRate.toFixed(2)}/hr
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">{assignedStaff.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        ${assignedStaff.hourlyRate.toFixed(2)}/hr
-                      </p>
-                    </div>
+                    {/* Mark Absent Button - Always visible */}
+                    {!isAbsent && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="h-7 text-xs border-destructive/50 text-destructive hover:bg-destructive/10"
+                        onClick={handleMarkAbsent}
+                      >
+                        <UserX className="h-3 w-3 mr-1" />
+                        Mark Absent
+                      </Button>
+                    )}
+                    {isAbsent && (
+                      <Badge variant="outline" className="text-amber-600 border-amber-500/50">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Absent
+                      </Badge>
+                    )}
                   </div>
                   
                   {/* Overtime warning */}
