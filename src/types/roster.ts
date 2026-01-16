@@ -218,6 +218,11 @@ export interface Shift {
   isOpenShift: boolean;
   notes?: string;
   
+  // Absence tracking
+  isAbsent?: boolean;
+  absenceReason?: 'leave' | 'sick' | 'no_show' | 'other';
+  replacementStaffId?: string; // Staff who covered this shift
+  
   // AI/Solver generated indicator
   isAIGenerated?: boolean;
   aiGeneratedAt?: string; // ISO timestamp when AI created this assignment

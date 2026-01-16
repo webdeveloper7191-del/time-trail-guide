@@ -37,6 +37,7 @@ import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/Pr
 import { useShiftCost } from '@/hooks/useShiftCost';
 import { toast } from 'sonner';
 import { ShiftCoverageSuggestionModal } from './ShiftCoverageSuggestionModal';
+import { timesheetApi } from '@/lib/api/timesheetApi';
 
 // Extended shift status to include absent
 export type ExtendedShiftStatus = Shift['status'] | 'absent';
@@ -161,27 +162,73 @@ export function ShiftDetailPanel({
     setShowCoverageModal(true);
   };
 
-  const handleConfirmAbsent = (findCoverage: boolean) => {
+  const handleConfirmAbsent = async (findCoverage: boolean) => {
+    const absenceReason = staffApprovedLeave ? 'leave' : 'other';
     const absentShift: Shift = {
       ...editedShift,
+      isAbsent: true,
+      absenceReason,
       notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[ABSENT] ${staffApprovedLeave ? `Leave: ${leaveTypeLabels[staffApprovedLeave.type]}` : 'Marked absent by manager'}`,
     };
     setIsAbsent(true);
+    setEditedShift(absentShift);
     onSave(absentShift);
-    toast.success('Shift marked as absent', {
-      description: findCoverage ? 'Select a replacement from the suggestions' : 'The shift has been updated to reflect staff absence'
-    });
+    
+    // Update timesheet for this date
+    try {
+      const result = await timesheetApi.markTimesheetAbsent(
+        editedShift.staffId,
+        editedShift.date,
+        absenceReason,
+        editedShift.startTime,
+        editedShift.endTime,
+        staffApprovedLeave ? `Leave: ${leaveTypeLabels[staffApprovedLeave.type]}` : undefined
+      );
+      
+      if (result.data.updated) {
+        toast.success('Shift marked as absent', {
+          description: 'Timesheet updated to reflect absence'
+        });
+      } else {
+        toast.success('Shift marked as absent', {
+          description: findCoverage ? 'Select a replacement from the suggestions' : 'The shift has been updated'
+        });
+      }
+    } catch {
+      toast.success('Shift marked as absent', {
+        description: 'Note: Timesheet may need manual update'
+      });
+    }
   };
 
-  const handleAssignCoverage = (staffId: string) => {
+  const handleAssignCoverage = async (staffId: string) => {
+    const originalStaffName = assignedStaff?.name;
     const coverageShift: Shift = {
       ...editedShift,
       staffId,
-      notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[REASSIGNED] Previously assigned to ${assignedStaff?.name}`,
+      isAbsent: false, // Clear absence since someone is covering
+      replacementStaffId: staffId,
+      notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[REASSIGNED] Previously assigned to ${originalStaffName}`,
     };
     setEditedShift(coverageShift);
     onSave(coverageShift);
     setShowCoverageModal(false);
+    
+    // Mark original staff as absent in timesheet
+    if (assignedStaff) {
+      try {
+        await timesheetApi.markTimesheetAbsent(
+          assignedStaff.id,
+          editedShift.date,
+          staffApprovedLeave ? 'leave' : 'other',
+          editedShift.startTime,
+          editedShift.endTime,
+          `Shift covered by replacement staff`
+        );
+      } catch {
+        // Silently fail - main operation succeeded
+      }
+    }
   };
 
   const handleSkipCoverage = () => {

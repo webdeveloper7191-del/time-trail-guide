@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Shift, StaffMember, OpenShift, qualificationLabels, ShiftSpecialType } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
-import { Clock, MoreHorizontal, X, AlertCircle, Users, Copy, ArrowLeftRight, Edit, Phone, Moon, Zap, Car, ArrowUpCircle, PhoneCall, Sparkles, Bot } from 'lucide-react';
+import { Clock, MoreHorizontal, X, AlertCircle, Users, Copy, ArrowLeftRight, Edit, Phone, Moon, Zap, Car, ArrowUpCircle, PhoneCall, Sparkles, Bot, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -112,11 +112,19 @@ export function ShiftCard({
         isDragging && "opacity-50 scale-95 rotate-2 shadow-xl ring-2 ring-primary/50",
         shift.status === 'draft' && "border-dashed opacity-80",
         shift.status === 'published' && "border-solid",
+        shift.isAbsent && "border-destructive/60",
         isCompact ? "p-1.5" : "p-2"
       )}
       style={{
-        backgroundColor: staff?.color ? `${staff.color}15` : 'hsl(var(--muted))',
-        borderColor: staff?.color || 'hsl(var(--border))',
+        backgroundColor: shift.isAbsent 
+          ? undefined 
+          : (staff?.color ? `${staff.color}15` : 'hsl(var(--muted))'),
+        borderColor: shift.isAbsent 
+          ? 'hsl(var(--destructive) / 0.6)' 
+          : (staff?.color || 'hsl(var(--border))'),
+        backgroundImage: shift.isAbsent 
+          ? 'repeating-linear-gradient(135deg, hsl(var(--destructive) / 0.08), hsl(var(--destructive) / 0.08) 8px, hsl(var(--destructive) / 0.15) 8px, hsl(var(--destructive) / 0.15) 16px)' 
+          : undefined,
       }}
     >
       {/* Status indicator */}
@@ -124,8 +132,21 @@ export function ShiftCard({
         className={cn(
           "absolute top-0 left-0 w-1 h-full rounded-l-md",
         )}
-        style={{ backgroundColor: staff?.color || 'hsl(var(--muted-foreground))' }}
+        style={{ 
+          backgroundColor: shift.isAbsent 
+            ? 'hsl(var(--destructive))' 
+            : (staff?.color || 'hsl(var(--muted-foreground))') 
+        }}
       />
+
+      {/* Absent overlay badge */}
+      {shift.isAbsent && (
+        <div className="absolute -top-1.5 -right-1.5 z-10">
+          <div className="bg-destructive text-destructive-foreground rounded-full p-1 shadow-md">
+            <UserX className="h-3 w-3" />
+          </div>
+        </div>
+      )}
 
       <div className="pl-2">
         {!isCompact && (
