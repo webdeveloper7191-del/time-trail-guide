@@ -305,7 +305,7 @@ export function MobileRosterToolbar({
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] max-w-[85vw] p-0 overflow-x-hidden">
+            <SheetContent side="right" className="w-full sm:w-[400px] sm:max-w-[85vw] p-0 overflow-x-hidden">
               <SheetHeader className="px-4 py-4 border-b border-border">
                 <SheetTitle className="text-sm">Actions & Settings</SheetTitle>
               </SheetHeader>
