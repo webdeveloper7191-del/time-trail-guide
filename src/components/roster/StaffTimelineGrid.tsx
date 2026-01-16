@@ -473,43 +473,77 @@ export function StaffTimelineGrid({
         <div className={cn("min-w-full w-max xl:w-full")}>
           {/* Header */}
           <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
-            <div className="w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50 sticky left-0 z-40">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search staff..."
-                    value={staffSearch}
-                    onChange={(e) => setStaffSearch(e.target.value)}
-                    className="h-8 pl-7 pr-2 text-xs bg-background border-border"
-                  />
-                </div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={toggleAllRooms}
-                        className="h-8 w-8 p-0 shrink-0"
-                      >
-                        {allRoomsCollapsed ? (
-                          <ChevronsUpDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronsDownUp className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">{allRoomsCollapsed ? 'Expand All Rooms' : 'Collapse All Rooms'}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <RoomColorPaletteSelector 
-                  selectedPalette={colorPalette} 
-                  onPaletteChange={setColorPalette} 
-                />
+            <div className={cn(
+              "shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50 sticky left-0 z-40",
+              viewMode === 'month' ? "w-24 md:w-32" : "w-32 md:w-48 lg:w-64"
+            )}>
+              <div className={cn("flex items-center", viewMode === 'month' ? "gap-1" : "gap-2")}>
+                {viewMode === 'month' ? (
+                  /* Compact month view header */
+                  <>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={toggleAllRooms}
+                            className="h-6 w-6 p-0 shrink-0"
+                          >
+                            {allRoomsCollapsed ? (
+                              <ChevronsUpDown className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronsDownUp className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{allRoomsCollapsed ? 'Expand All' : 'Collapse All'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="text-[10px] font-medium truncate">Staff</span>
+                  </>
+                ) : (
+                  /* Full header for other views */
+                  <>
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search staff..."
+                        value={staffSearch}
+                        onChange={(e) => setStaffSearch(e.target.value)}
+                        className="h-8 pl-7 pr-2 text-xs bg-background border-border"
+                      />
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={toggleAllRooms}
+                            className="h-8 w-8 p-0 shrink-0"
+                          >
+                            {allRoomsCollapsed ? (
+                              <ChevronsUpDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronsDownUp className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{allRoomsCollapsed ? 'Expand All Rooms' : 'Collapse All Rooms'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <RoomColorPaletteSelector 
+                      selectedPalette={colorPalette} 
+                      onPaletteChange={setColorPalette} 
+                    />
+                  </>
+                )}
               </div>
             </div>
             {dates.map((date) => {
@@ -762,8 +796,14 @@ export function StaffTimelineGrid({
                 >
                   <div
                     data-drop-zone
-                    className="w-32 md:w-48 lg:w-64 shrink-0 px-3 py-2 flex items-center gap-2 border-r sticky left-0 z-30 bg-inherit"
-                    style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
+                    className={cn(
+                      "shrink-0 px-2 md:px-3 py-2 flex items-center gap-2 border-r sticky left-0 z-30",
+                      viewMode === 'month' ? "w-24 md:w-32" : "w-32 md:w-48 lg:w-64"
+                    )}
+                    style={{ 
+                      borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)`,
+                      backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`
+                    }}
                     onDragOver={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -799,7 +839,10 @@ export function StaffTimelineGrid({
                     </button>
                     <Badge 
                       variant="secondary" 
-                      className="font-semibold text-xs px-2 py-0.5"
+                      className={cn(
+                        "font-semibold px-2 py-0.5",
+                        viewMode === 'month' ? "text-[10px] px-1.5" : "text-xs"
+                      )}
                       style={{ 
                         backgroundColor: roomColor,
                         color: 'white',
@@ -808,11 +851,13 @@ export function StaffTimelineGrid({
                     >
                       {room.name}
                     </Badge>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {ageGroupLabels[room.ageGroup]} • 1:{room.requiredRatio} • Cap: {room.capacity}
-                      </span>
-                    </div>
+                    {viewMode !== 'month' && (
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {ageGroupLabels[room.ageGroup]} • 1:{room.requiredRatio} • Cap: {room.capacity}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Analytics charts in header row when enabled - only when expanded */}
@@ -966,15 +1011,21 @@ export function StaffTimelineGrid({
                       {/* Staff info cell */}
                       <div 
                         className={cn(
-                          "w-32 md:w-48 lg:w-64 shrink-0 p-2 border-r border-border bg-card flex items-start gap-2 cursor-grab group/staff transition-opacity duration-200 sticky left-0 z-20",
+                          "shrink-0 p-1 md:p-2 border-r border-border bg-card flex items-start gap-1 md:gap-2 cursor-grab group/staff transition-opacity duration-200 sticky left-0 z-20",
+                          viewMode === 'month' ? "w-24 md:w-32" : "w-32 md:w-48 lg:w-64",
                           isDragging && "opacity-60"
                         )}
                         draggable
                         onDragStart={(e) => handleStaffDragStart(e, member)}
                       >
-                        <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-1" />
+                        {viewMode !== 'month' && (
+                          <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-1 hidden md:block" />
+                        )}
                         <div 
-                          className="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0 cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-2 transition-all"
+                          className={cn(
+                            "rounded-full flex items-center justify-center text-white font-medium shrink-0 cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all",
+                            viewMode === 'month' ? "h-6 w-6 text-[10px]" : "h-9 w-9 text-xs"
+                          )}
                           style={{ backgroundColor: member.color }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -986,66 +1037,75 @@ export function StaffTimelineGrid({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <p 
-                              className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary hover:underline transition-colors"
+                              className={cn(
+                                "font-medium text-foreground truncate cursor-pointer hover:text-primary hover:underline transition-colors",
+                                viewMode === 'month' ? "text-[10px]" : "text-sm"
+                              )}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onStaffClick?.(member);
                               }}
                             >
-                              {member.name}
+                              {viewMode === 'month' ? member.name.split(' ')[0] : member.name}
                             </p>
-                            {/* Remove from room menu */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-5 w-5 opacity-0 group-hover/staff:opacity-100 transition-opacity -mr-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <MoreHorizontal className="h-3.5 w-3.5" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem onClick={() => onStaffClick?.(member)}>
-                                  <User className="h-4 w-4 mr-2" />
-                                  View Profile
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => handleRequestRemoveStaffFromRoom(member.id, room.id, member, room.name)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Remove from Room
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                          <p className="text-[10px] text-muted-foreground">{roleLabels[member.role]}</p>
-                          <div className="flex flex-wrap gap-0.5 mt-0.5">
-                            {topQualifications.map((q, idx) => (
-                              <TooltipProvider key={idx}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Badge 
-                                      variant={q.isExpired ? 'destructive' : q.isExpiringSoon ? 'outline' : 'secondary'}
-                                      className={cn("text-[8px] px-1 py-0 h-3.5", q.isExpiringSoon && "border-amber-500 text-amber-600")}
-                                    >
-                                      {qualificationLabels[q.type].slice(0, 8)}
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{qualificationLabels[q.type]}</p>
-                                    {q.expiryDate && <p className="text-xs text-muted-foreground">Expires: {q.expiryDate}</p>}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            ))}
-                            {member.qualifications.length > 2 && (
-                              <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5">+{member.qualifications.length - 2}</Badge>
+                            {/* Remove from room menu - hide in month view */}
+                            {viewMode !== 'month' && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5 opacity-0 group-hover/staff:opacity-100 transition-opacity -mr-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreHorizontal className="h-3.5 w-3.5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                  <DropdownMenuItem onClick={() => onStaffClick?.(member)}>
+                                    <User className="h-4 w-4 mr-2" />
+                                    View Profile
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={() => handleRequestRemoveStaffFromRoom(member.id, room.id, member, room.name)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Remove from Room
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             )}
                           </div>
+                          {viewMode !== 'month' && (
+                            <>
+                              <p className="text-[10px] text-muted-foreground">{roleLabels[member.role]}</p>
+                              <div className="flex flex-wrap gap-0.5 mt-0.5">
+                                {topQualifications.map((q, idx) => (
+                                  <TooltipProvider key={idx}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge 
+                                          variant={q.isExpired ? 'destructive' : q.isExpiringSoon ? 'outline' : 'secondary'}
+                                          className={cn("text-[8px] px-1 py-0 h-3.5", q.isExpiringSoon && "border-amber-500 text-amber-600")}
+                                        >
+                                          {qualificationLabels[q.type].slice(0, 8)}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>{qualificationLabels[q.type]}</p>
+                                        {q.expiryDate && <p className="text-xs text-muted-foreground">Expires: {q.expiryDate}</p>}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                ))}
+                                {member.qualifications.length > 2 && (
+                                  <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5">+{member.qualifications.length - 2}</Badge>
+                                )}
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
 
