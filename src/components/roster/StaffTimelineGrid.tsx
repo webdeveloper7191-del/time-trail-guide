@@ -541,72 +541,131 @@ export function StaffTimelineGrid({
                       viewMode === 'month' ? "text-xs" : "text-sm",
                       hasPublicHoliday ? "text-destructive" : "text-foreground"
                     )}>
-                      {format(date, viewMode === 'month' ? 'EEE' : 'EEE')}
+                      {format(date, 'EEE')}
                     </span>
 
-                    {/* Public Holiday Indicator */}
-                    {hasPublicHoliday && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Flag className="h-3.5 w-3.5 text-destructive fill-destructive/20" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div className="space-y-1">
-                              <p className="text-xs font-medium text-destructive">Public Holiday</p>
-                              {holidays.filter(h => h.type === 'public_holiday').map(h => (
-                                <p key={h.id} className="text-xs">{h.name}</p>
-                              ))}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-
-                    {/* School Holiday Indicator */}
-                    {hasSchoolHoliday && !hasPublicHoliday && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <GraduationCap className="h-3.5 w-3.5 text-amber-500" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">School Holidays</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-
-                    {/* Event Indicator */}
-                    {hasEvents && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <div className="relative">
-                              <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-                              {events.length > 1 && (
-                                <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary text-[8px] text-primary-foreground flex items-center justify-center font-medium">
-                                  {events.length}
-                                </span>
-                              )}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div className="space-y-1.5">
-                              <p className="text-xs font-medium">Events</p>
-                              {events.map(ev => (
-                                <div key={ev.id} className="flex items-center gap-1.5">
-                                  <div 
-                                    className="h-2 w-2 rounded-full" 
-                                    style={{ backgroundColor: eventTypeConfig[ev.type].color }}
-                                  />
-                                  <span className="text-xs">{ev.name}</span>
+                    {/* In month view the header cells are very narrow; collapse all indicators into a single compact marker */}
+                    {viewMode === 'month' ? (
+                      (hasPublicHoliday || hasSchoolHoliday || hasEvents) && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div
+                                className={cn(
+                                  "relative ml-0.5 flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-semibold",
+                                  hasPublicHoliday
+                                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                                    : hasEvents
+                                      ? "border-primary/40 bg-primary/10 text-primary"
+                                      : "border-muted-foreground/30 bg-muted/30 text-muted-foreground"
+                                )}
+                                aria-label="Day indicators"
+                              >
+                                {(() => {
+                                  const count = (hasPublicHoliday ? 1 : 0) + (hasSchoolHoliday ? 1 : 0) + (hasEvents ? events.length : 0);
+                                  return count > 1 ? String(Math.min(count, 9)) : '•';
+                                })()}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="space-y-1.5">
+                                {hasPublicHoliday && (
+                                  <div className="text-xs">
+                                    <p className="font-medium text-destructive">Public Holiday</p>
+                                    {holidays.filter(h => h.type === 'public_holiday').map(h => (
+                                      <p key={h.id} className="text-xs">{h.name}</p>
+                                    ))}
+                                  </div>
+                                )}
+                                {hasSchoolHoliday && !hasPublicHoliday && (
+                                  <p className="text-xs">School Holidays</p>
+                                )}
+                                {hasEvents && (
+                                  <div className="space-y-1">
+                                    <p className="text-xs font-medium">Events</p>
+                                    {events.map(ev => (
+                                      <div key={ev.id} className="flex items-center gap-1.5">
+                                        <div
+                                          className="h-2 w-2 rounded-full"
+                                          style={{ backgroundColor: eventTypeConfig[ev.type].color }}
+                                        />
+                                        <span className="text-xs">{ev.name}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )
+                    ) : (
+                      <>
+                        {/* Public Holiday Indicator */}
+                        {hasPublicHoliday && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Flag className="h-3.5 w-3.5 text-destructive fill-destructive/20" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-medium text-destructive">Public Holiday</p>
+                                  {holidays.filter(h => h.type === 'public_holiday').map(h => (
+                                    <p key={h.id} className="text-xs">{h.name}</p>
+                                  ))}
                                 </div>
-                              ))}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+
+                        {/* School Holiday Indicator */}
+                        {hasSchoolHoliday && !hasPublicHoliday && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <GraduationCap className="h-3.5 w-3.5 text-amber-500" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">School Holidays</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+
+                        {/* Event Indicator */}
+                        {hasEvents && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <div className="relative">
+                                  <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                                  {events.length > 1 && (
+                                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary text-[8px] text-primary-foreground flex items-center justify-center font-medium">
+                                      {events.length}
+                                    </span>
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="space-y-1.5">
+                                  <p className="text-xs font-medium">Events</p>
+                                  {events.map(ev => (
+                                    <div key={ev.id} className="flex items-center gap-1.5">
+                                      <div 
+                                        className="h-2 w-2 rounded-full" 
+                                        style={{ backgroundColor: eventTypeConfig[ev.type].color }}
+                                      />
+                                      <span className="text-xs">{ev.name}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </>
                     )}
                   </div>
 
