@@ -468,11 +468,12 @@ export function StaffTimelineGrid({
       />
 
       {/* Scrollable content with sticky header */}
-      <div className="flex-1 overflow-auto w-full">
-        <div className="w-full">
+      <div className="flex-1 overflow-y-auto overflow-x-auto w-full">
+        {/* Make the grid measure to its content so horizontal scrolling works reliably on mobile/tablet */}
+        <div className="min-w-full w-max">
           {/* Header */}
           <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
-            <div className="w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50">
+            <div className="w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -641,7 +642,7 @@ export function StaffTimelineGrid({
                 </div>
               );
             })}
-            <div className="w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground bg-muted/50 border-r border-border">
+            <div className="w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground bg-muted/50 border-l border-border sticky right-0 z-40">
               <div className="flex items-center justify-center gap-1">
                 <DollarSign className="h-3.5 w-3.5" />
                 <span>Cost</span>
@@ -864,8 +865,8 @@ export function StaffTimelineGrid({
                   })}
                   {isCollapsed && (
                     <div 
-                      className="w-24 shrink-0 flex items-center justify-center border-r" 
-                      style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
+                      className="w-24 shrink-0 flex items-center justify-center border-l sticky right-0 z-30 bg-card"
+                      style={{ borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                     >
                       <Badge variant="secondary" className="text-xs font-medium">
                         {roomStaff.length} staff
@@ -1140,7 +1141,7 @@ export function StaffTimelineGrid({
                       })}
 
                       {/* Cost cell */}
-                      <div className="w-24 shrink-0 p-1.5 border-r border-border bg-card">
+                      <div className="w-24 shrink-0 p-1.5 border-l border-border bg-card sticky right-0 z-30">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
