@@ -40,6 +40,7 @@ import {
   PhoneCall,
   Building2,
   Send,
+  UserX,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -1578,13 +1579,21 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onShif
         "hover:shadow-md hover:-translate-y-0.5 active:cursor-grabbing",
         style.bg,
         style.border,
-        shift.status === 'draft' && "border-dashed"
+        shift.status === 'draft' && "border-dashed",
+        shift.isAbsent && "border-destructive/70"
       )}
+      style={{
+        backgroundImage: shift.isAbsent
+          ? 'repeating-linear-gradient(135deg, hsl(var(--destructive) / 0.10), hsl(var(--destructive) / 0.10) 10px, hsl(var(--destructive) / 0.18) 10px, hsl(var(--destructive) / 0.18) 20px)'
+          : undefined,
+      }}
     >
       {/* Left accent bar - colored by shift type if special */}
       <div className={cn(
         "absolute left-0 top-0 bottom-0 w-1",
-        shiftTypeInfo ? shiftTypeInfo.bgColor.replace('/20', '') : style.accent
+        shift.isAbsent
+          ? "bg-destructive"
+          : (shiftTypeInfo ? shiftTypeInfo.bgColor.replace('/20', '') : style.accent)
       )} />
 
       {/* Shift type indicator */}
@@ -1594,6 +1603,13 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onShif
           shiftTypeInfo.bgColor
         )}>
           <shiftTypeInfo.icon className={cn("h-2.5 w-2.5", shiftTypeInfo.color)} />
+        </div>
+      )}
+
+      {/* Absent indicator */}
+      {shift.isAbsent && (
+        <div className="absolute -top-1.5 -right-1.5 z-20 rounded-full bg-destructive text-destructive-foreground p-1 shadow">
+          <UserX className="h-3 w-3" />
         </div>
       )}
 
