@@ -530,7 +530,7 @@ export function StaffTimelineGrid({
                   className={cn(
                     "shrink-0 xl:shrink p-1 md:p-2 text-center border-r border-border bg-muted/50",
                     viewMode === 'month'
-                      ? "w-[40px] md:w-[50px] xl:w-[50px] xl:flex-none xl:shrink-0"
+                      ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
                       : isCompact
                         ? (viewMode === 'fortnight'
                             ? "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -845,7 +845,7 @@ export function StaffTimelineGrid({
                         className={cn(
                           "shrink-0 xl:shrink p-1 border-r",
                           viewMode === 'month'
-                            ? "w-[50px] xl:flex-none xl:shrink-0"
+                            ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
                             : isCompact
                               ? (viewMode === 'fortnight'
                                   ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -891,7 +891,7 @@ export function StaffTimelineGrid({
                         className={cn(
                           "shrink-0 xl:shrink border-r flex items-center justify-center",
                           viewMode === 'month'
-                            ? "w-[50px] xl:flex-none xl:shrink-0"
+                            ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
                             : isCompact
                               ? (viewMode === 'fortnight'
                                   ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -972,7 +972,7 @@ export function StaffTimelineGrid({
                 {/* Collapsible content with animation */}
                 <div 
                   className={cn(
-                    "overflow-hidden transition-all duration-300 ease-in-out",
+                    "overflow-y-hidden overflow-x-visible transition-all duration-300 ease-in-out",
                     isCollapsed ? "max-h-0 opacity-0" : "max-h-[5000px] opacity-100"
                   )}
                 >
@@ -1086,7 +1086,7 @@ export function StaffTimelineGrid({
                               "shrink-0 xl:shrink p-1 border-r border-border relative group/cell",
                               "transition-all duration-200 ease-out",
                               viewMode === 'month'
-                                ? "w-[50px] xl:flex-none xl:shrink-0"
+                                ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
                                 : isCompact
                                   ? (viewMode === 'fortnight'
                                       ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -1410,7 +1410,7 @@ export function StaffTimelineGrid({
                               "shrink-0 xl:shrink p-1 border-r border-border relative",
                               "transition-all duration-200 ease-out",
                               viewMode === 'month'
-                                ? "w-[50px] xl:flex-none xl:shrink-0"
+                                ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
                                 : isCompact
                                   ? "min-w-[80px] flex-1"
                                   : "min-w-[120px] flex-1",
@@ -1529,7 +1529,9 @@ export function StaffTimelineGrid({
                         className={cn(
                           "flex-1 p-1.5 border-r relative",
                           "transition-all duration-200 ease-out",
-                          viewMode === 'month' ? "min-w-[50px] xl:min-w-0" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
+                          viewMode === 'month'
+                            ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
+                            : isCompact ? "min-w-[80px]" : "min-w-[120px]",
                           showDropZone && !isDragOver && "border-sky-200/30 bg-sky-50/30 dark:bg-sky-950/10",
                           isDragOver && "bg-sky-100 dark:bg-sky-900/40 ring-2 ring-inset ring-sky-500/50",
                           !showDropZone && "border-border/30"
