@@ -469,8 +469,8 @@ export function StaffTimelineGrid({
 
       {/* Scrollable content with sticky header */}
       <div className="flex-1 overflow-y-auto overflow-x-auto w-full">
-        {/* Make the grid measure to its content so horizontal scrolling works reliably on mobile/tablet */}
-        <div className="min-w-full w-max">
+        {/* On mobile/tablet we use w-max for horizontal scroll; on desktop allow full-width flex distribution */}
+        <div className="min-w-full w-max xl:w-full">
           {/* Header */}
           <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
             <div className="w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50">
@@ -528,7 +528,9 @@ export function StaffTimelineGrid({
                     viewMode === 'month'
                       ? "w-[40px] md:w-[50px]"
                       : isCompact
-                        ? "w-[60px] md:w-[70px]"
+                        ? (viewMode === 'fortnight'
+                            ? "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
+                            : "w-[60px] md:w-[70px]")
                         : "w-[80px] md:w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto",
                     hasPublicHoliday && "bg-destructive/10 border-b-2 border-b-destructive/50"
                   )}
@@ -760,7 +762,9 @@ export function StaffTimelineGrid({
                           viewMode === 'month'
                             ? "w-[50px]"
                             : isCompact
-                              ? "w-[70px]"
+                              ? (viewMode === 'fortnight'
+                                  ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
+                                  : "w-[70px]")
                               : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto"
                         )}
                         style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
@@ -804,7 +808,9 @@ export function StaffTimelineGrid({
                           viewMode === 'month'
                             ? "w-[50px]"
                             : isCompact
-                              ? "w-[70px]"
+                              ? (viewMode === 'fortnight'
+                                  ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
+                                  : "w-[70px]")
                               : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto",
                           isUnderstaffed && "bg-destructive/5"
                         )}
@@ -994,7 +1000,9 @@ export function StaffTimelineGrid({
                               viewMode === 'month'
                                 ? "w-[50px]"
                                 : isCompact
-                                  ? "w-[70px]"
+                                  ? (viewMode === 'fortnight'
+                                      ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
+                                      : "w-[70px]")
                                   : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto",
                               timeOff && "bg-amber-500/10",
                               // Drop zone highlight states
