@@ -18,6 +18,8 @@ import {
   AlertCircle,
   AlertTriangle,
   DollarSign,
+  Pin,
+  PinOff,
   Palmtree,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
@@ -149,6 +151,7 @@ export function StaffTimelineGrid({
   const [staffSearch, setStaffSearch] = useState('');
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
   const [colorPalette, setColorPalette] = useState<ColorPalette>('ocean');
+  const [isCostSticky, setIsCostSticky] = useState(true);
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
 
   // Use context-aware shift cost calculator
@@ -526,7 +529,7 @@ export function StaffTimelineGrid({
                   className={cn(
                     "shrink-0 xl:shrink p-1 md:p-2 text-center border-r border-border bg-muted/50",
                     viewMode === 'month'
-                      ? "w-[40px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
+                      ? "w-[40px] md:w-[50px] xl:w-[50px] xl:flex-none xl:shrink-0"
                       : isCompact
                         ? (viewMode === 'fortnight'
                             ? "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -706,12 +709,26 @@ export function StaffTimelineGrid({
             <div
               className={cn(
                 "w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground bg-muted/50 border-l border-border",
-                viewMode !== 'month' && "sticky right-0 z-40"
+                isCostSticky && "sticky right-0 z-40"
               )}
             >
               <div className="flex items-center justify-center gap-1">
                 <DollarSign className="h-3.5 w-3.5" />
                 <span>Cost</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 ml-1"
+                  onClick={() => setIsCostSticky(v => !v)}
+                  aria-label={isCostSticky ? 'Unpin Cost column' : 'Pin Cost column'}
+                >
+                  {isCostSticky ? (
+                    <PinOff className="h-3.5 w-3.5" />
+                  ) : (
+                    <Pin className="h-3.5 w-3.5" />
+                  )}
+                </Button>
               </div>
             </div>
           </div>
@@ -827,7 +844,7 @@ export function StaffTimelineGrid({
                         className={cn(
                           "shrink-0 xl:shrink p-1 border-r",
                           viewMode === 'month'
-                            ? "w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
+                            ? "w-[50px] xl:flex-none xl:shrink-0"
                             : isCompact
                               ? (viewMode === 'fortnight'
                                   ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -873,7 +890,7 @@ export function StaffTimelineGrid({
                         className={cn(
                           "shrink-0 xl:shrink border-r flex items-center justify-center",
                           viewMode === 'month'
-                            ? "w-[50px]"
+                            ? "w-[50px] xl:flex-none xl:shrink-0"
                             : isCompact
                               ? (viewMode === 'fortnight'
                                   ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -940,7 +957,7 @@ export function StaffTimelineGrid({
                     <div 
                       className={cn(
                         "w-24 shrink-0 flex items-center justify-center border-l bg-card",
-                        viewMode !== 'month' && "sticky right-0 z-30"
+                        isCostSticky && "sticky right-0 z-30"
                       )}
                       style={{ borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                     >
@@ -1068,7 +1085,7 @@ export function StaffTimelineGrid({
                               "shrink-0 xl:shrink p-1 border-r border-border relative group/cell",
                               "transition-all duration-200 ease-out",
                               viewMode === 'month'
-                                ? "w-[50px]"
+                                ? "w-[50px] xl:flex-none xl:shrink-0"
                                 : isCompact
                                   ? (viewMode === 'fortnight'
                                       ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -1222,7 +1239,7 @@ export function StaffTimelineGrid({
                       <div
                         className={cn(
                           "w-24 shrink-0 p-1.5 border-l border-border bg-card",
-                          viewMode !== 'month' && "sticky right-0 z-30"
+                          isCostSticky && "sticky right-0 z-30"
                         )}
                       >
                         <TooltipProvider>
@@ -1272,7 +1289,7 @@ export function StaffTimelineGrid({
                 {/* Open Shifts row */}
                 {roomOpenShifts.length > 0 && (
                   <div className="flex border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10">
-                    <div className="w-64 shrink-0 p-3 border-r border-amber-200/50 flex items-center gap-3">
+                    <div className="w-64 shrink-0 p-3 border-r border-amber-200/50 flex items-center gap-3 sticky left-0 z-20 bg-amber-50/80 dark:bg-amber-950/30">
                       <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-amber-100 dark:bg-amber-900/50 shadow-sm">
                         <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       </div>
@@ -1294,9 +1311,9 @@ export function StaffTimelineGrid({
                           key={cellKey}
                           data-drop-zone
                           className={cn(
-                            "flex-1 p-1.5 border-r border-amber-200/30 relative group/open-cell",
+                            "shrink-0 xl:shrink p-1.5 border-r border-amber-200/30 relative group/open-cell",
                             "transition-all duration-200 ease-out",
-                            viewMode === 'month' ? "min-w-[50px] xl:min-w-0" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
+                            viewMode === 'month' ? "w-[50px] xl:flex-none xl:shrink-0" : isCompact ? "min-w-[80px] flex-1" : "min-w-[120px] flex-1",
                             isDragging && hasOpenShifts && "bg-emerald-50/50 dark:bg-emerald-950/20",
                             isDragOver && hasOpenShifts && "bg-emerald-100 dark:bg-emerald-900/40 ring-2 ring-inset ring-emerald-500/50"
                           )}
@@ -1352,7 +1369,12 @@ export function StaffTimelineGrid({
                       );
                     })}
 
-                    <div className="w-24 shrink-0 border-r border-amber-200/30" />
+                    <div
+                      className={cn(
+                        "w-24 shrink-0 border-l border-amber-200/30 bg-amber-50/40 dark:bg-amber-950/10",
+                        isCostSticky && "sticky right-0 z-20"
+                      )}
+                    />
                   </div>
                 )}
 
@@ -1363,7 +1385,7 @@ export function StaffTimelineGrid({
                   
                   return (
                     <div className="flex border-b border-border bg-purple-500/5 hover:bg-purple-500/10 transition-colors">
-                      <div className="w-64 shrink-0 p-2 border-r border-border flex items-center gap-2">
+                      <div className="w-64 shrink-0 p-2 border-r border-border flex items-center gap-2 sticky left-0 z-20 bg-purple-500/5">
                         <div className="h-9 w-9 rounded-full flex items-center justify-center bg-purple-500/20 border-2 border-dashed border-purple-500/50">
                           <Zap className="h-4 w-4 text-purple-600" />
                         </div>
@@ -1384,9 +1406,13 @@ export function StaffTimelineGrid({
                             key={cellKey}
                             data-drop-zone
                             className={cn(
-                              "flex-1 min-w-[120px] p-1 border-r border-border relative",
+                              "shrink-0 xl:shrink p-1 border-r border-border relative",
                               "transition-all duration-200 ease-out",
-                              isCompact && "min-w-[80px]",
+                              viewMode === 'month'
+                                ? "w-[50px] xl:flex-none xl:shrink-0"
+                                : isCompact
+                                  ? "min-w-[80px] flex-1"
+                                  : "min-w-[120px] flex-1",
                               isDragging && dayEmptyShifts.length > 0 && "bg-purple-500/5",
                               isDragOver && dayEmptyShifts.length > 0 && "bg-purple-500/20 ring-2 ring-inset ring-purple-500/50"
                             )}
@@ -1416,7 +1442,12 @@ export function StaffTimelineGrid({
                         );
                       })}
 
-                      <div className="w-24 shrink-0 border-r border-border" />
+                      <div
+                        className={cn(
+                          "w-24 shrink-0 border-l border-border bg-purple-500/5",
+                          isCostSticky && "sticky right-0 z-20"
+                        )}
+                      />
                     </div>
                   );
                 })()}
