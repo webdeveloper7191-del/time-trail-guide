@@ -644,7 +644,12 @@ export function StaffTimelineGrid({
                 </div>
               );
             })}
-            <div className="w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground bg-muted/50 border-l border-border sticky right-0 z-40">
+            <div
+              className={cn(
+                "w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground bg-muted/50 border-l border-border",
+                viewMode !== 'month' && "sticky right-0 z-40"
+              )}
+            >
               <div className="flex items-center justify-center gap-1">
                 <DollarSign className="h-3.5 w-3.5" />
                 <span>Cost</span>
@@ -871,7 +876,10 @@ export function StaffTimelineGrid({
                   })}
                   {isCollapsed && (
                     <div 
-                      className="w-24 shrink-0 flex items-center justify-center border-l sticky right-0 z-30 bg-card"
+                      className={cn(
+                        "w-24 shrink-0 flex items-center justify-center border-l bg-card",
+                        viewMode !== 'month' && "sticky right-0 z-30"
+                      )}
                       style={{ borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                     >
                       <Badge variant="secondary" className="text-xs font-medium">
@@ -1149,7 +1157,12 @@ export function StaffTimelineGrid({
                       })}
 
                       {/* Cost cell */}
-                      <div className="w-24 shrink-0 p-1.5 border-l border-border bg-card sticky right-0 z-30">
+                      <div
+                        className={cn(
+                          "w-24 shrink-0 p-1.5 border-l border-border bg-card",
+                          viewMode !== 'month' && "sticky right-0 z-30"
+                        )}
+                      >
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
