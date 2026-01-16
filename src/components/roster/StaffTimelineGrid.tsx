@@ -1578,6 +1578,7 @@ export function StaffTimelineGrid({
               </div>
             );
           })}
+          </div>
         </div>
       </div>
     </div>
