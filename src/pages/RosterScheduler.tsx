@@ -901,7 +901,7 @@ export default function RosterScheduler() {
   ];
 
   return (
-    <Box className="h-screen flex flex-col" sx={{ bgcolor: 'background.default' }}>
+    <Box className="h-screen flex flex-col w-full max-w-full overflow-x-hidden" sx={{ bgcolor: 'background.default' }}>
       {/* Mobile Toolbar */}
       <MobileRosterToolbar
         currentDate={currentDate}
@@ -1637,7 +1637,7 @@ export default function RosterScheduler() {
       </Box>
 
       {/* Main Content */}
-      <Box className="flex-1 flex overflow-hidden">
+      <Box className="flex-1 flex overflow-hidden w-full max-w-full">
         {viewMode === 'day' ? (
           <DayTimelineView
             centre={selectedCentre}
