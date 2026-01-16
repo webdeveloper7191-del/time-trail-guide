@@ -157,8 +157,8 @@ export function TimelineGrid({
   return (
     <div className="flex-1 overflow-hidden w-full max-w-full">
       <ScrollArea className="h-full w-full">
-        {/* Make the grid measure to its content so horizontal scrolling works reliably on mobile/tablet */}
-        <div className="min-w-full w-max">
+        {/* On mobile/tablet we use w-max for horizontal scroll; on desktop allow full-width flex distribution */}
+        <div className="min-w-full w-max xl:w-full">
           {/* Header row with dates */}
           <div className="flex sticky top-0 z-20 bg-background border-b border-border">
             <div className="w-20 md:w-28 lg:w-36 shrink-0 p-2 lg:p-3 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/30">
@@ -178,7 +178,11 @@ export function TimelineGrid({
                   key={date.toISOString()} 
                   className={cn(
                     "w-[80px] md:w-[100px] xl:flex-1 xl:min-w-[160px] xl:w-auto shrink-0 xl:shrink p-1 md:p-2 text-center border-r border-border bg-muted/30",
-                    isCompact && "w-[60px] md:w-[70px] xl:w-[100px] xl:flex-none xl:shrink-0",
+                    isCompact && (
+                      viewMode === 'month'
+                        ? "w-[60px] md:w-[70px] xl:w-[100px] xl:flex-none xl:shrink-0"
+                        : "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
+                    ),
                     isLowDemand && "bg-muted/60",
                     hasPublicHoliday && "bg-destructive/10 border-b-2 border-b-destructive/50"
                   )}
@@ -344,7 +348,11 @@ export function TimelineGrid({
                        "w-[80px] md:w-[100px] xl:flex-1 xl:min-w-[160px] xl:w-auto shrink-0 xl:shrink p-1 md:p-2 border-r border-border relative",
                        "transition-colors duration-150",
                        isDragOver && "bg-primary/10",
-                       isCompact && "w-[60px] md:w-[70px] xl:w-[100px] xl:flex-none xl:shrink-0 p-1",
+                       isCompact && (
+                         viewMode === 'month'
+                           ? "w-[60px] md:w-[70px] xl:w-[100px] xl:flex-none xl:shrink-0 p-1"
+                           : "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto p-1"
+                       ),
                        isLowDemand && "bg-muted/30"
                      )}
                      onDragOver={(e) => handleDragOver(e, room.id, dateStr)}
