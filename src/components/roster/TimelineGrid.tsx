@@ -155,10 +155,10 @@ export function TimelineGrid({
   };
 
   return (
-    <div className="flex-1 overflow-hidden w-full max-w-full">
+      <div className="flex-1 overflow-hidden w-full max-w-full">
       <ScrollArea className="h-full w-full">
-        {/* On mobile/tablet we use w-max for horizontal scroll; on desktop allow full-width flex distribution (except month view which uses fixed widths) */}
-        <div className={cn("min-w-full w-max", viewMode !== 'month' && "xl:w-full")}>
+        {/* Horizontal scroll on small screens; on desktop always stretch to available width */}
+        <div className={cn("min-w-full w-max xl:w-full")}>
           {/* Header row with dates */}
           <div className="flex sticky top-0 z-20 bg-background border-b border-border">
             <div className="w-20 md:w-28 lg:w-36 shrink-0 p-2 lg:p-3 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/30">
@@ -180,7 +180,7 @@ export function TimelineGrid({
                     "w-[80px] md:w-[100px] xl:flex-1 xl:min-w-[160px] xl:w-auto shrink-0 xl:shrink p-1 md:p-2 text-center border-r border-border bg-muted/30",
                     isCompact && (
                       viewMode === 'month'
-                        ? "w-[60px] md:w-[70px] xl:w-[100px] xl:flex-none xl:shrink-0"
+                        ? "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
                         : "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
                     ),
                     isLowDemand && "bg-muted/60",
@@ -414,7 +414,7 @@ export function TimelineGrid({
                        isDragOver && "bg-primary/10",
                        isCompact && (
                          viewMode === 'month'
-                           ? "w-[60px] md:w-[70px] xl:w-[100px] xl:flex-none xl:shrink-0 p-1"
+                           ? "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[44px] xl:w-auto p-1"
                            : "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto p-1"
                        ),
                        isLowDemand && "bg-muted/30"

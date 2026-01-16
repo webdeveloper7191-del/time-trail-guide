@@ -469,8 +469,8 @@ export function StaffTimelineGrid({
 
       {/* Scrollable content with sticky header */}
       <div className="flex-1 overflow-y-auto overflow-x-auto w-full">
-          {/* On mobile/tablet we use w-max for horizontal scroll; on desktop allow full-width flex distribution (except month view which uses fixed widths) */}
-        <div className={cn("min-w-full w-max", viewMode !== 'month' && "xl:w-full")}>
+        {/* Horizontal scroll on small screens; on desktop always stretch to available width */}
+        <div className={cn("min-w-full w-max xl:w-full")}>
           {/* Header */}
           <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
             <div className="w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50">
@@ -526,7 +526,7 @@ export function StaffTimelineGrid({
                   className={cn(
                     "shrink-0 xl:shrink p-1 md:p-2 text-center border-r border-border bg-muted/50",
                     viewMode === 'month'
-                      ? "w-[40px] md:w-[50px]"
+                      ? "w-[40px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
                       : isCompact
                         ? (viewMode === 'fortnight'
                             ? "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -824,7 +824,7 @@ export function StaffTimelineGrid({
                         className={cn(
                           "shrink-0 xl:shrink p-1 border-r",
                           viewMode === 'month'
-                            ? "w-[50px]"
+                            ? "w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
                             : isCompact
                               ? (viewMode === 'fortnight'
                                   ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -1293,7 +1293,7 @@ export function StaffTimelineGrid({
                           className={cn(
                             "flex-1 p-1.5 border-r border-amber-200/30 relative group/open-cell",
                             "transition-all duration-200 ease-out",
-                            viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
+                            viewMode === 'month' ? "min-w-[50px] xl:min-w-0" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
                             isDragging && hasOpenShifts && "bg-emerald-50/50 dark:bg-emerald-950/20",
                             isDragOver && hasOpenShifts && "bg-emerald-100 dark:bg-emerald-900/40 ring-2 ring-inset ring-emerald-500/50"
                           )}
@@ -1494,7 +1494,7 @@ export function StaffTimelineGrid({
                         className={cn(
                           "flex-1 p-1.5 border-r relative",
                           "transition-all duration-200 ease-out",
-                          viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
+                          viewMode === 'month' ? "min-w-[50px] xl:min-w-0" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
                           showDropZone && !isDragOver && "border-sky-200/30 bg-sky-50/30 dark:bg-sky-950/10",
                           isDragOver && "bg-sky-100 dark:bg-sky-900/40 ring-2 ring-inset ring-sky-500/50",
                           !showDropZone && "border-border/30"
