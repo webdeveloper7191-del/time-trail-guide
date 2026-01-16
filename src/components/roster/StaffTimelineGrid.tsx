@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from '@/components/ui/input';
 import { InlineDemandChart } from './InlineDemandChart';
 import { RoomColorPaletteSelector, colorPalettes, ColorPalette } from './RoomColorPaletteSelector';
+import { useShiftCost } from '@/hooks/useShiftCost';
 import {
   Plus,
   Clock,
@@ -149,6 +150,9 @@ export function StaffTimelineGrid({
   const [colorPalette, setColorPalette] = useState<ColorPalette>('ocean');
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
 
+  // Use context-aware shift cost calculator
+  const { calculateStaffCosts: calculateContextAwareCosts } = useShiftCost();
+
   // Get dynamic room color based on selected palette
   const getRoomColor = (roomIndex: number): string => {
     const colors = colorPalettes[colorPalette].colors;
@@ -269,31 +273,14 @@ export function StaffTimelineGrid({
     );
   };
 
-  // Calculate costs for a staff member
-  const calculateStaffCosts = (staffId: string) => {
-    const memberShifts = shifts.filter(s => s.staffId === staffId && s.centreId === centre.id);
+  // Calculate costs for a staff member using context-aware calculator
+  const calculateStaffCosts = useCallback((staffId: string) => {
     const member = staff.find(s => s.id === staffId);
-    if (!member) return { regularCost: 0, overtimeCost: 0, totalCost: 0, totalHours: 0 };
+    if (!member) return { regularCost: 0, overtimeCost: 0, penaltyCost: 0, totalCost: 0, totalHours: 0 };
 
-    let totalHours = 0;
-    memberShifts.forEach(shift => {
-      const [startH, startM] = shift.startTime.split(':').map(Number);
-      const [endH, endM] = shift.endTime.split(':').map(Number);
-      totalHours += ((endH * 60 + endM) - (startH * 60 + startM) - shift.breakMinutes) / 60;
-    });
-
-    const regularHours = Math.min(totalHours, member.maxHoursPerWeek);
-    const overtimeHours = Math.max(0, totalHours - member.maxHoursPerWeek);
-    const regularCost = regularHours * member.hourlyRate;
-    const overtimeCost = overtimeHours * member.overtimeRate;
-
-    return {
-      regularCost: Math.round(regularCost * 100) / 100,
-      overtimeCost: Math.round(overtimeCost * 100) / 100,
-      totalCost: Math.round((regularCost + overtimeCost) * 100) / 100,
-      totalHours: Math.round(totalHours * 10) / 10,
-    };
-  };
+    // Use the context-aware cost calculator with custom rules and rate overrides
+    return calculateContextAwareCosts(shifts, member, centre.id);
+  }, [shifts, staff, centre.id, calculateContextAwareCosts]);
 
   const handleDragOver = (e: React.DragEvent, cellId: string) => {
     e.preventDefault();

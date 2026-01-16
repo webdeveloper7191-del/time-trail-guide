@@ -31,6 +31,7 @@ import { ShiftTypeEditor } from './ShiftTypeEditor';
 import { AllowanceEligibilityPanel } from './AllowanceEligibilityPanel';
 import { OnCallPayBreakdown } from './OnCallPayBreakdown';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { useShiftCost } from '@/hooks/useShiftCost';
 
 interface ShiftDetailPanelProps {
   shift: Shift;
@@ -70,6 +71,8 @@ export function ShiftDetailPanel({
          f.centreId === shift.centreId
   );
 
+  const { getQuickEstimate, calculateCost } = useShiftCost();
+
   const shiftDuration = useMemo(() => {
     const [startH, startM] = editedShift.startTime.split(':').map(Number);
     const [endH, endM] = editedShift.endTime.split(':').map(Number);
@@ -77,9 +80,25 @@ export function ShiftDetailPanel({
     return Math.round(totalMinutes / 60 * 10) / 10;
   }, [editedShift]);
 
-  const estimatedCost = assignedStaff 
-    ? Math.round(shiftDuration * assignedStaff.hourlyRate * 100) / 100
-    : 0;
+  // Use context-aware cost calculation with custom rules and rate overrides
+  const { estimatedCost, costBreakdown } = useMemo(() => {
+    if (!assignedStaff) {
+      return { estimatedCost: 0, costBreakdown: null };
+    }
+    try {
+      const breakdown = calculateCost(editedShift, assignedStaff);
+      return { 
+        estimatedCost: breakdown.totalCost, 
+        costBreakdown: breakdown 
+      };
+    } catch {
+      // Fallback to quick estimate
+      return { 
+        estimatedCost: getQuickEstimate(editedShift, assignedStaff), 
+        costBreakdown: null 
+      };
+    }
+  }, [editedShift, assignedStaff, calculateCost, getQuickEstimate]);
 
   const handleSave = () => {
     onSave(editedShift);
