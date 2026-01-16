@@ -13,6 +13,7 @@ import RosterScheduler from "./pages/RosterScheduler";
 import StaffList from "./pages/StaffList";
 import StaffDetail from "./pages/StaffDetail";
 import AgencyPortal from "./pages/AgencyPortal";
+import PerformanceManagement from "./pages/PerformanceManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
                 <Route path="/workforce" element={<StaffList />} />
                 <Route path="/workforce/:id" element={<StaffDetail />} />
                 <Route path="/agency" element={<AgencyPortal />} />
+                <Route path="/performance" element={<PerformanceManagement />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
