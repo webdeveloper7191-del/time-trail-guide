@@ -157,8 +157,8 @@ export function TimelineGrid({
   return (
     <div className="flex-1 overflow-hidden w-full max-w-full">
       <ScrollArea className="h-full w-full">
-        {/* On mobile/tablet we use w-max for horizontal scroll; on desktop allow full-width flex distribution */}
-        <div className="min-w-full w-max xl:w-full">
+        {/* On mobile/tablet we use w-max for horizontal scroll; on desktop allow full-width flex distribution (except month view which uses fixed widths) */}
+        <div className={cn("min-w-full w-max", viewMode !== 'month' && "xl:w-full")}>
           {/* Header row with dates */}
           <div className="flex sticky top-0 z-20 bg-background border-b border-border">
             <div className="w-20 md:w-28 lg:w-36 shrink-0 p-2 lg:p-3 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/30">
