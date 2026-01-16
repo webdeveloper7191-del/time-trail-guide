@@ -176,8 +176,8 @@ export function TimelineGrid({
                 <div 
                   key={date.toISOString()} 
                   className={cn(
-                    "flex-1 min-w-[80px] md:min-w-[120px] lg:min-w-[160px] p-1 md:p-2 text-center border-r border-border bg-muted/30",
-                    isCompact && "min-w-[60px] md:min-w-[80px] lg:min-w-[100px]",
+                    "w-[80px] md:w-[100px] lg:w-[160px] shrink-0 p-1 md:p-2 text-center border-r border-border bg-muted/30",
+                    isCompact && "w-[60px] md:w-[70px] lg:w-[100px]",
                     isLowDemand && "bg-muted/60",
                     hasPublicHoliday && "bg-destructive/10 border-b-2 border-b-destructive/50"
                   )}
@@ -340,10 +340,10 @@ export function TimelineGrid({
                   <div
                     key={cellKey}
                     className={cn(
-                      "flex-1 min-w-[80px] md:min-w-[120px] lg:min-w-[160px] p-1 md:p-2 border-r border-border relative",
+                      "w-[80px] md:w-[100px] lg:w-[160px] shrink-0 p-1 md:p-2 border-r border-border relative",
                       "transition-colors duration-150",
                       isDragOver && "bg-primary/10",
-                      isCompact && "min-w-[60px] md:min-w-[80px] lg:min-w-[100px] p-1",
+                      isCompact && "w-[60px] md:w-[70px] lg:w-[100px] p-1",
                       isLowDemand && "bg-muted/30"
                     )}
                     onDragOver={(e) => handleDragOver(e, room.id, dateStr)}
