@@ -469,8 +469,8 @@ export function StaffTimelineGrid({
 
       {/* Scrollable content with sticky header */}
       <div className="flex-1 overflow-y-auto overflow-x-auto w-full">
-        {/* On mobile/tablet we use w-max for horizontal scroll; on desktop allow full-width flex distribution */}
-        <div className="min-w-full w-max xl:w-full">
+          {/* On mobile/tablet we use w-max for horizontal scroll; on desktop allow full-width flex distribution (except month view which uses fixed widths) */}
+        <div className={cn("min-w-full w-max", viewMode !== 'month' && "xl:w-full")}>
           {/* Header */}
           <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
             <div className="w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50">
