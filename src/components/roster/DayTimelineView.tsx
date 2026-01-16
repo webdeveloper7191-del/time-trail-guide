@@ -252,7 +252,7 @@ export function DayTimelineView({
           {/* Time header */}
           <div className="flex sticky top-0 z-20 bg-card border-b border-border">
             {/* Staff column header */}
-            <div className="w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50">
+            <div className="w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50 sticky left-0 z-30">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -387,7 +387,7 @@ export function DayTimelineView({
                       {/* Staff info */}
                       <div 
                         className={cn(
-                          "w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 border-r border-border bg-card flex items-center gap-1 md:gap-2 cursor-grab",
+                          "w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 border-r border-border bg-card flex items-center gap-1 md:gap-2 cursor-grab sticky left-0 z-20",
                           isDragging && "opacity-60"
                         )}
                         draggable
@@ -520,7 +520,7 @@ export function DayTimelineView({
                 {/* Open shifts row */}
                 {roomOpenShifts.length > 0 && (
                   <div className="flex border-b border-border bg-amber-500/5">
-                    <div className="w-64 shrink-0 p-2 border-r border-border flex items-center gap-2">
+                    <div className="w-32 md:w-48 lg:w-64 shrink-0 p-2 border-r border-border flex items-center gap-2 bg-amber-500/5 sticky left-0 z-20">
                       <div className="h-8 w-8 rounded-full flex items-center justify-center bg-amber-500/20 border-2 border-dashed border-amber-500/50">
                         <AlertCircle className="h-4 w-4 text-amber-600" />
                       </div>

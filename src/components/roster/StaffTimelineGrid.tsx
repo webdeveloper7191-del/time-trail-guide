@@ -473,7 +473,7 @@ export function StaffTimelineGrid({
         <div className={cn("min-w-full w-max xl:w-full")}>
           {/* Header */}
           <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
-            <div className="w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50">
+            <div className="w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50 sticky left-0 z-40">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -762,7 +762,7 @@ export function StaffTimelineGrid({
                 >
                   <div
                     data-drop-zone
-                    className="w-64 shrink-0 px-3 py-2 flex items-center gap-2 border-r"
+                    className="w-32 md:w-48 lg:w-64 shrink-0 px-3 py-2 flex items-center gap-2 border-r sticky left-0 z-30 bg-inherit"
                     style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                     onDragOver={(e) => {
                       e.preventDefault();
@@ -966,7 +966,7 @@ export function StaffTimelineGrid({
                       {/* Staff info cell */}
                       <div 
                         className={cn(
-                          "w-64 shrink-0 p-2 border-r border-border bg-card flex items-start gap-2 cursor-grab group/staff transition-opacity duration-200",
+                          "w-32 md:w-48 lg:w-64 shrink-0 p-2 border-r border-border bg-card flex items-start gap-2 cursor-grab group/staff transition-opacity duration-200 sticky left-0 z-20",
                           isDragging && "opacity-60"
                         )}
                         draggable
