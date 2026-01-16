@@ -342,9 +342,9 @@ export default function RosterScheduler() {
   }, [currentDate, viewMode]);
 
   const filteredStaff = useMemo(() => {
-    if (roleFilter === 'all') return mockStaff;
-    return mockStaff.filter(s => s.role === roleFilter);
-  }, [roleFilter]);
+    if (roleFilter === 'all') return allStaff;
+    return allStaff.filter(s => s.role === roleFilter);
+  }, [allStaff, roleFilter]);
 
   const centreFlags = complianceFlags.filter(f => f.centreId === selectedCentreId);
   const criticalFlags = centreFlags.filter(f => f.severity === 'critical');
