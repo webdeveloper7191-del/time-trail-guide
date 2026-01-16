@@ -232,8 +232,10 @@ export function ShiftDetailPanel({
     }
   };
 
-  const handleSkipCoverage = () => {
-    handleConfirmAbsent(false);
+  const handleSkipCoverage = async () => {
+    // First mark the shift as absent (including saving it)
+    await handleConfirmAbsent(false);
+    // Then close the modal
     setShowCoverageModal(false);
   };
 
