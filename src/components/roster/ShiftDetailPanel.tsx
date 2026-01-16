@@ -79,8 +79,10 @@ export function ShiftDetailPanel({
   onCopyShift,
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
-  const [isAbsent, setIsAbsent] = useState(false);
   const [showCoverageModal, setShowCoverageModal] = useState(false);
+  
+  // Track absent state from the shift itself
+  const isAbsent = editedShift.isAbsent || false;
   
   const assignedStaff = staff.find(s => s.id === editedShift.staffId);
   const room = centre.rooms.find(r => r.id === shift.roomId);
@@ -170,7 +172,6 @@ export function ShiftDetailPanel({
       absenceReason,
       notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[ABSENT] ${staffApprovedLeave ? `Leave: ${leaveTypeLabels[staffApprovedLeave.type]}` : 'Marked absent by manager'}`,
     };
-    setIsAbsent(true);
     setEditedShift(absentShift);
     onSave(absentShift);
     
