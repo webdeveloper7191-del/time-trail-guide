@@ -51,6 +51,7 @@ const SHIFT_TYPE_CONFIG: Record<ShiftSpecialType, { icon: typeof Phone; color: s
 interface ShiftCardProps {
   shift: Shift;
   staff?: StaffMember;
+  allStaff?: StaffMember[];
   onEdit?: (shift: Shift) => void;
   onDelete?: (shiftId: string) => void;
   onDragStart?: (e: React.DragEvent, shift: Shift) => void;
@@ -63,6 +64,7 @@ interface ShiftCardProps {
 export function ShiftCard({ 
   shift, 
   staff, 
+  allStaff,
   onEdit, 
   onDelete, 
   onDragStart,
@@ -145,6 +147,18 @@ export function ShiftCard({
           <div className="bg-destructive text-destructive-foreground rounded-full p-1 shadow-md">
             <UserX className="h-3 w-3" />
           </div>
+        </div>
+      )}
+
+      {/* Covered by chip */}
+      {shift.isAbsent && shift.replacementStaffId && !isCompact && (
+        <div className="absolute bottom-1 right-1 z-10">
+          <Badge 
+            variant="outline" 
+            className="text-[9px] px-1.5 py-0 h-4 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-700"
+          >
+            Covered by {allStaff?.find(s => s.id === shift.replacementStaffId)?.name?.split(' ')[0] || 'Staff'}
+          </Badge>
         </div>
       )}
 
