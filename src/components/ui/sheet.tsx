@@ -95,8 +95,8 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
     
     // Use width from style prop (from PrimaryOffCanvas) or calculate from className
     const getWidthFromClassName = (className: string | undefined) => {
-      // Default: keep drawers reasonably narrow so tablet views don't show huge empty space.
-      if (!className) return 'min(420px, 95vw)';
+      // Default: reasonably wide; specific sheets (e.g. mobile actions) should override via style/className.
+      if (!className) return 'min(600px, 95vw)';
 
       // Tailwind defaults (px):
       if (className.includes('max-w-7xl')) return 'min(1280px, 95vw)';
@@ -110,7 +110,7 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
       if (className.includes('max-w-md')) return 'min(448px, 95vw)';
       if (className.includes('max-w-sm')) return 'min(384px, 95vw)';
 
-      return 'min(420px, 95vw)';
+      return 'min(600px, 95vw)';
     };
     
     // Priority: style.width (from PrimaryOffCanvas) > className-based width
