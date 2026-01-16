@@ -157,7 +157,8 @@ export function TimelineGrid({
   return (
     <div className="flex-1 overflow-hidden w-full max-w-full">
       <ScrollArea className="h-full w-full">
-        <div className="w-full">
+        {/* Make the grid measure to its content so horizontal scrolling works reliably on mobile/tablet */}
+        <div className="min-w-full w-max">
           {/* Header row with dates */}
           <div className="flex sticky top-0 z-20 bg-background border-b border-border">
             <div className="w-20 md:w-28 lg:w-36 shrink-0 p-2 lg:p-3 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/30">
