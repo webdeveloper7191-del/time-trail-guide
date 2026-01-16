@@ -453,7 +453,7 @@ export function StaffTimelineGrid({
 
   return (
     <div
-      className="flex-1 flex flex-col overflow-hidden bg-background"
+      className="flex-1 flex flex-col overflow-hidden bg-background w-full max-w-full"
       onDragEnd={handleDragEnd}
       onDragEnter={handleGridDragEnter}
     >
@@ -468,11 +468,11 @@ export function StaffTimelineGrid({
       />
 
       {/* Scrollable content with sticky header */}
-      <div className="flex-1 overflow-auto">
-        <div className="min-w-max">
+      <div className="flex-1 overflow-auto w-full">
+        <div className="w-full">
           {/* Header */}
           <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
-            <div className="w-64 shrink-0 p-2 font-medium text-sm text-muted-foreground border-r border-border bg-muted/50">
+            <div className="w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -523,8 +523,8 @@ export function StaffTimelineGrid({
                 <div 
                   key={date.toISOString()} 
                   className={cn(
-                    "flex-1 p-2 text-center border-r border-border bg-muted/50",
-                    viewMode === 'month' ? "min-w-[50px]" : isCompact ? "min-w-[80px]" : "min-w-[120px]",
+                    "flex-1 p-1 md:p-2 text-center border-r border-border bg-muted/50",
+                    viewMode === 'month' ? "min-w-[40px] md:min-w-[50px]" : isCompact ? "min-w-[60px] md:min-w-[80px]" : "min-w-[80px] md:min-w-[100px] lg:min-w-[120px]",
                     hasPublicHoliday && "bg-destructive/10 border-b-2 border-b-destructive/50"
                   )}
                 >

@@ -155,12 +155,12 @@ export function TimelineGrid({
   };
 
   return (
-    <div className="flex-1 overflow-hidden">
-      <ScrollArea className="h-full">
-        <div className="min-w-max">
+    <div className="flex-1 overflow-hidden w-full max-w-full">
+      <ScrollArea className="h-full w-full">
+        <div className="w-full">
           {/* Header row with dates */}
           <div className="flex sticky top-0 z-20 bg-background border-b border-border">
-            <div className="w-36 shrink-0 p-3 font-medium text-sm text-muted-foreground border-r border-border bg-muted/30">
+            <div className="w-20 md:w-28 lg:w-36 shrink-0 p-2 lg:p-3 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/30">
               Room
             </div>
             {dates.map((date) => {
@@ -176,8 +176,8 @@ export function TimelineGrid({
                 <div 
                   key={date.toISOString()} 
                   className={cn(
-                    "flex-1 min-w-[160px] p-2 text-center border-r border-border bg-muted/30",
-                    isCompact && "min-w-[100px]",
+                    "flex-1 min-w-[80px] md:min-w-[120px] lg:min-w-[160px] p-1 md:p-2 text-center border-r border-border bg-muted/30",
+                    isCompact && "min-w-[60px] md:min-w-[80px] lg:min-w-[100px]",
                     isLowDemand && "bg-muted/60",
                     hasPublicHoliday && "bg-destructive/10 border-b-2 border-b-destructive/50"
                   )}
@@ -312,12 +312,12 @@ export function TimelineGrid({
           {centre.rooms.map((room) => (
             <div key={room.id} className="flex border-b border-border">
               {/* Room label */}
-              <div className="w-36 shrink-0 p-2 border-r border-border bg-card">
-                <div className="font-medium text-sm text-foreground">{room.name}</div>
-                <div className="text-xs text-muted-foreground">
+              <div className="w-20 md:w-28 lg:w-36 shrink-0 p-1 md:p-2 border-r border-border bg-card">
+                <div className="font-medium text-xs lg:text-sm text-foreground truncate">{room.name}</div>
+                <div className="text-[10px] lg:text-xs text-muted-foreground hidden md:block">
                   {ageGroupLabels[room.ageGroup]}
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                <div className="hidden lg:flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                   <Users className="h-3 w-3" />
                   <span>1:{room.requiredRatio}</span>
                   <span>•</span>
@@ -340,10 +340,10 @@ export function TimelineGrid({
                   <div
                     key={cellKey}
                     className={cn(
-                      "flex-1 min-w-[160px] p-2 border-r border-border relative",
+                      "flex-1 min-w-[80px] md:min-w-[120px] lg:min-w-[160px] p-1 md:p-2 border-r border-border relative",
                       "transition-colors duration-150",
                       isDragOver && "bg-primary/10",
-                      isCompact && "min-w-[100px] p-1",
+                      isCompact && "min-w-[60px] md:min-w-[80px] lg:min-w-[100px] p-1",
                       isLowDemand && "bg-muted/30"
                     )}
                     onDragOver={(e) => handleDragOver(e, room.id, dateStr)}

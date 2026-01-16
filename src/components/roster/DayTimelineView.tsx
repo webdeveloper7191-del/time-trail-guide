@@ -246,13 +246,13 @@ export function DayTimelineView({
   const totalWidth = TIME_SLOTS.length * SLOT_WIDTH;
 
   return (
-    <div className="flex-1 overflow-hidden bg-background" onDragEnd={handleDragEnd}>
-      <ScrollArea className="h-full">
-        <div style={{ minWidth: totalWidth + 264 + 100 }}>
+    <div className="flex-1 overflow-hidden bg-background w-full max-w-full" onDragEnd={handleDragEnd}>
+      <ScrollArea className="h-full w-full">
+        <div style={{ minWidth: totalWidth + 264 + 100 }} className="w-full">
           {/* Time header */}
           <div className="flex sticky top-0 z-20 bg-card border-b border-border">
             {/* Staff column header */}
-            <div className="w-64 shrink-0 p-2 font-medium text-sm text-muted-foreground border-r border-border bg-muted/50">
+            <div className="w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -387,7 +387,7 @@ export function DayTimelineView({
                       {/* Staff info */}
                       <div 
                         className={cn(
-                          "w-64 shrink-0 p-2 border-r border-border bg-card flex items-center gap-2 cursor-grab",
+                          "w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 border-r border-border bg-card flex items-center gap-1 md:gap-2 cursor-grab",
                           isDragging && "opacity-60"
                         )}
                         draggable
