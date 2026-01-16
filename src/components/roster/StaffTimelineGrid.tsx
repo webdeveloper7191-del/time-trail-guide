@@ -523,12 +523,12 @@ export function StaffTimelineGrid({
                 <div 
                   key={date.toISOString()} 
                   className={cn(
-                    "shrink-0 lg:shrink p-1 md:p-2 text-center border-r border-border bg-muted/50",
+                    "shrink-0 xl:shrink p-1 md:p-2 text-center border-r border-border bg-muted/50",
                     viewMode === 'month'
                       ? "w-[40px] md:w-[50px]"
                       : isCompact
                         ? "w-[60px] md:w-[70px]"
-                        : "w-[80px] md:w-[100px] lg:flex-1 lg:min-w-[120px] lg:w-auto",
+                        : "w-[80px] md:w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto",
                     hasPublicHoliday && "bg-destructive/10 border-b-2 border-b-destructive/50"
                   )}
                 >
@@ -755,12 +755,12 @@ export function StaffTimelineGrid({
                       <div 
                         key={dateStr} 
                         className={cn(
-                          "shrink-0 lg:shrink p-1 border-r",
+                          "shrink-0 xl:shrink p-1 border-r",
                           viewMode === 'month'
                             ? "w-[50px]"
                             : isCompact
                               ? "w-[70px]"
-                              : "w-[100px] lg:flex-1 lg:min-w-[120px] lg:w-auto"
+                              : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto"
                         )}
                         style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                         onClick={(e) => e.stopPropagation()}
@@ -799,12 +799,12 @@ export function StaffTimelineGrid({
                       <div 
                         key={dateStr} 
                         className={cn(
-                          "shrink-0 lg:shrink border-r flex items-center justify-center",
+                          "shrink-0 xl:shrink border-r flex items-center justify-center",
                           viewMode === 'month'
                             ? "w-[50px]"
                             : isCompact
                               ? "w-[70px]"
-                              : "w-[100px] lg:flex-1 lg:min-w-[120px] lg:w-auto",
+                              : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto",
                           isUnderstaffed && "bg-destructive/5"
                         )}
                         style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
@@ -988,13 +988,13 @@ export function StaffTimelineGrid({
                             key={cellKey}
                             data-drop-zone
                             className={cn(
-                              "shrink-0 lg:shrink p-1 border-r border-border relative group/cell",
+                              "shrink-0 xl:shrink p-1 border-r border-border relative group/cell",
                               "transition-all duration-200 ease-out",
                               viewMode === 'month'
                                 ? "w-[50px]"
                                 : isCompact
                                   ? "w-[70px]"
-                                  : "w-[100px] lg:flex-1 lg:min-w-[120px] lg:w-auto",
+                                  : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto",
                               timeOff && "bg-amber-500/10",
                               // Drop zone highlight states
                               isDragging && !timeOff && "bg-primary/5",
