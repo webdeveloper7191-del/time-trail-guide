@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Shift, StaffMember, DemandData, RosterComplianceFlag, Room, Centre } from '@/types/roster';
+import { Shift, StaffMember, DemandData, RosterComplianceFlag, Room, Centre, TimeOff } from '@/types/roster';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,16 +22,22 @@ import {
   Zap,
   Phone,
   Moon,
-  BarChart3
+  BarChart3,
+  UserX,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isWithinInterval } from 'date-fns';
 import { DemandHistogram } from './DemandHistogram';
 import { ShiftTypeEditor } from './ShiftTypeEditor';
 import { AllowanceEligibilityPanel } from './AllowanceEligibilityPanel';
 import { OnCallPayBreakdown } from './OnCallPayBreakdown';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { useShiftCost } from '@/hooks/useShiftCost';
+import { toast } from 'sonner';
+
+// Extended shift status to include absent
+export type ExtendedShiftStatus = Shift['status'] | 'absent';
 
 interface ShiftDetailPanelProps {
   shift: Shift;
@@ -47,6 +53,13 @@ interface ShiftDetailPanelProps {
   onCopyShift?: (shift: Shift) => void;
 }
 
+const shiftStatusOptions: { value: Shift['status']; label: string; description: string; color: string }[] = [
+  { value: 'draft', label: 'Draft', description: 'Not yet published to staff', color: 'bg-muted text-muted-foreground' },
+  { value: 'published', label: 'Published', description: 'Visible to staff', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+  { value: 'confirmed', label: 'Confirmed', description: 'Staff has confirmed attendance', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  { value: 'completed', label: 'Completed', description: 'Shift has been worked', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+];
+
 export function ShiftDetailPanel({
   shift,
   staff,
@@ -61,6 +74,7 @@ export function ShiftDetailPanel({
   onCopyShift,
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
+  const [isAbsent, setIsAbsent] = useState(false);
   
   const assignedStaff = staff.find(s => s.id === editedShift.staffId);
   const room = centre.rooms.find(r => r.id === shift.roomId);
@@ -70,6 +84,39 @@ export function ShiftDetailPanel({
          f.roomId === shift.roomId && 
          f.centreId === shift.centreId
   );
+
+  // Check if staff has approved leave for this shift date
+  const staffApprovedLeave = useMemo(() => {
+    if (!assignedStaff?.timeOff) return null;
+    
+    return assignedStaff.timeOff.find(leave => {
+      if (leave.status !== 'approved') return false;
+      const shiftDate = parseISO(shift.date);
+      const leaveStart = parseISO(leave.startDate);
+      const leaveEnd = parseISO(leave.endDate);
+      return isWithinInterval(shiftDate, { start: leaveStart, end: leaveEnd });
+    });
+  }, [assignedStaff, shift.date]);
+
+  // Check if there's pending leave for this date
+  const staffPendingLeave = useMemo(() => {
+    if (!assignedStaff?.timeOff) return null;
+    
+    return assignedStaff.timeOff.find(leave => {
+      if (leave.status !== 'pending') return false;
+      const shiftDate = parseISO(shift.date);
+      const leaveStart = parseISO(leave.startDate);
+      const leaveEnd = parseISO(leave.endDate);
+      return isWithinInterval(shiftDate, { start: leaveStart, end: leaveEnd });
+    });
+  }, [assignedStaff, shift.date]);
+
+  const leaveTypeLabels: Record<TimeOff['type'], string> = {
+    annual_leave: 'Annual Leave',
+    sick_leave: 'Sick Leave',
+    personal_leave: 'Personal Leave',
+    unpaid_leave: 'Unpaid Leave',
+  };
 
   const { getQuickEstimate, calculateCost } = useShiftCost();
 
@@ -103,6 +150,22 @@ export function ShiftDetailPanel({
   const handleSave = () => {
     onSave(editedShift);
     onClose();
+  };
+
+  const handleMarkAbsent = () => {
+    const absentShift: Shift = {
+      ...editedShift,
+      notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[ABSENT] ${staffApprovedLeave ? `Leave: ${leaveTypeLabels[staffApprovedLeave.type]}` : 'Marked absent by manager'}`,
+    };
+    setIsAbsent(true);
+    onSave(absentShift);
+    toast.success('Shift marked as absent', {
+      description: 'The shift has been updated to reflect staff absence'
+    });
+  };
+
+  const handleStatusChange = (newStatus: Shift['status']) => {
+    setEditedShift(prev => ({ ...prev, status: newStatus }));
   };
 
   // Get shift type icon and color
@@ -285,6 +348,54 @@ export function ShiftDetailPanel({
 
             <Separator />
 
+            {/* Leave/Absence Alert */}
+            {(staffApprovedLeave || staffPendingLeave) && (
+              <div className={cn(
+                "p-3 rounded-lg border",
+                staffApprovedLeave 
+                  ? "border-amber-500/50 bg-amber-500/10" 
+                  : "border-blue-500/50 bg-blue-500/10"
+              )}>
+                <div className="flex items-start gap-2">
+                  <UserX className={cn(
+                    "h-4 w-4 mt-0.5",
+                    staffApprovedLeave ? "text-amber-600" : "text-blue-500"
+                  )} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">
+                      {staffApprovedLeave 
+                        ? `Approved ${leaveTypeLabels[staffApprovedLeave.type]}`
+                        : `Pending ${leaveTypeLabels[staffPendingLeave!.type]}`
+                      }
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {staffApprovedLeave 
+                        ? `${format(parseISO(staffApprovedLeave.startDate), 'MMM d')} - ${format(parseISO(staffApprovedLeave.endDate), 'MMM d')}`
+                        : `${format(parseISO(staffPendingLeave!.startDate), 'MMM d')} - ${format(parseISO(staffPendingLeave!.endDate), 'MMM d')}`
+                      }
+                    </p>
+                    {staffApprovedLeave && !isAbsent && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="mt-2 h-7 text-xs border-amber-500/50 text-amber-700 hover:bg-amber-500/20"
+                        onClick={handleMarkAbsent}
+                      >
+                        <UserX className="h-3 w-3 mr-1" />
+                        Mark as Absent
+                      </Button>
+                    )}
+                    {isAbsent && (
+                      <Badge variant="outline" className="mt-2 text-amber-600 border-amber-500/50">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Marked Absent
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Time Settings */}
             <div className="space-y-3">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">
@@ -352,6 +463,72 @@ export function ShiftDetailPanel({
 
             <Separator />
 
+            {/* Shift Status */}
+            <div className="space-y-3">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                Shift Status
+              </Label>
+              <Select 
+                value={editedShift.status} 
+                onValueChange={(value) => handleStatusChange(value as Shift['status'])}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {shiftStatusOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value} textValue={option.label}>
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <Badge className={cn("text-xs", option.color)}>
+                            {option.label}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{option.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Quick status actions */}
+              <div className="flex gap-2">
+                {editedShift.status === 'draft' && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="text-xs h-7"
+                    onClick={() => handleStatusChange('published')}
+                  >
+                    Publish Shift
+                  </Button>
+                )}
+                {editedShift.status === 'published' && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="text-xs h-7"
+                    onClick={() => handleStatusChange('confirmed')}
+                  >
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Mark Confirmed
+                  </Button>
+                )}
+                {(editedShift.status === 'confirmed' || editedShift.status === 'published') && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="text-xs h-7"
+                    onClick={() => handleStatusChange('completed')}
+                  >
+                    Mark Completed
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Room Assignment */}
             <div className="space-y-3">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">
@@ -388,14 +565,6 @@ export function ShiftDetailPanel({
                 placeholder="Add notes for this shift..."
                 rows={3}
               />
-            </div>
-
-            {/* Status */}
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">Status</Label>
-              <Badge variant={editedShift.status === 'draft' ? 'outline' : 'default'}>
-                {editedShift.status}
-              </Badge>
             </div>
           </div>
         </TabsContent>
