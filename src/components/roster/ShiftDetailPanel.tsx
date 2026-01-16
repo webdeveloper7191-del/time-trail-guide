@@ -24,7 +24,8 @@ import {
   Moon,
   BarChart3,
   UserX,
-  CheckCircle2
+  CheckCircle2,
+  UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -35,6 +36,7 @@ import { OnCallPayBreakdown } from './OnCallPayBreakdown';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { useShiftCost } from '@/hooks/useShiftCost';
 import { toast } from 'sonner';
+import { ShiftCoverageSuggestionModal } from './ShiftCoverageSuggestionModal';
 
 // Extended shift status to include absent
 export type ExtendedShiftStatus = Shift['status'] | 'absent';
@@ -45,6 +47,7 @@ interface ShiftDetailPanelProps {
   centre: Centre;
   demandData: DemandData[];
   complianceFlags: RosterComplianceFlag[];
+  existingShifts?: Shift[];
   onClose: () => void;
   onSave: (shift: Shift) => void;
   onDelete: (shiftId: string) => void;
@@ -66,6 +69,7 @@ export function ShiftDetailPanel({
   centre,
   demandData,
   complianceFlags,
+  existingShifts = [],
   onClose,
   onSave,
   onDelete,
@@ -75,6 +79,7 @@ export function ShiftDetailPanel({
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
   const [isAbsent, setIsAbsent] = useState(false);
+  const [showCoverageModal, setShowCoverageModal] = useState(false);
   
   const assignedStaff = staff.find(s => s.id === editedShift.staffId);
   const room = centre.rooms.find(r => r.id === shift.roomId);
@@ -153,6 +158,10 @@ export function ShiftDetailPanel({
   };
 
   const handleMarkAbsent = () => {
+    setShowCoverageModal(true);
+  };
+
+  const handleConfirmAbsent = (findCoverage: boolean) => {
     const absentShift: Shift = {
       ...editedShift,
       notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[ABSENT] ${staffApprovedLeave ? `Leave: ${leaveTypeLabels[staffApprovedLeave.type]}` : 'Marked absent by manager'}`,
@@ -160,8 +169,24 @@ export function ShiftDetailPanel({
     setIsAbsent(true);
     onSave(absentShift);
     toast.success('Shift marked as absent', {
-      description: 'The shift has been updated to reflect staff absence'
+      description: findCoverage ? 'Select a replacement from the suggestions' : 'The shift has been updated to reflect staff absence'
     });
+  };
+
+  const handleAssignCoverage = (staffId: string) => {
+    const coverageShift: Shift = {
+      ...editedShift,
+      staffId,
+      notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[REASSIGNED] Previously assigned to ${assignedStaff?.name}`,
+    };
+    setEditedShift(coverageShift);
+    onSave(coverageShift);
+    setShowCoverageModal(false);
+  };
+
+  const handleSkipCoverage = () => {
+    handleConfirmAbsent(false);
+    setShowCoverageModal(false);
   };
 
   const handleStatusChange = (newStatus: Shift['status']) => {
@@ -375,15 +400,17 @@ export function ShiftDetailPanel({
                       }
                     </p>
                     {staffApprovedLeave && !isAbsent && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="mt-2 h-7 text-xs border-amber-500/50 text-amber-700 hover:bg-amber-500/20"
-                        onClick={handleMarkAbsent}
-                      >
-                        <UserX className="h-3 w-3 mr-1" />
-                        Mark as Absent
-                      </Button>
+                      <div className="flex gap-2 mt-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="h-7 text-xs border-amber-500/50 text-amber-700 hover:bg-amber-500/20"
+                          onClick={handleMarkAbsent}
+                        >
+                          <UserPlus className="h-3 w-3 mr-1" />
+                          Mark Absent & Find Coverage
+                        </Button>
+                      </div>
                     )}
                     {isAbsent && (
                       <Badge variant="outline" className="mt-2 text-amber-600 border-amber-500/50">
@@ -624,6 +651,21 @@ export function ShiftDetailPanel({
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Coverage Suggestion Modal */}
+      {assignedStaff && (
+        <ShiftCoverageSuggestionModal
+          open={showCoverageModal}
+          onClose={() => setShowCoverageModal(false)}
+          shift={editedShift}
+          absentStaff={assignedStaff}
+          allStaff={staff}
+          room={room}
+          existingShifts={existingShifts}
+          onAssignStaff={handleAssignCoverage}
+          onSkipCoverage={handleSkipCoverage}
+        />
+      )}
     </PrimaryOffCanvas>
   );
 }

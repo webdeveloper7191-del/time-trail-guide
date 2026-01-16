@@ -1702,6 +1702,7 @@ export default function RosterScheduler() {
           centre={selectedCentre}
           demandData={demandData}
           complianceFlags={complianceFlags}
+          existingShifts={shifts}
           onClose={() => setSelectedShift(null)}
           onSave={handleShiftSave}
           onDelete={handleShiftDelete}
