@@ -1027,6 +1027,7 @@ export function StaffTimelineGrid({
                                       key={shift.id}
                                       shift={shift}
                                       staff={member}
+                                      allStaff={staff}
                                       onEdit={() => onShiftEdit(shift)}
                                       onDelete={() => handleRequestDeleteShift(shift, member)}
                                       onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
@@ -1451,9 +1452,10 @@ export function StaffTimelineGrid({
   );
 }
 
-function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onShiftTypeChange, onDragStart, isCompact = false }: {
+function StaffShiftCard({ shift, staff, allStaff, onEdit, onDelete, onCopy, onSwap, onShiftTypeChange, onDragStart, isCompact = false }: {
   shift: Shift;
   staff?: StaffMember;
+  allStaff?: StaffMember[];
   onEdit: () => void;
   onDelete: () => void;
   onCopy?: () => void;
@@ -1771,6 +1773,15 @@ function StaffShiftCard({ shift, staff, onEdit, onDelete, onCopy, onSwap, onShif
             <Clock className="h-2.5 w-2.5" />
             <span>{shift.breakMinutes}m break</span>
           </div>
+        )}
+        {/* Covered by chip */}
+        {shift.isAbsent && shift.replacementStaffId && !isCompact && (
+          <Badge 
+            variant="outline" 
+            className="mt-1 text-[9px] px-1.5 py-0 h-4 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-700"
+          >
+            Covered by {allStaff?.find(s => s.id === shift.replacementStaffId)?.name?.split(' ')[0] || 'Staff'}
+          </Badge>
         )}
       </div>
     </div>

@@ -438,6 +438,7 @@ export function TimelineGrid({
                             key={shift.id}
                             shift={shift}
                             staff={staff.find(s => s.id === shift.staffId)}
+                            allStaff={staff}
                             onEdit={onShiftEdit}
                             onDelete={onShiftDelete}
                             onCopy={onShiftCopy}
@@ -448,6 +449,7 @@ export function TimelineGrid({
                             key={shift.id}
                             shift={shift}
                             staff={staff.find(s => s.id === shift.staffId)}
+                            allStaff={staff}
                             onEdit={onShiftEdit}
                             onDelete={onShiftDelete}
                             onCopy={onShiftCopy}

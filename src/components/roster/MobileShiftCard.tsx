@@ -31,6 +31,7 @@ const SHIFT_TYPE_CONFIG: Record<ShiftSpecialType, { icon: typeof Phone; color: s
 interface MobileShiftCardProps {
   shift: Shift;
   staff?: StaffMember;
+  allStaff?: StaffMember[];
   onEdit?: (shift: Shift) => void;
   onDelete?: (shiftId: string) => void;
   onCopy?: (shift: Shift) => void;
@@ -39,7 +40,8 @@ interface MobileShiftCardProps {
 
 export function MobileShiftCard({ 
   shift, 
-  staff, 
+  staff,
+  allStaff, 
   onEdit, 
   onDelete,
   onCopy,
@@ -126,7 +128,7 @@ export function MobileShiftCard({
         </div>
 
         {/* Duration and badges row */}
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
           <span className="text-[11px] text-muted-foreground">
             {duration}h
           </span>
@@ -138,6 +140,14 @@ export function MobileShiftCard({
           {shift.status === 'draft' && (
             <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
               Draft
+            </Badge>
+          )}
+          {shift.isAbsent && shift.replacementStaffId && (
+            <Badge 
+              variant="outline" 
+              className="text-[9px] px-1.5 py-0 h-4 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-700"
+            >
+              Covered by {allStaff?.find(s => s.id === shift.replacementStaffId)?.name?.split(' ')[0] || 'Staff'}
             </Badge>
           )}
         </div>
