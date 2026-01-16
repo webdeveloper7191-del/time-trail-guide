@@ -978,8 +978,10 @@ export default function RosterScheduler() {
         isGenerating={isGenerating}
       />
 
-      {/* Mobile FAB for Staff Panel */}
-      {isMobile && (
+      {/* Mobile/Tablet FAB for Staff Panel - Show on screens below lg */}
+      <Box
+        sx={{ display: { xs: 'block', lg: 'none' } }}
+      >
         <Button
           onClick={() => setShowMobileStaffPanel(true)}
           sx={{
@@ -998,10 +1000,10 @@ export default function RosterScheduler() {
         >
           <Users className="h-6 w-6" />
         </Button>
-      )}
+      </Box>
 
       {/* Desktop Header - Material Style */}
-      <Box component="header" sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0, boxShadow: 1, display: { xs: 'none', md: 'block' } }}>
+      <Box component="header" sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0, boxShadow: 1, display: { xs: 'none', lg: 'block' } }}>
         {/* Top Bar - Navigation & Primary Actions */}
         <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
           <Stack direction="row" spacing={{ xs: 1, lg: 3 }} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1 }}>
@@ -1128,18 +1130,18 @@ export default function RosterScheduler() {
         </Box>
 
         {/* Toolbar Row - Clean & Organized */}
-        <Box sx={{ px: 2, py: 1, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ px: 2, py: 1, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, overflow: 'hidden' }}>
           {/* Left: Date Navigation & View Mode */}
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={{ xs: 1, lg: 2 }} alignItems="center" sx={{ flexWrap: 'wrap', minWidth: 0 }}>
             {/* Date Navigation Group */}
-            <Stack direction="row" alignItems="center" sx={{ bgcolor: 'grey.100', borderRadius: 1.5, p: 0.5 }}>
+            <Stack direction="row" alignItems="center" sx={{ bgcolor: 'grey.100', borderRadius: 1.5, p: 0.5, flexShrink: 0 }}>
               <IconButton size="small" onClick={() => navigateDate('prev')} sx={{ color: 'text.secondary' }}>
                 <ChevronLeft size={18} />
               </IconButton>
               <Button 
                 size="small" 
                 onClick={() => setCurrentDate(new Date())} 
-                sx={{ px: 2, minWidth: 'auto', color: 'primary.main', fontWeight: 600 }}
+                sx={{ px: { xs: 1, lg: 2 }, minWidth: 'auto', color: 'primary.main', fontWeight: 600 }}
               >
                 Today
               </Button>
@@ -1155,12 +1157,14 @@ export default function RosterScheduler() {
                   size="small"
                   variant="outlined"
                   sx={{ 
-                    minWidth: 160, 
+                    minWidth: { xs: 120, lg: 160 }, 
                     justifyContent: 'flex-start',
                     gap: 1,
                     fontWeight: 600,
                     color: 'text.primary',
                     borderColor: 'divider',
+                    px: { xs: 1, lg: 2 },
+                    fontSize: { xs: '0.75rem', lg: '0.875rem' },
                     '&:hover': {
                       bgcolor: 'action.hover',
                       borderColor: 'primary.main',
@@ -1168,10 +1172,15 @@ export default function RosterScheduler() {
                   }}
                 >
                   <Calendar size={16} />
-                  {format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d, yyyy')}
+                  <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                    {format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d, yyyy')}
+                  </Box>
+                  <Box component="span" sx={{ display: { xs: 'inline', lg: 'none' } }}>
+                    {format(dates[0], 'MMM d')}
+                  </Box>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="start" className="w-auto p-0">
+              <PopoverContent align="start" className="w-auto p-0 z-50">
                 <CalendarComponent
                   mode="single"
                   selected={currentDate}
@@ -1182,20 +1191,21 @@ export default function RosterScheduler() {
               </PopoverContent>
             </Popover>
 
-            {/* View Mode Tabs - Styled */}
-            <Stack direction="row" sx={{ bgcolor: 'grey.100', borderRadius: 1.5, p: 0.5 }}>
+            {/* View Mode Tabs - Compact on tablet */}
+            <Stack direction="row" sx={{ bgcolor: 'grey.100', borderRadius: 1.5, p: 0.5, flexShrink: 0 }}>
               {(['day', 'week', 'fortnight', 'month'] as ViewMode[]).map((mode) => (
                 <Button
                   key={mode}
                   size="small"
                   onClick={() => setViewMode(mode)}
                   sx={{
-                    px: 2,
+                    px: { xs: 1, lg: 2 },
                     py: 0.5,
                     minWidth: 'auto',
                     borderRadius: 1,
                     textTransform: 'capitalize',
                     fontWeight: viewMode === mode ? 600 : 400,
+                    fontSize: { xs: '0.7rem', lg: '0.875rem' },
                     bgcolor: viewMode === mode ? 'background.paper' : 'transparent',
                     color: viewMode === mode ? 'primary.main' : 'text.secondary',
                     boxShadow: viewMode === mode ? 1 : 0,
@@ -1204,7 +1214,14 @@ export default function RosterScheduler() {
                     },
                   }}
                 >
-                  {mode === 'fortnight' ? 'Fortnight' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  {mode === 'fortnight' ? (
+                    <Box component="span">
+                      <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>Fortnight</Box>
+                      <Box component="span" sx={{ display: { xs: 'inline', lg: 'none' } }}>2W</Box>
+                    </Box>
+                  ) : (
+                    mode.charAt(0).toUpperCase() + mode.slice(1)
+                  )}
                 </Button>
               ))}
             </Stack>
@@ -1284,7 +1301,7 @@ export default function RosterScheduler() {
               )}
             </Stack>
 
-            {/* Quick Actions Group - Hidden on tablets, shown on large screens */}
+            {/* Quick Actions Group - Always shown on desktop (lg+) */}
             <Stack 
               direction="row" 
               spacing={0.5} 
@@ -1292,7 +1309,6 @@ export default function RosterScheduler() {
                 bgcolor: 'grey.100', 
                 borderRadius: 1.5, 
                 p: 0.5,
-                display: { xs: 'none', lg: 'flex' },
                 '& .MuiIconButton-root': {
                   borderRadius: 1,
                 }
@@ -1333,7 +1349,6 @@ export default function RosterScheduler() {
                 size="small"
                 onClick={() => setShowAutoAssignModal(true)}
                 startIcon={<Zap size={16} />}
-                sx={{ display: { xs: 'none', lg: 'inline-flex' } }}
               >
                 Auto-Assign ({emptyShifts.filter(s => s.centreId === selectedCentreId).length})
               </Button>
@@ -1349,42 +1364,6 @@ export default function RosterScheduler() {
                 p: 0.5,
               }}
             >
-              {/* Quick Actions Menu - Shown only on tablets (md-lg) */}
-              <Box sx={{ display: { xs: 'none', md: 'block', lg: 'none' } }}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                      <Plus size={18} />
-                    </IconButton>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => setShowAddOpenShiftModal(true)} icon={<Plus size={16} />}>
-                      Add Open Shift
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowBulkAssignmentModal(true)} icon={<UserPlus size={16} />}>
-                      Bulk Assign
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowAddEmptyShiftModal(true)} icon={<Layers size={16} />}>
-                      Create Empty Shifts
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleCopyWeek} icon={<Copy size={16} />}>
-                      Copy Week
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setShowAgencyTracker(true)} icon={<Building2 size={16} />}>
-                      View Agency Broadcasts
-                    </DropdownMenuItem>
-                    {emptyShifts.filter(s => s.centreId === selectedCentreId).length > 0 && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setShowAutoAssignModal(true)} icon={<Zap size={16} />}>
-                          Auto-Assign ({emptyShifts.filter(s => s.centreId === selectedCentreId).length})
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </Box>
 
               {/* Export Menu */}
               <DropdownMenu>
@@ -1730,8 +1709,8 @@ export default function RosterScheduler() {
           />
         )}
 
-        {/* Desktop Staff Panel - Hidden on mobile */}
-        <div className="hidden md:block">
+        {/* Desktop Staff Panel - Hidden on mobile and tablet */}
+        <div className="hidden lg:block">
           <UnscheduledStaffPanel
             staff={filteredStaff}
             agencyStaff={mockAgencyStaff}

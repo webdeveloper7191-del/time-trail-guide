@@ -188,7 +188,7 @@ export function MobileRosterToolbar({
   ];
 
   return (
-    <div className="md:hidden bg-card border-b border-border w-full overflow-x-hidden">
+    <div className="lg:hidden bg-card border-b border-border w-full overflow-x-hidden">
       {/* Top Row - Centre & Role Selectors */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border w-full">
         <Select value={selectedCentreId} onValueChange={onCentreChange}>
