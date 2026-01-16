@@ -13,7 +13,8 @@ import {
   Moon,
   Zap,
   PhoneCall,
-  AlertCircle
+  AlertCircle,
+  UserX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapse } from '@mui/material';
@@ -68,17 +69,27 @@ export function MobileShiftCard({
         "relative rounded-lg border overflow-hidden transition-all duration-200 w-full",
         "active:scale-[0.98]",
         isExpanded && "ring-2 ring-primary/30 shadow-md",
-        shift.status === 'draft' && "border-dashed opacity-80"
+        shift.status === 'draft' && "border-dashed opacity-80",
+        shift.isAbsent && "border-destructive/70"
       )}
       style={{
-        backgroundColor: staff?.color ? `${staff.color}15` : 'hsl(var(--muted))',
-        borderColor: staff?.color || 'hsl(var(--border))',
+        backgroundColor: shift.isAbsent ? undefined : (staff?.color ? `${staff.color}15` : 'hsl(var(--muted))'),
+        borderColor: shift.isAbsent ? 'hsl(var(--destructive) / 0.7)' : (staff?.color || 'hsl(var(--border))'),
+        backgroundImage: shift.isAbsent
+          ? 'repeating-linear-gradient(135deg, hsl(var(--destructive) / 0.10), hsl(var(--destructive) / 0.10) 10px, hsl(var(--destructive) / 0.18) 10px, hsl(var(--destructive) / 0.18) 20px)'
+          : undefined,
       }}
     >
+      {shift.isAbsent && (
+        <div className="absolute top-1 right-1 z-10 rounded-full bg-destructive text-destructive-foreground p-1 shadow">
+          <UserX className="h-3 w-3" />
+        </div>
+      )}
+
       {/* Color indicator bar */}
       <div 
         className="absolute top-0 left-0 w-1 h-full"
-        style={{ backgroundColor: staff?.color || 'hsl(var(--muted-foreground))' }}
+        style={{ backgroundColor: shift.isAbsent ? 'hsl(var(--destructive))' : (staff?.color || 'hsl(var(--muted-foreground))') }}
       />
 
       {/* Main content */}

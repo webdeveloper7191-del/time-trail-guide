@@ -202,33 +202,50 @@ export function ShiftDetailPanel({
     }
   };
 
-  const handleAssignCoverage = async (staffId: string) => {
-    const originalStaffName = assignedStaff?.name;
+  const handleAssignCoverage = async (replacementStaffId: string) => {
+    if (!assignedStaff) return;
+
+    const originalStaffName = assignedStaff.name;
+    const replacementStaff = staff.find(s => s.id === replacementStaffId);
+
+    // 1) Keep the existing shift on the original staff member, but mark it as absent.
+    const absenceReason = staffApprovedLeave ? 'leave' : 'other';
+    const absentShift: Shift = {
+      ...editedShift,
+      isAbsent: true,
+      absenceReason,
+      replacementStaffId,
+      notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[ABSENT] ${staffApprovedLeave ? `Leave: ${leaveTypeLabels[staffApprovedLeave.type]}` : 'Marked absent by manager'}${replacementStaff ? ` • Covered by ${replacementStaff.name}` : ''}`,
+    };
+
+    setEditedShift(absentShift);
+    onSave(absentShift);
+
+    // 2) Create a NEW shift for the replacement staff (same date/time/room).
+    // We use onDuplicate because RosterScheduler already supports adding a new shift via that callback.
     const coverageShift: Shift = {
       ...editedShift,
-      staffId,
-      isAbsent: false, // Clear absence since someone is covering
-      replacementStaffId: staffId,
-      notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[REASSIGNED] Previously assigned to ${originalStaffName}`,
+      staffId: replacementStaffId,
+      isAbsent: false,
+      replacementStaffId: undefined,
+      notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[COVERING] Covering for ${originalStaffName}`,
     };
-    setEditedShift(coverageShift);
-    onSave(coverageShift);
+    onDuplicate(coverageShift);
+
     setShowCoverageModal(false);
-    
+
     // Mark original staff as absent in timesheet
-    if (assignedStaff) {
-      try {
-        await timesheetApi.markTimesheetAbsent(
-          assignedStaff.id,
-          editedShift.date,
-          staffApprovedLeave ? 'leave' : 'other',
-          editedShift.startTime,
-          editedShift.endTime,
-          `Shift covered by replacement staff`
-        );
-      } catch {
-        // Silently fail - main operation succeeded
-      }
+    try {
+      await timesheetApi.markTimesheetAbsent(
+        assignedStaff.id,
+        editedShift.date,
+        absenceReason,
+        editedShift.startTime,
+        editedShift.endTime,
+        'Shift covered by replacement staff'
+      );
+    } catch {
+      // Silently fail - main operation succeeded
     }
   };
 
