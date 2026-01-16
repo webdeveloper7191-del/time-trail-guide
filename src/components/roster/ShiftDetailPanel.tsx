@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Shift, StaffMember, DemandData, RosterComplianceFlag, Room, Centre, TimeOff } from '@/types/roster';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,6 +80,12 @@ export function ShiftDetailPanel({
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
   const [showCoverageModal, setShowCoverageModal] = useState(false);
+
+  // IMPORTANT: keep local state in sync when user clicks a different shift card
+  useEffect(() => {
+    setEditedShift(shift);
+    setShowCoverageModal(false);
+  }, [shift]);
   
   // Track absent state from the shift itself
   const isAbsent = editedShift.isAbsent || false;
@@ -172,6 +178,15 @@ export function ShiftDetailPanel({
       absenceReason,
       notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[ABSENT] ${staffApprovedLeave ? `Leave: ${leaveTypeLabels[staffApprovedLeave.type]}` : 'Marked absent by manager'}`,
     };
+
+    console.log('[absent] saving shift', {
+      id: absentShift.id,
+      staffId: absentShift.staffId,
+      date: absentShift.date,
+      isAbsent: absentShift.isAbsent,
+      replacementStaffId: absentShift.replacementStaffId,
+    });
+
     setEditedShift(absentShift);
     onSave(absentShift);
     
