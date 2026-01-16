@@ -562,7 +562,9 @@ export default function RosterScheduler() {
   };
 
   const handleShiftSave = (updatedShift: Shift) => {
+    console.log('[roster] handleShiftSave', { id: updatedShift.id, isAbsent: updatedShift.isAbsent, staffId: updatedShift.staffId });
     setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s), 'Updated shift', 'update');
+    setSelectedShift(updatedShift);
     toast.success('Shift updated');
   };
 
