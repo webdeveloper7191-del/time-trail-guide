@@ -13,7 +13,8 @@ import {
   GripVertical,
   Search,
   Coffee,
-  AlertCircle
+  AlertCircle,
+  UserX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isToday } from 'date-fns';
@@ -756,18 +757,27 @@ function ShiftBar({
           isResizing && "z-30 shadow-xl",
           colors.bg,
           colors.border,
-          shift.status === 'draft' && "border-dashed"
+          shift.status === 'draft' && "border-dashed",
+          shift.isAbsent && "border-destructive/70"
         )}
         style={{ 
           left, 
           width: Math.max(width, 40),
-          backgroundColor: `${staff.color}20`,
-          borderColor: staff.color,
+          backgroundColor: shift.isAbsent ? undefined : `${staff.color}20`,
+          borderColor: shift.isAbsent ? 'hsl(var(--destructive) / 0.7)' : staff.color,
+          backgroundImage: shift.isAbsent
+            ? 'repeating-linear-gradient(135deg, hsl(var(--destructive) / 0.10), hsl(var(--destructive) / 0.10) 10px, hsl(var(--destructive) / 0.18) 10px, hsl(var(--destructive) / 0.18) 20px)'
+            : undefined,
         }}
         onClick={(e) => {
           if (!isResizing) onEdit();
         }}
       >
+        {shift.isAbsent && (
+          <div className="absolute top-1 right-1 z-20 rounded-full bg-destructive text-destructive-foreground p-1 shadow">
+            <UserX className="h-3 w-3" />
+          </div>
+        )}
         {/* Left resize handle */}
         <div
           className={cn(
@@ -798,7 +808,7 @@ function ShiftBar({
         <div className="flex items-center gap-1.5 px-2 overflow-hidden h-full">
           <div 
             className="w-1 h-6 rounded-full shrink-0" 
-            style={{ backgroundColor: staff.color }} 
+            style={{ backgroundColor: shift.isAbsent ? 'hsl(var(--destructive))' : staff.color }} 
           />
           <div className="flex-1 min-w-0">
             <div className={cn("text-xs font-semibold truncate", colors.text)}>
