@@ -1003,8 +1003,8 @@ export default function RosterScheduler() {
       {/* Desktop Header - Material Style */}
       <Box component="header" sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0, boxShadow: 1, display: { xs: 'none', md: 'block' } }}>
         {/* Top Bar - Navigation & Primary Actions */}
-        <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Stack direction="row" spacing={3} alignItems="center">
+        <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+          <Stack direction="row" spacing={{ xs: 1, lg: 3 }} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1 }}>
             {/* Logo/Brand */}
             <Stack direction="row" spacing={1} alignItems="center">
               <Box sx={{ height: 32, width: 32, borderRadius: 2, bgcolor: 'primary.main', opacity: 0.1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -1020,7 +1020,7 @@ export default function RosterScheduler() {
               options={centreOptions}
               size="small"
               fullWidth={false}
-              className="min-w-[200px]"
+              className="min-w-[160px] lg:min-w-[200px]"
             />
 
             {/* Role Filter */}
@@ -1030,14 +1030,14 @@ export default function RosterScheduler() {
               options={roleOptions}
               size="small"
               fullWidth={false}
-              className="min-w-[140px]"
+              className="min-w-[100px] lg:min-w-[140px]"
             />
           </Stack>
 
           {/* Status Badges & Primary Actions */}
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            {/* Status indicators */}
-            <Stack direction="row" spacing={1} sx={{ mr: 1 }}>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {/* Status indicators - hide labels on tablet */}
+            <Stack direction="row" spacing={0.5} sx={{ mr: { xs: 0, lg: 1 } }}>
               {centreOpenShifts.length > 0 && (
                 <Chip 
                   size="small" 
@@ -1058,28 +1058,42 @@ export default function RosterScheduler() {
               )}
             </Stack>
 
-            {/* Summary Dashboard */}
-            <Button 
-              variant="outlined" 
-              size="small" 
-              onClick={() => setShowWeeklySummary(true)}
-              startIcon={<BarChart3 size={16} />}
-            >
-              Summary
-            </Button>
+            {/* Summary Dashboard - Icon only on tablet */}
+            <Tooltip content="Summary Dashboard">
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={() => setShowWeeklySummary(true)}
+                startIcon={<BarChart3 size={16} />}
+                sx={{ 
+                  minWidth: { md: 'auto', lg: 'unset' },
+                  px: { md: 1, lg: 2 },
+                  '& .MuiButton-startIcon': { mr: { md: 0, lg: 1 } }
+                }}
+              >
+                <Box component="span" sx={{ display: { md: 'none', lg: 'inline' } }}>Summary</Box>
+              </Button>
+            </Tooltip>
 
-            {/* Optimization Report */}
-            <Button 
-              variant="outlined" 
-              size="small" 
-              onClick={() => setShowOptimizationReport(true)}
-              startIcon={<TrendingUp size={16} />}
-              color="success"
-            >
-              Optimize
-            </Button>
+            {/* Optimization Report - Icon only on tablet */}
+            <Tooltip content="Optimization Report">
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={() => setShowOptimizationReport(true)}
+                startIcon={<TrendingUp size={16} />}
+                color="success"
+                sx={{ 
+                  minWidth: { md: 'auto', lg: 'unset' },
+                  px: { md: 1, lg: 2 },
+                  '& .MuiButton-startIcon': { mr: { md: 0, lg: 1 } }
+                }}
+              >
+                <Box component="span" sx={{ display: { md: 'none', lg: 'inline' } }}>Optimize</Box>
+              </Button>
+            </Tooltip>
 
-            {/* Budget indicator */}
+            {/* Budget indicator - Compact on tablet */}
             <Button 
               variant="text" 
               size="small"
@@ -1090,19 +1104,26 @@ export default function RosterScheduler() {
               <Typography variant="body2" fontWeight={500} sx={{ ml: 0.5 }}>
                 ${costSummary.totalCost.toLocaleString()}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5, display: { md: 'none', lg: 'inline' } }}>
                 / ${weeklyBudget.toLocaleString()}
               </Typography>
             </Button>
 
             {/* Publish Button - Primary */}
-            <Button 
-              variant="contained" 
-              onClick={handlePublish}
-              startIcon={<Send size={16} />}
-            >
-              Publish
-            </Button>
+            <Tooltip content="Publish Roster">
+              <Button 
+                variant="contained" 
+                onClick={handlePublish}
+                startIcon={<Send size={16} />}
+                sx={{ 
+                  minWidth: { md: 'auto', lg: 'unset' },
+                  px: { md: 1.5, lg: 2 },
+                  '& .MuiButton-startIcon': { mr: { md: 0, lg: 1 } }
+                }}
+              >
+                <Box component="span" sx={{ display: { md: 'none', lg: 'inline' } }}>Publish</Box>
+              </Button>
+            </Tooltip>
           </Stack>
         </Box>
 
@@ -1190,7 +1211,7 @@ export default function RosterScheduler() {
           </Stack>
 
           {/* Right: Action Groups */}
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {/* Demand Analytics Toggle - Shows demand charts inline with the roster */}
             <Chip
               size="small"
@@ -1263,7 +1284,7 @@ export default function RosterScheduler() {
               )}
             </Stack>
 
-            {/* Quick Actions Group */}
+            {/* Quick Actions Group - Hidden on tablets, shown on large screens */}
             <Stack 
               direction="row" 
               spacing={0.5} 
@@ -1271,6 +1292,7 @@ export default function RosterScheduler() {
                 bgcolor: 'grey.100', 
                 borderRadius: 1.5, 
                 p: 0.5,
+                display: { xs: 'none', lg: 'flex' },
                 '& .MuiIconButton-root': {
                   borderRadius: 1,
                 }
@@ -1311,6 +1333,7 @@ export default function RosterScheduler() {
                 size="small"
                 onClick={() => setShowAutoAssignModal(true)}
                 startIcon={<Zap size={16} />}
+                sx={{ display: { xs: 'none', lg: 'inline-flex' } }}
               >
                 Auto-Assign ({emptyShifts.filter(s => s.centreId === selectedCentreId).length})
               </Button>
@@ -1326,6 +1349,43 @@ export default function RosterScheduler() {
                 p: 0.5,
               }}
             >
+              {/* Quick Actions Menu - Shown only on tablets (md-lg) */}
+              <Box sx={{ display: { xs: 'none', md: 'block', lg: 'none' } }}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                      <Plus size={18} />
+                    </IconButton>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setShowAddOpenShiftModal(true)} icon={<Plus size={16} />}>
+                      Add Open Shift
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowBulkAssignmentModal(true)} icon={<UserPlus size={16} />}>
+                      Bulk Assign
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowAddEmptyShiftModal(true)} icon={<Layers size={16} />}>
+                      Create Empty Shifts
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleCopyWeek} icon={<Copy size={16} />}>
+                      Copy Week
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setShowAgencyTracker(true)} icon={<Building2 size={16} />}>
+                      View Agency Broadcasts
+                    </DropdownMenuItem>
+                    {emptyShifts.filter(s => s.centreId === selectedCentreId).length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setShowAutoAssignModal(true)} icon={<Zap size={16} />}>
+                          Auto-Assign ({emptyShifts.filter(s => s.centreId === selectedCentreId).length})
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </Box>
+
               {/* Export Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -1456,7 +1516,7 @@ export default function RosterScheduler() {
               </DropdownMenu>
             </Stack>
 
-            {/* Status Icons Group */}
+            {/* Status Icons Group - Collapse alerts/notifications into single icon on tablet */}
             <Stack 
               direction="row" 
               spacing={0.5} 
