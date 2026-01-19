@@ -55,6 +55,15 @@ import {
   Timer,
   Activity,
   Sparkles,
+  Baby,
+  GraduationCap,
+  Building2,
+  HeartPulse,
+  Scale,
+  Calendar,
+  BadgeCheck,
+  ShieldCheck,
+  Factory,
 } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { toast } from 'sonner';
@@ -71,6 +80,26 @@ import {
   ConstraintPreset,
   TimefoldSolution,
 } from '@/lib/timefoldSolver';
+import {
+  IndustryType,
+  getIndustryConfig,
+  getIndustrySolverConfig,
+  listAvailableIndustries,
+  industryConfigs,
+} from '@/lib/timefold/industryConstraints';
+import {
+  allChildcareConstraints,
+  childcarePresets,
+  nqfRatioConstraints,
+  qualificationConstraints,
+  availabilityConstraints,
+  complianceConstraints,
+  qualityConstraints,
+  demandConstraints,
+  budgetConstraints,
+  awardConstraints,
+  fairnessConstraints,
+} from '@/lib/timefold/childcareConstraints';
 
 interface TimefoldConstraintPanelProps {
   open: boolean;
@@ -82,27 +111,106 @@ interface TimefoldConstraintPanelProps {
   lastSolution?: TimefoldSolution | null;
 }
 
-const categoryIcons: Record<ConstraintCategory, typeof Clock> = {
+// Extended category icons including regulatory
+const categoryIcons: Record<string, typeof Clock> = {
   availability: Clock,
-  qualification: Target,
+  qualification: GraduationCap,
   capacity: Users,
-  fairness: Heart,
+  fairness: Scale,
   cost: DollarSign,
-  preference: Settings,
+  preference: Heart,
   compliance: Shield,
   continuity: Repeat,
+  regulatory: ShieldCheck,
+  ratio: Baby,
+  demand: Calendar,
+  budget: DollarSign,
+  award: BadgeCheck,
 };
 
-const categoryLabels: Record<ConstraintCategory, string> = {
+// Extended category labels
+const categoryLabels: Record<string, string> = {
   availability: 'Availability',
-  qualification: 'Qualifications',
-  capacity: 'Capacity',
-  fairness: 'Fairness',
-  cost: 'Cost',
-  preference: 'Preferences',
-  compliance: 'Compliance',
-  continuity: 'Continuity',
+  qualification: 'Qualifications & Certifications',
+  capacity: 'Capacity & Ratios',
+  fairness: 'Fairness & Distribution',
+  cost: 'Cost Optimization',
+  preference: 'Staff Preferences',
+  compliance: 'Compliance & Fatigue',
+  continuity: 'Continuity & Quality',
+  regulatory: 'NQF Regulatory',
+  ratio: 'Staff-to-Child Ratios',
+  demand: 'Demand & Bookings',
+  budget: 'Budget Management',
+  award: 'Award & Pay Rules',
 };
+
+// Childcare-specific category groupings for display
+const childcareConstraintGroups = [
+  {
+    id: 'nqf_regulatory',
+    name: 'NQF Regulatory Requirements',
+    description: 'National Quality Framework mandatory requirements - must be satisfied',
+    icon: ShieldCheck,
+    isHardGroup: true,
+    color: 'error' as const,
+    constraints: [...nqfRatioConstraints, ...qualificationConstraints.slice(0, 6)],
+  },
+  {
+    id: 'availability_compliance',
+    name: 'Availability & Compliance',
+    description: 'Staff availability, leave, and Fair Work compliance',
+    icon: Clock,
+    isHardGroup: true,
+    color: 'error' as const,
+    constraints: [...availabilityConstraints, ...complianceConstraints],
+  },
+  {
+    id: 'quality_continuity',
+    name: 'Quality & Continuity',
+    description: 'Child attachment, skill matching, and care quality',
+    icon: Heart,
+    isHardGroup: false,
+    color: 'warning' as const,
+    constraints: qualityConstraints,
+  },
+  {
+    id: 'demand_capacity',
+    name: 'Demand & Capacity',
+    description: 'Booking patterns, attendance, and peak hours',
+    icon: Calendar,
+    isHardGroup: false,
+    color: 'info' as const,
+    constraints: demandConstraints,
+  },
+  {
+    id: 'cost_budget',
+    name: 'Cost & Budget',
+    description: 'Labour costs, overtime, and budget management',
+    icon: DollarSign,
+    isHardGroup: false,
+    color: 'info' as const,
+    constraints: budgetConstraints,
+  },
+  {
+    id: 'award_pay',
+    name: 'Award & Pay Rules',
+    description: "Children's Services Award 2020 compliance",
+    icon: BadgeCheck,
+    isHardGroup: false,
+    color: 'warning' as const,
+    constraints: awardConstraints,
+  },
+  {
+    id: 'fairness_preferences',
+    name: 'Fairness & Preferences',
+    description: 'Fair distribution and staff preferences',
+    icon: Scale,
+    isHardGroup: false,
+    color: 'info' as const,
+    constraints: fairnessConstraints,
+  },
+];
 
 const levelColors: Record<ConstraintLevel, 'error' | 'warning' | 'info'> = {
   HARD: 'error',
@@ -116,6 +224,18 @@ const levelLabels: Record<ConstraintLevel, string> = {
   SOFT: 'Nice to have',
 };
 
+// Industry icons
+const industryIcons: Record<IndustryType, typeof Building2> = {
+  childcare: Baby,
+  aged_care: HeartPulse,
+  disability_services: Heart,
+  hospitality: Building2,
+  retail: Building2,
+  healthcare: HeartPulse,
+  education: GraduationCap,
+  general: Factory,
+};
+
 export function TimefoldConstraintPanel({
   open,
   onClose,
@@ -125,8 +245,9 @@ export function TimefoldConstraintPanel({
   isSolving = false,
   lastSolution,
 }: TimefoldConstraintPanelProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<ConstraintCategory>>(
-    new Set(['availability', 'qualification', 'capacity'])
+  const [selectedIndustry, setSelectedIndustry] = useState<IndustryType>('childcare');
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    new Set(['nqf_regulatory', 'availability_compliance'])
   );
   const [editingConstraint, setEditingConstraint] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -138,39 +259,58 @@ export function TimefoldConstraintPanel({
     return stored ? JSON.parse(stored) : [];
   });
 
+  // Get available industries
+  const availableIndustries = useMemo(() => listAvailableIndustries(), []);
+  const currentIndustryConfig = useMemo(() => getIndustryConfig(selectedIndustry), [selectedIndustry]);
+
   // Save presets to localStorage when they change
   useEffect(() => {
     localStorage.setItem('timefold-presets', JSON.stringify(savedPresets));
   }, [savedPresets]);
 
+  // Switch industry and load constraints
+  const handleIndustryChange = (industry: IndustryType) => {
+    setSelectedIndustry(industry);
+    const industryConfig = getIndustrySolverConfig(industry);
+    
+    if (industryConfig.constraints.length > 0) {
+      onConfigChange({
+        ...config,
+        constraints: industryConfig.constraints,
+        categoryWeights: industryConfig.categoryWeights as any,
+      });
+      toast.success(`Loaded ${getIndustryConfig(industry).name} constraints`);
+    } else {
+      toast.info(`${getIndustryConfig(industry).name} constraints coming soon - using default`);
+    }
+  };
+
   const validationErrors = useMemo(() => validateConstraintConfig(config), [config]);
 
-  const constraintsByCategory = useMemo(() => {
-    const grouped: Record<ConstraintCategory, TimefoldConstraint[]> = {
-      availability: [],
-      qualification: [],
-      capacity: [],
-      fairness: [],
-      cost: [],
-      preference: [],
-      compliance: [],
-      continuity: [],
+  // Calculate NQF compliance summary
+  const nqfComplianceSummary = useMemo(() => {
+    if (selectedIndustry !== 'childcare') return null;
+    
+    const hardConstraints = config.constraints.filter(c => c.level === 'HARD');
+    const enabledHard = hardConstraints.filter(c => c.enabled);
+    const disabledHard = hardConstraints.filter(c => !c.enabled);
+    
+    return {
+      totalHard: hardConstraints.length,
+      enabledHard: enabledHard.length,
+      disabledHard: disabledHard.length,
+      isCompliant: disabledHard.length === 0,
+      disabledNames: disabledHard.map(c => c.name),
     };
-    
-    config.constraints.forEach(c => {
-      grouped[c.category].push(c);
-    });
-    
-    return grouped;
-  }, [config.constraints]);
+  }, [config.constraints, selectedIndustry]);
 
-  const toggleCategory = (category: ConstraintCategory) => {
-    setExpandedCategories(prev => {
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => {
       const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
+      if (next.has(groupId)) {
+        next.delete(groupId);
       } else {
-        next.add(category);
+        next.add(groupId);
       }
       return next;
     });
@@ -203,6 +343,19 @@ export function TimefoldConstraintPanel({
   };
 
   const applyPreset = (presetKey: string) => {
+    // Check if it's a childcare preset
+    if (selectedIndustry === 'childcare' && childcarePresets[presetKey as keyof typeof childcarePresets]) {
+      const preset = childcarePresets[presetKey as keyof typeof childcarePresets];
+      onConfigChange({
+        ...config,
+        categoryWeights: preset.categoryWeights as any,
+        optimizationGoal: presetKey as any,
+      });
+      toast.success(`Applied "${preset.name}" preset`);
+      return;
+    }
+    
+    // Fall back to default presets
     const preset = solverPresets[presetKey];
     if (preset) {
       onConfigChange({
@@ -215,7 +368,16 @@ export function TimefoldConstraintPanel({
   };
 
   const resetToDefaults = () => {
-    onConfigChange(defaultSolverConfig);
+    if (selectedIndustry === 'childcare') {
+      const industryConfig = getIndustrySolverConfig('childcare');
+      onConfigChange({
+        ...defaultSolverConfig,
+        constraints: industryConfig.constraints,
+        categoryWeights: industryConfig.categoryWeights as any,
+      });
+    } else {
+      onConfigChange(defaultSolverConfig);
+    }
     toast.success('Reset to default configuration');
   };
 
@@ -339,6 +501,11 @@ export function TimefoldConstraintPanel({
 
   const renderConstraintCard = (constraint: TimefoldConstraint) => {
     const isExpanded = editingConstraint === constraint.id;
+    const isNQFConstraint = constraint.id.startsWith('nqf-') || 
+                           constraint.id.includes('qualified') || 
+                           constraint.id.includes('wwc') ||
+                           constraint.id.includes('first-aid') ||
+                           constraint.id.includes('responsible-person');
     
     return (
       <Paper
@@ -349,6 +516,8 @@ export function TimefoldConstraintPanel({
           mb: 1,
           opacity: constraint.enabled ? 1 : 0.6,
           borderColor: constraint.enabled ? 'divider' : 'action.disabled',
+          borderLeft: isNQFConstraint ? '3px solid' : undefined,
+          borderLeftColor: isNQFConstraint ? 'error.main' : undefined,
           transition: 'all 0.2s',
         }}
       >
@@ -360,7 +529,7 @@ export function TimefoldConstraintPanel({
           />
           
           <Box flex={1}>
-            <Stack direction="row" alignItems="center" spacing={1}>
+            <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
               <Typography variant="body2" fontWeight="medium">
                 {constraint.name}
               </Typography>
@@ -370,6 +539,16 @@ export function TimefoldConstraintPanel({
                 color={levelColors[constraint.level]}
                 sx={{ height: 18, fontSize: '0.65rem' }}
               />
+              {isNQFConstraint && (
+                <Chip
+                  size="small"
+                  label="NQF"
+                  color="error"
+                  variant="outlined"
+                  sx={{ height: 18, fontSize: '0.65rem' }}
+                  icon={<ShieldCheck size={10} />}
+                />
+              )}
               {constraint.isBuiltIn && (
                 <Chip
                   size="small"
@@ -463,6 +642,46 @@ export function TimefoldConstraintPanel({
     );
   };
 
+  // Get constraints for display (use childcare groups for childcare, otherwise category-based)
+  const displayGroups = useMemo(() => {
+    if (selectedIndustry === 'childcare') {
+      return childcareConstraintGroups.map(group => ({
+        ...group,
+        constraints: group.constraints.map(c => 
+          config.constraints.find(cc => cc.id === c.id) || c
+        ),
+      }));
+    }
+    
+    // For other industries, group by category
+    const grouped: Record<ConstraintCategory, TimefoldConstraint[]> = {
+      availability: [],
+      qualification: [],
+      capacity: [],
+      fairness: [],
+      cost: [],
+      preference: [],
+      compliance: [],
+      continuity: [],
+    };
+    
+    config.constraints.forEach(c => {
+      grouped[c.category].push(c);
+    });
+    
+    return Object.entries(grouped)
+      .filter(([_, constraints]) => constraints.length > 0)
+      .map(([category, constraints]) => ({
+        id: category,
+        name: categoryLabels[category],
+        description: '',
+        icon: categoryIcons[category],
+        isHardGroup: constraints.every(c => c.level === 'HARD'),
+        color: constraints.every(c => c.level === 'HARD') ? 'error' as const : 'info' as const,
+        constraints,
+      }));
+  }, [selectedIndustry, config.constraints]);
+
   return (
     <PrimaryOffCanvas
       open={open}
@@ -473,6 +692,102 @@ export function TimefoldConstraintPanel({
       size="3xl"
     >
       <Stack spacing={3}>
+        {/* Industry Selector */}
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.paper' }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Factory size={20} className="text-muted-foreground" />
+            <Box flex={1}>
+              <Typography variant="subtitle2">Industry</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Select industry to load appropriate constraints
+              </Typography>
+            </Box>
+            <Select value={selectedIndustry} onValueChange={(value) => handleIndustryChange(value as IndustryType)}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableIndustries.map(industry => {
+                  const Icon = industryIcons[industry.id];
+                  return (
+                    <SelectItem key={industry.id} value={industry.id}>
+                      <div className="flex items-center gap-2">
+                        <Icon size={14} />
+                        <span>{industry.name}</span>
+                        {!industry.isImplemented && (
+                          <span className="text-xs text-muted-foreground">(Coming soon)</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </Stack>
+          
+          {/* Industry Notes */}
+          {currentIndustryConfig.regulatoryNotes.length > 0 && (
+            <Box mt={2} p={1.5} sx={{ bgcolor: 'action.hover', borderRadius: 1 }}>
+              <Typography variant="caption" fontWeight="medium" color="text.secondary">
+                Regulatory Requirements:
+              </Typography>
+              <ul className="list-disc list-inside text-xs text-muted-foreground mt-1 space-y-0.5">
+                {currentIndustryConfig.regulatoryNotes.slice(0, 4).map((note, idx) => (
+                  <li key={idx}>{note}</li>
+                ))}
+              </ul>
+            </Box>
+          )}
+        </Paper>
+
+        {/* NQF Compliance Summary (Childcare only) */}
+        {selectedIndustry === 'childcare' && nqfComplianceSummary && (
+          <Paper 
+            variant="outlined" 
+            sx={{ 
+              p: 2, 
+              bgcolor: nqfComplianceSummary.isCompliant ? 'success.main' : 'error.main',
+              color: 'white',
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={2}>
+              {nqfComplianceSummary.isCompliant ? (
+                <CheckCircle2 size={24} />
+              ) : (
+                <AlertTriangle size={24} />
+              )}
+              <Box flex={1}>
+                <Typography variant="subtitle2">
+                  NQF Compliance Status
+                </Typography>
+                <Typography variant="caption">
+                  {nqfComplianceSummary.isCompliant 
+                    ? `All ${nqfComplianceSummary.totalHard} regulatory constraints enabled`
+                    : `${nqfComplianceSummary.disabledHard} of ${nqfComplianceSummary.totalHard} regulatory constraints disabled`
+                  }
+                </Typography>
+              </Box>
+              <Box textAlign="right">
+                <Typography variant="h4" fontWeight="bold">
+                  {nqfComplianceSummary.enabledHard}/{nqfComplianceSummary.totalHard}
+                </Typography>
+                <Typography variant="caption">Hard Constraints</Typography>
+              </Box>
+            </Stack>
+            
+            {!nqfComplianceSummary.isCompliant && nqfComplianceSummary.disabledNames.length > 0 && (
+              <Box mt={2} p={1} sx={{ bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
+                <Typography variant="caption" fontWeight="medium">
+                  ⚠️ Disabled constraints that may breach NQF:
+                </Typography>
+                <Typography variant="caption" display="block">
+                  {nqfComplianceSummary.disabledNames.join(', ')}
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        )}
+
         {/* Validation Errors */}
         {validationErrors.length > 0 && (
           <Alert severity="warning">
@@ -546,30 +861,68 @@ export function TimefoldConstraintPanel({
             </Button>
           </Stack>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Chip
-              label="Balanced"
-              variant={config.optimizationGoal === 'balanced' ? 'filled' : 'outlined'}
-              onClick={() => applyPreset('balanced')}
-              icon={<Target size={14} />}
-            />
-            <Chip
-              label="Cost Minimization"
-              variant={config.optimizationGoal === 'cost_minimization' ? 'filled' : 'outlined'}
-              onClick={() => applyPreset('cost_minimization')}
-              icon={<DollarSign size={14} />}
-            />
-            <Chip
-              label="Staff Satisfaction"
-              variant={config.optimizationGoal === 'staff_satisfaction' ? 'filled' : 'outlined'}
-              onClick={() => applyPreset('staff_satisfaction')}
-              icon={<Heart size={14} />}
-            />
-            <Chip
-              label="Compliance First"
-              variant={config.optimizationGoal === 'compliance_first' ? 'filled' : 'outlined'}
-              onClick={() => applyPreset('compliance_first')}
-              icon={<Shield size={14} />}
-            />
+            {selectedIndustry === 'childcare' ? (
+              <>
+                <Chip
+                  label="Compliance First"
+                  variant={config.optimizationGoal === 'compliance_first' ? 'filled' : 'outlined'}
+                  onClick={() => applyPreset('compliance_first')}
+                  icon={<Shield size={14} />}
+                  color="error"
+                />
+                <Chip
+                  label="Balanced"
+                  variant={config.optimizationGoal === 'balanced' ? 'filled' : 'outlined'}
+                  onClick={() => applyPreset('balanced')}
+                  icon={<Target size={14} />}
+                />
+                <Chip
+                  label="Cost Focused"
+                  variant={config.optimizationGoal === 'cost_focused' as any ? 'filled' : 'outlined'}
+                  onClick={() => applyPreset('cost_focused')}
+                  icon={<DollarSign size={14} />}
+                />
+                <Chip
+                  label="Staff Satisfaction"
+                  variant={config.optimizationGoal === 'staff_satisfaction' ? 'filled' : 'outlined'}
+                  onClick={() => applyPreset('staff_satisfaction')}
+                  icon={<Heart size={14} />}
+                />
+                <Chip
+                  label="Quality Care"
+                  variant={config.optimizationGoal === 'quality_care' as any ? 'filled' : 'outlined'}
+                  onClick={() => applyPreset('quality_care')}
+                  icon={<Baby size={14} />}
+                />
+              </>
+            ) : (
+              <>
+                <Chip
+                  label="Balanced"
+                  variant={config.optimizationGoal === 'balanced' ? 'filled' : 'outlined'}
+                  onClick={() => applyPreset('balanced')}
+                  icon={<Target size={14} />}
+                />
+                <Chip
+                  label="Cost Minimization"
+                  variant={config.optimizationGoal === 'cost_minimization' ? 'filled' : 'outlined'}
+                  onClick={() => applyPreset('cost_minimization')}
+                  icon={<DollarSign size={14} />}
+                />
+                <Chip
+                  label="Staff Satisfaction"
+                  variant={config.optimizationGoal === 'staff_satisfaction' ? 'filled' : 'outlined'}
+                  onClick={() => applyPreset('staff_satisfaction')}
+                  icon={<Heart size={14} />}
+                />
+                <Chip
+                  label="Compliance First"
+                  variant={config.optimizationGoal === 'compliance_first' ? 'filled' : 'outlined'}
+                  onClick={() => applyPreset('compliance_first')}
+                  icon={<Shield size={14} />}
+                />
+              </>
+            )}
           </Stack>
           
           {/* Saved Custom Presets */}
@@ -606,13 +959,13 @@ export function TimefoldConstraintPanel({
           
           <Box display="grid" gridTemplateColumns="repeat(4, 1fr)" gap={2}>
             {(Object.keys(config.categoryWeights) as ConstraintCategory[]).map(category => {
-              const Icon = categoryIcons[category];
+              const Icon = categoryIcons[category] || Settings;
               return (
                 <Box key={category}>
                   <Stack direction="row" alignItems="center" spacing={0.5} mb={0.5}>
                     <Icon size={12} className="text-muted-foreground" />
                     <Typography variant="caption" color="text.secondary">
-                      {categoryLabels[category]}
+                      {categoryLabels[category] || category}
                     </Typography>
                   </Stack>
                   <Slider
@@ -680,46 +1033,68 @@ export function TimefoldConstraintPanel({
           </Paper>
         </Collapse>
 
-        {/* Constraints by Category */}
+        {/* Constraints by Group */}
         <Box>
-          <Typography variant="subtitle2" gutterBottom>
-            Constraints
-          </Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+            <Typography variant="subtitle2">
+              Constraints ({config.constraints.filter(c => c.enabled).length}/{config.constraints.length} enabled)
+            </Typography>
+            {selectedIndustry === 'childcare' && (
+              <Badge variant="outline" className="text-xs">
+                <ShieldCheck size={12} className="mr-1" />
+                NQF Compliant
+              </Badge>
+            )}
+          </Stack>
           
-          {(Object.keys(constraintsByCategory) as ConstraintCategory[]).map(category => {
-            const constraints = constraintsByCategory[category];
-            if (constraints.length === 0) return null;
-            
-            const Icon = categoryIcons[category];
-            const isExpanded = expandedCategories.has(category);
-            const enabledCount = constraints.filter(c => c.enabled).length;
+          {displayGroups.map(group => {
+            const Icon = group.icon;
+            const isExpanded = expandedGroups.has(group.id);
+            const enabledCount = group.constraints.filter(c => c.enabled).length;
+            const hardCount = group.constraints.filter(c => c.level === 'HARD').length;
             
             return (
-              <Box key={category} sx={{ mb: 1 }}>
+              <Box key={group.id} sx={{ mb: 1 }}>
                 <Paper
                   variant="outlined"
                   sx={{
                     p: 1.5,
                     cursor: 'pointer',
+                    borderLeft: group.isHardGroup ? '3px solid' : undefined,
+                    borderLeftColor: group.isHardGroup ? 'error.main' : undefined,
                     '&:hover': { bgcolor: 'action.hover' },
                   }}
-                  onClick={() => toggleCategory(category)}
+                  onClick={() => toggleGroup(group.id)}
                 >
                   <Stack direction="row" alignItems="center" spacing={1}>
                     <Icon size={18} className="text-muted-foreground" />
-                    <Typography variant="subtitle2" flex={1}>
-                      {categoryLabels[category]}
-                    </Typography>
-                    <Badge variant="secondary" className="text-xs">
-                      {enabledCount}/{constraints.length} enabled
-                    </Badge>
+                    <Box flex={1}>
+                      <Typography variant="subtitle2">
+                        {group.name}
+                      </Typography>
+                      {group.description && (
+                        <Typography variant="caption" color="text.secondary">
+                          {group.description}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Stack direction="row" spacing={1}>
+                      {hardCount > 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          {hardCount} HARD
+                        </Badge>
+                      )}
+                      <Badge variant="secondary" className="text-xs">
+                        {enabledCount}/{group.constraints.length}
+                      </Badge>
+                    </Stack>
                     {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </Stack>
                 </Paper>
                 
                 <Collapse in={isExpanded}>
                   <Box sx={{ pl: 2, pt: 1 }}>
-                    {constraints.map(renderConstraintCard)}
+                    {group.constraints.map(c => renderConstraintCard(c))}
                   </Box>
                 </Collapse>
               </Box>
@@ -758,8 +1133,10 @@ export function TimefoldConstraintPanel({
         <Alert severity="info" icon={<Info size={20} />}>
           <Typography variant="body2">
             <strong>Timefold Integration:</strong> This panel configures constraints for the Timefold Solver.
-            Hard constraints must always be satisfied, while soft constraints are optimized based on their weights.
-            Connect to a Timefold backend service for production use.
+            {selectedIndustry === 'childcare' && (
+              <> NQF regulatory constraints are marked with a red border and must be enabled for compliance.</>
+            )}
+            {' '}Hard constraints must always be satisfied, while soft constraints are optimized based on their weights.
           </Typography>
         </Alert>
       </Stack>
