@@ -124,7 +124,7 @@ export function StaffPayConfigurationSection({ staff }: StaffPayConfigurationSec
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
                       <span className="text-slate-400">Base rate:</span>
-                      <span>${calculatedRates.baseRate.toFixed(2)}/hr</span>
+                      <span>${calculatedRates.baseHourlyRate.toFixed(2)}/hr</span>
                     </div>
                     {employmentType === 'casual' && calculatedRates.casualLoadedRate && (
                       <div className="flex justify-between">
