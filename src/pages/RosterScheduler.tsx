@@ -48,6 +48,7 @@ import { MobileRosterToolbar } from '@/components/roster/MobileRosterToolbar';
 import { MobileStaffPanel } from '@/components/roster/MobileStaffPanel';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RecurringPatternsPanel } from '@/components/roster/RecurringPatternsPanel';
+import { RecurringShiftManagementPanel } from '@/components/roster/RecurringShiftManagementPanel';
 import { FatigueManagementPanel } from '@/components/roster/FatigueManagementPanel';
 import { GPSClockInPanel } from '@/components/roster/GPSClockInPanel';
 import { WeatherIntegrationPanel } from '@/components/roster/WeatherIntegrationPanel';
@@ -235,6 +236,7 @@ export default function RosterScheduler() {
   
   // Advanced Features panels
   const [showRecurringPatterns, setShowRecurringPatterns] = useState(false);
+  const [showRecurringManagement, setShowRecurringManagement] = useState(false);
   const [showFatigueManagement, setShowFatigueManagement] = useState(false);
   const [showGPSClockIn, setShowGPSClockIn] = useState(false);
   const [showWeatherIntegration, setShowWeatherIntegration] = useState(false);
@@ -2191,6 +2193,25 @@ export default function RosterScheduler() {
           }}
         />
       )}
+
+      {/* Recurring Shift Management Panel */}
+      <RecurringShiftManagementPanel
+        open={showRecurringManagement}
+        onClose={() => setShowRecurringManagement(false)}
+        shifts={shifts}
+        staff={allStaff}
+        centres={mockCentres}
+        onDeleteSeries={(groupId) => {
+          setShifts(prev => prev.filter(s => s.recurring?.recurrenceGroupId !== groupId), 'Deleted recurring series', 'bulk');
+        }}
+        onEditSeries={(groupId) => {
+          toast.info('Edit series functionality - open recurring patterns panel');
+          setShowRecurringPatterns(true);
+        }}
+        onExtendSeries={(groupId, newEndDate) => {
+          toast.success(`Series extended to ${newEndDate}`);
+        }}
+      />
 
       {/* Timefold Constraint Configuration Panel */}
       <TimefoldConstraintPanel
