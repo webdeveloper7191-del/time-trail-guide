@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Shift, StaffMember, OpenShift, qualificationLabels, ShiftSpecialType } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
-import { Clock, MoreHorizontal, X, AlertCircle, Users, Copy, ArrowLeftRight, Edit, Phone, Moon, Zap, Car, ArrowUpCircle, PhoneCall, Sparkles, Bot, UserX } from 'lucide-react';
+import { Clock, MoreHorizontal, X, AlertCircle, Users, Copy, ArrowLeftRight, Edit, Phone, Moon, Zap, Car, ArrowUpCircle, PhoneCall, Sparkles, Bot, UserX, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -190,6 +190,27 @@ export function ShiftCard({
                             Generated: {new Date(shift.aiGeneratedAt).toLocaleString()}
                           </p>
                         )}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              
+              {/* Recurring shift indicator */}
+              {shift.recurring?.isRecurring && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="p-0.5 rounded bg-emerald-500/20">
+                        <RefreshCw className="h-3 w-3 text-emerald-600" />
+                      </div>
+                    </TooltipTrigger>
+                    {showTooltipContent && (
+                      <TooltipContent>
+                        <p>Recurring Shift</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {shift.recurring.pattern || 'Weekly'} pattern
+                        </p>
                       </TooltipContent>
                     )}
                   </Tooltip>
