@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { format, addDays, startOfWeek, subWeeks, startOfMonth, endOfMonth, getDaysInMonth, setMonth, setYear, getYear, getMonth } from 'date-fns';
+import { format, addDays, addMonths, startOfWeek, subWeeks, startOfMonth, endOfMonth, getDaysInMonth, setMonth, setYear, getYear, getMonth } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff, SchedulingPreferences } from '@/types/roster';
@@ -273,6 +273,15 @@ export default function RosterScheduler() {
     requiredQualifications?: any[];
     minimumClassification?: string;
     preferredRole?: any;
+    recurring?: {
+      isRecurring: boolean;
+      pattern?: 'daily' | 'weekly' | 'fortnightly' | 'monthly';
+      daysOfWeek?: number[];
+      endType?: 'never' | 'after_occurrences' | 'on_date';
+      endAfterOccurrences?: number;
+      endDate?: string;
+      recurrenceGroupId?: string;
+    };
   }>>([]);
   
   // Timefold Solver state
@@ -856,10 +865,103 @@ export default function RosterScheduler() {
     toast.success('Shift templates saved');
   };
 
-  // Empty shift and auto-assign handlers
+  // Empty shift and auto-assign handlers - with recurring shift generation
   const handleAddEmptyShifts = (newEmptyShifts: typeof emptyShifts) => {
-    setEmptyShifts(prev => [...prev, ...newEmptyShifts]);
-    toast.success(`Created ${newEmptyShifts.length} empty shift(s) - ready for auto-assignment`);
+    const allShiftsToAdd: typeof emptyShifts = [];
+    let totalRecurringGenerated = 0;
+
+    newEmptyShifts.forEach(emptyShift => {
+      if (emptyShift.recurring?.isRecurring) {
+        // Generate all future shifts based on recurring config
+        const generatedShifts = generateRecurringEmptyShifts(emptyShift);
+        allShiftsToAdd.push(...generatedShifts);
+        totalRecurringGenerated += generatedShifts.length;
+      } else {
+        allShiftsToAdd.push(emptyShift);
+      }
+    });
+
+    setEmptyShifts(prev => [...prev, ...allShiftsToAdd]);
+    
+    if (totalRecurringGenerated > 0) {
+      toast.success(`Created ${allShiftsToAdd.length} shifts (${totalRecurringGenerated} from recurring patterns) - ready for auto-assignment`);
+    } else {
+      toast.success(`Created ${allShiftsToAdd.length} empty shift(s) - ready for auto-assignment`);
+    }
+  };
+
+  // Helper function to generate recurring empty shifts
+  const generateRecurringEmptyShifts = (baseShift: typeof emptyShifts[0]): typeof emptyShifts => {
+    const config = baseShift.recurring;
+    if (!config?.isRecurring) return [baseShift];
+
+    const generatedShifts: typeof emptyShifts = [];
+    const startDate = new Date(baseShift.date);
+    const recurrenceGroupId = config.recurrenceGroupId || `recurring-${Date.now()}`;
+    
+    // Calculate end conditions
+    let maxOccurrences = 52; // Default max for "never" end type
+    let endDate: Date | null = null;
+    
+    if (config.endType === 'after_occurrences' && config.endAfterOccurrences) {
+      maxOccurrences = config.endAfterOccurrences;
+    } else if (config.endType === 'on_date' && config.endDate) {
+      endDate = new Date(config.endDate);
+    }
+
+    let occurrenceCount = 0;
+    let currentDate = new Date(startDate);
+    
+    // Generate shifts based on pattern
+    while (occurrenceCount < maxOccurrences) {
+      if (endDate && currentDate > endDate) break;
+      
+      const shouldCreateShift = (): boolean => {
+        if (config.pattern === 'daily') return true;
+        
+        const dayOfWeek = currentDate.getDay();
+        if ((config.pattern === 'weekly' || config.pattern === 'fortnightly') && config.daysOfWeek) {
+          if (!config.daysOfWeek.includes(dayOfWeek)) return false;
+          
+          if (config.pattern === 'fortnightly') {
+            const weeksDiff = Math.floor((currentDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+            if (weeksDiff % 2 !== 0) return false;
+          }
+        }
+        return true;
+      };
+
+      if (shouldCreateShift()) {
+        generatedShifts.push({
+          ...baseShift,
+          id: `empty-${format(currentDate, 'yyyy-MM-dd')}-${baseShift.roomId}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          date: format(currentDate, 'yyyy-MM-dd'),
+          recurring: {
+            ...config,
+            recurrenceGroupId,
+          },
+        });
+        occurrenceCount++;
+      }
+
+      // Move to next date based on pattern
+      if (config.pattern === 'daily') {
+        currentDate = addDays(currentDate, 1);
+      } else if (config.pattern === 'weekly' || config.pattern === 'fortnightly') {
+        currentDate = addDays(currentDate, 1);
+      } else if (config.pattern === 'monthly') {
+        currentDate = addMonths(currentDate, 1);
+      } else {
+        currentDate = addDays(currentDate, 1);
+      }
+      
+      // Safety break to prevent infinite loops
+      if (currentDate.getTime() - startDate.getTime() > 365 * 24 * 60 * 60 * 1000 * 2) {
+        break;
+      }
+    }
+
+    return generatedShifts;
   };
 
   const handleAutoAssign = (assignments: { shiftId: string; staffId: string }[]) => {
