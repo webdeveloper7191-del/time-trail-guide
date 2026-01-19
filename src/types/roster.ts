@@ -205,6 +205,20 @@ export type ShiftSpecialType =
   | 'recall'         // Called back during on-call - triggers recall rates
   | 'emergency';     // Emergency call-out - may trigger additional penalties
 
+// Recurring shift configuration
+export type RecurrencePattern = 'daily' | 'weekly' | 'fortnightly' | 'monthly';
+export type RecurrenceEndType = 'never' | 'after_occurrences' | 'on_date';
+
+export interface RecurringShiftConfig {
+  isRecurring: boolean;
+  pattern?: RecurrencePattern;
+  daysOfWeek?: number[]; // 0-6 for Sunday-Saturday (for weekly/fortnightly)
+  endType?: RecurrenceEndType;
+  endAfterOccurrences?: number;
+  endDate?: string; // ISO date string
+  recurrenceGroupId?: string; // Links all shifts in a recurring series
+}
+
 export interface Shift {
   id: string;
   staffId: string;
@@ -217,6 +231,9 @@ export interface Shift {
   status: 'draft' | 'published' | 'confirmed' | 'completed';
   isOpenShift: boolean;
   notes?: string;
+  
+  // Recurring shift tracking
+  recurring?: RecurringShiftConfig;
   
   // Absence tracking
   isAbsent?: boolean;

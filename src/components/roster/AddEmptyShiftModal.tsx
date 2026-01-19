@@ -9,6 +9,10 @@ import {
   Select,
   MenuItem,
   TextField,
+  FormControlLabel,
+  Switch,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,6 +23,9 @@ import {
   qualificationLabels,
   roleLabels,
   StaffMember,
+  RecurrencePattern,
+  RecurrenceEndType,
+  RecurringShiftConfig,
 } from '@/types/roster';
 import { 
   Clock, 
@@ -27,8 +34,10 @@ import {
   Award,
   Check,
   Layers,
+  RefreshCw,
+  Calendar,
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addDays, addWeeks, addMonths } from 'date-fns';
 
 interface EmptyShift {
   id: string;
@@ -42,6 +51,7 @@ interface EmptyShift {
   requiredQualifications?: QualificationType[];
   minimumClassification?: string;
   preferredRole?: StaffMember['role'];
+  recurring?: RecurringShiftConfig;
 }
 
 interface AddEmptyShiftModalProps {
@@ -53,6 +63,16 @@ interface AddEmptyShiftModalProps {
   shiftTemplates: ShiftTemplate[];
   onAdd: (shifts: EmptyShift[]) => void;
 }
+
+const DAYS_OF_WEEK = [
+  { value: 0, label: 'Sun' },
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+];
 
 export function AddEmptyShiftModal({
   open,
@@ -70,6 +90,14 @@ export function AddEmptyShiftModal({
   const [customEndTime, setCustomEndTime] = useState('17:00');
   const [customBreakMinutes, setCustomBreakMinutes] = useState(30);
   const [activeTab, setActiveTab] = useState('template');
+  
+  // Recurring shift state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrencePattern, setRecurrencePattern] = useState<RecurrencePattern>('weekly');
+  const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<number[]>([1, 2, 3, 4, 5]); // Mon-Fri default
+  const [recurrenceEndType, setRecurrenceEndType] = useState<RecurrenceEndType>('after_occurrences');
+  const [recurrenceEndAfter, setRecurrenceEndAfter] = useState(8);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
 
   const selectedTemplate = shiftTemplates.find(t => t.id === selectedTemplateId);
 
@@ -89,10 +117,28 @@ export function AddEmptyShiftModal({
     );
   };
 
+  const toggleDayOfWeek = (day: number) => {
+    setSelectedDaysOfWeek(prev =>
+      prev.includes(day)
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort((a, b) => a - b)
+    );
+  };
+
   const selectAllRooms = () => setSelectedRoomIds(rooms.map(r => r.id));
   const deselectAllRooms = () => setSelectedRoomIds([]);
   const selectAllDates = () => setSelectedDates(availableDates.map(d => format(d, 'yyyy-MM-dd')));
   const deselectAllDates = () => setSelectedDates([]);
+
+  const recurrenceConfig: RecurringShiftConfig | undefined = isRecurring ? {
+    isRecurring: true,
+    pattern: recurrencePattern,
+    daysOfWeek: recurrencePattern === 'weekly' || recurrencePattern === 'fortnightly' ? selectedDaysOfWeek : undefined,
+    endType: recurrenceEndType,
+    endAfterOccurrences: recurrenceEndType === 'after_occurrences' ? recurrenceEndAfter : undefined,
+    endDate: recurrenceEndType === 'on_date' ? recurrenceEndDate : undefined,
+    recurrenceGroupId: `recurring-${Date.now()}`,
+  } : undefined;
 
   const previewShifts = useMemo(() => {
     const shifts: EmptyShift[] = [];
@@ -111,13 +157,45 @@ export function AddEmptyShiftModal({
           requiredQualifications: selectedTemplate?.requiredQualifications,
           minimumClassification: selectedTemplate?.minimumClassification,
           preferredRole: selectedTemplate?.preferredRole,
+          recurring: recurrenceConfig,
         };
         shifts.push(shift);
       });
     });
 
     return shifts;
-  }, [selectedDates, selectedRoomIds, selectedTemplate, customStartTime, customEndTime, customBreakMinutes, centreId]);
+  }, [selectedDates, selectedRoomIds, selectedTemplate, customStartTime, customEndTime, customBreakMinutes, centreId, recurrenceConfig]);
+
+  // Calculate total recurring shifts for preview
+  const recurringShiftCount = useMemo(() => {
+    if (!isRecurring || selectedDates.length === 0 || selectedRoomIds.length === 0) return 0;
+    
+    let count = 0;
+    const baseCount = selectedRoomIds.length;
+    
+    if (recurrenceEndType === 'after_occurrences') {
+      count = baseCount * recurrenceEndAfter;
+    } else if (recurrenceEndType === 'on_date' && recurrenceEndDate) {
+      // Estimate based on pattern
+      const startDate = selectedDates[0] ? parseISO(selectedDates[0]) : new Date();
+      const endDate = parseISO(recurrenceEndDate);
+      const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (recurrencePattern === 'daily') {
+        count = baseCount * Math.max(0, diffDays);
+      } else if (recurrencePattern === 'weekly') {
+        count = baseCount * selectedDaysOfWeek.length * Math.ceil(diffDays / 7);
+      } else if (recurrencePattern === 'fortnightly') {
+        count = baseCount * selectedDaysOfWeek.length * Math.ceil(diffDays / 14);
+      } else if (recurrencePattern === 'monthly') {
+        count = baseCount * Math.ceil(diffDays / 30);
+      }
+    } else {
+      count = baseCount * 52; // "Never" shows approximate yearly
+    }
+    
+    return Math.max(count, previewShifts.length);
+  }, [isRecurring, selectedDates, selectedRoomIds, recurrenceEndType, recurrenceEndAfter, recurrenceEndDate, recurrencePattern, selectedDaysOfWeek, previewShifts.length]);
 
   const handleAdd = () => {
     if (previewShifts.length === 0) return;
@@ -134,6 +212,12 @@ export function AddEmptyShiftModal({
     setCustomEndTime('17:00');
     setCustomBreakMinutes(30);
     setActiveTab('template');
+    setIsRecurring(false);
+    setRecurrencePattern('weekly');
+    setSelectedDaysOfWeek([1, 2, 3, 4, 5]);
+    setRecurrenceEndType('after_occurrences');
+    setRecurrenceEndAfter(8);
+    setRecurrenceEndDate('');
   };
 
   const getRoomName = (roomId: string) => rooms.find(r => r.id === roomId)?.name || 'Unknown';
@@ -145,11 +229,13 @@ export function AddEmptyShiftModal({
       onClick: onClose,
     },
     {
-      label: `Create ${previewShifts.length} Shift(s)`,
+      label: isRecurring 
+        ? `Create Recurring Series (${recurringShiftCount} shifts)`
+        : `Create ${previewShifts.length} Shift(s)`,
       variant: 'primary',
       onClick: handleAdd,
       disabled: previewShifts.length === 0,
-      icon: <Plus size={16} />,
+      icon: isRecurring ? <RefreshCw size={16} /> : <Plus size={16} />,
     },
   ];
 
@@ -279,6 +365,159 @@ export function AddEmptyShiftModal({
           </TabsContent>
         </Tabs>
 
+        {/* Recurring Shift Options */}
+        <Box sx={{ 
+          p: 2, 
+          borderRadius: 2, 
+          border: '1px solid',
+          borderColor: isRecurring ? 'success.main' : 'divider',
+          bgcolor: isRecurring ? 'success.50' : 'background.paper',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isRecurring ? 2 : 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <RefreshCw className={`h-5 w-5 ${isRecurring ? 'text-emerald-600' : 'text-muted-foreground'}`} />
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  Recurring Shift
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Automatically create shifts on a schedule
+                </Typography>
+              </Box>
+            </Box>
+            <Switch
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              color="success"
+            />
+          </Box>
+
+          {isRecurring && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+              {/* Recurrence Pattern */}
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                  Repeat every
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  {(['daily', 'weekly', 'fortnightly', 'monthly'] as RecurrencePattern[]).map((pattern) => (
+                    <Chip
+                      key={pattern}
+                      label={pattern.charAt(0).toUpperCase() + pattern.slice(1)}
+                      onClick={() => setRecurrencePattern(pattern)}
+                      color={recurrencePattern === pattern ? 'primary' : 'default'}
+                      variant={recurrencePattern === pattern ? 'filled' : 'outlined'}
+                      size="small"
+                      sx={{ cursor: 'pointer' }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
+              {/* Days of Week (for weekly/fortnightly) */}
+              {(recurrencePattern === 'weekly' || recurrencePattern === 'fortnightly') && (
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                    On these days
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {DAYS_OF_WEEK.map((day) => (
+                      <Chip
+                        key={day.value}
+                        label={day.label}
+                        onClick={() => toggleDayOfWeek(day.value)}
+                        color={selectedDaysOfWeek.includes(day.value) ? 'primary' : 'default'}
+                        variant={selectedDaysOfWeek.includes(day.value) ? 'filled' : 'outlined'}
+                        size="small"
+                        sx={{ cursor: 'pointer', minWidth: 40 }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {/* End Type */}
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                  Ends
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Chip
+                      label="Never"
+                      onClick={() => setRecurrenceEndType('never')}
+                      color={recurrenceEndType === 'never' ? 'primary' : 'default'}
+                      variant={recurrenceEndType === 'never' ? 'filled' : 'outlined'}
+                      size="small"
+                      sx={{ cursor: 'pointer' }}
+                    />
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Chip
+                      label="After"
+                      onClick={() => setRecurrenceEndType('after_occurrences')}
+                      color={recurrenceEndType === 'after_occurrences' ? 'primary' : 'default'}
+                      variant={recurrenceEndType === 'after_occurrences' ? 'filled' : 'outlined'}
+                      size="small"
+                      sx={{ cursor: 'pointer' }}
+                    />
+                    {recurrenceEndType === 'after_occurrences' && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <TextField
+                          type="number"
+                          value={recurrenceEndAfter}
+                          onChange={(e) => setRecurrenceEndAfter(parseInt(e.target.value) || 1)}
+                          size="small"
+                          inputProps={{ min: 1, max: 52 }}
+                          sx={{ width: 70 }}
+                        />
+                        <Typography variant="body2" color="text.secondary">
+                          occurrences
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Chip
+                      label="On date"
+                      onClick={() => setRecurrenceEndType('on_date')}
+                      color={recurrenceEndType === 'on_date' ? 'primary' : 'default'}
+                      variant={recurrenceEndType === 'on_date' ? 'filled' : 'outlined'}
+                      size="small"
+                      sx={{ cursor: 'pointer' }}
+                    />
+                    {recurrenceEndType === 'on_date' && (
+                      <TextField
+                        type="date"
+                        value={recurrenceEndDate}
+                        onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                        size="small"
+                        InputLabelProps={{ shrink: true }}
+                        sx={{ width: 160 }}
+                      />
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Recurring Preview */}
+              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'success.100', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Calendar className="h-4 w-4 text-emerald-700" />
+                <Typography variant="caption" color="success.dark">
+                  {recurrenceEndType === 'never' 
+                    ? 'This will create an ongoing recurring shift series'
+                    : recurrenceEndType === 'after_occurrences'
+                      ? `This will create ${recurringShiftCount} shifts over ${recurrenceEndAfter} ${recurrencePattern === 'weekly' ? 'weeks' : recurrencePattern}${recurrencePattern === 'weekly' || recurrencePattern === 'fortnightly' ? '' : 's'}`
+                      : recurrenceEndDate 
+                        ? `This will create approximately ${recurringShiftCount} shifts until ${format(parseISO(recurrenceEndDate), 'MMM d, yyyy')}`
+                        : 'Select an end date'
+                  }
+                </Typography>
+              </Box>
+            </Box>
+          )}
+        </Box>
+
         {/* Step 2: Select Rooms */}
         <Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -308,21 +547,33 @@ export function AddEmptyShiftModal({
         <Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
             <Typography variant="subtitle2" fontWeight={600}>
-              Select Dates
+              {isRecurring ? 'Start Date' : 'Select Dates'}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button size="small" variant="text" onClick={selectAllDates}>Select All</Button>
-              <Button size="small" variant="text" onClick={deselectAllDates}>Clear</Button>
-            </Box>
+            {!isRecurring && (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button size="small" variant="text" onClick={selectAllDates}>Select All</Button>
+                <Button size="small" variant="text" onClick={deselectAllDates}>Clear</Button>
+              </Box>
+            )}
           </Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 1 }}>
             {availableDates.map(date => {
               const dateStr = format(date, 'yyyy-MM-dd');
               const isSelected = selectedDates.includes(dateStr);
+              // For recurring, only allow single date selection
+              const shouldShow = isRecurring ? (selectedDates.length === 0 || isSelected) : true;
+              if (!shouldShow && isRecurring) return null;
+              
               return (
                 <Box
                   key={dateStr}
-                  onClick={() => toggleDate(dateStr)}
+                  onClick={() => {
+                    if (isRecurring) {
+                      setSelectedDates(isSelected ? [] : [dateStr]);
+                    } else {
+                      toggleDate(dateStr);
+                    }
+                  }}
                   sx={{
                     p: 1.5,
                     borderRadius: 2,
@@ -347,16 +598,27 @@ export function AddEmptyShiftModal({
               );
             })}
           </Box>
+          {isRecurring && selectedDates.length === 0 && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Select a start date for the recurring series
+            </Typography>
+          )}
         </Box>
 
         {/* Preview */}
         {previewShifts.length > 0 && (
           <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              Preview
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              {isRecurring && <RefreshCw className="h-4 w-4 text-emerald-600" />}
+              <Typography variant="subtitle2" fontWeight={600}>
+                {isRecurring ? 'Recurring Series Preview' : 'Preview'}
+              </Typography>
+            </Box>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              {previewShifts.length} empty shift(s) will be created:
+              {isRecurring 
+                ? `${recurringShiftCount} shifts will be created in this recurring series`
+                : `${previewShifts.length} empty shift(s) will be created:`
+              }
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
               {previewShifts.slice(0, 10).map(shift => (
@@ -365,12 +627,13 @@ export function AddEmptyShiftModal({
                   size="small"
                   label={`${getRoomName(shift.roomId)} - ${format(parseISO(shift.date), 'EEE d')}`}
                   variant="outlined"
+                  icon={isRecurring ? <RefreshCw size={12} /> : undefined}
                 />
               ))}
-              {previewShifts.length > 10 && (
+              {(isRecurring ? recurringShiftCount : previewShifts.length) > 10 && (
                 <Chip
                   size="small"
-                  label={`+${previewShifts.length - 10} more`}
+                  label={`+${(isRecurring ? recurringShiftCount : previewShifts.length) - 10} more`}
                   variant="outlined"
                   color="primary"
                 />
