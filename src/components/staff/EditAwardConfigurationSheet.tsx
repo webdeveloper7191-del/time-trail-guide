@@ -286,7 +286,7 @@ export function EditAwardConfigurationSheet({
                       <TableCell className="font-medium">Base Rate</TableCell>
                       <TableCell className="text-right">100%</TableCell>
                       <TableCell className="text-right font-medium text-primary">
-                        ${rates.baseRate.toFixed(2)}/hr
+                        ${rates.baseHourlyRate.toFixed(2)}/hr
                       </TableCell>
                     </TableRow>
                     {rates.casualLoadedRate && (
