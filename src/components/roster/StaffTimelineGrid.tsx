@@ -51,6 +51,7 @@ import {
   getEventsForDate, 
   eventTypeConfig 
 } from '@/data/mockHolidaysEvents';
+import { StaffAvailabilityOverlay } from './StaffAvailabilityOverlay';
 
 // Empty shift type for unassigned shifts
 interface EmptyShift {
@@ -1134,7 +1135,16 @@ export function StaffTimelineGrid({
 
                             {!timeOff && (
                               <>
-                                <div className="space-y-1">
+                                {/* Staff Availability Overlay - shows when no shifts */}
+                                {cellShifts.length === 0 && (
+                                  <StaffAvailabilityOverlay 
+                                    staff={member} 
+                                    date={date}
+                                    isCompact={isCompact}
+                                  />
+                                )}
+                                
+                                <div className="space-y-1 relative z-10">
                                 {cellShifts.map((shift) => (
                                     <StaffShiftCard
                                       key={shift.id}

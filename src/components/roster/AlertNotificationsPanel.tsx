@@ -13,15 +13,16 @@ import {
   X,
   TrendingUp,
   Calendar,
-  Shield
+  Shield,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Shift, StaffMember, RosterComplianceFlag } from '@/types/roster';
-import { format } from 'date-fns';
+import { format, parseISO, differenceInDays, isAfter, isBefore } from 'date-fns';
 
 interface Alert {
   id: string;
-  type: 'budget' | 'overtime' | 'compliance' | 'coverage' | 'agency';
+  type: 'budget' | 'overtime' | 'compliance' | 'coverage' | 'agency' | 'recurring';
   severity: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
@@ -161,6 +162,64 @@ export function AlertNotificationsPanel({
       });
     }
 
+    // Recurring shift expiry alerts
+    const seriesMap = new Map<string, { shifts: Shift[]; staffName: string }>();
+    centreShifts.forEach(shift => {
+      if (shift.recurring?.isRecurring && shift.recurring.recurrenceGroupId) {
+        const groupId = shift.recurring.recurrenceGroupId;
+        if (!seriesMap.has(groupId)) {
+          const staffMember = staff.find(s => s.id === shift.staffId);
+          seriesMap.set(groupId, { shifts: [], staffName: staffMember?.name || 'Unknown' });
+        }
+        seriesMap.get(groupId)!.shifts.push(shift);
+      }
+    });
+
+    seriesMap.forEach((data, groupId) => {
+      const { shifts: seriesShifts, staffName } = data;
+      const sortedShifts = seriesShifts.sort((a, b) => 
+        parseISO(a.date).getTime() - parseISO(b.date).getTime()
+      );
+      
+      const firstShift = sortedShifts[0];
+      const lastShift = sortedShifts[sortedShifts.length - 1];
+      
+      const futureShifts = sortedShifts.filter(s => isAfter(parseISO(s.date), now) || format(parseISO(s.date), 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd'));
+      const remainingCount = futureShifts.length;
+
+      // Check if ending within 14 days
+      const endDate = firstShift.recurring?.endDate;
+      if (endDate) {
+        const daysUntilEnd = differenceInDays(parseISO(endDate), now);
+        if (daysUntilEnd <= 14 && daysUntilEnd >= 0) {
+          alertList.push({
+            id: `recurring-expiry-${groupId}`,
+            type: 'recurring',
+            severity: daysUntilEnd <= 7 ? 'critical' : 'warning',
+            title: 'Recurring Series Ending Soon',
+            message: `${staffName}'s recurring shift series ends in ${daysUntilEnd} day${daysUntilEnd !== 1 ? 's' : ''} (${remainingCount} shifts remaining)`,
+            timestamp: now,
+            read: readAlerts.has(`recurring-expiry-${groupId}`),
+            actionLabel: 'Extend Series',
+          });
+        }
+      } else if (firstShift.recurring?.endType === 'after_occurrences') {
+        // Check if only a few occurrences left
+        if (remainingCount <= 3 && remainingCount > 0) {
+          alertList.push({
+            id: `recurring-low-${groupId}`,
+            type: 'recurring',
+            severity: remainingCount === 1 ? 'critical' : 'warning',
+            title: 'Recurring Series Almost Complete',
+            message: `${staffName}'s recurring shift series has ${remainingCount} shift${remainingCount !== 1 ? 's' : ''} remaining`,
+            timestamp: now,
+            read: readAlerts.has(`recurring-low-${groupId}`),
+            actionLabel: 'Extend Series',
+          });
+        }
+      }
+    });
+
     return alertList.sort((a, b) => {
       const severityOrder = { critical: 0, warning: 1, info: 2 };
       return severityOrder[a.severity] - severityOrder[b.severity];
@@ -184,6 +243,7 @@ export function AlertNotificationsPanel({
       case 'compliance': return Shield;
       case 'coverage': return Calendar;
       case 'agency': return Users;
+      case 'recurring': return RefreshCw;
       default: return AlertTriangle;
     }
   };
