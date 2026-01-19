@@ -146,6 +146,7 @@ import {
   Building2,
   Radio,
   Star,
+  RefreshCw,
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
 
@@ -1462,6 +1463,9 @@ export default function RosterScheduler() {
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => setShowRecurringPatterns(true)} icon={<Repeat size={16} />}>
                     Recurring Patterns
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowRecurringManagement(true)} icon={<RefreshCw size={16} />}>
+                    Manage Recurring Shifts
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowBreakScheduling(true)} icon={<Coffee size={16} />}>
                     Break Scheduling
