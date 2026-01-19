@@ -91,15 +91,29 @@ import {
   allChildcareConstraints,
   childcarePresets,
   nqfRatioConstraints,
-  qualificationConstraints,
-  availabilityConstraints,
-  complianceConstraints,
-  qualityConstraints,
+  qualificationConstraints as childcareQualificationConstraints,
+  availabilityConstraints as childcareAvailabilityConstraints,
+  complianceConstraints as childcareComplianceConstraints,
+  qualityConstraints as childcareQualityConstraints,
   demandConstraints,
-  budgetConstraints,
+  budgetConstraints as childcareBudgetConstraints,
   awardConstraints,
-  fairnessConstraints,
+  fairnessConstraints as childcareFairnessConstraints,
 } from '@/lib/timefold/childcareConstraints';
+import {
+  allAgedCareConstraints,
+  agedCarePresets,
+  agedCareConstraintGroups,
+  rnCoverageConstraints,
+  qualificationConstraints as agedCareQualificationConstraints,
+  skillsMixConstraints,
+  availabilityConstraints as agedCareAvailabilityConstraints,
+  complianceConstraints as agedCareComplianceConstraints,
+  qualityConstraints as agedCareQualityConstraints,
+  careMinuteTrackingConstraints,
+  budgetConstraints as agedCareBudgetConstraints,
+  fairnessConstraints as agedCareFairnessConstraints,
+} from '@/lib/timefold/agedCareConstraints';
 
 interface TimefoldConstraintPanelProps {
   open: boolean;
@@ -154,7 +168,7 @@ const childcareConstraintGroups = [
     icon: ShieldCheck,
     isHardGroup: true,
     color: 'error' as const,
-    constraints: [...nqfRatioConstraints, ...qualificationConstraints.slice(0, 6)],
+    constraints: [...nqfRatioConstraints, ...childcareQualificationConstraints.slice(0, 6)],
   },
   {
     id: 'availability_compliance',
@@ -163,7 +177,7 @@ const childcareConstraintGroups = [
     icon: Clock,
     isHardGroup: true,
     color: 'error' as const,
-    constraints: [...availabilityConstraints, ...complianceConstraints],
+    constraints: [...childcareAvailabilityConstraints, ...childcareComplianceConstraints],
   },
   {
     id: 'quality_continuity',
@@ -172,7 +186,7 @@ const childcareConstraintGroups = [
     icon: Heart,
     isHardGroup: false,
     color: 'warning' as const,
-    constraints: qualityConstraints,
+    constraints: childcareQualityConstraints,
   },
   {
     id: 'demand_capacity',
@@ -190,7 +204,7 @@ const childcareConstraintGroups = [
     icon: DollarSign,
     isHardGroup: false,
     color: 'info' as const,
-    constraints: budgetConstraints,
+    constraints: childcareBudgetConstraints,
   },
   {
     id: 'award_pay',
@@ -208,7 +222,7 @@ const childcareConstraintGroups = [
     icon: Scale,
     isHardGroup: false,
     color: 'info' as const,
-    constraints: fairnessConstraints,
+    constraints: childcareFairnessConstraints,
   },
 ];
 

@@ -12,6 +12,11 @@ import {
   childcareCategoryWeights, 
   childcarePresets 
 } from './childcareConstraints';
+import {
+  allAgedCareConstraints,
+  agedCareCategoryWeights,
+  agedCarePresets,
+} from './agedCareConstraints';
 
 // ============================================================================
 // INDUSTRY TYPES
@@ -68,35 +73,34 @@ export const childcareConfig: IndustryConfig = {
 };
 
 // ============================================================================
-// FUTURE INDUSTRY CONFIGS (PLACEHOLDER)
+// AGED CARE INDUSTRY CONFIG
 // ============================================================================
 
 export const agedCareConfig: IndustryConfig = {
   id: 'aged_care',
-  name: 'Aged Care',
-  description: 'Residential aged care facilities and home care services',
+  name: 'Residential Aged Care',
+  description: 'Residential aged care facilities, nursing homes, and home care services',
   applicableAwards: [
     'Aged Care Award 2010',
     'Nurses Award 2020',
   ],
-  defaultConstraints: [], // To be implemented
-  categoryWeights: {
-    availability: 100,
-    qualification: 95,
-    capacity: 90,
-    compliance: 100,
-    fairness: 50,
-    cost: 55,
-    preference: 40,
-    continuity: 70,
-  },
-  presets: {},
+  defaultConstraints: allAgedCareConstraints,
+  categoryWeights: agedCareCategoryWeights,
+  presets: agedCarePresets,
   regulatoryNotes: [
-    'Registered Nurse must be on duty 24/7 in residential facilities',
-    'Minimum staffing minutes per resident per day requirements',
-    'Skills mix requirements (RN, EN, AIN ratios)',
+    'Registered Nurse must be on-site 24 hours a day, 7 days a week',
+    'Minimum 215 care minutes per resident per day (AN-ACC)',
+    'Minimum 44 RN minutes per resident per day',
+    'AHPRA registration required for all nurses',
+    'Skills mix requirements (RN, EN, PCW ratios)',
+    'Medication competency required for medication administration',
+    'Staffing affects Aged Care Quality Star Ratings',
   ],
 };
+
+// ============================================================================
+// FUTURE INDUSTRY CONFIGS (PLACEHOLDER)
+// ============================================================================
 
 export const disabilityServicesConfig: IndustryConfig = {
   id: 'disability_services',
