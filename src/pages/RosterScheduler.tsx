@@ -867,26 +867,59 @@ export default function RosterScheduler() {
 
   // Empty shift and auto-assign handlers - with recurring shift generation
   const handleAddEmptyShifts = (newEmptyShifts: typeof emptyShifts) => {
-    const allShiftsToAdd: typeof emptyShifts = [];
+    const allEmptyShiftsToAdd: typeof emptyShifts = [];
+    const directShiftsToAdd: Shift[] = [];
     let totalRecurringGenerated = 0;
 
     newEmptyShifts.forEach(emptyShift => {
       if (emptyShift.recurring?.isRecurring) {
-        // Generate all future shifts based on recurring config
+        // Generate all future shifts based on recurring config and add them directly to the roster
         const generatedShifts = generateRecurringEmptyShifts(emptyShift);
-        allShiftsToAdd.push(...generatedShifts);
+        
+        // Convert to actual Shift objects for immediate visibility on the grid
+        generatedShifts.forEach(es => {
+          directShiftsToAdd.push({
+            id: `shift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            staffId: '', // Unassigned
+            centreId: es.centreId,
+            roomId: es.roomId,
+            date: es.date,
+            startTime: es.startTime,
+            endTime: es.endTime,
+            breakMinutes: es.breakMinutes,
+            status: 'draft' as const,
+            isOpenShift: true, // Mark as open shift so it appears on the grid
+            recurring: es.recurring ? {
+              isRecurring: es.recurring.isRecurring,
+              pattern: es.recurring.pattern,
+              daysOfWeek: es.recurring.daysOfWeek,
+              endType: es.recurring.endType,
+              endAfterOccurrences: es.recurring.endAfterOccurrences,
+              endDate: es.recurring.endDate,
+              recurrenceGroupId: es.recurring.recurrenceGroupId,
+            } : undefined,
+          });
+        });
         totalRecurringGenerated += generatedShifts.length;
       } else {
-        allShiftsToAdd.push(emptyShift);
+        allEmptyShiftsToAdd.push(emptyShift);
       }
     });
 
-    setEmptyShifts(prev => [...prev, ...allShiftsToAdd]);
+    // Add non-recurring empty shifts to the queue
+    if (allEmptyShiftsToAdd.length > 0) {
+      setEmptyShifts(prev => [...prev, ...allEmptyShiftsToAdd]);
+    }
+    
+    // Add recurring shifts directly to the roster grid
+    if (directShiftsToAdd.length > 0) {
+      setShifts(prev => [...prev, ...directShiftsToAdd], `Created ${directShiftsToAdd.length} recurring shifts`, 'bulk');
+    }
     
     if (totalRecurringGenerated > 0) {
-      toast.success(`Created ${allShiftsToAdd.length} shifts (${totalRecurringGenerated} from recurring patterns) - ready for auto-assignment`);
-    } else {
-      toast.success(`Created ${allShiftsToAdd.length} empty shift(s) - ready for auto-assignment`);
+      toast.success(`Created ${totalRecurringGenerated} recurring shifts on the roster`);
+    } else if (allEmptyShiftsToAdd.length > 0) {
+      toast.success(`Created ${allEmptyShiftsToAdd.length} empty shift(s) - ready for auto-assignment`);
     }
   };
 
