@@ -574,10 +574,114 @@ export default function RosterScheduler() {
   };
 
   const handleShiftSave = (updatedShift: Shift) => {
-    console.log('[roster] handleShiftSave', { id: updatedShift.id, isAbsent: updatedShift.isAbsent, staffId: updatedShift.staffId });
-    setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s), 'Updated shift', 'update');
-    setSelectedShift(updatedShift);
-    toast.success('Shift updated');
+    console.log('[roster] handleShiftSave', { id: updatedShift.id, isAbsent: updatedShift.isAbsent, staffId: updatedShift.staffId, recurring: updatedShift.recurring });
+    
+    // Check if this is a new recurring shift (has recurring config with isRecurring=true and is newly configured)
+    const existingShift = shifts.find(s => s.id === updatedShift.id);
+    const isNewRecurring = updatedShift.recurring?.isRecurring && 
+                           (!existingShift?.recurring?.isRecurring || 
+                            existingShift.recurring.recurrenceGroupId !== updatedShift.recurring.recurrenceGroupId);
+    
+    if (isNewRecurring && updatedShift.recurring) {
+      // Generate all future recurring shifts
+      const recurringShifts = generateRecurringShiftsFromBase(updatedShift);
+      
+      if (recurringShifts.length > 1) {
+        // Update the original shift and add all generated shifts
+        setShifts(prev => {
+          const updated = prev.map(s => s.id === updatedShift.id ? recurringShifts[0] : s);
+          // Add the new recurring instances (skip first as it's the original)
+          return [...updated, ...recurringShifts.slice(1)];
+        }, `Created ${recurringShifts.length} recurring shifts`, 'bulk');
+        
+        setSelectedShift(recurringShifts[0]);
+        toast.success(`Created ${recurringShifts.length} recurring shifts on the roster`);
+      } else {
+        setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s), 'Updated shift', 'update');
+        setSelectedShift(updatedShift);
+        toast.success('Shift updated');
+      }
+    } else {
+      // Normal shift update
+      setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s), 'Updated shift', 'update');
+      setSelectedShift(updatedShift);
+      toast.success('Shift updated');
+    }
+  };
+
+  // Generate recurring shifts from a base Shift object
+  const generateRecurringShiftsFromBase = (baseShift: Shift): Shift[] => {
+    const config = baseShift.recurring;
+    if (!config?.isRecurring) return [baseShift];
+
+    const generatedShifts: Shift[] = [];
+    const startDate = new Date(baseShift.date);
+    const recurrenceGroupId = config.recurrenceGroupId || `rg-${baseShift.id}-${Date.now()}`;
+    
+    // Calculate end conditions
+    let maxOccurrences = 52; // Default max for "never" end type
+    let endDateLimit: Date | null = null;
+    
+    if (config.endType === 'after_occurrences' && config.endAfterOccurrences) {
+      maxOccurrences = config.endAfterOccurrences;
+    } else if (config.endType === 'on_date' && config.endDate) {
+      endDateLimit = new Date(config.endDate);
+    }
+
+    let occurrenceCount = 0;
+    let currentDate = new Date(startDate);
+    
+    // Generate shifts based on pattern
+    while (occurrenceCount < maxOccurrences) {
+      if (endDateLimit && currentDate > endDateLimit) break;
+      
+      const shouldCreateShift = (): boolean => {
+        if (config.pattern === 'daily') return true;
+        
+        const dayOfWeek = currentDate.getDay();
+        if ((config.pattern === 'weekly' || config.pattern === 'fortnightly') && config.daysOfWeek) {
+          if (!config.daysOfWeek.includes(dayOfWeek)) return false;
+          
+          if (config.pattern === 'fortnightly') {
+            const weeksDiff = Math.floor((currentDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+            if (weeksDiff % 2 !== 0) return false;
+          }
+        }
+        return true;
+      };
+
+      if (shouldCreateShift()) {
+        const isFirst = occurrenceCount === 0;
+        generatedShifts.push({
+          ...baseShift,
+          id: isFirst ? baseShift.id : `shift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          date: format(currentDate, 'yyyy-MM-dd'),
+          recurring: {
+            ...config,
+            recurrenceGroupId,
+          },
+        });
+        occurrenceCount++;
+      }
+
+      // Move to next date based on pattern
+      if (config.pattern === 'daily') {
+        currentDate = addDays(currentDate, 1);
+      } else if (config.pattern === 'weekly' || config.pattern === 'fortnightly') {
+        currentDate = addDays(currentDate, 1);
+      } else if (config.pattern === 'monthly') {
+        currentDate = addMonths(currentDate, 1);
+      } else {
+        currentDate = addDays(currentDate, 1);
+      }
+      
+      // Safety break to prevent infinite loops (max 2 years)
+      if (currentDate.getTime() - startDate.getTime() > 365 * 24 * 60 * 60 * 1000 * 2) {
+        break;
+      }
+    }
+
+    return generatedShifts;
   };
 
   const handleShiftDelete = (shiftId: string) => {
