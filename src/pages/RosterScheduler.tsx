@@ -195,6 +195,7 @@ export default function RosterScheduler() {
   const [showDemandOverlay, setShowDemandOverlay] = useState(true);
   const [showAnalyticsCharts, setShowAnalyticsCharts] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [highlightedRecurrenceGroupId, setHighlightedRecurrenceGroupId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [shiftTemplates, setShiftTemplates] = useState<ShiftTemplate[]>([]);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -1966,6 +1967,10 @@ export default function RosterScheduler() {
             staffAbsences={mockStaffAbsences}
             shiftTemplates={shiftTemplates}
             emptyShifts={emptyShifts.filter(es => es.centreId === selectedCentreId)}
+            highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+            onViewSeries={(groupId) =>
+              setHighlightedRecurrenceGroupId(prev => (prev === groupId ? null : groupId))
+            }
             onDropStaff={handleDropStaff}
             staffRoomAssignments={staffRoomAssignmentsByCentre[selectedCentreId] || {}}
             onAssignStaffToRoom={handleAssignStaffToRoom}

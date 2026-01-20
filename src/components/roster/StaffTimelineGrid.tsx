@@ -43,6 +43,7 @@ import {
   Building2,
   Send,
   UserX,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -84,6 +85,11 @@ interface StaffTimelineGridProps {
   shiftTemplates: ShiftTemplate[];
   emptyShifts?: EmptyShift[];
 
+  /** When set, highlight all shifts in the matching recurring series */
+  highlightedRecurrenceGroupId?: string | null;
+  /** Called when user clicks "View Series" on a recurring shift */
+  onViewSeries?: (groupId: string) => void;
+
   /** Creates a shift by dropping staff onto a specific day cell */
   onDropStaff: (staffId: string, roomId: string, date: string) => void;
 
@@ -124,6 +130,8 @@ export function StaffTimelineGrid({
   staffAbsences = [],
   shiftTemplates,
   emptyShifts = [],
+  highlightedRecurrenceGroupId = null,
+  onViewSeries,
   onDropStaff,
   staffRoomAssignments = {},
   onAssignStaffToRoom,
@@ -1151,6 +1159,8 @@ export function StaffTimelineGrid({
                                       shift={shift}
                                       staff={member}
                                       allStaff={staff}
+                                      highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+                                      onViewSeries={onViewSeries}
                                       onEdit={() => onShiftEdit(shift)}
                                       onDelete={() => handleRequestDeleteShift(shift, member)}
                                       onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
@@ -1597,10 +1607,25 @@ export function StaffTimelineGrid({
   );
 }
 
-function StaffShiftCard({ shift, staff, allStaff, onEdit, onDelete, onCopy, onSwap, onShiftTypeChange, onDragStart, isCompact = false }: {
+function StaffShiftCard({
+  shift,
+  staff,
+  allStaff,
+  highlightedRecurrenceGroupId,
+  onViewSeries,
+  onEdit,
+  onDelete,
+  onCopy,
+  onSwap,
+  onShiftTypeChange,
+  onDragStart,
+  isCompact = false,
+}: {
   shift: Shift;
   staff?: StaffMember;
   allStaff?: StaffMember[];
+  highlightedRecurrenceGroupId?: string | null;
+  onViewSeries?: (groupId: string) => void;
   onEdit: () => void;
   onDelete: () => void;
   onCopy?: () => void;
@@ -1647,6 +1672,10 @@ function StaffShiftCard({ shift, staff, allStaff, onEdit, onDelete, onCopy, onSw
   const style = statusStyles[shift.status];
   const shiftTypeInfo = shift.shiftType ? shiftTypeStyles[shift.shiftType] : null;
   const currentType = shift.shiftType || 'regular';
+
+  const seriesId = shift.recurring?.isRecurring ? shift.recurring.recurrenceGroupId : undefined;
+  const isSeriesHighlighted = !!seriesId && !!highlightedRecurrenceGroupId && seriesId === highlightedRecurrenceGroupId;
+  const shouldDim = !!highlightedRecurrenceGroupId && (!seriesId || seriesId !== highlightedRecurrenceGroupId);
 
   const handleQuickToggle = (type: ShiftSpecialType, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1727,7 +1756,9 @@ function StaffShiftCard({ shift, staff, allStaff, onEdit, onDelete, onCopy, onSw
         style.bg,
         style.border,
         shift.status === 'draft' && "border-dashed",
-        shift.isAbsent && "border-destructive/70"
+        shift.isAbsent && "border-destructive/70",
+        isSeriesHighlighted && "ring-2 ring-primary/40",
+        shouldDim && "opacity-50"
       )}
       style={{
         backgroundImage: shift.isAbsent
@@ -1743,15 +1774,34 @@ function StaffShiftCard({ shift, staff, allStaff, onEdit, onDelete, onCopy, onSw
           : (shiftTypeInfo ? shiftTypeInfo.bgColor.replace('/20', '') : style.accent)
       )} />
 
-      {/* Shift type indicator */}
-      {shiftTypeInfo && (
-        <div className={cn(
-          "absolute top-1 left-2.5 p-0.5 rounded",
-          shiftTypeInfo.bgColor
-        )}>
-          <shiftTypeInfo.icon className={cn("h-2.5 w-2.5", shiftTypeInfo.color)} />
-        </div>
-      )}
+      {/* Top-left indicators */}
+      <div className="absolute top-1 left-2.5 flex items-center gap-1">
+        {/* Shift type indicator */}
+        {shiftTypeInfo && (
+          <div className={cn("p-0.5 rounded", shiftTypeInfo.bgColor)}>
+            <shiftTypeInfo.icon className={cn("h-2.5 w-2.5", shiftTypeInfo.color)} />
+          </div>
+        )}
+
+        {/* Recurring indicator */}
+        {shift.recurring?.isRecurring && shift.recurring?.recurrenceGroupId && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="p-0.5 rounded bg-emerald-500/20">
+                  <RefreshCw className="h-2.5 w-2.5 text-emerald-600" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Recurring Shift</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {shift.recurring.pattern || 'Weekly'} pattern
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
 
       {/* Absent indicator */}
       {shift.isAbsent && (
@@ -1793,9 +1843,21 @@ function StaffShiftCard({ shift, staff, allStaff, onEdit, onDelete, onCopy, onSw
                 Swap Staff
               </DropdownMenuItem>
             )}
-            
-            {onShiftTypeChange && (
+
+            {seriesId && onViewSeries && (
               <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewSeries(seriesId);
+                  }}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  View Series
+                </DropdownMenuItem>
+              </>
+            )}
                 <DropdownMenuSeparator />
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
