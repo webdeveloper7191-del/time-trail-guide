@@ -23,11 +23,20 @@ function getShiftHours(shift: Shift): number {
   return (end - start - shift.breakMinutes) / 60;
 }
 
+/**
+ * Detect shift conflicts for a given shift
+ * @param newShift - The shift to check for conflicts
+ * @param existingShifts - Shifts within the current centre for other checks (overtime, rest periods, etc.)
+ * @param staff - All staff members
+ * @param rooms - Rooms for the current centre (for room preference checks)
+ * @param allShiftsAcrossLocations - Optional: All shifts across all locations for cross-location overlap detection
+ */
 export function detectShiftConflicts(
   newShift: Shift,
   existingShifts: Shift[],
   staff: StaffMember[],
-  rooms: Room[]
+  rooms: Room[],
+  allShiftsAcrossLocations?: Shift[]
 ): ShiftConflict[] {
   const conflicts: ShiftConflict[] = [];
   const staffMember = staff.find(s => s.id === newShift.staffId);
@@ -37,21 +46,29 @@ export function detectShiftConflicts(
   const shiftDate = parseISO(newShift.date);
   const dayOfWeek = shiftDate.getDay();
 
-  // 1. Check for overlapping shifts on same day
-  const sameDay = existingShifts.filter(
+  // Use allShiftsAcrossLocations for cross-location overlap detection, fallback to existingShifts
+  const shiftsToCheckForOverlap = allShiftsAcrossLocations || existingShifts;
+
+  // 1. Check for overlapping shifts on same day ACROSS ALL LOCATIONS
+  const sameDayShifts = shiftsToCheckForOverlap.filter(
     s => s.staffId === newShift.staffId && s.date === newShift.date && s.id !== newShift.id
   );
   
-  for (const existing of sameDay) {
+  for (const existing of sameDayShifts) {
     if (timesOverlap(newShift.startTime, newShift.endTime, existing.startTime, existing.endTime)) {
+      const isSameLocation = existing.centreId === newShift.centreId;
       conflicts.push({
         id: `conflict-overlap-${newShift.id}-${existing.id}`,
         type: 'overlap',
         severity: 'error',
         shiftId: newShift.id,
         staffId: newShift.staffId,
-        message: `Shift overlaps with existing shift (${existing.startTime}-${existing.endTime})`,
-        details: `${staffMember.name} already has a shift from ${existing.startTime} to ${existing.endTime} on this day`,
+        message: isSameLocation 
+          ? `Shift overlaps with existing shift (${existing.startTime}-${existing.endTime})`
+          : `Cross-location conflict: overlaps with shift at another centre (${existing.startTime}-${existing.endTime})`,
+        details: isSameLocation
+          ? `${staffMember.name} already has a shift from ${existing.startTime} to ${existing.endTime} on this day`
+          : `${staffMember.name} has a conflicting shift at another location from ${existing.startTime} to ${existing.endTime}. Staff cannot be in two places at once.`,
         canOverride: false,
       });
     }
@@ -89,9 +106,9 @@ export function detectShiftConflicts(
     }
   }
 
-  // 3. Check overtime
-  const staffShifts = existingShifts.filter(s => s.staffId === newShift.staffId && s.id !== newShift.id);
-  const totalHours = staffShifts.reduce((sum, s) => sum + getShiftHours(s), 0) + getShiftHours(newShift);
+  // 3. Check overtime (use all shifts for this staff, not just current centre)
+  const allStaffShifts = shiftsToCheckForOverlap.filter(s => s.staffId === newShift.staffId && s.id !== newShift.id);
+  const totalHours = allStaffShifts.reduce((sum, s) => sum + getShiftHours(s), 0) + getShiftHours(newShift);
   
   if (totalHours > staffMember.maxHoursPerWeek) {
     conflicts.push({
@@ -126,13 +143,13 @@ export function detectShiftConflicts(
     });
   }
 
-  // 5. Check minimum rest between shifts
+  // 5. Check minimum rest between shifts (across all locations)
   const minRest = staffMember.schedulingPreferences?.minRestHoursBetweenShifts || 10;
   const previousDay = format(subDays(shiftDate, 1), 'yyyy-MM-dd');
   const nextDay = format(addDays(shiftDate, 1), 'yyyy-MM-dd');
   
-  const prevDayShifts = existingShifts.filter(s => s.staffId === newShift.staffId && s.date === previousDay);
-  const nextDayShifts = existingShifts.filter(s => s.staffId === newShift.staffId && s.date === nextDay);
+  const prevDayShifts = shiftsToCheckForOverlap.filter(s => s.staffId === newShift.staffId && s.date === previousDay);
+  const nextDayShifts = shiftsToCheckForOverlap.filter(s => s.staffId === newShift.staffId && s.date === nextDay);
   
   for (const prev of prevDayShifts) {
     const prevEnd = timeToMinutes(prev.endTime);
@@ -172,20 +189,20 @@ export function detectShiftConflicts(
     }
   }
 
-  // 6. Check max consecutive days
+  // 6. Check max consecutive days (across all locations)
   const maxConsecutive = staffMember.schedulingPreferences?.maxConsecutiveDays || 5;
   let consecutiveDays = 1;
   
   for (let i = 1; i <= maxConsecutive; i++) {
     const checkDate = format(subDays(shiftDate, i), 'yyyy-MM-dd');
-    if (existingShifts.some(s => s.staffId === newShift.staffId && s.date === checkDate)) {
+    if (shiftsToCheckForOverlap.some(s => s.staffId === newShift.staffId && s.date === checkDate)) {
       consecutiveDays++;
     } else break;
   }
   
   for (let i = 1; i <= maxConsecutive; i++) {
     const checkDate = format(addDays(shiftDate, i), 'yyyy-MM-dd');
-    if (existingShifts.some(s => s.staffId === newShift.staffId && s.date === checkDate)) {
+    if (shiftsToCheckForOverlap.some(s => s.staffId === newShift.staffId && s.date === checkDate)) {
       consecutiveDays++;
     } else break;
   }
@@ -219,6 +236,104 @@ export function detectShiftConflicts(
   }
 
   return conflicts;
+}
+
+/**
+ * Detect cross-location conflicts for all shifts of a specific staff member
+ * Returns only overlap conflicts across different centres
+ */
+export function detectCrossLocationConflicts(
+  staffId: string,
+  allShifts: Shift[],
+  staff: StaffMember[]
+): ShiftConflict[] {
+  const staffShifts = allShifts.filter(s => s.staffId === staffId);
+  const conflicts: ShiftConflict[] = [];
+  const staffMember = staff.find(s => s.id === staffId);
+  
+  if (!staffMember || staffShifts.length < 2) return conflicts;
+
+  // Group shifts by date
+  const shiftsByDate = new Map<string, Shift[]>();
+  staffShifts.forEach(shift => {
+    const existing = shiftsByDate.get(shift.date) || [];
+    existing.push(shift);
+    shiftsByDate.set(shift.date, existing);
+  });
+
+  // Check each date for overlaps across different centres
+  shiftsByDate.forEach((dayShifts, date) => {
+    if (dayShifts.length < 2) return;
+
+    for (let i = 0; i < dayShifts.length; i++) {
+      for (let j = i + 1; j < dayShifts.length; j++) {
+        const shift1 = dayShifts[i];
+        const shift2 = dayShifts[j];
+
+        if (timesOverlap(shift1.startTime, shift1.endTime, shift2.startTime, shift2.endTime)) {
+          const isCrossLocation = shift1.centreId !== shift2.centreId;
+          conflicts.push({
+            id: `conflict-overlap-${shift1.id}-${shift2.id}`,
+            type: 'overlap',
+            severity: 'error',
+            shiftId: shift1.id,
+            staffId: staffId,
+            message: isCrossLocation
+              ? `Cross-location conflict: ${staffMember.name} has overlapping shifts at different centres`
+              : `${staffMember.name} has overlapping shifts (${shift1.startTime}-${shift1.endTime} and ${shift2.startTime}-${shift2.endTime})`,
+            details: `Shifts overlap on ${date}: ${shift1.startTime}-${shift1.endTime} and ${shift2.startTime}-${shift2.endTime}`,
+            canOverride: false,
+          });
+        }
+      }
+    }
+  });
+
+  return conflicts;
+}
+
+/**
+ * Check if a shift can be published (no blocking conflicts)
+ */
+export function canPublishShift(
+  shift: Shift,
+  allShifts: Shift[],
+  staff: StaffMember[],
+  rooms: Room[]
+): { canPublish: boolean; blockingConflicts: ShiftConflict[] } {
+  const conflicts = detectShiftConflicts(shift, allShifts, staff, rooms, allShifts);
+  const blockingConflicts = conflicts.filter(c => c.severity === 'error' && !c.canOverride);
+  
+  return {
+    canPublish: blockingConflicts.length === 0,
+    blockingConflicts
+  };
+}
+
+/**
+ * Check if all draft shifts in a centre can be published
+ */
+export function canPublishRoster(
+  shifts: Shift[],
+  centreId: string,
+  allShifts: Shift[],
+  staff: StaffMember[],
+  rooms: Room[]
+): { canPublish: boolean; blockingShifts: { shift: Shift; conflicts: ShiftConflict[] }[] } {
+  const draftShifts = shifts.filter(s => s.status === 'draft' && s.centreId === centreId);
+  const blockingShifts: { shift: Shift; conflicts: ShiftConflict[] }[] = [];
+
+  draftShifts.forEach(shift => {
+    const { canPublish, blockingConflicts } = canPublishShift(shift, allShifts, staff, rooms);
+    if (!canPublish) {
+      blockingShifts.push({ shift, conflicts: blockingConflicts });
+    }
+  });
+
+  return {
+    canPublish: blockingShifts.length === 0,
+    blockingShifts
+  };
 }
 
 export function getConflictSeverityColor(severity: ShiftConflict['severity']): string {

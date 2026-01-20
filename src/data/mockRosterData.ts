@@ -521,46 +521,58 @@ export const mockAgencyStaff: StaffMember[] = [
   },
 ];
 
+// Recurring group ID for Emma Wilson's weekly recurring shift
+const emmaRecurringGroupId = 'rg-emma-weekly-001';
+
 // Generate shifts for the current week
 export const generateMockShifts = (): Shift[] => {
   const shifts: Shift[] = [];
   
-  // Monday shifts
+  // Emma Wilson's recurring shift config
+  const emmaRecurringConfig = {
+    isRecurring: true,
+    pattern: 'weekly' as const,
+    daysOfWeek: [1, 2, 3, 4, 5], // Mon-Fri
+    endType: 'never' as const,
+    recurrenceGroupId: emmaRecurringGroupId,
+  };
+  
+  // Monday shifts - Emma has a recurring shift in Joeys (room-1a)
   shifts.push(
-    { id: 'shift-1', staffId: 'staff-1', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 0), 'yyyy-MM-dd'), startTime: '07:00', endTime: '15:00', breakMinutes: 30, status: 'published', isOpenShift: false },
+    { id: 'shift-1', staffId: 'staff-1', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 0), 'yyyy-MM-dd'), startTime: '07:00', endTime: '15:00', breakMinutes: 30, status: 'published', isOpenShift: false, recurring: emmaRecurringConfig },
     { id: 'shift-2', staffId: 'staff-2', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 0), 'yyyy-MM-dd'), startTime: '10:00', endTime: '18:30', breakMinutes: 30, status: 'published', isOpenShift: false },
     { id: 'shift-3', staffId: 'staff-3', centreId: 'centre-1', roomId: 'room-1b', date: format(addDays(weekStart, 0), 'yyyy-MM-dd'), startTime: '08:00', endTime: '16:00', breakMinutes: 30, status: 'published', isOpenShift: false },
     { id: 'shift-4', staffId: 'staff-4', centreId: 'centre-2', roomId: 'room-2a', date: format(addDays(weekStart, 0), 'yyyy-MM-dd'), startTime: '07:00', endTime: '15:00', breakMinutes: 30, status: 'published', isOpenShift: false },
     { id: 'shift-5', staffId: 'staff-5', centreId: 'centre-1', roomId: 'room-1c', date: format(addDays(weekStart, 0), 'yyyy-MM-dd'), startTime: '09:00', endTime: '15:00', breakMinutes: 0, status: 'draft', isOpenShift: false },
   );
 
-  // Tuesday shifts
+  // Tuesday shifts - Emma continues recurring pattern
   shifts.push(
-    { id: 'shift-6', staffId: 'staff-1', centreId: 'centre-1', roomId: 'room-1b', date: format(addDays(weekStart, 1), 'yyyy-MM-dd'), startTime: '07:00', endTime: '15:00', breakMinutes: 30, status: 'published', isOpenShift: false },
-    { id: 'shift-7', staffId: 'staff-2', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 1), 'yyyy-MM-dd'), startTime: '06:30', endTime: '14:30', breakMinutes: 30, status: 'published', isOpenShift: false },
+    { id: 'shift-6', staffId: 'staff-1', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 1), 'yyyy-MM-dd'), startTime: '06:30', endTime: '14:30', breakMinutes: 30, status: 'published', isOpenShift: false, recurring: emmaRecurringConfig },
+    { id: 'shift-7', staffId: 'staff-2', centreId: 'centre-1', roomId: 'room-1b', date: format(addDays(weekStart, 1), 'yyyy-MM-dd'), startTime: '06:30', endTime: '14:30', breakMinutes: 30, status: 'published', isOpenShift: false },
     { id: 'shift-8', staffId: 'staff-6', centreId: 'centre-3', roomId: 'room-3a', date: format(addDays(weekStart, 1), 'yyyy-MM-dd'), startTime: '06:00', endTime: '14:00', breakMinutes: 30, status: 'published', isOpenShift: false },
     { id: 'shift-9', staffId: 'staff-8', centreId: 'centre-2', roomId: 'room-2b', date: format(addDays(weekStart, 1), 'yyyy-MM-dd'), startTime: '08:00', endTime: '17:00', breakMinutes: 30, status: 'draft', isOpenShift: false },
   );
 
-  // Wednesday shifts
+  // Wednesday shifts - Emma continues recurring pattern
   shifts.push(
-    { id: 'shift-10', staffId: 'staff-1', centreId: 'centre-1', roomId: 'room-1c', date: format(addDays(weekStart, 2), 'yyyy-MM-dd'), startTime: '07:00', endTime: '15:00', breakMinutes: 30, status: 'published', isOpenShift: false },
+    { id: 'shift-10', staffId: 'staff-1', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 2), 'yyyy-MM-dd'), startTime: '07:00', endTime: '15:00', breakMinutes: 30, status: 'published', isOpenShift: false, recurring: emmaRecurringConfig },
     { id: 'shift-11', staffId: 'staff-2', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 2), 'yyyy-MM-dd'), startTime: '10:00', endTime: '18:30', breakMinutes: 30, status: 'published', isOpenShift: false },
     { id: 'shift-12', staffId: 'staff-4', centreId: 'centre-2', roomId: 'room-2c', date: format(addDays(weekStart, 2), 'yyyy-MM-dd'), startTime: '07:00', endTime: '18:00', breakMinutes: 60, status: 'published', isOpenShift: false },
     { id: 'shift-13', staffId: 'staff-6', centreId: 'centre-3', roomId: 'room-3b', date: format(addDays(weekStart, 2), 'yyyy-MM-dd'), startTime: '06:00', endTime: '19:00', breakMinutes: 60, status: 'draft', isOpenShift: false },
   );
 
-  // Thursday shifts
+  // Thursday shifts - Emma continues recurring pattern
   shifts.push(
-    { id: 'shift-14', staffId: 'staff-1', centreId: 'centre-1', roomId: 'room-1d', date: format(addDays(weekStart, 3), 'yyyy-MM-dd'), startTime: '07:00', endTime: '15:00', breakMinutes: 30, status: 'published', isOpenShift: false },
+    { id: 'shift-14', staffId: 'staff-1', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 3), 'yyyy-MM-dd'), startTime: '07:00', endTime: '15:00', breakMinutes: 30, status: 'published', isOpenShift: false, recurring: emmaRecurringConfig },
     { id: 'shift-15', staffId: 'staff-3', centreId: 'centre-1', roomId: 'room-1b', date: format(addDays(weekStart, 3), 'yyyy-MM-dd'), startTime: '08:00', endTime: '16:00', breakMinutes: 30, status: 'published', isOpenShift: false },
     { id: 'shift-16', staffId: 'staff-4', centreId: 'centre-2', roomId: 'room-2a', date: format(addDays(weekStart, 3), 'yyyy-MM-dd'), startTime: '07:00', endTime: '15:00', breakMinutes: 30, status: 'published', isOpenShift: false },
-    { id: 'shift-17', staffId: 'staff-5', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 3), 'yyyy-MM-dd'), startTime: '09:00', endTime: '15:00', breakMinutes: 0, status: 'draft', isOpenShift: false },
+    { id: 'shift-17', staffId: 'staff-5', centreId: 'centre-1', roomId: 'room-1c', date: format(addDays(weekStart, 3), 'yyyy-MM-dd'), startTime: '09:00', endTime: '15:00', breakMinutes: 0, status: 'draft', isOpenShift: false },
   );
 
-  // Friday shifts
+  // Friday shifts - Emma continues recurring pattern
   shifts.push(
-    { id: 'shift-18', staffId: 'staff-1', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 4), 'yyyy-MM-dd'), startTime: '07:00', endTime: '13:00', breakMinutes: 0, status: 'published', isOpenShift: false },
+    { id: 'shift-18', staffId: 'staff-1', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 4), 'yyyy-MM-dd'), startTime: '07:00', endTime: '13:00', breakMinutes: 0, status: 'published', isOpenShift: false, recurring: emmaRecurringConfig },
     { id: 'shift-19', staffId: 'staff-2', centreId: 'centre-1', roomId: 'room-1c', date: format(addDays(weekStart, 4), 'yyyy-MM-dd'), startTime: '06:30', endTime: '18:30', breakMinutes: 60, status: 'published', isOpenShift: false },
     { id: 'shift-20', staffId: 'staff-3', centreId: 'centre-1', roomId: 'room-1b', date: format(addDays(weekStart, 4), 'yyyy-MM-dd'), startTime: '08:00', endTime: '16:00', breakMinutes: 30, status: 'published', isOpenShift: false },
     { id: 'shift-21', staffId: 'staff-6', centreId: 'centre-3', roomId: 'room-3c', date: format(addDays(weekStart, 4), 'yyyy-MM-dd'), startTime: '06:00', endTime: '19:00', breakMinutes: 60, status: 'draft', isOpenShift: false },
