@@ -11,8 +11,10 @@ import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, DollarSign, History, AlertCircle, CheckCircle2, Search, Filter, Download, Upload, RotateCcw, Building2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, DollarSign, History, AlertCircle, CheckCircle2, Search, Filter, Download, Upload, RotateCcw, Building2, ChevronDown, X } from 'lucide-react';
 import { australianAwards, AustralianAward, AwardClassification } from '@/data/australianAwards';
 
 export interface RateOverride {
@@ -85,12 +87,20 @@ export function CustomRateOverridesPanel() {
   
   // Form state
   const [selectedAward, setSelectedAward] = useState<string>('');
-  const [selectedClassification, setSelectedClassification] = useState<string>('');
+  const [selectedClassifications, setSelectedClassifications] = useState<string[]>([]);
   const [overrideType, setOverrideType] = useState<RateOverride['overrideType']>('base_rate');
   const [newValue, setNewValue] = useState<string>('');
   const [effectiveFrom, setEffectiveFrom] = useState<string>('');
   const [effectiveTo, setEffectiveTo] = useState<string>('');
   const [reason, setReason] = useState<string>('');
+  
+  // Allowance state
+  const [selectedAllowance, setSelectedAllowance] = useState<string>('');
+  const [showCreateAllowance, setShowCreateAllowance] = useState(false);
+  const [newAllowanceName, setNewAllowanceName] = useState('');
+  const [newAllowanceType, setNewAllowanceType] = useState<'per_hour' | 'per_shift' | 'per_week' | 'per_day'>('per_shift');
+  const [newAllowanceAmount, setNewAllowanceAmount] = useState('');
+  const [customAllowances, setCustomAllowances] = useState<Array<{ id: string; name: string; type: string; amount: number }>>([]);
 
   const getAwardName = (awardId: string) => {
     return australianAwards.find(a => a.id === awardId)?.shortName || awardId;
@@ -137,20 +147,24 @@ export function CustomRateOverridesPanel() {
 
   const resetForm = () => {
     setSelectedAward('');
-    setSelectedClassification('');
+    setSelectedClassifications([]);
     setOverrideType('base_rate');
     setNewValue('');
     setEffectiveFrom('');
     setEffectiveTo('');
     setReason('');
     setEditingOverride(null);
+    setSelectedAllowance('');
+    setShowCreateAllowance(false);
+    setNewAllowanceName('');
+    setNewAllowanceAmount('');
   };
 
   const handleOpenPanel = (override?: RateOverride) => {
     if (override) {
       setEditingOverride(override);
       setSelectedAward(override.awardId);
-      setSelectedClassification(override.classificationId);
+      setSelectedClassifications([override.classificationId]);
       setOverrideType(override.overrideType);
       setNewValue(override.newValue.toString());
       setEffectiveFrom(override.effectiveFrom);
@@ -167,30 +181,71 @@ export function CustomRateOverridesPanel() {
     resetForm();
   };
 
+  const toggleClassificationSelection = (classificationId: string) => {
+    setSelectedClassifications(prev => 
+      prev.includes(classificationId)
+        ? prev.filter(id => id !== classificationId)
+        : [...prev, classificationId]
+    );
+  };
+
+  const selectAllClassifications = () => {
+    if (selectedAwardData) {
+      setSelectedClassifications(selectedAwardData.classifications.map(c => c.id));
+    }
+  };
+
+  const clearAllClassifications = () => {
+    setSelectedClassifications([]);
+  };
+
+  const handleCreateNewAllowance = () => {
+    if (!newAllowanceName || !newAllowanceAmount) {
+      toast.error('Please fill in allowance name and amount');
+      return;
+    }
+    const newAllowance = {
+      id: `custom-${Date.now()}`,
+      name: newAllowanceName,
+      type: newAllowanceType,
+      amount: parseFloat(newAllowanceAmount),
+    };
+    setCustomAllowances([...customAllowances, newAllowance]);
+    setSelectedAllowance(newAllowance.id);
+    setNewValue(newAllowanceAmount);
+    setShowCreateAllowance(false);
+    setNewAllowanceName('');
+    setNewAllowanceAmount('');
+    toast.success('Custom allowance created');
+  };
+
   const handleAddOverride = () => {
-    if (!selectedAward || !selectedClassification || !newValue || !effectiveFrom || !reason) {
+    if (!selectedAward || selectedClassifications.length === 0 || !newValue || !effectiveFrom || !reason) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    const originalRate = getOriginalRate(selectedAward, selectedClassification);
-    const newOverride: RateOverride = {
-      id: Date.now().toString(),
-      awardId: selectedAward,
-      classificationId: selectedClassification,
-      overrideType,
-      originalValue: originalRate,
-      newValue: parseFloat(newValue),
-      effectiveFrom,
-      effectiveTo: effectiveTo || undefined,
-      reason,
-      approvedBy: 'Current User',
-      createdAt: new Date().toISOString().split('T')[0],
-      isActive: true,
-    };
+    // Create overrides for each selected classification
+    const newOverrides: RateOverride[] = selectedClassifications.map((classificationId, idx) => {
+      const originalRate = getOriginalRate(selectedAward, classificationId);
+      return {
+        id: `${Date.now()}-${idx}`,
+        awardId: selectedAward,
+        classificationId,
+        overrideType,
+        originalValue: originalRate,
+        newValue: parseFloat(newValue),
+        effectiveFrom,
+        effectiveTo: effectiveTo || undefined,
+        reason,
+        approvedBy: 'Current User',
+        createdAt: new Date().toISOString().split('T')[0],
+        isActive: true,
+      };
+    });
 
-    setOverrides([...overrides, newOverride]);
-    toast.success('Rate override added successfully');
+    setOverrides([...overrides, ...newOverrides]);
+    toast.success(`${newOverrides.length} rate override${newOverrides.length > 1 ? 's' : ''} added successfully`);
     handleClosePanel();
   };
 
@@ -273,7 +328,7 @@ export function CustomRateOverridesPanel() {
                 <Label>Select Award *</Label>
                 <Select 
                   value={selectedAward} 
-                  onValueChange={(v) => { setSelectedAward(v); setSelectedClassification(''); }}
+                  onValueChange={(v) => { setSelectedAward(v); setSelectedClassifications([]); }}
                   disabled={!!editingOverride}
                 >
                   <SelectTrigger>
@@ -309,38 +364,231 @@ export function CustomRateOverridesPanel() {
             </div>
 
             {selectedAwardData && (
-              <div className="space-y-2">
-                <Label>Select Classification *</Label>
-                <Select 
-                  value={selectedClassification} 
-                  onValueChange={setSelectedClassification}
-                  disabled={!!editingOverride}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select classification" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Select Classifications *</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={selectAllClassifications}
+                      disabled={!!editingOverride}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={clearAllClassifications}
+                      disabled={!!editingOverride || selectedClassifications.length === 0}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+                
+                {selectedClassifications.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 p-2 rounded-lg bg-muted/50">
+                    {selectedClassifications.map(classId => {
+                      const cls = selectedAwardData.classifications.find(c => c.id === classId);
+                      return cls ? (
+                        <Badge key={classId} variant="secondary" className="gap-1 pr-1">
+                          {cls.level}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 hover:bg-destructive/20"
+                            onClick={() => toggleClassificationSelection(classId)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+
+                <ScrollArea className="h-48 border rounded-lg">
+                  <div className="p-2 space-y-1">
                     {selectedAwardData.classifications.map(cls => (
-                      <SelectItem key={cls.id} value={cls.id}>
-                        <div className="flex flex-col">
-                          <span>{cls.level} - ${cls.baseHourlyRate}/hr</span>
-                          <span className="text-xs text-muted-foreground">{cls.description}</span>
+                      <div
+                        key={cls.id}
+                        className={`flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer ${
+                          selectedClassifications.includes(cls.id) ? 'bg-primary/5 border border-primary/20' : ''
+                        }`}
+                        onClick={() => !editingOverride && toggleClassificationSelection(cls.id)}
+                      >
+                        <Checkbox
+                          checked={selectedClassifications.includes(cls.id)}
+                          disabled={!!editingOverride}
+                          onCheckedChange={() => toggleClassificationSelection(cls.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{cls.level}</span>
+                            <span className="text-xs text-muted-foreground">- ${cls.baseHourlyRate.toFixed(2)}/hr</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{cls.description}</p>
                         </div>
-                      </SelectItem>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                </ScrollArea>
+                
+                <p className="text-xs text-muted-foreground">
+                  {selectedClassifications.length} of {selectedAwardData.classifications.length} classifications selected
+                </p>
               </div>
             )}
 
-            {selectedClassification && (
-              <div className="p-4 rounded-lg bg-muted/50">
+            {/* Allowance Selection - only show when override type is allowance */}
+            {overrideType === 'allowance' && selectedAwardData && (
+              <div className="space-y-3">
+                <Label>Select or Create Allowance</Label>
+                
+                <Select
+                  value={selectedAllowance}
+                  onValueChange={(v) => {
+                    if (v === 'create-new') {
+                      setShowCreateAllowance(true);
+                      setSelectedAllowance('');
+                    } else {
+                      setSelectedAllowance(v);
+                      // Auto-fill amount from selected allowance
+                      const awardAllowance = selectedAwardData.allowances.find(a => a.id === v);
+                      const customAllowance = customAllowances.find(a => a.id === v);
+                      if (awardAllowance) setNewValue(awardAllowance.amount.toString());
+                      if (customAllowance) setNewValue(customAllowance.amount.toString());
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an allowance" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="create-new" className="text-primary font-medium">
+                      <div className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        Create New Allowance
+                      </div>
+                    </SelectItem>
+                    <Separator className="my-1" />
+                    {selectedAwardData.allowances.length > 0 && (
+                      <>
+                        <div className="px-2 py-1 text-xs text-muted-foreground font-medium">Award Allowances</div>
+                        {selectedAwardData.allowances.map(allowance => (
+                          <SelectItem key={allowance.id} value={allowance.id}>
+                            <div className="flex items-center justify-between gap-4 w-full">
+                              <span>{allowance.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ${allowance.amount.toFixed(2)} {allowance.type.replace('per_', '/')}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                    {customAllowances.length > 0 && (
+                      <>
+                        <Separator className="my-1" />
+                        <div className="px-2 py-1 text-xs text-muted-foreground font-medium">Custom Allowances</div>
+                        {customAllowances.map(allowance => (
+                          <SelectItem key={allowance.id} value={allowance.id}>
+                            <div className="flex items-center justify-between gap-4 w-full">
+                              <span>{allowance.name}</span>
+                              <Badge variant="outline" className="text-[10px]">Custom</Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+
+                {/* Create New Allowance Form */}
+                {showCreateAllowance && (
+                  <Card className="border-dashed">
+                    <CardContent className="p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">New Allowance Details</Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => setShowCreateAllowance(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Allowance Name</Label>
+                          <Input
+                            placeholder="e.g., First Aid Allowance"
+                            value={newAllowanceName}
+                            onChange={(e) => setNewAllowanceName(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Type</Label>
+                          <Select value={newAllowanceType} onValueChange={(v) => setNewAllowanceType(v as typeof newAllowanceType)}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border shadow-lg z-50">
+                              <SelectItem value="per_hour">Per Hour</SelectItem>
+                              <SelectItem value="per_shift">Per Shift</SelectItem>
+                              <SelectItem value="per_week">Per Week</SelectItem>
+                              <SelectItem value="per_day">Per Day</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Amount ($)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={newAllowanceAmount}
+                          onChange={(e) => setNewAllowanceAmount(e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        className="w-full"
+                        size="sm"
+                        onClick={handleCreateNewAllowance}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Allowance
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {selectedClassifications.length > 0 && (
+              <div className="p-4 rounded-lg bg-muted/50 space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Current Award Rate:</span>
-                  <span className="font-mono font-semibold">
-                    ${getOriginalRate(selectedAward, selectedClassification).toFixed(2)}/hr
-                  </span>
+                  <span className="text-muted-foreground">Selected Classifications:</span>
+                  <span className="font-medium">{selectedClassifications.length}</span>
                 </div>
+                {selectedClassifications.length === 1 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Current Award Rate:</span>
+                    <span className="font-mono font-semibold">
+                      ${getOriginalRate(selectedAward, selectedClassifications[0]).toFixed(2)}/hr
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
