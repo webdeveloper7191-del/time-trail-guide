@@ -484,7 +484,7 @@ export function StaffTimelineGrid({
       <div className="flex-1 overflow-y-auto w-full">
         {/* Horizontal scroll lives in its own container so sticky left/right works reliably */}
         <div className="overflow-x-auto w-full relative isolate">
-          <div className={cn("min-w-full w-max xl:w-full")}>
+          <div className={cn("min-w-full", isMonthView ? "w-max" : "w-max xl:w-full")}>
           {/* Header */}
           <div className={cn(
             "flex sticky top-0 z-30 bg-card border-b border-border shadow-md",
@@ -723,7 +723,7 @@ export function StaffTimelineGrid({
             <div
               className={cn(
                 "w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground bg-muted/50 border-l border-border",
-                isCostSticky && "sticky right-0 z-40"
+                isCostSticky && !isMonthView && "sticky right-0 z-40"
               )}
             >
               <div className="flex items-center justify-center gap-1">
@@ -970,7 +970,7 @@ export function StaffTimelineGrid({
                     <div 
                       className={cn(
                         "w-24 shrink-0 flex items-center justify-center border-l bg-card",
-                        isCostSticky && "sticky right-0 z-30"
+                        isCostSticky && !isMonthView && "sticky right-0 z-30"
                       )}
                       style={{ borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                     >
@@ -1264,7 +1264,7 @@ export function StaffTimelineGrid({
                       <div
                         className={cn(
                           "w-24 shrink-0 p-1.5 border-l border-border bg-card",
-                          isCostSticky && "sticky right-0 z-30"
+                          isCostSticky && !isMonthView && "sticky right-0 z-30"
                         )}
                       >
                         <TooltipProvider>
@@ -1397,7 +1397,7 @@ export function StaffTimelineGrid({
                     <div
                       className={cn(
                         "w-24 shrink-0 border-l border-amber-200/30 bg-amber-50/40 dark:bg-amber-950/10",
-                        isCostSticky && "sticky right-0 z-20"
+                        isCostSticky && !isMonthView && "sticky right-0 z-20"
                       )}
                     />
                   </div>
@@ -1470,7 +1470,7 @@ export function StaffTimelineGrid({
                       <div
                         className={cn(
                           "w-24 shrink-0 border-l border-border bg-purple-500/5",
-                          isCostSticky && "sticky right-0 z-20"
+                          isCostSticky && !isMonthView && "sticky right-0 z-20"
                         )}
                       />
                     </div>
