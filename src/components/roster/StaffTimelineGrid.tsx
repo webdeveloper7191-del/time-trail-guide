@@ -486,7 +486,10 @@ export function StaffTimelineGrid({
         <div className="overflow-x-auto w-full relative isolate">
           <div className={cn("min-w-full w-max xl:w-full")}>
           {/* Header */}
-          <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
+          <div className={cn(
+            "flex sticky top-0 z-30 bg-card border-b border-border shadow-md",
+            isMonthView && "w-max"
+          )}>
             <div className="w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50 sticky left-0 z-40">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -780,7 +783,8 @@ export function StaffTimelineGrid({
                 <div 
                   className={cn(
                     "flex border-b sticky top-[53px] z-20 shadow-sm cursor-pointer transition-colors",
-                    !isCollapsed && "hover:brightness-95"
+                    !isCollapsed && "hover:brightness-95",
+                    isMonthView && "w-max"
                   )}
                   style={{ 
                     backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`,
@@ -898,8 +902,8 @@ export function StaffTimelineGrid({
                         key={dateStr} 
                         className={cn(
                           "shrink-0 xl:shrink border-r flex items-center justify-center",
-                          viewMode === 'month'
-                            ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
+                          isMonthView
+                            ? "w-[60px] min-w-[60px]"
                             : isCompact
                               ? (viewMode === 'fortnight'
                                   ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -991,7 +995,7 @@ export function StaffTimelineGrid({
                   const topQualifications = member.qualifications.slice(0, 2);
 
                   return (
-                    <div key={`${room.id}-${member.id}`} className="flex border-b border-border hover:bg-muted/20 transition-colors">
+                    <div key={`${room.id}-${member.id}`} className={cn("flex border-b border-border hover:bg-muted/20 transition-colors", isMonthView && "w-max")}>
                       {/* Staff info cell */}
                       <div 
                         className={cn(
@@ -1309,7 +1313,7 @@ export function StaffTimelineGrid({
 
                 {/* Open Shifts row */}
                 {roomOpenShifts.length > 0 && (
-                  <div className="flex border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10">
+                  <div className={cn("flex border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10", isMonthView && "w-max")}>
                     <div className="w-64 shrink-0 p-3 border-r border-amber-200/50 flex items-center gap-3 sticky left-0 z-20 bg-amber-50/80 dark:bg-amber-950/30">
                       <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-amber-100 dark:bg-amber-900/50 shadow-sm">
                         <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
@@ -1334,7 +1338,7 @@ export function StaffTimelineGrid({
                           className={cn(
                             "shrink-0 xl:shrink p-1.5 border-r border-amber-200/30 relative group/open-cell",
                             "transition-all duration-200 ease-out",
-                            viewMode === 'month' ? "w-[50px] xl:flex-none xl:shrink-0" : isCompact ? "min-w-[80px] flex-1" : "min-w-[120px] flex-1",
+                            isMonthView ? "w-[60px] min-w-[60px]" : isCompact ? "min-w-[80px] flex-1" : "min-w-[120px] flex-1",
                             isDragging && hasOpenShifts && "bg-emerald-50/50 dark:bg-emerald-950/20",
                             isDragOver && hasOpenShifts && "bg-emerald-100 dark:bg-emerald-900/40 ring-2 ring-inset ring-emerald-500/50"
                           )}
@@ -1405,7 +1409,7 @@ export function StaffTimelineGrid({
                   if (roomEmptyShifts.length === 0) return null;
                   
                   return (
-                    <div className="flex border-b border-border bg-purple-500/5 hover:bg-purple-500/10 transition-colors">
+                    <div className={cn("flex border-b border-border bg-purple-500/5 hover:bg-purple-500/10 transition-colors", isMonthView && "w-max")}>
                       <div className="w-64 shrink-0 p-2 border-r border-border flex items-center gap-2 sticky left-0 z-20 bg-purple-500/5">
                         <div className="h-9 w-9 rounded-full flex items-center justify-center bg-purple-500/20 border-2 border-dashed border-purple-500/50">
                           <Zap className="h-4 w-4 text-purple-600" />
@@ -1429,8 +1433,8 @@ export function StaffTimelineGrid({
                             className={cn(
                               "shrink-0 xl:shrink p-1 border-r border-border relative",
                               "transition-all duration-200 ease-out",
-                              viewMode === 'month'
-                                ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
+                              isMonthView
+                                ? "w-[60px] min-w-[60px]"
                                 : isCompact
                                   ? "min-w-[80px] flex-1"
                                   : "min-w-[120px] flex-1",
@@ -1479,7 +1483,8 @@ export function StaffTimelineGrid({
                     "flex border-b transition-colors",
                     isDragging && dragType === 'staff' 
                       ? "bg-gradient-to-r from-sky-50/80 to-sky-50/40 dark:from-sky-950/30 dark:to-sky-950/10 border-sky-200/50" 
-                      : "bg-muted/30 border-border/50"
+                      : "bg-muted/30 border-border/50",
+                    isMonthView && "w-max"
                   )}
                 >
                   <div 
@@ -1549,8 +1554,8 @@ export function StaffTimelineGrid({
                         className={cn(
                           "flex-1 p-1.5 border-r relative",
                           "transition-all duration-200 ease-out",
-                          viewMode === 'month'
-                            ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
+                          isMonthView
+                            ? "w-[60px] min-w-[60px]"
                             : isCompact ? "min-w-[80px]" : "min-w-[120px]",
                           showDropZone && !isDragOver && "border-sky-200/30 bg-sky-50/30 dark:bg-sky-950/10",
                           isDragOver && "bg-sky-100 dark:bg-sky-900/40 ring-2 ring-inset ring-sky-500/50",
