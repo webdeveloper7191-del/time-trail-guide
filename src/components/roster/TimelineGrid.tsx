@@ -46,7 +46,7 @@ interface TimelineGridProps {
   demandData: DemandData[];
   complianceFlags: RosterComplianceFlag[];
   dates: Date[];
-  viewMode: 'day' | 'week' | 'fortnight' | 'month';
+  viewMode: 'day' | 'week' | 'workweek' | 'fortnight' | 'month';
   showDemandOverlay: boolean;
   showAnalyticsCharts?: boolean;
   lowDemandDays?: Set<string>;

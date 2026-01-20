@@ -1,4 +1,4 @@
-export type ViewMode = 'day' | 'week' | 'fortnight' | 'month';
+export type ViewMode = 'day' | 'week' | 'workweek' | 'fortnight' | 'month';
 
 export type EmploymentType = 'permanent' | 'casual';
 
