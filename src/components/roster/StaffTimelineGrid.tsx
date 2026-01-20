@@ -162,6 +162,7 @@ export function StaffTimelineGrid({
   const [colorPalette, setColorPalette] = useState<ColorPalette>('ocean');
   const [isCostSticky, setIsCostSticky] = useState(true);
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
+  const isMonthView = viewMode === 'month';
 
   // Use context-aware shift cost calculator
   const { calculateStaffCosts: calculateContextAwareCosts } = useShiftCost();
@@ -537,9 +538,9 @@ export function StaffTimelineGrid({
                 <div 
                   key={date.toISOString()} 
                   className={cn(
-                    "shrink-0 xl:shrink p-1 md:p-2 text-center border-r border-border bg-muted/50",
-                    viewMode === 'month'
-                      ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
+                    "shrink-0 p-1 md:p-2 text-center border-r border-border bg-muted/50",
+                    isMonthView
+                      ? "w-[60px] min-w-[60px]"
                       : isCompact
                         ? (viewMode === 'fortnight'
                             ? "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -1090,10 +1091,10 @@ export function StaffTimelineGrid({
                             key={cellKey}
                             data-drop-zone
                             className={cn(
-                              "shrink-0 xl:shrink p-1 border-r border-border relative group/cell",
+                              "shrink-0 p-1 border-r border-border relative group/cell",
                               "transition-all duration-200 ease-out",
-                              viewMode === 'month'
-                                ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
+                              isMonthView
+                                ? "w-[60px] min-w-[60px]"
                                 : isCompact
                                   ? (viewMode === 'fortnight'
                                       ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -1166,6 +1167,7 @@ export function StaffTimelineGrid({
                                       onShiftTypeChange={onShiftTypeChange}
                                       onDragStart={handleShiftDragStart}
                                       isCompact={isCompact}
+                                      isMonthView={isMonthView}
                                     />
                                   ))}
                                 </div>
@@ -1618,6 +1620,7 @@ function StaffShiftCard({
   onShiftTypeChange,
   onDragStart,
   isCompact = false,
+  isMonthView = false,
 }: {
   shift: Shift;
   staff?: StaffMember;
@@ -1631,6 +1634,7 @@ function StaffShiftCard({
   onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   onDragStart: (e: React.DragEvent, shift: Shift) => void;
   isCompact?: boolean;
+  isMonthView?: boolean;
 }) {
   // Material-style soft color palettes
   const statusStyles = {
@@ -1743,6 +1747,65 @@ function StaffShiftCard({
       </div>
     </div>
   );
+
+  // Ultra-compact month view rendering
+  if (isMonthView) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              draggable
+              onDragStart={(e) => onDragStart(e, shift)}
+              onClick={onEdit}
+              className={cn(
+                "relative rounded border overflow-hidden cursor-pointer transition-all duration-150",
+                "hover:shadow-sm hover:scale-105 active:cursor-grabbing",
+                style.bg,
+                style.border,
+                shift.status === 'draft' && "border-dashed",
+                shift.isAbsent && "border-destructive/70",
+                isSeriesHighlighted && "ring-1 ring-primary/40",
+                shouldDim && "opacity-50"
+              )}
+              style={{
+                backgroundImage: shift.isAbsent
+                  ? 'repeating-linear-gradient(135deg, hsl(var(--destructive) / 0.10), hsl(var(--destructive) / 0.10) 6px, hsl(var(--destructive) / 0.18) 6px, hsl(var(--destructive) / 0.18) 12px)'
+                  : undefined,
+              }}
+            >
+              {/* Left accent bar */}
+              <div className={cn(
+                "absolute left-0 top-0 bottom-0 w-0.5",
+                shift.isAbsent
+                  ? "bg-destructive"
+                  : (shiftTypeInfo ? shiftTypeInfo.bgColor.replace('/20', '') : style.accent)
+              )} />
+              
+              {/* Absent indicator */}
+              {shift.isAbsent && (
+                <div className="absolute -top-0.5 -right-0.5 z-20 rounded-full bg-destructive text-destructive-foreground p-0.5 shadow">
+                  <UserX className="h-2 w-2" />
+                </div>
+              )}
+
+              <div className="pl-1.5 pr-1 py-0.5 text-center">
+                <div className={cn("text-[9px] font-semibold truncate leading-tight", style.text)}>
+                  {shift.startTime.slice(0,5)}
+                </div>
+                <div className={cn("text-[8px] truncate leading-tight", style.text, "opacity-70")}>
+                  {shift.endTime.slice(0,5)}
+                </div>
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="max-w-[200px]">
+            {tooltipContent}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <div
