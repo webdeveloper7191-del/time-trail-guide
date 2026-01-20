@@ -5,7 +5,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { ViewMode, Shift, StaffMember, OpenShift, roleLabels, ShiftTemplate, defaultShiftTemplates, TimeOff, SchedulingPreferences } from '@/types/roster';
 import { RosterTemplate } from '@/types/rosterTemplates';
 import { mockCentres, mockStaff, generateMockShifts, mockOpenShifts, generateMockDemandData, generateMockComplianceFlags, mockAgencyStaff } from '@/data/mockRosterData';
-import { generateMockDemandAnalytics, mockStaffAbsences } from '@/data/mockDemandAnalytics';
+import { generateMockDemandAnalytics, generateMockStaffAbsences } from '@/data/mockDemandAnalytics';
 import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel';
 import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
 import { DayTimelineView } from '@/components/roster/DayTimelineView';
@@ -305,8 +305,28 @@ export default function RosterScheduler() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   
   const demandData = useMemo(() => generateMockDemandData(), []);
-  const demandAnalytics = useMemo(() => generateMockDemandAnalytics(), []);
   const complianceFlags = useMemo(() => generateMockComplianceFlags(), []);
+  
+  // Generate demand analytics and staff absences for the currently displayed dates
+  const { demandAnalytics, staffAbsences } = useMemo(() => {
+    // Compute dates for analytics based on current view
+    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+    let analyticsDates: Date[];
+    
+    if (viewMode === 'month') {
+      const monthStart = startOfMonth(currentDate);
+      const daysInMonth = getDaysInMonth(currentDate);
+      analyticsDates = Array.from({ length: daysInMonth }, (_, i) => addDays(monthStart, i));
+    } else {
+      const dayCount = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : 14;
+      analyticsDates = Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i));
+    }
+    
+    return {
+      demandAnalytics: generateMockDemandAnalytics(analyticsDates),
+      staffAbsences: generateMockStaffAbsences(analyticsDates[0]),
+    };
+  }, [currentDate, viewMode]);
 
   // Keyboard shortcuts for undo/redo
   useEffect(() => {
@@ -1992,7 +2012,7 @@ export default function RosterScheduler() {
             shiftTemplates={shiftTemplates}
             showAnalyticsCharts={showAnalyticsCharts}
             demandAnalytics={demandAnalytics}
-            staffAbsences={mockStaffAbsences}
+            staffAbsences={staffAbsences}
             onShiftEdit={setSelectedShift}
             onShiftDelete={handleShiftDelete}
             onShiftResize={handleShiftResize}
@@ -2016,7 +2036,7 @@ export default function RosterScheduler() {
             showDemandOverlay={showDemandOverlay}
             showAnalyticsCharts={showAnalyticsCharts}
             demandAnalytics={demandAnalytics}
-            staffAbsences={mockStaffAbsences}
+            staffAbsences={staffAbsences}
             shiftTemplates={shiftTemplates}
             emptyShifts={emptyShifts.filter(es => es.centreId === selectedCentreId)}
             highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
@@ -2255,7 +2275,7 @@ export default function RosterScheduler() {
         dates={dates}
         weeklyBudget={weeklyBudget}
         analyticsData={demandAnalytics}
-        absences={mockStaffAbsences}
+        absences={staffAbsences}
         isOpen={showOptimizationReport}
         onClose={() => setShowOptimizationReport(false)}
       />
