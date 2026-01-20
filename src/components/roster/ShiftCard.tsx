@@ -52,6 +52,8 @@ interface ShiftCardProps {
   shift: Shift;
   staff?: StaffMember;
   allStaff?: StaffMember[];
+  highlightedRecurrenceGroupId?: string | null;
+  onViewSeries?: (groupId: string) => void;
   onEdit?: (shift: Shift) => void;
   onDelete?: (shiftId: string) => void;
   onDragStart?: (e: React.DragEvent, shift: Shift) => void;
@@ -61,22 +63,28 @@ interface ShiftCardProps {
   isCompact?: boolean;
 }
 
-export function ShiftCard({ 
-  shift, 
-  staff, 
+export function ShiftCard({
+  shift,
+  staff,
   allStaff,
-  onEdit, 
-  onDelete, 
+  highlightedRecurrenceGroupId,
+  onViewSeries,
+  onEdit,
+  onDelete,
   onDragStart,
   onCopy,
   onSwap,
   onShiftTypeChange,
-  isCompact = false 
+  isCompact = false,
 }: ShiftCardProps) {
   const [isDragging, setIsDragging] = useState(false);
   const globalDrag = useGlobalDrag();
   const cardRef = useRef<HTMLDivElement>(null);
   const duration = calculateDuration(shift.startTime, shift.endTime, shift.breakMinutes);
+
+  const seriesId = shift.recurring?.isRecurring ? shift.recurring.recurrenceGroupId : undefined;
+  const isSeriesHighlighted = !!seriesId && !!highlightedRecurrenceGroupId && seriesId === highlightedRecurrenceGroupId;
+  const shouldDim = !!highlightedRecurrenceGroupId && (!seriesId || seriesId !== highlightedRecurrenceGroupId);
 
   const currentType = shift.shiftType || 'regular';
   const shiftTypeInfo = SHIFT_TYPE_CONFIG[currentType];
@@ -115,6 +123,8 @@ export function ShiftCard({
         shift.status === 'draft' && "border-dashed opacity-80",
         shift.status === 'published' && "border-solid",
         shift.isAbsent && "border-destructive/60",
+        isSeriesHighlighted && "ring-2 ring-primary/40",
+        shouldDim && "opacity-50",
         isCompact ? "p-1.5" : "p-2"
       )}
       style={{
@@ -260,6 +270,16 @@ export function ShiftCard({
                   <ArrowLeftRight className="h-4 w-4 mr-2" />
                   Swap Staff
                 </DropdownMenuItem>
+
+                {seriesId && onViewSeries && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onViewSeries(seriesId)}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      View Series
+                    </DropdownMenuItem>
+                  </>
+                )}
                 
                 <DropdownMenuSeparator />
                 
