@@ -32,6 +32,7 @@ import {
   Info,
   Layers,
   Building2,
+  Calendar,
 } from 'lucide-react';
 import { AustralianAward, AwardClassification, calculateRates, australianAwards } from '@/data/australianAwards';
 import { exportAwardToPDF, exportAwardToExcel } from '@/lib/awardExport';
@@ -63,6 +64,7 @@ export function AwardDetailModal({
   const [localCustomRates, setLocalCustomRates] = useState<Record<string, number>>(customRates);
   const [classificationFilter, setClassificationFilter] = useState('');
   const [showOverridesOnly, setShowOverridesOnly] = useState(false);
+  const [showWeeklyRates, setShowWeeklyRates] = useState(false);
 
   // Get available awards for switching (use installedAwards if provided, otherwise use all)
   const availableAwards = installedAwards || australianAwards;
@@ -315,6 +317,15 @@ export function AwardDetailModal({
                       </Badge>
                     )}
                   </Button>
+                  <Button
+                    variant={showWeeklyRates ? "default" : "outline"}
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    onClick={() => setShowWeeklyRates(!showWeeklyRates)}
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    Weekly Rates
+                  </Button>
                 </div>
 
                 {/* Results count */}
@@ -380,7 +391,10 @@ export function AwardDetailModal({
                         <TableRow className="bg-muted/50">
                           <TableHead className="text-xs">Level</TableHead>
                           <TableHead className="text-xs">Description</TableHead>
-                          <TableHead className="text-right text-xs w-24">Base</TableHead>
+                          {showWeeklyRates && (
+                            <TableHead className="text-right text-xs w-24">Weekly</TableHead>
+                          )}
+                          <TableHead className="text-right text-xs w-24">Base/hr</TableHead>
                           <TableHead className="text-right text-xs w-28">Custom</TableHead>
                           <TableHead className="text-right text-xs w-24">Casual</TableHead>
                           <TableHead className="w-20 text-center text-xs">Actions</TableHead>
@@ -415,6 +429,11 @@ export function AwardDetailModal({
                               <TableCell className="text-muted-foreground text-xs py-2 max-w-[150px] truncate">
                                 {classification.description}
                               </TableCell>
+                              {showWeeklyRates && (
+                                <TableCell className="text-right font-mono text-sm py-2 text-muted-foreground">
+                                  ${(classification.baseWeeklyRate || classification.baseHourlyRate * 38).toFixed(2)}
+                                </TableCell>
+                              )}
                               <TableCell className="text-right font-mono text-sm py-2">
                                 <span className={hasOverride ? 'line-through text-muted-foreground' : ''}>
                                   {formatCurrency(classification.baseHourlyRate)}
