@@ -543,7 +543,7 @@ export function StaffTimelineGrid({
                   className={cn(
                     "shrink-0 p-1 md:p-2 text-center border-r border-border bg-muted/50",
                     isMonthView
-                      ? "w-[80px] min-w-[80px]"
+                      ? "w-[100px] min-w-[100px]"
                       : isCompact
                         ? (viewMode === 'fortnight'
                             ? "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -903,7 +903,7 @@ export function StaffTimelineGrid({
                         className={cn(
                           "shrink-0 xl:shrink border-r flex items-center justify-center",
                           isMonthView
-                            ? "w-[80px] min-w-[80px]"
+                            ? "w-[100px] min-w-[100px]"
                             : isCompact
                               ? (viewMode === 'fortnight'
                                   ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -1098,7 +1098,7 @@ export function StaffTimelineGrid({
                               "shrink-0 p-1 border-r border-border relative group/cell",
                               "transition-all duration-200 ease-out",
                               isMonthView
-                                ? "w-[80px] min-w-[80px]"
+                                ? "w-[100px] min-w-[100px]"
                                 : isCompact
                                   ? (viewMode === 'fortnight'
                                       ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
@@ -1338,7 +1338,7 @@ export function StaffTimelineGrid({
                           className={cn(
                             "shrink-0 xl:shrink p-1.5 border-r border-amber-200/30 relative group/open-cell",
                             "transition-all duration-200 ease-out",
-                            isMonthView ? "w-[80px] min-w-[80px]" : isCompact ? "min-w-[80px] flex-1" : "min-w-[120px] flex-1",
+                            isMonthView ? "w-[100px] min-w-[100px]" : isCompact ? "min-w-[80px] flex-1" : "min-w-[120px] flex-1",
                             isDragging && hasOpenShifts && "bg-emerald-50/50 dark:bg-emerald-950/20",
                             isDragOver && hasOpenShifts && "bg-emerald-100 dark:bg-emerald-900/40 ring-2 ring-inset ring-emerald-500/50"
                           )}
@@ -1434,7 +1434,7 @@ export function StaffTimelineGrid({
                               "shrink-0 xl:shrink p-1 border-r border-border relative",
                               "transition-all duration-200 ease-out",
                               isMonthView
-                                ? "w-[80px] min-w-[80px]"
+                                ? "w-[100px] min-w-[100px]"
                                 : isCompact
                                   ? "min-w-[80px] flex-1"
                                   : "min-w-[120px] flex-1",
@@ -1555,7 +1555,7 @@ export function StaffTimelineGrid({
                           "flex-1 p-1.5 border-r relative",
                           "transition-all duration-200 ease-out",
                           isMonthView
-                            ? "w-[80px] min-w-[80px]"
+                            ? "w-[100px] min-w-[100px]"
                             : isCompact ? "min-w-[80px]" : "min-w-[120px]",
                           showDropZone && !isDragOver && "border-sky-200/30 bg-sky-50/30 dark:bg-sky-950/10",
                           isDragOver && "bg-sky-100 dark:bg-sky-900/40 ring-2 ring-inset ring-sky-500/50",
