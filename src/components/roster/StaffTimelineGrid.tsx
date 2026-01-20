@@ -845,21 +845,19 @@ export function StaffTimelineGrid({
                     </div>
                   </div>
                   
-                  {/* Analytics charts in header row when enabled - only when expanded */}
-                  {!isCollapsed && showAnalyticsCharts && demandAnalytics.length > 0 && dates.map((date) => {
+                  {/* Analytics charts in header row when enabled - only when expanded and not in month view */}
+                  {!isCollapsed && showAnalyticsCharts && viewMode !== 'month' && demandAnalytics.length > 0 && dates.map((date) => {
                     const dateStr = format(date, 'yyyy-MM-dd');
                     return (
                       <div 
                         key={dateStr} 
                         className={cn(
                           "shrink-0 xl:shrink p-1 border-r",
-                          viewMode === 'month'
-                            ? "w-[44px] md:w-[50px] xl:flex-1 xl:min-w-[44px] xl:w-auto"
-                            : isCompact
-                              ? (viewMode === 'fortnight'
-                                  ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
-                                  : "w-[70px]")
-                              : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto"
+                          isCompact
+                            ? (viewMode === 'fortnight'
+                                ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
+                                : "w-[70px]")
+                            : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto"
                         )}
                         style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                         onClick={(e) => e.stopPropagation()}
@@ -875,7 +873,7 @@ export function StaffTimelineGrid({
                     );
                   })}
                   
-                  {!isCollapsed && showAnalyticsCharts && (
+                  {!isCollapsed && showAnalyticsCharts && viewMode !== 'month' && (
                     <div 
                       className="w-24 shrink-0 border-r"
                       style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
