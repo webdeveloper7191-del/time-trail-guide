@@ -70,6 +70,9 @@ import {
   StaffPlanningEntity,
   TimefoldSolution,
 } from '@/lib/timefoldSolver';
+import { SeriesActionBar } from '@/components/roster/SeriesActionBar';
+import { BulkSeriesEditModal } from '@/components/roster/BulkSeriesEditModal';
+import { DeleteConfirmationDialog } from '@/components/roster/DeleteConfirmationDialog';
 
 // MUI Components
 import {
@@ -196,6 +199,8 @@ export default function RosterScheduler() {
   const [showAnalyticsCharts, setShowAnalyticsCharts] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [highlightedRecurrenceGroupId, setHighlightedRecurrenceGroupId] = useState<string | null>(null);
+  const [showBulkSeriesEdit, setShowBulkSeriesEdit] = useState(false);
+  const [showBulkSeriesDelete, setShowBulkSeriesDelete] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [shiftTemplates, setShiftTemplates] = useState<ShiftTemplate[]>([]);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -723,6 +728,41 @@ export default function RosterScheduler() {
     setShifts(prev => prev.filter(s => s.id !== shiftId), 'Deleted shift', 'delete');
     setSelectedShift(null);
     toast.success('Shift removed');
+  };
+
+  // Bulk series operations
+  const handleBulkSeriesEdit = (updates: Partial<Shift>) => {
+    if (!highlightedRecurrenceGroupId) return;
+    
+    const seriesShifts = shifts.filter(
+      s => s.recurring?.recurrenceGroupId === highlightedRecurrenceGroupId
+    );
+    
+    setShifts(prev => prev.map(s => 
+      s.recurring?.recurrenceGroupId === highlightedRecurrenceGroupId
+        ? { ...s, ...updates, status: 'draft' as const }
+        : s
+    ), `Updated ${seriesShifts.length} shifts in recurring series`, 'update');
+    
+    toast.success(`Updated ${seriesShifts.length} shifts in series`);
+    setShowBulkSeriesEdit(false);
+  };
+
+  const handleBulkSeriesDelete = () => {
+    if (!highlightedRecurrenceGroupId) return;
+    
+    const seriesShifts = shifts.filter(
+      s => s.recurring?.recurrenceGroupId === highlightedRecurrenceGroupId
+    );
+    const count = seriesShifts.length;
+    
+    setShifts(prev => prev.filter(
+      s => s.recurring?.recurrenceGroupId !== highlightedRecurrenceGroupId
+    ), `Deleted ${count} shifts in recurring series`, 'delete');
+    
+    toast.success(`Deleted ${count} shifts from series`);
+    setHighlightedRecurrenceGroupId(null);
+    setShowBulkSeriesDelete(false);
   };
 
   const handleShiftDuplicate = (shift: Shift) => {
@@ -1928,6 +1968,18 @@ export default function RosterScheduler() {
         </Collapse>
       </Box>
 
+      {/* Series Action Bar - shown when viewing a recurring series */}
+      {highlightedRecurrenceGroupId && (
+        <SeriesActionBar
+          highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+          shifts={shifts}
+          staff={allStaff}
+          onExit={() => setHighlightedRecurrenceGroupId(null)}
+          onBulkEdit={() => setShowBulkSeriesEdit(true)}
+          onBulkDelete={() => setShowBulkSeriesDelete(true)}
+        />
+      )}
+
       {/* Main Content */}
       <Box className="flex-1 flex overflow-hidden w-full max-w-full">
         {viewMode === 'day' ? (
@@ -2153,6 +2205,30 @@ export default function RosterScheduler() {
         shifts={shifts}
         staff={allStaff}
         centreId={selectedCentreId}
+      />
+
+      {/* Bulk Series Edit Modal */}
+      {highlightedRecurrenceGroupId && (
+        <BulkSeriesEditModal
+          open={showBulkSeriesEdit}
+          onOpenChange={setShowBulkSeriesEdit}
+          highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+          shifts={shifts}
+          staff={allStaff}
+          rooms={selectedCentre.rooms}
+          onSave={handleBulkSeriesEdit}
+        />
+      )}
+
+      {/* Bulk Series Delete Confirmation */}
+      <DeleteConfirmationDialog
+        open={showBulkSeriesDelete}
+        onOpenChange={setShowBulkSeriesDelete}
+        title="Delete Recurring Series"
+        description={`This will permanently delete all ${shifts.filter(s => s.recurring?.recurrenceGroupId === highlightedRecurrenceGroupId).length} shifts in this recurring series. This action cannot be undone.`}
+        onConfirm={handleBulkSeriesDelete}
+        confirmLabel="Delete Series"
+        isDestructive={true}
       />
 
       <StaffProfileModal
