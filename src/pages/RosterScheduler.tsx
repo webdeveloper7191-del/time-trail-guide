@@ -175,7 +175,6 @@ export default function RosterScheduler() {
   const [showMobileStaffPanel, setShowMobileStaffPanel] = useState(false);
   
   const [viewMode, setViewMode] = useState<ViewMode>('week');
-  const [weekFilter, setWeekFilter] = useState<'workweek' | 'fullweek'>('fullweek');
   const [selectedCentreId, setSelectedCentreId] = useState<string>(mockCentres[0].id);
   const [currentDate, setCurrentDate] = useState(new Date());
   
@@ -370,28 +369,22 @@ export default function RosterScheduler() {
   const weeklyBudget = centreBudgets[selectedCentreId] || 7000;
   
   const dates = useMemo(() => {
-    let allDates: Date[];
-    
     if (viewMode === 'month') {
       const monthStart = startOfMonth(currentDate);
       const daysInMonth = getDaysInMonth(currentDate);
-      allDates = Array.from({ length: daysInMonth }, (_, i) => addDays(monthStart, i));
-    } else {
+      return Array.from({ length: daysInMonth }, (_, i) => addDays(monthStart, i));
+    }
+    
+    if (viewMode === 'workweek') {
+      // Workweek: Monday to Friday only
       const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-      const dayCount = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : 14;
-      allDates = Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i));
+      return Array.from({ length: 5 }, (_, i) => addDays(weekStart, i));
     }
     
-    // Filter out weekends if workweek is selected
-    if (weekFilter === 'workweek') {
-      allDates = allDates.filter(date => {
-        const day = date.getDay();
-        return day !== 0 && day !== 6; // Exclude Sunday (0) and Saturday (6)
-      });
-    }
-    
-    return allDates;
-  }, [currentDate, viewMode, weekFilter]);
+    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+    const dayCount = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : 14;
+    return Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i));
+  }, [currentDate, viewMode]);
 
   const filteredStaff = useMemo(() => {
     if (roleFilter === 'all') return allStaff;
@@ -643,7 +636,7 @@ export default function RosterScheduler() {
   };
 
   const navigateDate = (direction: 'prev' | 'next') => {
-    const days = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : viewMode === 'fortnight' ? 14 : 28;
+    const days = viewMode === 'day' ? 1 : (viewMode === 'week' || viewMode === 'workweek') ? 7 : viewMode === 'fortnight' ? 14 : 28;
     setCurrentDate(prev => addDays(prev, direction === 'next' ? days : -days));
   };
 
@@ -1556,7 +1549,7 @@ export default function RosterScheduler() {
 
             {/* View Mode Tabs - Compact on tablet */}
             <Stack direction="row" sx={{ bgcolor: 'grey.100', borderRadius: 1.5, p: 0.5, flexShrink: 0 }}>
-              {(['day', 'week', 'fortnight', 'month'] as ViewMode[]).map((mode) => (
+              {(['day', 'week', 'workweek', 'fortnight', 'month'] as ViewMode[]).map((mode) => (
                 <Button
                   key={mode}
                   size="small"
@@ -1582,6 +1575,11 @@ export default function RosterScheduler() {
                       <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>Fortnight</Box>
                       <Box component="span" sx={{ display: { xs: 'inline', lg: 'none' } }}>2W</Box>
                     </Box>
+                  ) : mode === 'workweek' ? (
+                    <Box component="span">
+                      <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>Workweek</Box>
+                      <Box component="span" sx={{ display: { xs: 'inline', lg: 'none' } }}>M-F</Box>
+                    </Box>
                   ) : (
                     mode.charAt(0).toUpperCase() + mode.slice(1)
                   )}
@@ -1589,53 +1587,6 @@ export default function RosterScheduler() {
               ))}
             </Stack>
 
-            {/* Workweek / Full Week Toggle */}
-            <Stack direction="row" sx={{ bgcolor: 'grey.100', borderRadius: 1.5, p: 0.5, flexShrink: 0 }}>
-              <Button
-                size="small"
-                onClick={() => setWeekFilter('workweek')}
-                sx={{
-                  px: { xs: 1, lg: 1.5 },
-                  py: 0.5,
-                  minWidth: 'auto',
-                  borderRadius: 1,
-                  textTransform: 'none',
-                  fontWeight: weekFilter === 'workweek' ? 600 : 400,
-                  fontSize: { xs: '0.7rem', lg: '0.8rem' },
-                  bgcolor: weekFilter === 'workweek' ? 'background.paper' : 'transparent',
-                  color: weekFilter === 'workweek' ? 'primary.main' : 'text.secondary',
-                  boxShadow: weekFilter === 'workweek' ? 1 : 0,
-                  '&:hover': {
-                    bgcolor: weekFilter === 'workweek' ? 'background.paper' : 'grey.200',
-                  },
-                }}
-              >
-                <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>Workweek</Box>
-                <Box component="span" sx={{ display: { xs: 'inline', lg: 'none' } }}>M-F</Box>
-              </Button>
-              <Button
-                size="small"
-                onClick={() => setWeekFilter('fullweek')}
-                sx={{
-                  px: { xs: 1, lg: 1.5 },
-                  py: 0.5,
-                  minWidth: 'auto',
-                  borderRadius: 1,
-                  textTransform: 'none',
-                  fontWeight: weekFilter === 'fullweek' ? 600 : 400,
-                  fontSize: { xs: '0.7rem', lg: '0.8rem' },
-                  bgcolor: weekFilter === 'fullweek' ? 'background.paper' : 'transparent',
-                  color: weekFilter === 'fullweek' ? 'primary.main' : 'text.secondary',
-                  boxShadow: weekFilter === 'fullweek' ? 1 : 0,
-                  '&:hover': {
-                    bgcolor: weekFilter === 'fullweek' ? 'background.paper' : 'grey.200',
-                  },
-                }}
-              >
-                <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>Full Week</Box>
-                <Box component="span" sx={{ display: { xs: 'inline', lg: 'none' } }}>M-Su</Box>
-              </Button>
-            </Stack>
           </Stack>
 
           {/* Right: Action Groups */}
