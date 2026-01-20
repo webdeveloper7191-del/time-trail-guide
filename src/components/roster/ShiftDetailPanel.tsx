@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Shift, StaffMember, DemandData, RosterComplianceFlag, Room, Centre, TimeOff, RecurrencePattern, RecurrenceEndType } from '@/types/roster';
+import { Shift, StaffMember, DemandData, RosterComplianceFlag, Room, Centre, TimeOff, RecurrencePattern, RecurrenceEndType, ShiftTemplate, defaultShiftTemplates } from '@/types/roster';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +25,7 @@ import {
   BarChart3,
   UserX,
   CheckCircle2,
+  FileText,
   UserPlus,
   RefreshCw
 } from 'lucide-react';
@@ -527,6 +528,54 @@ export function ShiftDetailPanel({
                 </div>
               </div>
             )}
+
+            {/* Shift Template Selector */}
+            <div className="space-y-3">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Shift Template
+              </Label>
+              <Select 
+                value=""
+                onValueChange={(templateId) => {
+                  const template = defaultShiftTemplates.find(t => t.id === templateId);
+                  if (template) {
+                    setEditedShift(prev => ({ 
+                      ...prev, 
+                      startTime: template.startTime,
+                      endTime: template.endTime,
+                      breakMinutes: template.breakMinutes,
+                      shiftType: template.shiftType || 'regular',
+                    }));
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Apply a shift template..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {defaultShiftTemplates.map(template => (
+                    <SelectItem key={template.id} value={template.id} textValue={template.name}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: template.color }}
+                        />
+                        <span>{template.name}</span>
+                        <span className="text-muted-foreground text-xs">
+                          ({template.startTime} - {template.endTime})
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Applying a template will set the start time, end time, break duration, and shift type.
+              </p>
+            </div>
+
+            <Separator />
 
             {/* Time Settings */}
             <div className="space-y-3">
