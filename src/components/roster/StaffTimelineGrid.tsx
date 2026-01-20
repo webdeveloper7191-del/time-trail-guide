@@ -1858,6 +1858,9 @@ function StaffShiftCard({
                 </DropdownMenuItem>
               </>
             )}
+
+            {onShiftTypeChange && (
+              <>
                 <DropdownMenuSeparator />
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
@@ -1865,8 +1868,8 @@ function StaffShiftCard({
                     Set Shift Type
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    <DropdownMenuRadioGroup 
-                      value={currentType} 
+                    <DropdownMenuRadioGroup
+                      value={currentType}
                       onValueChange={(value) => onShiftTypeChange(shift.id, value === 'regular' ? undefined : value as ShiftSpecialType)}
                     >
                       <DropdownMenuRadioItem value="regular">
