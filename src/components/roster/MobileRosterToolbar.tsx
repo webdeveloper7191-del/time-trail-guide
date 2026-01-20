@@ -182,8 +182,8 @@ export function MobileRosterToolbar({
 
   const viewModes: { value: ViewMode; label: string }[] = [
     { value: 'day', label: 'Day' },
-    { value: 'week', label: 'Week' },
     { value: 'workweek', label: 'M-F' },
+    { value: 'week', label: 'Week' },
     { value: 'fortnight', label: '2 Wk' },
     { value: 'month', label: 'Month' },
   ];

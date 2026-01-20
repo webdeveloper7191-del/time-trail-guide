@@ -174,7 +174,7 @@ export default function RosterScheduler() {
   // Mobile staff panel state
   const [showMobileStaffPanel, setShowMobileStaffPanel] = useState(false);
   
-  const [viewMode, setViewMode] = useState<ViewMode>('week');
+  const [viewMode, setViewMode] = useState<ViewMode>('workweek');
   const [selectedCentreId, setSelectedCentreId] = useState<string>(mockCentres[0].id);
   const [currentDate, setCurrentDate] = useState(new Date());
   
@@ -1549,7 +1549,7 @@ export default function RosterScheduler() {
 
             {/* View Mode Tabs - Compact on tablet */}
             <Stack direction="row" sx={{ bgcolor: 'grey.100', borderRadius: 1.5, p: 0.5, flexShrink: 0 }}>
-              {(['day', 'week', 'workweek', 'fortnight', 'month'] as ViewMode[]).map((mode) => (
+              {(['day', 'workweek', 'week', 'fortnight', 'month'] as ViewMode[]).map((mode) => (
                 <Button
                   key={mode}
                   size="small"
@@ -1577,7 +1577,7 @@ export default function RosterScheduler() {
                     </Box>
                   ) : mode === 'workweek' ? (
                     <Box component="span">
-                      <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>Workweek</Box>
+                      <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>Work Week</Box>
                       <Box component="span" sx={{ display: { xs: 'inline', lg: 'none' } }}>M-F</Box>
                     </Box>
                   ) : (
