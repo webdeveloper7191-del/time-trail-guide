@@ -492,6 +492,40 @@ export default function RosterScheduler() {
       return;
     }
     
+    // Check for blocking conflicts before publishing (cross-location aware)
+    const blockingShifts: { staffName: string; conflicts: string[] }[] = [];
+    
+    draftShifts.forEach(shift => {
+      // Detect conflicts using ALL shifts across all locations
+      const conflicts = detectShiftConflicts(shift, shifts, allStaff, selectedCentre.rooms, shifts);
+      const blockingConflicts = conflicts.filter(c => c.severity === 'error' && !c.canOverride);
+      
+      if (blockingConflicts.length > 0) {
+        const staff = allStaff.find(s => s.id === shift.staffId);
+        blockingShifts.push({
+          staffName: staff?.name || 'Unknown',
+          conflicts: blockingConflicts.map(c => c.message)
+        });
+      }
+    });
+    
+    if (blockingShifts.length > 0) {
+      // Show error with details about blocking conflicts
+      const conflictSummary = blockingShifts
+        .slice(0, 3) // Show first 3 to avoid overwhelming the user
+        .map(b => `${b.staffName}: ${b.conflicts[0]}`)
+        .join('; ');
+      
+      toast.error(`Cannot publish: ${blockingShifts.length} shift(s) have conflicts`, {
+        description: conflictSummary + (blockingShifts.length > 3 ? ` (+${blockingShifts.length - 3} more)` : ''),
+        duration: 6000,
+      });
+      
+      // Open the conflict panel to help resolve
+      setShowConflicts(true);
+      return;
+    }
+    
     setShifts(prev => prev.map(s => 
       s.status === 'draft' && s.centreId === selectedCentreId 
         ? { ...s, status: 'published' } 
@@ -906,13 +940,25 @@ export default function RosterScheduler() {
     return count;
   }, [costSummary, weeklyBudget, criticalFlags]);
 
-  // Count shift conflicts
+  // Count shift conflicts (cross-location aware)
   const conflictCount = useMemo(() => {
     const centreShifts = shifts.filter(s => s.centreId === selectedCentreId);
     let totalConflicts = 0;
+    const seenConflictPairs = new Set<string>();
+    
     centreShifts.forEach(shift => {
-      const conflicts = detectShiftConflicts(shift, centreShifts, allStaff, selectedCentre.rooms);
-      totalConflicts += conflicts.filter(c => c.severity === 'error').length;
+      // Pass ALL shifts for cross-location conflict detection
+      const conflicts = detectShiftConflicts(shift, centreShifts, allStaff, selectedCentre.rooms, shifts);
+      conflicts
+        .filter(c => c.severity === 'error')
+        .forEach(c => {
+          // Deduplicate overlap conflicts (they appear for both shifts involved)
+          const pairKey = c.id.split('-').sort().join('-');
+          if (!seenConflictPairs.has(pairKey)) {
+            seenConflictPairs.add(pairKey);
+            totalConflicts++;
+          }
+        });
     });
     return totalConflicts;
   }, [shifts, selectedCentreId, allStaff, selectedCentre.rooms]);
