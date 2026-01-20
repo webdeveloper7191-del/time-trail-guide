@@ -1783,24 +1783,6 @@ function StaffShiftCard({
           </div>
         )}
 
-        {/* Recurring indicator */}
-        {shift.recurring?.isRecurring && shift.recurring?.recurrenceGroupId && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="p-0.5 rounded bg-emerald-500/20">
-                  <RefreshCw className="h-2.5 w-2.5 text-emerald-600" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Recurring Shift</p>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {shift.recurring.pattern || 'Weekly'} pattern
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
       </div>
 
       {/* Absent indicator */}
@@ -1975,8 +1957,24 @@ function StaffShiftCard({
       )}
 
       <div className={cn("pl-3 pr-8 py-1.5", shiftTypeInfo && "pt-4")} onClick={onEdit}>
-        <div className={cn("text-xs font-semibold", style.text)}>
-          {shift.startTime}-{shift.endTime}
+        <div className={cn("text-xs font-semibold flex items-center gap-1", style.text)}>
+          <span>{shift.startTime}-{shift.endTime}</span>
+          {/* Recurring indicator inline with time */}
+          {shift.recurring?.isRecurring && shift.recurring?.recurrenceGroupId && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <RefreshCw className="h-2.5 w-2.5 text-emerald-600 flex-shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Recurring Shift</p>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {shift.recurring.pattern || 'Weekly'} pattern
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
         {!isCompact && (
           <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
