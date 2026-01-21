@@ -1257,7 +1257,7 @@ export default function RosterScheduler() {
   ];
 
   return (
-    <Box className="h-screen flex flex-col w-full max-w-full overflow-x-hidden" sx={{ bgcolor: 'background.default' }}>
+    <Box className="h-screen flex flex-col w-full max-w-full" sx={{ bgcolor: 'background.default' }}>
       {/* Mobile Toolbar */}
       <MobileRosterToolbar
         currentDate={currentDate}

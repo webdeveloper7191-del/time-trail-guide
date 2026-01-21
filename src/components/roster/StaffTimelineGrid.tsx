@@ -483,7 +483,7 @@ export function StaffTimelineGrid({
       {/* Scrollable content with sticky header */}
       <div className="flex-1 overflow-y-auto w-full sticky-safe">
         {/* Horizontal scroll lives in its own container so sticky left/right works reliably */}
-        <div className="overflow-x-auto w-full relative isolate sticky-safe">
+        <div className="overflow-x-auto w-full relative sticky-safe">
           <div className="min-w-max">
           {/* Header */}
           <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
