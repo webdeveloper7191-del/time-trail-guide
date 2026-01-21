@@ -168,14 +168,14 @@ export function StaffTimelineGrid({
   const isCompact = viewMode !== 'day';
   const isMonthView = viewMode === 'month';
   
-  // Column width classes - fluid for shorter views, fixed for fortnight/month
-  // Fortnight and Month views use fixed 125px for consistency
+  // Column width classes - fluid for all views except month
+  // Month view uses fixed 125px due to high column count, others stretch to fill
   const getColumnWidthClass = () => {
-    if (isMonthView || viewMode === 'fortnight') {
+    if (isMonthView) {
       return "w-[125px] min-w-[125px] shrink-0";
     }
-    // Fluid columns for day, workweek, week
-    return "flex-1 min-w-[100px]";
+    // Fluid columns for day, workweek, week, fortnight - stretch to fill available space
+    return "flex-1 min-w-[80px]";
   };
   const columnWidthClass = getColumnWidthClass();
 
