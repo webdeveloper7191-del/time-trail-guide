@@ -527,18 +527,20 @@ export function StaffTimelineGrid({
       {/* Two-pane layout: Fixed left staff pane + Scrollable right timeline pane */}
       <div className="flex-1 flex overflow-hidden">
         {/* ===== LEFT PANE: Fixed Staff Column ===== */}
-        <div className="flex flex-col w-64 shrink-0 border-r border-border bg-card z-20">
+        <div 
+          className="flex flex-col w-40 md:w-52 lg:w-64 shrink-0 border-r border-border bg-card z-20 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.08),2px_0_4px_-2px_rgba(0,0,0,0.04)] dark:shadow-[4px_0_12px_-2px_rgba(0,0,0,0.3),2px_0_6px_-2px_rgba(0,0,0,0.2)]"
+        >
           {/* Staff Column Header */}
-          <div className="h-[53px] shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-b border-border bg-muted/50 shadow-md">
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <div className="h-[53px] shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-b border-border bg-muted/50">
+            <div className="flex items-center gap-1 md:gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 md:h-3.5 md:w-3.5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search staff..."
+                  placeholder="Search..."
                   value={staffSearch}
                   onChange={(e) => setStaffSearch(e.target.value)}
-                  className="h-8 pl-7 pr-2 text-xs bg-background border-border"
+                  className="h-7 md:h-8 pl-6 md:pl-7 pr-1 md:pr-2 text-[11px] md:text-xs bg-background border-border"
                 />
               </div>
               <TooltipProvider>
@@ -548,12 +550,12 @@ export function StaffTimelineGrid({
                       variant="ghost"
                       size="sm"
                       onClick={toggleAllRooms}
-                      className="h-8 w-8 p-0 shrink-0"
+                      className="h-7 w-7 md:h-8 md:w-8 p-0 shrink-0"
                     >
                       {allRoomsCollapsed ? (
-                        <ChevronsUpDown className="h-4 w-4" />
+                        <ChevronsUpDown className="h-3.5 w-3.5 md:h-4 md:w-4" />
                       ) : (
-                        <ChevronsDownUp className="h-4 w-4" />
+                        <ChevronsDownUp className="h-3.5 w-3.5 md:h-4 md:w-4" />
                       )}
                     </Button>
                   </TooltipTrigger>
@@ -562,10 +564,13 @@ export function StaffTimelineGrid({
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <RoomColorPaletteSelector 
-                selectedPalette={colorPalette} 
-                onPaletteChange={setColorPalette} 
-              />
+              {/* Hide color palette on mobile, show on tablet+ */}
+              <div className="hidden md:block">
+                <RoomColorPaletteSelector 
+                  selectedPalette={colorPalette} 
+                  onPaletteChange={setColorPalette} 
+                />
+              </div>
             </div>
           </div>
           
@@ -587,7 +592,7 @@ export function StaffTimelineGrid({
                   {/* Room header - left side */}
                   <div 
                     className={cn(
-                      "h-[42px] flex items-center border-b cursor-pointer transition-colors",
+                      "h-[36px] md:h-[42px] flex items-center border-b cursor-pointer transition-colors",
                       !isCollapsed && "hover:brightness-95"
                     )}
                     style={{ 
@@ -598,7 +603,7 @@ export function StaffTimelineGrid({
                   >
                     <div
                       data-drop-zone
-                      className="flex-1 px-3 py-2 flex items-center gap-2"
+                      className="flex-1 px-1.5 md:px-3 py-1 md:py-2 flex items-center gap-1 md:gap-2"
                       onDragOver={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -624,17 +629,17 @@ export function StaffTimelineGrid({
                           e.stopPropagation();
                           toggleRoomCollapse(room.id);
                         }}
-                        className="p-0.5 rounded hover:bg-black/10 transition-all"
+                        className="p-0.5 rounded hover:bg-black/10 transition-all shrink-0"
                       >
                         {isCollapsed ? (
-                          <ChevronRightIcon className="h-4 w-4 transition-transform" />
+                          <ChevronRightIcon className="h-3.5 w-3.5 md:h-4 md:w-4 transition-transform" />
                         ) : (
-                          <ChevronDown className="h-4 w-4 transition-transform" />
+                          <ChevronDown className="h-3.5 w-3.5 md:h-4 md:w-4 transition-transform" />
                         )}
                       </button>
                       <Badge 
                         variant="secondary" 
-                        className="font-semibold text-xs px-2 py-0.5"
+                        className="font-semibold text-[10px] md:text-xs px-1.5 md:px-2 py-0 md:py-0.5 shrink-0"
                         style={{ 
                           backgroundColor: roomColor,
                           color: 'white',
@@ -643,8 +648,9 @@ export function StaffTimelineGrid({
                       >
                         {room.name}
                       </Badge>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {/* Hide age group on mobile */}
+                      <div className="hidden md:flex flex-col min-w-0">
+                        <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap truncate">
                           {ageGroupLabels[room.ageGroup]} • 1:{room.requiredRatio}
                         </span>
                       </div>
@@ -666,14 +672,15 @@ export function StaffTimelineGrid({
                           return (
                             <div 
                               key={`left-${room.id}-${member.id}`} 
-                              className="h-[72px] border-b border-border bg-card flex items-start gap-2 p-2 cursor-grab group/staff transition-opacity duration-200"
+                              className="h-[56px] md:h-[72px] border-b border-border bg-card flex items-start gap-1 md:gap-2 p-1.5 md:p-2 cursor-grab group/staff transition-opacity duration-200"
                               draggable
                               onDragStart={(e) => handleStaffDragStart(e, member)}
                               style={{ opacity: isDragging ? 0.6 : 1 }}
                             >
-                              <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-1" />
+                              {/* Hide grip on mobile */}
+                              <GripVertical className="hidden md:block h-4 w-4 text-muted-foreground/50 mt-1" />
                               <div 
-                                className="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0 cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-2 transition-all"
+                                className="h-7 w-7 md:h-9 md:w-9 rounded-full flex items-center justify-center text-white text-[10px] md:text-xs font-medium shrink-0 cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-1 md:hover:ring-offset-2 transition-all"
                                 style={{ backgroundColor: member.color }}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -685,7 +692,7 @@ export function StaffTimelineGrid({
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
                                   <p 
-                                    className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary hover:underline transition-colors"
+                                    className="text-[11px] md:text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary hover:underline transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       onStaffClick?.(member);
@@ -720,17 +727,18 @@ export function StaffTimelineGrid({
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 </div>
-                                <p className="text-[10px] text-muted-foreground">{roleLabels[member.role]}</p>
-                                <div className="flex flex-wrap gap-0.5 mt-0.5">
-                                  {topQualifications.map((q, idx) => (
+                                <p className="text-[9px] md:text-[10px] text-muted-foreground truncate">{roleLabels[member.role]}</p>
+                                {/* Hide qualifications on smallest screens */}
+                                <div className="hidden sm:flex flex-wrap gap-0.5 mt-0.5">
+                                  {topQualifications.slice(0, 1).map((q, idx) => (
                                     <TooltipProvider key={idx}>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
                                           <Badge 
                                             variant={q.isExpired ? 'destructive' : q.isExpiringSoon ? 'outline' : 'secondary'}
-                                            className={cn("text-[8px] px-1 py-0 h-3.5", q.isExpiringSoon && "border-amber-500 text-amber-600")}
+                                            className={cn("text-[7px] md:text-[8px] px-1 py-0 h-3 md:h-3.5", q.isExpiringSoon && "border-amber-500 text-amber-600")}
                                           >
-                                            {qualificationLabels[q.type].slice(0, 8)}
+                                            {qualificationLabels[q.type].slice(0, 6)}
                                           </Badge>
                                         </TooltipTrigger>
                                         <TooltipContent>
@@ -740,8 +748,8 @@ export function StaffTimelineGrid({
                                       </Tooltip>
                                     </TooltipProvider>
                                   ))}
-                                  {member.qualifications.length > 2 && (
-                                    <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5">+{member.qualifications.length - 2}</Badge>
+                                  {member.qualifications.length > 1 && (
+                                    <Badge variant="secondary" className="text-[7px] md:text-[8px] px-1 py-0 h-3 md:h-3.5">+{member.qualifications.length - 1}</Badge>
                                   )}
                                 </div>
                               </div>
@@ -751,13 +759,13 @@ export function StaffTimelineGrid({
 
                         {/* Open Shifts row - left side */}
                         {roomOpenShifts.length > 0 && (
-                          <div className="h-[52px] border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10 flex items-center gap-3 p-3">
-                            <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-amber-100 dark:bg-amber-900/50 shadow-sm">
-                              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          <div className="h-[44px] md:h-[52px] border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10 flex items-center gap-2 md:gap-3 p-2 md:p-3">
+                            <div className="h-6 w-6 md:h-8 md:w-8 rounded-lg flex items-center justify-center bg-amber-100 dark:bg-amber-900/50 shadow-sm shrink-0">
+                              <AlertCircle className="h-3 w-3 md:h-4 md:w-4 text-amber-600 dark:text-amber-400" />
                             </div>
-                            <div>
-                              <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Open Shifts</p>
-                              <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80">Drag staff to fill</p>
+                            <div className="min-w-0">
+                              <p className="text-xs md:text-sm font-semibold text-amber-800 dark:text-amber-200 truncate">Open Shifts</p>
+                              <p className="text-[9px] md:text-[10px] text-amber-600/80 dark:text-amber-400/80 hidden sm:block">Drag staff to fill</p>
                             </div>
                           </div>
                         )}
@@ -768,13 +776,13 @@ export function StaffTimelineGrid({
                           if (roomEmptyShifts.length === 0) return null;
                           
                           return (
-                            <div className="h-[52px] border-b border-border bg-purple-500/5 flex items-center gap-2 p-2">
-                              <div className="h-9 w-9 rounded-full flex items-center justify-center bg-purple-500/20 border-2 border-dashed border-purple-500/50">
-                                <Zap className="h-4 w-4 text-purple-600" />
+                            <div className="h-[44px] md:h-[52px] border-b border-border bg-purple-500/5 flex items-center gap-1.5 md:gap-2 p-1.5 md:p-2">
+                              <div className="h-7 w-7 md:h-9 md:w-9 rounded-full flex items-center justify-center bg-purple-500/20 border-2 border-dashed border-purple-500/50 shrink-0">
+                                <Zap className="h-3 w-3 md:h-4 md:w-4 text-purple-600" />
                               </div>
-                              <div>
-                                <p className="text-sm font-medium text-purple-700 dark:text-purple-300">Empty Shifts</p>
-                                <p className="text-[10px] text-purple-600 dark:text-purple-400">Auto-assign or drop staff</p>
+                              <div className="min-w-0">
+                                <p className="text-xs md:text-sm font-medium text-purple-700 dark:text-purple-300 truncate">Empty Shifts</p>
+                                <p className="text-[9px] md:text-[10px] text-purple-600 dark:text-purple-400 hidden sm:block">Auto-assign or drop staff</p>
                               </div>
                             </div>
                           );
@@ -784,7 +792,7 @@ export function StaffTimelineGrid({
                         <div 
                           data-drop-zone
                           className={cn(
-                            "h-[52px] border-b flex items-center gap-3 p-3 transition-colors",
+                            "h-[44px] md:h-[52px] border-b flex items-center gap-2 md:gap-3 p-2 md:p-3 transition-colors",
                             isDragging && dragType === 'staff' 
                               ? "bg-gradient-to-r from-sky-50/80 to-sky-50/40 dark:from-sky-950/30 dark:to-sky-950/10 border-sky-200/50" 
                               : "bg-muted/30 border-border/50"
@@ -807,25 +815,25 @@ export function StaffTimelineGrid({
                           }}
                         >
                           <div className={cn(
-                            "h-8 w-8 rounded-lg flex items-center justify-center transition-colors shadow-sm",
+                            "h-6 w-6 md:h-8 md:w-8 rounded-lg flex items-center justify-center transition-colors shadow-sm shrink-0",
                             isDragging && dragType === 'staff'
                               ? "bg-sky-100 dark:bg-sky-900/50"
                               : "bg-muted"
                           )}>
                             <User className={cn(
-                              "h-4 w-4 transition-colors",
+                              "h-3 w-3 md:h-4 md:w-4 transition-colors",
                               isDragging && dragType === 'staff' ? "text-sky-600 dark:text-sky-400" : "text-muted-foreground"
                             )} />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <p className={cn(
-                              "text-sm font-semibold transition-colors",
+                              "text-xs md:text-sm font-semibold transition-colors truncate",
                               isDragging && dragType === 'staff' ? "text-sky-800 dark:text-sky-200" : "text-muted-foreground"
                             )}>
                               {isDragging && dragType === 'staff' ? "Drop here" : "Add Staff"}
                             </p>
                             <p className={cn(
-                              "text-[10px] transition-colors",
+                              "text-[9px] md:text-[10px] transition-colors hidden sm:block",
                               isDragging && dragType === 'staff' ? "text-sky-600/80 dark:text-sky-400/80" : "text-muted-foreground/60"
                             )}>
                               {isDragging && dragType === 'staff' 
@@ -844,7 +852,7 @@ export function StaffTimelineGrid({
         </div>
 
         {/* ===== RIGHT PANE: Scrollable Timeline ===== */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* Timeline Header - syncs horizontal scroll with body */}
           <div 
             ref={timelineHeaderRef}
@@ -1093,7 +1101,7 @@ export function StaffTimelineGrid({
                     {/* Room header - right side (date cells for collapsed summary) */}
                     <div 
                       className={cn(
-                        "h-[42px] flex border-b cursor-pointer transition-colors",
+                        "h-[36px] md:h-[42px] flex border-b cursor-pointer transition-colors",
                         !isCollapsed && "hover:brightness-95"
                       )}
                       style={{ 
@@ -1254,7 +1262,7 @@ export function StaffTimelineGrid({
                             const costs = calculateStaffCosts(member.id);
 
                             return (
-                              <div key={`right-${room.id}-${member.id}`} className="h-[72px] flex border-b border-border hover:bg-muted/20 transition-colors">
+                              <div key={`right-${room.id}-${member.id}`} className="h-[56px] md:h-[72px] flex border-b border-border hover:bg-muted/20 transition-colors">
                                 {/* Day cells */}
                                 {dates.map((date) => {
                                   const dateStr = format(date, 'yyyy-MM-dd');
@@ -1473,7 +1481,7 @@ export function StaffTimelineGrid({
 
                           {/* Open Shifts row - right side */}
                           {roomOpenShifts.length > 0 && (
-                            <div className="h-[52px] flex border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10">
+                            <div className="h-[44px] md:h-[52px] flex border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10">
                               {dates.map((date) => {
                                 const dateStr = format(date, 'yyyy-MM-dd');
                                 const dayOpenShifts = getOpenShiftsForDay(room.id, dateStr);
@@ -1556,7 +1564,7 @@ export function StaffTimelineGrid({
                             if (roomEmptyShifts.length === 0) return null;
                             
                             return (
-                              <div className="h-[52px] flex border-b border-border bg-purple-500/5 hover:bg-purple-500/10 transition-colors">
+                              <div className="h-[44px] md:h-[52px] flex border-b border-border bg-purple-500/5 hover:bg-purple-500/10 transition-colors">
                                 {dates.map((date) => {
                                   const dateStr = format(date, 'yyyy-MM-dd');
                                   const dayEmptyShifts = getEmptyShiftsForRoomDay(room.id, dateStr);
@@ -1610,7 +1618,7 @@ export function StaffTimelineGrid({
                           {/* Add Staff drop zone - right side */}
                           <div 
                             className={cn(
-                              "h-[52px] flex border-b transition-colors",
+                              "h-[44px] md:h-[52px] flex border-b transition-colors",
                               isDragging && dragType === 'staff' 
                                 ? "bg-gradient-to-r from-sky-50/80 to-sky-50/40 dark:from-sky-950/30 dark:to-sky-950/10 border-sky-200/50" 
                                 : "bg-muted/30 border-border/50"
