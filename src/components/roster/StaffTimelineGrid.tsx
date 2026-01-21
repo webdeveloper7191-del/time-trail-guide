@@ -46,6 +46,8 @@ import {
   RefreshCw,
   TrendingUp,
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -184,6 +186,10 @@ export function StaffTimelineGrid({
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const timelineHeaderRef = useRef<HTMLDivElement>(null);
   const isSyncingScroll = useRef(false);
+  
+  // Scroll position tracking for scroll indicator (fortnight/month views)
+  const [scrollInfo, setScrollInfo] = useState({ scrollLeft: 0, scrollWidth: 0, clientWidth: 0 });
+  const showScrollIndicator = viewMode === 'fortnight' || viewMode === 'month';
 
   // Sync vertical scroll between left staff pane and right timeline pane
   useEffect(() => {
@@ -210,9 +216,26 @@ export function StaffTimelineGrid({
         if (timelineHeaderRef.current) {
           timelineHeaderRef.current.scrollLeft = rightPane.scrollLeft;
         }
+        // Update scroll info for indicator
+        if (showScrollIndicator) {
+          setScrollInfo({
+            scrollLeft: rightPane.scrollLeft,
+            scrollWidth: rightPane.scrollWidth,
+            clientWidth: rightPane.clientWidth,
+          });
+        }
         isSyncingScroll.current = false;
       });
     };
+    
+    // Initial scroll info
+    if (showScrollIndicator) {
+      setScrollInfo({
+        scrollLeft: rightPane.scrollLeft,
+        scrollWidth: rightPane.scrollWidth,
+        clientWidth: rightPane.clientWidth,
+      });
+    }
 
     leftPane.addEventListener('scroll', handleLeftScroll);
     rightPane.addEventListener('scroll', handleRightScroll);
@@ -221,7 +244,7 @@ export function StaffTimelineGrid({
       leftPane.removeEventListener('scroll', handleLeftScroll);
       rightPane.removeEventListener('scroll', handleRightScroll);
     };
-  }, []);
+  }, [showScrollIndicator]);
 
   // Use context-aware shift cost calculator
   const { calculateStaffCosts: calculateContextAwareCosts } = useShiftCost();
@@ -1686,6 +1709,81 @@ export function StaffTimelineGrid({
           </div>
         </div>
       </div>
+      
+      {/* Scroll Indicator for fortnight/month views */}
+      {showScrollIndicator && scrollInfo.scrollWidth > scrollInfo.clientWidth && (
+        <div className="h-8 bg-muted/50 border-t border-border flex items-center px-4 gap-3">
+          {/* Left scroll button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0"
+            disabled={scrollInfo.scrollLeft <= 0}
+            onClick={() => {
+              if (rightPaneRef.current) {
+                rightPaneRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+              }
+            }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          {/* Mini-map track */}
+          <div className="flex-1 relative h-3 bg-border/50 rounded-full overflow-hidden">
+            {/* Date markers */}
+            <div className="absolute inset-0 flex">
+              {dates.map((date, idx) => (
+                <div 
+                  key={idx} 
+                  className="flex-1 border-r border-background/30 last:border-r-0"
+                  style={{ opacity: 0.3 }}
+                />
+              ))}
+            </div>
+            
+            {/* Visible window indicator */}
+            <div
+              className="absolute top-0 bottom-0 bg-primary/60 rounded-full transition-all duration-75 cursor-pointer hover:bg-primary/80"
+              style={{
+                left: `${(scrollInfo.scrollLeft / scrollInfo.scrollWidth) * 100}%`,
+                width: `${Math.max((scrollInfo.clientWidth / scrollInfo.scrollWidth) * 100, 8)}%`,
+              }}
+              onClick={(e) => {
+                if (rightPaneRef.current) {
+                  const track = e.currentTarget.parentElement;
+                  if (track) {
+                    const rect = track.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const percent = clickX / rect.width;
+                    const scrollTarget = percent * (scrollInfo.scrollWidth - scrollInfo.clientWidth);
+                    rightPaneRef.current.scrollTo({ left: scrollTarget, behavior: 'smooth' });
+                  }
+                }
+              }}
+            />
+          </div>
+          
+          {/* Right scroll button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0"
+            disabled={scrollInfo.scrollLeft >= scrollInfo.scrollWidth - scrollInfo.clientWidth - 1}
+            onClick={() => {
+              if (rightPaneRef.current) {
+                rightPaneRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+              }
+            }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          
+          {/* Position label */}
+          <div className="text-xs text-muted-foreground shrink-0 min-w-[80px] text-right">
+            {format(dates[Math.floor((scrollInfo.scrollLeft / scrollInfo.scrollWidth) * dates.length)] || dates[0], 'd MMM')} – {format(dates[Math.min(Math.floor(((scrollInfo.scrollLeft + scrollInfo.clientWidth) / scrollInfo.scrollWidth) * dates.length), dates.length - 1)] || dates[dates.length - 1], 'd MMM')}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
