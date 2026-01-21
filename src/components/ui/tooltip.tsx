@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Tooltip as MuiTooltip } from "@mui/material";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 interface TooltipProviderProps {
@@ -13,9 +13,8 @@ const TooltipProvider = ({ children }: TooltipProviderProps) => <>{children}</>;
 interface TooltipContextValue {
   open: boolean;
   setOpen: (open: boolean) => void;
-  triggerRef: React.RefObject<HTMLElement>;
-  content: React.ReactNode;
-  setContent: (content: React.ReactNode) => void;
+  triggerRect: DOMRect | null;
+  setTriggerRect: (rect: DOMRect | null) => void;
 }
 
 const TooltipContext = React.createContext<TooltipContextValue | null>(null);
@@ -30,8 +29,7 @@ interface TooltipProps {
 
 const Tooltip = ({ children, open: controlledOpen, defaultOpen = false, onOpenChange, delayDuration }: TooltipProps) => {
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
-  const [content, setContent] = React.useState<React.ReactNode>(null);
-  const triggerRef = React.useRef<HTMLElement>(null);
+  const [triggerRect, setTriggerRect] = React.useState<DOMRect | null>(null);
   
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   
@@ -43,7 +41,7 @@ const Tooltip = ({ children, open: controlledOpen, defaultOpen = false, onOpenCh
   };
 
   return (
-    <TooltipContext.Provider value={{ open, setOpen, triggerRef, content, setContent }}>
+    <TooltipContext.Provider value={{ open, setOpen, triggerRect, setTriggerRect }}>
       {children}
     </TooltipContext.Provider>
   );
@@ -56,8 +54,11 @@ interface TooltipTriggerProps extends React.HTMLAttributes<HTMLElement> {
 const TooltipTrigger = React.forwardRef<HTMLElement, TooltipTriggerProps>(
   ({ children, asChild, onMouseEnter, onMouseLeave, ...props }, ref) => {
     const context = React.useContext(TooltipContext);
+    const internalRef = React.useRef<HTMLElement>(null);
     
     const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      context?.setTriggerRect(rect);
       context?.setOpen(true);
       onMouseEnter?.(e);
     };
@@ -69,7 +70,7 @@ const TooltipTrigger = React.forwardRef<HTMLElement, TooltipTriggerProps>(
 
     if (asChild && React.isValidElement(children)) {
       return React.cloneElement(children as React.ReactElement<any>, {
-        ref,
+        ref: ref || internalRef,
         onMouseEnter: handleMouseEnter,
         onMouseLeave: handleMouseLeave,
         ...props
@@ -78,7 +79,7 @@ const TooltipTrigger = React.forwardRef<HTMLElement, TooltipTriggerProps>(
     
     return (
       <span
-        ref={ref as any}
+        ref={(ref || internalRef) as any}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         {...props}
@@ -97,29 +98,85 @@ interface TooltipContentProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
-  ({ className, sideOffset = 4, children, ...props }, ref) => {
+  ({ className, side = 'top', sideOffset = 4, align = 'center', children, ...props }, ref) => {
     const context = React.useContext(TooltipContext);
+    const [position, setPosition] = React.useState({ top: 0, left: 0 });
+    const contentRef = React.useRef<HTMLDivElement>(null);
+    
+    React.useEffect(() => {
+      if (context?.triggerRect && contentRef.current) {
+        const rect = context.triggerRect;
+        const contentRect = contentRef.current.getBoundingClientRect();
+        
+        let top = 0;
+        let left = 0;
+        
+        switch (side) {
+          case 'top':
+            top = rect.top - contentRect.height - sideOffset;
+            left = rect.left + rect.width / 2 - contentRect.width / 2;
+            break;
+          case 'bottom':
+            top = rect.bottom + sideOffset;
+            left = rect.left + rect.width / 2 - contentRect.width / 2;
+            break;
+          case 'left':
+            top = rect.top + rect.height / 2 - contentRect.height / 2;
+            left = rect.left - contentRect.width - sideOffset;
+            break;
+          case 'right':
+            top = rect.top + rect.height / 2 - contentRect.height / 2;
+            left = rect.right + sideOffset;
+            break;
+        }
+        
+        // Adjust for alignment
+        if (side === 'top' || side === 'bottom') {
+          if (align === 'start') left = rect.left;
+          if (align === 'end') left = rect.right - contentRect.width;
+        } else {
+          if (align === 'start') top = rect.top;
+          if (align === 'end') top = rect.bottom - contentRect.height;
+        }
+        
+        // Keep within viewport bounds
+        const padding = 8;
+        left = Math.max(padding, Math.min(left, window.innerWidth - contentRect.width - padding));
+        top = Math.max(padding, Math.min(top, window.innerHeight - contentRect.height - padding));
+        
+        setPosition({ top, left });
+      }
+    }, [context?.triggerRect, side, sideOffset, align, context?.open]);
     
     if (!context?.open) {
       return null;
     }
 
-    return (
+    const content = (
       <div
-        ref={ref}
+        ref={(node) => {
+          (contentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+          if (typeof ref === 'function') ref(node);
+          else if (ref) ref.current = node;
+        }}
         className={cn(
-          "z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95",
+          "overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95",
           className
         )}
         style={{
           position: 'fixed',
-          pointerEvents: 'none',
+          top: position.top,
+          left: position.left,
+          zIndex: 99999,
+          pointerEvents: 'auto',
         }}
         {...props}
       >
         {children}
       </div>
     );
+
+    return createPortal(content, document.body);
   }
 );
 TooltipContent.displayName = "TooltipContent";
