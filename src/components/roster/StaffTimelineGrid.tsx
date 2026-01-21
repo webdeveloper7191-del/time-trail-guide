@@ -163,6 +163,17 @@ export function StaffTimelineGrid({
   const [isCostSticky, setIsCostSticky] = useState(true);
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
   const isMonthView = viewMode === 'month';
+  
+  // Column width classes - fluid for all views, with minimum widths for usability
+  // Month view uses fixed 125px, other views use flex-1 for fluid resizing
+  const getColumnWidthClass = () => {
+    if (isMonthView) {
+      return "w-[125px] min-w-[125px] shrink-0";
+    }
+    // Fluid columns for day, workweek, week, fortnight
+    return "flex-1 min-w-[100px]";
+  };
+  const columnWidthClass = getColumnWidthClass();
 
   // Refs for two-pane scroll sync
   const leftPaneRef = useRef<HTMLDivElement>(null);
@@ -858,7 +869,7 @@ export function StaffTimelineGrid({
             ref={timelineHeaderRef}
             className="h-[53px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-hidden"
           >
-            <div className="flex min-w-max">
+            <div className={cn("flex", isMonthView ? "min-w-max" : "w-full")}>
               {dates.map((date) => {
                 const dateStr = format(date, 'yyyy-MM-dd');
                 const holidays = getHolidaysForDate(dateStr);
@@ -871,12 +882,8 @@ export function StaffTimelineGrid({
                   <div 
                     key={date.toISOString()} 
                     className={cn(
-                      "shrink-0 p-1 md:p-2 text-center border-r border-border",
-                      isMonthView
-                        ? "w-[60px] md:w-[70px]"
-                        : isCompact
-                          ? "w-[60px] md:w-[70px] xl:w-[90px]"
-                          : "w-[80px] md:w-[100px] xl:w-[120px]",
+                      "p-1 md:p-2 text-center border-r border-border",
+                      columnWidthClass,
                       hasPublicHoliday && "bg-destructive/10 border-b-2 border-b-destructive/50"
                     )}
                   >
@@ -1070,7 +1077,7 @@ export function StaffTimelineGrid({
             ref={rightPaneRef}
             className="flex-1 overflow-auto"
           >
-            <div className="min-w-max">
+            <div className={cn(isMonthView ? "min-w-max" : "w-full")}>
               {centre.rooms.map((room, roomIndex) => {
                 const roomStaffIds = staffByRoom[room.id] || new Set();
                 const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
@@ -1119,12 +1126,8 @@ export function StaffTimelineGrid({
                               <div 
                                 key={dateStr} 
                                 className={cn(
-                                  "shrink-0 p-1 border-r",
-                                  isMonthView
-                                    ? "w-[60px] md:w-[70px]"
-                                    : isCompact
-                                      ? "w-[60px] md:w-[70px] xl:w-[90px]"
-                                      : "w-[80px] md:w-[100px] xl:w-[120px]"
+                                  "p-1 border-r",
+                                  columnWidthClass
                                 )}
                                 style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                                 onClick={(e) => e.stopPropagation()}
@@ -1159,12 +1162,8 @@ export function StaffTimelineGrid({
                               <div 
                                 key={dateStr} 
                                 className={cn(
-                                  "shrink-0 border-r flex items-center justify-center",
-                                  isMonthView
-                                    ? "w-[60px] md:w-[70px]"
-                                    : isCompact
-                                      ? "w-[60px] md:w-[70px] xl:w-[90px]"
-                                      : "w-[80px] md:w-[100px] xl:w-[120px]",
+                                  "border-r flex items-center justify-center",
+                                  columnWidthClass,
                                   isUnderstaffed && "bg-destructive/5"
                                 )}
                                 style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
@@ -1234,12 +1233,8 @@ export function StaffTimelineGrid({
                             <div 
                               key={date.toISOString()} 
                               className={cn(
-                                "shrink-0 border-r",
-                                isMonthView
-                                  ? "w-[60px] md:w-[70px]"
-                                  : isCompact
-                                    ? "w-[60px] md:w-[70px] xl:w-[90px]"
-                                    : "w-[80px] md:w-[100px] xl:w-[120px]"
+                                "border-r",
+                                columnWidthClass
                               )}
                               style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                             />
@@ -1276,13 +1271,9 @@ export function StaffTimelineGrid({
                                       key={cellKey}
                                       data-drop-zone
                                       className={cn(
-                                        "shrink-0 p-1 border-r border-border relative group/cell",
+                                        "p-1 border-r border-border relative group/cell",
                                         "transition-all duration-200 ease-out",
-                                        isMonthView
-                                          ? "w-[60px] md:w-[70px]"
-                                          : isCompact
-                                            ? "w-[60px] md:w-[70px] xl:w-[90px]"
-                                            : "w-[80px] md:w-[100px] xl:w-[120px]",
+                                        columnWidthClass,
                                         timeOff && "bg-amber-500/10",
                                         isDragging && !timeOff && "bg-primary/5",
                                         isDragOver && !timeOff && "bg-primary/20 ring-2 ring-inset ring-primary/50 scale-[1.02]",
@@ -1494,13 +1485,9 @@ export function StaffTimelineGrid({
                                     key={cellKey}
                                     data-drop-zone
                                     className={cn(
-                                      "shrink-0 p-1.5 border-r border-amber-200/30 relative group/open-cell",
+                                      "p-1.5 border-r border-amber-200/30 relative group/open-cell",
                                       "transition-all duration-200 ease-out",
-                                      isMonthView
-                                        ? "w-[60px] md:w-[70px]"
-                                        : isCompact
-                                          ? "w-[60px] md:w-[70px] xl:w-[90px]"
-                                          : "w-[80px] md:w-[100px] xl:w-[120px]",
+                                      columnWidthClass,
                                       isDragging && hasOpenShifts && "bg-emerald-50/50 dark:bg-emerald-950/20",
                                       isDragOver && hasOpenShifts && "bg-emerald-100 dark:bg-emerald-900/40 ring-2 ring-inset ring-emerald-500/50"
                                     )}
@@ -1576,13 +1563,9 @@ export function StaffTimelineGrid({
                                       key={cellKey}
                                       data-drop-zone
                                       className={cn(
-                                        "shrink-0 p-1 border-r border-border relative",
+                                        "p-1 border-r border-border relative",
                                         "transition-all duration-200 ease-out",
-                                        isMonthView
-                                          ? "w-[60px] md:w-[70px]"
-                                          : isCompact
-                                            ? "w-[60px] md:w-[70px] xl:w-[90px]"
-                                            : "w-[80px] md:w-[100px] xl:w-[120px]",
+                                        columnWidthClass,
                                         isDragging && dayEmptyShifts.length > 0 && "bg-purple-500/5",
                                         isDragOver && dayEmptyShifts.length > 0 && "bg-purple-500/20 ring-2 ring-inset ring-purple-500/50"
                                       )}
@@ -1635,13 +1618,9 @@ export function StaffTimelineGrid({
                                   key={cellKey}
                                   data-drop-zone
                                   className={cn(
-                                    "shrink-0 p-1.5 border-r relative",
+                                    "p-1.5 border-r relative",
                                     "transition-all duration-200 ease-out",
-                                    isMonthView
-                                      ? "w-[60px] md:w-[70px]"
-                                      : isCompact
-                                        ? "w-[60px] md:w-[70px] xl:w-[90px]"
-                                        : "w-[80px] md:w-[100px] xl:w-[120px]",
+                                    columnWidthClass,
                                     showDropZone && !isDragOver && "border-sky-200/30 bg-sky-50/30 dark:bg-sky-950/10",
                                     isDragOver && "bg-sky-100 dark:bg-sky-900/40 ring-2 ring-inset ring-sky-500/50",
                                     !showDropZone && "border-border/30"
