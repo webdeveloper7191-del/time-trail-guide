@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Shift, OpenShift, Centre, StaffMember, DemandData, RosterComplianceFlag, ageGroupLabels, qualificationLabels, roleLabels, ShiftTemplate, timeOffTypeLabels, defaultShiftTemplates, ShiftSpecialType } from '@/types/roster';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
@@ -163,6 +163,50 @@ export function StaffTimelineGrid({
   const [isCostSticky, setIsCostSticky] = useState(true);
   const isCompact = viewMode === 'fortnight' || viewMode === 'month';
   const isMonthView = viewMode === 'month';
+
+  // Refs for two-pane scroll sync
+  const leftPaneRef = useRef<HTMLDivElement>(null);
+  const rightPaneRef = useRef<HTMLDivElement>(null);
+  const timelineHeaderRef = useRef<HTMLDivElement>(null);
+  const isSyncingScroll = useRef(false);
+
+  // Sync vertical scroll between left staff pane and right timeline pane
+  useEffect(() => {
+    const leftPane = leftPaneRef.current;
+    const rightPane = rightPaneRef.current;
+
+    if (!leftPane || !rightPane) return;
+
+    const handleLeftScroll = () => {
+      if (isSyncingScroll.current) return;
+      isSyncingScroll.current = true;
+      requestAnimationFrame(() => {
+        if (rightPane) rightPane.scrollTop = leftPane.scrollTop;
+        isSyncingScroll.current = false;
+      });
+    };
+
+    const handleRightScroll = () => {
+      if (isSyncingScroll.current) return;
+      isSyncingScroll.current = true;
+      requestAnimationFrame(() => {
+        if (leftPane) leftPane.scrollTop = rightPane.scrollTop;
+        // Sync horizontal scroll to header
+        if (timelineHeaderRef.current) {
+          timelineHeaderRef.current.scrollLeft = rightPane.scrollLeft;
+        }
+        isSyncingScroll.current = false;
+      });
+    };
+
+    leftPane.addEventListener('scroll', handleLeftScroll);
+    rightPane.addEventListener('scroll', handleRightScroll);
+
+    return () => {
+      leftPane.removeEventListener('scroll', handleLeftScroll);
+      rightPane.removeEventListener('scroll', handleRightScroll);
+    };
+  }, []);
 
   // Use context-aware shift cost calculator
   const { calculateStaffCosts: calculateContextAwareCosts } = useShiftCost();
@@ -480,1129 +524,1164 @@ export function StaffTimelineGrid({
         confirmLabel={deleteConfirmation?.type === 'staffFromRoom' ? 'Remove' : 'Delete'}
       />
 
-      {/* Scrollable content with sticky header */}
-      <div className="flex-1 overflow-y-auto w-full sticky-safe">
-        {/* Horizontal scroll lives in its own container so sticky left/right works reliably */}
-        <div className="overflow-x-auto w-full relative sticky-safe">
-          <div className="min-w-max">
-          {/* Header */}
-          <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
-            <div className="w-64 shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-r border-border bg-muted/50 sticky left-0 z-40 bg-card">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search staff..."
-                    value={staffSearch}
-                    onChange={(e) => setStaffSearch(e.target.value)}
-                    className="h-8 pl-7 pr-2 text-xs bg-background border-border"
-                  />
-                </div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={toggleAllRooms}
-                        className="h-8 w-8 p-0 shrink-0"
-                      >
-                        {allRoomsCollapsed ? (
-                          <ChevronsUpDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronsDownUp className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">{allRoomsCollapsed ? 'Expand All Rooms' : 'Collapse All Rooms'}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <RoomColorPaletteSelector 
-                  selectedPalette={colorPalette} 
-                  onPaletteChange={setColorPalette} 
+      {/* Two-pane layout: Fixed left staff pane + Scrollable right timeline pane */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* ===== LEFT PANE: Fixed Staff Column ===== */}
+        <div className="flex flex-col w-64 shrink-0 border-r border-border bg-card z-20">
+          {/* Staff Column Header */}
+          <div className="h-[53px] shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-b border-border bg-muted/50 shadow-md">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search staff..."
+                  value={staffSearch}
+                  onChange={(e) => setStaffSearch(e.target.value)}
+                  className="h-8 pl-7 pr-2 text-xs bg-background border-border"
                 />
               </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleAllRooms}
+                      className="h-8 w-8 p-0 shrink-0"
+                    >
+                      {allRoomsCollapsed ? (
+                        <ChevronsUpDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronsDownUp className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">{allRoomsCollapsed ? 'Expand All Rooms' : 'Collapse All Rooms'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <RoomColorPaletteSelector 
+                selectedPalette={colorPalette} 
+                onPaletteChange={setColorPalette} 
+              />
             </div>
-            {dates.map((date) => {
-              const dateStr = format(date, 'yyyy-MM-dd');
-              const holidays = getHolidaysForDate(dateStr);
-              const events = getEventsForDate(dateStr);
-              const hasPublicHoliday = holidays.some(h => h.type === 'public_holiday');
-              const hasSchoolHoliday = holidays.some(h => h.type === 'school_holiday');
-              const hasEvents = events.length > 0;
+          </div>
+          
+          {/* Left pane scrollable body */}
+          <div ref={leftPaneRef} className="flex-1 overflow-y-auto overflow-x-hidden">
+            {centre.rooms.map((room, roomIndex) => {
+              const roomStaffIds = staffByRoom[room.id] || new Set();
+              const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
+              const roomOpenShifts = openShiftsByRoomDate[room.id] || [];
+              const isCollapsed = collapsedRooms.has(room.id);
+              const roomColor = getRoomColor(roomIndex);
 
               return (
                 <div 
-                  key={date.toISOString()} 
-                  className={cn(
-                    "shrink-0 p-1 md:p-2 text-center border-r border-border bg-muted/50",
-                    isMonthView
-                      ? "w-[60px] md:w-[70px]"
-                      : isCompact
-                        ? (viewMode === 'fortnight'
-                            ? "w-[60px] md:w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
-                            : "w-[60px] md:w-[70px]")
-                        : "w-[80px] md:w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto",
-                    hasPublicHoliday && "bg-destructive/10 border-b-2 border-b-destructive/50"
-                  )}
+                  key={room.id}
+                  className="animate-fade-opacity"
+                  style={{ borderLeft: `4px solid ${roomColor}` }}
                 >
-                  <div className="flex items-center justify-center gap-1">
-                    <span className={cn(
-                      "font-medium",
-                      viewMode === 'month' ? "text-xs" : "text-sm",
-                      hasPublicHoliday ? "text-destructive" : "text-foreground"
-                    )}>
-                      {format(date, 'EEE')}
-                    </span>
+                  {/* Room header - left side */}
+                  <div 
+                    className={cn(
+                      "h-[42px] flex items-center border-b cursor-pointer transition-colors",
+                      !isCollapsed && "hover:brightness-95"
+                    )}
+                    style={{ 
+                      backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`,
+                      borderBottomColor: `color-mix(in srgb, ${roomColor} 25%, transparent)`,
+                    }}
+                    onClick={() => toggleRoomCollapse(room.id)}
+                  >
+                    <div
+                      data-drop-zone
+                      className="flex-1 px-3 py-2 flex items-center gap-2"
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDragOver(e, `room-header-${room.id}`);
+                      }}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const staffId = e.dataTransfer.getData('staffId');
+                        const draggedType = e.dataTransfer.getData('dragType');
+                        if (!staffId || draggedType === 'shift') return;
 
-                    {/* In month view the header cells are very narrow; collapse all indicators into a single compact marker */}
-                    {viewMode === 'month' ? (
-                      (hasPublicHoliday || hasSchoolHoliday || hasEvents) && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div
-                                className={cn(
-                                  "relative ml-0.5 flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-semibold",
-                                  hasPublicHoliday
-                                    ? "border-destructive/40 bg-destructive/10 text-destructive"
-                                    : hasEvents
-                                      ? "border-primary/40 bg-primary/10 text-primary"
-                                      : "border-muted-foreground/30 bg-muted/30 text-muted-foreground"
-                                )}
-                                aria-label="Day indicators"
+                        setDragOverCell(null);
+                        setIsDragging(false);
+                        setDragType(null);
+                        onAssignStaffToRoom?.(staffId, room.id);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleRoomCollapse(room.id);
+                        }}
+                        className="p-0.5 rounded hover:bg-black/10 transition-all"
+                      >
+                        {isCollapsed ? (
+                          <ChevronRightIcon className="h-4 w-4 transition-transform" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 transition-transform" />
+                        )}
+                      </button>
+                      <Badge 
+                        variant="secondary" 
+                        className="font-semibold text-xs px-2 py-0.5"
+                        style={{ 
+                          backgroundColor: roomColor,
+                          color: 'white',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                        }}
+                      >
+                        {room.name}
+                      </Badge>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {ageGroupLabels[room.ageGroup]} • 1:{room.requiredRatio}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Collapsible staff rows - left side */}
+                  <div 
+                    className={cn(
+                      "overflow-hidden transition-all duration-300 ease-in-out",
+                      isCollapsed ? "max-h-0 opacity-0" : "max-h-[5000px] opacity-100"
+                    )}
+                  >
+                    {!isCollapsed && (
+                      <>
+                        {roomStaff.map((member) => {
+                          const topQualifications = member.qualifications.slice(0, 2);
+
+                          return (
+                            <div 
+                              key={`left-${room.id}-${member.id}`} 
+                              className="h-[72px] border-b border-border bg-card flex items-start gap-2 p-2 cursor-grab group/staff transition-opacity duration-200"
+                              draggable
+                              onDragStart={(e) => handleStaffDragStart(e, member)}
+                              style={{ opacity: isDragging ? 0.6 : 1 }}
+                            >
+                              <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-1" />
+                              <div 
+                                className="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0 cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-2 transition-all"
+                                style={{ backgroundColor: member.color }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onStaffClick?.(member);
+                                }}
                               >
-                                {(() => {
-                                  const count = (hasPublicHoliday ? 1 : 0) + (hasSchoolHoliday ? 1 : 0) + (hasEvents ? events.length : 0);
-                                  return count > 1 ? String(Math.min(count, 9)) : '•';
-                                })()}
+                                {member.name.split(' ').map(n => n[0]).join('')}
                               </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div className="space-y-1.5">
-                                {hasPublicHoliday && (
-                                  <div className="text-xs">
-                                    <p className="font-medium text-destructive">Public Holiday</p>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <p 
+                                    className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary hover:underline transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onStaffClick?.(member);
+                                    }}
+                                  >
+                                    {member.name}
+                                  </p>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 opacity-0 group-hover/staff:opacity-100 transition-opacity -mr-1"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <MoreHorizontal className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48">
+                                      <DropdownMenuItem onClick={() => onStaffClick?.(member)}>
+                                        <User className="h-4 w-4 mr-2" />
+                                        View Profile
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        className="text-destructive"
+                                        onClick={() => handleRequestRemoveStaffFromRoom(member.id, room.id, member, room.name)}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Remove from Room
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">{roleLabels[member.role]}</p>
+                                <div className="flex flex-wrap gap-0.5 mt-0.5">
+                                  {topQualifications.map((q, idx) => (
+                                    <TooltipProvider key={idx}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Badge 
+                                            variant={q.isExpired ? 'destructive' : q.isExpiringSoon ? 'outline' : 'secondary'}
+                                            className={cn("text-[8px] px-1 py-0 h-3.5", q.isExpiringSoon && "border-amber-500 text-amber-600")}
+                                          >
+                                            {qualificationLabels[q.type].slice(0, 8)}
+                                          </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{qualificationLabels[q.type]}</p>
+                                          {q.expiryDate && <p className="text-xs text-muted-foreground">Expires: {q.expiryDate}</p>}
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  ))}
+                                  {member.qualifications.length > 2 && (
+                                    <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5">+{member.qualifications.length - 2}</Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Open Shifts row - left side */}
+                        {roomOpenShifts.length > 0 && (
+                          <div className="h-[52px] border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10 flex items-center gap-3 p-3">
+                            <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-amber-100 dark:bg-amber-900/50 shadow-sm">
+                              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Open Shifts</p>
+                              <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80">Drag staff to fill</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Empty Shifts row - left side */}
+                        {(() => {
+                          const roomEmptyShifts = emptyShifts.filter(es => es.roomId === room.id && es.centreId === centre.id);
+                          if (roomEmptyShifts.length === 0) return null;
+                          
+                          return (
+                            <div className="h-[52px] border-b border-border bg-purple-500/5 flex items-center gap-2 p-2">
+                              <div className="h-9 w-9 rounded-full flex items-center justify-center bg-purple-500/20 border-2 border-dashed border-purple-500/50">
+                                <Zap className="h-4 w-4 text-purple-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-purple-700 dark:text-purple-300">Empty Shifts</p>
+                                <p className="text-[10px] text-purple-600 dark:text-purple-400">Auto-assign or drop staff</p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Add Staff drop zone - left side */}
+                        <div 
+                          data-drop-zone
+                          className={cn(
+                            "h-[52px] border-b flex items-center gap-3 p-3 transition-colors",
+                            isDragging && dragType === 'staff' 
+                              ? "bg-gradient-to-r from-sky-50/80 to-sky-50/40 dark:from-sky-950/30 dark:to-sky-950/10 border-sky-200/50" 
+                              : "bg-muted/30 border-border/50"
+                          )}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            handleDragOver(e, `assign-staff-${room.id}`);
+                          }}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const staffId = e.dataTransfer.getData('staffId');
+                            const draggedType = e.dataTransfer.getData('dragType');
+                            if (!staffId || draggedType === 'shift') return;
+
+                            setDragOverCell(null);
+                            setIsDragging(false);
+                            setDragType(null);
+                            onAssignStaffToRoom?.(staffId, room.id);
+                          }}
+                        >
+                          <div className={cn(
+                            "h-8 w-8 rounded-lg flex items-center justify-center transition-colors shadow-sm",
+                            isDragging && dragType === 'staff'
+                              ? "bg-sky-100 dark:bg-sky-900/50"
+                              : "bg-muted"
+                          )}>
+                            <User className={cn(
+                              "h-4 w-4 transition-colors",
+                              isDragging && dragType === 'staff' ? "text-sky-600 dark:text-sky-400" : "text-muted-foreground"
+                            )} />
+                          </div>
+                          <div>
+                            <p className={cn(
+                              "text-sm font-semibold transition-colors",
+                              isDragging && dragType === 'staff' ? "text-sky-800 dark:text-sky-200" : "text-muted-foreground"
+                            )}>
+                              {isDragging && dragType === 'staff' ? "Drop here" : "Add Staff"}
+                            </p>
+                            <p className={cn(
+                              "text-[10px] transition-colors",
+                              isDragging && dragType === 'staff' ? "text-sky-600/80 dark:text-sky-400/80" : "text-muted-foreground/60"
+                            )}>
+                              {isDragging && dragType === 'staff' 
+                                ? `Assign to ${room.name}` 
+                                : `Drag staff to ${room.name}`}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ===== RIGHT PANE: Scrollable Timeline ===== */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Timeline Header - syncs horizontal scroll with body */}
+          <div 
+            ref={timelineHeaderRef}
+            className="h-[53px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-hidden"
+          >
+            <div className="flex min-w-max">
+              {dates.map((date) => {
+                const dateStr = format(date, 'yyyy-MM-dd');
+                const holidays = getHolidaysForDate(dateStr);
+                const events = getEventsForDate(dateStr);
+                const hasPublicHoliday = holidays.some(h => h.type === 'public_holiday');
+                const hasSchoolHoliday = holidays.some(h => h.type === 'school_holiday');
+                const hasEvents = events.length > 0;
+
+                return (
+                  <div 
+                    key={date.toISOString()} 
+                    className={cn(
+                      "shrink-0 p-1 md:p-2 text-center border-r border-border",
+                      isMonthView
+                        ? "w-[60px] md:w-[70px]"
+                        : isCompact
+                          ? "w-[60px] md:w-[70px] xl:w-[90px]"
+                          : "w-[80px] md:w-[100px] xl:w-[120px]",
+                      hasPublicHoliday && "bg-destructive/10 border-b-2 border-b-destructive/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span className={cn(
+                        "font-medium",
+                        viewMode === 'month' ? "text-xs" : "text-sm",
+                        hasPublicHoliday ? "text-destructive" : "text-foreground"
+                      )}>
+                        {format(date, 'EEE')}
+                      </span>
+
+                      {viewMode === 'month' ? (
+                        (hasPublicHoliday || hasSchoolHoliday || hasEvents) && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className={cn(
+                                    "relative ml-0.5 flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-semibold",
+                                    hasPublicHoliday
+                                      ? "border-destructive/40 bg-destructive/10 text-destructive"
+                                      : hasEvents
+                                        ? "border-primary/40 bg-primary/10 text-primary"
+                                        : "border-muted-foreground/30 bg-muted/30 text-muted-foreground"
+                                  )}
+                                  aria-label="Day indicators"
+                                >
+                                  {(() => {
+                                    const count = (hasPublicHoliday ? 1 : 0) + (hasSchoolHoliday ? 1 : 0) + (hasEvents ? events.length : 0);
+                                    return count > 1 ? String(Math.min(count, 9)) : '•';
+                                  })()}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="space-y-1.5">
+                                  {hasPublicHoliday && (
+                                    <div className="text-xs">
+                                      <p className="font-medium text-destructive">Public Holiday</p>
+                                      {holidays.filter(h => h.type === 'public_holiday').map(h => (
+                                        <p key={h.id} className="text-xs">{h.name}</p>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {hasSchoolHoliday && !hasPublicHoliday && (
+                                    <p className="text-xs">School Holidays</p>
+                                  )}
+                                  {hasEvents && (
+                                    <div className="space-y-1">
+                                      <p className="text-xs font-medium">Events</p>
+                                      {events.map(ev => (
+                                        <div key={ev.id} className="flex items-center gap-1.5">
+                                          <div
+                                            className="h-2 w-2 rounded-full"
+                                            style={{ backgroundColor: eventTypeConfig[ev.type].color }}
+                                          />
+                                          <span className="text-xs">{ev.name}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )
+                      ) : (
+                        <>
+                          {hasPublicHoliday && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Flag className="h-3.5 w-3.5 text-destructive fill-destructive/20" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <div className="space-y-1">
+                                    <p className="text-xs font-medium text-destructive">Public Holiday</p>
                                     {holidays.filter(h => h.type === 'public_holiday').map(h => (
                                       <p key={h.id} className="text-xs">{h.name}</p>
                                     ))}
                                   </div>
-                                )}
-                                {hasSchoolHoliday && !hasPublicHoliday && (
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {hasSchoolHoliday && !hasPublicHoliday && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <GraduationCap className="h-3.5 w-3.5 text-amber-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>
                                   <p className="text-xs">School Holidays</p>
-                                )}
-                                {hasEvents && (
-                                  <div className="space-y-1">
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {hasEvents && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <div className="relative">
+                                    <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                                    {events.length > 1 && (
+                                      <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary text-[8px] text-primary-foreground flex items-center justify-center font-medium">
+                                        {events.length}
+                                      </span>
+                                    )}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <div className="space-y-1.5">
                                     <p className="text-xs font-medium">Events</p>
                                     {events.map(ev => (
                                       <div key={ev.id} className="flex items-center gap-1.5">
-                                        <div
-                                          className="h-2 w-2 rounded-full"
+                                        <div 
+                                          className="h-2 w-2 rounded-full" 
                                           style={{ backgroundColor: eventTypeConfig[ev.type].color }}
                                         />
                                         <span className="text-xs">{ev.name}</span>
                                       </div>
                                     ))}
                                   </div>
-                                )}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )
-                    ) : (
-                      <>
-                        {/* Public Holiday Indicator */}
-                        {hasPublicHoliday && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Flag className="h-3.5 w-3.5 text-destructive fill-destructive/20" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="space-y-1">
-                                  <p className="text-xs font-medium text-destructive">Public Holiday</p>
-                                  {holidays.filter(h => h.type === 'public_holiday').map(h => (
-                                    <p key={h.id} className="text-xs">{h.name}</p>
-                                  ))}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-
-                        {/* School Holiday Indicator */}
-                        {hasSchoolHoliday && !hasPublicHoliday && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <GraduationCap className="h-3.5 w-3.5 text-amber-500" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs">School Holidays</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-
-                        {/* Event Indicator */}
-                        {hasEvents && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <div className="relative">
-                                  <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-                                  {events.length > 1 && (
-                                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary text-[8px] text-primary-foreground flex items-center justify-center font-medium">
-                                      {events.length}
-                                    </span>
-                                  )}
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="space-y-1.5">
-                                  <p className="text-xs font-medium">Events</p>
-                                  {events.map(ev => (
-                                    <div key={ev.id} className="flex items-center gap-1.5">
-                                      <div 
-                                        className="h-2 w-2 rounded-full" 
-                                        style={{ backgroundColor: eventTypeConfig[ev.type].color }}
-                                      />
-                                      <span className="text-xs">{ev.name}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </>
-                    )}
-                  </div>
-
-                  <div className={cn(
-                    "text-muted-foreground",
-                    viewMode === 'month' ? "text-[10px]" : "text-xs",
-                    hasPublicHoliday && "text-destructive/80"
-                  )}>
-                    {format(date, viewMode === 'month' ? 'd' : 'd MMM')}
-                  </div>
-
-                  {/* Holiday/Event badges below date - non-compact only */}
-                  {!isCompact && (hasPublicHoliday || hasEvents) && (
-                    <div className="flex flex-wrap gap-1 justify-center mt-1">
-                      {holidays.filter(h => h.type === 'public_holiday').slice(0, 1).map(h => (
-                        <Badge 
-                          key={h.id} 
-                          variant="destructive" 
-                          className="text-[9px] px-1.5 py-0 h-4"
-                        >
-                          {h.name.length > 12 ? h.name.slice(0, 10) + '...' : h.name}
-                        </Badge>
-                      ))}
-                      {events.slice(0, 1).map(ev => (
-                        <Badge 
-                          key={ev.id} 
-                          variant="outline" 
-                          className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary"
-                        >
-                          {ev.name.length > 12 ? ev.name.slice(0, 10) + '...' : ev.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            <div
-              className={cn(
-                "w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground bg-muted/50 border-l border-border",
-                isCostSticky && !isMonthView && "sticky right-0 z-40"
-              )}
-            >
-              <div className="flex items-center justify-center gap-1">
-                <DollarSign className="h-3.5 w-3.5" />
-                <span>Cost</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 ml-1"
-                  onClick={() => setIsCostSticky(v => !v)}
-                  aria-label={isCostSticky ? 'Unpin Cost column' : 'Pin Cost column'}
-                >
-                  {isCostSticky ? (
-                    <PinOff className="h-3.5 w-3.5" />
-                  ) : (
-                    <Pin className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Room sections */}
-          {centre.rooms.map((room, roomIndex) => {
-            const roomStaffIds = staffByRoom[room.id] || new Set();
-            const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
-            const roomOpenShifts = openShiftsByRoomDate[room.id] || [];
-            const isCollapsed = collapsedRooms.has(room.id);
-            const roomColor = getRoomColor(roomIndex);
-
-            // Calculate shifts per day for collapsed view
-            const getRoomShiftsForDay = (dateStr: string) => {
-              return shifts.filter(s => 
-                s.centreId === centre.id && 
-                s.roomId === room.id && 
-                s.date === dateStr
-              );
-            };
-
-            const getRoomOpenShiftsForDay = (dateStr: string) => {
-              return openShifts.filter(os => 
-                os.roomId === room.id && 
-                os.date === dateStr
-              );
-            };
-
-            return (
-              <div 
-                key={room.id}
-                // NOTE: Avoid transforms on ancestors of sticky columns; transforms break position: sticky.
-                className="animate-fade-opacity"
-                style={{ 
-                  borderLeft: `4px solid ${roomColor}`,
-                }}
-              >
-                {/* Room header */}
-                <div 
-                  className={cn(
-                    "flex border-b sticky top-[53px] z-20 shadow-sm cursor-pointer transition-colors",
-                    !isCollapsed && "hover:brightness-95"
-                  )}
-                  style={{ 
-                    backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`,
-                    borderBottomColor: `color-mix(in srgb, ${roomColor} 25%, transparent)`,
-                  }}
-                  onClick={() => toggleRoomCollapse(room.id)}
-                >
-                  <div
-                    data-drop-zone
-                    className="w-64 shrink-0 px-3 py-2 flex items-center gap-2 border-r sticky left-0 z-30"
-                    style={{ 
-                      borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)`,
-                      backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDragOver(e, `room-header-${room.id}`);
-                    }}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const staffId = e.dataTransfer.getData('staffId');
-                      const draggedType = e.dataTransfer.getData('dragType');
-                      if (!staffId || draggedType === 'shift') return;
-
-                      setDragOverCell(null);
-                      setIsDragging(false);
-                      setDragType(null);
-                      onAssignStaffToRoom?.(staffId, room.id);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleRoomCollapse(room.id);
-                      }}
-                      className="p-0.5 rounded hover:bg-black/10 transition-all"
-                    >
-                      {isCollapsed ? (
-                        <ChevronRightIcon className="h-4 w-4 transition-transform" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 transition-transform" />
-                      )}
-                    </button>
-                    <Badge 
-                      variant="secondary" 
-                      className="font-semibold text-xs px-2 py-0.5"
-                      style={{ 
-                        backgroundColor: roomColor,
-                        color: 'white',
-                        textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                      }}
-                    >
-                      {room.name}
-                    </Badge>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {ageGroupLabels[room.ageGroup]} • 1:{room.requiredRatio} • Cap: {room.capacity}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Analytics charts in header row when enabled - only when expanded and not in month view */}
-                  {!isCollapsed && showAnalyticsCharts && viewMode !== 'month' && demandAnalytics.length > 0 && dates.map((date) => {
-                    const dateStr = format(date, 'yyyy-MM-dd');
-                    return (
-                      <div 
-                        key={dateStr} 
-                        className={cn(
-                          "shrink-0 xl:shrink p-1 border-r",
-                          viewMode === 'day'
-                            ? "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto"
-                            : isCompact
-                              ? (viewMode === 'fortnight'
-                                  ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
-                                  : "w-[70px]")
-                              : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto"
-                        )}
-                        style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <InlineDemandChart
-                          analyticsData={demandAnalytics}
-                          absences={staffAbsences}
-                          date={dateStr}
-                          roomId={room.id}
-                          isCompact={isCompact}
-                        />
-                      </div>
-                    );
-                  })}
-                  
-                  {!isCollapsed && showAnalyticsCharts && viewMode !== 'month' && (
-                    <div 
-                      className="w-24 shrink-0 border-r"
-                      style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
-                    />
-                  )}
-                  
-                  {/* Collapsed day summaries */}
-                  {isCollapsed && dates.map((date) => {
-                    const dateStr = format(date, 'yyyy-MM-dd');
-                    const dayShifts = getRoomShiftsForDay(dateStr);
-                    const dayOpenShifts = getRoomOpenShiftsForDay(dateStr);
-                    const uniqueStaff = new Set(dayShifts.map(s => s.staffId)).size;
-                    const hasOpenShifts = dayOpenShifts.length > 0;
-                    
-                    // Calculate if understaffed based on room ratio and capacity
-                    const requiredStaff = Math.ceil(room.capacity / room.requiredRatio);
-                    const isUnderstaffed = uniqueStaff < requiredStaff && uniqueStaff > 0;
-                    
-                    return (
-                      <div 
-                        key={dateStr} 
-                        className={cn(
-                          "shrink-0 xl:shrink border-r flex items-center justify-center",
-                          isMonthView
-                            ? "w-[60px] md:w-[70px]"
-                            : isCompact
-                              ? (viewMode === 'fortnight'
-                                  ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
-                                  : "w-[70px]")
-                              : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto",
-                          isUnderstaffed && "bg-destructive/5"
-                        )}
-                        style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {dayShifts.length > 0 ? (
-                          <div className="flex items-center gap-2 py-2 px-1">
-                            {/* Warning icon for understaffed */}
-                            {isUnderstaffed && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="text-xs font-medium text-destructive">Understaffed</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {uniqueStaff} of {requiredStaff} required
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                            
-                            {/* Shift and staff info */}
-                            <div className="flex flex-col items-center min-w-0">
-                              <div className="flex items-baseline gap-0.5">
-                                <span className={cn(
-                                  "text-sm font-semibold leading-none",
-                                  isUnderstaffed && "text-destructive"
-                                )}>
-                                  {dayShifts.length}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground leading-none">shifts</span>
-                              </div>
-                              <span className={cn(
-                                "text-[10px] leading-tight mt-0.5",
-                                isUnderstaffed ? "text-destructive font-medium" : "text-muted-foreground"
-                              )}>
-                                {uniqueStaff}/{requiredStaff} staff
-                              </span>
-                              {hasOpenShifts && (
-                                <Badge 
-                                  variant="outline" 
-                                  className="text-[9px] px-1.5 py-0 h-4 mt-1 border-amber-400 text-amber-600 bg-amber-50"
-                                >
-                                  {dayOpenShifts.length} open
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {isCollapsed && (
-                    <div 
-                      className={cn(
-                        "w-24 shrink-0 flex items-center justify-center border-l bg-card",
-                        isCostSticky && !isMonthView && "sticky right-0 z-30"
-                      )}
-                      style={{ borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
-                    >
-                      <Badge variant="secondary" className="text-xs font-medium">
-                        {roomStaff.length} staff
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-
-                {/* Collapsible content with animation */}
-                <div 
-                  className={cn(
-                    "overflow-y-hidden overflow-x-visible transition-all duration-300 ease-in-out",
-                    isCollapsed ? "max-h-0 opacity-0" : "max-h-[5000px] opacity-100"
-                  )}
-                >
-                  {!isCollapsed && (
-                    <>
-                {roomStaff.map((member) => {
-                  const costs = calculateStaffCosts(member.id);
-                  const topQualifications = member.qualifications.slice(0, 2);
-
-                  return (
-                    <div key={`${room.id}-${member.id}`} className="flex border-b border-border hover:bg-muted/20 transition-colors">
-                      {/* Staff info cell */}
-                      <div 
-                        className={cn(
-                          "w-64 shrink-0 p-2 border-r border-border bg-card flex items-start gap-2 cursor-grab group/staff transition-opacity duration-200 sticky left-0 z-20",
-                          isDragging && "opacity-60"
-                        )}
-                        draggable
-                        onDragStart={(e) => handleStaffDragStart(e, member)}
-                      >
-                        <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-1" />
-                        <div 
-                          className="h-9 w-9 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0 cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-2 transition-all"
-                          style={{ backgroundColor: member.color }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onStaffClick?.(member);
-                          }}
-                        >
-                          {member.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p 
-                              className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary hover:underline transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onStaffClick?.(member);
-                              }}
-                            >
-                              {member.name}
-                            </p>
-                            {/* Remove from room menu */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-5 w-5 opacity-0 group-hover/staff:opacity-100 transition-opacity -mr-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <MoreHorizontal className="h-3.5 w-3.5" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem onClick={() => onStaffClick?.(member)}>
-                                  <User className="h-4 w-4 mr-2" />
-                                  View Profile
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => handleRequestRemoveStaffFromRoom(member.id, room.id, member, room.name)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Remove from Room
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                          <p className="text-[10px] text-muted-foreground">{roleLabels[member.role]}</p>
-                          <div className="flex flex-wrap gap-0.5 mt-0.5">
-                            {topQualifications.map((q, idx) => (
-                              <TooltipProvider key={idx}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Badge 
-                                      variant={q.isExpired ? 'destructive' : q.isExpiringSoon ? 'outline' : 'secondary'}
-                                      className={cn("text-[8px] px-1 py-0 h-3.5", q.isExpiringSoon && "border-amber-500 text-amber-600")}
-                                    >
-                                      {qualificationLabels[q.type].slice(0, 8)}
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{qualificationLabels[q.type]}</p>
-                                    {q.expiryDate && <p className="text-xs text-muted-foreground">Expires: {q.expiryDate}</p>}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            ))}
-                            {member.qualifications.length > 2 && (
-                              <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5">+{member.qualifications.length - 2}</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Day cells */}
-                      {dates.map((date) => {
-                        const dateStr = format(date, 'yyyy-MM-dd');
-                        const cellKey = `${member.id}-${room.id}-${dateStr}`;
-                        const cellShifts = getShiftsForStaffDay(member.id, dateStr, room.id);
-                        const isDragOver = dragOverCell === cellKey;
-                        const timeOff = isStaffOnTimeOff(member, dateStr);
-
-                        return (
-                          <div
-                            key={cellKey}
-                            data-drop-zone
-                            className={cn(
-                              "shrink-0 p-1 border-r border-border relative group/cell",
-                              "transition-all duration-200 ease-out",
-                              isMonthView
-                                ? "w-[60px] md:w-[70px]"
-                                : isCompact
-                                  ? (viewMode === 'fortnight'
-                                      ? "w-[70px] xl:flex-1 xl:min-w-[80px] xl:w-auto"
-                                      : "w-[70px]")
-                                  : "w-[100px] xl:flex-1 xl:min-w-[120px] xl:w-auto",
-                              timeOff && "bg-amber-500/10",
-                              // Drop zone highlight states
-                              isDragging && !timeOff && "bg-primary/5",
-                              isDragOver && !timeOff && "bg-primary/20 ring-2 ring-inset ring-primary/50 scale-[1.02]",
-                              // Pulsing effect for valid drop targets during drag
-                              isDragging && !timeOff && !isDragOver && "animate-pulse"
-                            )}
-                            onDragOver={(e) => !timeOff && handleDragOver(e, cellKey)}
-                            onDragLeave={handleDragLeave}
-                            onDrop={(e) => !timeOff && handleDrop(e, member.id, dateStr, room.id)}
-                          >
-                            {/* Drop zone indicator overlay */}
-                            {isDragging && !timeOff && !isDragOver && (
-                              <div className="absolute inset-1 border-2 border-dashed border-primary/30 rounded-md pointer-events-none flex items-center justify-center">
-                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <Plus className="h-3 w-3 text-primary/50" />
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Active drop indicator */}
-                            {isDragOver && !timeOff && (
-                              <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none animate-scale-in">
-                                <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-                                  <div className="bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-medium shadow-lg">
-                                    Drop here
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            {/* Time off indicator */}
-                            {timeOff && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="flex items-center gap-1 text-amber-600 bg-amber-500/20 px-2 py-1 rounded text-[10px]">
-                                  <Palmtree className="h-3 w-3" />
-                                  <span>{timeOffTypeLabels[timeOff.type].split(' ')[0]}</span>
-                                </div>
-                              </div>
-                            )}
-
-                            {!timeOff && (
-                              <>
-                                {/* Staff Availability Overlay - shows when no shifts */}
-                                {cellShifts.length === 0 && (
-                                  <StaffAvailabilityOverlay 
-                                    staff={member} 
-                                    date={date}
-                                    isCompact={isCompact}
-                                  />
-                                )}
-                                
-                                <div className="space-y-1 relative z-10">
-                                {cellShifts.map((shift) => (
-                                    <StaffShiftCard
-                                      key={shift.id}
-                                      shift={shift}
-                                      staff={member}
-                                      allStaff={staff}
-                                      highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
-                                      onViewSeries={onViewSeries}
-                                      onEdit={() => onShiftEdit(shift)}
-                                      onDelete={() => handleRequestDeleteShift(shift, member)}
-                                      onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
-                                      onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
-                                      onShiftTypeChange={onShiftTypeChange}
-                                      onDragStart={handleShiftDragStart}
-                                      isCompact={isCompact}
-                                      isMonthView={isMonthView}
-                                    />
-                                  ))}
-                                </div>
-
-                                {cellShifts.length === 0 && (
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className={cn(
-                                          "w-full h-8 text-xs text-muted-foreground/30 hover:text-muted-foreground",
-                                          "border border-dashed border-transparent hover:border-muted-foreground/30",
-                                          "opacity-0 hover:opacity-100 transition-opacity"
-                                        )}
-                                      >
-                                        <Plus className="h-3 w-3 mr-1" />
-                                        <ChevronDown className="h-2.5 w-2.5" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                      {/* Quick Shift Types */}
-                                      <DropdownMenuItem 
-                                        onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'morning', name: 'Morning', startTime: '06:30', endTime: '14:30', breakMinutes: 30, color: 'hsl(200, 70%, 50%)' })}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(200, 70%, 50%)' }} />
-                                          <span>Morning</span>
-                                          <span className="text-muted-foreground text-[10px]">06:30-14:30</span>
-                                        </div>
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem 
-                                        onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'afternoon', name: 'Afternoon', startTime: '12:00', endTime: '18:30', breakMinutes: 30, color: 'hsl(280, 60%, 50%)' })}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(280, 60%, 50%)' }} />
-                                          <span>Afternoon</span>
-                                          <span className="text-muted-foreground text-[10px]">12:00-18:30</span>
-                                        </div>
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem 
-                                        onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'fullday', name: 'Full Day', startTime: '07:00', endTime: '18:00', breakMinutes: 60, color: 'hsl(340, 65%, 50%)' })}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(340, 65%, 50%)' }} />
-                                          <span>Full Day</span>
-                                          <span className="text-muted-foreground text-[10px]">07:00-18:00</span>
-                                        </div>
-                                      </DropdownMenuItem>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem onClick={() => onAddShift(member.id, dateStr, room.id)}>
-                                        Custom Shift
-                                      </DropdownMenuItem>
-                                      {shiftTemplates.length > 0 && (
-                                        <>
-                                          <DropdownMenuSeparator />
-                                          {shiftTemplates.map(template => (
-                                            <DropdownMenuItem 
-                                              key={template.id}
-                                              onClick={() => onAddShift(member.id, dateStr, room.id, template)}
-                                            >
-                                              <div className="flex items-center gap-2">
-                                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: template.color }} />
-                                                <span>{template.name}</span>
-                                                <span className="text-muted-foreground text-[10px]">
-                                                  {template.startTime}-{template.endTime}
-                                                </span>
-                                              </div>
-                                            </DropdownMenuItem>
-                                          ))}
-                                        </>
-                                      )}
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem onClick={() => onOpenShiftTemplateManager?.()}>
-                                        <div className="flex items-center gap-2">
-                                          <Settings className="h-3 w-3" />
-                                          <span>Create Shift Type...</span>
-                                        </div>
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      {/* Cost cell */}
-                      <div
-                        className={cn(
-                          "w-24 shrink-0 p-1.5 border-l border-border bg-card",
-                          isCostSticky && !isMonthView && "sticky right-0 z-30"
-                        )}
-                      >
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="text-center">
-                                <div className={cn(
-                                  "text-sm font-semibold",
-                                  costs.overtimeCost > 0 && "text-amber-600",
-                                  costs.totalCost === 0 && "text-muted-foreground"
-                                )}>
-                                  ${costs.totalCost}
-                                </div>
-                                <div className="text-[10px] text-muted-foreground">{costs.totalHours}h</div>
-                                {costs.overtimeCost > 0 && (
-                                  <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-amber-500 text-amber-600 mt-0.5">
-                                    +${costs.overtimeCost} OT
-                                  </Badge>
-                                )}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div className="space-y-1 text-xs">
-                                <div className="flex justify-between gap-4">
-                                  <span className="text-muted-foreground">Regular:</span>
-                                  <span>${costs.regularCost}</span>
-                                </div>
-                                {costs.overtimeCost > 0 && (
-                                  <div className="flex justify-between gap-4 text-amber-600">
-                                    <span>Overtime:</span>
-                                    <span>${costs.overtimeCost}</span>
-                                  </div>
-                                )}
-                                <div className="flex justify-between gap-4 font-medium border-t border-border pt-1">
-                                  <span>Total:</span>
-                                  <span>${costs.totalCost}</span>
-                                </div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Open Shifts row */}
-                {roomOpenShifts.length > 0 && (
-                  <div className="flex border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10">
-                    <div className="w-64 shrink-0 p-3 border-r border-amber-200/50 flex items-center gap-3 sticky left-0 z-20 bg-amber-50/80 dark:bg-amber-950/30">
-                      <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-amber-100 dark:bg-amber-900/50 shadow-sm">
-                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Open Shifts</p>
-                        <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80">Drag staff to fill</p>
-                      </div>
-                    </div>
-
-                    {dates.map((date) => {
-                      const dateStr = format(date, 'yyyy-MM-dd');
-                      const dayOpenShifts = getOpenShiftsForDay(room.id, dateStr);
-                      const cellKey = `open-${room.id}-${dateStr}`;
-                      const isDragOver = dragOverCell === cellKey;
-                      const hasOpenShifts = dayOpenShifts.length > 0;
-
-                      return (
-                        <div
-                          key={cellKey}
-                          data-drop-zone
-                          className={cn(
-                            "shrink-0 xl:shrink p-1.5 border-r border-amber-200/30 relative group/open-cell",
-                            "transition-all duration-200 ease-out",
-                            isMonthView ? "w-[60px] md:w-[70px]" : isCompact ? "min-w-[80px] flex-1" : "min-w-[120px] flex-1",
-                            isDragging && hasOpenShifts && "bg-emerald-50/50 dark:bg-emerald-950/20",
-                            isDragOver && hasOpenShifts && "bg-emerald-100 dark:bg-emerald-900/40 ring-2 ring-inset ring-emerald-500/50"
-                          )}
-                          onDragOver={(e) => hasOpenShifts && handleDragOver(e, cellKey)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => hasOpenShifts && dayOpenShifts[0] && handleOpenShiftDrop(e, dayOpenShifts[0])}
-                        >
-                          {isDragOver && hasOpenShifts && (
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                              <div className="bg-emerald-600 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg animate-scale-in">
-                                Fill shift
-                              </div>
-                            </div>
-                          )}
-                          <div className="flex flex-col gap-1">
-                            {dayOpenShifts.map((openShift) => (
-                              <OpenShiftCard 
-                                key={openShift.id} 
-                                openShift={openShift} 
-                                isCompact={isCompact} 
-                                isDragOver={isDragOver} 
-                                onDelete={onOpenShiftDelete ? () => handleRequestDeleteOpenShift(openShift, room.name) : undefined}
-                                onSendToAgency={onSendToAgency ? () => onSendToAgency(openShift) : undefined}
-                              />
-                            ))}
-                          </div>
-                          
-                          {/* Quick-add button */}
-                          {onAddOpenShift && !isDragging && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => onAddOpenShift(room.id, dateStr)}
-                                    className={cn(
-                                      "absolute bottom-1 right-1 h-5 w-5 rounded flex items-center justify-center",
-                                      "bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/50 dark:hover:bg-amber-800/70",
-                                      "text-amber-600 dark:text-amber-400 transition-all duration-200",
-                                      "opacity-0 group-hover/open-cell:opacity-100 focus:opacity-100",
-                                      "shadow-sm hover:shadow"
-                                    )}
-                                  >
-                                    <Plus className="h-3 w-3" />
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <p className="text-xs">Add open shift</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           )}
-                        </div>
-                      );
-                    })}
-
-                    <div
-                      className={cn(
-                        "w-24 shrink-0 border-l border-amber-200/30 bg-amber-50/40 dark:bg-amber-950/10",
-                        isCostSticky && !isMonthView && "sticky right-0 z-20"
+                        </>
                       )}
-                    />
-                  </div>
-                )}
-
-                {/* Empty Shifts row - shifts without staff assigned */}
-                {(() => {
-                  const roomEmptyShifts = emptyShifts.filter(es => es.roomId === room.id && es.centreId === centre.id);
-                  if (roomEmptyShifts.length === 0) return null;
-                  
-                  return (
-                    <div className="flex border-b border-border bg-purple-500/5 hover:bg-purple-500/10 transition-colors">
-                      <div className="w-64 shrink-0 p-2 border-r border-border flex items-center gap-2 sticky left-0 z-20 bg-purple-500/5">
-                        <div className="h-9 w-9 rounded-full flex items-center justify-center bg-purple-500/20 border-2 border-dashed border-purple-500/50">
-                          <Zap className="h-4 w-4 text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-purple-700 dark:text-purple-300">Empty Shifts</p>
-                          <p className="text-[10px] text-purple-600 dark:text-purple-400">Auto-assign or drop staff</p>
-                        </div>
-                      </div>
-
-                      {dates.map((date) => {
-                        const dateStr = format(date, 'yyyy-MM-dd');
-                        const dayEmptyShifts = getEmptyShiftsForRoomDay(room.id, dateStr);
-                        const cellKey = `empty-${room.id}-${dateStr}`;
-                        const isDragOver = dragOverCell === cellKey;
-
-                        return (
-                          <div
-                            key={cellKey}
-                            data-drop-zone
-                            className={cn(
-                              "shrink-0 xl:shrink p-1 border-r border-border relative",
-                              "transition-all duration-200 ease-out",
-                              isMonthView
-                                ? "w-[60px] md:w-[70px]"
-                                : isCompact
-                                  ? "min-w-[80px] flex-1"
-                                  : "min-w-[120px] flex-1",
-                              isDragging && dayEmptyShifts.length > 0 && "bg-purple-500/5",
-                              isDragOver && dayEmptyShifts.length > 0 && "bg-purple-500/20 ring-2 ring-inset ring-purple-500/50"
-                            )}
-                            onDragOver={(e) => dayEmptyShifts.length > 0 && handleDragOver(e, cellKey)}
-                            onDragLeave={handleDragLeave}
-                            onDrop={(e) => {
-                              if (dayEmptyShifts.length > 0) {
-                                e.preventDefault();
-                                const staffId = e.dataTransfer.getData('staffId');
-                                if (staffId && onEmptyShiftClick) {
-                                  // Clicking empty shift will open auto-assign
-                                  onEmptyShiftClick(dayEmptyShifts[0]);
-                                }
-                              }
-                            }}
-                          >
-                            {dayEmptyShifts.map((emptyShift) => (
-                              <EmptyShiftCard 
-                                key={emptyShift.id} 
-                                emptyShift={emptyShift} 
-                                isCompact={isCompact}
-                                onClick={() => onEmptyShiftClick?.(emptyShift)}
-                                onDelete={onDeleteEmptyShift ? () => onDeleteEmptyShift(emptyShift.id) : undefined}
-                              />
-                            ))}
-                          </div>
-                        );
-                      })}
-
-                      <div
-                        className={cn(
-                          "w-24 shrink-0 border-l border-border bg-purple-500/5",
-                          isCostSticky && !isMonthView && "sticky right-0 z-20"
-                        )}
-                      />
                     </div>
-                  );
-                })()}
 
-                {/* Drop zone row for adding new staff to this room - ALWAYS visible */}
-                <div 
-                  className={cn(
-                    "flex border-b transition-colors",
-                    isDragging && dragType === 'staff' 
-                      ? "bg-gradient-to-r from-sky-50/80 to-sky-50/40 dark:from-sky-950/30 dark:to-sky-950/10 border-sky-200/50" 
-                      : "bg-muted/30 border-border/50"
-                  )}
-                >
-                  <div 
-                    data-drop-zone
-                    className={cn(
-                      "w-64 shrink-0 p-3 border-r flex items-center gap-3 transition-colors",
-                      isDragging && dragType === 'staff' 
-                        ? "border-sky-200/50" 
-                        : "border-border/50"
-                    )}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      handleDragOver(e, `assign-staff-${room.id}`);
-                    }}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const staffId = e.dataTransfer.getData('staffId');
-                      const draggedType = e.dataTransfer.getData('dragType');
-                      if (!staffId || draggedType === 'shift') return;
-
-                      setDragOverCell(null);
-                      setIsDragging(false);
-                      setDragType(null);
-                      onAssignStaffToRoom?.(staffId, room.id);
-                    }}
-                  >
                     <div className={cn(
-                      "h-8 w-8 rounded-lg flex items-center justify-center transition-colors shadow-sm",
-                      isDragging && dragType === 'staff'
-                        ? "bg-sky-100 dark:bg-sky-900/50"
-                        : "bg-muted"
+                      "text-muted-foreground",
+                      viewMode === 'month' ? "text-[10px]" : "text-xs",
+                      hasPublicHoliday && "text-destructive/80"
                     )}>
-                      <User className={cn(
-                        "h-4 w-4 transition-colors",
-                        isDragging && dragType === 'staff' ? "text-sky-600 dark:text-sky-400" : "text-muted-foreground"
-                      )} />
+                      {format(date, viewMode === 'month' ? 'd' : 'd MMM')}
                     </div>
-                    <div>
-                      <p className={cn(
-                        "text-sm font-semibold transition-colors",
-                        isDragging && dragType === 'staff' ? "text-sky-800 dark:text-sky-200" : "text-muted-foreground"
-                      )}>
-                        {isDragging && dragType === 'staff' ? "Drop here" : "Add Staff"}
-                      </p>
-                      <p className={cn(
-                        "text-[10px] transition-colors",
-                        isDragging && dragType === 'staff' ? "text-sky-600/80 dark:text-sky-400/80" : "text-muted-foreground/60"
-                      )}>
-                        {isDragging && dragType === 'staff' 
-                          ? `Assign to ${room.name}` 
-                          : `Drag staff to ${room.name}`}
-                      </p>
-                    </div>
-                  </div>
 
-                  {dates.map((date) => {
-                    const dateStr = format(date, 'yyyy-MM-dd');
-                    const cellKey = `add-staff-${room.id}-${dateStr}`;
-                    const isDragOver = dragOverCell === cellKey;
-                    const showDropZone = isDragging && dragType === 'staff';
-
-                    return (
-                      <div
-                        key={cellKey}
-                        data-drop-zone
-                        className={cn(
-                          "flex-1 p-1.5 border-r relative",
-                          "transition-all duration-200 ease-out",
-                          isMonthView
-                            ? "w-[60px] md:w-[70px]"
-                            : isCompact ? "min-w-[80px]" : "min-w-[120px]",
-                          showDropZone && !isDragOver && "border-sky-200/30 bg-sky-50/30 dark:bg-sky-950/10",
-                          isDragOver && "bg-sky-100 dark:bg-sky-900/40 ring-2 ring-inset ring-sky-500/50",
-                          !showDropZone && "border-border/30"
-                        )}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          handleDragOver(e, cellKey);
-                        }}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const staffId = e.dataTransfer.getData('staffId');
-                          const draggedType = e.dataTransfer.getData('dragType');
-                          if (staffId && draggedType !== 'shift') {
-                            setDragOverCell(null);
-                            setIsDragging(false);
-                            setDragType(null);
-                            onAssignStaffToRoom?.(staffId, room.id);
-                          }
-                        }}
-                      >
-                        {showDropZone && !isDragOver && (
-                          <div className="absolute inset-1 rounded-md flex items-center justify-center">
-                            <div className="w-5 h-5 rounded-full bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
-                              <Plus className="h-3 w-3 text-sky-500" />
-                            </div>
-                          </div>
-                        )}
-                        
-                        {isDragOver && (
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                            <div className="bg-sky-600 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg animate-scale-in">
-                              Add staff
-                            </div>
-                          </div>
-                        )}
+                    {!isCompact && (hasPublicHoliday || hasEvents) && (
+                      <div className="flex flex-wrap gap-1 justify-center mt-1">
+                        {holidays.filter(h => h.type === 'public_holiday').slice(0, 1).map(h => (
+                          <Badge 
+                            key={h.id} 
+                            variant="destructive" 
+                            className="text-[9px] px-1.5 py-0 h-4"
+                          >
+                            {h.name.length > 12 ? h.name.slice(0, 10) + '...' : h.name}
+                          </Badge>
+                        ))}
+                        {events.slice(0, 1).map(ev => (
+                          <Badge 
+                            key={ev.id} 
+                            variant="outline" 
+                            className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary"
+                          >
+                            {ev.name.length > 12 ? ev.name.slice(0, 10) + '...' : ev.name}
+                          </Badge>
+                        ))}
                       </div>
-                    );
-                  })}
-
-                  <div className="w-24 shrink-0 border-r border-border/30" />
-                </div>
-                  </>
-                  )}
+                    )}
+                  </div>
+                );
+              })}
+              {/* Cost header */}
+              <div className="w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground border-l border-border">
+                <div className="flex items-center justify-center gap-1">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  <span>Cost</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 ml-1"
+                    onClick={() => setIsCostSticky(v => !v)}
+                    aria-label={isCostSticky ? 'Unpin Cost column' : 'Pin Cost column'}
+                  >
+                    {isCostSticky ? (
+                      <PinOff className="h-3.5 w-3.5" />
+                    ) : (
+                      <Pin className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          </div>
+
+          {/* Timeline Body - scrollable both ways */}
+          <div 
+            ref={rightPaneRef}
+            className="flex-1 overflow-auto"
+          >
+            <div className="min-w-max">
+              {centre.rooms.map((room, roomIndex) => {
+                const roomStaffIds = staffByRoom[room.id] || new Set();
+                const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
+                const roomOpenShifts = openShiftsByRoomDate[room.id] || [];
+                const isCollapsed = collapsedRooms.has(room.id);
+                const roomColor = getRoomColor(roomIndex);
+
+                const getRoomShiftsForDay = (dateStr: string) => {
+                  return shifts.filter(s => 
+                    s.centreId === centre.id && 
+                    s.roomId === room.id && 
+                    s.date === dateStr
+                  );
+                };
+
+                const getRoomOpenShiftsForDay = (dateStr: string) => {
+                  return openShifts.filter(os => 
+                    os.roomId === room.id && 
+                    os.date === dateStr
+                  );
+                };
+
+                return (
+                  <div 
+                    key={room.id}
+                    className="animate-fade-opacity"
+                  >
+                    {/* Room header - right side (date cells for collapsed summary) */}
+                    <div 
+                      className={cn(
+                        "h-[42px] flex border-b cursor-pointer transition-colors",
+                        !isCollapsed && "hover:brightness-95"
+                      )}
+                      style={{ 
+                        backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`,
+                        borderBottomColor: `color-mix(in srgb, ${roomColor} 25%, transparent)`,
+                      }}
+                      onClick={() => toggleRoomCollapse(room.id)}
+                    >
+                      {/* Analytics charts or collapsed day summaries */}
+                      {!isCollapsed && showAnalyticsCharts && viewMode !== 'month' && demandAnalytics.length > 0 ? (
+                        <>
+                          {dates.map((date) => {
+                            const dateStr = format(date, 'yyyy-MM-dd');
+                            return (
+                              <div 
+                                key={dateStr} 
+                                className={cn(
+                                  "shrink-0 p-1 border-r",
+                                  isMonthView
+                                    ? "w-[60px] md:w-[70px]"
+                                    : isCompact
+                                      ? "w-[60px] md:w-[70px] xl:w-[90px]"
+                                      : "w-[80px] md:w-[100px] xl:w-[120px]"
+                                )}
+                                style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <InlineDemandChart
+                                  analyticsData={demandAnalytics}
+                                  absences={staffAbsences}
+                                  date={dateStr}
+                                  roomId={room.id}
+                                  isCompact={isCompact}
+                                />
+                              </div>
+                            );
+                          })}
+                          <div 
+                            className="w-24 shrink-0 border-r"
+                            style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
+                          />
+                        </>
+                      ) : isCollapsed ? (
+                        <>
+                          {dates.map((date) => {
+                            const dateStr = format(date, 'yyyy-MM-dd');
+                            const dayShifts = getRoomShiftsForDay(dateStr);
+                            const dayOpenShifts = getRoomOpenShiftsForDay(dateStr);
+                            const uniqueStaff = new Set(dayShifts.map(s => s.staffId)).size;
+                            const hasOpenShifts = dayOpenShifts.length > 0;
+                            const requiredStaff = Math.ceil(room.capacity / room.requiredRatio);
+                            const isUnderstaffed = uniqueStaff < requiredStaff && uniqueStaff > 0;
+                            
+                            return (
+                              <div 
+                                key={dateStr} 
+                                className={cn(
+                                  "shrink-0 border-r flex items-center justify-center",
+                                  isMonthView
+                                    ? "w-[60px] md:w-[70px]"
+                                    : isCompact
+                                      ? "w-[60px] md:w-[70px] xl:w-[90px]"
+                                      : "w-[80px] md:w-[100px] xl:w-[120px]",
+                                  isUnderstaffed && "bg-destructive/5"
+                                )}
+                                style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {dayShifts.length > 0 ? (
+                                  <div className="flex items-center gap-2 py-2 px-1">
+                                    {isUnderstaffed && (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p className="text-xs font-medium text-destructive">Understaffed</p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {uniqueStaff} of {requiredStaff} required
+                                            </p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
+                                    <div className="flex flex-col items-center min-w-0">
+                                      <div className="flex items-baseline gap-0.5">
+                                        <span className={cn(
+                                          "text-sm font-semibold leading-none",
+                                          isUnderstaffed && "text-destructive"
+                                        )}>
+                                          {dayShifts.length}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground leading-none">shifts</span>
+                                      </div>
+                                      <span className={cn(
+                                        "text-[10px] leading-tight mt-0.5",
+                                        isUnderstaffed ? "text-destructive font-medium" : "text-muted-foreground"
+                                      )}>
+                                        {uniqueStaff}/{requiredStaff} staff
+                                      </span>
+                                      {hasOpenShifts && (
+                                        <Badge 
+                                          variant="outline" 
+                                          className="text-[9px] px-1.5 py-0 h-4 mt-1 border-amber-400 text-amber-600 bg-amber-50"
+                                        >
+                                          {dayOpenShifts.length} open
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                          <div 
+                            className="w-24 shrink-0 flex items-center justify-center border-l bg-card"
+                            style={{ borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
+                          >
+                            <Badge variant="secondary" className="text-xs font-medium">
+                              {roomStaff.length} staff
+                            </Badge>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {dates.map((date) => (
+                            <div 
+                              key={date.toISOString()} 
+                              className={cn(
+                                "shrink-0 border-r",
+                                isMonthView
+                                  ? "w-[60px] md:w-[70px]"
+                                  : isCompact
+                                    ? "w-[60px] md:w-[70px] xl:w-[90px]"
+                                    : "w-[80px] md:w-[100px] xl:w-[120px]"
+                              )}
+                              style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
+                            />
+                          ))}
+                          <div className="w-24 shrink-0" />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Collapsible content - right side */}
+                    <div 
+                      className={cn(
+                        "overflow-hidden transition-all duration-300 ease-in-out",
+                        isCollapsed ? "max-h-0 opacity-0" : "max-h-[5000px] opacity-100"
+                      )}
+                    >
+                      {!isCollapsed && (
+                        <>
+                          {roomStaff.map((member) => {
+                            const costs = calculateStaffCosts(member.id);
+
+                            return (
+                              <div key={`right-${room.id}-${member.id}`} className="h-[72px] flex border-b border-border hover:bg-muted/20 transition-colors">
+                                {/* Day cells */}
+                                {dates.map((date) => {
+                                  const dateStr = format(date, 'yyyy-MM-dd');
+                                  const cellKey = `${member.id}-${room.id}-${dateStr}`;
+                                  const cellShifts = getShiftsForStaffDay(member.id, dateStr, room.id);
+                                  const isDragOver = dragOverCell === cellKey;
+                                  const timeOff = isStaffOnTimeOff(member, dateStr);
+
+                                  return (
+                                    <div
+                                      key={cellKey}
+                                      data-drop-zone
+                                      className={cn(
+                                        "shrink-0 p-1 border-r border-border relative group/cell",
+                                        "transition-all duration-200 ease-out",
+                                        isMonthView
+                                          ? "w-[60px] md:w-[70px]"
+                                          : isCompact
+                                            ? "w-[60px] md:w-[70px] xl:w-[90px]"
+                                            : "w-[80px] md:w-[100px] xl:w-[120px]",
+                                        timeOff && "bg-amber-500/10",
+                                        isDragging && !timeOff && "bg-primary/5",
+                                        isDragOver && !timeOff && "bg-primary/20 ring-2 ring-inset ring-primary/50 scale-[1.02]",
+                                        isDragging && !timeOff && !isDragOver && "animate-pulse"
+                                      )}
+                                      onDragOver={(e) => !timeOff && handleDragOver(e, cellKey)}
+                                      onDragLeave={handleDragLeave}
+                                      onDrop={(e) => !timeOff && handleDrop(e, member.id, dateStr, room.id)}
+                                    >
+                                      {isDragging && !timeOff && !isDragOver && (
+                                        <div className="absolute inset-1 border-2 border-dashed border-primary/30 rounded-md pointer-events-none flex items-center justify-center">
+                                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <Plus className="h-3 w-3 text-primary/50" />
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {isDragOver && !timeOff && (
+                                        <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none animate-scale-in">
+                                          <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                                            <div className="bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-medium shadow-lg">
+                                              Drop here
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {timeOff && (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                          <div className="flex items-center gap-1 text-amber-600 bg-amber-500/20 px-2 py-1 rounded text-[10px]">
+                                            <Palmtree className="h-3 w-3" />
+                                            <span>{timeOffTypeLabels[timeOff.type].split(' ')[0]}</span>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {!timeOff && (
+                                        <>
+                                          {cellShifts.length === 0 && (
+                                            <StaffAvailabilityOverlay 
+                                              staff={member} 
+                                              date={date}
+                                              isCompact={isCompact}
+                                            />
+                                          )}
+                                          
+                                          <div className="space-y-1 relative z-10">
+                                            {cellShifts.map((shift) => (
+                                              <StaffShiftCard
+                                                key={shift.id}
+                                                shift={shift}
+                                                staff={member}
+                                                allStaff={staff}
+                                                highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+                                                onViewSeries={onViewSeries}
+                                                onEdit={() => onShiftEdit(shift)}
+                                                onDelete={() => handleRequestDeleteShift(shift, member)}
+                                                onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
+                                                onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
+                                                onShiftTypeChange={onShiftTypeChange}
+                                                onDragStart={handleShiftDragStart}
+                                                isCompact={isCompact}
+                                                isMonthView={isMonthView}
+                                              />
+                                            ))}
+                                          </div>
+
+                                          {cellShifts.length === 0 && (
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className={cn(
+                                                    "w-full h-8 text-xs text-muted-foreground/30 hover:text-muted-foreground",
+                                                    "border border-dashed border-transparent hover:border-muted-foreground/30",
+                                                    "opacity-0 hover:opacity-100 transition-opacity"
+                                                  )}
+                                                >
+                                                  <Plus className="h-3 w-3 mr-1" />
+                                                  <ChevronDown className="h-2.5 w-2.5" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent>
+                                                <DropdownMenuItem 
+                                                  onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'morning', name: 'Morning', startTime: '06:30', endTime: '14:30', breakMinutes: 30, color: 'hsl(200, 70%, 50%)' })}
+                                                >
+                                                  <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(200, 70%, 50%)' }} />
+                                                    <span>Morning</span>
+                                                    <span className="text-muted-foreground text-[10px]">06:30-14:30</span>
+                                                  </div>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem 
+                                                  onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'afternoon', name: 'Afternoon', startTime: '12:00', endTime: '18:30', breakMinutes: 30, color: 'hsl(280, 60%, 50%)' })}
+                                                >
+                                                  <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(280, 60%, 50%)' }} />
+                                                    <span>Afternoon</span>
+                                                    <span className="text-muted-foreground text-[10px]">12:00-18:30</span>
+                                                  </div>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem 
+                                                  onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'fullday', name: 'Full Day', startTime: '07:00', endTime: '18:00', breakMinutes: 60, color: 'hsl(340, 65%, 50%)' })}
+                                                >
+                                                  <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(340, 65%, 50%)' }} />
+                                                    <span>Full Day</span>
+                                                    <span className="text-muted-foreground text-[10px]">07:00-18:00</span>
+                                                  </div>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => onAddShift(member.id, dateStr, room.id)}>
+                                                  Custom Shift
+                                                </DropdownMenuItem>
+                                                {shiftTemplates.length > 0 && (
+                                                  <>
+                                                    <DropdownMenuSeparator />
+                                                    {shiftTemplates.map(template => (
+                                                      <DropdownMenuItem 
+                                                        key={template.id}
+                                                        onClick={() => onAddShift(member.id, dateStr, room.id, template)}
+                                                      >
+                                                        <div className="flex items-center gap-2">
+                                                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: template.color }} />
+                                                          <span>{template.name}</span>
+                                                          <span className="text-muted-foreground text-[10px]">
+                                                            {template.startTime}-{template.endTime}
+                                                          </span>
+                                                        </div>
+                                                      </DropdownMenuItem>
+                                                    ))}
+                                                  </>
+                                                )}
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => onOpenShiftTemplateManager?.()}>
+                                                  <div className="flex items-center gap-2">
+                                                    <Settings className="h-3 w-3" />
+                                                    <span>Create Shift Type...</span>
+                                                  </div>
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+
+                                {/* Cost cell */}
+                                <div className="w-24 shrink-0 p-1.5 border-l border-border bg-card flex items-center justify-center">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="text-center">
+                                          <div className={cn(
+                                            "text-sm font-semibold",
+                                            costs.overtimeCost > 0 && "text-amber-600",
+                                            costs.totalCost === 0 && "text-muted-foreground"
+                                          )}>
+                                            ${costs.totalCost}
+                                          </div>
+                                          <div className="text-[10px] text-muted-foreground">{costs.totalHours}h</div>
+                                          {costs.overtimeCost > 0 && (
+                                            <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-amber-500 text-amber-600 mt-0.5">
+                                              +${costs.overtimeCost} OT
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div className="space-y-1 text-xs">
+                                          <div className="flex justify-between gap-4">
+                                            <span className="text-muted-foreground">Regular:</span>
+                                            <span>${costs.regularCost}</span>
+                                          </div>
+                                          {costs.overtimeCost > 0 && (
+                                            <div className="flex justify-between gap-4 text-amber-600">
+                                              <span>Overtime:</span>
+                                              <span>${costs.overtimeCost}</span>
+                                            </div>
+                                          )}
+                                          <div className="flex justify-between gap-4 font-medium border-t border-border pt-1">
+                                            <span>Total:</span>
+                                            <span>${costs.totalCost}</span>
+                                          </div>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {/* Open Shifts row - right side */}
+                          {roomOpenShifts.length > 0 && (
+                            <div className="h-[52px] flex border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10">
+                              {dates.map((date) => {
+                                const dateStr = format(date, 'yyyy-MM-dd');
+                                const dayOpenShifts = getOpenShiftsForDay(room.id, dateStr);
+                                const cellKey = `open-${room.id}-${dateStr}`;
+                                const isDragOver = dragOverCell === cellKey;
+                                const hasOpenShifts = dayOpenShifts.length > 0;
+
+                                return (
+                                  <div
+                                    key={cellKey}
+                                    data-drop-zone
+                                    className={cn(
+                                      "shrink-0 p-1.5 border-r border-amber-200/30 relative group/open-cell",
+                                      "transition-all duration-200 ease-out",
+                                      isMonthView
+                                        ? "w-[60px] md:w-[70px]"
+                                        : isCompact
+                                          ? "w-[60px] md:w-[70px] xl:w-[90px]"
+                                          : "w-[80px] md:w-[100px] xl:w-[120px]",
+                                      isDragging && hasOpenShifts && "bg-emerald-50/50 dark:bg-emerald-950/20",
+                                      isDragOver && hasOpenShifts && "bg-emerald-100 dark:bg-emerald-900/40 ring-2 ring-inset ring-emerald-500/50"
+                                    )}
+                                    onDragOver={(e) => hasOpenShifts && handleDragOver(e, cellKey)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => hasOpenShifts && dayOpenShifts[0] && handleOpenShiftDrop(e, dayOpenShifts[0])}
+                                  >
+                                    {isDragOver && hasOpenShifts && (
+                                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                                        <div className="bg-emerald-600 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg animate-scale-in">
+                                          Fill shift
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="flex flex-col gap-1">
+                                      {dayOpenShifts.map((openShift) => (
+                                        <OpenShiftCard 
+                                          key={openShift.id} 
+                                          openShift={openShift} 
+                                          isCompact={isCompact} 
+                                          isDragOver={isDragOver} 
+                                          onDelete={onOpenShiftDelete ? () => handleRequestDeleteOpenShift(openShift, room.name) : undefined}
+                                          onSendToAgency={onSendToAgency ? () => onSendToAgency(openShift) : undefined}
+                                        />
+                                      ))}
+                                    </div>
+                                    
+                                    {onAddOpenShift && !isDragging && (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              onClick={() => onAddOpenShift(room.id, dateStr)}
+                                              className={cn(
+                                                "absolute bottom-1 right-1 h-5 w-5 rounded flex items-center justify-center",
+                                                "bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/50 dark:hover:bg-amber-800/70",
+                                                "text-amber-600 dark:text-amber-400 transition-all duration-200",
+                                                "opacity-0 group-hover/open-cell:opacity-100 focus:opacity-100",
+                                                "shadow-sm hover:shadow"
+                                              )}
+                                            >
+                                              <Plus className="h-3 w-3" />
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top">
+                                            <p className="text-xs">Add open shift</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              <div className="w-24 shrink-0 border-l border-amber-200/30 bg-amber-50/40 dark:bg-amber-950/10" />
+                            </div>
+                          )}
+
+                          {/* Empty Shifts row - right side */}
+                          {(() => {
+                            const roomEmptyShifts = emptyShifts.filter(es => es.roomId === room.id && es.centreId === centre.id);
+                            if (roomEmptyShifts.length === 0) return null;
+                            
+                            return (
+                              <div className="h-[52px] flex border-b border-border bg-purple-500/5 hover:bg-purple-500/10 transition-colors">
+                                {dates.map((date) => {
+                                  const dateStr = format(date, 'yyyy-MM-dd');
+                                  const dayEmptyShifts = getEmptyShiftsForRoomDay(room.id, dateStr);
+                                  const cellKey = `empty-${room.id}-${dateStr}`;
+                                  const isDragOver = dragOverCell === cellKey;
+
+                                  return (
+                                    <div
+                                      key={cellKey}
+                                      data-drop-zone
+                                      className={cn(
+                                        "shrink-0 p-1 border-r border-border relative",
+                                        "transition-all duration-200 ease-out",
+                                        isMonthView
+                                          ? "w-[60px] md:w-[70px]"
+                                          : isCompact
+                                            ? "w-[60px] md:w-[70px] xl:w-[90px]"
+                                            : "w-[80px] md:w-[100px] xl:w-[120px]",
+                                        isDragging && dayEmptyShifts.length > 0 && "bg-purple-500/5",
+                                        isDragOver && dayEmptyShifts.length > 0 && "bg-purple-500/20 ring-2 ring-inset ring-purple-500/50"
+                                      )}
+                                      onDragOver={(e) => dayEmptyShifts.length > 0 && handleDragOver(e, cellKey)}
+                                      onDragLeave={handleDragLeave}
+                                      onDrop={(e) => {
+                                        if (dayEmptyShifts.length > 0) {
+                                          e.preventDefault();
+                                          const staffId = e.dataTransfer.getData('staffId');
+                                          if (staffId && onEmptyShiftClick) {
+                                            onEmptyShiftClick(dayEmptyShifts[0]);
+                                          }
+                                        }
+                                      }}
+                                    >
+                                      {dayEmptyShifts.map((emptyShift) => (
+                                        <EmptyShiftCard 
+                                          key={emptyShift.id} 
+                                          emptyShift={emptyShift} 
+                                          isCompact={isCompact}
+                                          onClick={() => onEmptyShiftClick?.(emptyShift)}
+                                          onDelete={onDeleteEmptyShift ? () => onDeleteEmptyShift(emptyShift.id) : undefined}
+                                        />
+                                      ))}
+                                    </div>
+                                  );
+                                })}
+                                <div className="w-24 shrink-0 border-l border-border bg-purple-500/5" />
+                              </div>
+                            );
+                          })()}
+
+                          {/* Add Staff drop zone - right side */}
+                          <div 
+                            className={cn(
+                              "h-[52px] flex border-b transition-colors",
+                              isDragging && dragType === 'staff' 
+                                ? "bg-gradient-to-r from-sky-50/80 to-sky-50/40 dark:from-sky-950/30 dark:to-sky-950/10 border-sky-200/50" 
+                                : "bg-muted/30 border-border/50"
+                            )}
+                          >
+                            {dates.map((date) => {
+                              const dateStr = format(date, 'yyyy-MM-dd');
+                              const cellKey = `add-staff-${room.id}-${dateStr}`;
+                              const isDragOver = dragOverCell === cellKey;
+                              const showDropZone = isDragging && dragType === 'staff';
+
+                              return (
+                                <div
+                                  key={cellKey}
+                                  data-drop-zone
+                                  className={cn(
+                                    "shrink-0 p-1.5 border-r relative",
+                                    "transition-all duration-200 ease-out",
+                                    isMonthView
+                                      ? "w-[60px] md:w-[70px]"
+                                      : isCompact
+                                        ? "w-[60px] md:w-[70px] xl:w-[90px]"
+                                        : "w-[80px] md:w-[100px] xl:w-[120px]",
+                                    showDropZone && !isDragOver && "border-sky-200/30 bg-sky-50/30 dark:bg-sky-950/10",
+                                    isDragOver && "bg-sky-100 dark:bg-sky-900/40 ring-2 ring-inset ring-sky-500/50",
+                                    !showDropZone && "border-border/30"
+                                  )}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    handleDragOver(e, cellKey);
+                                  }}
+                                  onDragLeave={handleDragLeave}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    const staffId = e.dataTransfer.getData('staffId');
+                                    const draggedType = e.dataTransfer.getData('dragType');
+                                    if (staffId && draggedType !== 'shift') {
+                                      setDragOverCell(null);
+                                      setIsDragging(false);
+                                      setDragType(null);
+                                      onAssignStaffToRoom?.(staffId, room.id);
+                                    }
+                                  }}
+                                >
+                                  {showDropZone && !isDragOver && (
+                                    <div className="absolute inset-1 rounded-md flex items-center justify-center">
+                                      <div className="w-5 h-5 rounded-full bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
+                                        <Plus className="h-3 w-3 text-sky-500" />
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {isDragOver && (
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                                      <div className="bg-sky-600 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg animate-scale-in">
+                                        Add staff
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            <div className="w-24 shrink-0 border-r border-border/30" />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
