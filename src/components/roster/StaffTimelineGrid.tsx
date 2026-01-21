@@ -44,6 +44,8 @@ import {
   Send,
   UserX,
   RefreshCw,
+  TrendingUp,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -677,6 +679,19 @@ export function StaffTimelineGrid({
                   >
                     {!isCollapsed && (
                       <>
+                        {/* Demand Analytics label row - left side (matches right pane analytics row) */}
+                        {showAnalyticsCharts && viewMode !== 'month' && demandAnalytics.length > 0 && (
+                          <div className="min-h-[120px] border-b border-border bg-muted/30 flex items-center gap-2 md:gap-3 p-2 md:p-3">
+                            <div className="h-6 w-6 md:h-8 md:w-8 rounded-lg flex items-center justify-center bg-primary/10 shadow-sm shrink-0">
+                              <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs md:text-sm font-semibold text-foreground truncate">Daily Analytics</p>
+                              <p className="text-[9px] md:text-[10px] text-muted-foreground hidden sm:block">Demand forecast</p>
+                            </div>
+                          </div>
+                        )}
+                        
                         {roomStaff.map((member) => {
                           const topQualifications = member.qualifications.slice(0, 2);
 
@@ -1117,37 +1132,8 @@ export function StaffTimelineGrid({
                       }}
                       onClick={() => toggleRoomCollapse(room.id)}
                     >
-                      {/* Analytics charts or collapsed day summaries */}
-                      {!isCollapsed && showAnalyticsCharts && viewMode !== 'month' && demandAnalytics.length > 0 ? (
-                        <>
-                          {dates.map((date) => {
-                            const dateStr = format(date, 'yyyy-MM-dd');
-                            return (
-                              <div 
-                                key={dateStr} 
-                                className={cn(
-                                  "p-1 border-r",
-                                  columnWidthClass
-                                )}
-                                style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <InlineDemandChart
-                                  analyticsData={demandAnalytics}
-                                  absences={staffAbsences}
-                                  date={dateStr}
-                                  roomId={room.id}
-                                  isCompact={isCompact}
-                                />
-                              </div>
-                            );
-                          })}
-                          <div 
-                            className="w-24 shrink-0 border-r"
-                            style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
-                          />
-                        </>
-                      ) : isCollapsed ? (
+                      {/* Room header cells - show collapsed summaries or empty cells */}
+                      {isCollapsed ? (
                         <>
                           {dates.map((date) => {
                             const dateStr = format(date, 'yyyy-MM-dd');
@@ -1198,23 +1184,22 @@ export function StaffTimelineGrid({
                                       </div>
                                       <span className={cn(
                                         "text-[10px] leading-tight mt-0.5",
-                                        isUnderstaffed ? "text-destructive font-medium" : "text-muted-foreground"
+                                        isUnderstaffed ? "text-destructive/80" : "text-muted-foreground"
                                       )}>
                                         {uniqueStaff}/{requiredStaff} staff
                                       </span>
-                                      {hasOpenShifts && (
-                                        <Badge 
-                                          variant="outline" 
-                                          className="text-[9px] px-1.5 py-0 h-4 mt-1 border-amber-400 text-amber-600 bg-amber-50"
-                                        >
-                                          {dayOpenShifts.length} open
-                                        </Badge>
-                                      )}
                                     </div>
+                                    {hasOpenShifts && (
+                                      <Badge variant="outline" className="text-[9px] px-1 h-4 border-amber-500 text-amber-600 ml-1">
+                                        +{dayOpenShifts.length}
+                                      </Badge>
+                                    )}
                                   </div>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">—</span>
-                                )}
+                                ) : hasOpenShifts ? (
+                                  <Badge variant="outline" className="text-[9px] px-1.5 h-5 border-amber-500 text-amber-600">
+                                    {dayOpenShifts.length} open
+                                  </Badge>
+                                ) : null}
                               </div>
                             );
                           })}
@@ -1253,6 +1238,33 @@ export function StaffTimelineGrid({
                     >
                       {!isCollapsed && (
                         <>
+                          {/* Demand Analytics Row - separate from staff rows */}
+                          {showAnalyticsCharts && viewMode !== 'month' && demandAnalytics.length > 0 && (
+                            <div className="min-h-[120px] flex border-b border-border bg-muted/30">
+                              {dates.map((date) => {
+                                const dateStr = format(date, 'yyyy-MM-dd');
+                                return (
+                                  <div 
+                                    key={`analytics-${room.id}-${dateStr}`} 
+                                    className={cn(
+                                      "p-2 border-r border-border",
+                                      columnWidthClass
+                                    )}
+                                  >
+                                    <InlineDemandChart
+                                      analyticsData={demandAnalytics}
+                                      absences={staffAbsences}
+                                      date={dateStr}
+                                      roomId={room.id}
+                                      isCompact={isCompact}
+                                    />
+                                  </div>
+                                );
+                              })}
+                              <div className="w-24 shrink-0 border-l border-border" />
+                            </div>
+                          )}
+                          
                           {roomStaff.map((member) => {
                             const costs = calculateStaffCosts(member.id);
 
