@@ -770,7 +770,7 @@ export function StaffTimelineGrid({
 
                         {/* Open Shifts row - left side */}
                         {roomOpenShifts.length > 0 && (
-                          <div className="min-h-[52px] md:min-h-[60px] border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10 flex items-center gap-2 md:gap-3 p-2 md:p-3">
+                          <div className="h-[88px] md:h-[96px] border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10 flex items-center gap-2 md:gap-3 p-2 md:p-3">
                             <div className="h-6 w-6 md:h-8 md:w-8 rounded-lg flex items-center justify-center bg-amber-100 dark:bg-amber-900/50 shadow-sm shrink-0">
                               <AlertCircle className="h-3 w-3 md:h-4 md:w-4 text-amber-600 dark:text-amber-400" />
                             </div>
@@ -1472,7 +1472,7 @@ export function StaffTimelineGrid({
 
                           {/* Open Shifts row - right side */}
                           {roomOpenShifts.length > 0 && (
-                            <div className="min-h-[52px] md:min-h-[60px] flex border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10">
+                            <div className="h-[88px] md:h-[96px] flex border-b border-amber-200/50 bg-gradient-to-r from-amber-50/80 to-amber-50/40 dark:from-amber-950/30 dark:to-amber-950/10">
                               {dates.map((date) => {
                                 const dateStr = format(date, 'yyyy-MM-dd');
                                 const dayOpenShifts = getOpenShiftsForDay(room.id, dateStr);
