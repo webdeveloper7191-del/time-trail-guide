@@ -207,6 +207,16 @@
   .animate-fade-opacity {
     animation: fade-opacity 0.25s ease-out both;
   }
+
+  /*
+    Sticky-safe utility: transforms on any ancestor break `position: sticky`.
+    Apply this to the scroll containers / section wrappers that contain sticky columns.
+  */
+  .sticky-safe {
+    transform: none !important;
+    filter: none !important;
+    perspective: none !important;
+  }
 }
 
 @keyframes fade-opacity {

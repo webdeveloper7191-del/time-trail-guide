@@ -466,7 +466,7 @@ export function StaffTimelineGrid({
 
   return (
     <div
-      className="flex-1 flex flex-col overflow-hidden bg-background w-full max-w-full"
+      className="flex-1 flex flex-col overflow-hidden bg-background w-full max-w-full sticky-safe"
       onDragEnd={handleDragEnd}
       onDragEnter={handleGridDragEnter}
     >
@@ -481,9 +481,9 @@ export function StaffTimelineGrid({
       />
 
       {/* Scrollable content with sticky header */}
-      <div className="flex-1 overflow-y-auto w-full">
+      <div className="flex-1 overflow-y-auto w-full sticky-safe">
         {/* Horizontal scroll lives in its own container so sticky left/right works reliably */}
-        <div className="overflow-x-auto w-full relative isolate">
+        <div className="overflow-x-auto w-full relative isolate sticky-safe">
           <div className="min-w-max">
           {/* Header */}
           <div className="flex sticky top-0 z-30 bg-card border-b border-border shadow-md">
