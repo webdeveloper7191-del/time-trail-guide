@@ -771,7 +771,8 @@ export function StaffTimelineGrid({
             return (
               <div 
                 key={room.id}
-                className="animate-fade-in"
+                // NOTE: Avoid transforms on ancestors of sticky columns; transforms break position: sticky.
+                className="animate-fade-opacity"
                 style={{ 
                   borderLeft: `4px solid ${roomColor}`,
                 }}
