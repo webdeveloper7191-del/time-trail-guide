@@ -886,7 +886,7 @@ export function StaffTimelineGrid({
             ref={timelineHeaderRef}
              className="h-[76px] md:h-[84px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-hidden overflow-y-visible"
           >
-            <div className={cn("flex", isMonthView ? "min-w-max" : "w-full")}>
+            <div className={cn("flex", (isMonthView || viewMode === 'fortnight') ? "min-w-max" : "w-full")}>
               {dates.map((date) => {
                 const dateStr = format(date, 'yyyy-MM-dd');
                 const holidays = getHolidaysForDate(dateStr);
@@ -1094,7 +1094,7 @@ export function StaffTimelineGrid({
             ref={rightPaneRef}
             className="flex-1 overflow-auto"
           >
-            <div className={cn(isMonthView ? "min-w-max" : "w-full")}>
+            <div className={cn((isMonthView || viewMode === 'fortnight') ? "min-w-max" : "w-full")}>
               {centre.rooms.map((room, roomIndex) => {
                 const roomStaffIds = staffByRoom[room.id] || new Set();
                 const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
