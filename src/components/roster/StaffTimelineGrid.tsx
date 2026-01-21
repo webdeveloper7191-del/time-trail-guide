@@ -542,7 +542,7 @@ export function StaffTimelineGrid({
           className="flex flex-col w-40 md:w-52 lg:w-64 shrink-0 border-r border-border bg-card z-20 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.08),2px_0_4px_-2px_rgba(0,0,0,0.04)] dark:shadow-[4px_0_12px_-2px_rgba(0,0,0,0.3),2px_0_6px_-2px_rgba(0,0,0,0.2)]"
         >
           {/* Staff Column Header */}
-           <div className="h-[60px] md:h-[64px] shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-b border-border bg-muted/50 overflow-visible">
+           <div className="h-[76px] md:h-[84px] shrink-0 p-1 md:p-2 font-medium text-xs lg:text-sm text-muted-foreground border-b border-border bg-muted/50 overflow-visible">
             <div className="flex items-center gap-1 md:gap-2">
               <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 md:h-3.5 md:w-3.5 text-muted-foreground" />
@@ -867,7 +867,7 @@ export function StaffTimelineGrid({
           {/* Timeline Header - syncs horizontal scroll with body */}
           <div 
             ref={timelineHeaderRef}
-             className="h-[60px] md:h-[64px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-hidden overflow-y-visible"
+             className="h-[76px] md:h-[84px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-hidden overflow-y-visible"
           >
             <div className={cn("flex", isMonthView ? "min-w-max" : "w-full")}>
               {dates.map((date) => {
