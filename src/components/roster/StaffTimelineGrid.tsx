@@ -909,7 +909,8 @@ export function StaffTimelineGrid({
           {/* Timeline Header - syncs horizontal scroll with body */}
           <div 
             ref={timelineHeaderRef}
-             className="h-[76px] md:h-[84px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-auto overflow-y-visible scrollbar-hide"
+            className="h-[76px] md:h-[84px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-auto overflow-y-visible lg:scrollbar-default scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             <div className={cn("flex min-w-full", (isMonthView || viewMode === 'fortnight') && "min-w-max")}>
               {dates.map((date) => {
@@ -1125,10 +1126,10 @@ export function StaffTimelineGrid({
             ref={rightPaneRef}
             className={cn(
               "flex-1 overflow-auto",
-              // Hide native scrollbar for fortnight/month views (using custom indicator)
-              showScrollIndicator && "scrollbar-hide"
+              // Hide native scrollbar on mobile/tablet for all views, desktop shows for fortnight/month custom indicator
+              "lg:scrollbar-default scrollbar-hide"
             )}
-            style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             <div className={cn("min-w-full", (isMonthView || viewMode === 'fortnight') && "min-w-max")}>
               {centre.rooms.map((room, roomIndex) => {
