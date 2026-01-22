@@ -425,12 +425,7 @@ export function OpenShiftCard({
   const globalDrag = useGlobalDrag();
   const duration = calculateDuration(openShift.startTime, openShift.endTime, 0);
 
-  const urgencyColors = {
-    low: 'border-slate-300 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30',
-    medium: 'border-amber-300 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30',
-    high: 'border-orange-300 dark:border-orange-800 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30',
-    critical: 'border-rose-300 dark:border-rose-800 bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/50 dark:to-rose-900/30 animate-pulse',
-  };
+  // urgencyColors now applied directly in className for consistency with StaffTimelineGrid
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -450,25 +445,36 @@ export function OpenShiftCard({
   return (
     <div
       className={cn(
-        "relative rounded-md border-2 border-dashed p-2",
-        "transition-all duration-200 ease-out",
-        urgencyColors[openShift.urgency],
-        "hover:border-primary/50 hover:bg-primary/5",
+        "group relative rounded-lg border overflow-hidden p-2",
+        "transition-all duration-200 ease-out bg-gradient-to-br",
+        openShift.urgency === 'low' && "from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border-slate-300 dark:border-slate-700",
+        openShift.urgency === 'medium' && "from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 border-amber-300 dark:border-amber-800",
+        openShift.urgency === 'high' && "from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30 border-orange-300 dark:border-orange-800",
+        openShift.urgency === 'critical' && "from-rose-50 to-rose-100/50 dark:from-rose-950/50 dark:to-rose-900/30 border-rose-300 dark:border-rose-800 animate-pulse",
+        "hover:ring-2 hover:ring-primary/30",
         isDragOver && "scale-105 border-primary bg-primary/10 shadow-lg ring-2 ring-primary/30"
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="flex items-center justify-between mb-1">
+      {/* Left accent bar */}
+      <div className={cn(
+        "absolute left-0 top-0 bottom-0 w-1",
+        openShift.urgency === 'low' && "bg-slate-400",
+        openShift.urgency === 'medium' && "bg-amber-500",
+        openShift.urgency === 'high' && "bg-orange-500",
+        openShift.urgency === 'critical' && "bg-rose-500",
+      )} />
+      <div className="flex items-center justify-between mb-1 pl-2">
         <div className="flex items-center gap-1.5">
           <AlertCircle className={cn(
             "h-4 w-4 transition-transform duration-200",
             isDragOver && "scale-110",
-            openShift.urgency === 'critical' && "text-destructive",
+            openShift.urgency === 'critical' && "text-rose-500",
             openShift.urgency === 'high' && "text-orange-500",
             openShift.urgency === 'medium' && "text-amber-500",
-            openShift.urgency === 'low' && "text-muted-foreground",
+            openShift.urgency === 'low' && "text-slate-400",
           )} />
           <span className="text-sm font-medium text-foreground">Open Shift</span>
         </div>
@@ -480,7 +486,7 @@ export function OpenShiftCard({
         </Badge>
       </div>
 
-      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2 pl-2">
         <Clock className="h-3 w-3" />
         <span>{openShift.startTime} - {openShift.endTime}</span>
       </div>
