@@ -127,8 +127,10 @@ import {
   Moon,
   Sun,
   BarChart3,
-  Layers,
+  LayoutTemplate,
   FileStack,
+  Grid3X3,
+  FileCheck,
   UserPlus,
   Clock,
   Undo2,
@@ -1719,7 +1721,7 @@ export default function RosterScheduler() {
               </Tooltip>
               <Tooltip content="Create Empty Shifts">
                 <IconButton size="small" onClick={() => setShowAddEmptyShiftModal(true)} sx={{ color: 'text.secondary' }}>
-                  <Layers size={18} />
+                  <Grid3X3 size={18} />
                 </IconButton>
               </Tooltip>
               <Tooltip content="Copy Week">
@@ -1792,14 +1794,14 @@ export default function RosterScheduler() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                        <Layers size={18} />
+                        <LayoutTemplate size={18} />
                       </IconButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuItem onClick={() => setShowSaveTemplateModal(true)} icon={<FileStack size={16} />}>
                         Save as Template
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowApplyTemplateModal(true)} icon={<Layers size={16} />}>
+                      <DropdownMenuItem onClick={() => setShowApplyTemplateModal(true)} icon={<FileCheck size={16} />}>
                         Apply Template
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
