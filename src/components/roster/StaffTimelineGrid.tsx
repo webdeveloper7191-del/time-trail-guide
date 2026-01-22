@@ -1115,7 +1115,12 @@ export function StaffTimelineGrid({
           {/* Timeline Body - scrollable both ways */}
           <div 
             ref={rightPaneRef}
-            className="flex-1 overflow-auto"
+            className={cn(
+              "flex-1 overflow-auto",
+              // Hide native scrollbar for fortnight/month views (using custom indicator)
+              showScrollIndicator && "scrollbar-hide"
+            )}
+            style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
           >
             <div className={cn((isMonthView || viewMode === 'fortnight') ? "min-w-max" : "w-full")}>
               {centre.rooms.map((room, roomIndex) => {
