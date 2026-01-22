@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -102,6 +102,22 @@ export function ShiftCopyModal({
 
     return dates;
   }, [shift, copyMode, recurringPattern, recurringEndDate]);
+
+  // Keep RHF field `targetDates` in sync with the UI date selection so validation/errors clear correctly
+  useEffect(() => {
+    if (!shift) return;
+
+    const nextTargetDates =
+      copyMode === 'recurring'
+        ? recurringDates
+        : selectedDates.map((d) => format(d, 'yyyy-MM-dd'));
+
+    setValue('targetDates', nextTargetDates, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  }, [shift, copyMode, selectedDates, recurringDates, setValue]);
 
   // Check for conflicts (now with staff consideration)
   const getConflictsForDate = (date: string, roomId: string, staffId: string) => {
