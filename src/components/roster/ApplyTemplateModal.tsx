@@ -75,14 +75,20 @@ export function ApplyTemplateModal({
       
       // Only skip if there's an exactly matching OPEN shift (same room, date, time)
       // This allows adding template shifts even if staff shifts exist at same time/place
-      const existingShift = skipExisting ? existingShifts.find(s => 
-        s.centreId === centreId &&
-        s.roomId === templateShift.roomId &&
-        s.date === dateStr &&
-        s.startTime === templateShift.startTime &&
-        s.endTime === templateShift.endTime &&
-        s.isOpenShift // Only skip if the existing shift is also an open/template shift
-      ) : undefined;
+      const existingShift = skipExisting ? existingShifts.find(s => {
+        // Be defensive: treat a shift as "open" only if it's truly unassigned.
+        // Some flows may accidentally set isOpenShift=true on assigned shifts.
+        const isTrulyOpen = !s.staffId;
+
+        return (
+          s.centreId === centreId &&
+          s.roomId === templateShift.roomId &&
+          s.date === dateStr &&
+          s.startTime === templateShift.startTime &&
+          s.endTime === templateShift.endTime &&
+          isTrulyOpen
+        );
+      }) : undefined;
 
       if (existingShift) {
         return {
@@ -90,7 +96,7 @@ export function ApplyTemplateModal({
           existingShift,
           date: dateStr,
           action: 'skip' as const,
-          reason: 'Similar shift already exists'
+          reason: 'Open shift already exists'
         };
       }
 
