@@ -1,12 +1,13 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Shift, OpenShift, Centre, StaffMember, qualificationLabels, roleLabels, ShiftTemplate } from '@/types/roster';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip as MuiTooltip } from '@mui/material';
 import { Input } from '@/components/ui/input';
 import { StaffingInsightsBar } from './StaffingInsightsBar';
+import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
 import { 
   Plus, 
   Clock,
@@ -14,7 +15,9 @@ import {
   Search,
   Coffee,
   AlertCircle,
-  UserX
+  UserX,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isToday } from 'date-fns';
@@ -125,11 +128,20 @@ export function DayTimelineView({
   onStaffClick,
   onOpenShiftTemplateManager,
 }: DayTimelineViewProps) {
+  // keep hooks to ensure consistent behavior across breakpoints (and future tweaks)
+  useIsMobile();
+  useIsTablet();
+
   const [staffSearch, setStaffSearch] = useState('');
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [hoverTime, setHoverTime] = useState<{ staffId: string; roomId: string; time: string; x: number } | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollInfo, setScrollInfo] = useState({ scrollLeft: 0, scrollWidth: 0, clientWidth: 0 });
+  // Day view: always show the blue scroll bar (desktop + mobile/tablet), but only render it when scrollable
+  const showScrollIndicator = true;
 
   const dateStr = format(date, 'yyyy-MM-dd');
   const showCurrentTime = isToday(date);
@@ -146,6 +158,28 @@ export function DayTimelineView({
   }, [showCurrentTime]);
 
   const currentTimePosition = showCurrentTime ? currentTimeToPixels(currentTime) : null;
+
+  // Track horizontal scroll for custom blue scrollbar + hide native scrollbar
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const update = () => {
+      setScrollInfo({
+        scrollLeft: el.scrollLeft,
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+      });
+    };
+
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update as any);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
 
   // Filter staff by search
   const filteredStaff = useMemo(() => {
@@ -245,9 +279,30 @@ export function DayTimelineView({
 
   const totalWidth = TIME_SLOTS.length * SLOT_WIDTH;
 
+  const getVisibleTimeRangeLabel = () => {
+    if (scrollInfo.scrollWidth <= 0) return '';
+    const maxScroll = Math.max(scrollInfo.scrollWidth - scrollInfo.clientWidth, 1);
+    const startPercent = Math.max(0, Math.min(scrollInfo.scrollLeft / maxScroll, 1));
+    const endPercent = Math.max(0, Math.min((scrollInfo.scrollLeft + scrollInfo.clientWidth) / Math.max(scrollInfo.scrollWidth, 1), 1));
+
+    const startIdx = Math.floor(startPercent * (TIME_SLOTS.length - 1));
+    const endIdx = Math.min(Math.floor(endPercent * (TIME_SLOTS.length - 1)), TIME_SLOTS.length - 1);
+    const start = TIME_SLOTS[startIdx] || TIME_SLOTS[0];
+    const end = TIME_SLOTS[endIdx] || TIME_SLOTS[TIME_SLOTS.length - 1];
+    return `${start} – ${end}`;
+  };
+
   return (
     <div className="flex-1 overflow-hidden bg-background w-full max-w-full" onDragEnd={handleDragEnd}>
-      <ScrollArea className="h-full w-full">
+      <ScrollArea
+        ref={scrollRef}
+        className={cn(
+          "h-full w-full",
+          // Hide native scrollbars everywhere for day view; we show a custom blue scrollbar instead
+          showScrollIndicator && "scrollbar-hide"
+        )}
+        style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
+      >
         <div style={{ minWidth: totalWidth + 264 + 100 }} className="w-full">
           {/* Time header */}
           <div className="flex sticky top-0 z-20 bg-card border-b border-border">
@@ -579,8 +634,60 @@ export function DayTimelineView({
             );
           })}
         </div>
-        <ScrollBar orientation="horizontal" />
       </ScrollArea>
+
+      {/* Blue Scroll Indicator (Day view) */}
+      {showScrollIndicator && scrollInfo.scrollWidth > scrollInfo.clientWidth && (
+        <div className="h-8 bg-muted/50 border-t border-border flex items-center px-3 md:px-4 gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0"
+            disabled={scrollInfo.scrollLeft <= 0}
+            onClick={() => {
+              if (scrollRef.current) scrollRef.current.scrollBy({ left: -240, behavior: 'smooth' });
+            }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <div className="flex-1 relative h-3 bg-border/50 rounded-full overflow-hidden">
+            <div
+              className="absolute top-0 bottom-0 bg-primary/60 rounded-full transition-all duration-75 cursor-pointer hover:bg-primary/80"
+              style={{
+                left: `${(scrollInfo.scrollLeft / scrollInfo.scrollWidth) * 100}%`,
+                width: `${Math.max((scrollInfo.clientWidth / scrollInfo.scrollWidth) * 100, 8)}%`,
+              }}
+              onClick={(e) => {
+                if (!scrollRef.current) return;
+                const track = (e.currentTarget as HTMLDivElement).parentElement;
+                if (!track) return;
+                const rect = track.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const percent = clickX / rect.width;
+                const scrollTarget = percent * (scrollInfo.scrollWidth - scrollInfo.clientWidth);
+                scrollRef.current.scrollTo({ left: scrollTarget, behavior: 'smooth' });
+              }}
+            />
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0"
+            disabled={scrollInfo.scrollLeft >= scrollInfo.scrollWidth - scrollInfo.clientWidth - 1}
+            onClick={() => {
+              if (scrollRef.current) scrollRef.current.scrollBy({ left: 240, behavior: 'smooth' });
+            }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          <div className="text-xs text-muted-foreground shrink-0 min-w-[96px] text-right hidden sm:block">
+            {getVisibleTimeRangeLabel()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
