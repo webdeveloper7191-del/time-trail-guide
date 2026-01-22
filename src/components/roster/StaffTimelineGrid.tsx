@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { InlineDemandChart } from './InlineDemandChart';
 import { RoomColorPaletteSelector, colorPalettes, ColorPalette } from './RoomColorPaletteSelector';
 import { useShiftCost } from '@/hooks/useShiftCost';
+import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
 import {
   Plus,
   Clock,
@@ -158,6 +159,10 @@ export function StaffTimelineGrid({
   onDeleteEmptyShift,
   onSendToAgency,
 }: StaffTimelineGridProps) {
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+  const isMobileOrTablet = isMobile || isTablet;
+  
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragType, setDragType] = useState<'staff' | 'shift' | null>(null);
@@ -189,9 +194,13 @@ export function StaffTimelineGrid({
   const timelineHeaderRef = useRef<HTMLDivElement>(null);
   const isSyncingScroll = useRef(false);
   
-  // Scroll position tracking for scroll indicator (fortnight/month views)
+  // Scroll position tracking for scroll indicator
+  // Desktop: show for day, fortnight, month views
+  // Mobile/Tablet: show for ALL views
   const [scrollInfo, setScrollInfo] = useState({ scrollLeft: 0, scrollWidth: 0, clientWidth: 0 });
-  const showScrollIndicator = viewMode === 'fortnight' || viewMode === 'month';
+  const showScrollIndicator = isMobileOrTablet 
+    ? true  // Show for all views on mobile/tablet
+    : (viewMode === 'day' || viewMode === 'fortnight' || viewMode === 'month'); // Desktop: day, fortnight, month
 
   // Sync vertical scroll between left staff pane and right timeline pane
   useEffect(() => {
@@ -909,8 +918,11 @@ export function StaffTimelineGrid({
           {/* Timeline Header - syncs horizontal scroll with body */}
           <div 
             ref={timelineHeaderRef}
-            className="h-[76px] md:h-[84px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-auto overflow-y-visible lg:scrollbar-default scrollbar-hide"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            className={cn(
+              "h-[76px] md:h-[84px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-auto overflow-y-visible",
+              showScrollIndicator && "scrollbar-hide"
+            )}
+            style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
           >
             <div className={cn("flex min-w-full", (isMonthView || viewMode === 'fortnight') && "min-w-max")}>
               {dates.map((date) => {
@@ -1126,10 +1138,10 @@ export function StaffTimelineGrid({
             ref={rightPaneRef}
             className={cn(
               "flex-1 overflow-auto",
-              // Hide native scrollbar on mobile/tablet for all views, desktop shows for fortnight/month custom indicator
-              "lg:scrollbar-default scrollbar-hide"
+              // Hide native scrollbar when showing the blue custom indicator
+              showScrollIndicator && "scrollbar-hide"
             )}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
           >
             <div className={cn("min-w-full", (isMonthView || viewMode === 'fortnight') && "min-w-max")}>
               {centre.rooms.map((room, roomIndex) => {
