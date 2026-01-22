@@ -20,12 +20,12 @@ import { cn } from '@/lib/utils';
 import { Collapse } from '@mui/material';
 
 const SHIFT_TYPE_CONFIG: Record<ShiftSpecialType, { icon: typeof Phone; color: string; bgColor: string; label: string }> = {
-  regular: { icon: Clock, color: 'text-muted-foreground', bgColor: 'bg-muted/50', label: 'Regular' },
-  on_call: { icon: Phone, color: 'text-blue-500', bgColor: 'bg-blue-500/20', label: 'On-Call' },
-  sleepover: { icon: Moon, color: 'text-purple-500', bgColor: 'bg-purple-500/20', label: 'Sleepover' },
-  broken: { icon: Zap, color: 'text-orange-500', bgColor: 'bg-orange-500/20', label: 'Split' },
-  recall: { icon: PhoneCall, color: 'text-red-500', bgColor: 'bg-red-500/20', label: 'Recall' },
-  emergency: { icon: AlertCircle, color: 'text-destructive', bgColor: 'bg-destructive/20', label: 'Emergency' },
+  regular: { icon: Clock, color: 'text-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-800', label: 'Regular' },
+  on_call: { icon: Phone, color: 'text-cyan-500', bgColor: 'bg-cyan-100 dark:bg-cyan-500/20', label: 'On-Call' },
+  sleepover: { icon: Moon, color: 'text-violet-500', bgColor: 'bg-violet-100 dark:bg-violet-500/20', label: 'Sleepover' },
+  broken: { icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-100 dark:bg-amber-500/20', label: 'Split' },
+  recall: { icon: PhoneCall, color: 'text-rose-500', bgColor: 'bg-rose-100 dark:bg-rose-500/20', label: 'Recall' },
+  emergency: { icon: AlertCircle, color: 'text-rose-600', bgColor: 'bg-rose-100 dark:bg-rose-500/20', label: 'Emergency' },
 };
 
 interface MobileShiftCardProps {

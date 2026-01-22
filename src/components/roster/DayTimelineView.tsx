@@ -770,9 +770,10 @@ function ShiftBar({
   const left = isResizing ? currentLeft : timeToPixels(shift.startTime);
   const width = isResizing ? currentWidth : getShiftWidth(shift.startTime, shift.endTime);
   
+  // Unified status colors using centralized design tokens
   const statusColors = {
     draft: { bg: 'bg-amber-100 dark:bg-amber-900/40', border: 'border-amber-400', text: 'text-amber-800 dark:text-amber-200' },
-    published: { bg: 'bg-sky-100 dark:bg-sky-900/40', border: 'border-sky-400', text: 'text-sky-800 dark:text-sky-200' },
+    published: { bg: 'bg-[hsl(var(--info-bg))]', border: 'border-[hsl(var(--info)/0.35)]', text: 'text-[hsl(var(--info))] dark:text-[hsl(var(--info))]' },
     confirmed: { bg: 'bg-emerald-100 dark:bg-emerald-900/40', border: 'border-emerald-400', text: 'text-emerald-800 dark:text-emerald-200' },
     completed: { bg: 'bg-slate-100 dark:bg-slate-800/40', border: 'border-slate-400', text: 'text-slate-600 dark:text-slate-300' },
   };
@@ -882,9 +883,9 @@ function ShiftBar({
         <span className={cn(
           "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize",
           shift.status === 'draft' && "bg-amber-500/20 text-amber-200",
-          shift.status === 'published' && "bg-blue-500/20 text-blue-200",
-          shift.status === 'confirmed' && "bg-green-500/20 text-green-200",
-          shift.status === 'completed' && "bg-gray-500/20 text-gray-200",
+          shift.status === 'published' && "bg-[hsl(var(--info)/0.2)] text-[hsl(var(--info))]",
+          shift.status === 'confirmed' && "bg-emerald-500/20 text-emerald-200",
+          shift.status === 'completed' && "bg-slate-500/20 text-slate-300",
         )}>
           {shift.status}
         </span>

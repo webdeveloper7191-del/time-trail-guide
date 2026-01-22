@@ -1901,39 +1901,39 @@ function StaffShiftCard({
   isCompact?: boolean;
   isMonthView?: boolean;
 }) {
-  // Material-style soft color palettes
+  // Import centralized color system
   const statusStyles = {
     draft: {
       bg: 'bg-amber-50 dark:bg-amber-950/40',
-      border: 'border-amber-200 dark:border-amber-800',
+      border: 'border-amber-300 dark:border-amber-800',
       text: 'text-amber-800 dark:text-amber-200',
       accent: 'bg-amber-400',
     },
     published: {
-      bg: 'bg-sky-50 dark:bg-sky-950/40',
-      border: 'border-sky-200 dark:border-sky-800',
-      text: 'text-sky-800 dark:text-sky-200',
-      accent: 'bg-sky-500',
+      bg: 'bg-[hsl(var(--info-bg))]',
+      border: 'border-[hsl(var(--info)/0.35)]',
+      text: 'text-[hsl(var(--info))] dark:text-[hsl(var(--info))]',
+      accent: 'bg-[hsl(var(--info))]',
     },
     confirmed: {
       bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-      border: 'border-emerald-200 dark:border-emerald-800',
+      border: 'border-emerald-300 dark:border-emerald-800',
       text: 'text-emerald-800 dark:text-emerald-200',
       accent: 'bg-emerald-500',
     },
     completed: {
       bg: 'bg-slate-50 dark:bg-slate-900/40',
-      border: 'border-slate-200 dark:border-slate-700',
+      border: 'border-slate-300 dark:border-slate-700',
       text: 'text-slate-600 dark:text-slate-300',
       accent: 'bg-slate-400',
     },
   };
 
   const shiftTypeStyles: Record<string, { icon: typeof Phone; color: string; bgColor: string; label: string }> = {
-    on_call: { icon: Phone, color: 'text-blue-500', bgColor: 'bg-blue-500/20', label: 'On-Call' },
-    sleepover: { icon: Moon, color: 'text-purple-500', bgColor: 'bg-purple-500/20', label: 'Sleepover' },
-    broken: { icon: Zap, color: 'text-orange-500', bgColor: 'bg-orange-500/20', label: 'Split' },
-    recall: { icon: PhoneCall, color: 'text-red-500', bgColor: 'bg-red-500/20', label: 'Recall' },
+    on_call: { icon: Phone, color: 'text-cyan-500', bgColor: 'bg-cyan-100 dark:bg-cyan-500/20', label: 'On-Call' },
+    sleepover: { icon: Moon, color: 'text-violet-500', bgColor: 'bg-violet-100 dark:bg-violet-500/20', label: 'Sleepover' },
+    broken: { icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-100 dark:bg-amber-500/20', label: 'Split' },
+    recall: { icon: PhoneCall, color: 'text-rose-500', bgColor: 'bg-rose-100 dark:bg-rose-500/20', label: 'Recall' },
   };
 
   const style = statusStyles[shift.status];
@@ -2000,9 +2000,9 @@ function StaffShiftCard({
         <span className={cn(
           "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
           shift.status === 'draft' && "bg-amber-500/20 text-amber-200",
-          shift.status === 'published' && "bg-blue-500/20 text-blue-200",
-          shift.status === 'confirmed' && "bg-green-500/20 text-green-200",
-          shift.status === 'completed' && "bg-gray-500/20 text-gray-200",
+          shift.status === 'published' && "bg-[hsl(var(--info)/0.2)] text-[hsl(var(--info))]",
+          shift.status === 'confirmed' && "bg-emerald-500/20 text-emerald-200",
+          shift.status === 'completed' && "bg-slate-500/20 text-slate-300",
         )}>
           {shift.status === 'draft' && 'Draft - Not Published'}
           {shift.status === 'published' && 'Published'}
@@ -2337,47 +2337,19 @@ function OpenShiftCard({
   onDelete?: () => void;
   onSendToAgency?: () => void;
 }) {
-  const urgencyStyles = {
-    low: {
-      bg: 'bg-slate-50 dark:bg-slate-900/50',
-      border: 'border-slate-300 dark:border-slate-700',
-      accent: 'bg-slate-400',
-    },
-    medium: {
-      bg: 'bg-amber-50 dark:bg-amber-950/40',
-      border: 'border-amber-300 dark:border-amber-800',
-      accent: 'bg-amber-500',
-    },
-    high: {
-      bg: 'bg-orange-50 dark:bg-orange-950/40',
-      border: 'border-orange-300 dark:border-orange-800',
-      accent: 'bg-orange-500',
-    },
-    critical: {
-      bg: 'bg-rose-50 dark:bg-rose-950/40',
-      border: 'border-rose-300 dark:border-rose-800',
-      accent: 'bg-rose-500',
-    },
-  };
-
-  const style = urgencyStyles[openShift.urgency];
-
+  // Unified open shift styling using centralized color tokens
   return (
     <div 
       className={cn(
         "group relative rounded-lg border overflow-hidden transition-all duration-200",
-        "bg-gradient-to-br",
+        "bg-gradient-to-br from-[hsl(var(--open-shift-bg))] to-[hsl(var(--open-shift-bg-2))]",
+        "border-[hsl(var(--open-shift-border))]",
         onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30",
-        openShift.urgency === 'low' && "from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border-slate-300 dark:border-slate-700",
-        openShift.urgency === 'medium' && "from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 border-amber-300 dark:border-amber-800",
-        openShift.urgency === 'high' && "from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30 border-orange-300 dark:border-orange-800",
-        openShift.urgency === 'critical' && "from-rose-50 to-rose-100/50 dark:from-rose-950/50 dark:to-rose-900/30 border-rose-300 dark:border-rose-800",
         isDragOver && "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50",
-        openShift.urgency === 'critical' && "animate-pulse"
       )}
       onClick={onClick}
     >
-      <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[hsl(var(--open-shift))]" />
       
       {/* Action buttons */}
       <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
