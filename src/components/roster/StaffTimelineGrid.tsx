@@ -750,7 +750,7 @@ export function StaffTimelineGrid({
                     {!isCollapsed && (
                       <>
                         {/* Demand Analytics label row - left side (matches compact chart height ~108px) */}
-                        {showAnalyticsCharts && viewMode !== 'month' && demandAnalytics.length > 0 && (
+                        {showAnalyticsCharts && demandAnalytics.length > 0 && (
                           <div className="h-[108px] border-b border-border bg-muted/30 flex items-center gap-2 md:gap-3 p-2 md:p-3">
                             <div className="h-6 w-6 md:h-8 md:w-8 rounded-lg flex items-center justify-center bg-primary/10 shadow-sm shrink-0">
                               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 text-primary" />
@@ -1315,7 +1315,7 @@ export function StaffTimelineGrid({
                       {!isCollapsed && (
                         <>
                           {/* Demand Analytics Row - separate from staff rows */}
-                          {showAnalyticsCharts && viewMode !== 'month' && demandAnalytics.length > 0 && (
+                          {showAnalyticsCharts && demandAnalytics.length > 0 && (
                             <div className="h-[108px] flex border-b border-border bg-muted/30">
                               {dates.map((date) => {
                                 const dateStr = format(date, 'yyyy-MM-dd');
