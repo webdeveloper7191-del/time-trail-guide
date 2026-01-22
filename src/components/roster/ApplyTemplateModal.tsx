@@ -73,21 +73,24 @@ export function ApplyTemplateModal({
 
       const dateStr = format(targetDate, 'yyyy-MM-dd');
       
-      const existingShift = existingShifts.find(s => 
+      // Only skip if there's an exactly matching OPEN shift (same room, date, time)
+      // This allows adding template shifts even if staff shifts exist at same time/place
+      const existingShift = skipExisting ? existingShifts.find(s => 
         s.centreId === centreId &&
         s.roomId === templateShift.roomId &&
         s.date === dateStr &&
         s.startTime === templateShift.startTime &&
-        s.endTime === templateShift.endTime
-      );
+        s.endTime === templateShift.endTime &&
+        s.isOpenShift // Only skip if the existing shift is also an open/template shift
+      ) : undefined;
 
       if (existingShift) {
         return {
           templateShift,
           existingShift,
           date: dateStr,
-          action: skipExisting ? 'skip' as const : 'update' as const,
-          reason: 'Shift already exists'
+          action: 'skip' as const,
+          reason: 'Similar shift already exists'
         };
       }
 
