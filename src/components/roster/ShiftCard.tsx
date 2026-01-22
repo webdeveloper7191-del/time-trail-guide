@@ -447,10 +447,8 @@ export function OpenShiftCard({
       className={cn(
         "group relative rounded-lg border overflow-hidden p-2",
         "transition-all duration-200 ease-out bg-gradient-to-br",
-        openShift.urgency === 'low' && "from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border-slate-300 dark:border-slate-700",
-        openShift.urgency === 'medium' && "from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 border-amber-300 dark:border-amber-800",
-        openShift.urgency === 'high' && "from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30 border-orange-300 dark:border-orange-800",
-        openShift.urgency === 'critical' && "from-rose-50 to-rose-100/50 dark:from-rose-950/50 dark:to-rose-900/30 border-rose-300 dark:border-rose-800 animate-pulse",
+        "from-[hsl(var(--open-shift-bg))] to-[hsl(var(--open-shift-bg-2))]",
+        "border-[hsl(var(--open-shift-border))]",
         "hover:ring-2 hover:ring-primary/30",
         isDragOver && "scale-105 border-primary bg-primary/10 shadow-lg ring-2 ring-primary/30"
       )}
@@ -461,20 +459,14 @@ export function OpenShiftCard({
       {/* Left accent bar */}
       <div className={cn(
         "absolute left-0 top-0 bottom-0 w-1",
-        openShift.urgency === 'low' && "bg-slate-400",
-        openShift.urgency === 'medium' && "bg-amber-500",
-        openShift.urgency === 'high' && "bg-orange-500",
-        openShift.urgency === 'critical' && "bg-rose-500",
+        "bg-[hsl(var(--open-shift))]",
       )} />
       <div className="flex items-center justify-between mb-1 pl-2">
         <div className="flex items-center gap-1.5">
           <AlertCircle className={cn(
             "h-4 w-4 transition-transform duration-200",
             isDragOver && "scale-110",
-            openShift.urgency === 'critical' && "text-rose-500",
-            openShift.urgency === 'high' && "text-orange-500",
-            openShift.urgency === 'medium' && "text-amber-500",
-            openShift.urgency === 'low' && "text-slate-400",
+            "text-[hsl(var(--open-shift))]",
           )} />
           <span className="text-sm font-medium text-foreground">Open Shift</span>
         </div>

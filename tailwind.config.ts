@@ -68,6 +68,14 @@ export default {
           rejected: "hsl(var(--status-rejected))",
           "rejected-bg": "hsl(var(--status-rejected-bg))",
         },
+
+        // Roster-specific semantic colors
+        openShift: {
+          DEFAULT: "hsl(var(--open-shift))",
+          bg: "hsl(var(--open-shift-bg))",
+          "bg-2": "hsl(var(--open-shift-bg-2))",
+          border: "hsl(var(--open-shift-border))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
