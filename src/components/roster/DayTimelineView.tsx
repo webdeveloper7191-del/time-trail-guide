@@ -669,13 +669,21 @@ export function DayTimelineView({
       </ScrollArea>
 
       {/* Blue Scroll Indicator (Day view) */}
-      {showScrollIndicator && scrollInfo.scrollWidth > scrollInfo.clientWidth && (
+      {showScrollIndicator && (
+        (() => {
+          const isScrollable = scrollInfo.scrollWidth > scrollInfo.clientWidth;
+          const safeScrollWidth = Math.max(scrollInfo.scrollWidth, 1);
+          const safeClientWidth = Math.max(scrollInfo.clientWidth, 1);
+          const leftPct = isScrollable ? (scrollInfo.scrollLeft / safeScrollWidth) * 100 : 0;
+          const widthPct = isScrollable ? Math.max((safeClientWidth / safeScrollWidth) * 100, 8) : 100;
+
+          return (
         <div className="h-8 bg-muted/50 border-t border-border flex items-center px-3 md:px-4 gap-3">
           <Button
             variant="ghost"
             size="icon"
             className="h-6 w-6 shrink-0"
-            disabled={scrollInfo.scrollLeft <= 0}
+            disabled={!isScrollable || scrollInfo.scrollLeft <= 0}
             onClick={() => {
               if (scrollRef.current) scrollRef.current.scrollBy({ left: -240, behavior: 'smooth' });
             }}
@@ -685,9 +693,12 @@ export function DayTimelineView({
 
           <div 
             ref={scrollTrackRef}
-            className="flex-1 relative h-3 bg-border/50 rounded-full overflow-hidden cursor-pointer"
+            className={cn(
+              "flex-1 relative h-3 bg-border/50 rounded-full overflow-hidden",
+              isScrollable ? "cursor-pointer" : "cursor-default"
+            )}
             onClick={(e) => {
-              if (!scrollRef.current || isScrollDragging) return;
+              if (!isScrollable || !scrollRef.current || isScrollDragging) return;
               const rect = e.currentTarget.getBoundingClientRect();
               const clickX = e.clientX - rect.left;
               const percent = clickX / rect.width;
@@ -698,14 +709,18 @@ export function DayTimelineView({
             {/* Visible window indicator (draggable) */}
             <div
               className={cn(
-                "absolute top-0 bottom-0 bg-primary/60 rounded-full cursor-grab active:cursor-grabbing hover:bg-primary/80",
+                "absolute top-0 bottom-0 bg-primary/60 rounded-full",
+                isScrollable ? "cursor-grab active:cursor-grabbing hover:bg-primary/80" : "cursor-default",
                 isScrollDragging ? "bg-primary/80" : "transition-all duration-75"
               )}
               style={{
-                left: `${(scrollInfo.scrollLeft / scrollInfo.scrollWidth) * 100}%`,
-                width: `${Math.max((scrollInfo.clientWidth / scrollInfo.scrollWidth) * 100, 8)}%`,
+                left: `${leftPct}%`,
+                width: `${widthPct}%`,
               }}
-              onMouseDown={handleScrollThumbMouseDown}
+              onMouseDown={(e) => {
+                if (!isScrollable) return;
+                handleScrollThumbMouseDown(e);
+              }}
             />
           </div>
 
@@ -713,7 +728,7 @@ export function DayTimelineView({
             variant="ghost"
             size="icon"
             className="h-6 w-6 shrink-0"
-            disabled={scrollInfo.scrollLeft >= scrollInfo.scrollWidth - scrollInfo.clientWidth - 1}
+            disabled={!isScrollable || scrollInfo.scrollLeft >= scrollInfo.scrollWidth - scrollInfo.clientWidth - 1}
             onClick={() => {
               if (scrollRef.current) scrollRef.current.scrollBy({ left: 240, behavior: 'smooth' });
             }}
@@ -725,6 +740,8 @@ export function DayTimelineView({
             {getVisibleTimeRangeLabel()}
           </div>
         </div>
+          );
+        })()
       )}
     </div>
   );
