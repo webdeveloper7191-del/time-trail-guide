@@ -160,6 +160,13 @@ export function ShiftCopyModal({
       datesToCopy = recurringDates;
     }
 
+    console.log('[ShiftCopyModal] onSubmit called', {
+      copyMode: data.copyMode,
+      datesToCopy,
+      selectedDatesLength: selectedDates.length,
+      recurringDatesLength: recurringDates.length,
+    });
+
     if (datesToCopy.length === 0) {
       toast.error('Please select at least one date');
       return;
@@ -174,7 +181,15 @@ export function ShiftCopyModal({
         ? selectedStaff.map(s => s.id)
         : [shift.staffId];
 
+    console.log('[ShiftCopyModal] Target config', {
+      targetRooms,
+      targetStaffMembers,
+      keepOriginalStaff,
+      selectedStaffCount: selectedStaff.length,
+    });
+
     const newShifts: Omit<Shift, 'id'>[] = [];
+    let skippedForConflicts = 0;
 
     datesToCopy.forEach((date) => {
       targetRooms.forEach((roomId) => {
@@ -192,9 +207,17 @@ export function ShiftCopyModal({
               status: 'draft',
               isOpenShift: false,
             });
+          } else {
+            skippedForConflicts++;
+            console.log('[ShiftCopyModal] Conflict found', { date, roomId, staffId, conflicts });
           }
         });
       });
+    });
+
+    console.log('[ShiftCopyModal] Result', {
+      newShiftsCount: newShifts.length,
+      skippedForConflicts,
     });
 
     if (newShifts.length > 0) {
