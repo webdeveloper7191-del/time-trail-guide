@@ -40,12 +40,12 @@ const useGlobalDrag = () => {
 };
 
 const SHIFT_TYPE_CONFIG: Record<ShiftSpecialType, { icon: typeof Phone; color: string; bgColor: string; label: string }> = {
-  regular: { icon: Clock, color: 'text-muted-foreground', bgColor: 'bg-muted/50', label: 'Regular' },
-  on_call: { icon: Phone, color: 'text-blue-500', bgColor: 'bg-blue-500/20', label: 'On-Call' },
-  sleepover: { icon: Moon, color: 'text-purple-500', bgColor: 'bg-purple-500/20', label: 'Sleepover' },
-  broken: { icon: Clock, color: 'text-orange-500', bgColor: 'bg-orange-500/20', label: 'Split Shift' },
-  recall: { icon: PhoneCall, color: 'text-red-500', bgColor: 'bg-red-500/20', label: 'Recall' },
-  emergency: { icon: AlertCircle, color: 'text-destructive', bgColor: 'bg-destructive/20', label: 'Emergency' },
+  regular: { icon: Clock, color: 'text-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-800', label: 'Regular' },
+  on_call: { icon: Phone, color: 'text-cyan-500', bgColor: 'bg-cyan-100 dark:bg-cyan-500/20', label: 'On-Call' },
+  sleepover: { icon: Moon, color: 'text-violet-500', bgColor: 'bg-violet-100 dark:bg-violet-500/20', label: 'Sleepover' },
+  broken: { icon: Clock, color: 'text-amber-500', bgColor: 'bg-amber-100 dark:bg-amber-500/20', label: 'Split Shift' },
+  recall: { icon: PhoneCall, color: 'text-rose-500', bgColor: 'bg-rose-100 dark:bg-rose-500/20', label: 'Recall' },
+  emergency: { icon: AlertCircle, color: 'text-rose-600', bgColor: 'bg-rose-100 dark:bg-rose-500/20', label: 'Emergency' },
 };
 
 interface ShiftCardProps {
@@ -339,7 +339,7 @@ export function ShiftCard({
                     size="icon"
                     className={cn(
                       "h-5 w-5 p-0",
-                      currentType === 'on_call' && "bg-blue-500/20 text-blue-600"
+                      currentType === 'on_call' && "bg-cyan-100 dark:bg-cyan-500/20 text-cyan-600"
                     )}
                     onClick={(e) => handleShiftTypeQuickToggle('on_call', e)}
                   >
@@ -359,7 +359,7 @@ export function ShiftCard({
                     size="icon"
                     className={cn(
                       "h-5 w-5 p-0",
-                      currentType === 'sleepover' && "bg-purple-500/20 text-purple-600"
+                      currentType === 'sleepover' && "bg-violet-100 dark:bg-violet-500/20 text-violet-600"
                     )}
                     onClick={(e) => handleShiftTypeQuickToggle('sleepover', e)}
                   >
@@ -379,7 +379,7 @@ export function ShiftCard({
                     size="icon"
                     className={cn(
                       "h-5 w-5 p-0",
-                      currentType === 'broken' && "bg-orange-500/20 text-orange-600"
+                      currentType === 'broken' && "bg-amber-100 dark:bg-amber-500/20 text-amber-600"
                     )}
                     onClick={(e) => handleShiftTypeQuickToggle('broken', e)}
                   >
