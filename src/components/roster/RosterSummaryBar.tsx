@@ -92,13 +92,13 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
   const items: SummaryItem[] = [
     { label: 'Empty', count: summary.empty, color: 'bg-background', bgColor: 'border border-border' },
     { label: 'Unpublished', count: summary.unpublished, color: 'bg-amber-500', bgColor: 'bg-amber-500/20' },
-    { label: 'Published', count: summary.published, color: 'bg-emerald-500', bgColor: 'bg-emerald-500/20' },
-    { label: 'Confirmed', count: summary.confirmed, color: 'bg-blue-500', bgColor: 'bg-blue-500/20' },
-    { label: 'Open Shift', count: summary.openShift, color: 'bg-primary', bgColor: 'bg-primary/20' },
-    { label: 'Warnings', count: summary.warnings, color: 'bg-red-500', bgColor: 'bg-red-500/20' },
+    { label: 'Published', count: summary.published, color: 'bg-cyan-500', bgColor: 'bg-cyan-500/20' },
+    { label: 'Confirmed', count: summary.confirmed, color: 'bg-emerald-500', bgColor: 'bg-emerald-500/20' },
+    { label: 'Open Shift', count: summary.openShift, color: 'bg-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-800' },
+    { label: 'Warnings', count: summary.warnings, color: 'bg-amber-500', bgColor: 'bg-amber-500/20' },
     { label: 'Leave Approved', count: summary.leaveApproved, color: 'bg-emerald-600', bgColor: 'bg-emerald-600/20' },
     { label: 'Leave Pending', count: summary.leavePending, color: 'bg-amber-600', bgColor: 'bg-amber-600/20' },
-    { label: 'People Unavailable', count: summary.unavailable, color: 'bg-muted-foreground', bgColor: 'bg-muted' },
+    { label: 'People Unavailable', count: summary.unavailable, color: 'bg-slate-500', bgColor: 'bg-slate-200 dark:bg-slate-700' },
   ];
 
   // Items to show on mobile (condensed)
