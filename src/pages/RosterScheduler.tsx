@@ -1307,6 +1307,7 @@ export default function RosterScheduler() {
         onRoleChange={setRoleFilter}
         onNavigateDate={navigateDate}
         onToday={() => setCurrentDate(new Date())}
+        onDateSelect={(date) => setCurrentDate(date)}
         onViewModeChange={setViewMode}
         onPublish={handlePublish}
         onAddOpenShift={() => setShowAddOpenShiftModal(true)}

@@ -18,6 +18,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import {
   ChevronLeft,
   ChevronRight,
   Calendar,
@@ -83,6 +89,7 @@ interface MobileRosterToolbarProps {
   // Navigation
   onNavigateDate: (direction: 'prev' | 'next') => void;
   onToday: () => void;
+  onDateSelect: (date: Date) => void;
   onViewModeChange: (mode: ViewMode) => void;
   // Primary actions
   onPublish: () => void;
@@ -146,6 +153,7 @@ export function MobileRosterToolbar({
   onRoleChange,
   onNavigateDate,
   onToday,
+  onDateSelect,
   onViewModeChange,
   onPublish,
   onAddOpenShift,
@@ -181,6 +189,7 @@ export function MobileRosterToolbar({
   onToggleStaffPanel,
 }: MobileRosterToolbarProps) {
   const [showActionsSheet, setShowActionsSheet] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const viewModes: { value: ViewMode; label: string; tabletLabel: string }[] = [
     { value: 'day', label: 'Day', tabletLabel: 'Day' },
@@ -257,27 +266,38 @@ export function MobileRosterToolbar({
           </Button>
         </div>
 
-        {/* Date range - more detailed on tablet + swipe hint */}
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground hidden md:block" />
-          <span className="text-xs md:text-sm font-medium text-foreground md:text-muted-foreground">
-            <span className="md:hidden">{format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d')}</span>
-            <span className="hidden md:inline">{format(dates[0], 'MMMM d')} - {format(dates[dates.length - 1], 'MMMM d, yyyy')}</span>
-          </span>
-          {/* Swipe hint for mobile/tablet */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-0.5 text-muted-foreground/60 ml-1">
-                  <MoveHorizontal className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                <p>Swipe left/right to navigate dates</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+        {/* Date range with picker - clickable to change date */}
+        <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              className={cn(
+                "h-8 md:h-9 px-2 md:px-3 gap-1.5 md:gap-2",
+                "text-xs md:text-sm font-medium",
+                "hover:bg-accent/50 border border-transparent hover:border-border"
+              )}
+            >
+              <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
+              <span className="md:hidden">{format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d')}</span>
+              <span className="hidden md:inline">{format(dates[0], 'MMMM d')} - {format(dates[dates.length - 1], 'MMMM d, yyyy')}</span>
+              <MoveHorizontal className="h-3 w-3 text-muted-foreground/60" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <CalendarComponent
+              mode="single"
+              selected={currentDate}
+              onSelect={(date) => {
+                if (date) {
+                  onDateSelect(date);
+                  setShowDatePicker(false);
+                }
+              }}
+              initialFocus
+              className="pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
 
         <div className="flex items-center gap-1 md:gap-2">
           {/* Staff Panel Toggle */}
