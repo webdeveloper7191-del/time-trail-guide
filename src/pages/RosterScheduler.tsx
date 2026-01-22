@@ -1107,8 +1107,18 @@ export default function RosterScheduler() {
         notes: s.notes,
       }));
 
-    setOpenShifts(prev => [...prev, ...openShiftsToAdd]);
-    toast.success(`Created ${openShiftsToAdd.length} open shifts from template`);
+    // Debugging (will show in console logs for the next message if still broken)
+    console.log('[ApplyTemplate] selectedCentreId=', selectedCentreId);
+    console.log('[ApplyTemplate] openShiftsToAdd=', openShiftsToAdd);
+
+    setOpenShifts(prev => {
+      const next = [...prev, ...openShiftsToAdd];
+      console.log('[ApplyTemplate] openShifts count', prev.length, '->', next.length);
+      return next;
+    });
+    toast.success(
+      `Created ${openShiftsToAdd.length} open shifts from template (centre ${selectedCentreId})`
+    );
   };
 
   const handleBulkAssignment = (newShifts: Omit<Shift, 'id'>[]) => {
