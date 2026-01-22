@@ -107,6 +107,7 @@ interface StaffTimelineGridProps {
   onShiftSwap?: (shift: Shift) => void;
   onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   onOpenShiftFill: (openShift: OpenShift) => void;
+  onOpenShiftClick?: (openShift: OpenShift) => void;
   onOpenShiftDelete?: (openShiftId: string) => void;
   onAddOpenShift?: (roomId: string, date: string) => void;
   onAddShift: (staffId: string, date: string, roomId: string, template?: ShiftTemplate) => void;
@@ -144,6 +145,8 @@ export function StaffTimelineGrid({
   onShiftCopy,
   onShiftSwap,
   onShiftTypeChange,
+  onOpenShiftFill,
+  onOpenShiftClick,
   onOpenShiftDelete,
   onAddOpenShift,
   onAddShift,
@@ -1610,6 +1613,7 @@ export function StaffTimelineGrid({
                                               openShift={openShift} 
                                               isCompact={isCompact} 
                                               isDragOver={isDragOver} 
+                                              onClick={onOpenShiftClick ? () => onOpenShiftClick(openShift) : undefined}
                                               onDelete={onOpenShiftDelete ? () => handleRequestDeleteOpenShift(openShift, room.name) : undefined}
                                               onSendToAgency={onSendToAgency ? () => onSendToAgency(openShift) : undefined}
                                             />
@@ -2322,12 +2326,14 @@ function OpenShiftCard({
   openShift, 
   isCompact, 
   isDragOver, 
+  onClick,
   onDelete,
   onSendToAgency 
 }: { 
   openShift: OpenShift; 
   isCompact?: boolean; 
   isDragOver?: boolean; 
+  onClick?: () => void;
   onDelete?: () => void;
   onSendToAgency?: () => void;
 }) {
@@ -2357,16 +2363,20 @@ function OpenShiftCard({
   const style = urgencyStyles[openShift.urgency];
 
   return (
-    <div className={cn(
-      "group relative rounded-lg border overflow-hidden transition-all duration-200",
-      "bg-gradient-to-br",
-      openShift.urgency === 'low' && "from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border-slate-200 dark:border-slate-700",
-      openShift.urgency === 'medium' && "from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 border-amber-200 dark:border-amber-800",
-      openShift.urgency === 'high' && "from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30 border-orange-200 dark:border-orange-800",
-      openShift.urgency === 'critical' && "from-red-50 to-red-100/50 dark:from-red-950/50 dark:to-red-900/30 border-red-200 dark:border-red-800",
-      isDragOver && "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50",
-      openShift.urgency === 'critical' && "animate-pulse"
-    )}>
+    <div 
+      className={cn(
+        "group relative rounded-lg border overflow-hidden transition-all duration-200",
+        "bg-gradient-to-br",
+        onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30",
+        openShift.urgency === 'low' && "from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border-slate-200 dark:border-slate-700",
+        openShift.urgency === 'medium' && "from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 border-amber-200 dark:border-amber-800",
+        openShift.urgency === 'high' && "from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30 border-orange-200 dark:border-orange-800",
+        openShift.urgency === 'critical' && "from-red-50 to-red-100/50 dark:from-red-950/50 dark:to-red-900/30 border-red-200 dark:border-red-800",
+        isDragOver && "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50",
+        openShift.urgency === 'critical' && "animate-pulse"
+      )}
+      onClick={onClick}
+    >
       <div className={cn("absolute left-0 top-0 bottom-0 w-1", style.accent)} />
       
       {/* Action buttons */}
