@@ -426,10 +426,10 @@ export function OpenShiftCard({
   const duration = calculateDuration(openShift.startTime, openShift.endTime, 0);
 
   const urgencyColors = {
-    low: 'border-muted-foreground/30 bg-muted/30',
-    medium: 'border-amber-500/50 bg-amber-500/10',
-    high: 'border-orange-500/50 bg-orange-500/10',
-    critical: 'border-destructive/50 bg-destructive/10 animate-pulse',
+    low: 'border-slate-300 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30',
+    medium: 'border-amber-300 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30',
+    high: 'border-orange-300 dark:border-orange-800 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30',
+    critical: 'border-rose-300 dark:border-rose-800 bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/50 dark:to-rose-900/30 animate-pulse',
   };
 
   const handleDragOver = (e: React.DragEvent) => {

@@ -116,10 +116,10 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
     {
       title: 'Shift Status',
       items: [
-        { icon: <div className="h-3 w-3 rounded-sm bg-amber-500" />, label: 'Draft/Unpublished', description: 'Not yet published to staff' },
-        { icon: <div className="h-3 w-3 rounded-sm bg-cyan-500" />, label: 'Published', description: 'Visible to staff' },
-        { icon: <div className="h-3 w-3 rounded-sm bg-emerald-500" />, label: 'Confirmed', description: 'Acknowledged by staff' },
-        { icon: <div className="h-3 w-3 rounded-sm bg-slate-400" />, label: 'Completed', description: 'Past shift' },
+        { icon: <div className="h-3 w-6 rounded-sm border-2 border-dashed border-amber-400 bg-amber-50 dark:bg-amber-500/10" />, label: 'Draft/Unpublished', description: 'Dashed border, not yet published' },
+        { icon: <div className="h-3 w-6 rounded-sm border border-cyan-400 bg-cyan-50 dark:bg-cyan-500/10" />, label: 'Published', description: 'Solid border, visible to staff' },
+        { icon: <div className="h-3 w-6 rounded-sm border border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10" />, label: 'Confirmed', description: 'Acknowledged by staff' },
+        { icon: <div className="h-3 w-6 rounded-sm border border-slate-300 bg-slate-100 dark:bg-slate-700" />, label: 'Completed', description: 'Past shift' },
       ],
     },
     {
@@ -146,10 +146,10 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
     {
       title: 'Open Shift Urgency',
       items: [
-        { icon: <div className="h-3 w-6 rounded border-2 border-dashed border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-800" />, label: 'Low', description: 'Plenty of time to fill' },
-        { icon: <div className="h-3 w-6 rounded border-2 border-dashed border-amber-400 bg-amber-50 dark:bg-amber-500/10" />, label: 'Medium', description: 'Should be filled soon' },
-        { icon: <div className="h-3 w-6 rounded border-2 border-dashed border-orange-400 bg-orange-50 dark:bg-orange-500/10" />, label: 'High', description: 'Needs attention' },
-        { icon: <div className="h-3 w-6 rounded border-2 border-dashed border-rose-400 bg-rose-50 dark:bg-rose-500/10" />, label: 'Critical', description: 'Immediate action required' },
+        { icon: <div className="h-3 w-6 rounded border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 dark:border-slate-700" />, label: 'Low', description: 'Plenty of time to fill' },
+        { icon: <div className="h-3 w-6 rounded border border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 dark:border-amber-800" />, label: 'Medium', description: 'Should be filled soon' },
+        { icon: <div className="h-3 w-6 rounded border border-orange-300 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30 dark:border-orange-800" />, label: 'High', description: 'Needs attention' },
+        { icon: <div className="h-3 w-6 rounded border border-rose-300 bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/50 dark:to-rose-900/30 dark:border-rose-800" />, label: 'Critical', description: 'Immediate action required' },
       ],
     },
     {

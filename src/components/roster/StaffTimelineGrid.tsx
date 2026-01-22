@@ -2354,9 +2354,9 @@ function OpenShiftCard({
       accent: 'bg-orange-500',
     },
     critical: {
-      bg: 'bg-red-50 dark:bg-red-950/40',
-      border: 'border-red-300 dark:border-red-800',
-      accent: 'bg-red-500',
+      bg: 'bg-rose-50 dark:bg-rose-950/40',
+      border: 'border-rose-300 dark:border-rose-800',
+      accent: 'bg-rose-500',
     },
   };
 
@@ -2368,10 +2368,10 @@ function OpenShiftCard({
         "group relative rounded-lg border overflow-hidden transition-all duration-200",
         "bg-gradient-to-br",
         onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30",
-        openShift.urgency === 'low' && "from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border-slate-200 dark:border-slate-700",
-        openShift.urgency === 'medium' && "from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 border-amber-200 dark:border-amber-800",
-        openShift.urgency === 'high' && "from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30 border-orange-200 dark:border-orange-800",
-        openShift.urgency === 'critical' && "from-red-50 to-red-100/50 dark:from-red-950/50 dark:to-red-900/30 border-red-200 dark:border-red-800",
+        openShift.urgency === 'low' && "from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border-slate-300 dark:border-slate-700",
+        openShift.urgency === 'medium' && "from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 border-amber-300 dark:border-amber-800",
+        openShift.urgency === 'high' && "from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30 border-orange-300 dark:border-orange-800",
+        openShift.urgency === 'critical' && "from-rose-50 to-rose-100/50 dark:from-rose-950/50 dark:to-rose-900/30 border-rose-300 dark:border-rose-800",
         isDragOver && "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50",
         openShift.urgency === 'critical' && "animate-pulse"
       )}
