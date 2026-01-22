@@ -100,53 +100,75 @@ interface TooltipContentProps extends React.HTMLAttributes<HTMLDivElement> {
 const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
   ({ className, side = 'top', sideOffset = 4, align = 'center', children, ...props }, ref) => {
     const context = React.useContext(TooltipContext);
-    const [position, setPosition] = React.useState({ top: 0, left: 0 });
+    const [position, setPosition] = React.useState({ top: -9999, left: -9999 });
+    const [isPositioned, setIsPositioned] = React.useState(false);
     const contentRef = React.useRef<HTMLDivElement>(null);
     
-    React.useEffect(() => {
-      if (context?.triggerRect && contentRef.current) {
-        const rect = context.triggerRect;
-        const contentRect = contentRef.current.getBoundingClientRect();
+    React.useLayoutEffect(() => {
+      if (context?.open && context?.triggerRect && contentRef.current) {
+        // Use requestAnimationFrame to ensure the content is rendered and measured
+        const frame = requestAnimationFrame(() => {
+          if (!contentRef.current) return;
+          
+          const rect = context.triggerRect!;
+          const contentRect = contentRef.current.getBoundingClientRect();
+          
+          // If content hasn't been measured yet, skip positioning
+          if (contentRect.width === 0 || contentRect.height === 0) return;
+          
+          let top = 0;
+          let left = 0;
+          
+          switch (side) {
+            case 'top':
+              top = rect.top - contentRect.height - sideOffset;
+              left = rect.left + rect.width / 2 - contentRect.width / 2;
+              break;
+            case 'bottom':
+              top = rect.bottom + sideOffset;
+              left = rect.left + rect.width / 2 - contentRect.width / 2;
+              break;
+            case 'left':
+              top = rect.top + rect.height / 2 - contentRect.height / 2;
+              left = rect.left - contentRect.width - sideOffset;
+              break;
+            case 'right':
+              top = rect.top + rect.height / 2 - contentRect.height / 2;
+              left = rect.right + sideOffset;
+              break;
+          }
+          
+          // Adjust for alignment
+          if (side === 'top' || side === 'bottom') {
+            if (align === 'start') left = rect.left;
+            if (align === 'end') left = rect.right - contentRect.width;
+          } else {
+            if (align === 'start') top = rect.top;
+            if (align === 'end') top = rect.bottom - contentRect.height;
+          }
+          
+          // Keep within viewport bounds
+          const padding = 8;
+          left = Math.max(padding, Math.min(left, window.innerWidth - contentRect.width - padding));
+          top = Math.max(padding, Math.min(top, window.innerHeight - contentRect.height - padding));
+          
+          setPosition({ top, left });
+          setIsPositioned(true);
+        });
         
-        let top = 0;
-        let left = 0;
-        
-        switch (side) {
-          case 'top':
-            top = rect.top - contentRect.height - sideOffset;
-            left = rect.left + rect.width / 2 - contentRect.width / 2;
-            break;
-          case 'bottom':
-            top = rect.bottom + sideOffset;
-            left = rect.left + rect.width / 2 - contentRect.width / 2;
-            break;
-          case 'left':
-            top = rect.top + rect.height / 2 - contentRect.height / 2;
-            left = rect.left - contentRect.width - sideOffset;
-            break;
-          case 'right':
-            top = rect.top + rect.height / 2 - contentRect.height / 2;
-            left = rect.right + sideOffset;
-            break;
-        }
-        
-        // Adjust for alignment
-        if (side === 'top' || side === 'bottom') {
-          if (align === 'start') left = rect.left;
-          if (align === 'end') left = rect.right - contentRect.width;
-        } else {
-          if (align === 'start') top = rect.top;
-          if (align === 'end') top = rect.bottom - contentRect.height;
-        }
-        
-        // Keep within viewport bounds
-        const padding = 8;
-        left = Math.max(padding, Math.min(left, window.innerWidth - contentRect.width - padding));
-        top = Math.max(padding, Math.min(top, window.innerHeight - contentRect.height - padding));
-        
-        setPosition({ top, left });
+        return () => cancelAnimationFrame(frame);
+      } else {
+        setIsPositioned(false);
       }
     }, [context?.triggerRect, side, sideOffset, align, context?.open]);
+    
+    // Reset positioned state when closing
+    React.useEffect(() => {
+      if (!context?.open) {
+        setIsPositioned(false);
+        setPosition({ top: -9999, left: -9999 });
+      }
+    }, [context?.open]);
     
     if (!context?.open) {
       return null;
@@ -160,7 +182,8 @@ const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
           else if (ref) ref.current = node;
         }}
         className={cn(
-          "overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95",
+          "overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md",
+          isPositioned && "animate-in fade-in-0 zoom-in-95",
           className
         )}
         style={{
@@ -169,6 +192,8 @@ const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
           left: position.left,
           zIndex: 99999,
           pointerEvents: 'auto',
+          opacity: isPositioned ? 1 : 0,
+          visibility: isPositioned ? 'visible' : 'hidden',
         }}
         {...props}
       >
