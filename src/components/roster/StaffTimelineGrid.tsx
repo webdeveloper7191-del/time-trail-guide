@@ -1089,22 +1089,22 @@ export function StaffTimelineGrid({
                 );
               })}
               {/* Cost header */}
-              <div className="w-24 shrink-0 p-2 text-center font-medium text-sm text-muted-foreground border-l border-border">
-                <div className="flex items-center justify-center gap-1">
-                  <DollarSign className="h-3.5 w-3.5" />
-                  <span>Cost</span>
+              <div className="w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-2 text-center font-medium text-xs md:text-sm text-muted-foreground border-l border-border">
+                <div className="flex items-center justify-center gap-0.5 md:gap-1">
+                  <DollarSign className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                  <span className="hidden sm:inline">Cost</span>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 ml-1"
+                    className="h-5 w-5 md:h-6 md:w-6 ml-0.5 md:ml-1"
                     onClick={() => setIsCostSticky(v => !v)}
                     aria-label={isCostSticky ? 'Unpin Cost column' : 'Pin Cost column'}
                   >
                     {isCostSticky ? (
-                      <PinOff className="h-3.5 w-3.5" />
+                      <PinOff className="h-3 w-3 md:h-3.5 md:w-3.5" />
                     ) : (
-                      <Pin className="h-3.5 w-3.5" />
+                      <Pin className="h-3 w-3 md:h-3.5 md:w-3.5" />
                     )}
                   </Button>
                 </div>
@@ -1234,10 +1234,10 @@ export function StaffTimelineGrid({
                             );
                           })}
                           <div 
-                            className="w-24 shrink-0 flex items-center justify-center border-l bg-card"
+                            className="w-16 md:w-20 lg:w-24 shrink-0 flex items-center justify-center border-l bg-card"
                             style={{ borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                           >
-                            <Badge variant="secondary" className="text-xs font-medium">
+                            <Badge variant="secondary" className="text-[10px] md:text-xs font-medium px-1 md:px-2">
                               {roomStaff.length} staff
                             </Badge>
                           </div>
@@ -1254,7 +1254,7 @@ export function StaffTimelineGrid({
                               style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                             />
                           ))}
-                          <div className="w-24 shrink-0" />
+                          <div className="w-16 md:w-20 lg:w-24 shrink-0" />
                         </>
                       )}
                     </div>
@@ -1291,7 +1291,7 @@ export function StaffTimelineGrid({
                                   </div>
                                 );
                               })}
-                              <div className="w-24 shrink-0 border-l border-border" />
+                              <div className="w-16 md:w-20 lg:w-24 shrink-0 border-l border-border" />
                             </div>
                           )}
                           
@@ -1467,21 +1467,21 @@ export function StaffTimelineGrid({
                                 })}
 
                                 {/* Cost cell */}
-                                <div className="w-24 shrink-0 p-1.5 border-l border-border bg-card flex items-center justify-center">
+                                <div className="w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-1.5 border-l border-border bg-card flex items-center justify-center">
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <div className="text-center">
                                           <div className={cn(
-                                            "text-sm font-semibold",
+                                            "text-[11px] md:text-sm font-semibold",
                                             costs.overtimeCost > 0 && "text-amber-600",
                                             costs.totalCost === 0 && "text-muted-foreground"
                                           )}>
                                             ${costs.totalCost}
                                           </div>
-                                          <div className="text-[10px] text-muted-foreground">{costs.totalHours}h</div>
+                                          <div className="text-[9px] md:text-[10px] text-muted-foreground">{costs.totalHours}h</div>
                                           {costs.overtimeCost > 0 && (
-                                            <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-amber-500 text-amber-600 mt-0.5">
+                                            <Badge variant="outline" className="text-[7px] md:text-[8px] px-0.5 md:px-1 py-0 h-3 md:h-3.5 border-amber-500 text-amber-600 mt-0.5">
                                               +${costs.overtimeCost} OT
                                             </Badge>
                                           )}
@@ -1583,7 +1583,7 @@ export function StaffTimelineGrid({
                                   </div>
                                 );
                               })}
-                              <div className="w-24 shrink-0 border-l border-amber-200/30 bg-amber-50/40 dark:bg-amber-950/10" />
+                              <div className="w-16 md:w-20 lg:w-24 shrink-0 border-l border-amber-200/30 bg-amber-50/40 dark:bg-amber-950/10" />
                             </div>
                           )}
 
@@ -1635,7 +1635,7 @@ export function StaffTimelineGrid({
                                     </div>
                                   );
                                 })}
-                                <div className="w-24 shrink-0 border-l border-border bg-purple-500/5" />
+                                <div className="w-16 md:w-20 lg:w-24 shrink-0 border-l border-border bg-purple-500/5" />
                               </div>
                             );
                           })()}
@@ -1702,7 +1702,7 @@ export function StaffTimelineGrid({
                                 </div>
                               );
                             })}
-                            <div className="w-24 shrink-0 border-r border-border/30" />
+                            <div className="w-16 md:w-20 lg:w-24 shrink-0 border-r border-border/30" />
                           </div>
                         </>
                       )}
