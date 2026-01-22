@@ -76,6 +76,26 @@ export function ShiftCopyModal({
     reset,
   } = methods;
 
+  // When opening with a different shift, ensure RHF defaults are refreshed.
+  // (react-hook-form defaultValues are only applied on first render)
+  useEffect(() => {
+    if (!open || !shift) return;
+    reset({
+      sourceShiftId: shift.id,
+      targetDates: [],
+      copyMode: 'single',
+      recurringPattern: 'weekly',
+      recurringEndDate: format(addWeeks(new Date(), 4), 'yyyy-MM-dd'),
+      targetRoomId: shift.roomId,
+      copyToAllRooms: false,
+      targetStaffIds: [],
+      keepOriginalStaff: true,
+    });
+    setSelectedDates([]);
+    setSelectedStaff([]);
+    setShowCalendar(false);
+  }, [open, shift, reset]);
+
   const copyMode = watch('copyMode');
   const recurringPattern = watch('recurringPattern');
   const recurringEndDate = watch('recurringEndDate');
