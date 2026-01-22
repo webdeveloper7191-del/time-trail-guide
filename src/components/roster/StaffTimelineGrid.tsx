@@ -1595,16 +1595,27 @@ export function StaffTimelineGrid({
                                       </div>
                                     )}
                                     <div className="flex flex-col gap-1">
-                                      {dayOpenShifts.map((openShift) => (
-                                        <OpenShiftCard 
-                                          key={openShift.id} 
-                                          openShift={openShift} 
-                                          isCompact={isCompact} 
-                                          isDragOver={isDragOver} 
-                                          onDelete={onOpenShiftDelete ? () => handleRequestDeleteOpenShift(openShift, room.name) : undefined}
-                                          onSendToAgency={onSendToAgency ? () => onSendToAgency(openShift) : undefined}
-                                        />
-                                      ))}
+                                      {dayOpenShifts.length > 0 && (
+                                        <div className="absolute top-1 left-1 z-10">
+                                          <Badge variant="outline" className="bg-background/80 backdrop-blur text-[10px] px-1 py-0 h-4">
+                                            {dayOpenShifts.length}
+                                          </Badge>
+                                        </div>
+                                      )}
+                                      <div className="max-h-[72px] overflow-auto pr-1">
+                                        <div className="flex flex-col gap-1">
+                                          {dayOpenShifts.map((openShift) => (
+                                            <OpenShiftCard 
+                                              key={openShift.id} 
+                                              openShift={openShift} 
+                                              isCompact={isCompact} 
+                                              isDragOver={isDragOver} 
+                                              onDelete={onOpenShiftDelete ? () => handleRequestDeleteOpenShift(openShift, room.name) : undefined}
+                                              onSendToAgency={onSendToAgency ? () => onSendToAgency(openShift) : undefined}
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
                                     </div>
                                     
                                     {onAddOpenShift && !isDragging && (
