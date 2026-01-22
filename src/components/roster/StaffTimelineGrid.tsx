@@ -1242,10 +1242,13 @@ export function StaffTimelineGrid({
                           })}
                           <div
                             className={cn(
-                              "w-16 md:w-20 lg:w-24 shrink-0 flex items-center justify-center border-l bg-card",
+                              "w-16 md:w-20 lg:w-24 shrink-0 flex items-center justify-center border-l",
                               isCostStickyEnabled && "sticky right-0 z-20 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.18)]"
                             )}
-                            style={{ borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
+                            style={{ 
+                              backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`,
+                              borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)`,
+                            }}
                           >
                             <Badge variant="secondary" className="text-[10px] md:text-xs font-medium px-1 md:px-2">
                               {roomStaff.length} staff
@@ -1266,9 +1269,13 @@ export function StaffTimelineGrid({
                           ))}
                           <div
                             className={cn(
-                              "w-16 md:w-20 lg:w-24 shrink-0",
-                              isCostStickyEnabled && "sticky right-0 z-10 bg-background shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
+                              "w-16 md:w-20 lg:w-24 shrink-0 border-l",
+                              isCostStickyEnabled && "sticky right-0 z-10 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
                             )}
+                            style={{ 
+                              backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`,
+                              borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)`,
+                            }}
                           />
                         </>
                       )}
@@ -1739,8 +1746,11 @@ export function StaffTimelineGrid({
                             })}
                             <div
                               className={cn(
-                                "w-16 md:w-20 lg:w-24 shrink-0 border-r border-border/30",
-                                isCostStickyEnabled && "sticky right-0 z-10 bg-background shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
+                                "w-16 md:w-20 lg:w-24 shrink-0 border-l border-border/30",
+                                isDragging && dragType === 'staff' 
+                                  ? "bg-sky-50/40 dark:bg-sky-950/10" 
+                                  : "bg-muted/30",
+                                isCostStickyEnabled && "sticky right-0 z-10 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
                               )}
                             />
                           </div>
