@@ -36,12 +36,7 @@ export function ShiftSwapModal({ open, onClose, shift, staff, allShifts, onSwap 
     }
   }, [open, shift?.id]);
 
-  // Guard: Don't render if shift is null
-  if (!shift) {
-    return null;
-  }
-
-  const currentStaff = staff.find(s => s.id === shift.staffId);
+  const currentStaff = shift ? staff.find(s => s.id === shift.staffId) : null;
 
   const calculateShiftHours = (s: Shift) => {
     const [startH, startM] = s.startTime.split(':').map(Number);
@@ -50,6 +45,8 @@ export function ShiftSwapModal({ open, onClose, shift, staff, allShifts, onSwap 
   };
 
   const eligibleStaff = useMemo(() => {
+    if (!shift) return [];
+    
     return staff.filter(s => {
       // Exclude current staff
       if (s.id === shift.staffId) return false;
@@ -81,6 +78,8 @@ export function ShiftSwapModal({ open, onClose, shift, staff, allShifts, onSwap 
 
   const getConflicts = (staffId: string) => {
     const conflicts: string[] = [];
+    if (!shift) return conflicts;
+    
     const member = staff.find(s => s.id === staffId);
     if (!member) return conflicts;
     
@@ -118,6 +117,11 @@ export function ShiftSwapModal({ open, onClose, shift, staff, allShifts, onSwap 
       disabled: !selectedStaffId,
     },
   ];
+
+  // Guard: Don't render if shift is null (moved after all hooks)
+  if (!shift) {
+    return null;
+  }
 
   return (
     <PrimaryOffCanvas
