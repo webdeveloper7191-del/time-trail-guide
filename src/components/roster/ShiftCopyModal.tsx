@@ -327,6 +327,7 @@ export function ShiftCopyModal({
                         }}
                         disabled={(date) => format(date, 'yyyy-MM-dd') === shift.date}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     ) : (
                       <CalendarUI
@@ -337,6 +338,7 @@ export function ShiftCopyModal({
                         }}
                         disabled={(date) => format(date, 'yyyy-MM-dd') === shift.date}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     )}
                   </PopoverContent>
