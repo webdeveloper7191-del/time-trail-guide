@@ -1759,144 +1759,152 @@ export default function RosterScheduler() {
             >
 
               {/* Export Menu */}
-              <DropdownMenu>
-                <Tooltip content="Export Options">
-                  <DropdownMenuTrigger asChild>
-                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                      <Download size={18} />
-                    </IconButton>
-                  </DropdownMenuTrigger>
-                </Tooltip>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => handleExportPDF(false)} icon={<FileText size={16} />}>
-                    Export to PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExportPDF(true)} icon={<Palette size={16} />}>
-                    Export Color PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportExcel} icon={<FileSpreadsheet size={16} />}>
-                    Export to Excel
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handlePrint} icon={<Printer size={16} />}>
-                    Print View
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Tooltip content="Export Options">
+                <span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                        <Download size={18} />
+                      </IconButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleExportPDF(false)} icon={<FileText size={16} />}>
+                        Export to PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExportPDF(true)} icon={<Palette size={16} />}>
+                        Export Color PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportExcel} icon={<FileSpreadsheet size={16} />}>
+                        Export to Excel
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handlePrint} icon={<Printer size={16} />}>
+                        Print View
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </span>
+              </Tooltip>
 
               {/* Templates Menu */}
-              <DropdownMenu>
-                <Tooltip content="Templates & Settings">
-                  <DropdownMenuTrigger asChild>
-                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                      <Layers size={18} />
-                    </IconButton>
-                  </DropdownMenuTrigger>
-                </Tooltip>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setShowSaveTemplateModal(true)} icon={<FileStack size={16} />}>
-                    Save as Template
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowApplyTemplateModal(true)} icon={<Layers size={16} />}>
-                    Apply Template
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowShiftTemplateManager(true)} icon={<Clock size={16} />}>
-                    Manage Shift Templates
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowIndustryConfig(true)} icon={<Settings size={16} />}>
-                    Industry Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowDemandSettings(true)} icon={<BarChart2 size={16} />}>
-                    Demand Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowDemandDataEntry(true)} icon={<FileSpreadsheet size={16} />}>
-                    Enter Demand Data
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowIntegrationManager(true)} icon={<Plug size={16} />}>
-                    Integration Manager
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Tooltip content="Templates & Settings">
+                <span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                        <Layers size={18} />
+                      </IconButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setShowSaveTemplateModal(true)} icon={<FileStack size={16} />}>
+                        Save as Template
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowApplyTemplateModal(true)} icon={<Layers size={16} />}>
+                        Apply Template
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setShowShiftTemplateManager(true)} icon={<Clock size={16} />}>
+                        Manage Shift Templates
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowIndustryConfig(true)} icon={<Settings size={16} />}>
+                        Industry Settings
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowDemandSettings(true)} icon={<BarChart2 size={16} />}>
+                        Demand Settings
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowDemandDataEntry(true)} icon={<FileSpreadsheet size={16} />}>
+                        Enter Demand Data
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setShowIntegrationManager(true)} icon={<Plug size={16} />}>
+                        Integration Manager
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </span>
+              </Tooltip>
 
               {/* Schedule Menu */}
-              <DropdownMenu>
-                <Tooltip content="Schedule & Leave">
-                  <DropdownMenuTrigger asChild>
-                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                      <CalendarDays size={18} />
-                    </IconButton>
-                  </DropdownMenuTrigger>
-                </Tooltip>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setShowHolidayCalendar(true)} icon={<Flag size={16} />}>
-                    Holidays & Events
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowAvailabilityModal(true)} icon={<CalendarCheck size={16} />}>
-                    Staff Availability
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowLeaveModal(true)} icon={<CalendarDays size={16} />}>
-                    Leave Requests
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => {
-                    if (allStaff.length > 0) openPreferencesForStaff(allStaff[0]);
-                  }} icon={<UserCog size={16} />}>
-                    Staff Preferences
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Tooltip content="Schedule & Leave">
+                <span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                        <CalendarDays size={18} />
+                      </IconButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setShowHolidayCalendar(true)} icon={<Flag size={16} />}>
+                        Holidays & Events
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setShowAvailabilityModal(true)} icon={<CalendarCheck size={16} />}>
+                        Staff Availability
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowLeaveModal(true)} icon={<CalendarDays size={16} />}>
+                        Leave Requests
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => {
+                        if (allStaff.length > 0) openPreferencesForStaff(allStaff[0]);
+                      }} icon={<UserCog size={16} />}>
+                        Staff Preferences
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </span>
+              </Tooltip>
 
               {/* Advanced Features Menu */}
-              <DropdownMenu>
-                <Tooltip content="Advanced Features">
-                  <DropdownMenuTrigger asChild>
-                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                      <Zap size={18} />
-                    </IconButton>
-                  </DropdownMenuTrigger>
-                </Tooltip>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setShowRecurringPatterns(true)} icon={<Repeat size={16} />}>
-                    Recurring Patterns
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowRecurringManagement(true)} icon={<RefreshCw size={16} />}>
-                    Manage Recurring Shifts
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowBreakScheduling(true)} icon={<Coffee size={16} />}>
-                    Break Scheduling
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowSkillMatrix(true)} icon={<Target size={16} />}>
-                    Skill Matrix Matching
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowFatigueManagement(true)} icon={<Brain size={16} />}>
-                    Fatigue Management
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowGPSClockIn(true)} icon={<MapPin size={16} />}>
-                    GPS Clock-in/out
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowWeatherIntegration(true)} icon={<CloudSun size={16} />}>
-                    Weather Integration
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowAgencyTracker(true)} icon={<Radio size={16} />}>
-                    View Agency Broadcasts
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowNotificationTemplates(true)} icon={<Mail size={16} />}>
-                    Notification Templates
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowAgencyPreferences(true)} icon={<Star size={16} />}>
-                    Agency Preferences
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowAgencyDashboard(true)} icon={<BarChart3 size={16} />}>
-                    Agency Performance
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Tooltip content="Advanced Features">
+                <span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                        <Zap size={18} />
+                      </IconButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setShowRecurringPatterns(true)} icon={<Repeat size={16} />}>
+                        Recurring Patterns
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowRecurringManagement(true)} icon={<RefreshCw size={16} />}>
+                        Manage Recurring Shifts
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowBreakScheduling(true)} icon={<Coffee size={16} />}>
+                        Break Scheduling
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowSkillMatrix(true)} icon={<Target size={16} />}>
+                        Skill Matrix Matching
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setShowFatigueManagement(true)} icon={<Brain size={16} />}>
+                        Fatigue Management
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowGPSClockIn(true)} icon={<MapPin size={16} />}>
+                        GPS Clock-in/out
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setShowWeatherIntegration(true)} icon={<CloudSun size={16} />}>
+                        Weather Integration
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setShowAgencyTracker(true)} icon={<Radio size={16} />}>
+                        View Agency Broadcasts
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowNotificationTemplates(true)} icon={<Mail size={16} />}>
+                        Notification Templates
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowAgencyPreferences(true)} icon={<Star size={16} />}>
+                        Agency Preferences
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowAgencyDashboard(true)} icon={<BarChart3 size={16} />}>
+                        Agency Performance
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </span>
+              </Tooltip>
             </Stack>
 
             {/* Status Icons Group - Collapse alerts/notifications into single icon on tablet */}
