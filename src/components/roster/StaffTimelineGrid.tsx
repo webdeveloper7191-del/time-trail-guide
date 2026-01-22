@@ -169,7 +169,8 @@ export function StaffTimelineGrid({
   // Only day view gets the expanded chart (but day view uses DayTimelineView component)
   const isCompact = viewMode !== 'day';
   const isMonthView = viewMode === 'month';
-  const isCostStickyEnabled = isCostSticky && !isMonthView;
+  // Disable sticky cost for fortnight/month as those have fixed-width scrollable columns
+  const isCostStickyEnabled = isCostSticky && !isMonthView && viewMode !== 'fortnight';
   
   // Column width classes - fluid for shorter views, fixed for fortnight/month
   // Fortnight and Month views use fixed 125px for consistency with many columns
