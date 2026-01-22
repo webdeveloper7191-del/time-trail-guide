@@ -180,25 +180,25 @@ export function MobileRosterToolbar({
 }: MobileRosterToolbarProps) {
   const [showActionsSheet, setShowActionsSheet] = useState(false);
 
-  const viewModes: { value: ViewMode; label: string }[] = [
-    { value: 'day', label: 'Day' },
-    { value: 'workweek', label: 'M-F' },
-    { value: 'week', label: 'Week' },
-    { value: 'fortnight', label: '2 Wk' },
-    { value: 'month', label: 'Month' },
+  const viewModes: { value: ViewMode; label: string; tabletLabel: string }[] = [
+    { value: 'day', label: 'Day', tabletLabel: 'Day' },
+    { value: 'workweek', label: 'M-F', tabletLabel: 'Work Week' },
+    { value: 'week', label: 'Week', tabletLabel: 'Week' },
+    { value: 'fortnight', label: '2 Wk', tabletLabel: 'Fortnight' },
+    { value: 'month', label: 'Month', tabletLabel: 'Month' },
   ];
 
   return (
     <div className="lg:hidden bg-card border-b border-border w-full overflow-x-hidden">
-      {/* Top Row - Centre & Role Selectors */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-border w-full">
+      {/* Top Row - Centre & Role Selectors - More spacious on tablet */}
+      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 border-b border-border w-full">
         <Select value={selectedCentreId} onValueChange={onCentreChange}>
-          <SelectTrigger className="h-8 flex-1 min-w-0 text-xs">
+          <SelectTrigger className="h-8 md:h-9 flex-1 min-w-0 text-xs md:text-sm">
             <SelectValue placeholder="Select centre" />
           </SelectTrigger>
           <SelectContent>
             {centres.map((centre) => (
-              <SelectItem key={centre.id} value={centre.id} className="text-xs">
+              <SelectItem key={centre.id} value={centre.id} className="text-xs md:text-sm">
                 {centre.name}
               </SelectItem>
             ))}
@@ -206,34 +206,41 @@ export function MobileRosterToolbar({
         </Select>
 
         <Select value={selectedRole} onValueChange={onRoleChange}>
-          <SelectTrigger className="h-8 w-[100px] shrink-0 text-xs">
+          <SelectTrigger className="h-8 md:h-9 w-[100px] md:w-[130px] shrink-0 text-xs md:text-sm">
             <SelectValue placeholder="Role" />
           </SelectTrigger>
           <SelectContent>
             {roleOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+              <SelectItem key={opt.value} value={opt.value} className="text-xs md:text-sm">
                 {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        
+        {/* Tablet-only: Show budget info inline */}
+        <div className="hidden md:flex items-center gap-2 text-sm font-medium ml-auto">
+          <DollarSign className="h-4 w-4 text-primary" />
+          <span>${costSummary.totalCost.toLocaleString()}</span>
+          <span className="text-muted-foreground">/ ${weeklyBudget.toLocaleString()}</span>
+        </div>
       </div>
 
       {/* Second Row - Date Navigation */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border w-full">
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between px-3 md:px-4 py-2 border-b border-border w-full">
+        <div className="flex items-center gap-1 md:gap-2">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 md:h-9 md:w-9"
             onClick={() => onNavigateDate('prev')}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-2 text-xs font-medium"
+            className="h-8 md:h-9 px-2 md:px-3 text-xs md:text-sm font-medium"
             onClick={onToday}
           >
             Today
@@ -241,36 +248,71 @@ export function MobileRosterToolbar({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 md:h-9 md:w-9"
             onClick={() => onNavigateDate('next')}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
         </div>
 
-        <div className="text-xs font-medium text-muted-foreground">
-          {format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d')}
+        {/* Date range - more detailed on tablet */}
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground hidden md:block" />
+          <span className="text-xs md:text-sm font-medium text-foreground md:text-muted-foreground">
+            <span className="md:hidden">{format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d')}</span>
+            <span className="hidden md:inline">{format(dates[0], 'MMMM d')} - {format(dates[dates.length - 1], 'MMMM d, yyyy')}</span>
+          </span>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 md:gap-2">
           {/* Staff Panel Toggle */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 md:h-9 md:w-9"
             onClick={onToggleStaffPanel}
           >
-            <Users className="h-4 w-4" />
+            <Users className="h-4 w-4 md:h-5 md:w-5" />
+          </Button>
+          
+          {/* Tablet: Quick action buttons */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:flex h-9 w-9"
+            onClick={onToggleDemand}
+          >
+            {showDemandOverlay ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+          </Button>
+          
+          {/* Tablet: Undo/Redo */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:flex h-9 w-9"
+            disabled={!canUndo}
+            onClick={onUndo}
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:flex h-9 w-9"
+            disabled={!canRedo}
+            onClick={onRedo}
+          >
+            <Redo2 className="h-4 w-4" />
           </Button>
           
           {/* Conflicts with badge */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 relative"
+            className="h-8 w-8 md:h-9 md:w-9 relative"
             onClick={onShowConflicts}
           >
-            <Shield className="h-4 w-4" />
+            <Shield className="h-4 w-4 md:h-5 md:w-5" />
             {conflictCount > 0 && (
               <Badge
                 variant="destructive"
@@ -281,11 +323,11 @@ export function MobileRosterToolbar({
             )}
           </Button>
 
-          {/* Alerts with badge */}
+          {/* Alerts with badge - hidden on tablet since shown in row 3 */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 relative"
+            className="h-8 w-8 md:hidden relative"
             onClick={onShowAlerts}
           >
             <Bell className="h-4 w-4" />
@@ -302,8 +344,8 @@ export function MobileRosterToolbar({
           {/* More Actions */}
           <Sheet open={showActionsSheet} onOpenChange={setShowActionsSheet}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Menu className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 md:h-9 md:w-9">
+                <Menu className="h-4 w-4 md:h-5 md:w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent
@@ -723,8 +765,8 @@ export function MobileRosterToolbar({
       </div>
 
       {/* Third Row - View Mode & Publish */}
-      <div className="flex items-center justify-between px-4 py-2 gap-2 w-full">
-        {/* View Mode Tabs */}
+      <div className="flex items-center justify-between px-3 md:px-4 py-2 gap-2 w-full">
+        {/* View Mode Tabs - Show full labels on tablet */}
         <div className="flex bg-muted rounded-lg p-0.5 shrink-0">
           {viewModes.map((mode) => (
             <Button
@@ -732,26 +774,34 @@ export function MobileRosterToolbar({
               variant={viewMode === mode.value ? 'secondary' : 'ghost'}
               size="sm"
               className={cn(
-                'h-7 px-2.5 text-xs whitespace-nowrap',
+                'h-7 md:h-8 px-2 md:px-3 text-xs md:text-sm whitespace-nowrap',
                 viewMode === mode.value && 'bg-background shadow-sm'
               )}
               onClick={() => onViewModeChange(mode.value)}
             >
-              {mode.label}
+              <span className="md:hidden">{mode.label}</span>
+              <span className="hidden md:inline">{mode.tabletLabel}</span>
             </Button>
           ))}
         </div>
 
-        {/* Open Shifts Badge & Publish */}
-        <div className="flex items-center gap-2">
+        {/* Status badges and actions - more on tablet */}
+        <div className="flex items-center gap-1.5 md:gap-2">
           {openShiftCount > 0 && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs md:text-sm">
               {openShiftCount} open
             </Badge>
           )}
-          <Button size="sm" className="h-8 px-3" onClick={onPublish}>
+          {/* Show critical alerts count on tablet */}
+          {alertCount > 0 && (
+            <Badge variant="destructive" className="hidden md:flex text-xs">
+              {alertCount} alert{alertCount > 1 ? 's' : ''}
+            </Badge>
+          )}
+          <Button size="sm" className="h-8 md:h-9 px-3 md:px-4" onClick={onPublish}>
             <Send className="h-3.5 w-3.5 mr-1.5" />
-            Publish
+            <span className="hidden md:inline">Publish Roster</span>
+            <span className="md:hidden">Publish</span>
           </Button>
         </div>
       </div>

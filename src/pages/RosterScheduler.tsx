@@ -1339,6 +1339,7 @@ export default function RosterScheduler() {
       />
 
       {/* Mobile/Tablet FAB for Staff Panel - Show on screens below lg */}
+      {/* Positioned to avoid overlap with bottom summary bar */}
       <Box
         sx={{ display: { xs: 'block', lg: 'none' } }}
       >
@@ -1346,19 +1347,22 @@ export default function RosterScheduler() {
           onClick={() => setShowMobileStaffPanel(true)}
           sx={{
             position: 'fixed',
-            bottom: 80,
-            right: 16,
+            bottom: { xs: 80, md: 100 },
+            right: { xs: 16, md: 24 },
             zIndex: 40,
             borderRadius: '50%',
-            minWidth: 56,
-            width: 56,
-            height: 56,
-            boxShadow: 3,
+            minWidth: { xs: 48, md: 56 },
+            width: { xs: 48, md: 56 },
+            height: { xs: 48, md: 56 },
+            boxShadow: 4,
+            '&:hover': {
+              boxShadow: 6,
+            },
           }}
           variant="contained"
           color="primary"
         >
-          <Users className="h-6 w-6" />
+          <Users className="h-5 w-5 md:h-6 md:w-6" />
         </Button>
       </Box>
 
