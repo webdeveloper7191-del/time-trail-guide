@@ -83,9 +83,44 @@ const DropdownMenuGroup = ({ children }: { children: React.ReactNode }) => <>{ch
 
 const DropdownMenuPortal = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
-const DropdownMenuSub = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+// Submenu context
+interface SubMenuContextValue {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  anchorEl: HTMLElement | null;
+  setAnchorEl: (el: HTMLElement | null) => void;
+}
 
-const DropdownMenuRadioGroup = ({ children, value, onValueChange }: { children: React.ReactNode; value?: string; onValueChange?: (value: string) => void }) => <>{children}</>;
+const SubMenuContext = React.createContext<SubMenuContextValue | null>(null);
+
+const DropdownMenuSub = ({ children }: { children: React.ReactNode }) => {
+  const [open, setOpen] = React.useState(false);
+  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
+  
+  return (
+    <SubMenuContext.Provider value={{ open, setOpen, anchorEl, setAnchorEl }}>
+      <div className="relative">
+        {children}
+      </div>
+    </SubMenuContext.Provider>
+  );
+};
+
+// Radio group context
+interface RadioGroupContextValue {
+  value?: string;
+  onValueChange?: (value: string) => void;
+}
+
+const RadioGroupContext = React.createContext<RadioGroupContextValue>({});
+
+const DropdownMenuRadioGroup = ({ children, value, onValueChange }: { children: React.ReactNode; value?: string; onValueChange?: (value: string) => void }) => {
+  return (
+    <RadioGroupContext.Provider value={{ value, onValueChange }}>
+      {children}
+    </RadioGroupContext.Provider>
+  );
+};
 
 interface DropdownMenuContentProps extends React.HTMLAttributes<HTMLDivElement> {
   sideOffset?: number;
@@ -227,23 +262,43 @@ interface DropdownMenuRadioItemProps extends React.HTMLAttributes<HTMLDivElement
 }
 
 const DropdownMenuRadioItem = React.forwardRef<HTMLDivElement, DropdownMenuRadioItemProps>(
-  ({ className, children, value, disabled, ...props }, ref) => (
-    <div
-      ref={ref}
-      role="menuitemradio"
-      className={cn(
-        "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
-        disabled && "pointer-events-none opacity-50",
-        className
-      )}
-      {...props}
-    >
-      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-        <Circle className="h-2 w-2 fill-current" />
-      </span>
-      {children}
-    </div>
-  )
+  ({ className, children, value, disabled, onClick, ...props }, ref) => {
+    const { setOpen } = React.useContext(DropdownMenuContext);
+    const subContext = React.useContext(SubMenuContext);
+    const radioContext = React.useContext(RadioGroupContext);
+    const isSelected = radioContext.value === value;
+
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!disabled) {
+        radioContext.onValueChange?.(value);
+        onClick?.(e);
+        // Close submenu and parent menu
+        subContext?.setOpen(false);
+        setOpen(false);
+      }
+    };
+
+    return (
+      <div
+        ref={ref}
+        role="menuitemradio"
+        aria-checked={isSelected}
+        className={cn(
+          "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
+          disabled && "pointer-events-none opacity-50",
+          isSelected && "bg-accent/50",
+          className
+        )}
+        onClick={handleClick}
+        {...props}
+      >
+        <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+          {isSelected ? <Check className="h-4 w-4" /> : <Circle className="h-2 w-2 opacity-0" />}
+        </span>
+        {children}
+      </div>
+    );
+  }
 );
 DropdownMenuRadioItem.displayName = "DropdownMenuRadioItem";
 
@@ -275,34 +330,85 @@ const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTML
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut";
 
 const DropdownMenuSubTrigger = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { inset?: boolean }>(
-  ({ className, inset, children, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        "flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent",
-        inset && "pl-8",
-        className
-      )}
-      {...props}
-    >
-      {children}
-      <ChevronRight className="ml-auto h-4 w-4" />
-    </div>
-  )
+  ({ className, inset, children, onClick, ...props }, ref) => {
+    const subContext = React.useContext(SubMenuContext);
+    
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      subContext?.setAnchorEl(e.currentTarget);
+      subContext?.setOpen(!subContext.open);
+      onClick?.(e);
+    };
+
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent",
+          inset && "pl-8",
+          subContext?.open && "bg-accent",
+          className
+        )}
+        onClick={handleClick}
+        {...props}
+      >
+        {children}
+        <ChevronRight className="ml-auto h-4 w-4" />
+      </div>
+    );
+  }
 );
 DropdownMenuSubTrigger.displayName = "DropdownMenuSubTrigger";
 
 const DropdownMenuSubContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
-        className
-      )}
-      {...props}
-    />
-  )
+  ({ className, children, ...props }, ref) => {
+    const subContext = React.useContext(SubMenuContext);
+    const { setOpen: setParentOpen } = React.useContext(DropdownMenuContext);
+    
+    if (!subContext?.open || !subContext.anchorEl) return null;
+
+    return (
+      <Popper
+        open={subContext.open}
+        anchorEl={subContext.anchorEl}
+        placement="right-start"
+        style={{ zIndex: 10000 }}
+        modifiers={[
+          {
+            name: 'offset',
+            options: {
+              offset: [0, 4],
+            },
+          },
+        ]}
+      >
+        <Fade in={subContext.open} timeout={150}>
+          <Paper
+            elevation={8}
+            sx={{
+              backgroundColor: 'hsl(var(--popover))',
+              color: 'hsl(var(--popover-foreground))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '0.375rem',
+              minWidth: '8rem',
+              overflow: 'hidden',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            }}
+          >
+            <ClickAwayListener onClickAway={() => subContext.setOpen(false)}>
+              <div
+                ref={ref}
+                className={cn("p-1", className)}
+                {...props}
+              >
+                {children}
+              </div>
+            </ClickAwayListener>
+          </Paper>
+        </Fade>
+      </Popper>
+    );
+  }
 );
 DropdownMenuSubContent.displayName = "DropdownMenuSubContent";
 
