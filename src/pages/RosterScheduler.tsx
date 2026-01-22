@@ -1760,11 +1760,13 @@ export default function RosterScheduler() {
 
               {/* Export Menu */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                    <Download size={18} />
-                  </IconButton>
-                </DropdownMenuTrigger>
+                <Tooltip content="Export Options">
+                  <DropdownMenuTrigger asChild>
+                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                      <Download size={18} />
+                    </IconButton>
+                  </DropdownMenuTrigger>
+                </Tooltip>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => handleExportPDF(false)} icon={<FileText size={16} />}>
                     Export to PDF
@@ -1784,11 +1786,13 @@ export default function RosterScheduler() {
 
               {/* Templates Menu */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                    <Layers size={18} />
-                  </IconButton>
-                </DropdownMenuTrigger>
+                <Tooltip content="Templates & Settings">
+                  <DropdownMenuTrigger asChild>
+                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                      <Layers size={18} />
+                    </IconButton>
+                  </DropdownMenuTrigger>
+                </Tooltip>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => setShowSaveTemplateModal(true)} icon={<FileStack size={16} />}>
                     Save as Template
@@ -1818,11 +1822,13 @@ export default function RosterScheduler() {
 
               {/* Schedule Menu */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                    <CalendarDays size={18} />
-                  </IconButton>
-                </DropdownMenuTrigger>
+                <Tooltip content="Schedule & Leave">
+                  <DropdownMenuTrigger asChild>
+                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                      <CalendarDays size={18} />
+                    </IconButton>
+                  </DropdownMenuTrigger>
+                </Tooltip>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => setShowHolidayCalendar(true)} icon={<Flag size={16} />}>
                     Holidays & Events
@@ -1845,11 +1851,13 @@ export default function RosterScheduler() {
 
               {/* Advanced Features Menu */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
-                    <Zap size={18} />
-                  </IconButton>
-                </DropdownMenuTrigger>
+                <Tooltip content="Advanced Features">
+                  <DropdownMenuTrigger asChild>
+                    <IconButton size="small" sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                      <Zap size={18} />
+                    </IconButton>
+                  </DropdownMenuTrigger>
+                </Tooltip>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => setShowRecurringPatterns(true)} icon={<Repeat size={16} />}>
                     Recurring Patterns
