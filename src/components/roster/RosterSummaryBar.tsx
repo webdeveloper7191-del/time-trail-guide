@@ -2,27 +2,26 @@ import { Badge } from '@/components/ui/badge';
 import { Shift, OpenShift, StaffMember } from '@/types/roster';
 import { useMemo, useState } from 'react';
 import { 
-  Bot, 
-  RefreshCw, 
-  Phone, 
-  Moon, 
-  Clock, 
-  PhoneCall, 
-  AlertCircle, 
-  UserX, 
-  AlertTriangle,
   ChevronDown,
   ChevronUp,
-  Zap,
-  Info
+  Info,
+  Palette,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  shiftStatusColors,
+  shiftTypeConfig,
+  openShiftColors,
+  calendarEventColors,
+  leaveColors,
+  specialIndicatorConfig,
+} from '@/lib/rosterColors';
 
 interface SummaryItem {
   label: string;
@@ -41,6 +40,7 @@ interface RosterSummaryBarProps {
 
 export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }: RosterSummaryBarProps) {
   const [showFullLegend, setShowFullLegend] = useState(false);
+  const [showColorTokens, setShowColorTokens] = useState(false);
   
   const summary = useMemo(() => {
     const centreShifts = shifts.filter(s => s.centreId === centreId);
@@ -91,14 +91,14 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
 
   const items: SummaryItem[] = [
     { label: 'Empty', count: summary.empty, color: 'bg-background', bgColor: 'border border-border' },
-    { label: 'Unpublished', count: summary.unpublished, color: 'bg-amber-500', bgColor: 'bg-amber-500/20' },
-    { label: 'Published', count: summary.published, color: 'bg-[hsl(var(--info))]', bgColor: 'bg-[hsl(var(--info-bg))]' },
-    { label: 'Confirmed', count: summary.confirmed, color: 'bg-emerald-500', bgColor: 'bg-emerald-500/20' },
-    { label: 'Open Shift', count: summary.openShift, color: 'bg-[hsl(var(--open-shift))]', bgColor: 'bg-[hsl(var(--open-shift-bg))]' },
-    { label: 'Warnings', count: summary.warnings, color: 'bg-amber-500', bgColor: 'bg-amber-500/20' },
-    { label: 'Leave Approved', count: summary.leaveApproved, color: 'bg-emerald-600', bgColor: 'bg-emerald-600/20' },
-    { label: 'Leave Pending', count: summary.leavePending, color: 'bg-amber-600', bgColor: 'bg-amber-600/20' },
-    { label: 'People Unavailable', count: summary.unavailable, color: 'bg-slate-500', bgColor: 'bg-slate-200 dark:bg-slate-700' },
+    { label: 'Unpublished', count: summary.unpublished, color: shiftStatusColors.draft.legendBg, bgColor: shiftStatusColors.draft.badgeBg },
+    { label: 'Published', count: summary.published, color: shiftStatusColors.published.legendBg, bgColor: shiftStatusColors.published.bg },
+    { label: 'Confirmed', count: summary.confirmed, color: shiftStatusColors.confirmed.legendBg, bgColor: shiftStatusColors.confirmed.badgeBg },
+    { label: 'Open Shift', count: summary.openShift, color: openShiftColors.accent, bgColor: openShiftColors.bg },
+    { label: 'Warnings', count: summary.warnings, color: specialIndicatorConfig.warning.bg, bgColor: specialIndicatorConfig.warning.bg },
+    { label: 'Leave Approved', count: summary.leaveApproved, color: leaveColors.approved.dot, bgColor: 'bg-emerald-500/20' },
+    { label: 'Leave Pending', count: summary.leavePending, color: leaveColors.pending.dot, bgColor: 'bg-amber-500/20' },
+    { label: 'People Unavailable', count: summary.unavailable, color: leaveColors.unavailable.bg, bgColor: leaveColors.unavailable.bg },
   ];
 
   // Items to show on mobile (condensed)
@@ -111,36 +111,56 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
     ['Empty', 'Unpublished', 'Published', 'Open Shift', 'Warnings', 'Leave Approved', 'Leave Pending'].includes(item.label)
   );
 
-  // Full legend items organized by category
+  // Full legend items organized by category - dynamically built from rosterColors
   const legendCategories = [
     {
       title: 'Shift Status',
-      items: [
-        { icon: <div className="h-3 w-6 rounded-sm border-2 border-dashed border-amber-400 bg-amber-50 dark:bg-amber-500/10" />, label: 'Draft/Unpublished', description: 'Dashed border, not yet published' },
-        { icon: <div className="h-3 w-6 rounded-sm border border-[hsl(var(--info)/0.35)] bg-[hsl(var(--info-bg))]" />, label: 'Published', description: 'Solid border, visible to staff' },
-        { icon: <div className="h-3 w-6 rounded-sm border border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10" />, label: 'Confirmed', description: 'Acknowledged by staff' },
-        { icon: <div className="h-3 w-6 rounded-sm border border-slate-300 bg-slate-100 dark:bg-slate-700" />, label: 'Completed', description: 'Past shift' },
-      ],
+      items: Object.entries(shiftStatusColors).map(([key, value]) => ({
+        icon: (
+          <div 
+            className={cn(
+              "h-3 w-6 rounded-sm border",
+              value.bg,
+              value.border,
+              key === 'draft' && 'border-dashed border-2'
+            )} 
+          />
+        ),
+        label: value.legendLabel,
+        description: value.legendDescription,
+      })),
     },
     {
       title: 'Shift Types',
-      items: [
-        { icon: <Clock className="h-3.5 w-3.5 text-slate-400" />, label: 'Regular', description: 'Standard shift' },
-        { icon: <Phone className="h-3.5 w-3.5 text-cyan-500" />, label: 'On-Call', description: 'Available if needed' },
-        { icon: <Moon className="h-3.5 w-3.5 text-violet-500" />, label: 'Sleepover', description: 'Overnight stay shift' },
-        { icon: <Zap className="h-3.5 w-3.5 text-amber-500" />, label: 'Split/Broken', description: 'Non-continuous shift' },
-        { icon: <PhoneCall className="h-3.5 w-3.5 text-rose-500" />, label: 'Recall', description: 'Called back to work' },
-        { icon: <AlertCircle className="h-3.5 w-3.5 text-rose-600" />, label: 'Emergency', description: 'Urgent coverage needed' },
-      ],
+      items: Object.entries(shiftTypeConfig).map(([key, config]) => {
+        const Icon = config.icon;
+        return {
+          icon: <Icon className={cn("h-3.5 w-3.5", config.color)} />,
+          label: config.label,
+          description: config.description,
+        };
+      }),
     },
     {
       title: 'Special Indicators',
       items: [
-        { icon: <div className="p-0.5 rounded bg-violet-100 dark:bg-violet-500/20"><Bot className="h-3 w-3 text-violet-500" /></div>, label: 'AI Generated', description: 'Auto-assigned by solver' },
-        { icon: <div className="p-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20"><RefreshCw className="h-3 w-3 text-emerald-500" /></div>, label: 'Recurring', description: 'Part of a recurring series' },
-        { icon: <div className="bg-rose-500 text-white rounded-full p-0.5"><UserX className="h-3 w-3" /></div>, label: 'Absent', description: 'Staff marked absent' },
-        { icon: <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />, label: 'Warning', description: 'Compliance issue detected' },
-        { icon: <div className="flex items-center gap-0.5 text-slate-500"><Clock className="h-3 w-3" /><span className="text-[9px]">9-5</span></div>, label: 'Availability Times', description: 'Staff working hours shown' },
+        ...Object.entries(specialIndicatorConfig).map(([key, config]) => {
+          const Icon = config.icon;
+          return {
+            icon: (
+              <div className={cn("p-0.5 rounded", config.bg)}>
+                <Icon className={cn("h-3 w-3", config.iconColor)} />
+              </div>
+            ),
+            label: config.label,
+            description: config.description,
+          };
+        }),
+        { 
+          icon: <div className="flex items-center gap-0.5 text-slate-500"><Clock className="h-3 w-3" /><span className="text-[9px]">9-5</span></div>, 
+          label: 'Availability Times', 
+          description: 'Staff working hours shown' 
+        },
       ],
     },
     {
@@ -148,30 +168,100 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
       items: [
         {
           icon: (
-            <div className="h-3 w-6 rounded border bg-gradient-to-br from-[hsl(var(--open-shift-bg))] to-[hsl(var(--open-shift-bg-2))] border-[hsl(var(--open-shift-border))]" />
+            <div className={cn(
+              "h-3 w-6 rounded border",
+              openShiftColors.bgGradient,
+              openShiftColors.border
+            )} />
           ),
-          label: 'Open Shift',
-          description: 'Unassigned shift requiring coverage',
+          label: openShiftColors.legendLabel,
+          description: openShiftColors.legendDescription,
         },
       ],
     },
     {
       title: 'Calendar Events',
-      items: [
-        { icon: <div className="h-3 w-3 rounded-sm bg-rose-500" />, label: 'Public Holiday', description: 'Government holiday' },
-        { icon: <div className="h-3 w-3 rounded-sm bg-amber-500" />, label: 'School Holiday', description: 'School break period' },
-        { icon: <div className="h-3 w-3 rounded-sm bg-cyan-500" />, label: 'Centre Event', description: 'Special occasion' },
-      ],
+      items: Object.entries(calendarEventColors).map(([key, value]) => ({
+        icon: <div className={cn("h-3 w-3 rounded-sm", value.bg)} />,
+        label: value.label,
+        description: value.description,
+      })),
     },
     {
       title: 'Staff & Leave',
       items: [
-        { icon: <div className="h-3 w-3 rounded-full bg-emerald-500" />, label: 'Leave Approved', description: 'Time off confirmed' },
-        { icon: <div className="h-3 w-3 rounded-full bg-amber-500" />, label: 'Leave Pending', description: 'Awaiting approval' },
-        { icon: <div className="h-3 w-6 rounded-sm bg-slate-100 dark:bg-slate-700" style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent 0px, transparent 2px, rgba(148,163,184,0.3) 2px, rgba(148,163,184,0.3) 4px)' }} />, label: 'Unavailable', description: 'Staff not available to work' },
+        { icon: <div className={cn("h-3 w-3 rounded-full", leaveColors.approved.dot)} />, label: leaveColors.approved.label, description: leaveColors.approved.description },
+        { icon: <div className={cn("h-3 w-3 rounded-full", leaveColors.pending.dot)} />, label: leaveColors.pending.label, description: leaveColors.pending.description },
+        { icon: <div className={cn("h-3 w-6 rounded-sm", leaveColors.unavailable.bg)} style={{ backgroundImage: leaveColors.unavailable.pattern }} />, label: leaveColors.unavailable.label, description: leaveColors.unavailable.description },
         { icon: <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-500/10">OT</Badge>, label: 'Overtime', description: 'Extra pay rate applies' },
         { icon: <div className="flex gap-0.5"><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">M</Badge><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">T</Badge><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">W</Badge></div>, label: 'Availability Days', description: 'Staff available work days' },
       ],
+    },
+  ];
+
+  // Color Token Preview Categories
+  const colorTokenCategories = [
+    {
+      title: 'Shift Status Tokens',
+      tokens: Object.entries(shiftStatusColors).map(([key, value]) => ({
+        name: key,
+        swatches: [
+          { label: 'bg', class: value.bg },
+          { label: 'border', class: value.border },
+          { label: 'accent', class: value.accent },
+          { label: 'text', class: value.text },
+        ],
+      })),
+    },
+    {
+      title: 'Shift Type Tokens',
+      tokens: Object.entries(shiftTypeConfig).map(([key, value]) => ({
+        name: key,
+        swatches: [
+          { label: 'color', class: value.color.replace('text-', 'bg-') },
+          { label: 'bgColor', class: value.bgColor },
+        ],
+      })),
+    },
+    {
+      title: 'Open Shift Tokens',
+      tokens: [{
+        name: 'openShift',
+        swatches: [
+          { label: 'bg', class: openShiftColors.bg },
+          { label: 'gradient', class: openShiftColors.bgGradient },
+          { label: 'border', class: openShiftColors.border },
+          { label: 'accent', class: openShiftColors.accent },
+        ],
+      }],
+    },
+    {
+      title: 'Calendar Event Tokens',
+      tokens: Object.entries(calendarEventColors).map(([key, value]) => ({
+        name: key,
+        swatches: [
+          { label: 'bg', class: value.bg },
+        ],
+      })),
+    },
+    {
+      title: 'Leave Tokens',
+      tokens: Object.entries(leaveColors).map(([key, value]) => ({
+        name: key,
+        swatches: 'dot' in value 
+          ? [{ label: 'dot', class: value.dot }]
+          : [{ label: 'bg', class: value.bg }],
+      })),
+    },
+    {
+      title: 'Special Indicator Tokens',
+      tokens: Object.entries(specialIndicatorConfig).map(([key, value]) => ({
+        name: key,
+        swatches: [
+          { label: 'bg', class: value.bg },
+          { label: 'icon', class: value.iconColor.replace('text-', 'bg-') },
+        ],
+      })),
     },
   ];
 
@@ -181,7 +271,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
       <div className="hidden lg:flex items-center gap-4 px-4 py-2 bg-card border-t border-border overflow-x-hidden w-full">
         {items.map((item) => (
           <div key={item.label} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-            <div className={`h-3 w-3 rounded-sm ${item.color} ${item.bgColor}`} />
+            <div className={cn("h-3 w-3 rounded-sm", item.color, item.bgColor)} />
             <span className="text-muted-foreground">{item.count}</span>
             <span className="text-muted-foreground">{item.label}</span>
           </div>
@@ -190,22 +280,32 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
         {/* Divider */}
         <div className="h-4 w-px bg-border mx-2" />
         
-        {/* Holiday & Event indicators */}
+        {/* Holiday & Event indicators from central system */}
         <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-          <div className="h-3 w-3 rounded-sm bg-destructive" />
-          <span className="text-muted-foreground">Public Holiday</span>
+          <div className={cn("h-3 w-3 rounded-sm", calendarEventColors.publicHoliday.bg)} />
+          <span className="text-muted-foreground">{calendarEventColors.publicHoliday.label}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-          <div className="h-3 w-3 rounded-sm bg-amber-500" />
-          <span className="text-muted-foreground">School Holiday</span>
+          <div className={cn("h-3 w-3 rounded-sm", calendarEventColors.schoolHoliday.bg)} />
+          <span className="text-muted-foreground">{calendarEventColors.schoolHoliday.label}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-          <div className="h-3 w-3 rounded-sm bg-primary" />
-          <span className="text-muted-foreground">Event</span>
+          <div className={cn("h-3 w-3 rounded-sm", calendarEventColors.centreEvent.bg)} />
+          <span className="text-muted-foreground">{calendarEventColors.centreEvent.label}</span>
         </div>
         
         {/* Full Legend Toggle */}
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-xs gap-1"
+            onClick={() => setShowColorTokens(!showColorTokens)}
+          >
+            <Palette className="h-3 w-3" />
+            Tokens
+            {showColorTokens ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -213,7 +313,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
             onClick={() => setShowFullLegend(!showFullLegend)}
           >
             <Info className="h-3 w-3" />
-            Full Legend
+            Legend
             {showFullLegend ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </Button>
         </div>
@@ -223,7 +323,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
       <div className="hidden md:flex lg:hidden items-center gap-3 px-4 py-2 bg-card border-t border-border overflow-x-auto w-full">
         {tabletItems.map((item) => (
           <div key={item.label} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-            <div className={`h-2.5 w-2.5 rounded-sm ${item.color} ${item.bgColor}`} />
+            <div className={cn("h-2.5 w-2.5 rounded-sm", item.color, item.bgColor)} />
             <span className="text-muted-foreground font-medium">{item.count}</span>
             <span className="text-muted-foreground">{item.label}</span>
           </div>
@@ -233,16 +333,24 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
         
         {/* Holiday indicators */}
         <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-          <div className="h-2.5 w-2.5 rounded-sm bg-destructive" />
+          <div className={cn("h-2.5 w-2.5 rounded-sm", calendarEventColors.publicHoliday.bg)} />
           <span className="text-muted-foreground">Holiday</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-          <div className="h-2.5 w-2.5 rounded-sm bg-primary" />
+          <div className={cn("h-2.5 w-2.5 rounded-sm", calendarEventColors.centreEvent.bg)} />
           <span className="text-muted-foreground">Event</span>
         </div>
         
         {/* Full Legend Toggle */}
-        <div className="ml-auto shrink-0">
+        <div className="ml-auto shrink-0 flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-xs gap-1"
+            onClick={() => setShowColorTokens(!showColorTokens)}
+          >
+            <Palette className="h-3 w-3" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -261,7 +369,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
         {mobileItems.length > 0 ? (
           mobileItems.map((item) => (
             <div key={item.label} className="flex items-center gap-1 text-[10px] whitespace-nowrap">
-              <div className={`h-2.5 w-2.5 rounded-sm ${item.color} ${item.bgColor}`} />
+              <div className={cn("h-2.5 w-2.5 rounded-sm", item.color, item.bgColor)} />
               <span className="text-muted-foreground font-medium">{item.count}</span>
               <span className="text-muted-foreground">{item.label}</span>
             </div>
@@ -284,6 +392,44 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
           </Button>
         </div>
       </div>
+      
+      {/* Color Token Preview Panel - Collapsible */}
+      <Collapsible open={showColorTokens} onOpenChange={setShowColorTokens}>
+        <CollapsibleContent>
+          <div className="bg-muted/30 border-t border-border px-4 py-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Palette className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Color Token Preview</h3>
+              <span className="text-xs text-muted-foreground">(from src/lib/rosterColors.ts)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              {colorTokenCategories.map((category) => (
+                <div key={category.title} className="space-y-2">
+                  <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{category.title}</h4>
+                  <div className="space-y-1.5">
+                    {category.tokens.map((token) => (
+                      <div key={token.name} className="flex items-center gap-2">
+                        <code className="text-[10px] text-foreground bg-muted px-1 py-0.5 rounded font-mono min-w-[60px]">
+                          {token.name}
+                        </code>
+                        <div className="flex gap-1">
+                          {token.swatches.map((swatch, idx) => (
+                            <div 
+                              key={idx}
+                              className={cn("h-4 w-4 rounded border border-border", swatch.class)}
+                              title={swatch.label}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
       
       {/* Full Legend Panel - Collapsible */}
       <Collapsible open={showFullLegend} onOpenChange={setShowFullLegend}>
