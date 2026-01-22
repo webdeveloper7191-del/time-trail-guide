@@ -136,19 +136,20 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
     {
       title: 'Special Indicators',
       items: [
-        { icon: <Bot className="h-3.5 w-3.5 text-purple-500" />, label: 'AI Generated', description: 'Auto-assigned by solver' },
-        { icon: <RefreshCw className="h-3.5 w-3.5 text-emerald-600" />, label: 'Recurring', description: 'Part of a series' },
-        { icon: <UserX className="h-3.5 w-3.5 text-destructive" />, label: 'Absent', description: 'Staff marked absent' },
+        { icon: <div className="p-0.5 rounded bg-purple-500/20"><Bot className="h-3 w-3 text-purple-500" /></div>, label: 'AI Generated', description: 'Auto-assigned by solver' },
+        { icon: <div className="p-0.5 rounded bg-emerald-500/20"><RefreshCw className="h-3 w-3 text-emerald-600" /></div>, label: 'Recurring', description: 'Part of a recurring series' },
+        { icon: <div className="bg-destructive text-destructive-foreground rounded-full p-0.5"><UserX className="h-3 w-3" /></div>, label: 'Absent', description: 'Staff marked absent' },
         { icon: <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />, label: 'Warning', description: 'Compliance issue detected' },
+        { icon: <div className="flex items-center gap-0.5 text-muted-foreground"><Clock className="h-3 w-3" /><span className="text-[9px]">9-5</span></div>, label: 'Availability Times', description: 'Staff working hours shown' },
       ],
     },
     {
       title: 'Open Shift Urgency',
       items: [
-        { icon: <div className="h-3 w-3 rounded-sm border border-muted-foreground/30 bg-muted/30" />, label: 'Low', description: 'Plenty of time to fill' },
-        { icon: <div className="h-3 w-3 rounded-sm border border-amber-500/50 bg-amber-500/10" />, label: 'Medium', description: 'Should be filled soon' },
-        { icon: <div className="h-3 w-3 rounded-sm border border-orange-500/50 bg-orange-500/10" />, label: 'High', description: 'Needs attention' },
-        { icon: <div className="h-3 w-3 rounded-sm border border-destructive/50 bg-destructive/10" />, label: 'Critical', description: 'Immediate action required' },
+        { icon: <div className="h-3 w-8 rounded-sm border-2 border-dashed border-muted-foreground/30 bg-muted/30" />, label: 'Low', description: 'Plenty of time to fill' },
+        { icon: <div className="h-3 w-8 rounded-sm border-2 border-dashed border-amber-500/50 bg-amber-500/10" />, label: 'Medium', description: 'Should be filled soon' },
+        { icon: <div className="h-3 w-8 rounded-sm border-2 border-dashed border-orange-500/50 bg-orange-500/10" />, label: 'High', description: 'Needs attention' },
+        { icon: <div className="h-3 w-8 rounded-sm border-2 border-dashed border-destructive/50 bg-destructive/10" />, label: 'Critical', description: 'Immediate action required' },
       ],
     },
     {
@@ -164,7 +165,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
       items: [
         { icon: <div className="h-3 w-3 rounded-sm bg-emerald-600" />, label: 'Leave Approved', description: 'Time off confirmed' },
         { icon: <div className="h-3 w-3 rounded-sm bg-amber-600" />, label: 'Leave Pending', description: 'Awaiting approval' },
-        { icon: <div className="h-3 w-3 rounded-sm bg-muted-foreground" />, label: 'Unavailable', description: 'Not available to work' },
+        { icon: <div className="h-3 w-6 rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(135deg, hsl(var(--muted)) 0px, hsl(var(--muted)) 2px, hsl(var(--muted-foreground) / 0.2) 2px, hsl(var(--muted-foreground) / 0.2) 4px)' }} />, label: 'Unavailable', description: 'Staff not available to work' },
         { icon: <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-amber-500 text-amber-600">OT</Badge>, label: 'Overtime', description: 'Extra pay rate applies' },
       ],
     },
