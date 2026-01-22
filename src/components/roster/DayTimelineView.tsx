@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Shift, OpenShift, Centre, StaffMember, qualificationLabels, roleLabels, ShiftTemplate } from '@/types/roster';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -139,7 +139,9 @@ export function DayTimelineView({
   const [hoverTime, setHoverTime] = useState<{ staffId: string; roomId: string; time: string; x: number } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollTrackRef = useRef<HTMLDivElement>(null);
   const [scrollInfo, setScrollInfo] = useState({ scrollLeft: 0, scrollWidth: 0, clientWidth: 0 });
+  const [isScrollDragging, setIsScrollDragging] = useState(false);
   // Day view: always show the blue scroll bar (desktop + mobile/tablet), but only render it when scrollable
   const showScrollIndicator = true;
 
@@ -180,6 +182,36 @@ export function DayTimelineView({
       window.removeEventListener('resize', update);
     };
   }, []);
+
+  // Draggable scroll thumb handlers
+  const handleScrollThumbMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsScrollDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isScrollDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!scrollTrackRef.current || !scrollRef.current) return;
+      const rect = scrollTrackRef.current.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const percent = x / rect.width;
+      const maxScroll = scrollInfo.scrollWidth - scrollInfo.clientWidth;
+      scrollRef.current.scrollLeft = percent * maxScroll;
+    };
+
+    const handleMouseUp = () => {
+      setIsScrollDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isScrollDragging, scrollInfo.scrollWidth, scrollInfo.clientWidth]);
 
   // Filter staff by search
   const filteredStaff = useMemo(() => {
@@ -651,23 +683,29 @@ export function DayTimelineView({
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          <div className="flex-1 relative h-3 bg-border/50 rounded-full overflow-hidden">
+          <div 
+            ref={scrollTrackRef}
+            className="flex-1 relative h-3 bg-border/50 rounded-full overflow-hidden cursor-pointer"
+            onClick={(e) => {
+              if (!scrollRef.current || isScrollDragging) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              const clickX = e.clientX - rect.left;
+              const percent = clickX / rect.width;
+              const scrollTarget = percent * (scrollInfo.scrollWidth - scrollInfo.clientWidth);
+              scrollRef.current.scrollTo({ left: scrollTarget, behavior: 'smooth' });
+            }}
+          >
+            {/* Visible window indicator (draggable) */}
             <div
-              className="absolute top-0 bottom-0 bg-primary/60 rounded-full transition-all duration-75 cursor-pointer hover:bg-primary/80"
+              className={cn(
+                "absolute top-0 bottom-0 bg-primary/60 rounded-full cursor-grab active:cursor-grabbing hover:bg-primary/80",
+                isScrollDragging ? "bg-primary/80" : "transition-all duration-75"
+              )}
               style={{
                 left: `${(scrollInfo.scrollLeft / scrollInfo.scrollWidth) * 100}%`,
                 width: `${Math.max((scrollInfo.clientWidth / scrollInfo.scrollWidth) * 100, 8)}%`,
               }}
-              onClick={(e) => {
-                if (!scrollRef.current) return;
-                const track = (e.currentTarget as HTMLDivElement).parentElement;
-                if (!track) return;
-                const rect = track.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const percent = clickX / rect.width;
-                const scrollTarget = percent * (scrollInfo.scrollWidth - scrollInfo.clientWidth);
-                scrollRef.current.scrollTo({ left: scrollTarget, behavior: 'smooth' });
-              }}
+              onMouseDown={handleScrollThumbMouseDown}
             />
           </div>
 
