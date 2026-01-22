@@ -10,6 +10,7 @@ import { UnscheduledStaffPanel } from '@/components/roster/UnscheduledStaffPanel
 import { StaffTimelineGrid } from '@/components/roster/StaffTimelineGrid';
 import { DayTimelineView } from '@/components/roster/DayTimelineView';
 import { ShiftDetailPanel } from '@/components/roster/ShiftDetailPanel';
+import { OpenShiftDetailPanel } from '@/components/roster/OpenShiftDetailPanel';
 import { RosterSummaryBar } from '@/components/roster/RosterSummaryBar';
 import { LeaveRequestModal } from '@/components/roster/LeaveRequestModal';
 import { ShiftSwapModal } from '@/components/roster/ShiftSwapModal';
@@ -203,6 +204,7 @@ export default function RosterScheduler() {
   const [showDemandOverlay, setShowDemandOverlay] = useState(true);
   const [showAnalyticsCharts, setShowAnalyticsCharts] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [selectedOpenShift, setSelectedOpenShift] = useState<OpenShift | null>(null);
   const [highlightedRecurrenceGroupId, setHighlightedRecurrenceGroupId] = useState<string | null>(null);
   const [showBulkSeriesEdit, setShowBulkSeriesEdit] = useState(false);
   const [showBulkSeriesDelete, setShowBulkSeriesDelete] = useState(false);
@@ -2142,6 +2144,7 @@ export default function RosterScheduler() {
             onShiftSwap={handleSwapStaff}
             onShiftTypeChange={handleShiftTypeChange}
             onOpenShiftFill={(os) => toast.info('Drag a staff member to fill this shift')}
+            onOpenShiftClick={setSelectedOpenShift}
             onOpenShiftDelete={handleDeleteOpenShift}
             onAddOpenShift={(roomId, date) => {
               setQuickAddOpenShiftContext({ roomId, date });
@@ -2207,6 +2210,46 @@ export default function RosterScheduler() {
           onDuplicate={handleShiftDuplicate}
           onSwapStaff={handleSwapStaff}
           onCopyShift={handleCopyShift}
+        />
+      )}
+
+      {selectedOpenShift && (
+        <OpenShiftDetailPanel
+          openShift={selectedOpenShift}
+          staff={allStaff}
+          centre={selectedCentre}
+          onClose={() => setSelectedOpenShift(null)}
+          onSave={(updated) => {
+            setOpenShifts(prev => prev.map(os => os.id === updated.id ? updated : os));
+            toast.success('Open shift updated');
+          }}
+          onDelete={(id) => {
+            setOpenShifts(prev => prev.filter(os => os.id !== id));
+            toast.success('Open shift deleted');
+          }}
+          onFill={(os, staffId) => {
+            const staffMember = allStaff.find(s => s.id === staffId);
+            const newShift: Shift = {
+              id: `shift-fill-${Date.now()}`,
+              staffId,
+              centreId: os.centreId,
+              roomId: os.roomId,
+              date: os.date,
+              startTime: os.startTime,
+              endTime: os.endTime,
+              breakMinutes: os.breakMinutes || 30,
+              status: 'draft',
+              isOpenShift: false,
+            };
+            setShifts(prev => [...prev, newShift], `Filled open shift with ${staffMember?.name || 'staff'}`, 'add');
+            setOpenShifts(prev => prev.filter(o => o.id !== os.id));
+            toast.success(`Shift assigned to ${staffMember?.name || 'staff'}`);
+          }}
+          onSendToAgency={(os) => {
+            setShiftForAgency(os);
+            setShowSendToAgencyModal(true);
+            setSelectedOpenShift(null);
+          }}
         />
       )}
 
