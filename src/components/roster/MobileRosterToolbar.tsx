@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ViewMode, Centre } from '@/types/roster';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,11 @@ import {
   Plug,
   BarChart2,
   MoveHorizontal,
+  LayoutDashboard,
+  Target,
+  Sparkles,
+  Briefcase,
+  Home,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -188,9 +194,22 @@ export function MobileRosterToolbar({
   onToggleTheme,
   onToggleStaffPanel,
 }: MobileRosterToolbarProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [showActionsSheet, setShowActionsSheet] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // Navigation items for app-level navigation
+  const navItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
+    { icon: Clock, label: 'Timesheet Admin', to: '/timesheet-admin' },
+    { icon: Calendar, label: 'Roster', to: '/roster' },
+    { icon: Users, label: 'Workforce', to: '/workforce' },
+    { icon: Target, label: 'Performance', to: '/performance' },
+    { icon: Sparkles, label: 'Recognition', to: '/recognition' },
+    { icon: Briefcase, label: 'Recruitment', to: '/recruitment' },
+    { icon: Settings, label: 'Settings', to: '/settings' },
+  ];
   const viewModes: { value: ViewMode; label: string; tabletLabel: string }[] = [
     { value: 'day', label: 'Day', tabletLabel: 'Day' },
     { value: 'workweek', label: 'M-F', tabletLabel: 'Work Week' },
@@ -392,6 +411,32 @@ export function MobileRosterToolbar({
                 <SheetTitle className="text-sm">Actions & Settings</SheetTitle>
               </SheetHeader>
               <div className="px-4 py-2 space-y-1 max-h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden">
+                {/* Section: Navigation */}
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Navigation
+                </div>
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {navItems.map((item) => {
+                    const isActive = location.pathname === item.to;
+                    return (
+                      <Button
+                        key={item.to}
+                        variant={isActive ? 'secondary' : 'ghost'}
+                        className="h-16 flex-col gap-1 p-2"
+                        onClick={() => {
+                          navigate(item.to);
+                          setShowActionsSheet(false);
+                        }}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span className="text-[10px] leading-tight text-center">{item.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <div className="border-t border-border my-2" />
+
                 {/* Budget Info */}
                 <div className="p-3 bg-muted/50 rounded-lg mb-3">
                   <div className="flex items-center gap-2 text-sm font-medium mb-1">
