@@ -359,11 +359,11 @@ export function MobileRosterToolbar({
             <Redo2 className="h-4 w-4" />
           </Button>
           
-          {/* Conflicts with badge */}
+          {/* Conflicts with badge (hide on small mobile screens to keep the hamburger visible) */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 md:h-9 md:w-9 relative"
+            className="hidden sm:inline-flex h-8 w-8 md:h-9 md:w-9 relative"
             onClick={onShowConflicts}
           >
             <Shield className="h-4 w-4 md:h-5 md:w-5" />
@@ -377,11 +377,11 @@ export function MobileRosterToolbar({
             )}
           </Button>
 
-          {/* Alerts with badge - hidden on tablet since shown in row 3 */}
+          {/* Alerts with badge (moved into the Actions sheet for mobile) */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 md:hidden relative"
+            className="hidden"
             onClick={onShowAlerts}
           >
             <Bell className="h-4 w-4" />
