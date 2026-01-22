@@ -81,11 +81,16 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
   const mobileItems = items.filter(item => 
     ['Unpublished', 'Published', 'Open Shift', 'Warnings'].includes(item.label) && item.count > 0
   );
+  
+  // Items to show on tablet (medium condensed)
+  const tabletItems = items.filter(item => 
+    ['Empty', 'Unpublished', 'Published', 'Open Shift', 'Warnings', 'Leave Approved', 'Leave Pending'].includes(item.label)
+  );
 
   return (
     <>
-      {/* Desktop Summary Bar */}
-      <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-card border-t border-border overflow-x-hidden w-full">
+      {/* Desktop Summary Bar - Full */}
+      <div className="hidden lg:flex items-center gap-4 px-4 py-2 bg-card border-t border-border overflow-x-hidden w-full">
         {items.map((item) => (
           <div key={item.label} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
             <div className={`h-3 w-3 rounded-sm ${item.color} ${item.bgColor}`} />
@@ -112,8 +117,31 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
         </div>
       </div>
 
+      {/* Tablet Summary Bar - Medium */}
+      <div className="hidden md:flex lg:hidden items-center gap-3 px-4 py-2 bg-card border-t border-border overflow-x-auto w-full">
+        {tabletItems.map((item) => (
+          <div key={item.label} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <div className={`h-2.5 w-2.5 rounded-sm ${item.color} ${item.bgColor}`} />
+            <span className="text-muted-foreground font-medium">{item.count}</span>
+            <span className="text-muted-foreground">{item.label}</span>
+          </div>
+        ))}
+        
+        <div className="h-3 w-px bg-border mx-1" />
+        
+        {/* Holiday indicators */}
+        <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+          <div className="h-2.5 w-2.5 rounded-sm bg-destructive" />
+          <span className="text-muted-foreground">Holiday</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+          <div className="h-2.5 w-2.5 rounded-sm bg-primary" />
+          <span className="text-muted-foreground">Event</span>
+        </div>
+      </div>
+
       {/* Mobile Summary Bar - Condensed */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-2 bg-card border-t border-border overflow-x-hidden w-full">
+      <div className="md:hidden flex items-center gap-3 px-3 py-2 bg-card border-t border-border overflow-x-auto w-full">
         {mobileItems.length > 0 ? (
           mobileItems.map((item) => (
             <div key={item.label} className="flex items-center gap-1 text-[10px] whitespace-nowrap">
@@ -127,7 +155,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
         )}
         
         {/* Condensed legend for mobile */}
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           <div className="flex items-center gap-1 text-[10px]">
             <div className="h-2 w-2 rounded-sm bg-destructive" />
             <span className="text-muted-foreground">Holiday</span>
