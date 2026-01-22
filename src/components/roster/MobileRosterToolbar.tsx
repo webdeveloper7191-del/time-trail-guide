@@ -54,7 +54,9 @@ import {
   Clock,
   Plug,
   BarChart2,
+  MoveHorizontal,
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 interface MobileRosterToolbarProps {
@@ -255,13 +257,26 @@ export function MobileRosterToolbar({
           </Button>
         </div>
 
-        {/* Date range - more detailed on tablet */}
+        {/* Date range - more detailed on tablet + swipe hint */}
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground hidden md:block" />
           <span className="text-xs md:text-sm font-medium text-foreground md:text-muted-foreground">
             <span className="md:hidden">{format(dates[0], 'MMM d')} - {format(dates[dates.length - 1], 'MMM d')}</span>
             <span className="hidden md:inline">{format(dates[0], 'MMMM d')} - {format(dates[dates.length - 1], 'MMMM d, yyyy')}</span>
           </span>
+          {/* Swipe hint for mobile/tablet */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-0.5 text-muted-foreground/60 ml-1">
+                  <MoveHorizontal className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                <p>Swipe left/right to navigate dates</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         <div className="flex items-center gap-1 md:gap-2">

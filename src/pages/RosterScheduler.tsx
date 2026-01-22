@@ -46,7 +46,8 @@ import { IntegrationManagerModal } from '@/components/settings/IntegrationManage
 import { HolidayEventCalendarView } from '@/components/roster/HolidayEventCalendarView';
 import { MobileRosterToolbar } from '@/components/roster/MobileRosterToolbar';
 import { MobileStaffPanel } from '@/components/roster/MobileStaffPanel';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
+import { useSwipeRef } from '@/hooks/useSwipeGesture';
 import { RecurringPatternsPanel } from '@/components/roster/RecurringPatternsPanel';
 import { RecurringShiftManagementPanel } from '@/components/roster/RecurringShiftManagementPanel';
 import { FatigueManagementPanel } from '@/components/roster/FatigueManagementPanel';
@@ -163,6 +164,8 @@ const defaultCentreBudgets: Record<string, number> = {
 export default function RosterScheduler() {
   const { mode, setMode, resolvedMode } = useThemeMode();
   const isMobile = useIsMobile();
+  const breakpoint = useBreakpoint();
+  const isTouch = breakpoint === 'mobile' || breakpoint === 'tablet';
   const { 
     config: demandConfig,
     settings: demandContextSettings, 
@@ -639,10 +642,29 @@ export default function RosterScheduler() {
     toast.success('Excel exported successfully');
   };
 
-  const navigateDate = (direction: 'prev' | 'next') => {
+  const navigateDate = useCallback((direction: 'prev' | 'next') => {
     const days = viewMode === 'day' ? 1 : (viewMode === 'week' || viewMode === 'workweek') ? 7 : viewMode === 'fortnight' ? 14 : 28;
     setCurrentDate(prev => addDays(prev, direction === 'next' ? days : -days));
-  };
+  }, [viewMode]);
+
+  // Swipe gesture for date navigation on mobile/tablet
+  const swipeContainerRef = useSwipeRef<HTMLDivElement>({
+    onSwipeLeft: () => {
+      if (isTouch) {
+        navigateDate('next');
+        toast.info('Next period', { duration: 1000 });
+      }
+    },
+    onSwipeRight: () => {
+      if (isTouch) {
+        navigateDate('prev');
+        toast.info('Previous period', { duration: 1000 });
+      }
+    },
+    threshold: 80, // Require 80px swipe to prevent accidental triggers
+    velocityThreshold: 0.25,
+    disabled: !isTouch,
+  });
 
   const handleShiftSave = (updatedShift: Shift) => {
     console.log('[roster] handleShiftSave', { id: updatedShift.id, isAbsent: updatedShift.isAbsent, staffId: updatedShift.staffId, recurring: updatedShift.recurring });
@@ -2021,8 +2043,11 @@ export default function RosterScheduler() {
         />
       )}
 
-      {/* Main Content */}
-      <Box className="flex-1 flex overflow-hidden w-full max-w-full">
+      {/* Main Content - with swipe gesture support for mobile/tablet */}
+      <Box 
+        ref={swipeContainerRef}
+        className="flex-1 flex overflow-hidden w-full max-w-full touch-pan-y"
+      >
         {viewMode === 'day' ? (
           <DayTimelineView
             centre={selectedCentre}
