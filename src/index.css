@@ -59,6 +59,12 @@
     --error: 0 84% 60%;
     --error-bg: 0 84% 95%;
 
+    /* Roster-specific semantic colors */
+    --open-shift: 24 94% 45%;
+    --open-shift-bg: 24 94% 96%;
+    --open-shift-bg-2: 24 94% 92%;
+    --open-shift-border: 24 94% 80%;
+
     /* Sidebar */
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 96%;
@@ -114,6 +120,12 @@
     --success-bg: 142 71% 15%;
     --error: 0 62% 50%;
     --error-bg: 0 62% 15%;
+
+    /* Dark roster-specific semantic colors */
+    --open-shift: 24 94% 55%;
+    --open-shift-bg: 24 94% 14%;
+    --open-shift-bg-2: 24 94% 18%;
+    --open-shift-border: 24 94% 30%;
 
     /* Dark shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);

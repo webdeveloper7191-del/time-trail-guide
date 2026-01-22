@@ -92,9 +92,9 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
   const items: SummaryItem[] = [
     { label: 'Empty', count: summary.empty, color: 'bg-background', bgColor: 'border border-border' },
     { label: 'Unpublished', count: summary.unpublished, color: 'bg-amber-500', bgColor: 'bg-amber-500/20' },
-    { label: 'Published', count: summary.published, color: 'bg-cyan-500', bgColor: 'bg-cyan-500/20' },
+    { label: 'Published', count: summary.published, color: 'bg-[hsl(var(--info))]', bgColor: 'bg-[hsl(var(--info-bg))]' },
     { label: 'Confirmed', count: summary.confirmed, color: 'bg-emerald-500', bgColor: 'bg-emerald-500/20' },
-    { label: 'Open Shift', count: summary.openShift, color: 'bg-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-800' },
+    { label: 'Open Shift', count: summary.openShift, color: 'bg-[hsl(var(--open-shift))]', bgColor: 'bg-[hsl(var(--open-shift-bg))]' },
     { label: 'Warnings', count: summary.warnings, color: 'bg-amber-500', bgColor: 'bg-amber-500/20' },
     { label: 'Leave Approved', count: summary.leaveApproved, color: 'bg-emerald-600', bgColor: 'bg-emerald-600/20' },
     { label: 'Leave Pending', count: summary.leavePending, color: 'bg-amber-600', bgColor: 'bg-amber-600/20' },
@@ -117,7 +117,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
       title: 'Shift Status',
       items: [
         { icon: <div className="h-3 w-6 rounded-sm border-2 border-dashed border-amber-400 bg-amber-50 dark:bg-amber-500/10" />, label: 'Draft/Unpublished', description: 'Dashed border, not yet published' },
-        { icon: <div className="h-3 w-6 rounded-sm border border-cyan-400 bg-cyan-50 dark:bg-cyan-500/10" />, label: 'Published', description: 'Solid border, visible to staff' },
+        { icon: <div className="h-3 w-6 rounded-sm border border-[hsl(var(--info)/0.35)] bg-[hsl(var(--info-bg))]" />, label: 'Published', description: 'Solid border, visible to staff' },
         { icon: <div className="h-3 w-6 rounded-sm border border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10" />, label: 'Confirmed', description: 'Acknowledged by staff' },
         { icon: <div className="h-3 w-6 rounded-sm border border-slate-300 bg-slate-100 dark:bg-slate-700" />, label: 'Completed', description: 'Past shift' },
       ],
@@ -144,12 +144,15 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
       ],
     },
     {
-      title: 'Open Shift Urgency',
+      title: 'Open Shifts',
       items: [
-        { icon: <div className="h-3 w-6 rounded border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 dark:border-slate-700" />, label: 'Low', description: 'Plenty of time to fill' },
-        { icon: <div className="h-3 w-6 rounded border border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 dark:border-amber-800" />, label: 'Medium', description: 'Should be filled soon' },
-        { icon: <div className="h-3 w-6 rounded border border-orange-300 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30 dark:border-orange-800" />, label: 'High', description: 'Needs attention' },
-        { icon: <div className="h-3 w-6 rounded border border-rose-300 bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/50 dark:to-rose-900/30 dark:border-rose-800" />, label: 'Critical', description: 'Immediate action required' },
+        {
+          icon: (
+            <div className="h-3 w-6 rounded border bg-gradient-to-br from-[hsl(var(--open-shift-bg))] to-[hsl(var(--open-shift-bg-2))] border-[hsl(var(--open-shift-border))]" />
+          ),
+          label: 'Open Shift',
+          description: 'Unassigned shift requiring coverage',
+        },
       ],
     },
     {
