@@ -310,15 +310,19 @@ export default function RosterScheduler() {
   // Generate demand analytics and staff absences for the currently displayed dates
   const { demandAnalytics, staffAbsences } = useMemo(() => {
     // Compute dates for analytics based on current view
-    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
     let analyticsDates: Date[];
     
     if (viewMode === 'month') {
       const monthStart = startOfMonth(currentDate);
       const daysInMonth = getDaysInMonth(currentDate);
       analyticsDates = Array.from({ length: daysInMonth }, (_, i) => addDays(monthStart, i));
+    } else if (viewMode === 'day') {
+      // Day view: use the exact current date
+      analyticsDates = [currentDate];
     } else {
-      const dayCount = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : 14;
+      // Week, work week, fortnight views: start from week start
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const dayCount = viewMode === 'workweek' ? 5 : viewMode === 'week' ? 7 : 14;
       analyticsDates = Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i));
     }
     
