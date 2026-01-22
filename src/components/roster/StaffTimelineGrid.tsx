@@ -909,9 +909,9 @@ export function StaffTimelineGrid({
           {/* Timeline Header - syncs horizontal scroll with body */}
           <div 
             ref={timelineHeaderRef}
-             className="h-[76px] md:h-[84px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-hidden overflow-y-visible"
+             className="h-[76px] md:h-[84px] shrink-0 flex border-b border-border bg-muted/50 shadow-md overflow-x-auto overflow-y-visible scrollbar-hide"
           >
-            <div className={cn("flex", (isMonthView || viewMode === 'fortnight') ? "min-w-max" : "w-full")}>
+            <div className={cn("flex min-w-full", (isMonthView || viewMode === 'fortnight') && "min-w-max")}>
               {dates.map((date) => {
                 const dateStr = format(date, 'yyyy-MM-dd');
                 const holidays = getHolidaysForDate(dateStr);
@@ -1093,29 +1093,29 @@ export function StaffTimelineGrid({
               {/* Cost header */}
               <div
                 className={cn(
-                  "w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-2 text-center font-medium text-xs md:text-sm text-muted-foreground border-l border-border",
+                  "w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-2 text-center font-medium text-xs md:text-sm text-muted-foreground border-l border-border bg-muted flex flex-col items-center justify-center",
                   // Keep cost visible while horizontally scrolling on non-month views
-                  isCostStickyEnabled && "sticky right-0 z-30 bg-muted/50 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.25)]"
+                  isCostStickyEnabled && "sticky right-0 z-30 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.25)]"
                 )}
               >
                 <div className="flex items-center justify-center gap-0.5 md:gap-1">
-                  <DollarSign className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                  <DollarSign className="h-3 w-3 md:h-3.5 md:w-3.5 shrink-0" />
                   <span className="hidden sm:inline">Cost</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 md:h-6 md:w-6 ml-0.5 md:ml-1"
-                    onClick={() => setIsCostSticky(v => !v)}
-                    aria-label={isCostSticky ? 'Unpin Cost column' : 'Pin Cost column'}
-                  >
-                    {isCostSticky ? (
-                      <PinOff className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                    ) : (
-                      <Pin className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                    )}
-                  </Button>
                 </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 md:h-6 md:w-6 mt-0.5"
+                  onClick={() => setIsCostSticky(v => !v)}
+                  aria-label={isCostSticky ? 'Unpin Cost column' : 'Pin Cost column'}
+                >
+                  {isCostSticky ? (
+                    <PinOff className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                  ) : (
+                    <Pin className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                  )}
+                </Button>
               </div>
             </div>
           </div>
@@ -1130,7 +1130,7 @@ export function StaffTimelineGrid({
             )}
             style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
           >
-            <div className={cn((isMonthView || viewMode === 'fortnight') ? "min-w-max" : "w-full")}>
+            <div className={cn("min-w-full", (isMonthView || viewMode === 'fortnight') && "min-w-max")}>
               {centre.rooms.map((room, roomIndex) => {
                 const roomStaffIds = staffByRoom[room.id] || new Set();
                 const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
