@@ -202,6 +202,10 @@ export function StaffTimelineGrid({
     ? true  // Show for all views on mobile/tablet
     : (viewMode === 'day' || viewMode === 'fortnight' || viewMode === 'month'); // Desktop: day, fortnight, month
 
+  // Draggable scroll thumb state
+  const [isScrollDragging, setIsScrollDragging] = useState(false);
+  const scrollTrackRef = useRef<HTMLDivElement>(null);
+
   // Sync vertical scroll between left staff pane and right timeline pane
   useEffect(() => {
     const leftPane = leftPaneRef.current;
@@ -256,6 +260,36 @@ export function StaffTimelineGrid({
       rightPane.removeEventListener('scroll', handleRightScroll);
     };
   }, [showScrollIndicator]);
+
+  // Draggable scroll thumb handlers
+  const handleScrollThumbMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsScrollDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isScrollDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!scrollTrackRef.current || !rightPaneRef.current) return;
+      const rect = scrollTrackRef.current.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const percent = x / rect.width;
+      const maxScroll = scrollInfo.scrollWidth - scrollInfo.clientWidth;
+      rightPaneRef.current.scrollLeft = percent * maxScroll;
+    };
+
+    const handleMouseUp = () => {
+      setIsScrollDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isScrollDragging, scrollInfo.scrollWidth, scrollInfo.clientWidth]);
 
   // Use context-aware shift cost calculator
   const { calculateStaffCosts: calculateContextAwareCosts } = useShiftCost();
@@ -1798,9 +1832,20 @@ export function StaffTimelineGrid({
           </Button>
           
           {/* Mini-map track */}
-          <div className="flex-1 relative h-3 bg-border/50 rounded-full overflow-hidden">
+          <div 
+            ref={scrollTrackRef}
+            className="flex-1 relative h-3 bg-border/50 rounded-full overflow-hidden cursor-pointer"
+            onClick={(e) => {
+              if (!rightPaneRef.current || isScrollDragging) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              const clickX = e.clientX - rect.left;
+              const percent = clickX / rect.width;
+              const scrollTarget = percent * (scrollInfo.scrollWidth - scrollInfo.clientWidth);
+              rightPaneRef.current.scrollTo({ left: scrollTarget, behavior: 'smooth' });
+            }}
+          >
             {/* Date markers */}
-            <div className="absolute inset-0 flex">
+            <div className="absolute inset-0 flex pointer-events-none">
               {dates.map((date, idx) => (
                 <div 
                   key={idx} 
@@ -1810,25 +1855,17 @@ export function StaffTimelineGrid({
               ))}
             </div>
             
-            {/* Visible window indicator */}
+            {/* Visible window indicator (draggable) */}
             <div
-              className="absolute top-0 bottom-0 bg-primary/60 rounded-full transition-all duration-75 cursor-pointer hover:bg-primary/80"
+              className={cn(
+                "absolute top-0 bottom-0 bg-primary/60 rounded-full cursor-grab active:cursor-grabbing hover:bg-primary/80",
+                isScrollDragging ? "bg-primary/80" : "transition-all duration-75"
+              )}
               style={{
                 left: `${(scrollInfo.scrollLeft / scrollInfo.scrollWidth) * 100}%`,
                 width: `${Math.max((scrollInfo.clientWidth / scrollInfo.scrollWidth) * 100, 8)}%`,
               }}
-              onClick={(e) => {
-                if (rightPaneRef.current) {
-                  const track = e.currentTarget.parentElement;
-                  if (track) {
-                    const rect = track.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const percent = clickX / rect.width;
-                    const scrollTarget = percent * (scrollInfo.scrollWidth - scrollInfo.clientWidth);
-                    rightPaneRef.current.scrollTo({ left: scrollTarget, behavior: 'smooth' });
-                  }
-                }
-              }}
+              onMouseDown={handleScrollThumbMouseDown}
             />
           </div>
           
