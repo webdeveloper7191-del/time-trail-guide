@@ -244,6 +244,11 @@ export function ShiftCopyModal({
     return dateCount * roomCount * staffCount;
   }, [copyMode, recurringDates.length, selectedDates.length, copyToAllRooms, rooms.length, keepOriginalStaff, selectedStaff.length]);
 
+  const handleInvalidSubmit = (formErrors: unknown) => {
+    console.log('[ShiftCopyModal] Invalid submit', formErrors);
+    toast.error('Please fix the highlighted fields');
+  };
+
   const actions: OffCanvasAction[] = [
     {
       label: 'Cancel',
@@ -252,7 +257,15 @@ export function ShiftCopyModal({
     },
     {
       label: `Copy Shift${estimatedShiftCount > 0 ? ` (${estimatedShiftCount})` : ''}`,
-      onClick: handleSubmit(onSubmit),
+      onClick: () => {
+        try {
+          // NOTE: PrimaryOffCanvas uses a portal, so we trigger RHF via onClick (not form submit)
+          void handleSubmit(onSubmit, handleInvalidSubmit)();
+        } catch (e) {
+          console.error('[ShiftCopyModal] Copy click failed', e);
+          toast.error('Failed to copy shift');
+        }
+      },
       variant: 'primary',
       disabled: (copyMode !== 'recurring' && selectedDates.length === 0) || (copyMode === 'recurring' && recurringDates.length === 0),
     },
