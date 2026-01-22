@@ -169,6 +169,7 @@ export function StaffTimelineGrid({
   // Only day view gets the expanded chart (but day view uses DayTimelineView component)
   const isCompact = viewMode !== 'day';
   const isMonthView = viewMode === 'month';
+  const isCostStickyEnabled = isCostSticky && !isMonthView;
   
   // Column width classes - fluid for shorter views, fixed for fortnight/month
   // Fortnight and Month views use fixed 125px for consistency with many columns
@@ -1089,7 +1090,13 @@ export function StaffTimelineGrid({
                 );
               })}
               {/* Cost header */}
-              <div className="w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-2 text-center font-medium text-xs md:text-sm text-muted-foreground border-l border-border">
+              <div
+                className={cn(
+                  "w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-2 text-center font-medium text-xs md:text-sm text-muted-foreground border-l border-border",
+                  // Keep cost visible while horizontally scrolling on non-month views
+                  isCostStickyEnabled && "sticky right-0 z-30 bg-muted/50 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.25)]"
+                )}
+              >
                 <div className="flex items-center justify-center gap-0.5 md:gap-1">
                   <DollarSign className="h-3 w-3 md:h-3.5 md:w-3.5" />
                   <span className="hidden sm:inline">Cost</span>
@@ -1233,8 +1240,11 @@ export function StaffTimelineGrid({
                               </div>
                             );
                           })}
-                          <div 
-                            className="w-16 md:w-20 lg:w-24 shrink-0 flex items-center justify-center border-l bg-card"
+                          <div
+                            className={cn(
+                              "w-16 md:w-20 lg:w-24 shrink-0 flex items-center justify-center border-l bg-card",
+                              isCostStickyEnabled && "sticky right-0 z-20 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.18)]"
+                            )}
                             style={{ borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                           >
                             <Badge variant="secondary" className="text-[10px] md:text-xs font-medium px-1 md:px-2">
@@ -1254,7 +1264,12 @@ export function StaffTimelineGrid({
                               style={{ borderRightColor: `color-mix(in srgb, ${roomColor} 25%, transparent)` }}
                             />
                           ))}
-                          <div className="w-16 md:w-20 lg:w-24 shrink-0" />
+                          <div
+                            className={cn(
+                              "w-16 md:w-20 lg:w-24 shrink-0",
+                              isCostStickyEnabled && "sticky right-0 z-10 bg-background shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
+                            )}
+                          />
                         </>
                       )}
                     </div>
@@ -1291,7 +1306,12 @@ export function StaffTimelineGrid({
                                   </div>
                                 );
                               })}
-                              <div className="w-16 md:w-20 lg:w-24 shrink-0 border-l border-border" />
+                              <div
+                                className={cn(
+                                  "w-16 md:w-20 lg:w-24 shrink-0 border-l border-border",
+                                  isCostStickyEnabled && "sticky right-0 z-10 bg-muted/30 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
+                                )}
+                              />
                             </div>
                           )}
                           
@@ -1467,7 +1487,12 @@ export function StaffTimelineGrid({
                                 })}
 
                                 {/* Cost cell */}
-                                <div className="w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-1.5 border-l border-border bg-card flex items-center justify-center">
+                                <div
+                                  className={cn(
+                                    "w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-1.5 border-l border-border bg-card flex items-center justify-center",
+                                    isCostStickyEnabled && "sticky right-0 z-20 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.18)]"
+                                  )}
+                                >
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
@@ -1583,7 +1608,12 @@ export function StaffTimelineGrid({
                                   </div>
                                 );
                               })}
-                              <div className="w-16 md:w-20 lg:w-24 shrink-0 border-l border-amber-200/30 bg-amber-50/40 dark:bg-amber-950/10" />
+                              <div
+                                className={cn(
+                                  "w-16 md:w-20 lg:w-24 shrink-0 border-l border-amber-200/30 bg-amber-50/40 dark:bg-amber-950/10",
+                                  isCostStickyEnabled && "sticky right-0 z-10 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
+                                )}
+                              />
                             </div>
                           )}
 
@@ -1635,7 +1665,12 @@ export function StaffTimelineGrid({
                                     </div>
                                   );
                                 })}
-                                <div className="w-16 md:w-20 lg:w-24 shrink-0 border-l border-border bg-purple-500/5" />
+                                <div
+                                  className={cn(
+                                    "w-16 md:w-20 lg:w-24 shrink-0 border-l border-border bg-purple-500/5",
+                                    isCostStickyEnabled && "sticky right-0 z-10 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
+                                  )}
+                                />
                               </div>
                             );
                           })()}
@@ -1702,7 +1737,12 @@ export function StaffTimelineGrid({
                                 </div>
                               );
                             })}
-                            <div className="w-16 md:w-20 lg:w-24 shrink-0 border-r border-border/30" />
+                            <div
+                              className={cn(
+                                "w-16 md:w-20 lg:w-24 shrink-0 border-r border-border/30",
+                                isCostStickyEnabled && "sticky right-0 z-10 bg-background shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
+                              )}
+                            />
                           </div>
                         </>
                       )}
