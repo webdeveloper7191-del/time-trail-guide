@@ -1089,12 +1089,26 @@ export default function RosterScheduler() {
   };
 
   const handleApplyTemplate = (newShifts: Omit<Shift, 'id'>[]) => {
-    const shiftsWithIds = newShifts.map((s, idx) => ({
-      ...s,
-      id: `shift-template-${Date.now()}-${idx}`,
-    }));
-    setShifts(prev => [...prev, ...shiftsWithIds], `Applied template (${shiftsWithIds.length} shifts)`, 'bulk');
-    toast.success(`Applied ${shiftsWithIds.length} shifts from template`);
+    // Applying a roster template should create OPEN shifts.
+    // In this app, open shifts are rendered from the `openShifts` state (not `shifts`).
+    const openShiftsToAdd: OpenShift[] = newShifts
+      .filter(s => !s.staffId)
+      .map((s, idx) => ({
+        id: `open-template-${Date.now()}-${idx}`,
+        centreId: s.centreId,
+        roomId: s.roomId,
+        date: s.date,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        breakMinutes: s.breakMinutes,
+        requiredQualifications: [],
+        urgency: 'medium',
+        applicants: [],
+        notes: s.notes,
+      }));
+
+    setOpenShifts(prev => [...prev, ...openShiftsToAdd]);
+    toast.success(`Created ${openShiftsToAdd.length} open shifts from template`);
   };
 
   const handleBulkAssignment = (newShifts: Omit<Shift, 'id'>[]) => {
@@ -2360,7 +2374,25 @@ export default function RosterScheduler() {
         onClose={() => setShowApplyTemplateModal(false)}
         rosterTemplates={rosterTemplates}
         shiftTemplates={allShiftTemplates}
-        existingShifts={shifts.filter(s => s.centreId === selectedCentreId)}
+        existingShifts={[
+          ...shifts.filter(s => s.centreId === selectedCentreId),
+          // Include existing open shifts so duplicate detection works correctly.
+          ...openShifts
+            .filter(os => os.centreId === selectedCentreId)
+            .map<Shift>(os => ({
+              id: os.id,
+              staffId: '',
+              centreId: os.centreId,
+              roomId: os.roomId,
+              date: os.date,
+              startTime: os.startTime,
+              endTime: os.endTime,
+              breakMinutes: os.breakMinutes ?? 30,
+              status: 'draft',
+              isOpenShift: true,
+              notes: os.notes,
+            })),
+        ]}
         rooms={selectedCentre.rooms}
         centreId={selectedCentreId}
         currentDate={currentDate}
