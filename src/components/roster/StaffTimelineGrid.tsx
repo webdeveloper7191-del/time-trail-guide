@@ -177,18 +177,16 @@ export function StaffTimelineGrid({
   // Disable sticky cost for fortnight/month as those have fixed-width scrollable columns
   const isCostStickyEnabled = isCostSticky && !isMonthView && viewMode !== 'fortnight';
   
-  // Column width classes - responsive with fixed widths on mobile for scrollable multi-day views
-  // Desktop: fluid for shorter views, fixed for fortnight/month
-  // Mobile: fixed widths for workweek/week to enable 2-day viewport with horizontal scroll
+  // Column width classes - consistent fixed widths on mobile/tablet for ALL views (like fortnight/month)
+  // Desktop: fluid for day/workweek/week, fixed for fortnight/month
+  // Mobile/Tablet: fixed widths for ALL views to enable scrollable grid with blue scrollbar
   const getColumnWidthClass = () => {
     if (isMonthView || viewMode === 'fortnight') {
       return "w-[125px] min-w-[125px] shrink-0";
     }
-    // On mobile/tablet for workweek (5 days) and week (7 days), use fixed width for proper scrolling
-    if (isMobileOrTablet && (viewMode === 'workweek' || viewMode === 'week')) {
-      // Calculate width to show ~2 days on mobile viewport (considering 160px left staff pane)
-      // Mobile viewport ~375px - 160px pane = ~215px for timeline, so ~105px per visible day
-      return "w-[140px] min-w-[140px] shrink-0";
+    // On mobile/tablet, use fixed width for ALL views (day, workweek, week) - same structure as fortnight/month
+    if (isMobileOrTablet) {
+      return "w-[125px] min-w-[125px] shrink-0";
     }
     // Desktop: fluid columns for day, workweek, week - stretch to fill available space
     return "flex-1 min-w-[80px]";
@@ -965,7 +963,7 @@ export function StaffTimelineGrid({
             )}
             style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
           >
-            <div className={cn("flex min-w-full", (isMonthView || viewMode === 'fortnight' || (isMobileOrTablet && (viewMode === 'workweek' || viewMode === 'week'))) && "min-w-max")}>
+            <div className={cn("flex min-w-full", (isMonthView || viewMode === 'fortnight' || isMobileOrTablet) && "min-w-max")}>
               {dates.map((date) => {
                 const dateStr = format(date, 'yyyy-MM-dd');
                 const holidays = getHolidaysForDate(dateStr);
@@ -1184,7 +1182,7 @@ export function StaffTimelineGrid({
             )}
             style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
           >
-            <div className={cn("min-w-full", (isMonthView || viewMode === 'fortnight' || (isMobileOrTablet && (viewMode === 'workweek' || viewMode === 'week'))) && "min-w-max")}>
+            <div className={cn("min-w-full", (isMonthView || viewMode === 'fortnight' || isMobileOrTablet) && "min-w-max")}>
               {centre.rooms.map((room, roomIndex) => {
                 const roomStaffIds = staffByRoom[room.id] || new Set();
                 const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
