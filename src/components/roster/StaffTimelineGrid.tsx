@@ -56,6 +56,7 @@ import {
   eventTypeConfig 
 } from '@/data/mockHolidaysEvents';
 import { StaffAvailabilityOverlay } from './StaffAvailabilityOverlay';
+import { shiftStatusColors, shiftTypeConfig, getShiftTypeConfig, openShiftColors, specialIndicatorConfig } from '@/lib/rosterColors';
 
 // Empty shift type for unassigned shifts
 interface EmptyShift {
@@ -1901,43 +1902,9 @@ function StaffShiftCard({
   isCompact?: boolean;
   isMonthView?: boolean;
 }) {
-  // Import centralized color system
-  const statusStyles = {
-    draft: {
-      bg: 'bg-amber-50 dark:bg-amber-950/40',
-      border: 'border-amber-300 dark:border-amber-800',
-      text: 'text-amber-800 dark:text-amber-200',
-      accent: 'bg-amber-400',
-    },
-    published: {
-      bg: 'bg-[hsl(var(--info-bg))]',
-      border: 'border-[hsl(var(--info)/0.35)]',
-      text: 'text-[hsl(var(--info))] dark:text-[hsl(var(--info))]',
-      accent: 'bg-[hsl(var(--info))]',
-    },
-    confirmed: {
-      bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-      border: 'border-emerald-300 dark:border-emerald-800',
-      text: 'text-emerald-800 dark:text-emerald-200',
-      accent: 'bg-emerald-500',
-    },
-    completed: {
-      bg: 'bg-slate-50 dark:bg-slate-900/40',
-      border: 'border-slate-300 dark:border-slate-700',
-      text: 'text-slate-600 dark:text-slate-300',
-      accent: 'bg-slate-400',
-    },
-  };
-
-  const shiftTypeStyles: Record<string, { icon: typeof Phone; color: string; bgColor: string; label: string }> = {
-    on_call: { icon: Phone, color: 'text-cyan-500', bgColor: 'bg-cyan-100 dark:bg-cyan-500/20', label: 'On-Call' },
-    sleepover: { icon: Moon, color: 'text-violet-500', bgColor: 'bg-violet-100 dark:bg-violet-500/20', label: 'Sleepover' },
-    broken: { icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-100 dark:bg-amber-500/20', label: 'Split' },
-    recall: { icon: PhoneCall, color: 'text-rose-500', bgColor: 'bg-rose-100 dark:bg-rose-500/20', label: 'Recall' },
-  };
-
-  const style = statusStyles[shift.status];
-  const shiftTypeInfo = shift.shiftType ? shiftTypeStyles[shift.shiftType] : null;
+  // Use centralized color system
+  const style = shiftStatusColors[shift.status] || shiftStatusColors.draft;
+  const shiftTypeInfo = shift.shiftType && shift.shiftType !== 'regular' ? getShiftTypeConfig(shift.shiftType) : null;
   const currentType = shift.shiftType || 'regular';
 
   const seriesId = shift.recurring?.isRecurring ? shift.recurring.recurrenceGroupId : undefined;

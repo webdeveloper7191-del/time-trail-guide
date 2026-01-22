@@ -9,24 +9,11 @@ import {
   ArrowLeftRight, 
   Copy, 
   ChevronDown,
-  Phone,
-  Moon,
-  Zap,
-  PhoneCall,
-  AlertCircle,
   UserX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapse } from '@mui/material';
-
-const SHIFT_TYPE_CONFIG: Record<ShiftSpecialType, { icon: typeof Phone; color: string; bgColor: string; label: string }> = {
-  regular: { icon: Clock, color: 'text-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-800', label: 'Regular' },
-  on_call: { icon: Phone, color: 'text-cyan-500', bgColor: 'bg-cyan-100 dark:bg-cyan-500/20', label: 'On-Call' },
-  sleepover: { icon: Moon, color: 'text-violet-500', bgColor: 'bg-violet-100 dark:bg-violet-500/20', label: 'Sleepover' },
-  broken: { icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-100 dark:bg-amber-500/20', label: 'Split' },
-  recall: { icon: PhoneCall, color: 'text-rose-500', bgColor: 'bg-rose-100 dark:bg-rose-500/20', label: 'Recall' },
-  emergency: { icon: AlertCircle, color: 'text-rose-600', bgColor: 'bg-rose-100 dark:bg-rose-500/20', label: 'Emergency' },
-};
+import { getShiftTypeConfig } from '@/lib/rosterColors';
 
 interface MobileShiftCardProps {
   shift: Shift;
@@ -51,7 +38,7 @@ export function MobileShiftCard({
   
   const duration = calculateDuration(shift.startTime, shift.endTime, shift.breakMinutes);
   const currentType = shift.shiftType || 'regular';
-  const shiftTypeInfo = SHIFT_TYPE_CONFIG[currentType];
+  const shiftTypeInfo = getShiftTypeConfig(currentType);
   const ShiftTypeIcon = shiftTypeInfo.icon;
 
   const handleCardTap = () => {

@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { shiftTypeConfig, getShiftTypeConfig, openShiftColors, specialIndicatorConfig } from '@/lib/rosterColors';
 
 // Global drag state to disable tooltips during any drag operation
 let globalDragInProgress = false;
@@ -37,15 +38,6 @@ const useGlobalDrag = () => {
   }, []);
   
   return isDragging;
-};
-
-const SHIFT_TYPE_CONFIG: Record<ShiftSpecialType, { icon: typeof Phone; color: string; bgColor: string; label: string }> = {
-  regular: { icon: Clock, color: 'text-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-800', label: 'Regular' },
-  on_call: { icon: Phone, color: 'text-cyan-500', bgColor: 'bg-cyan-100 dark:bg-cyan-500/20', label: 'On-Call' },
-  sleepover: { icon: Moon, color: 'text-violet-500', bgColor: 'bg-violet-100 dark:bg-violet-500/20', label: 'Sleepover' },
-  broken: { icon: Clock, color: 'text-amber-500', bgColor: 'bg-amber-100 dark:bg-amber-500/20', label: 'Split Shift' },
-  recall: { icon: PhoneCall, color: 'text-rose-500', bgColor: 'bg-rose-100 dark:bg-rose-500/20', label: 'Recall' },
-  emergency: { icon: AlertCircle, color: 'text-rose-600', bgColor: 'bg-rose-100 dark:bg-rose-500/20', label: 'Emergency' },
 };
 
 interface ShiftCardProps {
@@ -87,7 +79,7 @@ export function ShiftCard({
   const shouldDim = !!highlightedRecurrenceGroupId && (!seriesId || seriesId !== highlightedRecurrenceGroupId);
 
   const currentType = shift.shiftType || 'regular';
-  const shiftTypeInfo = SHIFT_TYPE_CONFIG[currentType];
+  const shiftTypeInfo = getShiftTypeConfig(currentType);
 
   const handleShiftTypeQuickToggle = (type: ShiftSpecialType, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -294,7 +286,7 @@ export function ShiftCard({
                       value={currentType} 
                       onValueChange={(value) => onShiftTypeChange?.(shift.id, value === 'regular' ? undefined : value as ShiftSpecialType)}
                     >
-                      {Object.entries(SHIFT_TYPE_CONFIG).map(([type, config]) => {
+                      {Object.entries(shiftTypeConfig).map(([type, config]) => {
                         const TypeIcon = config.icon;
                         return (
                           <DropdownMenuRadioItem key={type} value={type}>
