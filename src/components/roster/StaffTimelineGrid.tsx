@@ -19,8 +19,6 @@ import {
   AlertCircle,
   AlertTriangle,
   DollarSign,
-  Pin,
-  PinOff,
   Palmtree,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
@@ -169,13 +167,10 @@ export function StaffTimelineGrid({
   const [staffSearch, setStaffSearch] = useState('');
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
   const [colorPalette, setColorPalette] = useState<ColorPalette>('ocean');
-  const [isCostSticky, setIsCostSticky] = useState(true);
   // Use compact charts for all multi-day views (workweek, week, fortnight, month)
   // Only day view gets the expanded chart (but day view uses DayTimelineView component)
   const isCompact = viewMode !== 'day';
   const isMonthView = viewMode === 'month';
-  // Disable sticky cost for fortnight/month as those have fixed-width scrollable columns
-  const isCostStickyEnabled = isCostSticky && !isMonthView && viewMode !== 'fortnight';
   
   // Column width classes - consistent fixed widths on mobile/tablet for ALL views (like fortnight/month)
   // Desktop: fluid for day/workweek/week, fixed for fortnight/month
@@ -1144,30 +1139,12 @@ export function StaffTimelineGrid({
               })}
               {/* Cost header */}
               <div
-                className={cn(
-                  "w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-2 text-center font-medium text-xs md:text-sm text-muted-foreground border-l border-border bg-muted flex flex-col items-center justify-center",
-                  // Keep cost visible while horizontally scrolling on non-month views
-                  isCostStickyEnabled && "sticky right-0 z-30 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.25)]"
-                )}
+                className="w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-2 text-center font-medium text-xs md:text-sm text-muted-foreground border-l border-border bg-muted flex flex-col items-center justify-center"
               >
                 <div className="flex items-center justify-center gap-0.5 md:gap-1">
                   <DollarSign className="h-3 w-3 md:h-3.5 md:w-3.5 shrink-0" />
                   <span className="hidden sm:inline">Cost</span>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 md:h-6 md:w-6 mt-0.5"
-                  onClick={() => setIsCostSticky(v => !v)}
-                  aria-label={isCostSticky ? 'Unpin Cost column' : 'Pin Cost column'}
-                >
-                  {isCostSticky ? (
-                    <PinOff className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                  ) : (
-                    <Pin className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                  )}
-                </Button>
               </div>
             </div>
           </div>
@@ -1294,10 +1271,7 @@ export function StaffTimelineGrid({
                             );
                           })}
                           <div
-                            className={cn(
-                              "w-16 md:w-20 lg:w-24 shrink-0 flex items-center justify-center border-l",
-                              isCostStickyEnabled && "sticky right-0 z-20 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.18)]"
-                            )}
+                            className="w-16 md:w-20 lg:w-24 shrink-0 flex items-center justify-center border-l"
                             style={{ 
                               backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`,
                               borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)`,
@@ -1321,10 +1295,7 @@ export function StaffTimelineGrid({
                             />
                           ))}
                           <div
-                            className={cn(
-                              "w-16 md:w-20 lg:w-24 shrink-0 border-l",
-                              isCostStickyEnabled && "sticky right-0 z-10 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
-                            )}
+                            className="w-16 md:w-20 lg:w-24 shrink-0 border-l"
                             style={{ 
                               backgroundColor: `color-mix(in srgb, ${roomColor} 12%, hsl(var(--background)))`,
                               borderLeftColor: `color-mix(in srgb, ${roomColor} 25%, transparent)`,
@@ -1367,10 +1338,7 @@ export function StaffTimelineGrid({
                                 );
                               })}
                               <div
-                                className={cn(
-                                  "w-16 md:w-20 lg:w-24 shrink-0 border-l border-border",
-                                  isCostStickyEnabled && "sticky right-0 z-10 bg-muted/30 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
-                                )}
+                                className="w-16 md:w-20 lg:w-24 shrink-0 border-l border-border"
                               />
                             </div>
                           )}
@@ -1548,10 +1516,7 @@ export function StaffTimelineGrid({
 
                                 {/* Cost cell */}
                                 <div
-                                  className={cn(
-                                    "w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-1.5 border-l border-border bg-card flex items-center justify-center",
-                                    isCostStickyEnabled && "sticky right-0 z-20 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.18)]"
-                                  )}
+                                  className="w-16 md:w-20 lg:w-24 shrink-0 p-1 md:p-1.5 border-l border-border bg-card flex items-center justify-center"
                                 >
                                   <TooltipProvider>
                                     <Tooltip>
@@ -1669,10 +1634,7 @@ export function StaffTimelineGrid({
                                 );
                               })}
                               <div
-                                className={cn(
-                                  "w-16 md:w-20 lg:w-24 shrink-0 border-l border-amber-200/30 bg-amber-50/40 dark:bg-amber-950/10",
-                                  isCostStickyEnabled && "sticky right-0 z-10 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
-                                )}
+                                className="w-16 md:w-20 lg:w-24 shrink-0 border-l border-amber-200/30 bg-amber-50/40 dark:bg-amber-950/10"
                               />
                             </div>
                           )}
@@ -1726,10 +1688,7 @@ export function StaffTimelineGrid({
                                   );
                                 })}
                                 <div
-                                  className={cn(
-                                    "w-16 md:w-20 lg:w-24 shrink-0 border-l border-border bg-purple-500/5",
-                                    isCostStickyEnabled && "sticky right-0 z-10 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
-                                  )}
+                                  className="w-16 md:w-20 lg:w-24 shrink-0 border-l border-border bg-purple-500/5"
                                 />
                               </div>
                             );
@@ -1802,8 +1761,7 @@ export function StaffTimelineGrid({
                                 "w-16 md:w-20 lg:w-24 shrink-0 border-l border-border/30",
                                 isDragging && dragType === 'staff' 
                                   ? "bg-sky-50/40 dark:bg-sky-950/10" 
-                                  : "bg-muted/30",
-                                isCostStickyEnabled && "sticky right-0 z-10 shadow-[-8px_0_12px_-10px_hsl(var(--foreground)/0.12)]"
+                                  : "bg-muted/30"
                               )}
                             />
                           </div>
