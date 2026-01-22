@@ -167,6 +167,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
         { icon: <div className="h-3 w-3 rounded-full bg-amber-500" />, label: 'Leave Pending', description: 'Awaiting approval' },
         { icon: <div className="h-3 w-6 rounded-sm bg-slate-100 dark:bg-slate-700" style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent 0px, transparent 2px, rgba(148,163,184,0.3) 2px, rgba(148,163,184,0.3) 4px)' }} />, label: 'Unavailable', description: 'Staff not available to work' },
         { icon: <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-500/10">OT</Badge>, label: 'Overtime', description: 'Extra pay rate applies' },
+        { icon: <div className="flex gap-0.5"><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">M</Badge><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">T</Badge><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">W</Badge></div>, label: 'Availability Days', description: 'Staff available work days' },
       ],
     },
   ];
