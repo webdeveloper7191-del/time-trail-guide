@@ -325,11 +325,12 @@ export function DayTimelineView({
   };
 
   return (
-    <div className="flex-1 overflow-hidden bg-background w-full max-w-full" onDragEnd={handleDragEnd}>
+    <div className="flex-1 overflow-hidden bg-background w-full max-w-full relative" onDragEnd={handleDragEnd}>
       <ScrollArea
         ref={scrollRef}
         className={cn(
-          "h-full w-full",
+          // Leave space so the always-visible blue scrollbar doesn't get covered by the footer legend
+          "h-full w-full pb-8",
           // Hide native scrollbars everywhere for day view; we show a custom blue scrollbar instead
           showScrollIndicator && "scrollbar-hide"
         )}
@@ -678,7 +679,7 @@ export function DayTimelineView({
           const widthPct = isScrollable ? Math.max((safeClientWidth / safeScrollWidth) * 100, 8) : 100;
 
           return (
-        <div className="h-8 bg-muted/50 border-t border-border flex items-center px-3 md:px-4 gap-3">
+        <div className="h-8 bg-muted/50 border-t border-border flex items-center px-3 md:px-4 gap-3 sticky bottom-0 z-40">
           <Button
             variant="ghost"
             size="icon"
