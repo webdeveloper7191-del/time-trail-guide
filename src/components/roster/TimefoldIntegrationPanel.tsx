@@ -59,6 +59,10 @@ import {
   Check,
   X,
   PlugZap,
+  Webhook,
+  Send,
+  History,
+  TestTube,
 } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { toast } from 'sonner';
@@ -68,11 +72,15 @@ import {
   DataMappingProfile,
   FieldMappingConfig,
   ImportedConstraintSet,
+  WebhookEndpoint,
   API_ENVIRONMENTS,
   SHIFT_ENTITY_FIELDS,
   STAFF_ENTITY_FIELDS,
+  WEBHOOK_EVENTS,
+  SAMPLE_INPUT_VALUES,
   EnvironmentType,
   SolverEntityType,
+  WebhookEventType,
 } from '@/lib/timefold/integrationConfig';
 
 interface TimefoldIntegrationPanelProps {
@@ -128,6 +136,12 @@ export function TimefoldIntegrationPanel({ open, onClose }: TimefoldIntegrationP
     importConstraintsFromJson,
     deleteConstraintSet,
     updateConstraintSet,
+    addWebhookEndpoint,
+    updateWebhookEndpoint,
+    deleteWebhookEndpoint,
+    testWebhook,
+    clearWebhookLogs,
+    previewTransform,
     updateGlobalSettings,
     resetToDefaults,
     exportSettings,
@@ -141,6 +155,9 @@ export function TimefoldIntegrationPanel({ open, onClose }: TimefoldIntegrationP
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['connection-list']));
   const [constraintJsonInput, setConstraintJsonInput] = useState('');
   const [importName, setImportName] = useState('');
+  const [transformPreviewInput, setTransformPreviewInput] = useState('');
+  const [previewingMappingId, setPreviewingMappingId] = useState<string | null>(null);
+  const [isTestingWebhook, setIsTestingWebhook] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const settingsFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -165,6 +182,17 @@ export function TimefoldIntegrationPanel({ open, onClose }: TimefoldIntegrationP
     staffMappings: [],
     validationRules: [],
     isActive: true,
+  });
+
+  // New webhook form state
+  const [newWebhook, setNewWebhook] = useState<Partial<WebhookEndpoint>>({
+    name: '',
+    url: '',
+    events: [],
+    isActive: true,
+    retryCount: 3,
+    timeoutSeconds: 30,
+    headers: [],
   });
 
   const toggleSection = (section: string) => {
@@ -840,6 +868,90 @@ export function TimefoldIntegrationPanel({ open, onClose }: TimefoldIntegrationP
 
       <Divider sx={{ my: 3 }} />
 
+      {/* Transform Preview */}
+      <Box sx={{ mb: 3 }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          onClick={() => toggleSection('transform-preview')}
+          sx={{ cursor: 'pointer', py: 1 }}
+        >
+          <Typography variant="subtitle1" fontWeight={600}>
+            <TestTube className="h-4 w-4 inline mr-1" />
+            Transform Preview
+          </Typography>
+          {expandedSections.has('transform-preview') ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Stack>
+
+        <Collapse in={expandedSections.has('transform-preview')}>
+          <Paper sx={{ p: 2, mt: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Test how transforms will process your source data. Enter a sample input and select a transform to see the result.
+            </Typography>
+            
+            <Stack spacing={2}>
+              <Box>
+                <Label htmlFor="preview-input">Sample Input</Label>
+                <Input
+                  id="preview-input"
+                  placeholder="Enter sample value to transform..."
+                  value={transformPreviewInput}
+                  onChange={e => setTransformPreviewInput(e.target.value)}
+                />
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                  {Object.entries(SAMPLE_INPUT_VALUES).map(([key, value]) => (
+                    <Chip
+                      key={key}
+                      label={key}
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setTransformPreviewInput(value)}
+                      sx={{ cursor: 'pointer', fontSize: '0.65rem' }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
+              {transformPreviewInput && (
+                <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="caption" fontWeight={600} sx={{ display: 'block', mb: 1 }}>
+                    Transform Results
+                  </Typography>
+                  <Stack spacing={1}>
+                    {TRANSFORM_OPTIONS.filter(opt => opt.value !== 'custom').map(opt => {
+                      const result = previewTransform(transformPreviewInput, opt.value as any);
+                      return (
+                        <Stack key={opt.value} direction="row" spacing={2} alignItems="center">
+                          <Typography variant="caption" sx={{ width: 100, fontWeight: 500 }}>
+                            {opt.label}:
+                          </Typography>
+                          {result.success ? (
+                            <Paper sx={{ px: 1, py: 0.5, bgcolor: 'success.light', flex: 1 }}>
+                              <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'success.dark' }}>
+                                {result.output.length > 50 ? result.output.substring(0, 50) + '...' : result.output}
+                              </Typography>
+                            </Paper>
+                          ) : (
+                            <Paper sx={{ px: 1, py: 0.5, bgcolor: 'error.light', flex: 1 }}>
+                              <Typography variant="caption" sx={{ color: 'error.dark' }}>
+                                ❌ {result.error}
+                              </Typography>
+                            </Paper>
+                          )}
+                        </Stack>
+                      );
+                    })}
+                  </Stack>
+                </Paper>
+              )}
+            </Stack>
+          </Paper>
+        </Collapse>
+      </Box>
+
+      <Divider sx={{ my: 3 }} />
+
       {/* Available Fields Reference */}
       <Box>
         <Stack
@@ -1106,12 +1218,349 @@ export function TimefoldIntegrationPanel({ open, onClose }: TimefoldIntegrationP
     </Box>
   );
 
+  const renderWebhooksTab = () => (
+    <Box sx={{ p: 2 }}>
+      <Alert severity="info" sx={{ mb: 3 }}>
+        <AlertTitle>Webhook Callbacks</AlertTitle>
+        <Typography variant="body2">
+          Configure webhook endpoints to receive real-time notifications when solver events occur.
+          External systems can receive data updates and solver results automatically.
+        </Typography>
+      </Alert>
+
+      {/* Enable Webhooks Toggle */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={settings.enableWebhooks}
+              onChange={(e) => updateGlobalSettings({ enableWebhooks: e.target.checked })}
+            />
+          }
+          label={
+            <Stack>
+              <Typography variant="subtitle2">Enable Webhooks</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Allow outbound webhook calls when events occur
+              </Typography>
+            </Stack>
+          }
+        />
+      </Paper>
+
+      {/* Webhook Endpoints */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
+          Webhook Endpoints ({settings.webhookEndpoints.length})
+        </Typography>
+
+        {settings.webhookEndpoints.length === 0 ? (
+          <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'action.hover' }}>
+            <Webhook className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <Typography variant="body2" color="text.secondary">
+              No webhook endpoints configured
+            </Typography>
+          </Paper>
+        ) : (
+          <Stack spacing={2}>
+            {settings.webhookEndpoints.map(endpoint => (
+              <Paper key={endpoint.id} sx={{ p: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: endpoint.isActive 
+                        ? (endpoint.lastStatus === 'success' ? 'success.main' : endpoint.lastStatus === 'failed' ? 'error.main' : 'grey.400')
+                        : 'grey.400',
+                    }}
+                  />
+                  <Box flex={1}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Typography variant="subtitle2">{endpoint.name}</Typography>
+                      {!endpoint.isActive && (
+                        <Chip label="Disabled" size="small" color="default" />
+                      )}
+                    </Stack>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {endpoint.url}
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                      {endpoint.events.slice(0, 3).map(event => (
+                        <Chip key={event} label={event} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 18 }} />
+                      ))}
+                      {endpoint.events.length > 3 && (
+                        <Chip label={`+${endpoint.events.length - 3}`} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 18 }} />
+                      )}
+                    </Box>
+                  </Box>
+                  <Stack direction="row" spacing={0.5}>
+                    <IconButton
+                      size="small"
+                      onClick={async () => {
+                        setIsTestingWebhook(endpoint.id);
+                        const result = await testWebhook(endpoint);
+                        setIsTestingWebhook(null);
+                        if (result.success) {
+                          toast.success(result.message);
+                        } else {
+                          toast.error(result.message);
+                        }
+                      }}
+                      disabled={isTestingWebhook === endpoint.id}
+                    >
+                      <TestTube className="h-4 w-4" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => updateWebhookEndpoint(endpoint.id, { isActive: !endpoint.isActive })}
+                      color={endpoint.isActive ? 'primary' : 'default'}
+                    >
+                      {endpoint.isActive ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => deleteWebhookEndpoint(endpoint.id)}
+                      color="error"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </IconButton>
+                  </Stack>
+                </Stack>
+
+                {/* Last trigger info */}
+                {endpoint.lastTriggeredAt && (
+                  <Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Typography variant="caption" color="text.secondary">
+                        Last triggered: {new Date(endpoint.lastTriggeredAt).toLocaleString()}
+                      </Typography>
+                      {endpoint.lastStatus === 'success' ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-600" />
+                      ) : endpoint.lastStatus === 'failed' ? (
+                        <AlertCircle className="h-3 w-3 text-red-600" />
+                      ) : null}
+                      {endpoint.lastError && (
+                        <Typography variant="caption" color="error.main">
+                          {endpoint.lastError}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Box>
+                )}
+              </Paper>
+            ))}
+          </Stack>
+        )}
+      </Box>
+
+      <Divider sx={{ my: 3 }} />
+
+      {/* Add New Webhook */}
+      <Box>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          onClick={() => toggleSection('new-webhook')}
+          sx={{ cursor: 'pointer', py: 1 }}
+        >
+          <Typography variant="subtitle1" fontWeight={600}>
+            <Plus className="h-4 w-4 inline mr-1" />
+            Add New Webhook
+          </Typography>
+          {expandedSections.has('new-webhook') ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Stack>
+
+        <Collapse in={expandedSections.has('new-webhook')}>
+          <Stack spacing={2} sx={{ mt: 2 }}>
+            <Box>
+              <Label htmlFor="webhook-name">Webhook Name</Label>
+              <Input
+                id="webhook-name"
+                placeholder="e.g., Slack Notifications"
+                value={newWebhook.name || ''}
+                onChange={e => setNewWebhook(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </Box>
+
+            <Box>
+              <Label htmlFor="webhook-url">Endpoint URL</Label>
+              <Input
+                id="webhook-url"
+                placeholder="https://api.example.com/webhooks/solver"
+                value={newWebhook.url || ''}
+                onChange={e => setNewWebhook(prev => ({ ...prev, url: e.target.value }))}
+              />
+            </Box>
+
+            <Box>
+              <Label>Events to Subscribe</Label>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                {WEBHOOK_EVENTS.map(event => (
+                  <Chip
+                    key={event.type}
+                    label={event.label}
+                    size="small"
+                    variant={newWebhook.events?.includes(event.type) ? 'filled' : 'outlined'}
+                    color={newWebhook.events?.includes(event.type) ? 'primary' : 'default'}
+                    onClick={() => {
+                      const events = newWebhook.events || [];
+                      if (events.includes(event.type)) {
+                        setNewWebhook(prev => ({ ...prev, events: events.filter(e => e !== event.type) }));
+                      } else {
+                        setNewWebhook(prev => ({ ...prev, events: [...events, event.type] }));
+                      }
+                    }}
+                    sx={{ cursor: 'pointer' }}
+                  />
+                ))}
+              </Box>
+            </Box>
+
+            <Box>
+              <Label htmlFor="webhook-secret">Secret (optional)</Label>
+              <div className="relative">
+                <Input
+                  id="webhook-secret"
+                  type={showSecrets['webhook-secret'] ? 'text' : 'password'}
+                  placeholder="Webhook signing secret"
+                  value={newWebhook.secret || ''}
+                  onChange={e => setNewWebhook(prev => ({ ...prev, secret: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                  onClick={() => toggleSecret('webhook-secret')}
+                >
+                  {showSecrets['webhook-secret'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </Box>
+
+            <Stack direction="row" spacing={2}>
+              <Box flex={1}>
+                <Label htmlFor="webhook-timeout">Timeout (seconds)</Label>
+                <Input
+                  id="webhook-timeout"
+                  type="number"
+                  min={5}
+                  max={120}
+                  value={newWebhook.timeoutSeconds || 30}
+                  onChange={e => setNewWebhook(prev => ({ ...prev, timeoutSeconds: parseInt(e.target.value) || 30 }))}
+                />
+              </Box>
+              <Box flex={1}>
+                <Label htmlFor="webhook-retries">Retry Count</Label>
+                <Input
+                  id="webhook-retries"
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={newWebhook.retryCount || 3}
+                  onChange={e => setNewWebhook(prev => ({ ...prev, retryCount: parseInt(e.target.value) || 3 }))}
+                />
+              </Box>
+            </Stack>
+
+            <Button
+              onClick={() => {
+                if (!newWebhook.name || !newWebhook.url) {
+                  toast.error('Please fill in webhook name and URL');
+                  return;
+                }
+                if (!newWebhook.events || newWebhook.events.length === 0) {
+                  toast.error('Please select at least one event');
+                  return;
+                }
+                addWebhookEndpoint(newWebhook as Omit<WebhookEndpoint, 'id' | 'createdAt' | 'updatedAt'>);
+                setNewWebhook({
+                  name: '',
+                  url: '',
+                  events: [],
+                  isActive: true,
+                  retryCount: 3,
+                  timeoutSeconds: 30,
+                  headers: [],
+                });
+              }}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Webhook
+            </Button>
+          </Stack>
+        </Collapse>
+      </Box>
+
+      <Divider sx={{ my: 3 }} />
+
+      {/* Recent Webhook Logs */}
+      <Box>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Typography variant="subtitle1" fontWeight={600}>
+            <History className="h-4 w-4 inline mr-1" />
+            Recent Logs ({settings.webhookLogs.length})
+          </Typography>
+          {settings.webhookLogs.length > 0 && (
+            <Button variant="outline" size="sm" onClick={clearWebhookLogs}>
+              Clear Logs
+            </Button>
+          )}
+        </Stack>
+
+        {settings.webhookLogs.length === 0 ? (
+          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'action.hover' }}>
+            <Typography variant="caption" color="text.secondary">
+              No webhook logs yet
+            </Typography>
+          </Paper>
+        ) : (
+          <Stack spacing={1}>
+            {settings.webhookLogs.slice(0, 10).map(log => (
+              <Paper key={log.id} sx={{ p: 1.5 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      bgcolor: log.status === 'success' ? 'success.main' : log.status === 'failed' ? 'error.main' : 'warning.main',
+                    }}
+                  />
+                  <Chip label={log.eventType} size="small" sx={{ fontSize: '0.65rem', height: 18 }} />
+                  <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
+                    {new Date(log.timestamp).toLocaleString()}
+                  </Typography>
+                  {log.duration && (
+                    <Typography variant="caption" color="text.secondary">
+                      {log.duration}ms
+                    </Typography>
+                  )}
+                  {log.responseStatus && (
+                    <Chip
+                      label={log.responseStatus}
+                      size="small"
+                      color={log.responseStatus < 400 ? 'success' : 'error'}
+                      sx={{ fontSize: '0.6rem', height: 16 }}
+                    />
+                  )}
+                </Stack>
+              </Paper>
+            ))}
+          </Stack>
+        )}
+      </Box>
+    </Box>
+  );
+
   return (
     <PrimaryOffCanvas
       open={open}
       onClose={onClose}
       title="Timefold Integration Settings"
-      description="Configure API connections, data mappings, and external constraints"
+      description="Configure API connections, data mappings, webhooks, and external constraints"
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Loading bar */}
@@ -1121,21 +1570,26 @@ export function TimefoldIntegrationPanel({ open, onClose }: TimefoldIntegrationP
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="w-full sticky top-0 z-10 bg-background">
               <TabsTrigger value="api" className="flex-1">
-                <Server className="h-4 w-4 mr-1" />
+                <Server className="h-3 w-3 mr-1" />
                 API
               </TabsTrigger>
               <TabsTrigger value="mapping" className="flex-1">
-                <Database className="h-4 w-4 mr-1" />
+                <Database className="h-3 w-3 mr-1" />
                 Mapping
               </TabsTrigger>
+              <TabsTrigger value="webhooks" className="flex-1">
+                <Webhook className="h-3 w-3 mr-1" />
+                Webhooks
+              </TabsTrigger>
               <TabsTrigger value="constraints" className="flex-1">
-                <FileJson className="h-4 w-4 mr-1" />
+                <FileJson className="h-3 w-3 mr-1" />
                 Constraints
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="api">{renderApiConnectionTab()}</TabsContent>
             <TabsContent value="mapping">{renderDataMappingTab()}</TabsContent>
+            <TabsContent value="webhooks">{renderWebhooksTab()}</TabsContent>
             <TabsContent value="constraints">{renderConstraintImportTab()}</TabsContent>
           </Tabs>
         </ScrollArea>

@@ -64,6 +64,7 @@ import { CentreAgencyPreferencesPanel } from '@/components/roster/CentreAgencyPr
 import { PostPlacementRatingModal } from '@/components/roster/PostPlacementRatingModal';
 import { AgencyPerformanceDashboard } from '@/components/roster/AgencyPerformanceDashboard';
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
+import { TimefoldIntegrationPanel } from '@/components/roster/TimefoldIntegrationPanel';
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
@@ -141,6 +142,7 @@ import {
   Zap,
   TrendingUp,
   Plug,
+  PlugZap,
   Flag,
   Users,
   Repeat,
@@ -299,6 +301,7 @@ export default function RosterScheduler() {
   
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
+  const [showTimefoldIntegration, setShowTimefoldIntegration] = useState(false);
   const [timefoldConfig, setTimefoldConfig] = useState<TimefoldSolverConfig>(defaultSolverConfig);
   const [isSolvingTimefold, setIsSolvingTimefold] = useState(false);
   const [lastTimefoldSolution, setLastTimefoldSolution] = useState<TimefoldSolution | null>(null);
@@ -1847,6 +1850,9 @@ export default function RosterScheduler() {
                       <DropdownMenuItem onClick={() => setShowIntegrationManager(true)} icon={<Plug size={16} />}>
                         Integration Manager
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowTimefoldIntegration(true)} icon={<PlugZap size={16} />}>
+                        Solver Integration Settings
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </span>
@@ -2833,6 +2839,12 @@ export default function RosterScheduler() {
           }
         }}
         isSolving={isSolvingTimefold}
+      />
+
+      {/* Timefold Integration Settings Panel */}
+      <TimefoldIntegrationPanel
+        open={showTimefoldIntegration}
+        onClose={() => setShowTimefoldIntegration(false)}
       />
 
       <div className="hidden">
