@@ -16,6 +16,7 @@ import AgencyPortal from "./pages/AgencyPortal";
 import PerformanceManagement from "./pages/PerformanceManagement";
 import RecognitionPage from "./pages/RecognitionPage";
 import RecruitmentPage from "./pages/RecruitmentPage";
+import FormBuilder from "./pages/FormBuilder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
                 <Route path="/performance" element={<PerformanceManagement />} />
                 <Route path="/recognition" element={<RecognitionPage />} />
                 <Route path="/recruitment" element={<RecruitmentPage />} />
+                <Route path="/forms" element={<FormBuilder />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
