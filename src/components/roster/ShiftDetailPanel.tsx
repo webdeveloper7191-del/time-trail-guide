@@ -20,8 +20,6 @@ import {
   Copy,
   ArrowLeftRight,
   Zap,
-  Phone,
-  Moon,
   BarChart3,
   UserX,
   CheckCircle2,
@@ -42,6 +40,7 @@ import { useShiftCost } from '@/hooks/useShiftCost';
 import { toast } from 'sonner';
 import { ShiftCoverageSuggestionModal } from './ShiftCoverageSuggestionModal';
 import { timesheetApi } from '@/lib/api/timesheetApi';
+import { shiftStatusColors, getShiftTypeConfig, ShiftStatus } from '@/lib/rosterColors';
 
 // Extended shift status to include absent
 export type ExtendedShiftStatus = Shift['status'] | 'absent';
@@ -61,11 +60,12 @@ interface ShiftDetailPanelProps {
   onCopyShift?: (shift: Shift) => void;
 }
 
-const shiftStatusOptions: { value: Shift['status']; label: string; description: string; color: string }[] = [
-  { value: 'draft', label: 'Draft', description: 'Not yet published to staff', color: 'bg-muted text-muted-foreground' },
-  { value: 'published', label: 'Published', description: 'Visible to staff', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'confirmed', label: 'Confirmed', description: 'Staff has confirmed attendance', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  { value: 'completed', label: 'Completed', description: 'Shift has been worked', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+// Build status options from central config
+const shiftStatusOptions: { value: ShiftStatus; label: string; description: string; color: string }[] = [
+  { value: 'draft', label: shiftStatusColors.draft.legendLabel, description: shiftStatusColors.draft.legendDescription, color: `${shiftStatusColors.draft.badgeBg} ${shiftStatusColors.draft.text}` },
+  { value: 'published', label: shiftStatusColors.published.legendLabel, description: shiftStatusColors.published.legendDescription, color: `${shiftStatusColors.published.badgeBg} ${shiftStatusColors.published.text}` },
+  { value: 'confirmed', label: shiftStatusColors.confirmed.legendLabel, description: shiftStatusColors.confirmed.legendDescription, color: `${shiftStatusColors.confirmed.badgeBg} ${shiftStatusColors.confirmed.text}` },
+  { value: 'completed', label: shiftStatusColors.completed.legendLabel, description: shiftStatusColors.completed.legendDescription, color: `${shiftStatusColors.completed.badgeBg} ${shiftStatusColors.completed.text}` },
 ];
 
 export function ShiftDetailPanel({
@@ -279,22 +279,13 @@ export function ShiftDetailPanel({
     setEditedShift(prev => ({ ...prev, status: newStatus }));
   };
 
-  // Get shift type icon and color
+  // Get shift type from central config
   const getShiftTypeIndicator = () => {
-    switch (editedShift.shiftType) {
-      case 'on_call':
-        return { icon: Phone, color: 'text-blue-600', label: 'On-Call' };
-      case 'sleepover':
-        return { icon: Moon, color: 'text-purple-600', label: 'Sleepover' };
-      case 'broken':
-        return { icon: Clock, color: 'text-orange-600', label: 'Broken Shift' };
-      case 'recall':
-        return { icon: Phone, color: 'text-red-600', label: 'Recall' };
-      case 'emergency':
-        return { icon: AlertTriangle, color: 'text-destructive', label: 'Emergency' };
-      default:
-        return null;
+    if (!editedShift.shiftType || editedShift.shiftType === 'regular') {
+      return null;
     }
+    const config = getShiftTypeConfig(editedShift.shiftType);
+    return { icon: config.icon, color: config.color, label: config.label };
   };
 
   const shiftTypeIndicator = getShiftTypeIndicator();
