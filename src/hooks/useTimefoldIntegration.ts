@@ -5,6 +5,9 @@ import {
   ApiConnectionConfig,
   DataMappingProfile,
   ImportedConstraintSet,
+  WebhookEndpoint,
+  WebhookLog,
+  WebhookEventType,
   loadIntegrationSettings,
   saveIntegrationSettings,
   getDefaultIntegrationSettings,
@@ -12,6 +15,9 @@ import {
   validateConstraintImport,
   SAMPLE_API_CONNECTION,
   SAMPLE_MAPPING_PROFILE,
+  applyTransform,
+  TransformPreviewResult,
+  FieldMappingConfig,
 } from '@/lib/timefold/integrationConfig';
 import { TimefoldConstraint } from '@/lib/timefoldSolver';
 import { toast } from 'sonner';
@@ -336,6 +342,99 @@ export function useTimefoldIntegration() {
     toast.success('Settings reset to defaults');
   }, []);
 
+  // ============= WEBHOOK MANAGEMENT =============
+
+  const addWebhookEndpoint = useCallback((endpoint: Omit<WebhookEndpoint, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newEndpoint: WebhookEndpoint = {
+      ...endpoint,
+      id: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setSettings(prev => ({
+      ...prev,
+      webhookEndpoints: [...prev.webhookEndpoints, newEndpoint],
+    }));
+
+    toast.success(`Webhook endpoint "${endpoint.name}" added`);
+    return newEndpoint;
+  }, []);
+
+  const updateWebhookEndpoint = useCallback((id: string, updates: Partial<WebhookEndpoint>) => {
+    setSettings(prev => ({
+      ...prev,
+      webhookEndpoints: prev.webhookEndpoints.map(endpoint =>
+        endpoint.id === id
+          ? { ...endpoint, ...updates, updatedAt: new Date().toISOString() }
+          : endpoint
+      ),
+    }));
+  }, []);
+
+  const deleteWebhookEndpoint = useCallback((id: string) => {
+    setSettings(prev => ({
+      ...prev,
+      webhookEndpoints: prev.webhookEndpoints.filter(endpoint => endpoint.id !== id),
+    }));
+    toast.success('Webhook endpoint deleted');
+  }, []);
+
+  const testWebhook = useCallback(async (endpoint: WebhookEndpoint): Promise<{ success: boolean; message: string }> => {
+    // Simulate webhook test
+    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500));
+    
+    const success = Math.random() > 0.2;
+    
+    // Add log entry
+    const log: WebhookLog = {
+      id: `log-${Date.now()}`,
+      endpointId: endpoint.id,
+      eventType: 'solver.started',
+      payload: { test: true, timestamp: new Date().toISOString() },
+      status: success ? 'success' : 'failed',
+      responseStatus: success ? 200 : 500,
+      duration: Math.floor(100 + Math.random() * 200),
+      error: success ? undefined : 'Connection timeout',
+      timestamp: new Date().toISOString(),
+      retryAttempt: 0,
+    };
+
+    setSettings(prev => ({
+      ...prev,
+      webhookLogs: [log, ...prev.webhookLogs.slice(0, 99)], // Keep last 100 logs
+      webhookEndpoints: prev.webhookEndpoints.map(ep =>
+        ep.id === endpoint.id
+          ? { 
+              ...ep, 
+              lastTriggeredAt: log.timestamp,
+              lastStatus: success ? 'success' : 'failed',
+              lastError: success ? undefined : log.error,
+            }
+          : ep
+      ),
+    }));
+
+    return { 
+      success, 
+      message: success ? 'Webhook test successful' : 'Webhook test failed: Connection timeout' 
+    };
+  }, []);
+
+  const clearWebhookLogs = useCallback(() => {
+    setSettings(prev => ({
+      ...prev,
+      webhookLogs: [],
+    }));
+    toast.success('Webhook logs cleared');
+  }, []);
+
+  // ============= TRANSFORM PREVIEW =============
+
+  const previewTransform = useCallback((value: string, transform: FieldMappingConfig['transform']): TransformPreviewResult => {
+    return applyTransform(value, transform);
+  }, []);
+
   // ============= EXPORT/IMPORT =============
 
   const exportSettings = useCallback(() => {
@@ -359,7 +458,11 @@ export function useTimefoldIntegration() {
         throw new Error('Invalid settings format');
       }
 
-      setSettings(imported);
+      // Ensure new fields have defaults
+      setSettings({
+        ...getDefaultIntegrationSettings(),
+        ...imported,
+      });
       toast.success('Settings imported successfully');
       return true;
     } catch (error) {
@@ -402,6 +505,16 @@ export function useTimefoldIntegration() {
     deleteConstraintSet,
     updateConstraintSet,
     getAllConstraints,
+    
+    // Webhooks
+    addWebhookEndpoint,
+    updateWebhookEndpoint,
+    deleteWebhookEndpoint,
+    testWebhook,
+    clearWebhookLogs,
+    
+    // Transform Preview
+    previewTransform,
     
     // Global
     updateGlobalSettings,

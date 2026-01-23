@@ -174,6 +174,62 @@ export interface ImportedConstraintSet {
   updatedAt: string;
 }
 
+// ============= WEBHOOK CONFIGURATION =============
+
+export type WebhookEventType = 
+  | 'solver.started'
+  | 'solver.completed'
+  | 'solver.failed'
+  | 'data.sync.started'
+  | 'data.sync.completed'
+  | 'data.sync.failed'
+  | 'constraint.violation'
+  | 'assignment.created'
+  | 'assignment.updated';
+
+export interface WebhookEndpoint {
+  id: string;
+  name: string;
+  url: string;
+  secret?: string;
+  events: WebhookEventType[];
+  isActive: boolean;
+  retryCount: number;
+  timeoutSeconds: number;
+  headers: { key: string; value: string }[];
+  lastTriggeredAt?: string;
+  lastStatus?: 'success' | 'failed' | 'pending';
+  lastError?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WebhookLog {
+  id: string;
+  endpointId: string;
+  eventType: WebhookEventType;
+  payload: Record<string, unknown>;
+  responseStatus?: number;
+  responseBody?: string;
+  duration?: number;
+  status: 'success' | 'failed' | 'pending' | 'retrying';
+  error?: string;
+  timestamp: string;
+  retryAttempt: number;
+}
+
+export const WEBHOOK_EVENTS: { type: WebhookEventType; label: string; description: string }[] = [
+  { type: 'solver.started', label: 'Solver Started', description: 'Triggered when solver begins optimization' },
+  { type: 'solver.completed', label: 'Solver Completed', description: 'Triggered when solver finishes successfully' },
+  { type: 'solver.failed', label: 'Solver Failed', description: 'Triggered when solver encounters an error' },
+  { type: 'data.sync.started', label: 'Data Sync Started', description: 'Triggered when data sync begins' },
+  { type: 'data.sync.completed', label: 'Data Sync Completed', description: 'Triggered when data sync completes' },
+  { type: 'data.sync.failed', label: 'Data Sync Failed', description: 'Triggered when data sync fails' },
+  { type: 'constraint.violation', label: 'Constraint Violation', description: 'Triggered when hard constraint is violated' },
+  { type: 'assignment.created', label: 'Assignment Created', description: 'Triggered when new shift assignment is made' },
+  { type: 'assignment.updated', label: 'Assignment Updated', description: 'Triggered when shift assignment is modified' },
+];
+
 // ============= INTEGRATION SETTINGS AGGREGATE =============
 
 export interface TimefoldIntegrationSettings {
@@ -187,6 +243,10 @@ export interface TimefoldIntegrationSettings {
   
   // External Constraint Sets
   importedConstraintSets: ImportedConstraintSet[];
+  
+  // Webhook endpoints
+  webhookEndpoints: WebhookEndpoint[];
+  webhookLogs: WebhookLog[];
   
   // Global settings
   enableWebhooks: boolean;
@@ -232,6 +292,8 @@ export function getDefaultIntegrationSettings(): TimefoldIntegrationSettings {
     apiConnections: [],
     mappingProfiles: [],
     importedConstraintSets: [],
+    webhookEndpoints: [],
+    webhookLogs: [],
     enableWebhooks: false,
     autoSyncEnabled: false,
     syncIntervalMinutes: 60,
@@ -239,6 +301,94 @@ export function getDefaultIntegrationSettings(): TimefoldIntegrationSettings {
     logRetentionDays: 7,
   };
 }
+
+// ============= TRANSFORMATION PREVIEW HELPERS =============
+
+export interface TransformPreviewResult {
+  success: boolean;
+  input: string;
+  output: string;
+  error?: string;
+}
+
+export function applyTransform(value: string, transform: FieldMappingConfig['transform']): TransformPreviewResult {
+  try {
+    let result: string;
+    
+    switch (transform) {
+      case 'none':
+        result = value;
+        break;
+      case 'to_string':
+        result = String(value);
+        break;
+      case 'to_number':
+        const num = parseFloat(value);
+        if (isNaN(num)) throw new Error('Cannot convert to number');
+        result = String(num);
+        break;
+      case 'to_boolean':
+        const lower = value.toLowerCase();
+        if (['true', '1', 'yes', 'on'].includes(lower)) result = 'true';
+        else if (['false', '0', 'no', 'off'].includes(lower)) result = 'false';
+        else throw new Error('Cannot convert to boolean');
+        break;
+      case 'to_date':
+        const date = new Date(value);
+        if (isNaN(date.getTime())) throw new Error('Invalid date');
+        result = date.toISOString().split('T')[0];
+        break;
+      case 'to_time':
+        // Try parsing as time string or full date
+        const timeParts = value.match(/(\d{1,2}):(\d{2})/);
+        if (timeParts) {
+          result = `${timeParts[1].padStart(2, '0')}:${timeParts[2]}`;
+        } else {
+          const timeDate = new Date(value);
+          if (isNaN(timeDate.getTime())) throw new Error('Invalid time');
+          result = timeDate.toTimeString().slice(0, 5);
+        }
+        break;
+      case 'to_array':
+        // Try JSON parse first, then split by comma
+        try {
+          const arr = JSON.parse(value);
+          result = JSON.stringify(Array.isArray(arr) ? arr : [arr]);
+        } catch {
+          result = JSON.stringify(value.split(',').map(s => s.trim()));
+        }
+        break;
+      case 'json_parse':
+        const parsed = JSON.parse(value);
+        result = JSON.stringify(parsed, null, 2);
+        break;
+      case 'custom':
+        result = value; // Custom handled separately
+        break;
+      default:
+        result = value;
+    }
+    
+    return { success: true, input: value, output: result };
+  } catch (error) {
+    return { 
+      success: false, 
+      input: value, 
+      output: '', 
+      error: error instanceof Error ? error.message : 'Transform failed' 
+    };
+  }
+}
+
+export const SAMPLE_INPUT_VALUES: Record<string, string> = {
+  id: 'EMP-12345',
+  date: '2024-01-15',
+  time: '09:30',
+  number: '42.5',
+  boolean: 'true',
+  array: '["item1", "item2"]',
+  json: '{"key": "value", "nested": {"a": 1}}',
+};
 
 // ============= VALIDATION HELPERS =============
 
