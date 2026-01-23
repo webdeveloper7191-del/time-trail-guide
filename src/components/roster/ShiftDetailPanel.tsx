@@ -668,6 +668,55 @@ export function ShiftDetailPanel({
 
               {editedShift.recurring?.isRecurring && (
                 <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border">
+                  {/* Shift Template for Recurring */}
+                  <div className="space-y-2">
+                    <Label className="text-sm flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Shift Template
+                    </Label>
+                    <Select 
+                      value=""
+                      onValueChange={(templateId) => {
+                        const template = defaultShiftTemplates.find(t => t.id === templateId);
+                        if (template) {
+                          setEditedShift(prev => ({ 
+                            ...prev, 
+                            startTime: template.startTime,
+                            endTime: template.endTime,
+                            breakMinutes: template.breakMinutes,
+                            shiftType: template.shiftType || 'regular',
+                          }));
+                          toast.success(`Applied "${template.name}" template`);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Select a shift template..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {defaultShiftTemplates.map(template => (
+                          <SelectItem key={template.id} value={template.id} textValue={template.name}>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="h-3 w-3 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: template.color }}
+                              />
+                              <span>{template.name}</span>
+                              <span className="text-muted-foreground text-xs">
+                                ({template.startTime} - {template.endTime})
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Apply a template to set shift times and type
+                    </p>
+                  </div>
+
+                  <Separator />
+
                   {/* Pattern Selection */}
                   <div className="space-y-2">
                     <Label className="text-sm">Repeat Pattern</Label>
@@ -678,7 +727,7 @@ export function ShiftDetailPanel({
                         recurring: { ...prev.recurring!, pattern: value }
                       }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -727,7 +776,7 @@ export function ShiftDetailPanel({
                         recurring: { ...prev.recurring!, endType: value }
                       }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -752,7 +801,7 @@ export function ShiftDetailPanel({
                             ...prev,
                             recurring: { ...prev.recurring!, endAfterOccurrences: parseInt(e.target.value) || 4 }
                           }))}
-                          className="w-24"
+                          className="w-24 bg-background"
                         />
                         <span className="text-sm text-muted-foreground">occurrences</span>
                       </div>
@@ -771,6 +820,7 @@ export function ShiftDetailPanel({
                           ...prev,
                           recurring: { ...prev.recurring!, endDate: e.target.value }
                         }))}
+                        className="bg-background"
                       />
                     </div>
                   )}
