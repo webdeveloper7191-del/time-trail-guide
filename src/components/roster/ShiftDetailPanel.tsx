@@ -538,7 +538,30 @@ export function ShiftDetailPanel({
               {/* Radio Selection */}
               <RadioGroup 
                 value={templateMode} 
-                onValueChange={(value: 'shift' | 'recurring') => setTemplateMode(value)}
+                onValueChange={(value: 'shift' | 'recurring') => {
+                  setTemplateMode(value);
+                  // Initialize recurring config when switching to recurring mode
+                  if (value === 'recurring' && !editedShift.recurring?.isRecurring) {
+                    setEditedShift(prev => ({
+                      ...prev,
+                      recurring: {
+                        isRecurring: true,
+                        pattern: 'weekly' as RecurrencePattern,
+                        daysOfWeek: [new Date(prev.date).getDay()],
+                        endType: 'after_occurrences' as RecurrenceEndType,
+                        endAfterOccurrences: 4,
+                        recurrenceGroupId: `rg-${prev.id}-${Date.now()}`
+                      }
+                    }));
+                  }
+                  // Clear recurring when switching to shift mode
+                  if (value === 'shift') {
+                    setEditedShift(prev => ({
+                      ...prev,
+                      recurring: { isRecurring: false }
+                    }));
+                  }
+                }}
                 className="flex gap-4"
               >
                 <div className="flex items-center space-x-2">
@@ -736,166 +759,148 @@ export function ShiftDetailPanel({
               </div>
             </div>
 
-            <Separator />
-
-            {/* Recurring Shift Configuration */}
-            <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Recurring Shift
-              </Label>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="recurring-toggle" className="text-sm">Make this a recurring shift</Label>
-                  <p className="text-xs text-muted-foreground">Automatically create shifts on a schedule</p>
-                </div>
-                <Switch
-                  id="recurring-toggle"
-                  checked={editedShift.recurring?.isRecurring || false}
-                  onCheckedChange={(checked) => setEditedShift(prev => ({
-                    ...prev,
-                    recurring: checked 
-                      ? { 
-                          isRecurring: true, 
-                          pattern: 'weekly' as RecurrencePattern,
-                          daysOfWeek: [new Date(prev.date).getDay()],
-                          endType: 'after_occurrences' as RecurrenceEndType,
-                          endAfterOccurrences: 4,
-                          recurrenceGroupId: `rg-${prev.id}-${Date.now()}`
-                        }
-                      : { isRecurring: false }
-                  }))}
-                />
-              </div>
-
-              {editedShift.recurring?.isRecurring && (
-                <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border">
-
-                  {/* Pattern Selection */}
-                  <div className="space-y-2">
-                    <Label className="text-sm">Repeat Pattern</Label>
-                    <Select
-                      value={editedShift.recurring.pattern || 'weekly'}
-                      onValueChange={(value: RecurrencePattern) => setEditedShift(prev => ({
-                        ...prev,
-                        recurring: { ...prev.recurring!, pattern: value }
-                      }))}
-                    >
-                      <SelectTrigger className="bg-background">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="fortnightly">Fortnightly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Days of Week - for weekly/fortnightly patterns */}
-                  {(editedShift.recurring.pattern === 'weekly' || editedShift.recurring.pattern === 'fortnightly') && (
+            {/* Recurring Shift Configuration - Only shown when templateMode is 'recurring' */}
+            {templateMode === 'recurring' && (
+              <>
+                <Separator />
+                
+                <div className="space-y-3">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    Recurring Settings
+                  </Label>
+                  
+                  <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border">
+                    {/* Pattern Selection */}
                     <div className="space-y-2">
-                      <Label className="text-sm">Repeat on</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-                          <div key={day} className="flex items-center gap-1">
-                            <Checkbox
-                              id={`day-${index}`}
-                              checked={editedShift.recurring?.daysOfWeek?.includes(index) || false}
-                              onCheckedChange={(checked) => {
-                                const currentDays = editedShift.recurring?.daysOfWeek || [];
-                                const newDays = checked
-                                  ? [...currentDays, index]
-                                  : currentDays.filter(d => d !== index);
-                                setEditedShift(prev => ({
-                                  ...prev,
-                                  recurring: { ...prev.recurring!, daysOfWeek: newDays }
-                                }));
-                              }}
-                            />
-                            <Label htmlFor={`day-${index}`} className="text-xs cursor-pointer">{day}</Label>
-                          </div>
-                        ))}
-                      </div>
+                      <Label className="text-sm">Repeat Pattern</Label>
+                      <Select
+                        value={editedShift.recurring?.pattern || 'weekly'}
+                        onValueChange={(value: RecurrencePattern) => setEditedShift(prev => ({
+                          ...prev,
+                          recurring: { 
+                            ...prev.recurring!, 
+                            isRecurring: true,
+                            pattern: value,
+                            recurrenceGroupId: prev.recurring?.recurrenceGroupId || `rg-${prev.id}-${Date.now()}`
+                          }
+                        }))}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  )}
 
-                  {/* End Condition */}
-                  <div className="space-y-2">
-                    <Label className="text-sm">Ends</Label>
-                    <Select
-                      value={editedShift.recurring.endType || 'after_occurrences'}
-                      onValueChange={(value: RecurrenceEndType) => setEditedShift(prev => ({
-                        ...prev,
-                        recurring: { ...prev.recurring!, endType: value }
-                      }))}
-                    >
-                      <SelectTrigger className="bg-background">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="never">Never</SelectItem>
-                        <SelectItem value="after_occurrences">After X occurrences</SelectItem>
-                        <SelectItem value="on_date">On a specific date</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    {/* Days of Week - for weekly/fortnightly patterns */}
+                    {(editedShift.recurring?.pattern === 'weekly' || editedShift.recurring?.pattern === 'fortnightly') && (
+                      <div className="space-y-2">
+                        <Label className="text-sm">Repeat on</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                            <div key={day} className="flex items-center gap-1">
+                              <Checkbox
+                                id={`day-${index}`}
+                                checked={editedShift.recurring?.daysOfWeek?.includes(index) || false}
+                                onCheckedChange={(checked) => {
+                                  const currentDays = editedShift.recurring?.daysOfWeek || [];
+                                  const newDays = checked
+                                    ? [...currentDays, index]
+                                    : currentDays.filter(d => d !== index);
+                                  setEditedShift(prev => ({
+                                    ...prev,
+                                    recurring: { ...prev.recurring!, isRecurring: true, daysOfWeek: newDays }
+                                  }));
+                                }}
+                              />
+                              <Label htmlFor={`day-${index}`} className="text-xs cursor-pointer">{day}</Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Occurrences count */}
-                  {editedShift.recurring.endType === 'after_occurrences' && (
+                    {/* End Condition */}
                     <div className="space-y-2">
-                      <Label className="text-sm">Number of occurrences</Label>
-                      <div className="flex items-center gap-2">
+                      <Label className="text-sm">Ends</Label>
+                      <Select
+                        value={editedShift.recurring?.endType || 'after_occurrences'}
+                        onValueChange={(value: RecurrenceEndType) => setEditedShift(prev => ({
+                          ...prev,
+                          recurring: { ...prev.recurring!, isRecurring: true, endType: value }
+                        }))}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          <SelectItem value="never">Never</SelectItem>
+                          <SelectItem value="after_occurrences">After X occurrences</SelectItem>
+                          <SelectItem value="on_date">On a specific date</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Occurrences count */}
+                    {editedShift.recurring?.endType === 'after_occurrences' && (
+                      <div className="space-y-2">
+                        <Label className="text-sm">Number of occurrences</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={52}
+                            value={editedShift.recurring?.endAfterOccurrences || 4}
+                            onChange={(e) => setEditedShift(prev => ({
+                              ...prev,
+                              recurring: { ...prev.recurring!, isRecurring: true, endAfterOccurrences: parseInt(e.target.value) || 4 }
+                            }))}
+                            className="w-24 bg-background"
+                          />
+                          <span className="text-sm text-muted-foreground">occurrences</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* End date */}
+                    {editedShift.recurring?.endType === 'on_date' && (
+                      <div className="space-y-2">
+                        <Label className="text-sm">End date</Label>
                         <Input
-                          type="number"
-                          min={1}
-                          max={52}
-                          value={editedShift.recurring.endAfterOccurrences || 4}
+                          type="date"
+                          value={editedShift.recurring?.endDate || ''}
+                          min={editedShift.date}
                           onChange={(e) => setEditedShift(prev => ({
                             ...prev,
-                            recurring: { ...prev.recurring!, endAfterOccurrences: parseInt(e.target.value) || 4 }
+                            recurring: { ...prev.recurring!, isRecurring: true, endDate: e.target.value }
                           }))}
-                          className="w-24 bg-background"
+                          className="bg-background"
                         />
-                        <span className="text-sm text-muted-foreground">occurrences</span>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* End date */}
-                  {editedShift.recurring.endType === 'on_date' && (
-                    <div className="space-y-2">
-                      <Label className="text-sm">End date</Label>
-                      <Input
-                        type="date"
-                        value={editedShift.recurring.endDate || ''}
-                        min={editedShift.date}
-                        onChange={(e) => setEditedShift(prev => ({
-                          ...prev,
-                          recurring: { ...prev.recurring!, endDate: e.target.value }
-                        }))}
-                        className="bg-background"
-                      />
+                    {/* Preview info */}
+                    <div className="p-2 bg-primary/5 rounded text-xs text-muted-foreground border border-primary/10">
+                      <p className="font-medium text-foreground">
+                        {editedShift.recurring?.pattern === 'daily' && 'Creates a shift every day'}
+                        {editedShift.recurring?.pattern === 'weekly' && `Creates a shift every week on ${editedShift.recurring?.daysOfWeek?.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') || 'selected days'}`}
+                        {editedShift.recurring?.pattern === 'fortnightly' && `Creates a shift every 2 weeks on ${editedShift.recurring?.daysOfWeek?.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') || 'selected days'}`}
+                      </p>
+                      <p className="mt-1">
+                        {editedShift.recurring?.endType === 'never' && 'Until manually stopped'}
+                        {editedShift.recurring?.endType === 'after_occurrences' && `For ${editedShift.recurring?.endAfterOccurrences || 4} occurrences`}
+                        {editedShift.recurring?.endType === 'on_date' && editedShift.recurring?.endDate && `Until ${format(new Date(editedShift.recurring.endDate), 'MMM d, yyyy')}`}
+                      </p>
                     </div>
-                  )}
-
-                  {/* Preview info */}
-                  <div className="p-2 bg-primary/5 rounded text-xs text-muted-foreground border border-primary/10">
-                    <p className="font-medium text-foreground">
-                      {editedShift.recurring.pattern === 'daily' && 'Creates a shift every day'}
-                      {editedShift.recurring.pattern === 'weekly' && `Creates a shift every week on ${editedShift.recurring.daysOfWeek?.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') || 'selected days'}`}
-                      {editedShift.recurring.pattern === 'fortnightly' && `Creates a shift every 2 weeks on ${editedShift.recurring.daysOfWeek?.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') || 'selected days'}`}
-                    </p>
-                    <p className="mt-1">
-                      {editedShift.recurring.endType === 'never' && 'Until manually stopped'}
-                      {editedShift.recurring.endType === 'after_occurrences' && `For ${editedShift.recurring.endAfterOccurrences || 4} occurrences`}
-                      {editedShift.recurring.endType === 'on_date' && editedShift.recurring.endDate && `Until ${format(new Date(editedShift.recurring.endDate), 'MMM d, yyyy')}`}
-                    </p>
                   </div>
                 </div>
-              )}
-            </div>
+              </>
+            )}
 
             <Separator />
 
