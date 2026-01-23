@@ -11,6 +11,7 @@ import {
   Target,
   Sparkles,
   Briefcase,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ const navItems = [
   { icon: Clock, label: 'Timesheet Admin', to: '/timesheet-admin' },
   { icon: Calendar, label: 'Roster', to: '/roster' },
   { icon: Users, label: 'Workforce', to: '/workforce' },
+  { icon: ClipboardList, label: 'Forms', to: '/forms' },
   { icon: Target, label: 'Performance', to: '/performance' },
   { icon: Sparkles, label: 'Recognition', to: '/recognition' },
   { icon: Briefcase, label: 'Recruitment', to: '/recruitment' },
