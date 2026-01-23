@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { 
   Clock, 
   AlertTriangle, 
@@ -87,6 +88,7 @@ export function ShiftDetailPanel({
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
   const [showCoverageModal, setShowCoverageModal] = useState(false);
+  const [templateMode, setTemplateMode] = useState<'shift' | 'recurring'>('shift');
   
   // Get recurring patterns from shared hook
   const { activePatterns } = useRecurringPatterns();
@@ -533,115 +535,138 @@ export function ShiftDetailPanel({
                 Templates
               </Label>
               
-              {/* Quick Shift Templates */}
-              <div className="space-y-2">
-                <Label className="text-sm">Shift Template</Label>
-                <Select 
-                  value=""
-                  onValueChange={(templateId) => {
-                    const template = defaultShiftTemplates.find(t => t.id === templateId);
-                    if (template) {
-                      setEditedShift(prev => ({ 
-                        ...prev, 
-                        startTime: template.startTime,
-                        endTime: template.endTime,
-                        breakMinutes: template.breakMinutes,
-                        shiftType: template.shiftType || 'regular',
-                      }));
-                      toast.success(`Applied "${template.name}" template`);
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Apply a shift template..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {defaultShiftTemplates.map(template => (
-                      <SelectItem key={template.id} value={template.id} textValue={template.name}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="h-3 w-3 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: template.color }}
-                          />
-                          <span>{template.name}</span>
-                          <span className="text-muted-foreground text-xs">
-                            ({template.startTime} - {template.endTime})
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Sets shift times, break duration, and type
-                </p>
-              </div>
+              {/* Radio Selection */}
+              <RadioGroup 
+                value={templateMode} 
+                onValueChange={(value: 'shift' | 'recurring') => setTemplateMode(value)}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="shift" id="template-shift" />
+                  <Label htmlFor="template-shift" className="text-sm font-medium cursor-pointer">
+                    Shift Template
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="recurring" id="template-recurring" />
+                  <Label htmlFor="template-recurring" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+                    <Repeat className="h-3.5 w-3.5" />
+                    Recurring Pattern
+                  </Label>
+                </div>
+              </RadioGroup>
 
-              {/* Recurring Patterns */}
-              <div className="space-y-2">
-                <Label className="text-sm flex items-center gap-2">
-                  <Repeat className="h-3.5 w-3.5" />
-                  Recurring Pattern
-                </Label>
-                {activePatterns.length > 0 ? (
+              {/* Shift Template Section */}
+              {templateMode === 'shift' && (
+                <div className="space-y-2 p-4 bg-muted/30 rounded-lg border border-border">
                   <Select 
                     value=""
-                    onValueChange={(patternId) => {
-                      const pattern = activePatterns.find(p => p.id === patternId);
-                      if (pattern) {
+                    onValueChange={(templateId) => {
+                      const template = defaultShiftTemplates.find(t => t.id === templateId);
+                      if (template) {
                         setEditedShift(prev => ({ 
                           ...prev, 
-                          startTime: pattern.shiftTemplate.startTime,
-                          endTime: pattern.shiftTemplate.endTime,
-                          breakMinutes: pattern.shiftTemplate.breakDuration || 30,
-                          recurring: {
-                            isRecurring: true,
-                            pattern: pattern.pattern as RecurrencePattern,
-                            daysOfWeek: pattern.daysOfWeek || [],
-                            endType: pattern.endDate ? 'on_date' : 'never',
-                            endDate: pattern.endDate,
-                            recurrenceGroupId: `rg-${prev.id}-${Date.now()}`
-                          }
+                          startTime: template.startTime,
+                          endTime: template.endTime,
+                          breakMinutes: template.breakMinutes,
+                          shiftType: template.shiftType || 'regular',
                         }));
-                        toast.success(`Applied "${pattern.name}" recurring pattern`);
+                        toast.success(`Applied "${template.name}" template`);
                       }
                     }}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Apply a recurring pattern..." />
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Select a shift template..." />
                     </SelectTrigger>
-                    <SelectContent>
-                      {activePatterns.map(pattern => (
-                        <SelectItem key={pattern.id} value={pattern.id} textValue={pattern.name}>
-                          <div className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-2">
-                              <RefreshCw className="h-3 w-3 text-emerald-500 flex-shrink-0" />
-                              <span className="font-medium">{pattern.name}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                {recurrencePatternLabels[pattern.pattern]}
-                              </Badge>
-                              <span>
-                                {pattern.shiftTemplate.startTime} - {pattern.shiftTemplate.endTime}
-                              </span>
-                              <span>•</span>
-                              <span>{pattern.shiftTemplate.roleName}</span>
-                            </div>
+                    <SelectContent className="bg-background z-50">
+                      {defaultShiftTemplates.map(template => (
+                        <SelectItem key={template.id} value={template.id} textValue={template.name}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="h-3 w-3 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: template.color }}
+                            />
+                            <span>{template.name}</span>
+                            <span className="text-muted-foreground text-xs">
+                              ({template.startTime} - {template.endTime})
+                            </span>
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                ) : (
-                  <div className="p-3 border border-dashed border-muted-foreground/30 rounded-lg text-center">
-                    <p className="text-xs text-muted-foreground">No active patterns available</p>
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Sets times and enables recurring schedule automatically
-                </p>
-              </div>
+                  <p className="text-xs text-muted-foreground">
+                    Sets shift times, break duration, and type
+                  </p>
+                </div>
+              )}
+
+              {/* Recurring Pattern Section */}
+              {templateMode === 'recurring' && (
+                <div className="space-y-2 p-4 bg-muted/30 rounded-lg border border-border">
+                  {activePatterns.length > 0 ? (
+                    <Select 
+                      value=""
+                      onValueChange={(patternId) => {
+                        const pattern = activePatterns.find(p => p.id === patternId);
+                        if (pattern) {
+                          setEditedShift(prev => ({ 
+                            ...prev, 
+                            startTime: pattern.shiftTemplate.startTime,
+                            endTime: pattern.shiftTemplate.endTime,
+                            breakMinutes: pattern.shiftTemplate.breakDuration || 30,
+                            recurring: {
+                              isRecurring: true,
+                              pattern: pattern.pattern as RecurrencePattern,
+                              daysOfWeek: pattern.daysOfWeek || [],
+                              endType: pattern.endDate ? 'on_date' : 'never',
+                              endDate: pattern.endDate,
+                              recurrenceGroupId: `rg-${prev.id}-${Date.now()}`
+                            }
+                          }));
+                          toast.success(`Applied "${pattern.name}" recurring pattern`);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Select a recurring pattern..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        {activePatterns.map(pattern => (
+                          <SelectItem key={pattern.id} value={pattern.id} textValue={pattern.name}>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-2">
+                                <RefreshCw className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                                <span className="font-medium">{pattern.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                  {recurrencePatternLabels[pattern.pattern]}
+                                </Badge>
+                                <span>
+                                  {pattern.shiftTemplate.startTime} - {pattern.shiftTemplate.endTime}
+                                </span>
+                                <span>•</span>
+                                <span>{pattern.shiftTemplate.roleName}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="p-3 border border-dashed border-muted-foreground/30 rounded-lg text-center">
+                      <p className="text-sm text-muted-foreground">No active patterns available</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Create patterns in Recurring Shift Patterns panel
+                      </p>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Sets times and enables recurring schedule automatically
+                  </p>
+                </div>
+              )}
             </div>
 
             <Separator />
