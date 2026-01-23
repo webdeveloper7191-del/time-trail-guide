@@ -50,9 +50,10 @@ const categoryIcons: Record<string, React.ReactNode> = {
 interface FormTemplatesLibraryProps {
   onSelectTemplate: (template: FormTemplate) => void;
   onPreviewTemplate: (template: FormTemplate) => void;
+  onCreateNew: () => void;
 }
 
-export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate }: FormTemplatesLibraryProps) {
+export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCreateNew }: FormTemplatesLibraryProps) {
   const [templates, setTemplates] = useState<FormTemplate[]>(mockFormTemplates);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -133,7 +134,13 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate }: Fo
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Form Templates</Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Typography variant="h6" fontWeight={600}>Form Templates</Typography>
+          <Button onClick={onCreateNew}>
+            <FileText className="h-4 w-4 mr-1" />
+            New Template
+          </Button>
+        </Stack>
         
         {/* Search */}
         <TextField

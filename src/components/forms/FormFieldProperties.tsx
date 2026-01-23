@@ -31,6 +31,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ConditionalLogicBuilder } from '@/components/forms/ConditionalLogicBuilder';
 import { FormField, FormTemplate, FieldOption, ConditionalLogic, FIELD_TYPES } from '@/types/forms';
 import { toast } from 'sonner';
 
@@ -446,15 +447,11 @@ export function FormFieldProperties({
                 Show or hide this field based on other field values.
               </Typography>
 
-              <Paper sx={{ p: 2, bgcolor: 'grey.50', textAlign: 'center' }}>
-                <Zap size={24} className="mx-auto mb-2 text-muted-foreground" />
-                <Typography variant="body2" color="text.secondary">
-                  Conditional logic coming soon
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Show/hide, require, or set values based on conditions
-                </Typography>
-              </Paper>
+              <ConditionalLogicBuilder
+                field={field}
+                allFields={template.fields}
+                onUpdate={(logic) => onFieldUpdate(field.id, { conditionalLogic: logic })}
+              />
             </Stack>
           </TabsContent>
 

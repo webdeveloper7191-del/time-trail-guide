@@ -6,18 +6,34 @@ import { FormFieldProperties } from '@/components/forms/FormFieldProperties';
 import { FormTemplatesLibrary } from '@/components/forms/FormTemplatesLibrary';
 import { FormPreview } from '@/components/forms/FormPreview';
 import { FormAssignmentRules } from '@/components/forms/FormAssignmentRules';
+import { SubmissionWorkflow } from '@/components/forms/SubmissionWorkflow';
 import { FormTemplate, FormField, FieldType, FIELD_TYPES } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Library, PenTool, Send, Eye } from 'lucide-react';
+import { ArrowLeft, Library, PenTool, Send, Eye, ClipboardCheck } from 'lucide-react';
 
-type ViewMode = 'library' | 'builder' | 'preview' | 'assignments';
+type ViewMode = 'library' | 'builder' | 'preview' | 'assignments' | 'submissions';
 
 export default function FormBuilder() {
   const [viewMode, setViewMode] = useState<ViewMode>('library');
   const [template, setTemplate] = useState<FormTemplate>(mockFormTemplates[0]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<FormTemplate | null>(null);
+
+  const createNewTemplate = (): FormTemplate => ({
+    id: `template-${Date.now()}`,
+    name: 'New Form Template',
+    description: '',
+    category: 'custom',
+    version: 1,
+    status: 'draft',
+    sections: [
+      { id: 'section-1', title: 'Section 1', order: 0 },
+    ],
+    fields: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
 
   const handleAddField = (fieldType: FieldType) => {
     const fieldDef = FIELD_TYPES.find(f => f.type === fieldType);
@@ -62,6 +78,13 @@ export default function FormBuilder() {
     setViewMode('preview');
   };
 
+  const handleCreateNew = () => {
+    const newTemplate = createNewTemplate();
+    setTemplate(newTemplate);
+    setViewMode('builder');
+    setSelectedFieldId(null);
+  };
+
   // Preview mode
   if (viewMode === 'preview' && previewTemplate) {
     return (
@@ -90,7 +113,8 @@ export default function FormBuilder() {
             <Typography variant="h5" fontWeight={600}>
               {viewMode === 'library' && 'Form Management'}
               {viewMode === 'builder' && template.name}
-              {viewMode === 'assignments' && 'Assignment Rules'}
+              {viewMode === 'assignments' && 'Form Management'}
+              {viewMode === 'submissions' && 'Form Management'}
             </Typography>
           </Stack>
 
@@ -111,7 +135,7 @@ export default function FormBuilder() {
           )}
         </Stack>
 
-        {/* Tab Navigation (only show in library/assignments view) */}
+        {/* Tab Navigation (only show in library/assignments/submissions view) */}
         {viewMode !== 'builder' && viewMode !== 'preview' && (
           <Tabs 
             value={viewMode} 
@@ -136,6 +160,15 @@ export default function FormBuilder() {
                 </Stack>
               } 
             />
+            <Tab 
+              value="submissions" 
+              label={
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <ClipboardCheck className="h-4 w-4" />
+                  <span>Submissions</span>
+                </Stack>
+              } 
+            />
           </Tabs>
         )}
       </Box>
@@ -146,6 +179,7 @@ export default function FormBuilder() {
           <FormTemplatesLibrary 
             onSelectTemplate={handleSelectTemplate}
             onPreviewTemplate={handlePreviewTemplate}
+            onCreateNew={handleCreateNew}
           />
         </Box>
       )}
@@ -153,6 +187,12 @@ export default function FormBuilder() {
       {viewMode === 'assignments' && (
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
           <FormAssignmentRules />
+        </Box>
+      )}
+
+      {viewMode === 'submissions' && (
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <SubmissionWorkflow />
         </Box>
       )}
 
