@@ -7,12 +7,15 @@ import { FormTemplatesLibrary } from '@/components/forms/FormTemplatesLibrary';
 import { FormPreview } from '@/components/forms/FormPreview';
 import { FormAssignmentRules } from '@/components/forms/FormAssignmentRules';
 import { SubmissionWorkflow } from '@/components/forms/SubmissionWorkflow';
+import { FormAnalyticsDashboard } from '@/components/forms/FormAnalyticsDashboard';
+import { TaskManagementPanel } from '@/components/forms/TaskManagementPanel';
+import { OfflineSyncStatusBar } from '@/components/forms/OfflineSyncStatusBar';
 import { FormTemplate, FormField, FieldType, FIELD_TYPES } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Library, PenTool, Send, Eye, ClipboardCheck } from 'lucide-react';
+import { ArrowLeft, Library, Send, Eye, ClipboardCheck, BarChart3, ListTodo } from 'lucide-react';
 
-type ViewMode = 'library' | 'builder' | 'preview' | 'assignments' | 'submissions';
+type ViewMode = 'library' | 'builder' | 'preview' | 'assignments' | 'submissions' | 'analytics' | 'tasks';
 
 export default function FormBuilder() {
   const [viewMode, setViewMode] = useState<ViewMode>('library');
@@ -100,6 +103,9 @@ export default function FormBuilder() {
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'grey.100' }}>
+      {/* Offline Status Bar */}
+      <OfflineSyncStatusBar />
+
       {/* Header */}
       <Box sx={{ p: 2, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -111,10 +117,7 @@ export default function FormBuilder() {
               </Button>
             )}
             <Typography variant="h5" fontWeight={600}>
-              {viewMode === 'library' && 'Form Management'}
-              {viewMode === 'builder' && template.name}
-              {viewMode === 'assignments' && 'Form Management'}
-              {viewMode === 'submissions' && 'Form Management'}
+              {viewMode === 'builder' ? template.name : 'Form Management'}
             </Typography>
           </Stack>
 
@@ -135,12 +138,14 @@ export default function FormBuilder() {
           )}
         </Stack>
 
-        {/* Tab Navigation (only show in library/assignments/submissions view) */}
+        {/* Tab Navigation */}
         {viewMode !== 'builder' && viewMode !== 'preview' && (
           <Tabs 
             value={viewMode} 
             onChange={(_, value) => setViewMode(value)}
             sx={{ mt: 2 }}
+            variant="scrollable"
+            scrollButtons="auto"
           >
             <Tab 
               value="library" 
@@ -169,6 +174,24 @@ export default function FormBuilder() {
                 </Stack>
               } 
             />
+            <Tab 
+              value="tasks" 
+              label={
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <ListTodo className="h-4 w-4" />
+                  <span>Tasks</span>
+                </Stack>
+              } 
+            />
+            <Tab 
+              value="analytics" 
+              label={
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Analytics</span>
+                </Stack>
+              } 
+            />
           </Tabs>
         )}
       </Box>
@@ -193,6 +216,18 @@ export default function FormBuilder() {
       {viewMode === 'submissions' && (
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
           <SubmissionWorkflow />
+        </Box>
+      )}
+
+      {viewMode === 'tasks' && (
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <TaskManagementPanel />
+        </Box>
+      )}
+
+      {viewMode === 'analytics' && (
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <FormAnalyticsDashboard />
         </Box>
       )}
 
