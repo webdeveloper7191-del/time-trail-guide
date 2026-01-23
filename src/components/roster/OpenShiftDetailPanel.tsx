@@ -20,6 +20,15 @@ import {
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { openShiftColors } from '@/lib/rosterColors';
+
+// Urgency styling using semantic tokens
+const urgencyStyles = {
+  low: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300',
+  medium: 'text-amber-600 bg-amber-100 dark:bg-amber-900/50 dark:text-amber-300',
+  high: 'text-[hsl(var(--open-shift))] bg-[hsl(var(--open-shift-bg))] dark:text-[hsl(var(--open-shift))]',
+  critical: 'text-rose-600 bg-rose-100 dark:bg-rose-900/50 dark:text-rose-300',
+};
 
 interface OpenShiftDetailPanelProps {
   openShift: OpenShift;
@@ -51,13 +60,6 @@ export function OpenShiftDetailPanel({
   }, [openShift]);
 
   const room = centre.rooms.find(r => r.id === editedShift.roomId);
-
-  const urgencyColors = {
-    low: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300',
-    medium: 'text-amber-600 bg-amber-100 dark:bg-amber-900/50 dark:text-amber-300',
-    high: 'text-orange-600 bg-orange-100 dark:bg-orange-900/50 dark:text-orange-300',
-    critical: 'text-rose-600 bg-rose-100 dark:bg-rose-900/50 dark:text-rose-300',
-  };
 
   const handleSave = () => {
     onSave(editedShift);
@@ -134,7 +136,7 @@ export function OpenShiftDetailPanel({
       <div className="space-y-6">
         {/* Urgency Badge */}
         <div className="flex items-center gap-2">
-          <Badge className={cn("capitalize text-sm px-3 py-1", urgencyColors[editedShift.urgency])}>
+          <Badge className={cn("capitalize text-sm px-3 py-1", urgencyStyles[editedShift.urgency])}>
             {editedShift.urgency === 'critical' && <AlertTriangle className="h-3.5 w-3.5 mr-1" />}
             {editedShift.urgency} Priority
           </Badge>
