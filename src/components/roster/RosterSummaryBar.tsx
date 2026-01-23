@@ -400,7 +400,6 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
             <div className="flex items-center gap-2 mb-3">
               <Palette className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">Color Token Preview</h3>
-              <span className="text-xs text-muted-foreground">(from src/lib/rosterColors.ts)</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               {colorTokenCategories.map((category) => (
@@ -410,7 +409,7 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
                     {category.tokens.map((token) => (
                       <div key={token.name} className="flex items-center gap-2">
                         <code className="text-[10px] text-foreground bg-muted px-1 py-0.5 rounded font-mono min-w-[60px]">
-                          {token.name}
+                          {token.name.charAt(0).toUpperCase() + token.name.slice(1).replace(/_/g, ' ')}
                         </code>
                         <div className="flex gap-1">
                           {token.swatches.map((swatch, idx) => (

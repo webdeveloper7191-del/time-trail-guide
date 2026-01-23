@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isToday } from 'date-fns';
+import { shiftStatusColors, openShiftColors } from '@/lib/rosterColors';
 
 interface DayTimelineViewProps {
   centre: Centre;
@@ -607,14 +608,14 @@ export function DayTimelineView({
 
                 {/* Open shifts row */}
                 {roomOpenShifts.length > 0 && (
-                  <div className="flex border-b border-border bg-amber-500/5">
-                    <div className="w-32 md:w-48 lg:w-64 shrink-0 p-2 border-r border-border flex items-center gap-2 bg-amber-500/5 sticky left-0 z-20">
-                      <div className="h-8 w-8 rounded-full flex items-center justify-center bg-amber-500/20 border-2 border-dashed border-amber-500/50">
-                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <div className={cn("flex border-b border-border", openShiftColors.bg)}>
+                    <div className={cn("w-32 md:w-48 lg:w-64 shrink-0 p-2 border-r border-border flex items-center gap-2 sticky left-0 z-20", openShiftColors.bg)}>
+                      <div className={cn("h-8 w-8 rounded-full flex items-center justify-center border-2 border-dashed", openShiftColors.bg, openShiftColors.border)}>
+                        <AlertCircle className={cn("h-4 w-4", openShiftColors.icon)} />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-amber-700">Open Shifts</p>
-                        <p className="text-[10px] text-amber-600">{roomOpenShifts.length} unfilled</p>
+                        <p className={cn("text-sm font-medium", openShiftColors.text)}>Open Shifts</p>
+                        <p className={cn("text-[10px]", openShiftColors.text, "opacity-80")}>{roomOpenShifts.length} unfilled</p>
                       </div>
                     </div>
 
@@ -770,15 +771,8 @@ function ShiftBar({
   const left = isResizing ? currentLeft : timeToPixels(shift.startTime);
   const width = isResizing ? currentWidth : getShiftWidth(shift.startTime, shift.endTime);
   
-  // Unified status colors using centralized design tokens
-  const statusColors = {
-    draft: { bg: 'bg-amber-100 dark:bg-amber-900/40', border: 'border-amber-400', text: 'text-amber-800 dark:text-amber-200' },
-    published: { bg: 'bg-[hsl(var(--info-bg))]', border: 'border-[hsl(var(--info)/0.35)]', text: 'text-[hsl(var(--info))] dark:text-[hsl(var(--info))]' },
-    confirmed: { bg: 'bg-emerald-100 dark:bg-emerald-900/40', border: 'border-emerald-400', text: 'text-emerald-800 dark:text-emerald-200' },
-    completed: { bg: 'bg-slate-100 dark:bg-slate-800/40', border: 'border-slate-400', text: 'text-slate-600 dark:text-slate-300' },
-  };
-
-  const colors = statusColors[shift.status];
+  // Use centralized color system
+  const colors = shiftStatusColors[shift.status] || shiftStatusColors.draft;
   const duration = ((timeToSlotIndex(shift.endTime) - timeToSlotIndex(shift.startTime)) * 15 - shift.breakMinutes) / 60;
 
   // Handle resize start
@@ -992,40 +986,29 @@ function ShiftBar({
   );
 }
 
-// Open shift bar component
+// Open shift bar component using centralized color system
 function OpenShiftBar({ openShift }: { openShift: OpenShift }) {
   const left = timeToPixels(openShift.startTime);
   const width = getShiftWidth(openShift.startTime, openShift.endTime);
-
-  const urgencyColors = {
-    low: 'border-slate-400 bg-slate-100/50 dark:bg-slate-800/30',
-    medium: 'border-amber-500 bg-amber-100/50 dark:bg-amber-900/30',
-    high: 'border-orange-500 bg-orange-100/50 dark:bg-orange-900/30',
-    critical: 'border-red-500 bg-red-100/50 dark:bg-red-900/30 animate-pulse',
-  };
 
   return (
     <div
       className={cn(
         "absolute top-2 bottom-2 rounded-lg border-2 border-dashed",
         "flex items-center justify-center gap-1 px-2",
-        urgencyColors[openShift.urgency]
+        openShiftColors.bgGradient,
+        openShiftColors.border,
+        openShift.urgency === 'critical' && "animate-pulse"
       )}
       style={{ left, width: Math.max(width, 60) }}
     >
-      <AlertCircle className={cn(
-        "h-4 w-4",
-        openShift.urgency === 'critical' && "text-red-500",
-        openShift.urgency === 'high' && "text-orange-500",
-        openShift.urgency === 'medium' && "text-amber-500",
-        openShift.urgency === 'low' && "text-muted-foreground",
-      )} />
-      <span className="text-xs font-medium text-foreground">
+      <AlertCircle className={cn("h-4 w-4", openShiftColors.icon)} />
+      <span className={cn("text-xs font-medium", openShiftColors.text)}>
         {openShift.startTime}-{openShift.endTime}
       </span>
       <Badge 
         variant={openShift.urgency === 'critical' ? 'destructive' : 'outline'} 
-        className="text-[8px] capitalize ml-1"
+        className={cn("text-[8px] capitalize ml-1", openShiftColors.text)}
       >
         {openShift.urgency}
       </Badge>
