@@ -36,6 +36,7 @@ import {
 } from '@/types/advancedRoster';
 import { Shift, StaffMember, Room, Centre } from '@/types/roster';
 import { generateShiftsFromPattern, generateBulkShiftsFromPatterns, convertGeneratedShiftsToRosterShifts } from '@/lib/shiftGenerator';
+import { useRecurringPatterns } from '@/hooks/useRecurringPatterns';
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Sun' },
@@ -45,72 +46,6 @@ const DAYS_OF_WEEK = [
   { value: 4, label: 'Thu' },
   { value: 5, label: 'Fri' },
   { value: 6, label: 'Sat' },
-];
-
-// Mock data for initial patterns
-const mockPatterns: RecurringShiftPattern[] = [
-  {
-    id: 'pattern-1',
-    name: 'Morning Educator Shift',
-    description: 'Standard morning shift for qualified educators',
-    pattern: 'weekly',
-    startDate: '2025-01-06',
-    endDate: '2025-06-30',
-    daysOfWeek: [1, 2, 3, 4, 5],
-    shiftTemplate: {
-      startTime: '07:00',
-      endTime: '15:00',
-      roleId: 'educator',
-      roleName: 'Educator',
-      centreId: 'centre-1',
-      requiredQualifications: ['Cert III', 'First Aid'],
-      breakDuration: 30,
-    },
-    assignedStaffId: 'staff-1',
-    assignedStaffName: 'Sarah Johnson',
-    isActive: true,
-    createdAt: '2025-01-01T00:00:00Z',
-    createdBy: 'admin',
-  },
-  {
-    id: 'pattern-2',
-    name: 'Weekend Support Worker',
-    description: 'Weekend coverage for support staff',
-    pattern: 'weekly',
-    startDate: '2025-01-04',
-    daysOfWeek: [0, 6],
-    shiftTemplate: {
-      startTime: '08:00',
-      endTime: '16:00',
-      roleId: 'support',
-      roleName: 'Support Worker',
-      centreId: 'centre-1',
-      breakDuration: 30,
-    },
-    isActive: true,
-    createdAt: '2025-01-01T00:00:00Z',
-    createdBy: 'admin',
-  },
-  {
-    id: 'pattern-3',
-    name: 'Fortnightly Deep Clean',
-    description: 'Deep cleaning shift every second Friday',
-    pattern: 'fortnightly',
-    startDate: '2025-01-10',
-    daysOfWeek: [5],
-    weekInterval: 2,
-    shiftTemplate: {
-      startTime: '17:00',
-      endTime: '21:00',
-      roleId: 'cleaning',
-      roleName: 'Cleaner',
-      centreId: 'centre-1',
-      breakDuration: 0,
-    },
-    isActive: false,
-    createdAt: '2025-01-01T00:00:00Z',
-    createdBy: 'admin',
-  },
 ];
 
 const mockRoles = [
@@ -136,7 +71,9 @@ export function RecurringPatternsPanel({
   existingShifts = [],
   onGenerateShifts,
 }: RecurringPatternsPanelProps) {
-  const [patterns, setPatterns] = useState(mockPatterns);
+  // Use shared patterns hook for state management
+  const { patterns, addPattern, updatePattern, deletePattern, togglePatternActive } = useRecurringPatterns();
+  
   const [showCreatePanel, setShowCreatePanel] = useState(false);
   const [selectedPattern, setSelectedPattern] = useState<RecurringShiftPattern | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -183,7 +120,7 @@ export function RecurringPatternsPanel({
       createdBy: 'admin',
     };
 
-    setPatterns(prev => [...prev, pattern]);
+    addPattern(pattern);
     setShowCreatePanel(false);
     setNewPattern({
       name: '',
@@ -203,14 +140,12 @@ export function RecurringPatternsPanel({
   };
 
   const handleToggleActive = (patternId: string) => {
-    setPatterns(prev =>
-      prev.map(p => (p.id === patternId ? { ...p, isActive: !p.isActive } : p))
-    );
+    togglePatternActive(patternId);
     toast.success('Pattern status updated');
   };
 
   const handleDeletePattern = (patternId: string) => {
-    setPatterns(prev => prev.filter(p => p.id !== patternId));
+    deletePattern(patternId);
     toast.success('Pattern deleted');
   };
 
