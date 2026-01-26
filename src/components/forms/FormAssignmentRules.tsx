@@ -20,12 +20,15 @@ import {
   Divider,
   Alert,
   AlertTitle,
+  Paper,
+  Button as MuiButton,
 } from '@mui/material';
 import {
   Plus,
   Calendar,
   Clock,
   Users,
+  User,
   MapPin,
   Briefcase,
   AlertTriangle,
@@ -749,6 +752,163 @@ export function FormAssignmentRules({ templateId }: FormAssignmentRulesProps) {
                         helperText={errors.dueAfterMinutes?.message || 'How long staff have to complete the form after it is assigned'}
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
+                    )}
+                  />
+                </Box>
+
+                <Divider />
+
+                {/* Escalation Rules Section */}
+                <Box>
+                  <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      <Bell className="h-4 w-4 inline mr-1" />
+                      Escalation Rules
+                    </Typography>
+                    <MuiButton
+                      size="small"
+                      startIcon={<Plus className="h-3 w-3" />}
+                      onClick={() => {
+                        const currentRules = watch('escalationRules') || [];
+                        const newRule = {
+                          afterMinutes: 30,
+                          notifyUserIds: [],
+                          action: 'notify' as const,
+                        };
+                        reset({
+                          ...watch(),
+                          escalationRules: [...currentRules, newRule],
+                        });
+                      }}
+                    >
+                      Add Escalation
+                    </MuiButton>
+                  </Stack>
+                  
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                    Configure automatic notifications when forms are overdue
+                  </Typography>
+
+                  <Controller
+                    name="escalationRules"
+                    control={control}
+                    render={({ field }) => (
+                      <Stack spacing={2}>
+                        {(field.value || []).map((rule, index) => (
+                          <Paper
+                            key={index}
+                            variant="outlined"
+                            sx={{ p: 2, bgcolor: 'grey.50' }}
+                          >
+                            <Stack spacing={2}>
+                              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                                <Typography variant="body2" fontWeight={500}>
+                                  Escalation {index + 1}
+                                </Typography>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => {
+                                    const newRules = [...(field.value || [])];
+                                    newRules.splice(index, 1);
+                                    field.onChange(newRules);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </IconButton>
+                              </Stack>
+
+                              <TextField
+                                size="small"
+                                type="number"
+                                label="Minutes After Due"
+                                value={rule.afterMinutes}
+                                onChange={(e) => {
+                                  const newRules = [...(field.value || [])];
+                                  newRules[index] = { ...rule, afterMinutes: Number(e.target.value) };
+                                  field.onChange(newRules);
+                                }}
+                                helperText="How many minutes after the form is overdue"
+                                inputProps={{ min: 1 }}
+                              />
+
+                              <FormControl fullWidth size="small">
+                                <InputLabel>Action</InputLabel>
+                                <MuiSelect
+                                  value={rule.action}
+                                  label="Action"
+                                  onChange={(e) => {
+                                    const newRules = [...(field.value || [])];
+                                    newRules[index] = { ...rule, action: e.target.value as 'notify' | 'reassign' | 'escalate' };
+                                    field.onChange(newRules);
+                                  }}
+                                >
+                                  <MenuItem value="notify">
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                      <Bell className="h-4 w-4" />
+                                      <span>Send Notification</span>
+                                    </Stack>
+                                  </MenuItem>
+                                  <MenuItem value="reassign">
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                      <UserPlus className="h-4 w-4" />
+                                      <span>Reassign Task</span>
+                                    </Stack>
+                                  </MenuItem>
+                                  <MenuItem value="escalate">
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                      <AlertTriangle className="h-4 w-4" />
+                                      <span>Escalate to Manager</span>
+                                    </Stack>
+                                  </MenuItem>
+                                </MuiSelect>
+                              </FormControl>
+
+                              <FormControl fullWidth size="small">
+                                <InputLabel>Notify Users</InputLabel>
+                                <MuiSelect
+                                  multiple
+                                  value={rule.notifyUserIds}
+                                  label="Notify Users"
+                                  onChange={(e) => {
+                                    const newRules = [...(field.value || [])];
+                                    newRules[index] = { ...rule, notifyUserIds: e.target.value as string[] };
+                                    field.onChange(newRules);
+                                  }}
+                                  renderValue={(selected) => (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                      {(selected as string[]).map((value) => (
+                                        <Chip key={value} label={mockStaff.find(s => s.id === value)?.name || value} size="small" />
+                                      ))}
+                                    </Box>
+                                  )}
+                                >
+                                  {mockStaff.map(staff => (
+                                    <MenuItem key={staff.id} value={staff.id}>
+                                      <Stack direction="row" alignItems="center" spacing={1}>
+                                        <User className="h-4 w-4" />
+                                        <span>{staff.name}</span>
+                                      </Stack>
+                                    </MenuItem>
+                                  ))}
+                                </MuiSelect>
+                                <FormHelperText>
+                                  Select users to receive notifications
+                                </FormHelperText>
+                              </FormControl>
+                            </Stack>
+                          </Paper>
+                        ))}
+
+                        {(!field.value || field.value.length === 0) && (
+                          <Alert severity="info" sx={{ py: 1 }}>
+                            <AlertTitle sx={{ fontSize: '0.875rem' }}>No Escalation Rules</AlertTitle>
+                            <Typography variant="caption">
+                              Add escalation rules to automatically notify managers when forms are overdue.
+                            </Typography>
+                          </Alert>
+                        )}
+                      </Stack>
                     )}
                   />
                 </Box>
