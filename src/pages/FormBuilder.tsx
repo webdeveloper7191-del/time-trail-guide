@@ -1,5 +1,18 @@
 import { useState } from 'react';
-import { Box, Stack, Typography, Tab, Tabs, Chip, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Popover, TextField } from '@mui/material';
+import { 
+  Box, 
+  Stack, 
+  Typography, 
+  Tab, 
+  Tabs, 
+  Chip, 
+  IconButton, 
+  TextField,
+  Drawer,
+  Divider,
+  Button as MuiButton,
+  Alert,
+} from '@mui/material';
 import { FormBuilderCanvas } from '@/components/forms/FormBuilderCanvas';
 import { FormFieldPalette } from '@/components/forms/FormFieldPalette';
 import { FormFieldProperties } from '@/components/forms/FormFieldProperties';
@@ -11,14 +24,26 @@ import { FormAnalyticsDashboard } from '@/components/forms/FormAnalyticsDashboar
 import { TaskManagementPanel } from '@/components/forms/TaskManagementPanel';
 import { OfflineSyncStatusBar } from '@/components/forms/OfflineSyncStatusBar';
 import { FormVersionHistoryPanel } from '@/components/forms/FormVersionHistoryPanel';
-import { FormTemplate, FormField, FieldType, FIELD_TYPES } from '@/types/forms';
+import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Library, Send, Eye, ClipboardCheck, BarChart3, ListTodo, Save, Upload, Users, Check, History, Pencil } from 'lucide-react';
+import { templateDetailsSchema } from '@/lib/validationSchemas/formSchemas';
+import { 
+  ArrowLeft, 
+  Library, 
+  Send, 
+  Eye, 
+  ClipboardCheck, 
+  BarChart3, 
+  ListTodo, 
+  Save, 
+  Upload, 
+  Users, 
+  Check, 
+  History, 
+  Pencil,
+  X,
+  AlertCircle,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 type ViewMode = 'library' | 'builder' | 'preview' | 'assignments' | 'submissions' | 'analytics' | 'tasks';
@@ -29,12 +54,13 @@ export default function FormBuilder() {
   const [template, setTemplate] = useState<FormTemplate>(mockFormTemplates[0]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<FormTemplate | null>(null);
-  const [showPublishDialog, setShowPublishDialog] = useState(false);
-  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [showPublishPanel, setShowPublishPanel] = useState(false);
+  const [showAssignPanel, setShowAssignPanel] = useState(false);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
-  const [editNameAnchor, setEditNameAnchor] = useState<HTMLElement | null>(null);
+  const [showEditDetailsPanel, setShowEditDetailsPanel] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [editingDescription, setEditingDescription] = useState('');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const createNewTemplate = (): FormTemplate => ({
     id: `template-${Date.now()}`,
@@ -127,30 +153,49 @@ export default function FormBuilder() {
     };
     setTemplate(publishedTemplate);
     setTemplates(prev => prev.map(t => t.id === publishedTemplate.id ? publishedTemplate : t));
-    setShowPublishDialog(false);
+    setShowPublishPanel(false);
     toast.success(`"${template.name}" published successfully (v${publishedTemplate.version})`);
   };
 
   const handleQuickAssign = () => {
-    setShowAssignDialog(false);
+    setShowAssignPanel(false);
     setViewMode('assignments');
     toast.info('Create an assignment rule to distribute this form to staff');
   };
 
-  const handleOpenEditName = (event: React.MouseEvent<HTMLElement>) => {
+  const handleOpenEditDetails = () => {
     setEditingName(template.name);
     setEditingDescription(template.description || '');
-    setEditNameAnchor(event.currentTarget);
+    setValidationErrors({});
+    setShowEditDetailsPanel(true);
   };
 
   const handleSaveNameDescription = () => {
+    // Validate with Zod
+    const result = templateDetailsSchema.safeParse({
+      name: editingName.trim(),
+      description: editingDescription.trim(),
+    });
+
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setValidationErrors(errors);
+      return;
+    }
+
     setTemplate(prev => ({
       ...prev,
-      name: editingName.trim() || 'Untitled Form',
-      description: editingDescription.trim(),
+      name: result.data.name,
+      description: result.data.description,
       updatedAt: new Date().toISOString(),
     }));
-    setEditNameAnchor(null);
+    setShowEditDetailsPanel(false);
+    setValidationErrors({});
     toast.success('Template details updated');
   };
 
@@ -163,6 +208,36 @@ export default function FormBuilder() {
       }
       return [...prev, restoredTemplate];
     });
+  };
+
+  // Section duplication handler
+  const handleDuplicateSection = (sectionId: string) => {
+    const sectionToDuplicate = template.sections.find(s => s.id === sectionId);
+    if (!sectionToDuplicate) return;
+
+    const newSectionId = `section-${Date.now()}`;
+    const newSection: FormSection = {
+      ...sectionToDuplicate,
+      id: newSectionId,
+      title: `${sectionToDuplicate.title} (Copy)`,
+      order: template.sections.length,
+    };
+
+    // Duplicate all fields in this section
+    const fieldsInSection = template.fields.filter(f => f.sectionId === sectionId);
+    const newFields: FormField[] = fieldsInSection.map((field, index) => ({
+      ...field,
+      id: `field-${Date.now()}-${index}`,
+      sectionId: newSectionId,
+    }));
+
+    setTemplate(prev => ({
+      ...prev,
+      sections: [...prev.sections, newSection],
+      fields: [...prev.fields, ...newFields],
+    }));
+
+    toast.success(`Section "${sectionToDuplicate.title}" duplicated with ${fieldsInSection.length} field(s)`);
   };
 
   // Preview mode
@@ -188,15 +263,19 @@ export default function FormBuilder() {
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" alignItems="center" spacing={2}>
             {viewMode === 'builder' && (
-              <Button variant="ghost" size="sm" onClick={() => setViewMode('library')}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
+              <MuiButton 
+                variant="text" 
+                size="small" 
+                startIcon={<ArrowLeft size={16} />}
+                onClick={() => setViewMode('library')}
+              >
                 Back
-              </Button>
+              </MuiButton>
             )}
             {viewMode === 'builder' ? (
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Box 
-                  onClick={handleOpenEditName}
+                  onClick={handleOpenEditDetails}
                   sx={{ 
                     cursor: 'pointer',
                     '&:hover': { 
@@ -233,47 +312,49 @@ export default function FormBuilder() {
 
           {viewMode === 'builder' && (
             <Stack direction="row" spacing={1}>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowHistoryPanel(!showHistoryPanel)}
+              <MuiButton 
+                variant="text" 
+                size="small"
+                startIcon={<History size={16} />}
+                onClick={() => setShowHistoryPanel(true)}
               >
-                <History className="h-4 w-4 mr-1" />
                 History
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
+              </MuiButton>
+              <MuiButton 
+                variant="outlined" 
+                size="small"
+                startIcon={<Eye size={16} />}
                 onClick={() => handlePreviewTemplate(template)}
               >
-                <Eye className="h-4 w-4 mr-1" />
                 Preview
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
+              </MuiButton>
+              <MuiButton 
+                variant="outlined" 
+                size="small"
+                startIcon={<Save size={16} />}
                 onClick={handleSaveTemplate}
               >
-                <Save className="h-4 w-4 mr-1" />
                 Save
-              </Button>
+              </MuiButton>
               {template.status === 'draft' ? (
-                <Button 
-                  size="sm"
-                  onClick={() => setShowPublishDialog(true)}
+                <MuiButton 
+                  variant="contained"
+                  size="small"
+                  startIcon={<Upload size={16} />}
+                  onClick={() => setShowPublishPanel(true)}
                   disabled={template.fields.length === 0}
                 >
-                  <Upload className="h-4 w-4 mr-1" />
                   Publish
-                </Button>
+                </MuiButton>
               ) : (
-                <Button 
-                  size="sm"
-                  onClick={() => setShowAssignDialog(true)}
+                <MuiButton 
+                  variant="contained"
+                  size="small"
+                  startIcon={<Users size={16} />}
+                  onClick={() => setShowAssignPanel(true)}
                 >
-                  <Users className="h-4 w-4 mr-1" />
                   Assign
-                </Button>
+                </MuiButton>
               )}
             </Stack>
           )}
@@ -292,7 +373,7 @@ export default function FormBuilder() {
               value="library" 
               label={
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <Library className="h-4 w-4" />
+                  <Library size={16} />
                   <span>Templates</span>
                 </Stack>
               } 
@@ -301,7 +382,7 @@ export default function FormBuilder() {
               value="assignments" 
               label={
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <Send className="h-4 w-4" />
+                  <Send size={16} />
                   <span>Assignment Rules</span>
                 </Stack>
               } 
@@ -310,7 +391,7 @@ export default function FormBuilder() {
               value="submissions" 
               label={
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <ClipboardCheck className="h-4 w-4" />
+                  <ClipboardCheck size={16} />
                   <span>Submissions</span>
                 </Stack>
               } 
@@ -319,7 +400,7 @@ export default function FormBuilder() {
               value="tasks" 
               label={
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <ListTodo className="h-4 w-4" />
+                  <ListTodo size={16} />
                   <span>Tasks</span>
                 </Stack>
               } 
@@ -328,7 +409,7 @@ export default function FormBuilder() {
               value="analytics" 
               label={
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <BarChart3 className="h-4 w-4" />
+                  <BarChart3 size={16} />
                   <span>Analytics</span>
                 </Stack>
               } 
@@ -386,170 +467,262 @@ export default function FormBuilder() {
               onTemplateChange={setTemplate}
               selectedFieldId={selectedFieldId}
               onFieldSelect={setSelectedFieldId}
+              onDuplicateSection={handleDuplicateSection}
             />
           </Box>
 
-          {/* Right: Properties or History */}
+          {/* Right: Properties */}
           <Box sx={{ width: 320, borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            {showHistoryPanel ? (
-              <FormVersionHistoryPanel
-                currentTemplate={template}
-                onRestore={handleRestoreVersion}
-                onClose={() => setShowHistoryPanel(false)}
-                onPreview={handlePreviewTemplate}
-              />
-            ) : (
-              <FormFieldProperties
-                template={template}
-                selectedFieldId={selectedFieldId}
-                onFieldUpdate={handleFieldUpdate}
-                onClose={() => setSelectedFieldId(null)}
-              />
-            )}
+            <FormFieldProperties
+              template={template}
+              selectedFieldId={selectedFieldId}
+              onFieldUpdate={handleFieldUpdate}
+              onClose={() => setSelectedFieldId(null)}
+            />
           </Box>
         </Box>
       )}
 
-      {/* Edit Name/Description Popover */}
-      <Popover
-        open={Boolean(editNameAnchor)}
-        anchorEl={editNameAnchor}
-        onClose={() => setEditNameAnchor(null)}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
+      {/* Edit Details Side Panel */}
+      <Drawer
+        anchor="right"
+        open={showEditDetailsPanel}
+        onClose={() => setShowEditDetailsPanel(false)}
+        PaperProps={{ sx: { width: 400 } }}
       >
-        <Box sx={{ p: 2, width: 320 }}>
-          <Stack spacing={2}>
-            <Typography variant="subtitle2" fontWeight={600}>
-              Edit Template Details
-            </Typography>
-            <TextField
-              label="Template Name"
-              value={editingName}
-              onChange={(e) => setEditingName(e.target.value)}
-              size="small"
-              fullWidth
-              autoFocus
-            />
-            <TextField
-              label="Description"
-              value={editingDescription}
-              onChange={(e) => setEditingDescription(e.target.value)}
-              size="small"
-              fullWidth
-              multiline
-              rows={3}
-              placeholder="Brief description of this form's purpose..."
-            />
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              <Button variant="ghost" size="sm" onClick={() => setEditNameAnchor(null)}>
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleSaveNameDescription}>
-                Save
-              </Button>
-            </Stack>
-          </Stack>
-        </Box>
-      </Popover>
-
-      {/* Publish Dialog */}
-      <Dialog open={showPublishDialog} onClose={() => setShowPublishDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Upload className="h-5 w-5" />
-            <span>Publish Form Template</span>
-          </Stack>
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              Publishing this form will make it available for assignment to staff members. Once published, 
-              any changes will create a new version while preserving previous submissions.
-            </Typography>
-            <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-              <Stack spacing={1}>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2" fontWeight={500}>Template:</Typography>
-                  <Typography variant="body2">{template.name}</Typography>
-                </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2" fontWeight={500}>Sections:</Typography>
-                  <Typography variant="body2">{template.sections.length}</Typography>
-                </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2" fontWeight={500}>Fields:</Typography>
-                  <Typography variant="body2">{template.fields.length}</Typography>
-                </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2" fontWeight={500}>Version:</Typography>
-                  <Typography variant="body2">v{template.version}</Typography>
-                </Stack>
-              </Stack>
-            </Box>
-            {template.fields.filter(f => f.required).length === 0 && (
-              <Box sx={{ p: 1.5, bgcolor: 'warning.light', borderRadius: 1 }}>
-                <Typography variant="caption" color="warning.dark">
-                  ⚠️ This form has no required fields. Consider marking important fields as required.
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Pencil size={18} />
+                <Typography variant="h6" fontWeight={600}>
+                  Edit Template Details
                 </Typography>
-              </Box>
-            )}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button variant="ghost" onClick={() => setShowPublishDialog(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handlePublishTemplate}>
-            <Check className="h-4 w-4 mr-1" />
-            Publish Now
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Assign Dialog */}
-      <Dialog open={showAssignDialog} onClose={() => setShowAssignDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Users className="h-5 w-5" />
-            <span>Assign Form to Staff</span>
-          </Stack>
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              Create an assignment rule to automatically distribute "{template.name}" to staff members 
-              based on triggers like shift start, schedules, or manual assignment.
-            </Typography>
-            <Box sx={{ p: 2, bgcolor: 'primary.50', borderRadius: 1, border: 1, borderColor: 'primary.200' }}>
-              <Typography variant="subtitle2" color="primary.main" sx={{ mb: 1 }}>
-                Assignment Options:
-              </Typography>
-              <Stack spacing={0.5}>
-                <Typography variant="body2">• Assign to specific staff or roles</Typography>
-                <Typography variant="body2">• Trigger at shift start/end</Typography>
-                <Typography variant="body2">• Schedule daily, weekly, or monthly</Typography>
-                <Typography variant="body2">• Set due times and escalation rules</Typography>
               </Stack>
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button variant="ghost" onClick={() => setShowAssignDialog(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleQuickAssign}>
-            <Send className="h-4 w-4 mr-1" />
-            Create Assignment Rule
-          </Button>
-        </DialogActions>
-      </Dialog>
+              <IconButton size="small" onClick={() => setShowEditDetailsPanel(false)}>
+                <X size={18} />
+              </IconButton>
+            </Stack>
+          </Box>
+
+          <Box sx={{ flex: 1, p: 3, overflow: 'auto' }}>
+            <Stack spacing={3}>
+              <TextField
+                label="Template Name"
+                value={editingName}
+                onChange={(e) => setEditingName(e.target.value)}
+                fullWidth
+                error={!!validationErrors.name}
+                helperText={validationErrors.name}
+                autoFocus
+              />
+              <TextField
+                label="Description"
+                value={editingDescription}
+                onChange={(e) => setEditingDescription(e.target.value)}
+                fullWidth
+                multiline
+                rows={4}
+                placeholder="Brief description of this form's purpose..."
+                error={!!validationErrors.description}
+                helperText={validationErrors.description || 'Max 500 characters'}
+              />
+            </Stack>
+          </Box>
+
+          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <MuiButton variant="text" onClick={() => setShowEditDetailsPanel(false)}>
+                Cancel
+              </MuiButton>
+              <MuiButton variant="contained" onClick={handleSaveNameDescription}>
+                Save Changes
+              </MuiButton>
+            </Stack>
+          </Box>
+        </Box>
+      </Drawer>
+
+      {/* Publish Side Panel */}
+      <Drawer
+        anchor="right"
+        open={showPublishPanel}
+        onClose={() => setShowPublishPanel(false)}
+        PaperProps={{ sx: { width: 420 } }}
+      >
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Upload size={18} />
+                <Typography variant="h6" fontWeight={600}>
+                  Publish Form Template
+                </Typography>
+              </Stack>
+              <IconButton size="small" onClick={() => setShowPublishPanel(false)}>
+                <X size={18} />
+              </IconButton>
+            </Stack>
+          </Box>
+
+          <Box sx={{ flex: 1, p: 3, overflow: 'auto' }}>
+            <Stack spacing={3}>
+              <Typography variant="body2" color="text.secondary">
+                Publishing this form will make it available for assignment to staff members. Once published, 
+                any changes will create a new version while preserving previous submissions.
+              </Typography>
+
+              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2" fontWeight={500}>Template:</Typography>
+                    <Typography variant="body2">{template.name}</Typography>
+                  </Stack>
+                  <Divider />
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2" fontWeight={500}>Sections:</Typography>
+                    <Typography variant="body2">{template.sections.length}</Typography>
+                  </Stack>
+                  <Divider />
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2" fontWeight={500}>Fields:</Typography>
+                    <Typography variant="body2">{template.fields.length}</Typography>
+                  </Stack>
+                  <Divider />
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2" fontWeight={500}>Required Fields:</Typography>
+                    <Typography variant="body2">{template.fields.filter(f => f.required).length}</Typography>
+                  </Stack>
+                  <Divider />
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2" fontWeight={500}>Version:</Typography>
+                    <Chip label={`v${template.version}`} size="small" />
+                  </Stack>
+                </Stack>
+              </Box>
+
+              {template.fields.filter(f => f.required).length === 0 && (
+                <Alert severity="warning" icon={<AlertCircle size={18} />}>
+                  This form has no required fields. Consider marking important fields as required.
+                </Alert>
+              )}
+
+              {template.fields.length === 0 && (
+                <Alert severity="error" icon={<AlertCircle size={18} />}>
+                  This form has no fields. Add at least one field before publishing.
+                </Alert>
+              )}
+            </Stack>
+          </Box>
+
+          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <MuiButton variant="text" onClick={() => setShowPublishPanel(false)}>
+                Cancel
+              </MuiButton>
+              <MuiButton 
+                variant="contained" 
+                onClick={handlePublishTemplate}
+                startIcon={<Check size={16} />}
+                disabled={template.fields.length === 0}
+              >
+                Publish Now
+              </MuiButton>
+            </Stack>
+          </Box>
+        </Box>
+      </Drawer>
+
+      {/* Assign Side Panel */}
+      <Drawer
+        anchor="right"
+        open={showAssignPanel}
+        onClose={() => setShowAssignPanel(false)}
+        PaperProps={{ sx: { width: 420 } }}
+      >
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Users size={18} />
+                <Typography variant="h6" fontWeight={600}>
+                  Assign Form to Staff
+                </Typography>
+              </Stack>
+              <IconButton size="small" onClick={() => setShowAssignPanel(false)}>
+                <X size={18} />
+              </IconButton>
+            </Stack>
+          </Box>
+
+          <Box sx={{ flex: 1, p: 3, overflow: 'auto' }}>
+            <Stack spacing={3}>
+              <Typography variant="body2" color="text.secondary">
+                Create an assignment rule to automatically distribute "{template.name}" to staff members 
+                based on triggers like shift start, schedules, or manual assignment.
+              </Typography>
+
+              <Box sx={{ p: 2, bgcolor: 'primary.50', borderRadius: 1, border: 1, borderColor: 'primary.200' }}>
+                <Typography variant="subtitle2" color="primary.main" sx={{ mb: 1.5 }}>
+                  Assignment Options:
+                </Typography>
+                <Stack spacing={1}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Check size={14} className="text-primary" />
+                    <Typography variant="body2">Assign to specific staff or roles</Typography>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Check size={14} className="text-primary" />
+                    <Typography variant="body2">Trigger at shift start/end</Typography>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Check size={14} className="text-primary" />
+                    <Typography variant="body2">Schedule daily, weekly, or monthly</Typography>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Check size={14} className="text-primary" />
+                    <Typography variant="body2">Set due times and escalation rules</Typography>
+                  </Stack>
+                </Stack>
+              </Box>
+
+              <Alert severity="info">
+                Assignment rules can be edited anytime from the "Assignment Rules" tab.
+              </Alert>
+            </Stack>
+          </Box>
+
+          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <MuiButton variant="text" onClick={() => setShowAssignPanel(false)}>
+                Cancel
+              </MuiButton>
+              <MuiButton 
+                variant="contained" 
+                onClick={handleQuickAssign}
+                startIcon={<Send size={16} />}
+              >
+                Create Assignment Rule
+              </MuiButton>
+            </Stack>
+          </Box>
+        </Box>
+      </Drawer>
+
+      {/* History Side Panel */}
+      <Drawer
+        anchor="right"
+        open={showHistoryPanel}
+        onClose={() => setShowHistoryPanel(false)}
+        PaperProps={{ sx: { width: 380 } }}
+      >
+        <FormVersionHistoryPanel
+          currentTemplate={template}
+          onRestore={handleRestoreVersion}
+          onClose={() => setShowHistoryPanel(false)}
+          onPreview={handlePreviewTemplate}
+        />
+      </Drawer>
     </Box>
   );
 }

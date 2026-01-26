@@ -91,6 +91,7 @@ interface FormBuilderCanvasProps {
   onTemplateChange: (template: FormTemplate) => void;
   selectedFieldId: string | null;
   onFieldSelect: (fieldId: string | null) => void;
+  onDuplicateSection?: (sectionId: string) => void;
 }
 
 export function FormBuilderCanvas({
@@ -98,6 +99,7 @@ export function FormBuilderCanvas({
   onTemplateChange,
   selectedFieldId,
   onFieldSelect,
+  onDuplicateSection,
 }: FormBuilderCanvasProps) {
   const [draggedFieldId, setDraggedFieldId] = useState<string | null>(null);
   const [dragOverFieldId, setDragOverFieldId] = useState<string | null>(null);
@@ -716,17 +718,31 @@ export function FormBuilderCanvas({
                       <MoreVertical size={14} />
                     </IconButton>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="bg-background z-50">
                     <DropdownMenuItem>
                       <Settings size={14} className="mr-2" />
                       Edit Section
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDuplicateSection?.(section.id)}>
                       <Copy size={14} className="mr-2" />
                       Duplicate Section
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive">
+                    <DropdownMenuItem 
+                      className="text-destructive"
+                      onClick={() => {
+                        if (template.sections.length <= 1) {
+                          toast.error('Cannot delete the only section');
+                          return;
+                        }
+                        onTemplateChange({
+                          ...template,
+                          sections: template.sections.filter(s => s.id !== section.id),
+                          fields: template.fields.filter(f => f.sectionId !== section.id),
+                        });
+                        toast.success('Section deleted');
+                      }}
+                    >
                       <Trash2 size={14} className="mr-2" />
                       Delete Section
                     </DropdownMenuItem>
