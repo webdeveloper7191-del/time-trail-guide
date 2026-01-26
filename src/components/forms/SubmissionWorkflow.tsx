@@ -427,13 +427,19 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
         if (Array.isArray(value)) {
           return (
             <Stack direction="row" spacing={0.5} flexWrap="wrap">
-              {value.map((v, i) => (
-                <Chip key={i} label={v} size="small" />
-              ))}
+              {value.map((v, i) => {
+                // Try to find the label from field options
+                const optionLabel = field.options?.find(o => o.value === v || o.label === v)?.label || v;
+                return <Chip key={i} label={optionLabel} size="small" />;
+              })}
             </Stack>
           );
         }
         return <Typography variant="body2">{String(value)}</Typography>;
+      case 'dropdown':
+        // For dropdown, resolve the label from options
+        const dropdownLabel = field.options?.find(o => o.value === value || o.label === value)?.label || String(value);
+        return <Typography variant="body2">{dropdownLabel}</Typography>;
       case 'date':
         return <Typography variant="body2">{format(new Date(String(value)), 'MMM d, yyyy')}</Typography>;
       case 'datetime':

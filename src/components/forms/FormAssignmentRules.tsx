@@ -555,31 +555,36 @@ export function FormAssignmentRules({ templateId }: FormAssignmentRulesProps) {
                     <Controller
                       name="targetIds"
                       control={control}
-                      render={({ field }) => (
-                        <FormControl fullWidth sx={{ mt: 2 }}>
-                          <InputLabel>
-                            Select {currentTargetType === 'individual' ? 'Staff' : currentTargetType === 'role' ? 'Roles' : currentTargetType === 'team' ? 'Teams' : 'Locations'}
-                          </InputLabel>
-                          <MuiSelect
-                            {...field}
-                            multiple
-                            label={`Select ${currentTargetType === 'individual' ? 'Staff' : currentTargetType === 'role' ? 'Roles' : currentTargetType === 'team' ? 'Teams' : 'Locations'}`}
-                            renderValue={(selected) => (
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {(selected as string[]).map((value) => (
-                                  <Chip key={value} label={value} size="small" />
-                                ))}
-                              </Box>
-                            )}
-                          >
-                            {getTargetOptions().map(option => (
-                              <MenuItem key={option.id} value={option.id}>
-                                {option.name}
-                              </MenuItem>
-                            ))}
-                          </MuiSelect>
-                        </FormControl>
-                      )}
+                      render={({ field }) => {
+                        const targetOptions = getTargetOptions();
+                        const getTargetLabel = (id: string) => targetOptions.find(o => o.id === id)?.name || id;
+                        
+                        return (
+                          <FormControl fullWidth sx={{ mt: 2 }}>
+                            <InputLabel>
+                              Select {currentTargetType === 'individual' ? 'Staff' : currentTargetType === 'role' ? 'Roles' : currentTargetType === 'team' ? 'Teams' : 'Locations'}
+                            </InputLabel>
+                            <MuiSelect
+                              {...field}
+                              multiple
+                              label={`Select ${currentTargetType === 'individual' ? 'Staff' : currentTargetType === 'role' ? 'Roles' : currentTargetType === 'team' ? 'Teams' : 'Locations'}`}
+                              renderValue={(selected) => (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                  {(selected as string[]).map((value) => (
+                                    <Chip key={value} label={getTargetLabel(value)} size="small" />
+                                  ))}
+                                </Box>
+                              )}
+                            >
+                              {targetOptions.map(option => (
+                                <MenuItem key={option.id} value={option.id}>
+                                  {option.name}
+                                </MenuItem>
+                              ))}
+                            </MuiSelect>
+                          </FormControl>
+                        );
+                      }}
                     />
                   )}
                 </Box>
