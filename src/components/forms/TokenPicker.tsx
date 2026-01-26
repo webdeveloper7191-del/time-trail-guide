@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -19,6 +19,7 @@ import {
   Copy,
   Check,
   Braces,
+  Wand2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -31,21 +32,33 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   location: MapPin,
   date: Clock,
   form: FileText,
+  custom: Wand2,
 };
 
 interface TokenPickerProps {
   onInsert: (token: string) => void;
   buttonVariant?: 'icon' | 'text';
   disabled?: boolean;
+  customTokens?: AutoPopulateToken[];
 }
 
-export function TokenPicker({ onInsert, buttonVariant = 'icon', disabled = false }: TokenPickerProps) {
+export function TokenPicker({ 
+  onInsert, 
+  buttonVariant = 'icon', 
+  disabled = false,
+  customTokens = [],
+}: TokenPickerProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const open = Boolean(anchorEl);
+
+  // Combine built-in and custom tokens
+  const allTokens = useMemo(() => {
+    return [...AUTO_POPULATE_TOKENS, ...customTokens];
+  }, [customTokens]);
 
   const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -71,7 +84,7 @@ export function TokenPicker({ onInsert, buttonVariant = 'icon', disabled = false
     toast.success('Token copied to clipboard');
   };
 
-  const filteredTokens = AUTO_POPULATE_TOKENS.filter(token => {
+  const filteredTokens = allTokens.filter(token => {
     const matchesSearch = searchQuery === '' || 
       token.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
       token.token.toLowerCase().includes(searchQuery.toLowerCase()) ||

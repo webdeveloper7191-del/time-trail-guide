@@ -1,7 +1,7 @@
 // Token resolver for auto-populating form fields
 // This module resolves {{token}} placeholders with actual values from context
 
-import { AUTO_POPULATE_TOKENS } from '@/types/forms';
+import { AUTO_POPULATE_TOKENS, AutoPopulateToken } from '@/types/forms';
 import { format } from 'date-fns';
 
 // Context types for token resolution
@@ -38,11 +38,16 @@ export interface FormContext {
   dueDate?: Date;
 }
 
+export interface CustomTokenValues {
+  [tokenKey: string]: string;
+}
+
 export interface TokenContext {
   staff?: StaffContext;
   shift?: ShiftContext;
   location?: LocationContext;
   form?: FormContext;
+  custom?: CustomTokenValues;
 }
 
 // Token regex pattern
@@ -119,34 +124,111 @@ function resolveToken(token: string, context: TokenContext): string | null {
       return context.form?.dueDate ? format(context.form.dueDate, 'dd/MM/yyyy') : null;
 
     default:
+      // Check for custom tokens
+      if (token.startsWith('{{custom_') && context.custom) {
+        const customKey = token.slice(2, -2); // Remove {{ and }}
+        return context.custom[customKey] || null;
+      }
       return null;
   }
 }
 
-// Resolve all tokens in a string
-export function resolveTokensInString(text: string, context: TokenContext): string {
+// Resolve all tokens in a string, with optional custom token definitions
+export function resolveTokensInString(
+  text: string, 
+  context: TokenContext,
+  customTokenDefs?: AutoPopulateToken[]
+): string {
   return text.replace(TOKEN_REGEX, (match) => {
     const resolved = resolveToken(match, context);
-    return resolved !== null ? resolved : match;
+    if (resolved !== null) return resolved;
+    
+    // Try custom token definitions for preview values
+    if (customTokenDefs) {
+      const customDef = customTokenDefs.find(t => t.token === match);
+      if (customDef && context.custom) {
+        const key = match.slice(2, -2);
+        return context.custom[key] || match;
+      }
+    }
+    
+    return match;
   });
 }
 
 // Resolve tokens in form field default values
 export function resolveFormFieldDefaults(
   fieldDefaults: Record<string, string | number | boolean | string[]>,
-  context: TokenContext
+  context: TokenContext,
+  customTokenDefs?: AutoPopulateToken[]
 ): Record<string, string | number | boolean | string[]> {
   const resolved: Record<string, string | number | boolean | string[]> = {};
   
   for (const [fieldId, value] of Object.entries(fieldDefaults)) {
     if (typeof value === 'string') {
-      resolved[fieldId] = resolveTokensInString(value, context);
+      resolved[fieldId] = resolveTokensInString(value, context, customTokenDefs);
     } else {
       resolved[fieldId] = value;
     }
   }
   
   return resolved;
+}
+
+// Get all available tokens including custom ones
+export function getAllTokens(customTokens?: AutoPopulateToken[]): AutoPopulateToken[] {
+  if (!customTokens || customTokens.length === 0) {
+    return AUTO_POPULATE_TOKENS;
+  }
+  return [...AUTO_POPULATE_TOKENS, ...customTokens];
+}
+
+// Create example context for preview with custom tokens
+export function createPreviewContext(customTokens?: AutoPopulateToken[]): TokenContext {
+  const context: TokenContext = {
+    staff: {
+      id: 'EMP001',
+      firstName: 'John',
+      lastName: 'Smith',
+      email: 'john.smith@example.com',
+      phone: '+61 400 123 456',
+      role: 'Care Worker',
+      department: 'Nursing',
+      manager: 'Jane Doe',
+    },
+    shift: {
+      date: new Date(),
+      startTime: '09:00',
+      endTime: '17:00',
+      duration: '8 hours',
+      type: 'Morning',
+      room: 'Room A',
+    },
+    location: {
+      name: 'Main Campus',
+      address: '123 Main St, Sydney NSW 2000',
+      code: 'LOC001',
+    },
+    form: {
+      name: 'Daily Safety Checklist',
+      id: 'SUB-2025-001',
+      assignedBy: 'Admin User',
+      dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
+    custom: {},
+  };
+
+  // Add custom token example values
+  if (customTokens) {
+    customTokens.forEach(token => {
+      const key = token.token.slice(2, -2); // Remove {{ and }}
+      if (context.custom) {
+        context.custom[key] = token.example;
+      }
+    });
+  }
+
+  return context;
 }
 
 // Check if a string contains any tokens
@@ -166,9 +248,13 @@ export function extractTokens(text: string): string[] {
 }
 
 // Validate that all tokens in a string are valid
-export function validateTokens(text: string): { valid: boolean; invalidTokens: string[] } {
+export function validateTokens(
+  text: string, 
+  customTokens?: AutoPopulateToken[]
+): { valid: boolean; invalidTokens: string[] } {
   const usedTokens = extractTokens(text);
-  const validTokens = AUTO_POPULATE_TOKENS.map(t => t.token);
+  const allTokens = getAllTokens(customTokens);
+  const validTokens = allTokens.map(t => t.token);
   const invalidTokens = usedTokens.filter(t => !validTokens.includes(t));
   
   return {
@@ -178,14 +264,16 @@ export function validateTokens(text: string): { valid: boolean; invalidTokens: s
 }
 
 // Get a preview of what a string will look like with tokens resolved
-export function getTokenPreview(text: string, context?: TokenContext): string {
+export function getTokenPreview(
+  text: string, 
+  context?: TokenContext,
+  customTokens?: AutoPopulateToken[]
+): string {
   // Use example values if no context provided
   if (!context) {
-    return text.replace(TOKEN_REGEX, (match) => {
-      const tokenDef = AUTO_POPULATE_TOKENS.find(t => t.token === match);
-      return tokenDef ? tokenDef.example : match;
-    });
+    const previewContext = createPreviewContext(customTokens);
+    return resolveTokensInString(text, previewContext, customTokens);
   }
   
-  return resolveTokensInString(text, context);
+  return resolveTokensInString(text, context, customTokens);
 }
