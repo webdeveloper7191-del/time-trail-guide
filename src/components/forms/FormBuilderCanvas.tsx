@@ -111,6 +111,8 @@ export function FormBuilderCanvas({
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
   const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
   const [dragOverSectionTarget, setDragOverSectionTarget] = useState<string | null>(null);
+  const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null);
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(template.sections.map(s => s.id))
   );
@@ -330,6 +332,60 @@ export function FormBuilderCanvas({
         g.id === groupId ? { ...g, style } : g
       ),
     });
+  };
+
+  // Group drag and drop handlers
+  const handleGroupDragStart = (e: React.DragEvent, groupId: string) => {
+    e.stopPropagation();
+    setDraggedGroupId(groupId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('groupId', groupId);
+  };
+
+  const handleGroupDragOver = (e: React.DragEvent, targetGroupId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedGroupId && draggedGroupId !== targetGroupId) {
+      setDragOverGroupId(targetGroupId);
+    }
+  };
+
+  const handleGroupDragEnd = () => {
+    setDraggedGroupId(null);
+    setDragOverGroupId(null);
+  };
+
+  const handleGroupDrop = (e: React.DragEvent, targetGroupId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedGroupId || draggedGroupId === targetGroupId) {
+      handleGroupDragEnd();
+      return;
+    }
+
+    const draggedGroup = (template.groups || []).find(g => g.id === draggedGroupId);
+    const targetGroup = (template.groups || []).find(g => g.id === targetGroupId);
+
+    if (!draggedGroup || !targetGroup || draggedGroup.sectionId !== targetGroup.sectionId) {
+      handleGroupDragEnd();
+      return;
+    }
+
+    // Swap the order of the two groups
+    const newGroups = (template.groups || []).map(group => {
+      if (group.id === draggedGroupId) {
+        return { ...group, order: targetGroup.order };
+      }
+      if (group.id === targetGroupId) {
+        return { ...group, order: draggedGroup.order };
+      }
+      return group;
+    });
+
+    onTemplateChange({ ...template, groups: newGroups });
+    toast.success('Group reordered');
+    handleGroupDragEnd();
   };
 
   // Toggle field selection for grouping
@@ -924,6 +980,8 @@ export function FormBuilderCanvas({
   const renderFieldGroup = (group: FieldGroup, fields: FormField[]) => {
     const isGroupExpanded = group.collapsible ? expandedGroups.has(group.id) : true;
     const isEditing = editingGroupId === group.id;
+    const isDraggingGroup = draggedGroupId === group.id;
+    const isDragOverGroup = dragOverGroupId === group.id;
 
     const getGroupStyles = () => {
       switch (group.style) {
@@ -955,15 +1013,41 @@ export function FormBuilderCanvas({
     };
 
     return (
-      <Box key={group.id} sx={{ mb: 2, gridColumn: 'span 12' }}>
+      <Box 
+        key={group.id} 
+        sx={{ 
+          mb: 2, 
+          gridColumn: 'span 12',
+          opacity: isDraggingGroup ? 0.5 : 1,
+          transition: 'opacity 0.15s ease',
+        }}
+        draggable
+        onDragStart={(e) => handleGroupDragStart(e, group.id)}
+        onDragEnd={handleGroupDragEnd}
+        onDragOver={(e) => handleGroupDragOver(e, group.id)}
+        onDrop={(e) => handleGroupDrop(e, group.id)}
+      >
         <Paper
           sx={{
             ...getGroupStyles(),
             transition: 'all 0.15s ease',
+            border: isDragOverGroup ? 2 : undefined,
+            borderColor: isDragOverGroup ? 'primary.main' : undefined,
           }}
         >
           {/* Group Header */}
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: isGroupExpanded ? 1.5 : 0 }}>
+            {/* Drag handle for groups */}
+            <Box
+              sx={{
+                cursor: 'grab',
+                color: 'text.disabled',
+                '&:hover': { color: 'text.secondary' },
+              }}
+            >
+              <GripVertical size={14} />
+            </Box>
+
             {group.collapsible && (
               <IconButton 
                 size="small" 
