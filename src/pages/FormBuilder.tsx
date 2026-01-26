@@ -27,6 +27,7 @@ import { OfflineSyncStatusBar } from '@/components/forms/OfflineSyncStatusBar';
 import { FormVersionHistoryPanel } from '@/components/forms/FormVersionHistoryPanel';
 import { FieldTemplatesLibrary } from '@/components/forms/FieldTemplatesLibrary';
 import { CustomTokenManager } from '@/components/forms/CustomTokenManager';
+import { FormSettingsDrawer } from '@/components/forms/FormSettingsDrawer';
 import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES, AutoPopulateToken } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { templateDetailsSchema } from '@/lib/validationSchemas/formSchemas';
@@ -51,6 +52,7 @@ import {
   Redo2,
   Bookmark,
   Braces,
+  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -67,6 +69,7 @@ export default function FormBuilder() {
   const [showEditDetailsPanel, setShowEditDetailsPanel] = useState(false);
   const [showFieldTemplates, setShowFieldTemplates] = useState(false);
   const [showCustomTokens, setShowCustomTokens] = useState(false);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [customTokens, setCustomTokens] = useState<AutoPopulateToken[]>([]);
   const [editingName, setEditingName] = useState('');
   const [editingDescription, setEditingDescription] = useState('');
@@ -337,7 +340,7 @@ export default function FormBuilder() {
             )}
           </Stack>
 
-          {viewMode === 'builder' && (
+          {viewMode === 'builder' && template && (
             <Stack direction="row" spacing={1} alignItems="center">
               {/* Undo/Redo buttons */}
               <Tooltip title="Undo (Ctrl+Z)">
@@ -380,6 +383,14 @@ export default function FormBuilder() {
                 onClick={() => setShowCustomTokens(true)}
               >
                 Custom Tokens
+              </MuiButton>
+              <MuiButton 
+                variant="text" 
+                size="small"
+                startIcon={<Settings size={16} />}
+                onClick={() => setShowSettingsPanel(true)}
+              >
+                Settings
               </MuiButton>
               <MuiButton 
                 variant="text" 
@@ -522,7 +533,7 @@ export default function FormBuilder() {
         </Box>
       )}
 
-      {viewMode === 'builder' && (
+      {viewMode === 'builder' && template && (
         <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {/* Left: Field Palette */}
           <Box sx={{ width: 280, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
@@ -620,6 +631,7 @@ export default function FormBuilder() {
         onClose={() => setShowPublishPanel(false)}
         PaperProps={{ sx: { width: 420 } }}
       >
+        {template && (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -701,6 +713,7 @@ export default function FormBuilder() {
             </Stack>
           </Box>
         </Box>
+        )}
       </Drawer>
 
       {/* Assign Side Panel */}
@@ -710,6 +723,7 @@ export default function FormBuilder() {
         onClose={() => setShowAssignPanel(false)}
         PaperProps={{ sx: { width: 420 } }}
       >
+        {template && (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -777,6 +791,7 @@ export default function FormBuilder() {
             </Stack>
           </Box>
         </Box>
+        )}
       </Drawer>
 
       {/* History Side Panel */}
@@ -786,12 +801,14 @@ export default function FormBuilder() {
         onClose={() => setShowHistoryPanel(false)}
         PaperProps={{ sx: { width: 380 } }}
       >
-        <FormVersionHistoryPanel
-          currentTemplate={template}
-          onRestore={handleRestoreVersion}
-          onClose={() => setShowHistoryPanel(false)}
-          onPreview={handlePreviewTemplate}
-        />
+        {template && (
+          <FormVersionHistoryPanel
+            currentTemplate={template}
+            onRestore={handleRestoreVersion}
+            onClose={() => setShowHistoryPanel(false)}
+            onPreview={handlePreviewTemplate}
+          />
+        )}
       </Drawer>
 
       {/* Field Templates Library */}
@@ -843,6 +860,22 @@ export default function FormBuilder() {
           </Box>
         </Box>
       </Drawer>
+
+      {/* Form Settings Drawer */}
+      {template && (
+        <FormSettingsDrawer
+          open={showSettingsPanel}
+          template={template}
+          onClose={() => setShowSettingsPanel(false)}
+          onSave={(updates) => {
+            setTemplate(prev => ({
+              ...prev,
+              ...updates,
+              updatedAt: new Date().toISOString(),
+            }));
+          }}
+        />
+      )}
     </Box>
   );
 }

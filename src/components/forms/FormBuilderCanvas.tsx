@@ -51,7 +51,9 @@ import {
   Layers,
   Ungroup,
   Edit3,
+  Pencil,
 } from 'lucide-react';
+import { SectionEditorDrawer } from './SectionEditorDrawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -121,6 +123,7 @@ export function FormBuilderCanvas({
   );
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupLabel, setEditingGroupLabel] = useState('');
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [selectedFieldsForGroup, setSelectedFieldsForGroup] = useState<Set<string>>(new Set());
 
   // Add a new field from the palette
@@ -1248,8 +1251,8 @@ export function FormBuilderCanvas({
                     </IconButton>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-background z-50">
-                    <DropdownMenuItem>
-                      <Settings size={14} className="mr-2" />
+                    <DropdownMenuItem onClick={() => setEditingSectionId(section.id)}>
+                      <Pencil size={14} className="mr-2" />
                       Edit Section
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onDuplicateSection?.(section.id)}>
@@ -1479,6 +1482,23 @@ export function FormBuilderCanvas({
           </Button>
         </Box>
       </ScrollArea>
+
+      {/* Section Editor Drawer */}
+      <SectionEditorDrawer
+        open={!!editingSectionId}
+        section={template.sections.find(s => s.id === editingSectionId) || null}
+        onClose={() => setEditingSectionId(null)}
+        onSave={(updates) => {
+          if (!editingSectionId) return;
+          onTemplateChange({
+            ...template,
+            sections: template.sections.map(s =>
+              s.id === editingSectionId ? { ...s, ...updates } : s
+            ),
+          });
+          setEditingSectionId(null);
+        }}
+      />
     </Box>
   );
 }
