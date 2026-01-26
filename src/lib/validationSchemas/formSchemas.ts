@@ -67,6 +67,7 @@ export const formFieldSchema = z.object({
     filterByLocation: z.array(z.string()).optional(),
   }).optional(),
   sectionId: z.string().optional(),
+  groupId: z.string().optional(),
   order: z.number().min(0),
 });
 
@@ -79,6 +80,18 @@ export const formSectionSchema = z.object({
   collapsible: z.boolean().optional(),
   defaultCollapsed: z.boolean().optional(),
   conditionalLogic: z.array(conditionalLogicSchema).optional(),
+});
+
+// Field group schema
+export const fieldGroupSchema = z.object({
+  id: z.string().min(1, 'Group ID is required'),
+  label: z.string().min(1, 'Group label is required').max(100, 'Label must be under 100 characters'),
+  sectionId: z.string().min(1, 'Section is required'),
+  order: z.number().min(0),
+  description: z.string().max(200, 'Description must be under 200 characters').optional(),
+  collapsible: z.boolean().optional(),
+  defaultCollapsed: z.boolean().optional(),
+  style: z.enum(['outlined', 'filled', 'minimal']).optional(),
 });
 
 // Scoring config schema
@@ -100,6 +113,7 @@ export const formTemplateSchema = z.object({
   status: z.enum(['draft', 'published', 'archived']),
   sections: z.array(formSectionSchema).min(1, 'At least one section is required'),
   fields: z.array(formFieldSchema),
+  groups: z.array(fieldGroupSchema).optional(),
   scoring: scoringConfigSchema.optional(),
   branding: z.object({
     logo: z.string().url().optional(),

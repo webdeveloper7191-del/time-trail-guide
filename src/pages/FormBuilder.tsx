@@ -80,9 +80,9 @@ export default function FormBuilder() {
 
   // Get currently selected field
   const selectedField = useMemo(() => {
-    if (!selectedFieldId) return null;
+    if (!selectedFieldId || !template?.fields) return null;
     return template.fields.find(f => f.id === selectedFieldId) || null;
-  }, [selectedFieldId, template.fields]);
+  }, [selectedFieldId, template?.fields]);
 
   const createNewTemplate = (): FormTemplate => ({
     id: `template-${Date.now()}`,
