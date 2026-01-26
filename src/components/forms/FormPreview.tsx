@@ -15,6 +15,8 @@ import {
   FormHelperText,
   Chip,
   IconButton,
+  Alert,
+  Tooltip,
 } from '@mui/material';
 import {
   Camera,
@@ -35,25 +37,41 @@ import {
   ChevronUp,
   AlertCircle,
   Check,
+  Braces,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FormTemplate, FormField, FormSection } from '@/types/forms';
+import { FormTemplate, FormField, FormSection, AutoPopulateToken } from '@/types/forms';
+import { 
+  getTokenPreview, 
+  containsTokens, 
+  createPreviewContext,
+  TokenContext,
+} from '@/lib/tokenResolver';
 
 type ViewMode = 'mobile' | 'tablet' | 'desktop';
 
 interface FormPreviewProps {
   template: FormTemplate;
   onClose: () => void;
+  customTokens?: AutoPopulateToken[];
 }
 
-export function FormPreview({ template, onClose }: FormPreviewProps) {
+export function FormPreview({ template, onClose, customTokens = [] }: FormPreviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('mobile');
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [submitted, setSubmitted] = useState(false);
+  const [showTokenValues, setShowTokenValues] = useState(true);
+
+  // Create preview context with example values
+  const previewContext = useMemo(() => {
+    return createPreviewContext(customTokens);
+  }, [customTokens]);
 
   const containerWidth = useMemo(() => {
     switch (viewMode) {
@@ -72,6 +90,13 @@ export function FormPreview({ template, onClose }: FormPreviewProps) {
     });
     return grouped;
   }, [template]);
+
+  // Resolve token in a value for display
+  const resolveValueForDisplay = (value: string | undefined): string => {
+    if (!value) return '';
+    if (!showTokenValues || !containsTokens(value)) return value;
+    return getTokenPreview(value, previewContext, customTokens);
+  };
 
   const handleChange = (fieldId: string, value: any) => {
     setFormData(prev => ({ ...prev, [fieldId]: value }));
@@ -152,6 +177,16 @@ export function FormPreview({ template, onClose }: FormPreviewProps) {
     }
   };
 
+  // Token indicator component for showing which fields have auto-populated values
+  const TokenIndicator = ({ original }: { original: string }) => (
+    <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.5 }}>
+      <Braces className="h-3 w-3 text-primary" />
+      <Typography variant="caption" color="primary" sx={{ fontFamily: 'monospace', fontSize: '0.65rem' }}>
+        {original}
+      </Typography>
+    </Stack>
+  );
+
   const toggleSection = (sectionId: string) => {
     setCollapsedSections(prev => {
       const next = new Set(prev);
@@ -167,37 +202,75 @@ export function FormPreview({ template, onClose }: FormPreviewProps) {
   const renderField = (field: FormField) => {
     const error = errors[field.id];
     const value = formData[field.id];
+    
+    // Get default value with tokens resolved
+    const resolvedDefaultValue = field.defaultValue 
+      ? resolveValueForDisplay(String(field.defaultValue))
+      : undefined;
+    
+    // Check if field has tokens in default value
+    const hasTokens = field.defaultValue && containsTokens(String(field.defaultValue));
 
     switch (field.type) {
       case 'short_text':
         return (
-          <TextField
-            fullWidth
-            size="small"
-            label={field.label}
-            placeholder={field.placeholder}
-            required={field.required}
-            value={value || ''}
-            onChange={(e) => handleChange(field.id, e.target.value)}
-            error={!!error}
-            helperText={error || field.description}
-          />
+          <Box>
+            <TextField
+              fullWidth
+              size="small"
+              label={field.label}
+              placeholder={field.placeholder}
+              required={field.required}
+              value={value ?? resolvedDefaultValue ?? ''}
+              onChange={(e) => handleChange(field.id, e.target.value)}
+              error={!!error}
+              helperText={error || field.description}
+            />
+            {hasTokens && showTokenValues && (
+              <TokenIndicator original={String(field.defaultValue)} />
+            )}
+          </Box>
         );
 
       case 'long_text':
         return (
+          <Box>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              size="small"
+              label={field.label}
+              placeholder={field.placeholder}
+              required={field.required}
+              value={value ?? resolvedDefaultValue ?? ''}
+              onChange={(e) => handleChange(field.id, e.target.value)}
+              error={!!error}
+              helperText={error || field.description}
+            />
+            {hasTokens && showTokenValues && (
+              <TokenIndicator original={String(field.defaultValue)} />
+            )}
+          </Box>
+        );
+
+      case 'number':
+        return (
           <TextField
             fullWidth
-            multiline
-            rows={3}
+            type="number"
             size="small"
             label={field.label}
-            placeholder={field.placeholder}
             required={field.required}
-            value={value || ''}
-            onChange={(e) => handleChange(field.id, e.target.value)}
+            value={value ?? (resolvedDefaultValue ? Number(resolvedDefaultValue) : '')}
+            onChange={(e) => handleChange(field.id, e.target.value ? Number(e.target.value) : '')}
             error={!!error}
             helperText={error || field.description}
+            inputProps={{
+              min: field.settings?.min,
+              max: field.settings?.max,
+              step: field.settings?.step || 1,
+            }}
           />
         );
 
@@ -567,6 +640,24 @@ export function FormPreview({ template, onClose }: FormPreviewProps) {
             <Badge variant="outline">{template.name}</Badge>
           </Stack>
           <Stack direction="row" alignItems="center" spacing={1}>
+            {/* Token Preview Toggle */}
+            <Tooltip title={showTokenValues ? "Show raw tokens" : "Show resolved values"}>
+              <IconButton
+                size="small"
+                onClick={() => setShowTokenValues(!showTokenValues)}
+                sx={{ 
+                  bgcolor: showTokenValues ? 'primary.50' : 'transparent',
+                  '&:hover': { bgcolor: showTokenValues ? 'primary.100' : 'action.hover' },
+                }}
+              >
+                {showTokenValues ? (
+                  <Eye className="h-4 w-4 text-primary" />
+                ) : (
+                  <EyeOff className="h-4 w-4" />
+                )}
+              </IconButton>
+            </Tooltip>
+            
             {/* View Mode Switcher */}
             <Stack direction="row" sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 0.5 }}>
               <IconButton

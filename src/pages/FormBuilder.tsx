@@ -26,7 +26,8 @@ import { TaskManagementPanel } from '@/components/forms/TaskManagementPanel';
 import { OfflineSyncStatusBar } from '@/components/forms/OfflineSyncStatusBar';
 import { FormVersionHistoryPanel } from '@/components/forms/FormVersionHistoryPanel';
 import { FieldTemplatesLibrary } from '@/components/forms/FieldTemplatesLibrary';
-import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES } from '@/types/forms';
+import { CustomTokenManager } from '@/components/forms/CustomTokenManager';
+import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES, AutoPopulateToken } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { templateDetailsSchema } from '@/lib/validationSchemas/formSchemas';
 import { useFormBuilderUndoRedo } from '@/hooks/useFormBuilderUndoRedo';
@@ -49,6 +50,7 @@ import {
   Undo2,
   Redo2,
   Bookmark,
+  Braces,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -64,6 +66,8 @@ export default function FormBuilder() {
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showEditDetailsPanel, setShowEditDetailsPanel] = useState(false);
   const [showFieldTemplates, setShowFieldTemplates] = useState(false);
+  const [showCustomTokens, setShowCustomTokens] = useState(false);
+  const [customTokens, setCustomTokens] = useState<AutoPopulateToken[]>([]);
   const [editingName, setEditingName] = useState('');
   const [editingDescription, setEditingDescription] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -270,7 +274,8 @@ export default function FormBuilder() {
         onClose={() => {
           setPreviewTemplate(null);
           setViewMode('library');
-        }} 
+        }}
+        customTokens={customTokens}
       />
     );
   }
@@ -367,6 +372,14 @@ export default function FormBuilder() {
                 onClick={() => setShowFieldTemplates(true)}
               >
                 Field Templates
+              </MuiButton>
+              <MuiButton 
+                variant="text" 
+                size="small"
+                startIcon={<Braces size={16} />}
+                onClick={() => setShowCustomTokens(true)}
+              >
+                Custom Tokens
               </MuiButton>
               <MuiButton 
                 variant="text" 
@@ -534,6 +547,7 @@ export default function FormBuilder() {
               selectedFieldId={selectedFieldId}
               onFieldUpdate={handleFieldUpdate}
               onClose={() => setSelectedFieldId(null)}
+              customTokens={customTokens}
             />
           </Box>
         </Box>
@@ -799,6 +813,36 @@ export default function FormBuilder() {
         }}
         currentField={selectedField}
       />
+
+      {/* Custom Token Manager Drawer */}
+      <Drawer
+        anchor="right"
+        open={showCustomTokens}
+        onClose={() => setShowCustomTokens(false)}
+        PaperProps={{ sx: { width: 420 } }}
+      >
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Typography variant="h6" fontWeight={600}>
+                Custom Tokens
+              </Typography>
+              <IconButton onClick={() => setShowCustomTokens(false)}>
+                <X size={20} />
+              </IconButton>
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Create organization-specific tokens to auto-populate custom data in forms.
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+            <CustomTokenManager
+              customTokens={customTokens}
+              onTokensChange={setCustomTokens}
+            />
+          </Box>
+        </Box>
+      </Drawer>
     </Box>
   );
 }

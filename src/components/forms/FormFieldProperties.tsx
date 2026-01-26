@@ -35,8 +35,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ConditionalLogicBuilder } from '@/components/forms/ConditionalLogicBuilder';
 import { TokenPicker } from '@/components/forms/TokenPicker';
-import { FormField, FormTemplate, FieldOption, ConditionalLogic, FIELD_TYPES, AUTO_POPULATE_TOKENS } from '@/types/forms';
-import { containsTokens, getTokenPreview, validateTokens } from '@/lib/tokenResolver';
+import { FormField, FormTemplate, FieldOption, ConditionalLogic, FIELD_TYPES, AUTO_POPULATE_TOKENS, AutoPopulateToken } from '@/types/forms';
+import { containsTokens, getTokenPreview, validateTokens, getAllTokens } from '@/lib/tokenResolver';
 import { toast } from 'sonner';
 
 interface FormFieldPropertiesProps {
@@ -44,6 +44,7 @@ interface FormFieldPropertiesProps {
   selectedFieldId: string | null;
   onFieldUpdate: (fieldId: string, updates: Partial<FormField>) => void;
   onClose: () => void;
+  customTokens?: AutoPopulateToken[];
 }
 
 export function FormFieldProperties({
@@ -51,6 +52,7 @@ export function FormFieldProperties({
   selectedFieldId,
   onFieldUpdate,
   onClose,
+  customTokens = [],
 }: FormFieldPropertiesProps) {
   const [activeTab, setActiveTab] = useState('general');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['basic']));
@@ -274,6 +276,7 @@ export function FormFieldProperties({
                                 const currentValue = String(field.defaultValue || '');
                                 onFieldUpdate(field.id, { defaultValue: currentValue + token });
                               }}
+                              customTokens={customTokens}
                             />
                           </Stack>
                           
@@ -326,7 +329,7 @@ export function FormFieldProperties({
                               }}
                             >
                               <Typography variant="body2">
-                                {getTokenPreview(String(field.defaultValue))}
+                                {getTokenPreview(String(field.defaultValue), undefined, customTokens)}
                               </Typography>
                             </Paper>
                           </Box>
@@ -334,7 +337,7 @@ export function FormFieldProperties({
 
                         {/* Token validation */}
                         {field.defaultValue && (() => {
-                          const validation = validateTokens(String(field.defaultValue));
+                          const validation = validateTokens(String(field.defaultValue), customTokens);
                           if (!validation.valid) {
                             return (
                               <Alert severity="warning" sx={{ fontSize: '0.75rem' }}>

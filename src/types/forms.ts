@@ -120,6 +120,7 @@ export const TOKEN_CATEGORIES = [
   { id: 'location', label: 'Location', icon: 'MapPin' },
   { id: 'date', label: 'Date/Time', icon: 'Clock' },
   { id: 'form', label: 'Form', icon: 'FileText' },
+  { id: 'custom', label: 'Custom', icon: 'Wand2' },
 ] as const;
 
 // Saved field template for reuse
