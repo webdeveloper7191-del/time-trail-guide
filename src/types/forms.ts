@@ -54,6 +54,28 @@ export interface ScoringConfig {
   fieldWeights?: Record<string, number>;
 }
 
+// Field width options for grid layout
+export type FieldWidth = 'full' | '1/2' | '1/3' | '2/3' | '1/4' | '3/4';
+
+export const FIELD_WIDTH_OPTIONS: { value: FieldWidth; label: string; cols: number }[] = [
+  { value: 'full', label: 'Full', cols: 12 },
+  { value: '3/4', label: '3/4', cols: 9 },
+  { value: '2/3', label: '2/3', cols: 8 },
+  { value: '1/2', label: '1/2', cols: 6 },
+  { value: '1/3', label: '1/3', cols: 4 },
+  { value: '1/4', label: '1/4', cols: 3 },
+];
+
+// Saved field template for reuse
+export interface FieldTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  field: Omit<FormField, 'id' | 'order' | 'sectionId'>;
+  createdAt: string;
+  category?: string;
+}
+
 export interface FormField {
   id: string;
   type: FieldType;
@@ -61,6 +83,7 @@ export interface FormField {
   description?: string;
   placeholder?: string;
   required: boolean;
+  width?: FieldWidth;
   options?: FieldOption[];
   validation?: ValidationRule[];
   conditionalLogic?: ConditionalLogic[];

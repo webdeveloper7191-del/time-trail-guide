@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   Box, 
   Stack, 
@@ -12,6 +12,7 @@ import {
   Divider,
   Button as MuiButton,
   Alert,
+  Tooltip,
 } from '@mui/material';
 import { FormBuilderCanvas } from '@/components/forms/FormBuilderCanvas';
 import { FormFieldPalette } from '@/components/forms/FormFieldPalette';
@@ -24,9 +25,11 @@ import { FormAnalyticsDashboard } from '@/components/forms/FormAnalyticsDashboar
 import { TaskManagementPanel } from '@/components/forms/TaskManagementPanel';
 import { OfflineSyncStatusBar } from '@/components/forms/OfflineSyncStatusBar';
 import { FormVersionHistoryPanel } from '@/components/forms/FormVersionHistoryPanel';
+import { FieldTemplatesLibrary } from '@/components/forms/FieldTemplatesLibrary';
 import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { templateDetailsSchema } from '@/lib/validationSchemas/formSchemas';
+import { useFormBuilderUndoRedo } from '@/hooks/useFormBuilderUndoRedo';
 import { 
   ArrowLeft, 
   Library, 
@@ -43,6 +46,9 @@ import {
   Pencil,
   X,
   AlertCircle,
+  Undo2,
+  Redo2,
+  Bookmark,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -51,16 +57,32 @@ type ViewMode = 'library' | 'builder' | 'preview' | 'assignments' | 'submissions
 export default function FormBuilder() {
   const [viewMode, setViewMode] = useState<ViewMode>('library');
   const [templates, setTemplates] = useState<FormTemplate[]>(mockFormTemplates);
-  const [template, setTemplate] = useState<FormTemplate>(mockFormTemplates[0]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<FormTemplate | null>(null);
   const [showPublishPanel, setShowPublishPanel] = useState(false);
   const [showAssignPanel, setShowAssignPanel] = useState(false);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showEditDetailsPanel, setShowEditDetailsPanel] = useState(false);
+  const [showFieldTemplates, setShowFieldTemplates] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [editingDescription, setEditingDescription] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Undo/Redo for template state
+  const {
+    state: template,
+    setState: setTemplate,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useFormBuilderUndoRedo<FormTemplate>(mockFormTemplates[0]);
+
+  // Get currently selected field
+  const selectedField = useMemo(() => {
+    if (!selectedFieldId) return null;
+    return template.fields.find(f => f.id === selectedFieldId) || null;
+  }, [selectedFieldId, template.fields]);
 
   const createNewTemplate = (): FormTemplate => ({
     id: `template-${Date.now()}`,
@@ -311,7 +333,41 @@ export default function FormBuilder() {
           </Stack>
 
           {viewMode === 'builder' && (
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              {/* Undo/Redo buttons */}
+              <Tooltip title="Undo (Ctrl+Z)">
+                <span>
+                  <IconButton 
+                    size="small" 
+                    onClick={undo} 
+                    disabled={!canUndo}
+                  >
+                    <Undo2 size={18} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Redo (Ctrl+Y)">
+                <span>
+                  <IconButton 
+                    size="small" 
+                    onClick={redo} 
+                    disabled={!canRedo}
+                  >
+                    <Redo2 size={18} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+
+              <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+
+              <MuiButton 
+                variant="text" 
+                size="small"
+                startIcon={<Bookmark size={16} />}
+                onClick={() => setShowFieldTemplates(true)}
+              >
+                Field Templates
+              </MuiButton>
               <MuiButton 
                 variant="text" 
                 size="small"
@@ -723,6 +779,26 @@ export default function FormBuilder() {
           onPreview={handlePreviewTemplate}
         />
       </Drawer>
+
+      {/* Field Templates Library */}
+      <FieldTemplatesLibrary
+        open={showFieldTemplates}
+        onClose={() => setShowFieldTemplates(false)}
+        onAddField={(fieldConfig) => {
+          const newField: FormField = {
+            ...fieldConfig,
+            id: `field-${Date.now()}`,
+            order: template.fields.length,
+            sectionId: template.sections[0]?.id,
+          };
+          setTemplate(prev => ({
+            ...prev,
+            fields: [...prev.fields, newField],
+          }));
+          setSelectedFieldId(newField.id);
+        }}
+        currentField={selectedField}
+      />
     </Box>
   );
 }

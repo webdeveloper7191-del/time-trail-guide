@@ -59,8 +59,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { FormField, FormSection, FormTemplate, FieldType, FIELD_TYPES, FieldOption } from '@/types/forms';
+import { FormField, FormSection, FormTemplate, FieldType, FIELD_TYPES, FieldOption, FieldWidth, FIELD_WIDTH_OPTIONS } from '@/types/forms';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Icon mapping for field types
 const FIELD_ICONS: Record<FieldType, React.ElementType> = {
@@ -340,110 +341,187 @@ export function FormBuilderCanvas({
     toast.success('Field deleted');
   };
 
+  const updateFieldWidth = (fieldId: string, width: FieldWidth) => {
+    onTemplateChange({
+      ...template,
+      fields: template.fields.map(f => 
+        f.id === fieldId ? { ...f, width } : f
+      ),
+    });
+  };
+
+  // Get grid column span based on field width
+  const getGridCols = (width?: FieldWidth): number => {
+    const option = FIELD_WIDTH_OPTIONS.find(o => o.value === width);
+    return option?.cols || 12;
+  };
+
   const renderFieldPreview = (field: FormField) => {
     const Icon = FIELD_ICONS[field.type];
     const isSelected = selectedFieldId === field.id;
     const isDragging = draggedFieldId === field.id;
     const isDragOver = dragOverFieldId === field.id;
+    const currentWidth = field.width || 'full';
+    const gridCols = getGridCols(field.width);
 
     return (
-      <Paper
+      <Box
         key={field.id}
-        draggable
-        onDragStart={(e) => handleDragStart(e, field.id)}
-        onDragOver={(e) => handleDragOver(e, field.id)}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => handleDrop(e, field.id)}
-        onDragEnd={handleDragEnd}
-        onClick={() => onFieldSelect(field.id)}
         sx={{
-          p: 2,
-          mb: 1,
-          cursor: 'pointer',
-          border: 2,
-          borderColor: isSelected ? 'primary.main' : isDragOver ? 'primary.light' : 'transparent',
-          bgcolor: isDragging ? 'action.selected' : isSelected ? 'primary.50' : 'background.paper',
-          opacity: isDragging ? 0.5 : 1,
-          transition: 'all 0.15s ease',
-          '&:hover': {
-            borderColor: isSelected ? 'primary.main' : 'grey.300',
-            '& .field-actions': {
-              opacity: 1,
-            },
-          },
+          gridColumn: `span ${gridCols}`,
         }}
       >
-        <Stack direction="row" spacing={1.5} alignItems="flex-start">
-          {/* Drag handle */}
-          <Box
-            sx={{
-              cursor: 'grab',
-              color: 'text.disabled',
-              '&:hover': { color: 'text.secondary' },
-              mt: 0.5,
-            }}
-          >
-            <GripVertical size={16} />
-          </Box>
+        <Paper
+          draggable
+          onDragStart={(e) => handleDragStart(e, field.id)}
+          onDragOver={(e) => handleDragOver(e, field.id)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, field.id)}
+          onDragEnd={handleDragEnd}
+          onClick={() => onFieldSelect(field.id)}
+          sx={{
+            p: 2,
+            cursor: 'pointer',
+            border: 2,
+            borderColor: isSelected ? 'primary.main' : isDragOver ? 'primary.light' : 'transparent',
+            bgcolor: isDragging ? 'action.selected' : isSelected ? 'primary.50' : 'background.paper',
+            opacity: isDragging ? 0.5 : 1,
+            transition: 'all 0.15s ease',
+            height: '100%',
+            '&:hover': {
+              borderColor: isSelected ? 'primary.main' : 'grey.300',
+              '& .field-actions': {
+                opacity: 1,
+              },
+              '& .width-controls': {
+                opacity: 1,
+              },
+            },
+          }}
+        >
+          <Stack spacing={1}>
+            <Stack direction="row" spacing={1.5} alignItems="flex-start">
+              {/* Drag handle */}
+              <Box
+                sx={{
+                  cursor: 'grab',
+                  color: 'text.disabled',
+                  '&:hover': { color: 'text.secondary' },
+                  mt: 0.5,
+                }}
+              >
+                <GripVertical size={16} />
+              </Box>
 
-          {/* Field icon */}
-          <Box
-            sx={{
-              p: 1,
-              borderRadius: 1,
-              bgcolor: 'grey.100',
-              color: 'grey.600',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Icon size={16} />
-          </Box>
+              {/* Field icon */}
+              <Box
+                sx={{
+                  p: 1,
+                  borderRadius: 1,
+                  bgcolor: 'grey.100',
+                  color: 'grey.600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon size={16} />
+              </Box>
 
-          {/* Field content */}
-          <Box flex={1} sx={{ minWidth: 0 }}>
-            <Stack direction="row" alignItems="center" spacing={0.5}>
-              <Typography variant="body2" fontWeight={500} noWrap>
-                {field.label}
-              </Typography>
-              {field.required && (
-                <Asterisk size={12} className="text-red-500" />
-              )}
-              {field.conditionalLogic && field.conditionalLogic.length > 0 && (
-                <Zap size={12} className="text-amber-500" />
-              )}
-              {field.scoring?.enabled && (
-                <FileCheck size={12} className="text-blue-500" />
-              )}
+              {/* Field content */}
+              <Box flex={1} sx={{ minWidth: 0 }}>
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Typography variant="body2" fontWeight={500} noWrap>
+                    {field.label}
+                  </Typography>
+                  {field.required && (
+                    <Asterisk size={12} className="text-red-500" />
+                  )}
+                  {field.conditionalLogic && field.conditionalLogic.length > 0 && (
+                    <Zap size={12} className="text-amber-500" />
+                  )}
+                  {field.scoring?.enabled && (
+                    <FileCheck size={12} className="text-blue-500" />
+                  )}
+                </Stack>
+                <Typography variant="caption" color="text.secondary" noWrap>
+                  {FIELD_TYPES.find(ft => ft.type === field.type)?.label}
+                  {field.width && field.width !== 'full' && ` • ${field.width}`}
+                </Typography>
+              </Box>
+
+              {/* Actions */}
+              <Stack
+                direction="row"
+                spacing={0.5}
+                className="field-actions"
+                sx={{ opacity: 0, transition: 'opacity 0.15s' }}
+              >
+                <IconButton size="small" onClick={(e) => { e.stopPropagation(); duplicateField(field); }}>
+                  <Copy size={14} />
+                </IconButton>
+                <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); deleteField(field.id); }}>
+                  <Trash2 size={14} />
+                </IconButton>
+              </Stack>
             </Stack>
-            <Typography variant="caption" color="text.secondary" noWrap>
-              {FIELD_TYPES.find(ft => ft.type === field.type)?.label}
-              {field.description && ` • ${field.description}`}
-            </Typography>
 
             {/* Field preview based on type */}
-            <Box sx={{ mt: 1 }}>
+            <Box sx={{ pl: 4.5 }}>
               {renderFieldInput(field)}
             </Box>
-          </Box>
 
-          {/* Actions */}
-          <Stack
-            direction="row"
-            spacing={0.5}
-            className="field-actions"
-            sx={{ opacity: 0, transition: 'opacity 0.15s' }}
-          >
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); duplicateField(field); }}>
-              <Copy size={14} />
-            </IconButton>
-            <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); deleteField(field.id); }}>
-              <Trash2 size={14} />
-            </IconButton>
+            {/* Inline Width Controls */}
+            <Stack 
+              direction="row" 
+              spacing={0.5} 
+              className="width-controls"
+              sx={{ 
+                opacity: isSelected ? 1 : 0, 
+                transition: 'opacity 0.15s',
+                pt: 1,
+                borderTop: 1,
+                borderColor: 'divider',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Typography variant="caption" color="text.secondary" sx={{ mr: 1, alignSelf: 'center' }}>
+                Width:
+              </Typography>
+              <TooltipProvider>
+                {FIELD_WIDTH_OPTIONS.map((option) => (
+                  <Tooltip key={option.value}>
+                    <TooltipTrigger asChild>
+                      <Box
+                        onClick={() => updateFieldWidth(field.id, option.value)}
+                        sx={{
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 0.5,
+                          cursor: 'pointer',
+                          bgcolor: currentWidth === option.value ? 'primary.main' : 'grey.100',
+                          color: currentWidth === option.value ? 'white' : 'text.secondary',
+                          fontSize: '0.65rem',
+                          fontWeight: 500,
+                          transition: 'all 0.1s ease',
+                          '&:hover': {
+                            bgcolor: currentWidth === option.value ? 'primary.dark' : 'grey.200',
+                          },
+                        }}
+                      >
+                        {option.label}
+                      </Box>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{option.label} width ({option.cols}/12 columns)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </TooltipProvider>
+            </Stack>
           </Stack>
-        </Stack>
-      </Paper>
+        </Paper>
+      </Box>
     );
   };
 
@@ -778,7 +856,17 @@ export function FormBuilderCanvas({
                 </Box>
               ) : (
                 <>
-                  {sectionFields.map(field => renderFieldPreview(field))}
+                  {/* Grid layout for fields */}
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(12, 1fr)',
+                      gap: 1,
+                      mb: 1,
+                    }}
+                  >
+                    {sectionFields.map(field => renderFieldPreview(field))}
+                  </Box>
                   {/* Drop zone at the end of the section */}
                   <Box
                     sx={{
