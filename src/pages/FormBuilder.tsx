@@ -849,13 +849,24 @@ export default function FormBuilder() {
               </IconButton>
             </Stack>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Click on any token to copy it to clipboard. Tokens are replaced with real values when forms are distributed.
+              {selectedFieldId 
+                ? 'Click a token to insert it into the selected field\'s default value, or copy to clipboard.'
+                : 'Click a token to copy it to clipboard. Select a field first to enable direct insertion.'
+              }
             </Typography>
           </Box>
           <Box sx={{ flex: 1, overflow: 'hidden', p: 2 }}>
             <CustomTokenManager
               customTokens={customTokens}
               onTokensChange={setCustomTokens}
+              mode={selectedFieldId ? 'insert' : 'copy'}
+              onInsertToken={(token) => {
+                if (selectedFieldId) {
+                  const currentField = template.fields.find(f => f.id === selectedFieldId);
+                  const currentValue = String(currentField?.defaultValue || '');
+                  handleFieldUpdate(selectedFieldId, { defaultValue: currentValue + token });
+                }
+              }}
             />
           </Box>
         </Box>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box,
   Stack,
@@ -9,24 +9,23 @@ import {
   Chip,
   Collapse,
   Divider,
+  InputAdornment,
+  Tooltip,
 } from '@mui/material';
 import { 
   Plus, 
   Trash2, 
-  Edit2, 
   Check, 
   X, 
   Wand2, 
   ChevronDown,
   ChevronUp,
   Copy,
-  Users,
-  Calendar,
-  MapPin,
-  Clock,
   FileText,
   Building2,
   User,
+  Search,
+  MousePointerClick,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,20 +93,55 @@ const TOKEN_GROUPS = [
 interface CustomTokenManagerProps {
   customTokens: AutoPopulateToken[];
   onTokensChange: (tokens: AutoPopulateToken[]) => void;
+  onInsertToken?: (token: string) => void;
+  mode?: 'copy' | 'insert';
 }
 
-export function CustomTokenManager({ customTokens, onTokensChange }: CustomTokenManagerProps) {
+export function CustomTokenManager({ 
+  customTokens, 
+  onTokensChange, 
+  onInsertToken,
+  mode = 'copy',
+}: CustomTokenManagerProps) {
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(TOKEN_GROUPS.map(g => g.id))
   );
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [newToken, setNewToken] = useState({
     label: '',
     description: '',
     example: '',
   });
+
+  // Filter tokens based on search query
+  const filteredGroups = useMemo(() => {
+    if (!searchQuery.trim()) return TOKEN_GROUPS;
+    
+    const query = searchQuery.toLowerCase();
+    return TOKEN_GROUPS.map(group => ({
+      ...group,
+      tokens: group.tokens.filter(
+        token =>
+          token.token.toLowerCase().includes(query) ||
+          token.label.toLowerCase().includes(query) ||
+          token.description.toLowerCase().includes(query)
+      ),
+    })).filter(group => group.tokens.length > 0);
+  }, [searchQuery]);
+
+  const filteredCustomTokens = useMemo(() => {
+    if (!searchQuery.trim()) return customTokens;
+    
+    const query = searchQuery.toLowerCase();
+    return customTokens.filter(
+      token =>
+        token.token.toLowerCase().includes(query) ||
+        token.label.toLowerCase().includes(query) ||
+        token.description.toLowerCase().includes(query)
+    );
+  }, [customTokens, searchQuery]);
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups(prev => {
@@ -121,11 +155,16 @@ export function CustomTokenManager({ customTokens, onTokensChange }: CustomToken
     });
   };
 
-  const handleCopyToken = (token: string) => {
-    navigator.clipboard.writeText(token);
-    setCopiedToken(token);
-    setTimeout(() => setCopiedToken(null), 2000);
-    toast.success('Token copied to clipboard');
+  const handleTokenAction = (token: string) => {
+    if (mode === 'insert' && onInsertToken) {
+      onInsertToken(token);
+      toast.success('Token inserted');
+    } else {
+      navigator.clipboard.writeText(token);
+      setCopiedToken(token);
+      setTimeout(() => setCopiedToken(null), 2000);
+      toast.success('Token copied to clipboard');
+    }
   };
 
   const generateTokenKey = (label: string): string => {
@@ -164,8 +203,40 @@ export function CustomTokenManager({ customTokens, onTokensChange }: CustomToken
   return (
     <ScrollArea className="h-full">
       <Stack spacing={2}>
+        {/* Search Input */}
+        <TextField
+          size="small"
+          fullWidth
+          placeholder="Search tokens..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={16} />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => setSearchQuery('')}>
+                  <X size={14} />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        {/* Mode Indicator */}
+        {mode === 'insert' && (
+          <Alert severity="info" icon={<MousePointerClick size={16} />} sx={{ py: 0.5 }}>
+            <Typography variant="caption">
+              Click a token to insert it directly into the selected field
+            </Typography>
+          </Alert>
+        )}
+
         {/* System Token Groups */}
-        {TOKEN_GROUPS.map((group) => {
+        {filteredGroups.map((group) => {
           const Icon = group.icon;
           const isExpanded = expandedGroups.has(group.id);
           
@@ -189,6 +260,11 @@ export function CustomTokenManager({ customTokens, onTokensChange }: CustomToken
                   <Typography variant="subtitle2" fontWeight={600}>
                     {group.label}
                   </Typography>
+                  <Chip 
+                    label={group.tokens.length} 
+                    size="small" 
+                    sx={{ height: 20, fontSize: '0.7rem' }} 
+                  />
                 </Stack>
                 <IconButton size="small" sx={{ bgcolor: 'grey.800', color: 'white', width: 24, height: 24 }}>
                   {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -200,37 +276,40 @@ export function CustomTokenManager({ customTokens, onTokensChange }: CustomToken
                 <Box sx={{ p: 2, border: 1, borderTop: 0, borderColor: 'divider', borderRadius: '0 0 8px 8px' }}>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {group.tokens.map((token) => (
-                      <Chip
-                        key={token.token}
-                        label={
-                          <Stack direction="row" alignItems="center" spacing={0.5}>
-                            <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                              {token.token}
-                            </span>
-                            {copiedToken === token.token ? (
-                              <Check size={12} className="text-green-500" />
-                            ) : (
-                              <Copy size={12} />
-                            )}
-                          </Stack>
-                        }
-                        onClick={() => handleCopyToken(token.token)}
-                        sx={{
-                          height: 32,
-                          bgcolor: 'white',
-                          border: 1,
-                          borderColor: 'primary.main',
-                          color: 'primary.main',
-                          fontFamily: 'monospace',
-                          cursor: 'pointer',
-                          '&:hover': {
-                            bgcolor: 'primary.50',
-                          },
-                          '& .MuiChip-label': {
-                            px: 1,
-                          },
-                        }}
-                      />
+                      <Tooltip key={token.token} title={token.description} arrow>
+                        <Chip
+                          label={
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                                {token.token}
+                              </span>
+                              {copiedToken === token.token ? (
+                                <Check size={12} className="text-green-500" />
+                              ) : mode === 'insert' ? (
+                                <MousePointerClick size={12} />
+                              ) : (
+                                <Copy size={12} />
+                              )}
+                            </Stack>
+                          }
+                          onClick={() => handleTokenAction(token.token)}
+                          sx={{
+                            height: 32,
+                            bgcolor: 'white',
+                            border: 1,
+                            borderColor: 'primary.main',
+                            color: 'primary.main',
+                            fontFamily: 'monospace',
+                            cursor: 'pointer',
+                            '&:hover': {
+                              bgcolor: 'primary.50',
+                            },
+                            '& .MuiChip-label': {
+                              px: 1,
+                            },
+                          }}
+                        />
+                      </Tooltip>
                     ))}
                   </Box>
                 </Box>
@@ -238,6 +317,15 @@ export function CustomTokenManager({ customTokens, onTokensChange }: CustomToken
             </Box>
           );
         })}
+
+        {/* No Results Message */}
+        {filteredGroups.length === 0 && searchQuery && (
+          <Alert severity="info">
+            <Typography variant="body2">
+              No system tokens match "{searchQuery}"
+            </Typography>
+          </Alert>
+        )}
 
         <Divider sx={{ my: 2 }} />
 
@@ -315,40 +403,47 @@ export function CustomTokenManager({ customTokens, onTokensChange }: CustomToken
               </Box>
             )}
 
-            {customTokens.length === 0 && !isAdding ? (
+            {filteredCustomTokens.length === 0 && !isAdding ? (
               <Alert severity="info" sx={{ '& .MuiAlert-message': { width: '100%' } }}>
                 <Typography variant="body2">
-                  No custom tokens defined. Create tokens for organization-specific data like company name, policies, etc.
+                  {searchQuery ? 'No custom tokens match your search.' : 'No custom tokens defined. Create tokens for organization-specific data like company name, policies, etc.'}
                 </Typography>
               </Alert>
             ) : (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {customTokens.map((token) => (
-                  <Chip
-                    key={token.token}
-                    label={
-                      <Stack direction="row" alignItems="center" spacing={0.5}>
-                        <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                          {token.token}
-                        </span>
-                        <Copy size={12} />
-                      </Stack>
-                    }
-                    onClick={() => handleCopyToken(token.token)}
-                    onDelete={() => handleDeleteToken(token.token)}
-                    sx={{
-                      height: 32,
-                      bgcolor: 'white',
-                      border: 1,
-                      borderColor: 'secondary.main',
-                      color: 'secondary.main',
-                      fontFamily: 'monospace',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        bgcolor: 'secondary.50',
-                      },
-                    }}
-                  />
+                {filteredCustomTokens.map((token) => (
+                  <Tooltip key={token.token} title={token.description} arrow>
+                    <Chip
+                      label={
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                            {token.token}
+                          </span>
+                          {copiedToken === token.token ? (
+                            <Check size={12} className="text-green-500" />
+                          ) : mode === 'insert' ? (
+                            <MousePointerClick size={12} />
+                          ) : (
+                            <Copy size={12} />
+                          )}
+                        </Stack>
+                      }
+                      onClick={() => handleTokenAction(token.token)}
+                      onDelete={() => handleDeleteToken(token.token)}
+                      sx={{
+                        height: 32,
+                        bgcolor: 'white',
+                        border: 1,
+                        borderColor: 'secondary.main',
+                        color: 'secondary.main',
+                        fontFamily: 'monospace',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          bgcolor: 'secondary.50',
+                        },
+                      }}
+                    />
+                  </Tooltip>
                 ))}
               </Box>
             )}
