@@ -101,9 +101,83 @@ export function FormBuilderCanvas({
 }: FormBuilderCanvasProps) {
   const [draggedFieldId, setDraggedFieldId] = useState<string | null>(null);
   const [dragOverFieldId, setDragOverFieldId] = useState<string | null>(null);
+  const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(template.sections.map(s => s.id))
   );
+
+  // Add a new field from the palette
+  const addFieldToSection = (fieldType: FieldType, sectionId: string) => {
+    const fieldDef = FIELD_TYPES.find(f => f.type === fieldType);
+    const sectionFields = template.fields.filter(f => f.sectionId === sectionId);
+    const newField: FormField = {
+      id: `field-${Date.now()}`,
+      type: fieldType,
+      label: fieldDef?.label || 'New Field',
+      required: false,
+      order: sectionFields.length,
+      sectionId,
+    };
+    
+    if (['dropdown', 'multi_select', 'radio'].includes(fieldType)) {
+      newField.options = [
+        { id: 'opt-1', label: 'Option 1', value: 'option_1' },
+        { id: 'opt-2', label: 'Option 2', value: 'option_2' },
+      ];
+    }
+
+    onTemplateChange({
+      ...template,
+      fields: [...template.fields, newField],
+    });
+    onFieldSelect(newField.id);
+    toast.success(`Added ${fieldDef?.label || 'field'}`);
+  };
+
+  // Handle drop from palette onto section
+  const handleSectionDragOver = (e: React.DragEvent, sectionId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const fieldType = e.dataTransfer.types.includes('fieldtype');
+    if (fieldType || draggedFieldId) {
+      setDragOverSectionId(sectionId);
+    }
+  };
+
+  const handleSectionDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverSectionId(null);
+  };
+
+  const handleSectionDrop = (e: React.DragEvent, sectionId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverSectionId(null);
+
+    // Check if dropping a new field from palette
+    const fieldType = e.dataTransfer.getData('fieldType') as FieldType;
+    if (fieldType && FIELD_TYPES.some(f => f.type === fieldType)) {
+      addFieldToSection(fieldType, sectionId);
+      return;
+    }
+
+    // Otherwise handle reordering existing field into this section
+    if (draggedFieldId) {
+      const draggedField = template.fields.find(f => f.id === draggedFieldId);
+      if (draggedField && draggedField.sectionId !== sectionId) {
+        const sectionFields = template.fields.filter(f => f.sectionId === sectionId);
+        const newFields = template.fields.map(field => {
+          if (field.id === draggedFieldId) {
+            return { ...field, sectionId, order: sectionFields.length };
+          }
+          return field;
+        });
+        onTemplateChange({ ...template, fields: newFields });
+        toast.success('Field moved to section');
+      }
+      setDraggedFieldId(null);
+    }
+  };
 
   // Group fields by section
   const fieldsBySection = useMemo(() => {
@@ -509,6 +583,7 @@ export function FormBuilderCanvas({
   const renderSection = (section: FormSection) => {
     const sectionFields = fieldsBySection[section.id] || [];
     const isExpanded = expandedSections.has(section.id);
+    const isDragOver = dragOverSectionId === section.id;
 
     return (
       <Box key={section.id} sx={{ mb: 2 }}>
@@ -573,25 +648,53 @@ export function FormBuilderCanvas({
           </Paper>
 
           <CollapsibleContent>
-            <Box sx={{ pl: 2 }}>
+            <Box 
+              sx={{ pl: 2 }}
+              onDragOver={(e) => handleSectionDragOver(e, section.id)}
+              onDragLeave={handleSectionDragLeave}
+              onDrop={(e) => handleSectionDrop(e, section.id)}
+            >
               {sectionFields.length === 0 ? (
                 <Box
                   sx={{
                     p: 3,
                     border: 2,
-                    borderColor: 'grey.200',
+                    borderColor: isDragOver ? 'primary.main' : 'grey.200',
                     borderStyle: 'dashed',
                     borderRadius: 1,
                     textAlign: 'center',
-                    bgcolor: 'grey.50',
+                    bgcolor: isDragOver ? 'primary.50' : 'grey.50',
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary">
-                    Drag fields here or click + to add
+                  <Typography variant="body2" color={isDragOver ? 'primary.main' : 'text.secondary'}>
+                    {isDragOver ? 'Drop field here' : 'Drag fields here or click from palette to add'}
                   </Typography>
                 </Box>
               ) : (
-                sectionFields.map(field => renderFieldPreview(field))
+                <>
+                  {sectionFields.map(field => renderFieldPreview(field))}
+                  {/* Drop zone at the end of the section */}
+                  <Box
+                    sx={{
+                      p: 2,
+                      border: 2,
+                      borderColor: isDragOver ? 'primary.main' : 'transparent',
+                      borderStyle: 'dashed',
+                      borderRadius: 1,
+                      textAlign: 'center',
+                      bgcolor: isDragOver ? 'primary.50' : 'transparent',
+                      transition: 'all 0.15s ease',
+                      minHeight: isDragOver ? 48 : 8,
+                    }}
+                  >
+                    {isDragOver && (
+                      <Typography variant="caption" color="primary.main">
+                        Drop here to add at end
+                      </Typography>
+                    )}
+                  </Box>
+                </>
               )}
             </Box>
           </CollapsibleContent>
