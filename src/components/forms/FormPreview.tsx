@@ -356,6 +356,11 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
               value={value || ''}
               label={field.label}
               onChange={(e) => handleChange(field.id, e.target.value)}
+              renderValue={(selected) => {
+                if (!selected) return '';
+                const option = field.options?.find(o => o.value === selected);
+                return option?.label || selected;
+              }}
             >
               {field.options?.map(opt => (
                 <MenuItem key={opt.id} value={opt.value}>{opt.label}</MenuItem>

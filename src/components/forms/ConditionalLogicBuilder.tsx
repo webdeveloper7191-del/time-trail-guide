@@ -275,14 +275,39 @@ export function ConditionalLogicBuilder({
                           </Select>
 
                           {/* Value (hide for is_empty/is_not_empty) */}
-                          {!['is_empty', 'is_not_empty'].includes(condition.operator) && (
-                            <Input
-                              value={String(condition.value)}
-                              onChange={(e) => updateCondition(rule.id, condIndex, { value: e.target.value })}
-                              placeholder="Value"
-                              className="w-[100px] h-8 text-xs"
-                            />
-                          )}
+                          {!['is_empty', 'is_not_empty'].includes(condition.operator) && (() => {
+                            const selectedField = allFields.find(f => f.id === condition.fieldId);
+                            const hasOptions = selectedField?.options && selectedField.options.length > 0;
+                            
+                            if (hasOptions) {
+                              return (
+                                <Select
+                                  value={String(condition.value)}
+                                  onValueChange={(value) => updateCondition(rule.id, condIndex, { value })}
+                                >
+                                  <SelectTrigger className="w-[120px] h-8 text-xs">
+                                    <SelectValue placeholder="Select value" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-background z-50">
+                                    {selectedField.options?.map(opt => (
+                                      <SelectItem key={opt.id} value={opt.value}>
+                                        {opt.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              );
+                            }
+                            
+                            return (
+                              <Input
+                                value={String(condition.value)}
+                                onChange={(e) => updateCondition(rule.id, condIndex, { value: e.target.value })}
+                                placeholder="Value"
+                                className="w-[100px] h-8 text-xs"
+                              />
+                            );
+                          })()}
 
                           {/* Delete condition */}
                           {rule.conditions.length > 1 && (
