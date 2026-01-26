@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Stack, Typography, Tab, Tabs, Chip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Stack, Typography, Tab, Tabs, Chip, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Popover, TextField } from '@mui/material';
 import { FormBuilderCanvas } from '@/components/forms/FormBuilderCanvas';
 import { FormFieldPalette } from '@/components/forms/FormFieldPalette';
 import { FormFieldProperties } from '@/components/forms/FormFieldProperties';
@@ -10,6 +10,7 @@ import { SubmissionWorkflow } from '@/components/forms/SubmissionWorkflow';
 import { FormAnalyticsDashboard } from '@/components/forms/FormAnalyticsDashboard';
 import { TaskManagementPanel } from '@/components/forms/TaskManagementPanel';
 import { OfflineSyncStatusBar } from '@/components/forms/OfflineSyncStatusBar';
+import { FormVersionHistoryPanel } from '@/components/forms/FormVersionHistoryPanel';
 import { FormTemplate, FormField, FieldType, FIELD_TYPES } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Library, Send, Eye, ClipboardCheck, BarChart3, ListTodo, Save, Upload, Users, Check } from 'lucide-react';
+import { ArrowLeft, Library, Send, Eye, ClipboardCheck, BarChart3, ListTodo, Save, Upload, Users, Check, History, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 type ViewMode = 'library' | 'builder' | 'preview' | 'assignments' | 'submissions' | 'analytics' | 'tasks';
@@ -30,6 +31,10 @@ export default function FormBuilder() {
   const [previewTemplate, setPreviewTemplate] = useState<FormTemplate | null>(null);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [editNameAnchor, setEditNameAnchor] = useState<HTMLElement | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [editingDescription, setEditingDescription] = useState('');
 
   const createNewTemplate = (): FormTemplate => ({
     id: `template-${Date.now()}`,
@@ -132,6 +137,34 @@ export default function FormBuilder() {
     toast.info('Create an assignment rule to distribute this form to staff');
   };
 
+  const handleOpenEditName = (event: React.MouseEvent<HTMLElement>) => {
+    setEditingName(template.name);
+    setEditingDescription(template.description || '');
+    setEditNameAnchor(event.currentTarget);
+  };
+
+  const handleSaveNameDescription = () => {
+    setTemplate(prev => ({
+      ...prev,
+      name: editingName.trim() || 'Untitled Form',
+      description: editingDescription.trim(),
+      updatedAt: new Date().toISOString(),
+    }));
+    setEditNameAnchor(null);
+    toast.success('Template details updated');
+  };
+
+  const handleRestoreVersion = (restoredTemplate: FormTemplate) => {
+    setTemplate(restoredTemplate);
+    setTemplates(prev => {
+      const exists = prev.find(t => t.id === restoredTemplate.id);
+      if (exists) {
+        return prev.map(t => t.id === restoredTemplate.id ? restoredTemplate : t);
+      }
+      return [...prev, restoredTemplate];
+    });
+  };
+
   // Preview mode
   if (viewMode === 'preview' && previewTemplate) {
     return (
@@ -160,9 +193,34 @@ export default function FormBuilder() {
                 Back
               </Button>
             )}
-            <Typography variant="h5" fontWeight={600}>
-              {viewMode === 'builder' ? template.name : 'Form Management'}
-            </Typography>
+            {viewMode === 'builder' ? (
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Box 
+                  onClick={handleOpenEditName}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '&:hover': { 
+                      bgcolor: 'action.hover',
+                      borderRadius: 1,
+                    },
+                    p: 0.5,
+                    mx: -0.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <Typography variant="h5" fontWeight={600}>
+                    {template.name}
+                  </Typography>
+                  <Pencil size={14} className="text-muted-foreground" />
+                </Box>
+              </Stack>
+            ) : (
+              <Typography variant="h5" fontWeight={600}>
+                Form Management
+              </Typography>
+            )}
             {viewMode === 'builder' && (
               <Chip 
                 label={template.status} 
@@ -175,6 +233,14 @@ export default function FormBuilder() {
 
           {viewMode === 'builder' && (
             <Stack direction="row" spacing={1}>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowHistoryPanel(!showHistoryPanel)}
+              >
+                <History className="h-4 w-4 mr-1" />
+                History
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm"
@@ -323,17 +389,75 @@ export default function FormBuilder() {
             />
           </Box>
 
-          {/* Right: Properties */}
+          {/* Right: Properties or History */}
           <Box sx={{ width: 320, borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <FormFieldProperties
-              template={template}
-              selectedFieldId={selectedFieldId}
-              onFieldUpdate={handleFieldUpdate}
-              onClose={() => setSelectedFieldId(null)}
-            />
+            {showHistoryPanel ? (
+              <FormVersionHistoryPanel
+                currentTemplate={template}
+                onRestore={handleRestoreVersion}
+                onClose={() => setShowHistoryPanel(false)}
+                onPreview={handlePreviewTemplate}
+              />
+            ) : (
+              <FormFieldProperties
+                template={template}
+                selectedFieldId={selectedFieldId}
+                onFieldUpdate={handleFieldUpdate}
+                onClose={() => setSelectedFieldId(null)}
+              />
+            )}
           </Box>
         </Box>
       )}
+
+      {/* Edit Name/Description Popover */}
+      <Popover
+        open={Boolean(editNameAnchor)}
+        anchorEl={editNameAnchor}
+        onClose={() => setEditNameAnchor(null)}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+      >
+        <Box sx={{ p: 2, width: 320 }}>
+          <Stack spacing={2}>
+            <Typography variant="subtitle2" fontWeight={600}>
+              Edit Template Details
+            </Typography>
+            <TextField
+              label="Template Name"
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              size="small"
+              fullWidth
+              autoFocus
+            />
+            <TextField
+              label="Description"
+              value={editingDescription}
+              onChange={(e) => setEditingDescription(e.target.value)}
+              size="small"
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Brief description of this form's purpose..."
+            />
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button variant="ghost" size="sm" onClick={() => setEditNameAnchor(null)}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSaveNameDescription}>
+                Save
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      </Popover>
 
       {/* Publish Dialog */}
       <Dialog open={showPublishDialog} onClose={() => setShowPublishDialog(false)} maxWidth="sm" fullWidth>
