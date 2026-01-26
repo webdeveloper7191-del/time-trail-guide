@@ -76,6 +76,18 @@ export interface FieldTemplate {
   category?: string;
 }
 
+// Row group for visually grouping related fields
+export interface FieldGroup {
+  id: string;
+  label: string;
+  sectionId: string;
+  order: number;
+  description?: string;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
+  style?: 'outlined' | 'filled' | 'minimal';
+}
+
 export interface FormField {
   id: string;
   type: FieldType;
@@ -115,6 +127,7 @@ export interface FormField {
     filterByLocation?: string[];
   };
   sectionId?: string;
+  groupId?: string; // Optional group ID for row grouping
   order: number;
 }
 
@@ -137,6 +150,7 @@ export interface FormTemplate {
   status: 'draft' | 'published' | 'archived';
   sections: FormSection[];
   fields: FormField[];
+  groups?: FieldGroup[]; // Optional field groups for row grouping
   scoring?: ScoringConfig;
   branding?: {
     logo?: string;

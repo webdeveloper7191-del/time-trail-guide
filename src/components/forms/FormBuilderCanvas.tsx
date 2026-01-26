@@ -9,6 +9,7 @@ import {
   Divider,
   Alert,
   AlertTitle,
+  Button as MuiButton,
 } from '@mui/material';
 import {
   GripVertical,
@@ -47,6 +48,9 @@ import {
   Save,
   Undo2,
   Redo2,
+  Layers,
+  Ungroup,
+  Edit3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,7 +63,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { FormField, FormSection, FormTemplate, FieldType, FIELD_TYPES, FieldOption, FieldWidth, FIELD_WIDTH_OPTIONS } from '@/types/forms';
+import { FormField, FormSection, FormTemplate, FieldType, FIELD_TYPES, FieldOption, FieldWidth, FIELD_WIDTH_OPTIONS, FieldGroup } from '@/types/forms';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -110,6 +114,12 @@ export function FormBuilderCanvas({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(template.sections.map(s => s.id))
   );
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    new Set((template.groups || []).map(g => g.id))
+  );
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingGroupLabel, setEditingGroupLabel] = useState('');
+  const [selectedFieldsForGroup, setSelectedFieldsForGroup] = useState<Set<string>>(new Set());
 
   // Add a new field from the palette
   const addFieldToSection = (fieldType: FieldType, sectionId: string) => {
@@ -206,6 +216,130 @@ export function FormBuilderCanvas({
         next.delete(sectionId);
       } else {
         next.add(sectionId);
+      }
+      return next;
+    });
+  };
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
+  // Create a new group from selected fields
+  const createGroupFromSelection = (sectionId: string) => {
+    const selectedInSection = template.fields.filter(
+      f => selectedFieldsForGroup.has(f.id) && f.sectionId === sectionId
+    );
+    
+    if (selectedInSection.length === 0) {
+      toast.error('Select fields first to create a group');
+      return;
+    }
+
+    const newGroup: FieldGroup = {
+      id: `group-${Date.now()}`,
+      label: 'New Field Group',
+      sectionId,
+      order: (template.groups || []).filter(g => g.sectionId === sectionId).length,
+      style: 'outlined',
+    };
+
+    // Assign selected fields to this group
+    const updatedFields = template.fields.map(f => 
+      selectedFieldsForGroup.has(f.id) && f.sectionId === sectionId
+        ? { ...f, groupId: newGroup.id }
+        : f
+    );
+
+    onTemplateChange({
+      ...template,
+      groups: [...(template.groups || []), newGroup],
+      fields: updatedFields,
+    });
+
+    setExpandedGroups(prev => new Set([...prev, newGroup.id]));
+    setSelectedFieldsForGroup(new Set());
+    setEditingGroupId(newGroup.id);
+    setEditingGroupLabel(newGroup.label);
+    toast.success(`Created group with ${selectedInSection.length} field(s)`);
+  };
+
+  // Add field to existing group
+  const addFieldToGroup = (fieldId: string, groupId: string) => {
+    onTemplateChange({
+      ...template,
+      fields: template.fields.map(f => 
+        f.id === fieldId ? { ...f, groupId } : f
+      ),
+    });
+    toast.success('Field added to group');
+  };
+
+  // Remove field from group
+  const removeFieldFromGroup = (fieldId: string) => {
+    onTemplateChange({
+      ...template,
+      fields: template.fields.map(f => 
+        f.id === fieldId ? { ...f, groupId: undefined } : f
+      ),
+    });
+    toast.success('Field removed from group');
+  };
+
+  // Delete a group (but keep the fields)
+  const deleteGroup = (groupId: string) => {
+    onTemplateChange({
+      ...template,
+      groups: (template.groups || []).filter(g => g.id !== groupId),
+      fields: template.fields.map(f => 
+        f.groupId === groupId ? { ...f, groupId: undefined } : f
+      ),
+    });
+    toast.success('Group deleted');
+  };
+
+  // Update group label
+  const saveGroupLabel = (groupId: string) => {
+    if (!editingGroupLabel.trim()) {
+      toast.error('Group label cannot be empty');
+      return;
+    }
+    onTemplateChange({
+      ...template,
+      groups: (template.groups || []).map(g => 
+        g.id === groupId ? { ...g, label: editingGroupLabel.trim() } : g
+      ),
+    });
+    setEditingGroupId(null);
+    setEditingGroupLabel('');
+  };
+
+  // Update group style
+  const updateGroupStyle = (groupId: string, style: 'outlined' | 'filled' | 'minimal') => {
+    onTemplateChange({
+      ...template,
+      groups: (template.groups || []).map(g => 
+        g.id === groupId ? { ...g, style } : g
+      ),
+    });
+  };
+
+  // Toggle field selection for grouping
+  const toggleFieldSelection = (fieldId: string) => {
+    setSelectedFieldsForGroup(prev => {
+      const next = new Set(prev);
+      if (next.has(fieldId)) {
+        next.delete(fieldId);
+      } else {
+        next.add(fieldId);
       }
       return next;
     });
@@ -363,6 +497,8 @@ export function FormBuilderCanvas({
     const isDragOver = dragOverFieldId === field.id;
     const currentWidth = field.width || 'full';
     const gridCols = getGridCols(field.width);
+    const isSelectedForGroup = selectedFieldsForGroup.has(field.id);
+    const existingGroups = (template.groups || []).filter(g => g.sectionId === field.sectionId);
 
     return (
       <Box
@@ -383,17 +519,20 @@ export function FormBuilderCanvas({
             p: 2,
             cursor: 'pointer',
             border: 2,
-            borderColor: isSelected ? 'primary.main' : isDragOver ? 'primary.light' : 'transparent',
-            bgcolor: isDragging ? 'action.selected' : isSelected ? 'primary.50' : 'background.paper',
+            borderColor: isSelectedForGroup ? 'info.main' : isSelected ? 'primary.main' : isDragOver ? 'primary.light' : 'transparent',
+            bgcolor: isSelectedForGroup ? 'info.50' : isDragging ? 'action.selected' : isSelected ? 'primary.50' : 'background.paper',
             opacity: isDragging ? 0.5 : 1,
             transition: 'all 0.15s ease',
             height: '100%',
             '&:hover': {
-              borderColor: isSelected ? 'primary.main' : 'grey.300',
+              borderColor: isSelectedForGroup ? 'info.main' : isSelected ? 'primary.main' : 'grey.300',
               '& .field-actions': {
                 opacity: 1,
               },
               '& .width-controls': {
+                opacity: 1,
+              },
+              '& .group-checkbox': {
                 opacity: 1,
               },
             },
@@ -401,6 +540,31 @@ export function FormBuilderCanvas({
         >
           <Stack spacing={1}>
             <Stack direction="row" spacing={1.5} alignItems="flex-start">
+              {/* Group selection checkbox */}
+              {!field.groupId && (
+                <Box
+                  className="group-checkbox"
+                  onClick={(e) => { e.stopPropagation(); toggleFieldSelection(field.id); }}
+                  sx={{
+                    opacity: isSelectedForGroup ? 1 : 0,
+                    transition: 'opacity 0.15s',
+                    cursor: 'pointer',
+                    p: 0.5,
+                    borderRadius: 0.5,
+                    bgcolor: isSelectedForGroup ? 'info.main' : 'grey.200',
+                    color: isSelectedForGroup ? 'white' : 'grey.600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    '&:hover': {
+                      bgcolor: isSelectedForGroup ? 'info.dark' : 'grey.300',
+                    },
+                  }}
+                >
+                  <CheckSquare size={12} />
+                </Box>
+              )}
+              
               {/* Drag handle */}
               <Box
                 sx={{
@@ -457,6 +621,47 @@ export function FormBuilderCanvas({
                 className="field-actions"
                 sx={{ opacity: 0, transition: 'opacity 0.15s' }}
               >
+                {/* Group menu for existing groups */}
+                {!field.groupId && existingGroups.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <IconButton size="small" onClick={(e) => e.stopPropagation()}>
+                        <Layers size={14} />
+                      </IconButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-background z-50">
+                      {existingGroups.map(group => (
+                        <DropdownMenuItem 
+                          key={group.id}
+                          onClick={(e) => { e.stopPropagation(); addFieldToGroup(field.id, group.id); }}
+                        >
+                          <Layers size={14} className="mr-2" />
+                          Add to "{group.label}"
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
+                {/* Remove from group */}
+                {field.groupId && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <IconButton 
+                          size="small" 
+                          onClick={(e) => { e.stopPropagation(); removeFieldFromGroup(field.id); }}
+                        >
+                          <Ungroup size={14} />
+                        </IconButton>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Remove from group</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                
                 <IconButton size="small" onClick={(e) => { e.stopPropagation(); duplicateField(field); }}>
                   <Copy size={14} />
                 </IconButton>
@@ -715,12 +920,163 @@ export function FormBuilderCanvas({
     }
   };
 
+  // Render a group with its fields
+  const renderFieldGroup = (group: FieldGroup, fields: FormField[]) => {
+    const isGroupExpanded = group.collapsible ? expandedGroups.has(group.id) : true;
+    const isEditing = editingGroupId === group.id;
+
+    const getGroupStyles = () => {
+      switch (group.style) {
+        case 'filled':
+          return {
+            bgcolor: 'grey.50',
+            border: 0,
+            p: 2,
+            borderRadius: 1,
+          };
+        case 'minimal':
+          return {
+            bgcolor: 'transparent',
+            borderLeft: 3,
+            borderColor: 'primary.main',
+            pl: 2,
+            py: 1,
+            borderRadius: 0,
+          };
+        default: // outlined
+          return {
+            bgcolor: 'background.paper',
+            border: 1,
+            borderColor: 'grey.300',
+            p: 2,
+            borderRadius: 1,
+          };
+      }
+    };
+
+    return (
+      <Box key={group.id} sx={{ mb: 2, gridColumn: 'span 12' }}>
+        <Paper
+          sx={{
+            ...getGroupStyles(),
+            transition: 'all 0.15s ease',
+          }}
+        >
+          {/* Group Header */}
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: isGroupExpanded ? 1.5 : 0 }}>
+            {group.collapsible && (
+              <IconButton 
+                size="small" 
+                onClick={() => toggleGroup(group.id)}
+                sx={{ p: 0.5 }}
+              >
+                {isGroupExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              </IconButton>
+            )}
+            
+            <Layers size={14} className="text-primary" />
+            
+            {isEditing ? (
+              <Stack direction="row" spacing={1} alignItems="center" flex={1}>
+                <Input
+                  value={editingGroupLabel}
+                  onChange={(e) => setEditingGroupLabel(e.target.value)}
+                  className="h-7 text-sm flex-1"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveGroupLabel(group.id);
+                    if (e.key === 'Escape') { setEditingGroupId(null); setEditingGroupLabel(''); }
+                  }}
+                />
+                <IconButton size="small" onClick={() => saveGroupLabel(group.id)}>
+                  <FileCheck size={14} />
+                </IconButton>
+              </Stack>
+            ) : (
+              <Typography 
+                variant="body2" 
+                fontWeight={500} 
+                flex={1}
+                onClick={() => { setEditingGroupId(group.id); setEditingGroupLabel(group.label); }}
+                sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
+              >
+                {group.label}
+              </Typography>
+            )}
+
+            <Chip
+              label={`${fields.length} field${fields.length !== 1 ? 's' : ''}`}
+              size="small"
+              sx={{ fontSize: '0.6rem', height: 18 }}
+            />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <IconButton size="small">
+                  <MoreVertical size={14} />
+                </IconButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-background z-50">
+                <DropdownMenuItem onClick={() => { setEditingGroupId(group.id); setEditingGroupLabel(group.label); }}>
+                  <Edit3 size={14} className="mr-2" />
+                  Rename Group
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => updateGroupStyle(group.id, 'outlined')}>
+                  <Box sx={{ width: 14, height: 14, border: 1, borderColor: 'currentColor', borderRadius: 0.5, mr: 1 }} />
+                  Outlined Style
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateGroupStyle(group.id, 'filled')}>
+                  <Box sx={{ width: 14, height: 14, bgcolor: 'grey.400', borderRadius: 0.5, mr: 1 }} />
+                  Filled Style
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateGroupStyle(group.id, 'minimal')}>
+                  <Box sx={{ width: 14, height: 14, borderLeft: 2, borderColor: 'primary.main', mr: 1 }} />
+                  Minimal Style
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={() => deleteGroup(group.id)}
+                >
+                  <Ungroup size={14} className="mr-2" />
+                  Ungroup Fields
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </Stack>
+
+          {/* Group Fields */}
+          {isGroupExpanded && (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(12, 1fr)',
+                gap: 1,
+              }}
+            >
+              {fields.map(field => renderFieldPreview(field))}
+            </Box>
+          )}
+        </Paper>
+      </Box>
+    );
+  };
+
   const renderSection = (section: FormSection) => {
     const sectionFields = fieldsBySection[section.id] || [];
+    const sectionGroups = (template.groups || []).filter(g => g.sectionId === section.id).sort((a, b) => a.order - b.order);
     const isExpanded = expandedSections.has(section.id);
     const isDragOver = dragOverSectionId === section.id;
     const isSectionDragging = draggedSectionId === section.id;
     const isSectionDragTarget = dragOverSectionTarget === section.id;
+    
+    // Separate grouped and ungrouped fields
+    const groupedFieldIds = new Set(sectionFields.filter(f => f.groupId).map(f => f.groupId));
+    const ungroupedFields = sectionFields.filter(f => !f.groupId);
+    
+    // Check if any fields are selected for grouping
+    const selectedInSection = sectionFields.filter(f => selectedFieldsForGroup.has(f.id));
 
     return (
       <Box 
@@ -785,11 +1141,22 @@ export function FormBuilderCanvas({
                     </Typography>
                   )}
                 </Box>
-                <Chip
-                  label={`${sectionFields.length} field${sectionFields.length !== 1 ? 's' : ''}`}
-                  size="small"
-                  sx={{ fontSize: '0.65rem', height: 20 }}
-                />
+                <Stack direction="row" spacing={0.5}>
+                  {sectionGroups.length > 0 && (
+                    <Chip
+                      label={`${sectionGroups.length} group${sectionGroups.length !== 1 ? 's' : ''}`}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      sx={{ fontSize: '0.6rem', height: 18 }}
+                    />
+                  )}
+                  <Chip
+                    label={`${sectionFields.length} field${sectionFields.length !== 1 ? 's' : ''}`}
+                    size="small"
+                    sx={{ fontSize: '0.65rem', height: 20 }}
+                  />
+                </Stack>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <IconButton size="small" onClick={(e) => e.stopPropagation()}>
@@ -817,6 +1184,7 @@ export function FormBuilderCanvas({
                           ...template,
                           sections: template.sections.filter(s => s.id !== section.id),
                           fields: template.fields.filter(f => f.sectionId !== section.id),
+                          groups: (template.groups || []).filter(g => g.sectionId !== section.id),
                         });
                         toast.success('Section deleted');
                       }}
@@ -837,6 +1205,37 @@ export function FormBuilderCanvas({
               onDragLeave={handleFieldDropZoneDragLeave}
               onDrop={(e) => handleSectionDrop(e, section.id)}
             >
+              {/* Selection mode toolbar */}
+              {selectedInSection.length > 0 && (
+                <Alert 
+                  severity="info" 
+                  sx={{ mb: 2 }}
+                  action={
+                    <Stack direction="row" spacing={1}>
+                      <MuiButton 
+                        size="small" 
+                        variant="contained"
+                        startIcon={<Layers size={14} />}
+                        onClick={() => createGroupFromSelection(section.id)}
+                      >
+                        Create Group
+                      </MuiButton>
+                      <MuiButton 
+                        size="small" 
+                        variant="outlined"
+                        onClick={() => setSelectedFieldsForGroup(new Set())}
+                      >
+                        Cancel
+                      </MuiButton>
+                    </Stack>
+                  }
+                >
+                  <AlertTitle sx={{ fontSize: '0.85rem' }}>
+                    {selectedInSection.length} field{selectedInSection.length !== 1 ? 's' : ''} selected
+                  </AlertTitle>
+                </Alert>
+              )}
+
               {sectionFields.length === 0 ? (
                 <Box
                   sx={{
@@ -856,17 +1255,35 @@ export function FormBuilderCanvas({
                 </Box>
               ) : (
                 <>
-                  {/* Grid layout for fields */}
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(12, 1fr)',
-                      gap: 1,
-                      mb: 1,
-                    }}
-                  >
-                    {sectionFields.map(field => renderFieldPreview(field))}
-                  </Box>
+                  {/* Render groups first */}
+                  {sectionGroups.map(group => {
+                    const groupFields = sectionFields.filter(f => f.groupId === group.id).sort((a, b) => a.order - b.order);
+                    return renderFieldGroup(group, groupFields);
+                  })}
+
+                  {/* Then render ungrouped fields in a grid */}
+                  {ungroupedFields.length > 0 && (
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(12, 1fr)',
+                        gap: 1,
+                        mb: 1,
+                      }}
+                    >
+                      {ungroupedFields.map(field => renderFieldPreview(field))}
+                    </Box>
+                  )}
+
+                  {/* Create group button when no selection */}
+                  {selectedInSection.length === 0 && ungroupedFields.length >= 2 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                        Tip: Click the checkbox on fields to select them, then create a group
+                      </Typography>
+                    </Box>
+                  )}
+
                   {/* Drop zone at the end of the section */}
                   <Box
                     sx={{
