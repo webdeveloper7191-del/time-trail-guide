@@ -382,7 +382,7 @@ export default function FormBuilder() {
                 startIcon={<Braces size={16} />}
                 onClick={() => setShowCustomTokens(true)}
               >
-                Custom Tokens
+                Tokens
               </MuiButton>
               <MuiButton 
                 variant="text" 
@@ -831,28 +831,28 @@ export default function FormBuilder() {
         currentField={selectedField}
       />
 
-      {/* Custom Token Manager Drawer */}
+      {/* Token Manager Drawer */}
       <Drawer
         anchor="right"
         open={showCustomTokens}
         onClose={() => setShowCustomTokens(false)}
-        PaperProps={{ sx: { width: 420 } }}
+        PaperProps={{ sx: { width: 480 } }}
       >
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Typography variant="h6" fontWeight={600}>
-                Custom Tokens
+                Tokens
               </Typography>
               <IconButton onClick={() => setShowCustomTokens(false)}>
                 <X size={20} />
               </IconButton>
             </Stack>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Create organization-specific tokens to auto-populate custom data in forms.
+              Click on any token to copy it to clipboard. Tokens are replaced with real values when forms are distributed.
             </Typography>
           </Box>
-          <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+          <Box sx={{ flex: 1, overflow: 'hidden', p: 2 }}>
             <CustomTokenManager
               customTokens={customTokens}
               onTokensChange={setCustomTokens}
