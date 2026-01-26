@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Stack, Typography, Tab, Tabs } from '@mui/material';
+import { Box, Stack, Typography, Tab, Tabs, Chip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { FormBuilderCanvas } from '@/components/forms/FormBuilderCanvas';
 import { FormFieldPalette } from '@/components/forms/FormFieldPalette';
 import { FormFieldProperties } from '@/components/forms/FormFieldProperties';
@@ -13,15 +13,23 @@ import { OfflineSyncStatusBar } from '@/components/forms/OfflineSyncStatusBar';
 import { FormTemplate, FormField, FieldType, FIELD_TYPES } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Library, Send, Eye, ClipboardCheck, BarChart3, ListTodo } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Library, Send, Eye, ClipboardCheck, BarChart3, ListTodo, Save, Upload, Users, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 type ViewMode = 'library' | 'builder' | 'preview' | 'assignments' | 'submissions' | 'analytics' | 'tasks';
 
 export default function FormBuilder() {
   const [viewMode, setViewMode] = useState<ViewMode>('library');
+  const [templates, setTemplates] = useState<FormTemplate[]>(mockFormTemplates);
   const [template, setTemplate] = useState<FormTemplate>(mockFormTemplates[0]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<FormTemplate | null>(null);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
 
   const createNewTemplate = (): FormTemplate => ({
     id: `template-${Date.now()}`,
@@ -88,6 +96,42 @@ export default function FormBuilder() {
     setSelectedFieldId(null);
   };
 
+  const handleSaveTemplate = () => {
+    const updatedTemplate = {
+      ...template,
+      updatedAt: new Date().toISOString(),
+    };
+    setTemplate(updatedTemplate);
+    setTemplates(prev => {
+      const exists = prev.find(t => t.id === updatedTemplate.id);
+      if (exists) {
+        return prev.map(t => t.id === updatedTemplate.id ? updatedTemplate : t);
+      }
+      return [...prev, updatedTemplate];
+    });
+    toast.success('Template saved successfully');
+  };
+
+  const handlePublishTemplate = () => {
+    const publishedTemplate: FormTemplate = {
+      ...template,
+      status: 'published',
+      version: template.status === 'published' ? template.version + 1 : template.version,
+      publishedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setTemplate(publishedTemplate);
+    setTemplates(prev => prev.map(t => t.id === publishedTemplate.id ? publishedTemplate : t));
+    setShowPublishDialog(false);
+    toast.success(`"${template.name}" published successfully (v${publishedTemplate.version})`);
+  };
+
+  const handleQuickAssign = () => {
+    setShowAssignDialog(false);
+    setViewMode('assignments');
+    toast.info('Create an assignment rule to distribute this form to staff');
+  };
+
   // Preview mode
   if (viewMode === 'preview' && previewTemplate) {
     return (
@@ -119,6 +163,14 @@ export default function FormBuilder() {
             <Typography variant="h5" fontWeight={600}>
               {viewMode === 'builder' ? template.name : 'Form Management'}
             </Typography>
+            {viewMode === 'builder' && (
+              <Chip 
+                label={template.status} 
+                size="small"
+                color={template.status === 'published' ? 'success' : template.status === 'draft' ? 'warning' : 'default'}
+                sx={{ textTransform: 'capitalize' }}
+              />
+            )}
           </Stack>
 
           {viewMode === 'builder' && (
@@ -131,9 +183,32 @@ export default function FormBuilder() {
                 <Eye className="h-4 w-4 mr-1" />
                 Preview
               </Button>
-              <Button size="sm">
-                Save Template
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleSaveTemplate}
+              >
+                <Save className="h-4 w-4 mr-1" />
+                Save
               </Button>
+              {template.status === 'draft' ? (
+                <Button 
+                  size="sm"
+                  onClick={() => setShowPublishDialog(true)}
+                  disabled={template.fields.length === 0}
+                >
+                  <Upload className="h-4 w-4 mr-1" />
+                  Publish
+                </Button>
+              ) : (
+                <Button 
+                  size="sm"
+                  onClick={() => setShowAssignDialog(true)}
+                >
+                  <Users className="h-4 w-4 mr-1" />
+                  Assign
+                </Button>
+              )}
             </Stack>
           )}
         </Stack>
@@ -259,6 +334,98 @@ export default function FormBuilder() {
           </Box>
         </Box>
       )}
+
+      {/* Publish Dialog */}
+      <Dialog open={showPublishDialog} onClose={() => setShowPublishDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Upload className="h-5 w-5" />
+            <span>Publish Form Template</span>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Publishing this form will make it available for assignment to staff members. Once published, 
+              any changes will create a new version while preserving previous submissions.
+            </Typography>
+            <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Stack spacing={1}>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" fontWeight={500}>Template:</Typography>
+                  <Typography variant="body2">{template.name}</Typography>
+                </Stack>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" fontWeight={500}>Sections:</Typography>
+                  <Typography variant="body2">{template.sections.length}</Typography>
+                </Stack>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" fontWeight={500}>Fields:</Typography>
+                  <Typography variant="body2">{template.fields.length}</Typography>
+                </Stack>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" fontWeight={500}>Version:</Typography>
+                  <Typography variant="body2">v{template.version}</Typography>
+                </Stack>
+              </Stack>
+            </Box>
+            {template.fields.filter(f => f.required).length === 0 && (
+              <Box sx={{ p: 1.5, bgcolor: 'warning.light', borderRadius: 1 }}>
+                <Typography variant="caption" color="warning.dark">
+                  ⚠️ This form has no required fields. Consider marking important fields as required.
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="ghost" onClick={() => setShowPublishDialog(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handlePublishTemplate}>
+            <Check className="h-4 w-4 mr-1" />
+            Publish Now
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Assign Dialog */}
+      <Dialog open={showAssignDialog} onClose={() => setShowAssignDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Users className="h-5 w-5" />
+            <span>Assign Form to Staff</span>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Create an assignment rule to automatically distribute "{template.name}" to staff members 
+              based on triggers like shift start, schedules, or manual assignment.
+            </Typography>
+            <Box sx={{ p: 2, bgcolor: 'primary.50', borderRadius: 1, border: 1, borderColor: 'primary.200' }}>
+              <Typography variant="subtitle2" color="primary.main" sx={{ mb: 1 }}>
+                Assignment Options:
+              </Typography>
+              <Stack spacing={0.5}>
+                <Typography variant="body2">• Assign to specific staff or roles</Typography>
+                <Typography variant="body2">• Trigger at shift start/end</Typography>
+                <Typography variant="body2">• Schedule daily, weekly, or monthly</Typography>
+                <Typography variant="body2">• Set due times and escalation rules</Typography>
+              </Stack>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="ghost" onClick={() => setShowAssignDialog(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleQuickAssign}>
+            <Send className="h-4 w-4 mr-1" />
+            Create Assignment Rule
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
