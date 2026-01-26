@@ -24,7 +24,7 @@ export function useFormBuilderUndoRedo<T>(
   const [history, setHistory] = useState<T[]>([initialState]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const state = history[currentIndex];
+  const state = history[currentIndex] ?? initialState;
 
   const setState = useCallback((newState: T | ((prev: T) => T)) => {
     setHistory(prev => {
