@@ -706,14 +706,49 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
             borderColor: 'grey.800',
           }}
         >
-          {/* Form Header */}
-          <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'primary.contrastText' }}>
-            <Typography variant="h6">{template.name}</Typography>
-            {template.description && (
-              <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-                {template.description}
-              </Typography>
-            )}
+          {/* Form Header with Branding */}
+          {template.branding?.headerImage && (
+            <Box
+              sx={{
+                height: 120,
+                backgroundImage: `url(${template.branding.headerImage})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            />
+          )}
+          <Box 
+            sx={{ 
+              p: 2, 
+              bgcolor: template.branding?.primaryColor || 'primary.main', 
+              color: 'white' 
+            }}
+          >
+            <Stack direction="row" spacing={2} alignItems="center">
+              {template.branding?.logo && (
+                <Box
+                  component="img"
+                  src={template.branding.logo}
+                  alt="Logo"
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 1,
+                    objectFit: 'cover',
+                    bgcolor: 'white',
+                    p: 0.5,
+                  }}
+                />
+              )}
+              <Box>
+                <Typography variant="h6">{template.name}</Typography>
+                {template.description && (
+                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                    {template.description}
+                  </Typography>
+                )}
+              </Box>
+            </Stack>
           </Box>
 
           {/* Form Content */}
