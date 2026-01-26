@@ -40,6 +40,7 @@ import {
   Braces,
   Eye,
   EyeOff,
+  UserCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,6 +54,7 @@ import {
 } from '@/lib/tokenResolver';
 
 type ViewMode = 'mobile' | 'tablet' | 'desktop';
+type PreviewMode = 'builder' | 'user';
 
 interface FormPreviewProps {
   template: FormTemplate;
@@ -62,6 +64,7 @@ interface FormPreviewProps {
 
 export function FormPreview({ template, onClose, customTokens = [] }: FormPreviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('mobile');
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('user');
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -92,11 +95,20 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
   }, [template]);
 
   // Resolve token in a value for display
+  // In user mode, always resolve tokens. In builder mode, respect the toggle.
   const resolveValueForDisplay = (value: string | undefined): string => {
     if (!value) return '';
-    if (!showTokenValues || !containsTokens(value)) return value;
-    return getTokenPreview(value, previewContext, customTokens);
+    if (!containsTokens(value)) return value;
+    
+    // In user mode, always resolve. In builder mode, respect toggle.
+    if (previewMode === 'user' || showTokenValues) {
+      return getTokenPreview(value, previewContext, customTokens);
+    }
+    return value;
   };
+
+  // Check if we should show token indicators (only in builder mode)
+  const shouldShowTokenIndicators = previewMode === 'builder' && showTokenValues;
 
   const handleChange = (fieldId: string, value: any) => {
     setFormData(prev => ({ ...prev, [fieldId]: value }));
@@ -226,7 +238,7 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
               error={!!error}
               helperText={error || field.description}
             />
-            {hasTokens && showTokenValues && (
+            {hasTokens && shouldShowTokenIndicators && (
               <TokenIndicator original={String(field.defaultValue)} />
             )}
           </Box>
@@ -248,7 +260,7 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
               error={!!error}
               helperText={error || field.description}
             />
-            {hasTokens && showTokenValues && (
+            {hasTokens && shouldShowTokenIndicators && (
               <TokenIndicator original={String(field.defaultValue)} />
             )}
           </Box>
@@ -645,23 +657,72 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
             <Badge variant="outline">{template.name}</Badge>
           </Stack>
           <Stack direction="row" alignItems="center" spacing={1}>
-            {/* Token Preview Toggle */}
-            <Tooltip title={showTokenValues ? "Show raw tokens" : "Show resolved values"}>
-              <IconButton
-                size="small"
-                onClick={() => setShowTokenValues(!showTokenValues)}
-                sx={{ 
-                  bgcolor: showTokenValues ? 'primary.50' : 'transparent',
-                  '&:hover': { bgcolor: showTokenValues ? 'primary.100' : 'action.hover' },
-                }}
-              >
-                {showTokenValues ? (
-                  <Eye className="h-4 w-4 text-primary" />
-                ) : (
-                  <EyeOff className="h-4 w-4" />
-                )}
-              </IconButton>
-            </Tooltip>
+            {/* Preview Mode Toggle */}
+            <Stack 
+              direction="row" 
+              sx={{ 
+                border: 1, 
+                borderColor: 'divider', 
+                borderRadius: 1, 
+                p: 0.25,
+                bgcolor: 'grey.50',
+              }}
+            >
+              <Tooltip title="User View - Shows exactly how end-users will see and complete the form">
+                <Chip
+                  label="User View"
+                  size="small"
+                  onClick={() => setPreviewMode('user')}
+                  sx={{
+                    borderRadius: 0.5,
+                    bgcolor: previewMode === 'user' ? 'primary.main' : 'transparent',
+                    color: previewMode === 'user' ? 'white' : 'text.secondary',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      bgcolor: previewMode === 'user' ? 'primary.dark' : 'action.hover',
+                    },
+                  }}
+                />
+              </Tooltip>
+              <Tooltip title="Builder View - Shows tokens and technical details">
+                <Chip
+                  label="Builder View"
+                  size="small"
+                  onClick={() => setPreviewMode('builder')}
+                  sx={{
+                    borderRadius: 0.5,
+                    bgcolor: previewMode === 'builder' ? 'primary.main' : 'transparent',
+                    color: previewMode === 'builder' ? 'white' : 'text.secondary',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      bgcolor: previewMode === 'builder' ? 'primary.dark' : 'action.hover',
+                    },
+                  }}
+                />
+              </Tooltip>
+            </Stack>
+
+            {/* Token Preview Toggle - only show in builder mode */}
+            {previewMode === 'builder' && (
+              <Tooltip title={showTokenValues ? "Show raw tokens" : "Show resolved values"}>
+                <IconButton
+                  size="small"
+                  onClick={() => setShowTokenValues(!showTokenValues)}
+                  sx={{ 
+                    bgcolor: showTokenValues ? 'primary.50' : 'transparent',
+                    '&:hover': { bgcolor: showTokenValues ? 'primary.100' : 'action.hover' },
+                  }}
+                >
+                  {showTokenValues ? (
+                    <Eye className="h-4 w-4 text-primary" />
+                  ) : (
+                    <EyeOff className="h-4 w-4" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
             
             {/* View Mode Switcher */}
             <Stack direction="row" sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 0.5 }}>
@@ -690,6 +751,20 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
             <IconButton onClick={onClose}><X className="h-5 w-5" /></IconButton>
           </Stack>
         </Stack>
+        
+        {/* Preview Mode Description */}
+        <Alert 
+          severity={previewMode === 'user' ? 'success' : 'info'} 
+          sx={{ mt: 2, py: 0.5 }}
+          icon={previewMode === 'user' ? <Users className="h-4 w-4" /> : <Braces className="h-4 w-4" />}
+        >
+          <Typography variant="caption">
+            {previewMode === 'user' 
+              ? 'You are viewing this form as an end-user would see it. All tokens are resolved to their actual values.'
+              : 'Builder view shows raw tokens and technical details. Toggle the eye icon to switch between raw tokens and resolved values.'
+            }
+          </Typography>
+        </Alert>
       </Box>
 
       {/* Preview Container */}
