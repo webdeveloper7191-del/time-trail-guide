@@ -9,6 +9,7 @@ import {
   Divider,
   FormControlLabel,
   Switch as MuiSwitch,
+  Alert,
 } from '@mui/material';
 import {
   X,
@@ -21,6 +22,7 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
+  Braces,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +34,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ConditionalLogicBuilder } from '@/components/forms/ConditionalLogicBuilder';
-import { FormField, FormTemplate, FieldOption, ConditionalLogic, FIELD_TYPES } from '@/types/forms';
+import { TokenPicker } from '@/components/forms/TokenPicker';
+import { FormField, FormTemplate, FieldOption, ConditionalLogic, FIELD_TYPES, AUTO_POPULATE_TOKENS } from '@/types/forms';
+import { containsTokens, getTokenPreview, validateTokens } from '@/lib/tokenResolver';
 import { toast } from 'sonner';
 
 interface FormFieldPropertiesProps {
@@ -239,6 +243,138 @@ export function FormFieldProperties({
                   </Stack>
                 </CollapsibleContent>
               </Collapsible>
+
+              {/* Default Value / Auto-Populate section */}
+              {!['section_header', 'instructions', 'signature', 'photo_upload', 'video_upload', 'file_upload', 'location', 'barcode_scan', 'qr_scan'].includes(field.type) && (
+                <>
+                  <Divider />
+                  <Collapsible open={expandedSections.has('autopopulate')} onOpenChange={() => toggleSection('autopopulate')}>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full py-1">
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          Default Value / Auto-Populate
+                        </Typography>
+                        {field.defaultValue && containsTokens(String(field.defaultValue)) && (
+                          <Braces size={12} className="text-primary" />
+                        )}
+                      </Stack>
+                      {expandedSections.has('autopopulate') ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <Stack spacing={2} sx={{ mt: 2 }}>
+                        <Alert severity="info" sx={{ fontSize: '0.75rem' }}>
+                          Use tokens like <code>{'{{staff_name}}'}</code> to auto-fill fields when the form is sent to staff
+                        </Alert>
+
+                        <Box>
+                          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                            <Label htmlFor="field-default">Default Value</Label>
+                            <TokenPicker 
+                              onInsert={(token) => {
+                                const currentValue = String(field.defaultValue || '');
+                                onFieldUpdate(field.id, { defaultValue: currentValue + token });
+                              }}
+                            />
+                          </Stack>
+                          
+                          {field.type === 'long_text' ? (
+                            <Textarea
+                              id="field-default"
+                              value={String(field.defaultValue || '')}
+                              onChange={(e) => onFieldUpdate(field.id, { defaultValue: e.target.value })}
+                              placeholder="Enter default value or use tokens..."
+                              className="min-h-[80px] font-mono text-sm"
+                            />
+                          ) : field.type === 'number' ? (
+                            <Input
+                              id="field-default"
+                              type="text"
+                              value={String(field.defaultValue || '')}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                // Allow tokens or numbers
+                                if (containsTokens(val) || val === '' || !isNaN(Number(val))) {
+                                  onFieldUpdate(field.id, { defaultValue: val });
+                                }
+                              }}
+                              placeholder="Enter number or token..."
+                              className="font-mono text-sm"
+                            />
+                          ) : (
+                            <Input
+                              id="field-default"
+                              value={String(field.defaultValue || '')}
+                              onChange={(e) => onFieldUpdate(field.id, { defaultValue: e.target.value })}
+                              placeholder="Enter default value or use tokens..."
+                              className="font-mono text-sm"
+                            />
+                          )}
+                        </Box>
+
+                        {/* Token preview */}
+                        {field.defaultValue && containsTokens(String(field.defaultValue)) && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                              Preview (with example values):
+                            </Typography>
+                            <Paper
+                              variant="outlined"
+                              sx={{
+                                p: 1.5,
+                                bgcolor: 'grey.50',
+                                fontStyle: 'italic',
+                              }}
+                            >
+                              <Typography variant="body2">
+                                {getTokenPreview(String(field.defaultValue))}
+                              </Typography>
+                            </Paper>
+                          </Box>
+                        )}
+
+                        {/* Token validation */}
+                        {field.defaultValue && (() => {
+                          const validation = validateTokens(String(field.defaultValue));
+                          if (!validation.valid) {
+                            return (
+                              <Alert severity="warning" sx={{ fontSize: '0.75rem' }}>
+                                Unknown tokens: {validation.invalidTokens.join(', ')}
+                              </Alert>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        {/* Common tokens quick insert */}
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                            Quick Insert:
+                          </Typography>
+                          <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                            {AUTO_POPULATE_TOKENS.slice(0, 6).map(token => (
+                              <Chip
+                                key={token.token}
+                                label={token.label}
+                                size="small"
+                                onClick={() => {
+                                  const currentValue = String(field.defaultValue || '');
+                                  onFieldUpdate(field.id, { defaultValue: currentValue + token.token });
+                                }}
+                                sx={{
+                                  fontSize: '0.65rem',
+                                  height: 22,
+                                  cursor: 'pointer',
+                                  '&:hover': { bgcolor: 'primary.50' },
+                                }}
+                              />
+                            ))}
+                          </Stack>
+                        </Box>
+                      </Stack>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </>
+              )}
 
               {/* Options (for choice fields) */}
               {hasOptions && (

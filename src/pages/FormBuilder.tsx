@@ -312,7 +312,7 @@ export default function FormBuilder() {
                   }}
                 >
                   <Typography variant="h5" fontWeight={600}>
-                    {template.name}
+                    {template?.name || 'Loading...'}
                   </Typography>
                   <Pencil size={14} className="text-muted-foreground" />
                 </Box>
@@ -322,7 +322,7 @@ export default function FormBuilder() {
                 Form Management
               </Typography>
             )}
-            {viewMode === 'builder' && (
+            {viewMode === 'builder' && template && (
               <Chip 
                 label={template.status} 
                 size="small"
