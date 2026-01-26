@@ -102,6 +102,8 @@ export function FormBuilderCanvas({
   const [draggedFieldId, setDraggedFieldId] = useState<string | null>(null);
   const [dragOverFieldId, setDragOverFieldId] = useState<string | null>(null);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
+  const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
+  const [dragOverSectionTarget, setDragOverSectionTarget] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(template.sections.map(s => s.id))
   );
@@ -134,8 +136,8 @@ export function FormBuilderCanvas({
     toast.success(`Added ${fieldDef?.label || 'field'}`);
   };
 
-  // Handle drop from palette onto section
-  const handleSectionDragOver = (e: React.DragEvent, sectionId: string) => {
+  // Handle drop from palette onto section (for fields)
+  const handleFieldDropZoneDragOver = (e: React.DragEvent, sectionId: string) => {
     e.preventDefault();
     e.stopPropagation();
     const fieldType = e.dataTransfer.types.includes('fieldtype');
@@ -144,7 +146,7 @@ export function FormBuilderCanvas({
     }
   };
 
-  const handleSectionDragLeave = (e: React.DragEvent) => {
+  const handleFieldDropZoneDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOverSectionId(null);
   };
@@ -204,6 +206,59 @@ export function FormBuilderCanvas({
       }
       return next;
     });
+  };
+
+  // Section drag and drop handlers
+  const handleSectionDragStart = (e: React.DragEvent, sectionId: string) => {
+    e.stopPropagation();
+    setDraggedSectionId(sectionId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('sectionId', sectionId);
+  };
+
+  const handleSectionDragOver = (e: React.DragEvent, targetSectionId: string) => {
+    e.preventDefault();
+    if (draggedSectionId && draggedSectionId !== targetSectionId) {
+      setDragOverSectionTarget(targetSectionId);
+    }
+  };
+
+  const handleSectionDragEnd = () => {
+    setDraggedSectionId(null);
+    setDragOverSectionTarget(null);
+  };
+
+  const handleSectionDropOnSection = (e: React.DragEvent, targetSectionId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedSectionId || draggedSectionId === targetSectionId) {
+      handleSectionDragEnd();
+      return;
+    }
+
+    const draggedSection = template.sections.find(s => s.id === draggedSectionId);
+    const targetSection = template.sections.find(s => s.id === targetSectionId);
+
+    if (!draggedSection || !targetSection) {
+      handleSectionDragEnd();
+      return;
+    }
+
+    // Reorder sections
+    const newSections = template.sections.map(section => {
+      if (section.id === draggedSectionId) {
+        return { ...section, order: targetSection.order };
+      }
+      if (section.id === targetSectionId) {
+        return { ...section, order: draggedSection.order };
+      }
+      return section;
+    }).sort((a, b) => a.order - b.order);
+
+    onTemplateChange({ ...template, sections: newSections });
+    toast.success('Section reordered');
+    handleSectionDragEnd();
   };
 
   const handleDragStart = (e: React.DragEvent, fieldId: string) => {
@@ -584,16 +639,39 @@ export function FormBuilderCanvas({
     const sectionFields = fieldsBySection[section.id] || [];
     const isExpanded = expandedSections.has(section.id);
     const isDragOver = dragOverSectionId === section.id;
+    const isSectionDragging = draggedSectionId === section.id;
+    const isSectionDragTarget = dragOverSectionTarget === section.id;
 
     return (
-      <Box key={section.id} sx={{ mb: 2 }}>
+      <Box 
+        key={section.id} 
+        sx={{ 
+          mb: 2,
+          opacity: isSectionDragging ? 0.5 : 1,
+          transition: 'opacity 0.15s ease',
+        }}
+        draggable
+        onDragStart={(e) => handleSectionDragStart(e, section.id)}
+        onDragEnd={handleSectionDragEnd}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (draggedSectionId && draggedSectionId !== section.id) {
+            setDragOverSectionTarget(section.id);
+          }
+        }}
+        onDragLeave={() => setDragOverSectionTarget(null)}
+        onDrop={(e) => handleSectionDropOnSection(e, section.id)}
+      >
         <Collapsible open={isExpanded} onOpenChange={() => toggleSection(section.id)}>
           <Paper
             sx={{
               p: 1.5,
-              bgcolor: 'grey.100',
+              bgcolor: isSectionDragTarget ? 'primary.50' : 'grey.100',
               borderRadius: 1,
               mb: 1,
+              border: 2,
+              borderColor: isSectionDragTarget ? 'primary.main' : 'transparent',
+              transition: 'all 0.15s ease',
             }}
           >
             <CollapsibleTrigger asChild>
@@ -603,6 +681,17 @@ export function FormBuilderCanvas({
                 spacing={1}
                 sx={{ cursor: 'pointer' }}
               >
+                {/* Section drag handle */}
+                <Box
+                  sx={{
+                    cursor: 'grab',
+                    color: 'text.disabled',
+                    '&:hover': { color: 'text.secondary' },
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <GripVertical size={14} />
+                </Box>
                 <Box sx={{ color: 'text.secondary' }}>
                   {isExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                 </Box>
@@ -650,8 +739,8 @@ export function FormBuilderCanvas({
           <CollapsibleContent>
             <Box 
               sx={{ pl: 2 }}
-              onDragOver={(e) => handleSectionDragOver(e, section.id)}
-              onDragLeave={handleSectionDragLeave}
+              onDragOver={(e) => handleFieldDropZoneDragOver(e, section.id)}
+              onDragLeave={handleFieldDropZoneDragLeave}
               onDrop={(e) => handleSectionDrop(e, section.id)}
             >
               {sectionFields.length === 0 ? (
