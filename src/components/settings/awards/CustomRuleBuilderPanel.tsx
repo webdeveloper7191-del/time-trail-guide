@@ -442,7 +442,45 @@ export function CustomRuleBuilderPanel() {
     isPublicHoliday: false,
     shiftType: 'regular',
     baseRate: 25,
+    yearsOfService: 3,
+    qualification: '',
+    shiftStartTime: '09:00',
   });
+
+  // Test result state with detailed statistics
+  interface ConditionResult {
+    condition: RuleCondition;
+    matched: boolean;
+    actualValue: string;
+    expectedValue: string;
+  }
+
+  interface GroupResult {
+    group: ConditionGroup;
+    conditionResults: ConditionResult[];
+    groupPassed: boolean;
+  }
+
+  interface ActionResult {
+    action: RuleAction;
+    description: string;
+    impact: number;
+  }
+
+  interface TestResult {
+    passed: boolean;
+    groupResults: GroupResult[];
+    actionResults: ActionResult[];
+    basePay: number;
+    adjustedPay: number;
+    totalAdjustment: number;
+    adjustmentPercentage: number;
+    executionTimeMs: number;
+    testedAt: string;
+  }
+
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
+  const [isTestRunning, setIsTestRunning] = useState(false);
 
   // Computed values
   const filteredRules = useMemo(() => {
@@ -613,12 +651,173 @@ export function CustomRuleBuilderPanel() {
     toast.success('Template applied! Customize the values.');
   };
 
+  // Evaluate a single condition against the test scenario
+  const evaluateCondition = (condition: RuleCondition): ConditionResult => {
+    const scenarioValues: Record<string, string | number | boolean> = {
+      hours_worked: testScenario.hoursWorked,
+      daily_hours: testScenario.hoursWorked, // Alias for hours_worked
+      weekly_hours: testScenario.hoursWorked * 5, // Approximate weekly hours
+      overtime_hours: Math.max(0, testScenario.hoursWorked - 8), // Hours over 8
+      day_of_week: testScenario.dayOfWeek.toLowerCase(),
+      is_public_holiday: testScenario.isPublicHoliday,
+      public_holiday: testScenario.isPublicHoliday,
+      shift_type: testScenario.shiftType,
+      base_rate: testScenario.baseRate,
+      years_of_service: testScenario.yearsOfService,
+      qualification: testScenario.qualification,
+      shift_start_time: testScenario.shiftStartTime,
+      shift_duration: testScenario.hoursWorked, // Alias
+    };
+
+    const actualValue = scenarioValues[condition.field];
+    const expectedValue = condition.value;
+    let matched = false;
+
+    switch (condition.operator) {
+      case 'equals':
+        matched = String(actualValue).toLowerCase() === String(expectedValue).toLowerCase();
+        break;
+      case 'not_equals':
+        matched = String(actualValue).toLowerCase() !== String(expectedValue).toLowerCase();
+        break;
+      case 'greater_than':
+        matched = Number(actualValue) > Number(expectedValue);
+        break;
+      case 'less_than':
+        matched = Number(actualValue) < Number(expectedValue);
+        break;
+      case 'greater_or_equal':
+        matched = Number(actualValue) >= Number(expectedValue);
+        break;
+      case 'less_or_equal':
+        matched = Number(actualValue) <= Number(expectedValue);
+        break;
+      case 'contains':
+        matched = String(actualValue).toLowerCase().includes(String(expectedValue).toLowerCase());
+        break;
+      case 'between':
+        const [min, max] = expectedValue.split('-').map(Number);
+        matched = Number(actualValue) >= min && Number(actualValue) <= max;
+        break;
+      case 'starts_with':
+        matched = String(actualValue).toLowerCase().startsWith(String(expectedValue).toLowerCase());
+        break;
+      case 'is_true':
+        matched = actualValue === true || actualValue === 'true' || actualValue === '1';
+        break;
+      case 'is_false':
+        matched = actualValue === false || actualValue === 'false' || actualValue === '0' || actualValue === '';
+        break;
+      default:
+        matched = false;
+    }
+
+    return {
+      condition,
+      matched,
+      actualValue: String(actualValue ?? 'N/A'),
+      expectedValue,
+    };
+  };
+
+  // Evaluate a condition group
+  const evaluateGroup = (group: ConditionGroup): GroupResult => {
+    const conditionResults = group.conditions.map(evaluateCondition);
+    const groupPassed = group.logic === 'AND'
+      ? conditionResults.every(r => r.matched)
+      : conditionResults.some(r => r.matched);
+
+    return { group, conditionResults, groupPassed };
+  };
+
+  // Calculate action results
+  const calculateActionResults = (actions: RuleAction[]): ActionResult[] => {
+    const basePay = testScenario.hoursWorked * testScenario.baseRate;
+    
+    return actions.map(action => {
+      let description = '';
+      let impact = 0;
+
+      switch (action.type) {
+        case 'apply_multiplier':
+          const multiplier = parseFloat(action.value);
+          impact = basePay * (multiplier - 1);
+          description = `Apply ${multiplier}x multiplier to base pay`;
+          break;
+        case 'apply_percentage':
+          const percentage = parseFloat(action.value);
+          impact = basePay * (percentage / 100);
+          description = `Add ${percentage}% loading to base pay`;
+          break;
+        case 'add_allowance':
+          impact = parseFloat(action.value);
+          description = `Add $${action.value} ${action.unit || 'flat'} allowance`;
+          break;
+        case 'add_loading':
+          impact = parseFloat(action.value);
+          description = `Add $${action.value} loading`;
+          break;
+        case 'set_minimum_rate':
+          const minRate = parseFloat(action.value);
+          if (testScenario.baseRate < minRate) {
+            impact = (minRate - testScenario.baseRate) * testScenario.hoursWorked;
+            description = `Override to minimum rate of $${action.value}/hr`;
+          } else {
+            description = `Minimum rate $${action.value}/hr (current rate is higher)`;
+          }
+          break;
+        default:
+          description = `${action.type}: ${action.value}`;
+      }
+
+      return { action, description, impact };
+    });
+  };
+
   const handleTestRule = () => {
-    // Simulate rule testing
+    setIsTestRunning(true);
+    setTestResult(null);
+    
+    const startTime = performance.now();
+
+    // Simulate processing delay for realism
     setTimeout(() => {
-      const result = Math.random() > 0.3 ? 'pass' : 'fail';
-      toast.success(`Test ${result === 'pass' ? 'passed' : 'failed'}!`);
-    }, 500);
+      // Evaluate all condition groups
+      const groupResults = ruleForm.conditionGroups.map(evaluateGroup);
+      
+      // Determine overall pass/fail based on group logic
+      const passed = ruleForm.groupLogic === 'AND'
+        ? groupResults.every(g => g.groupPassed)
+        : groupResults.some(g => g.groupPassed);
+
+      // Calculate action results only if rule passes
+      const actionResults = passed ? calculateActionResults(ruleForm.actions) : [];
+      
+      // Calculate pay breakdown
+      const basePay = testScenario.hoursWorked * testScenario.baseRate;
+      const totalAdjustment = actionResults.reduce((sum, r) => sum + r.impact, 0);
+      const adjustedPay = basePay + totalAdjustment;
+      const adjustmentPercentage = basePay > 0 ? (totalAdjustment / basePay) * 100 : 0;
+
+      const endTime = performance.now();
+
+      const result: TestResult = {
+        passed,
+        groupResults,
+        actionResults,
+        basePay,
+        adjustedPay,
+        totalAdjustment,
+        adjustmentPercentage,
+        executionTimeMs: Math.round(endTime - startTime),
+        testedAt: new Date().toISOString(),
+      };
+
+      setTestResult(result);
+      setIsTestRunning(false);
+      
+      toast.success(passed ? 'Rule test passed!' : 'Rule test failed - conditions not met');
+    }, 300);
   };
 
   const toggleRule = (id: string) => {
@@ -1745,7 +1944,7 @@ export function CustomRuleBuilderPanel() {
                 {/* Test Tab */}
                 <TabsContent value="test" className="space-y-4 mt-0">
                   <Card>
-                    <CardHeader>
+                    <CardHeader className="pb-2">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <TestTube className="h-4 w-4" />
                         Test Scenario
@@ -1755,17 +1954,17 @@ export function CustomRuleBuilderPanel() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Hours Worked</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Hours Worked</Label>
                           <Input
                             type="number"
                             value={testScenario.hoursWorked}
-                            onChange={(e) => setTestScenario(prev => ({ ...prev, hoursWorked: parseFloat(e.target.value) }))}
+                            onChange={(e) => setTestScenario(prev => ({ ...prev, hoursWorked: parseFloat(e.target.value) || 0 }))}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label>Day of Week</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Day of Week</Label>
                           <Select 
                             value={testScenario.dayOfWeek} 
                             onValueChange={(v) => setTestScenario(prev => ({ ...prev, dayOfWeek: v }))}
@@ -1780,8 +1979,8 @@ export function CustomRuleBuilderPanel() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Shift Type</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Shift Type</Label>
                           <Select 
                             value={testScenario.shiftType} 
                             onValueChange={(v) => setTestScenario(prev => ({ ...prev, shiftType: v }))}
@@ -1796,45 +1995,235 @@ export function CustomRuleBuilderPanel() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Base Hourly Rate ($)</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Base Hourly Rate ($)</Label>
                           <Input
                             type="number"
                             value={testScenario.baseRate}
-                            onChange={(e) => setTestScenario(prev => ({ ...prev, baseRate: parseFloat(e.target.value) }))}
+                            onChange={(e) => setTestScenario(prev => ({ ...prev, baseRate: parseFloat(e.target.value) || 0 }))}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Years of Service</Label>
+                          <Input
+                            type="number"
+                            value={testScenario.yearsOfService}
+                            onChange={(e) => setTestScenario(prev => ({ ...prev, yearsOfService: parseFloat(e.target.value) || 0 }))}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Shift Start Time</Label>
+                          <Input
+                            type="time"
+                            value={testScenario.shiftStartTime}
+                            onChange={(e) => setTestScenario(prev => ({ ...prev, shiftStartTime: e.target.value }))}
                           />
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          id="public-holiday"
-                          checked={testScenario.isPublicHoliday}
-                          onCheckedChange={(v) => setTestScenario(prev => ({ ...prev, isPublicHoliday: v }))}
-                        />
-                        <Label htmlFor="public-holiday">Is Public Holiday</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id="public-holiday"
+                            checked={testScenario.isPublicHoliday}
+                            onCheckedChange={(v) => setTestScenario(prev => ({ ...prev, isPublicHoliday: v }))}
+                          />
+                          <Label htmlFor="public-holiday" className="text-xs">Is Public Holiday</Label>
+                        </div>
                       </div>
 
                       <Separator />
 
-                      <Button onClick={handleTestRule} className="w-full gap-2">
-                        <Play className="h-4 w-4" />
-                        Run Test
+                      <Button 
+                        onClick={handleTestRule} 
+                        className="w-full gap-2"
+                        disabled={isTestRunning}
+                      >
+                        {isTestRunning ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                            Running Test...
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4" />
+                            Run Test
+                          </>
+                        )}
                       </Button>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-muted/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium text-sm">Test Result Preview</span>
+                  {/* Test Results Display */}
+                  {!testResult && !isTestRunning && (
+                    <Card className="bg-muted/50">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">Test Result Preview</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Run a test to see if your rule conditions match the scenario and what actions would be applied.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {testResult && (
+                    <div className="space-y-3">
+                      {/* Overall Result Card */}
+                      <Card className={testResult.passed ? 'border-green-500/50 bg-green-500/5' : 'border-red-500/50 bg-red-500/5'}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              {testResult.passed ? (
+                                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                              ) : (
+                                <X className="h-5 w-5 text-red-600" />
+                              )}
+                              <span className={`font-semibold ${testResult.passed ? 'text-green-700' : 'text-red-700'}`}>
+                                {testResult.passed ? 'Rule Passed' : 'Rule Failed'}
+                              </span>
+                            </div>
+                            <Badge variant="secondary" className="text-xs font-mono">
+                              {testResult.executionTimeMs}ms
+                            </Badge>
+                          </div>
+                          
+                          {testResult.passed && (
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div className="p-2 rounded-md bg-background/60">
+                                <div className="text-xs text-muted-foreground">Base Pay</div>
+                                <div className="font-semibold">${testResult.basePay.toFixed(2)}</div>
+                              </div>
+                              <div className="p-2 rounded-md bg-background/60">
+                                <div className="text-xs text-muted-foreground">Adjusted Pay</div>
+                                <div className="font-semibold text-green-600">${testResult.adjustedPay.toFixed(2)}</div>
+                              </div>
+                              <div className="p-2 rounded-md bg-background/60">
+                                <div className="text-xs text-muted-foreground">Adjustment</div>
+                                <div className="font-semibold">
+                                  {testResult.totalAdjustment >= 0 ? '+' : ''}${testResult.totalAdjustment.toFixed(2)}
+                                </div>
+                              </div>
+                              <div className="p-2 rounded-md bg-background/60">
+                                <div className="text-xs text-muted-foreground">% Change</div>
+                                <div className="font-semibold">
+                                  {testResult.adjustmentPercentage >= 0 ? '+' : ''}{testResult.adjustmentPercentage.toFixed(1)}%
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Condition Evaluation Breakdown */}
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <GitBranch className="h-4 w-4" />
+                            Condition Evaluation
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {testResult.groupResults.map((groupResult, gIdx) => (
+                            <div key={groupResult.group.id} className="space-y-2">
+                              {gIdx > 0 && (
+                                <div className="flex items-center gap-2 py-1">
+                                  <Separator className="flex-1" />
+                                  <Badge variant="outline" className="text-xs font-bold">{ruleForm.groupLogic}</Badge>
+                                  <Separator className="flex-1" />
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge 
+                                  variant={groupResult.groupPassed ? 'default' : 'destructive'}
+                                  className="text-xs"
+                                >
+                                  Group {gIdx + 1}: {groupResult.groupPassed ? 'PASSED' : 'FAILED'}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  ({groupResult.group.logic} logic)
+                                </span>
+                              </div>
+                              <div className="space-y-1.5 pl-2 border-l-2 border-muted">
+                                {groupResult.conditionResults.map((condResult, cIdx) => {
+                                  const fieldLabel = conditionFields.find(f => f.value === condResult.condition.field)?.label || condResult.condition.field;
+                                  const operatorLabel = operators.find(o => o.value === condResult.condition.operator)?.symbol || condResult.condition.operator;
+                                  
+                                  return (
+                                    <div 
+                                      key={condResult.condition.id}
+                                      className={`flex items-center justify-between p-2 rounded-md text-xs ${
+                                        condResult.matched 
+                                          ? 'bg-green-500/10 border border-green-500/20' 
+                                          : 'bg-red-500/10 border border-red-500/20'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        {condResult.matched ? (
+                                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                                        ) : (
+                                          <X className="h-3.5 w-3.5 text-red-600" />
+                                        )}
+                                        <span className="font-medium">{fieldLabel}</span>
+                                        <span className="text-muted-foreground">{operatorLabel}</span>
+                                        <span className="font-mono">{condResult.condition.value}</span>
+                                      </div>
+                                      <div className="text-muted-foreground">
+                                        Actual: <span className="font-mono font-medium">{condResult.actualValue}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+
+                      {/* Actions Applied */}
+                      {testResult.passed && testResult.actionResults.length > 0 && (
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm flex items-center gap-2">
+                              <Zap className="h-4 w-4" />
+                              Actions Applied
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-2">
+                            {testResult.actionResults.map((actionResult, idx) => (
+                              <div 
+                                key={actionResult.action.id}
+                                className="flex items-center justify-between p-2 rounded-md bg-primary/5 border border-primary/20 text-sm"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <ArrowRight className="h-3.5 w-3.5 text-primary" />
+                                  <span>{actionResult.description}</span>
+                                </div>
+                                <Badge variant="secondary" className="font-mono">
+                                  {actionResult.impact >= 0 ? '+' : ''}${actionResult.impact.toFixed(2)}
+                                </Badge>
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Test Metadata */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                        <span>Tested at {new Date(testResult.testedAt).toLocaleTimeString()}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 text-xs"
+                          onClick={() => setTestResult(null)}
+                        >
+                          Clear Results
+                        </Button>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Run a test to see if your rule conditions match the scenario and what actions would be applied.
-                      </p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  )}
                 </TabsContent>
 
                 {/* History Tab */}
