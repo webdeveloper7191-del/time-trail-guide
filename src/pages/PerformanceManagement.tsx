@@ -13,8 +13,10 @@ import { TeamOverviewDashboard } from '@/components/performance/TeamOverviewDash
 import { PerformanceNotificationBell } from '@/components/performance/PerformanceNotificationBell';
 import { PlanManagementPanel } from '@/components/performance/PlanManagementPanel';
 import { AssignPlanDrawer } from '@/components/performance/AssignPlanDrawer';
+import { BulkAssignPlanDrawer } from '@/components/performance/BulkAssignPlanDrawer';
 import { PlanDetailSheet } from '@/components/performance/PlanDetailSheet';
 import { PlanTemplatePreviewSheet } from '@/components/performance/PlanTemplatePreviewSheet';
+import { CreateTemplateDrawer } from '@/components/performance/CreateTemplateDrawer';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
@@ -40,7 +42,10 @@ export default function PerformanceManagement() {
   // Plan-related states
   const [selectedTemplate, setSelectedTemplate] = useState<PerformancePlanTemplate | null>(null);
   const [showAssignDrawer, setShowAssignDrawer] = useState(false);
+  const [showBulkAssignDrawer, setShowBulkAssignDrawer] = useState(false);
   const [showTemplatePreview, setShowTemplatePreview] = useState(false);
+  const [showCreateTemplateDrawer, setShowCreateTemplateDrawer] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<PerformancePlanTemplate | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<AssignedPlan | null>(null);
   const [showPlanDetail, setShowPlanDetail] = useState(false);
   
@@ -149,6 +154,11 @@ export default function PerformanceManagement() {
     setShowAssignDrawer(true);
   };
 
+  const handleBulkAssignPlan = (template: PerformancePlanTemplate) => {
+    setSelectedTemplate(template);
+    setShowBulkAssignDrawer(true);
+  };
+
   const handleViewTemplate = (template: PerformancePlanTemplate) => {
     setSelectedTemplate(template);
     setShowTemplatePreview(true);
@@ -157,6 +167,30 @@ export default function PerformanceManagement() {
   const handleViewPlan = (plan: AssignedPlan) => {
     setSelectedPlan(plan);
     setShowPlanDetail(true);
+  };
+
+  const handleCreateTemplate = () => {
+    setEditingTemplate(null);
+    setShowCreateTemplateDrawer(true);
+  };
+
+  const handleEditTemplate = (template: PerformancePlanTemplate) => {
+    setEditingTemplate(template);
+    setShowCreateTemplateDrawer(true);
+  };
+
+  const handleDuplicateTemplate = (template: PerformancePlanTemplate) => {
+    const duplicated = { ...template, name: `${template.name} (Copy)`, isSystem: false };
+    setEditingTemplate(duplicated as PerformancePlanTemplate);
+    setShowCreateTemplateDrawer(true);
+    toast.info('Editing duplicate - make changes and save');
+  };
+
+  const handleSaveTemplate = async (template: Omit<PerformancePlanTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
+    // In a real app, this would save to backend
+    console.log('Saving template:', template);
+    setShowCreateTemplateDrawer(false);
+    setEditingTemplate(null);
   };
 
   const handleAssignPlanSubmit = async (data: {
@@ -173,6 +207,19 @@ export default function PerformanceManagement() {
     console.log('Assigning plan:', data);
     toast.success('Performance plan assigned successfully!');
     setShowAssignDrawer(false);
+    setSelectedTemplate(null);
+  };
+
+  const handleBulkAssignPlanSubmit = async (
+    assignments: { staffId: string; startDate: Date; notes?: string }[],
+    selectedGoals: string[],
+    selectedReviews: string[],
+    selectedConversations: string[]
+  ) => {
+    // In a real app, this would create multiple plans
+    console.log('Bulk assigning plans:', assignments);
+    toast.success(`Plans assigned to ${assignments.length} team members!`);
+    setShowBulkAssignDrawer(false);
     setSelectedTemplate(null);
   };
 
@@ -231,9 +278,16 @@ export default function PerformanceManagement() {
             <TabsContent value="plans" className="mt-6">
               <PlanManagementPanel
                 staff={mockStaff}
+                goals={goals}
+                reviews={reviews}
+                conversations={conversations}
                 onAssignPlan={handleAssignPlan}
+                onBulkAssignPlan={handleBulkAssignPlan}
                 onViewPlan={handleViewPlan}
                 onViewTemplate={handleViewTemplate}
+                onCreateTemplate={handleCreateTemplate}
+                onEditTemplate={handleEditTemplate}
+                onDuplicateTemplate={handleDuplicateTemplate}
               />
             </TabsContent>
 
@@ -396,6 +450,30 @@ export default function PerformanceManagement() {
           handleViewConversation(conv);
         }}
         onUpdateStatus={handleUpdatePlanStatus}
+      />
+
+      {/* Bulk Assign Plan Drawer */}
+      <BulkAssignPlanDrawer
+        open={showBulkAssignDrawer}
+        template={selectedTemplate}
+        staff={mockStaff}
+        currentUserId={CURRENT_USER_ID}
+        onClose={() => {
+          setShowBulkAssignDrawer(false);
+          setSelectedTemplate(null);
+        }}
+        onAssign={handleBulkAssignPlanSubmit}
+      />
+
+      {/* Create/Edit Template Drawer */}
+      <CreateTemplateDrawer
+        open={showCreateTemplateDrawer}
+        existingTemplate={editingTemplate}
+        onClose={() => {
+          setShowCreateTemplateDrawer(false);
+          setEditingTemplate(null);
+        }}
+        onSave={handleSaveTemplate}
       />
     </div>
   );

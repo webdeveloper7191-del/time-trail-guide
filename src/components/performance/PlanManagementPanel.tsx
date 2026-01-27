@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import {
   FileText,
   Plus,
@@ -22,6 +23,9 @@ import {
   Clock,
   Users,
   Sparkles,
+  Edit,
+  Copy,
+  MoreVertical,
 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { 
@@ -37,19 +41,35 @@ import {
 } from '@/types/performancePlan';
 import { performancePlanTemplates, mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { StaffMember } from '@/types/staff';
+import { Goal, PerformanceReview, Conversation } from '@/types/performance';
+import { calculatePlanProgress } from '@/lib/planProgressCalculator';
 
 interface PlanManagementPanelProps {
   staff: StaffMember[];
+  goals: Goal[];
+  reviews: PerformanceReview[];
+  conversations: Conversation[];
   onAssignPlan: (template: PerformancePlanTemplate) => void;
+  onBulkAssignPlan: (template: PerformancePlanTemplate) => void;
   onViewPlan: (plan: AssignedPlan) => void;
   onViewTemplate: (template: PerformancePlanTemplate) => void;
+  onCreateTemplate: () => void;
+  onEditTemplate: (template: PerformancePlanTemplate) => void;
+  onDuplicateTemplate: (template: PerformancePlanTemplate) => void;
 }
 
 export function PlanManagementPanel({
   staff,
+  goals,
+  reviews,
+  conversations,
   onAssignPlan,
+  onBulkAssignPlan,
   onViewPlan,
   onViewTemplate,
+  onCreateTemplate,
+  onEditTemplate,
+  onDuplicateTemplate,
 }: PlanManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<'assigned' | 'templates'>('assigned');
   const [searchTerm, setSearchTerm] = useState('');
@@ -133,6 +153,13 @@ export function PlanManagementPanel({
               Plan Templates ({performancePlanTemplates.length})
             </TabsTrigger>
           </TabsList>
+          
+          {activeTab === 'templates' && (
+            <Button onClick={onCreateTemplate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Template
+            </Button>
+          )}
         </div>
 
         {/* Filters */}
@@ -270,11 +297,24 @@ export function PlanManagementPanel({
                           
                           <div className="mt-3 flex items-center gap-4">
                             <div className="flex-1">
-                              <div className="flex items-center justify-between text-sm mb-1">
-                                <span>Progress</span>
-                                <span className="font-medium">{plan.progress}%</span>
-                              </div>
-                              <Progress value={plan.progress} className="h-2" />
+                              {/* Calculate automated progress */}
+                              {(() => {
+                                const breakdown = calculatePlanProgress(plan, goals, reviews, conversations);
+                                return (
+                                  <>
+                                    <div className="flex items-center justify-between text-sm mb-1">
+                                      <span className="flex items-center gap-2">
+                                        Progress
+                                        <span className="text-xs text-muted-foreground">
+                                          ({breakdown.completedGoals}/{breakdown.totalGoals} goals, {breakdown.completedReviews}/{breakdown.totalReviews} reviews)
+                                        </span>
+                                      </span>
+                                      <span className="font-medium">{breakdown.totalProgress}%</span>
+                                    </div>
+                                    <Progress value={breakdown.totalProgress} className="h-2" />
+                                  </>
+                                );
+                              })()}
                             </div>
                             <ChevronRight className="h-5 w-5 text-muted-foreground" />
                           </div>
@@ -356,6 +396,39 @@ export function PlanManagementPanel({
                               <Plus className="h-4 w-4 mr-1" />
                               Assign
                             </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="ghost">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBulkAssignPlan(template);
+                                }}>
+                                  <Users className="h-4 w-4 mr-2" />
+                                  Bulk Assign
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {!template.isSystem && (
+                                  <DropdownMenuItem onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEditTemplate(template);
+                                  }}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Template
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDuplicateTemplate(template);
+                                }}>
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Duplicate
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </CardContent>
                       </Card>
