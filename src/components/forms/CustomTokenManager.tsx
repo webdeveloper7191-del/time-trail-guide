@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, DragEvent } from 'react';
 import {
   Box,
   Stack,
@@ -26,6 +26,7 @@ import {
   User,
   Search,
   MousePointerClick,
+  GripVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,6 +96,7 @@ interface CustomTokenManagerProps {
   onTokensChange: (tokens: AutoPopulateToken[]) => void;
   onInsertToken?: (token: string) => void;
   mode?: 'copy' | 'insert';
+  enableDragDrop?: boolean;
 }
 
 export function CustomTokenManager({ 
@@ -102,6 +104,7 @@ export function CustomTokenManager({
   onTokensChange, 
   onInsertToken,
   mode = 'copy',
+  enableDragDrop = true,
 }: CustomTokenManagerProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
@@ -109,11 +112,25 @@ export function CustomTokenManager({
   );
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [draggingToken, setDraggingToken] = useState<string | null>(null);
   const [newToken, setNewToken] = useState({
     label: '',
     description: '',
     example: '',
   });
+
+  // Handle drag start
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, token: string) => {
+    e.dataTransfer.setData('text/plain', token);
+    e.dataTransfer.setData('application/x-token', token);
+    e.dataTransfer.effectAllowed = 'copy';
+    setDraggingToken(token);
+  };
+
+  // Handle drag end
+  const handleDragEnd = () => {
+    setDraggingToken(null);
+  };
 
   // Filter tokens based on search query
   const filteredGroups = useMemo(() => {
@@ -227,7 +244,14 @@ export function CustomTokenManager({
         />
 
         {/* Mode Indicator */}
-        {mode === 'insert' && (
+        {enableDragDrop && (
+          <Alert severity="info" icon={<GripVertical size={16} />} sx={{ py: 0.5 }}>
+            <Typography variant="caption">
+              Drag tokens to form fields, click to {mode === 'insert' ? 'insert' : 'copy'}
+            </Typography>
+          </Alert>
+        )}
+        {!enableDragDrop && mode === 'insert' && (
           <Alert severity="info" icon={<MousePointerClick size={16} />} sx={{ py: 0.5 }}>
             <Typography variant="caption">
               Click a token to insert it directly into the selected field
@@ -276,39 +300,51 @@ export function CustomTokenManager({
                 <Box sx={{ p: 2, border: 1, borderTop: 0, borderColor: 'divider', borderRadius: '0 0 8px 8px' }}>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {group.tokens.map((token) => (
-                      <Tooltip key={token.token} title={token.description} arrow>
-                        <Chip
-                          label={
-                            <Stack direction="row" alignItems="center" spacing={0.5}>
-                              <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                                {token.token}
-                              </span>
-                              {copiedToken === token.token ? (
-                                <Check size={12} className="text-green-500" />
-                              ) : mode === 'insert' ? (
-                                <MousePointerClick size={12} />
-                              ) : (
-                                <Copy size={12} />
-                              )}
-                            </Stack>
-                          }
-                          onClick={() => handleTokenAction(token.token)}
-                          sx={{
-                            height: 32,
-                            bgcolor: 'white',
-                            border: 1,
-                            borderColor: 'primary.main',
-                            color: 'primary.main',
-                            fontFamily: 'monospace',
-                            cursor: 'pointer',
-                            '&:hover': {
-                              bgcolor: 'primary.50',
-                            },
-                            '& .MuiChip-label': {
-                              px: 1,
-                            },
+                      <Tooltip key={token.token} title={`${token.description} • Drag to insert`} arrow>
+                        <Box
+                          draggable={enableDragDrop}
+                          onDragStart={(e) => handleDragStart(e, token.token)}
+                          onDragEnd={handleDragEnd}
+                          sx={{ 
+                            cursor: enableDragDrop ? 'grab' : 'pointer',
+                            '&:active': { cursor: enableDragDrop ? 'grabbing' : 'pointer' },
+                            opacity: draggingToken === token.token ? 0.5 : 1,
                           }}
-                        />
+                        >
+                          <Chip
+                            label={
+                              <Stack direction="row" alignItems="center" spacing={0.5}>
+                                {enableDragDrop && <GripVertical size={12} className="text-muted-foreground" />}
+                                <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                                  {token.token}
+                                </span>
+                                {copiedToken === token.token ? (
+                                  <Check size={12} className="text-green-500" />
+                                ) : mode === 'insert' ? (
+                                  <MousePointerClick size={12} />
+                                ) : (
+                                  <Copy size={12} />
+                                )}
+                              </Stack>
+                            }
+                            onClick={() => handleTokenAction(token.token)}
+                            sx={{
+                              height: 32,
+                              bgcolor: draggingToken === token.token ? 'primary.100' : 'white',
+                              border: 1,
+                              borderColor: 'primary.main',
+                              color: 'primary.main',
+                              fontFamily: 'monospace',
+                              cursor: 'inherit',
+                              '&:hover': {
+                                bgcolor: 'primary.50',
+                              },
+                              '& .MuiChip-label': {
+                                px: 1,
+                              },
+                            }}
+                          />
+                        </Box>
                       </Tooltip>
                     ))}
                   </Box>
@@ -412,37 +448,49 @@ export function CustomTokenManager({
             ) : (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {filteredCustomTokens.map((token) => (
-                  <Tooltip key={token.token} title={token.description} arrow>
-                    <Chip
-                      label={
-                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                            {token.token}
-                          </span>
-                          {copiedToken === token.token ? (
-                            <Check size={12} className="text-green-500" />
-                          ) : mode === 'insert' ? (
-                            <MousePointerClick size={12} />
-                          ) : (
-                            <Copy size={12} />
-                          )}
-                        </Stack>
-                      }
-                      onClick={() => handleTokenAction(token.token)}
-                      onDelete={() => handleDeleteToken(token.token)}
-                      sx={{
-                        height: 32,
-                        bgcolor: 'white',
-                        border: 1,
-                        borderColor: 'secondary.main',
-                        color: 'secondary.main',
-                        fontFamily: 'monospace',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          bgcolor: 'secondary.50',
-                        },
+                  <Tooltip key={token.token} title={`${token.description} • Drag to insert`} arrow>
+                    <Box
+                      draggable={enableDragDrop}
+                      onDragStart={(e) => handleDragStart(e, token.token)}
+                      onDragEnd={handleDragEnd}
+                      sx={{ 
+                        cursor: enableDragDrop ? 'grab' : 'pointer',
+                        '&:active': { cursor: enableDragDrop ? 'grabbing' : 'pointer' },
+                        opacity: draggingToken === token.token ? 0.5 : 1,
                       }}
-                    />
+                    >
+                      <Chip
+                        label={
+                          <Stack direction="row" alignItems="center" spacing={0.5}>
+                            {enableDragDrop && <GripVertical size={12} className="text-muted-foreground" />}
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                              {token.token}
+                            </span>
+                            {copiedToken === token.token ? (
+                              <Check size={12} className="text-green-500" />
+                            ) : mode === 'insert' ? (
+                              <MousePointerClick size={12} />
+                            ) : (
+                              <Copy size={12} />
+                            )}
+                          </Stack>
+                        }
+                        onClick={() => handleTokenAction(token.token)}
+                        onDelete={() => handleDeleteToken(token.token)}
+                        sx={{
+                          height: 32,
+                          bgcolor: draggingToken === token.token ? 'secondary.100' : 'white',
+                          border: 1,
+                          borderColor: 'secondary.main',
+                          color: 'secondary.main',
+                          fontFamily: 'monospace',
+                          cursor: 'inherit',
+                          '&:hover': {
+                            bgcolor: 'secondary.50',
+                          },
+                        }}
+                      />
+                    </Box>
                   </Tooltip>
                 ))}
               </Box>

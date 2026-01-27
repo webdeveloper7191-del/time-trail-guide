@@ -41,6 +41,8 @@ import {
   Eye,
   EyeOff,
   UserCircle,
+  Shuffle,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,6 +72,7 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [submitted, setSubmitted] = useState(false);
   const [showTokenValues, setShowTokenValues] = useState(true);
+  const [testFillActive, setTestFillActive] = useState(false);
 
   // Create preview context with example values
   const previewContext = useMemo(() => {
@@ -83,6 +86,81 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
       case 'desktop': return 1024;
     }
   }, [viewMode]);
+
+  // Generate sample data for Test Fill feature
+  const generateSampleData = useMemo(() => {
+    const samples: Record<string, any> = {};
+    
+    template.fields.forEach(field => {
+      switch (field.type) {
+        case 'short_text':
+          samples[field.id] = field.defaultValue || `Sample ${field.label}`;
+          break;
+        case 'long_text':
+          samples[field.id] = field.defaultValue || `This is sample text for the ${field.label} field. It contains multiple sentences to simulate real user input.`;
+          break;
+        case 'number':
+          const min = field.settings?.min ?? 1;
+          const max = field.settings?.max ?? 100;
+          samples[field.id] = Math.floor(Math.random() * (max - min + 1)) + min;
+          break;
+        case 'date':
+          samples[field.id] = new Date().toISOString().split('T')[0];
+          break;
+        case 'time':
+          samples[field.id] = '09:30';
+          break;
+        case 'datetime':
+          samples[field.id] = new Date().toISOString().slice(0, 16);
+          break;
+        case 'dropdown':
+        case 'radio':
+          if (field.options && field.options.length > 0) {
+            samples[field.id] = field.options[Math.floor(Math.random() * field.options.length)].value;
+          }
+          break;
+        case 'multi_select':
+          if (field.options && field.options.length > 0) {
+            const count = Math.min(2, field.options.length);
+            samples[field.id] = field.options.slice(0, count).map(o => o.value);
+          }
+          break;
+        case 'checkbox':
+          samples[field.id] = true;
+          break;
+        case 'signature':
+          samples[field.id] = 'signed';
+          break;
+        case 'location':
+          samples[field.id] = { lat: -33.8688, lng: 151.2093, address: '123 Sample St, Sydney' };
+          break;
+        case 'staff_selector':
+          samples[field.id] = 'EMP001';
+          break;
+        default:
+          // For other fields like photo, video, file, etc. - leave empty
+          break;
+      }
+    });
+    
+    return samples;
+  }, [template.fields]);
+
+  // Apply test fill data
+  const handleTestFill = () => {
+    setFormData(generateSampleData);
+    setTestFillActive(true);
+    setErrors({});
+    setSubmitted(false);
+  };
+
+  // Clear form data
+  const handleClearForm = () => {
+    setFormData({});
+    setTestFillActive(false);
+    setErrors({});
+    setSubmitted(false);
+  };
 
   const fieldsBySection = useMemo(() => {
     const grouped: Record<string, FormField[]> = {};
@@ -723,6 +801,24 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
                 </IconButton>
               </Tooltip>
             )}
+
+            {/* Test Fill Button */}
+            <Tooltip title={testFillActive ? "Clear sample data" : "Fill form with sample data"}>
+              <IconButton
+                size="small"
+                onClick={testFillActive ? handleClearForm : handleTestFill}
+                sx={{ 
+                  bgcolor: testFillActive ? 'success.50' : 'transparent',
+                  '&:hover': { bgcolor: testFillActive ? 'success.100' : 'action.hover' },
+                }}
+              >
+                {testFillActive ? (
+                  <RotateCcw className="h-4 w-4 text-success" />
+                ) : (
+                  <Shuffle className="h-4 w-4" />
+                )}
+              </IconButton>
+            </Tooltip>
             
             {/* View Mode Switcher */}
             <Stack direction="row" sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 0.5 }}>
@@ -753,18 +849,27 @@ export function FormPreview({ template, onClose, customTokens = [] }: FormPrevie
         </Stack>
         
         {/* Preview Mode Description */}
-        <Alert 
-          severity={previewMode === 'user' ? 'success' : 'info'} 
-          sx={{ mt: 2, py: 0.5 }}
-          icon={previewMode === 'user' ? <Users className="h-4 w-4" /> : <Braces className="h-4 w-4" />}
-        >
-          <Typography variant="caption">
-            {previewMode === 'user' 
-              ? 'You are viewing this form as an end-user would see it. All tokens are resolved to their actual values.'
-              : 'Builder view shows raw tokens and technical details. Toggle the eye icon to switch between raw tokens and resolved values.'
-            }
-          </Typography>
-        </Alert>
+        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+          <Alert 
+            severity={previewMode === 'user' ? 'success' : 'info'} 
+            sx={{ py: 0.5, flex: 1 }}
+            icon={previewMode === 'user' ? <Users className="h-4 w-4" /> : <Braces className="h-4 w-4" />}
+          >
+            <Typography variant="caption">
+              {previewMode === 'user' 
+                ? 'You are viewing this form as an end-user would see it. All tokens are resolved to their actual values.'
+                : 'Builder view shows raw tokens and technical details. Toggle the eye icon to switch between raw tokens and resolved values.'
+              }
+            </Typography>
+          </Alert>
+          {testFillActive && (
+            <Alert severity="warning" sx={{ py: 0.5 }} icon={<Shuffle className="h-4 w-4" />}>
+              <Typography variant="caption">
+                Test data active
+              </Typography>
+            </Alert>
+          )}
+        </Stack>
       </Box>
 
       {/* Preview Container */}
