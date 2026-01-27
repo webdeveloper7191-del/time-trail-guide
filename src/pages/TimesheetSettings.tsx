@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { ApprovalTier, BreakRule, ApprovalRule } from '@/types/compliance';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
+import { OvertimeRulesConfigPanel } from '@/components/settings/OvertimeRulesConfigPanel';
 
 interface AutoApprovalCondition {
   id: string;
@@ -926,6 +927,10 @@ export default function TimesheetSettings() {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Advanced Overtime Rules */}
+              <Separator className="my-6" />
+              <OvertimeRulesConfigPanel />
             </TabsContent>
 
             {/* Workflow Tab */}
