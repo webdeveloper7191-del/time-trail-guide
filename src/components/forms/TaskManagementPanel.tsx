@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Stack,
@@ -17,6 +17,8 @@ import {
   FormControl,
   InputLabel,
   Select as MuiSelect,
+  Collapse,
+  Autocomplete,
 } from '@mui/material';
 import {
   Plus,
@@ -41,24 +43,38 @@ import {
   MessageSquare,
   Settings2,
   GitBranch,
+  Bell,
+  X,
+  UserPlus,
+  ExternalLink,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Task, TaskType, TaskStatus, TaskPriority, TaskFormData, TaskAttachment, TaskActivityLog, TaskPipeline } from '@/types/tasks';
 import { mockTasks, mockPipelines } from '@/data/mockTaskData';
+import { mockStaff } from '@/data/mockStaffData';
 import { TaskEditDrawer } from './tasks/TaskEditDrawer';
 import { TaskDetailSheet } from './tasks/TaskDetailSheet';
 import { TaskKanbanBoard } from './tasks/TaskKanbanBoard';
 import { PipelineManagerDrawer } from './tasks/PipelineManagerDrawer';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { detectDueDateNotifications, getDueDateStatusLabel, TaskDueDateNotification } from '@/lib/taskDueDateNotificationService';
 
 const taskTypeConfig: Record<TaskType, { label: string; icon: React.ReactNode; color: string }> = {
   work_order: { label: 'Work Order', icon: <ClipboardList className="h-4 w-4" />, color: 'primary' },
   corrective_action: { label: 'Corrective Action', icon: <AlertTriangle className="h-4 w-4" />, color: 'error' },
   maintenance_request: { label: 'Maintenance', icon: <Wrench className="h-4 w-4" />, color: 'warning' },
 };
+
+const staffOptions = mockStaff.map(s => ({
+  id: s.id,
+  name: `${s.firstName} ${s.lastName}`,
+  position: s.position,
+  avatar: s.avatar,
+}));
 
 const statusConfig: Record<TaskStatus, { label: string; color: string }> = {
   open: { label: 'Open', color: 'info' },
@@ -75,7 +91,11 @@ const priorityConfig: Record<TaskPriority, { label: string; color: string }> = {
   critical: { label: 'Critical', color: 'error' },
 };
 
-export function TaskManagementPanel() {
+interface TaskManagementPanelProps {
+  onNavigateToSubmission?: (submissionId: string) => void;
+}
+
+export function TaskManagementPanel({ onNavigateToSubmission }: TaskManagementPanelProps = {}) {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [pipelines, setPipelines] = useState<TaskPipeline[]>(mockPipelines);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>(mockPipelines[0].id);
@@ -95,6 +115,15 @@ export function TaskManagementPanel() {
   // Context menu
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
+
+  // Bulk selection state
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [bulkAssignAnchor, setBulkAssignAnchor] = useState<null | HTMLElement>(null);
+
+  // Due date notifications
+  const [dueDateNotifications, setDueDateNotifications] = useState<TaskDueDateNotification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
 
   const selectedPipeline = useMemo(() => 
     pipelines.find(p => p.id === selectedPipelineId) || pipelines[0],
@@ -123,12 +152,78 @@ export function TaskManagementPanel() {
     overdue: tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'completed').length,
   }), [tasks]);
 
+  // Detect due date notifications
+  useEffect(() => {
+    const notifications = detectDueDateNotifications(tasks);
+    const activeNotifications = notifications.filter(n => !dismissedNotifications.has(n.taskId));
+    setDueDateNotifications(activeNotifications);
+  }, [tasks, dismissedNotifications]);
+
   const addActivityLog = (taskId: string, log: Omit<TaskActivityLog, 'id' | 'timestamp'>): TaskActivityLog => {
     return {
       ...log,
       id: `log-${Date.now()}`,
       timestamp: new Date().toISOString(),
     };
+  };
+
+  // Bulk selection handlers
+  const handleSelectTask = (taskId: string, checked: boolean) => {
+    setSelectedTaskIds(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(taskId);
+      } else {
+        newSet.delete(taskId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAllTasks = (checked: boolean) => {
+    if (checked) {
+      setSelectedTaskIds(new Set(filteredTasks.map(t => t.id)));
+    } else {
+      setSelectedTaskIds(new Set());
+    }
+  };
+
+  const handleBulkStatusChange = (newStatus: TaskStatus) => {
+    const count = selectedTaskIds.size;
+    selectedTaskIds.forEach(taskId => {
+      handleStatusChange(taskId, newStatus);
+    });
+    setSelectedTaskIds(new Set());
+    toast.success(`Updated status to ${statusConfig[newStatus].label} for ${count} task(s)`);
+  };
+
+  const handleBulkAssign = (assigneeId: string, assigneeName: string) => {
+    const count = selectedTaskIds.size;
+    selectedTaskIds.forEach(taskId => {
+      handleAssigneeChange(taskId, assigneeId, assigneeName);
+    });
+    setSelectedTaskIds(new Set());
+    setBulkAssignAnchor(null);
+    toast.success(`Assigned ${count} task(s) to ${assigneeName}`);
+  };
+
+  const handleBulkDelete = () => {
+    const count = selectedTaskIds.size;
+    setTasks(prev => prev.filter(t => !selectedTaskIds.has(t.id)));
+    setSelectedTaskIds(new Set());
+    toast.success(`Deleted ${count} task(s)`);
+  };
+
+  const handleDismissNotification = (taskId: string) => {
+    setDismissedNotifications(prev => new Set([...prev, taskId]));
+  };
+
+  const handleLinkedFormClick = (submissionId: string) => {
+    if (onNavigateToSubmission) {
+      onNavigateToSubmission(submissionId);
+    } else {
+      toast.info(`Navigate to submission: ${submissionId}`);
+    }
   };
 
   const handleCreateTask = () => {
@@ -357,7 +452,32 @@ export function TaskManagementPanel() {
               Track work orders, corrective actions, and maintenance requests
             </Typography>
           </div>
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            {/* Due Date Notifications Bell */}
+            {dueDateNotifications.length > 0 && (
+              <Box sx={{ position: 'relative' }}>
+                <IconButton
+                  size="small"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  sx={{ 
+                    bgcolor: showNotifications ? 'action.selected' : 'transparent',
+                  }}
+                >
+                  <Bell className="h-4 w-4" />
+                </IconButton>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 2,
+                    right: 2,
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: 'error.main',
+                  }}
+                />
+              </Box>
+            )}
             <ToggleButtonGroup
               value={viewMode}
               exclusive
@@ -381,6 +501,72 @@ export function TaskManagementPanel() {
             </Button>
           </Stack>
         </Stack>
+
+        {/* Due Date Notifications Panel */}
+        <Collapse in={showNotifications}>
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'warning.50', borderRadius: 1, border: 1, borderColor: 'warning.200' }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+              <Typography variant="subtitle2" fontWeight={600}>
+                <Bell className="h-4 w-4 inline mr-1" /> Due Date Reminders ({dueDateNotifications.length})
+              </Typography>
+              <IconButton size="small" onClick={() => setShowNotifications(false)}>
+                <X size={14} />
+              </IconButton>
+            </Stack>
+            <Stack spacing={1}>
+              {dueDateNotifications.slice(0, 5).map(notification => (
+                <Stack
+                  key={notification.taskId}
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  sx={{ 
+                    p: 1, 
+                    bgcolor: 'background.paper', 
+                    borderRadius: 0.5,
+                    borderLeft: 3,
+                    borderColor: notification.severity === 'critical' ? 'error.main' : 
+                                  notification.severity === 'warning' ? 'warning.main' : 'info.main',
+                  }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" noWrap fontWeight={500}>
+                      {notification.taskTitle}
+                    </Typography>
+                    <Typography variant="caption" color={notification.severity === 'critical' ? 'error.main' : 'text.secondary'}>
+                      {getDueDateStatusLabel(notification)}
+                      {notification.assigneeName && ` • ${notification.assigneeName}`}
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" spacing={0.5}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const task = tasks.find(t => t.id === notification.taskId);
+                        if (task) handleTaskClick(task);
+                        setShowNotifications(false);
+                      }}
+                    >
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDismissNotification(notification.taskId)}
+                    >
+                      <X size={12} />
+                    </IconButton>
+                  </Stack>
+                </Stack>
+              ))}
+              {dueDateNotifications.length > 5 && (
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  And {dueDateNotifications.length - 5} more...
+                </Typography>
+              )}
+            </Stack>
+          </Box>
+        </Collapse>
 
         {/* Pipeline Selector (Kanban mode) */}
         {viewMode === 'kanban' && (
@@ -503,22 +689,118 @@ export function TaskManagementPanel() {
         </Stack>
       </Box>
 
+      {/* Bulk Action Bar */}
+      <Collapse in={viewMode === 'list' && selectedTaskIds.size > 0}>
+        <Box sx={{ px: 2, py: 1.5, bgcolor: 'primary.50', borderBottom: 1, borderColor: 'primary.200' }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography variant="body2" fontWeight={500}>
+              {selectedTaskIds.size} task(s) selected
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkStatusChange('in_progress')}
+              >
+                <ArrowRight className="h-3 w-3 mr-1" />
+                Start
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkStatusChange('completed')}
+              >
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Complete
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => setBulkAssignAnchor(e.currentTarget)}
+              >
+                <UserPlus className="h-3 w-3 mr-1" />
+                Assign
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkDelete}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Delete
+              </Button>
+            </Stack>
+            <Box sx={{ flex: 1 }} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedTaskIds(new Set())}
+            >
+              Clear Selection
+            </Button>
+          </Stack>
+        </Box>
+      </Collapse>
+
+      {/* Bulk Assign Menu */}
+      <Menu
+        anchorEl={bulkAssignAnchor}
+        open={Boolean(bulkAssignAnchor)}
+        onClose={() => setBulkAssignAnchor(null)}
+      >
+        {staffOptions.map(staff => (
+          <MenuItem
+            key={staff.id}
+            onClick={() => handleBulkAssign(staff.id, staff.name)}
+          >
+            <ListItemIcon>
+              <Avatar sx={{ width: 24, height: 24 }}>
+                <User size={12} />
+              </Avatar>
+            </ListItemIcon>
+            <ListItemText primary={staff.name} secondary={staff.position} />
+          </MenuItem>
+        ))}
+      </Menu>
+
       {/* Content */}
       {viewMode === 'list' ? (
         <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+          {/* Select All Header */}
+          {filteredTasks.length > 0 && (
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5, pl: 0.5 }}>
+              <Checkbox
+                checked={selectedTaskIds.size === filteredTasks.length && filteredTasks.length > 0}
+                onCheckedChange={(checked) => handleSelectAllTasks(!!checked)}
+              />
+              <Typography variant="caption" color="text.secondary">
+                Select all ({filteredTasks.length})
+              </Typography>
+            </Stack>
+          )}
           <Stack spacing={2}>
             {filteredTasks.map((task) => {
               const typeInfo = taskTypeConfig[task.type];
               const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
+              const isSelected = selectedTaskIds.has(task.id);
               
               return (
                 <Card 
                   key={task.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  className={`cursor-pointer hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-primary' : ''}`}
                   onClick={() => handleTaskClick(task)}
                 >
                   <CardContent className="py-3">
-                    <Stack direction="row" alignItems="flex-start" justifyContent="space-between">
+                    <Stack direction="row" alignItems="flex-start" spacing={1.5}>
+                      {/* Checkbox */}
+                      <Box onClick={(e) => e.stopPropagation()} sx={{ pt: 0.5 }}>
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={(checked) => handleSelectTask(task.id, !!checked)}
+                        />
+                      </Box>
+
                       <Stack spacing={1} sx={{ flex: 1 }}>
                         <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
                           <Chip
@@ -547,6 +829,16 @@ export function TaskManagementPanel() {
                               label="From Form"
                               size="small"
                               variant="outlined"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLinkedFormClick(task.linkedSubmissionId!);
+                              }}
+                              onDelete={(e) => {
+                                e.stopPropagation();
+                                handleLinkedFormClick(task.linkedSubmissionId!);
+                              }}
+                              deleteIcon={<ExternalLink className="h-3 w-3" />}
+                              sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
                             />
                           )}
                         </Stack>
@@ -688,6 +980,7 @@ export function TaskManagementPanel() {
         onStatusChange={handleStatusChange}
         onAddComment={handleAddComment}
         onEdit={() => selectedTask && handleEditTask(selectedTask)}
+        onLinkedFormClick={handleLinkedFormClick}
       />
 
       {/* Task Edit/Create Drawer */}

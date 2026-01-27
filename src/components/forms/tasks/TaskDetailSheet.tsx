@@ -26,6 +26,7 @@ import {
   File,
   Download,
   Send,
+  ExternalLink,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -41,6 +42,7 @@ interface TaskDetailSheetProps {
   onStatusChange: (taskId: string, status: TaskStatus) => void;
   onAddComment: (taskId: string, comment: string) => void;
   onEdit: () => void;
+  onLinkedFormClick?: (submissionId: string) => void;
 }
 
 const taskTypeConfig = {
@@ -73,6 +75,7 @@ export function TaskDetailSheet({
   onStatusChange,
   onAddComment,
   onEdit,
+  onLinkedFormClick,
 }: TaskDetailSheetProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [newComment, setNewComment] = useState('');
@@ -125,6 +128,10 @@ export function TaskDetailSheet({
                       label="From Form"
                       size="small"
                       variant="outlined"
+                      onClick={() => onLinkedFormClick?.(task.linkedSubmissionId!)}
+                      onDelete={() => onLinkedFormClick?.(task.linkedSubmissionId!)}
+                      deleteIcon={<ExternalLink size={12} />}
+                      sx={{ cursor: onLinkedFormClick ? 'pointer' : 'default', '&:hover': { bgcolor: 'action.hover' } }}
                     />
                   )}
                 </Stack>
@@ -240,16 +247,29 @@ export function TaskDetailSheet({
                     )}
 
                     {task.linkedSubmissionId && (
-                      <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <Stack 
+                        direction="row" 
+                        alignItems="center" 
+                        spacing={1.5}
+                        sx={{ 
+                          cursor: onLinkedFormClick ? 'pointer' : 'default',
+                          p: 1,
+                          mx: -1,
+                          borderRadius: 1,
+                          '&:hover': onLinkedFormClick ? { bgcolor: 'action.hover' } : undefined,
+                        }}
+                        onClick={() => onLinkedFormClick?.(task.linkedSubmissionId!)}
+                      >
                         <Box sx={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Link2 size={16} className="text-muted-foreground" />
                         </Box>
-                        <Box>
+                        <Box sx={{ flex: 1 }}>
                           <Typography variant="caption" color="text.secondary">Source</Typography>
                           <Typography variant="body2" fontWeight={500}>
-                            Linked to form submission
+                            View linked form submission
                           </Typography>
                         </Box>
+                        {onLinkedFormClick && <ExternalLink size={14} className="text-muted-foreground" />}
                       </Stack>
                     )}
                   </Stack>
