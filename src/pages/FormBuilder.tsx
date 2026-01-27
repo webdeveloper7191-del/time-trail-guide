@@ -73,6 +73,7 @@ export default function FormBuilder() {
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [customTokens, setCustomTokens] = useState<AutoPopulateToken[]>([]);
   const [targetSubmissionId, setTargetSubmissionId] = useState<string | null>(null);
+  const [targetTaskId, setTargetTaskId] = useState<string | null>(null);
 
   // Navigation handler for task → submission links
   const handleNavigateToSubmission = (submissionId: string) => {
@@ -80,10 +81,19 @@ export default function FormBuilder() {
     setViewMode('submissions');
   };
 
+  // Navigation handler for submission → task links
+  const handleNavigateToTask = (taskId: string) => {
+    setTargetTaskId(taskId);
+    setViewMode('tasks');
+  };
+
   // Clear target submission when leaving submissions tab
   const handleViewModeChange = (newMode: ViewMode) => {
     if (viewMode === 'submissions' && newMode !== 'submissions') {
       setTargetSubmissionId(null);
+    }
+    if (viewMode === 'tasks' && newMode !== 'tasks') {
+      setTargetTaskId(null);
     }
     setViewMode(newMode);
   };
@@ -515,13 +525,18 @@ export default function FormBuilder() {
           <SubmissionWorkflow 
             initialSubmissionId={targetSubmissionId}
             onSubmissionViewed={() => setTargetSubmissionId(null)}
+            onNavigateToTask={handleNavigateToTask}
           />
         </Box>
       )}
 
       {viewMode === 'tasks' && (
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
-          <TaskManagementPanel onNavigateToSubmission={handleNavigateToSubmission} />
+          <TaskManagementPanel 
+            onNavigateToSubmission={handleNavigateToSubmission}
+            initialTaskId={targetTaskId}
+            onTaskViewed={() => setTargetTaskId(null)}
+          />
         </Box>
       )}
 

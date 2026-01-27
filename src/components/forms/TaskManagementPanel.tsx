@@ -93,9 +93,11 @@ const priorityConfig: Record<TaskPriority, { label: string; color: string }> = {
 
 interface TaskManagementPanelProps {
   onNavigateToSubmission?: (submissionId: string) => void;
+  initialTaskId?: string | null;
+  onTaskViewed?: () => void;
 }
 
-export function TaskManagementPanel({ onNavigateToSubmission }: TaskManagementPanelProps = {}) {
+export function TaskManagementPanel({ onNavigateToSubmission, initialTaskId, onTaskViewed }: TaskManagementPanelProps = {}) {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [pipelines, setPipelines] = useState<TaskPipeline[]>(mockPipelines);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>(mockPipelines[0].id);
@@ -129,6 +131,18 @@ export function TaskManagementPanel({ onNavigateToSubmission }: TaskManagementPa
     pipelines.find(p => p.id === selectedPipelineId) || pipelines[0],
     [pipelines, selectedPipelineId]
   );
+
+  // Auto-open task when navigating from submissions
+  useEffect(() => {
+    if (initialTaskId) {
+      const targetTask = tasks.find(t => t.id === initialTaskId);
+      if (targetTask) {
+        setSelectedTask(targetTask);
+        setShowDetailSheet(true);
+        onTaskViewed?.();
+      }
+    }
+  }, [initialTaskId, tasks, onTaskViewed]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
