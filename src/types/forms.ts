@@ -205,6 +205,8 @@ export interface FormTemplate {
   category: string;
   version: number;
   status: 'draft' | 'published' | 'archived';
+  isEnabled?: boolean; // Whether template is active for assignments
+  isIndustryTemplate?: boolean; // Read-only industry template
   sections: FormSection[];
   fields: FormField[];
   groups?: FieldGroup[]; // Optional field groups for row grouping
@@ -231,6 +233,7 @@ export interface FormTemplate {
   updatedAt: string;
   publishedAt?: string;
   createdBy?: string;
+  duplicatedFrom?: string; // Original template ID if duplicated
 }
 
 export interface FormSubmission {
