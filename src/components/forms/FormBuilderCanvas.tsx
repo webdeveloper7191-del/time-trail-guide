@@ -465,6 +465,12 @@ export function FormBuilderCanvas({
 
   const handleDragOver = (e: React.DragEvent, fieldId: string) => {
     e.preventDefault();
+    // Check if it's a token being dragged
+    const isTokenDrag = e.dataTransfer.types.includes('application/x-token');
+    if (isTokenDrag) {
+      setDragOverFieldId(fieldId);
+      return;
+    }
     if (draggedFieldId && draggedFieldId !== fieldId) {
       setDragOverFieldId(fieldId);
     }
@@ -476,6 +482,29 @@ export function FormBuilderCanvas({
 
   const handleDrop = (e: React.DragEvent, targetFieldId: string) => {
     e.preventDefault();
+    
+    // Check if a token was dropped
+    const droppedToken = e.dataTransfer.getData('application/x-token');
+    if (droppedToken) {
+      // Insert token into the target field's default value
+      const targetField = template.fields.find(f => f.id === targetFieldId);
+      if (targetField) {
+        const currentValue = String(targetField.defaultValue || '');
+        onTemplateChange({
+          ...template,
+          fields: template.fields.map(f => 
+            f.id === targetFieldId 
+              ? { ...f, defaultValue: currentValue + droppedToken }
+              : f
+          ),
+        });
+        onFieldSelect(targetFieldId);
+        toast.success(`Token ${droppedToken} added to field`);
+      }
+      setDragOverFieldId(null);
+      return;
+    }
+
     if (!draggedFieldId || draggedFieldId === targetFieldId) {
       setDraggedFieldId(null);
       setDragOverFieldId(null);
@@ -578,8 +607,9 @@ export function FormBuilderCanvas({
             p: 2,
             cursor: 'pointer',
             border: 2,
-            borderColor: isSelectedForGroup ? 'info.main' : isSelected ? 'primary.main' : isDragOver ? 'primary.light' : 'transparent',
-            bgcolor: isSelectedForGroup ? 'info.50' : isDragging ? 'action.selected' : isSelected ? 'primary.50' : 'background.paper',
+            borderStyle: isDragOver && !draggedFieldId ? 'dashed' : 'solid',
+            borderColor: isSelectedForGroup ? 'info.main' : isSelected ? 'primary.main' : isDragOver ? 'success.main' : 'transparent',
+            bgcolor: isSelectedForGroup ? 'info.50' : isDragging ? 'action.selected' : isSelected ? 'primary.50' : isDragOver && !draggedFieldId ? 'success.50' : 'background.paper',
             opacity: isDragging ? 0.5 : 1,
             transition: 'all 0.15s ease',
             height: '100%',
