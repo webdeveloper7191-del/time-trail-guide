@@ -16,26 +16,33 @@ import {
   Tag,
   CalendarPlus,
   Scale,
+  Settings2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { StaffPayConfigurationSection } from './StaffPayConfigurationSection';
 import { StaffAwardRuleSection } from './StaffAwardRuleSection';
-import { EditPayConditionsSheet } from './EditPayConditionsSheet';
 import { PayConditionsHistorySheet } from './PayConditionsHistorySheet';
-import { SchedulePayChangeSheet } from './SchedulePayChangeSheet';
 import { PayRateComparisonSheet } from './PayRateComparisonSheet';
+import { UnifiedPayChangeSheet } from './UnifiedPayChangeSheet';
 
 interface StaffPayConditionsSectionProps {
   staff: StaffMember;
 }
 
+type PayChangeMode = 'previous' | 'current' | 'future';
+
 export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionProps) {
   const [activeTab, setActiveTab] = useState('pay-conditions');
-  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [payChangeSheetOpen, setPayChangeSheetOpen] = useState(false);
+  const [payChangeMode, setPayChangeMode] = useState<PayChangeMode>('current');
   const [historySheetOpen, setHistorySheetOpen] = useState(false);
-  const [scheduleSheetOpen, setScheduleSheetOpen] = useState(false);
   const [comparisonSheetOpen, setComparisonSheetOpen] = useState(false);
   const payCondition = staff.currentPayCondition;
+
+  const openPayChangeSheet = (mode: PayChangeMode) => {
+    setPayChangeMode(mode);
+    setPayChangeSheetOpen(true);
+  };
 
   const payPeriodLabel = {
     weekly: 'Weekly',
@@ -71,13 +78,9 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
                 <History className="h-4 w-4 mr-2" />
                 View History
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setScheduleSheetOpen(true)} className="shadow-sm">
-                <CalendarPlus className="h-4 w-4 mr-2" />
-                Schedule Change
-              </Button>
-              <Button size="sm" onClick={() => setEditSheetOpen(true)} className="shadow-md">
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Current
+              <Button size="sm" onClick={() => openPayChangeSheet('current')} className="shadow-md">
+                <Settings2 className="h-4 w-4 mr-2" />
+                Manage Pay
               </Button>
             </div>
           </div>
@@ -215,19 +218,15 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
       </Tabs>
 
       {/* Sheet Panels */}
-      <EditPayConditionsSheet
-        open={editSheetOpen}
-        onOpenChange={setEditSheetOpen}
+      <UnifiedPayChangeSheet
+        open={payChangeSheetOpen}
+        onOpenChange={setPayChangeSheetOpen}
         staff={staff}
+        initialMode={payChangeMode}
       />
       <PayConditionsHistorySheet
         open={historySheetOpen}
         onOpenChange={setHistorySheetOpen}
-        staff={staff}
-      />
-      <SchedulePayChangeSheet
-        open={scheduleSheetOpen}
-        onOpenChange={setScheduleSheetOpen}
         staff={staff}
       />
       <PayRateComparisonSheet
