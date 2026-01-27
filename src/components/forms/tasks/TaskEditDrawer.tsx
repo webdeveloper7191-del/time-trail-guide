@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Stack,
@@ -78,7 +78,7 @@ export function TaskEditDrawer({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset form when task changes or drawer opens
-  useState(() => {
+  useEffect(() => {
     if (open) {
       if (mode === 'edit' && task) {
         setFormData({
@@ -107,7 +107,7 @@ export function TaskEditDrawer({
       }
       setErrors({});
     }
-  });
+  }, [open, mode, task]);
 
   const handleAssigneeChange = (_: any, value: typeof staffOptions[0] | null) => {
     setFormData(prev => ({
