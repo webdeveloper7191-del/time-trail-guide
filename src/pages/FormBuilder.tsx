@@ -28,6 +28,7 @@ import { FormVersionHistoryPanel } from '@/components/forms/FormVersionHistoryPa
 import { FieldTemplatesLibrary } from '@/components/forms/FieldTemplatesLibrary';
 import { CustomTokenManager } from '@/components/forms/CustomTokenManager';
 import { FormSettingsDrawer } from '@/components/forms/FormSettingsDrawer';
+import { EditTemplateDetailsDrawer } from '@/components/forms/EditTemplateDetailsDrawer';
 import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES, AutoPopulateToken } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { templateDetailsSchema } from '@/lib/validationSchemas/formSchemas';
@@ -71,9 +72,7 @@ export default function FormBuilder() {
   const [showCustomTokens, setShowCustomTokens] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [customTokens, setCustomTokens] = useState<AutoPopulateToken[]>([]);
-  const [editingName, setEditingName] = useState('');
-  const [editingDescription, setEditingDescription] = useState('');
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  // Removed editingName, editingDescription, validationErrors - now handled by EditTemplateDetailsDrawer
 
   // Undo/Redo for template state
   const {
@@ -193,39 +192,20 @@ export default function FormBuilder() {
   };
 
   const handleOpenEditDetails = () => {
-    setEditingName(template.name);
-    setEditingDescription(template.description || '');
-    setValidationErrors({});
     setShowEditDetailsPanel(true);
   };
 
-  const handleSaveNameDescription = () => {
-    // Validate with Zod
-    const result = templateDetailsSchema.safeParse({
-      name: editingName.trim(),
-      description: editingDescription.trim(),
-    });
-
-    if (!result.success) {
-      const errors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
-        if (err.path[0]) {
-          errors[err.path[0] as string] = err.message;
-        }
-      });
-      setValidationErrors(errors);
-      return;
-    }
-
+  const handleSaveTemplateDetails = (updates: { name: string; description: string; headerImage?: string }) => {
     setTemplate(prev => ({
       ...prev,
-      name: result.data.name,
-      description: result.data.description,
+      name: updates.name,
+      description: updates.description,
+      branding: {
+        ...prev.branding,
+        headerImage: updates.headerImage,
+      },
       updatedAt: new Date().toISOString(),
     }));
-    setShowEditDetailsPanel(false);
-    setValidationErrors({});
-    toast.success('Template details updated');
   };
 
   const handleRestoreVersion = (restoredTemplate: FormTemplate) => {
@@ -565,64 +545,12 @@ export default function FormBuilder() {
       )}
 
       {/* Edit Details Side Panel */}
-      <Drawer
-        anchor="right"
+      <EditTemplateDetailsDrawer
         open={showEditDetailsPanel}
+        template={template}
         onClose={() => setShowEditDetailsPanel(false)}
-        PaperProps={{ sx: { width: 400 } }}
-      >
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Pencil size={18} />
-                <Typography variant="h6" fontWeight={600}>
-                  Edit Template Details
-                </Typography>
-              </Stack>
-              <IconButton size="small" onClick={() => setShowEditDetailsPanel(false)}>
-                <X size={18} />
-              </IconButton>
-            </Stack>
-          </Box>
-
-          <Box sx={{ flex: 1, p: 3, overflow: 'auto' }}>
-            <Stack spacing={3}>
-              <TextField
-                label="Template Name"
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                fullWidth
-                error={!!validationErrors.name}
-                helperText={validationErrors.name}
-                autoFocus
-              />
-              <TextField
-                label="Description"
-                value={editingDescription}
-                onChange={(e) => setEditingDescription(e.target.value)}
-                fullWidth
-                multiline
-                rows={4}
-                placeholder="Brief description of this form's purpose..."
-                error={!!validationErrors.description}
-                helperText={validationErrors.description || 'Max 500 characters'}
-              />
-            </Stack>
-          </Box>
-
-          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              <MuiButton variant="text" onClick={() => setShowEditDetailsPanel(false)}>
-                Cancel
-              </MuiButton>
-              <MuiButton variant="contained" onClick={handleSaveNameDescription}>
-                Save Changes
-              </MuiButton>
-            </Stack>
-          </Box>
-        </Box>
-      </Drawer>
+        onSave={handleSaveTemplateDetails}
+      />
 
       {/* Publish Side Panel */}
       <Drawer
