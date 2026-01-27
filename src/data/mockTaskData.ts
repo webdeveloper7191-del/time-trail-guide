@@ -1,4 +1,50 @@
-import { Task } from '@/types/tasks';
+import { Task, TaskPipeline } from '@/types/tasks';
+
+// Default pipelines
+export const mockPipelines: TaskPipeline[] = [
+  {
+    id: 'pipeline-default',
+    name: 'Default Workflow',
+    description: 'Standard task progression workflow',
+    isDefault: true,
+    stages: [
+      { id: 'stage-open', name: 'Open', color: '#3b82f6', order: 0 },
+      { id: 'stage-in-progress', name: 'In Progress', color: '#8b5cf6', order: 1 },
+      { id: 'stage-blocked', name: 'Blocked', color: '#ef4444', order: 2 },
+      { id: 'stage-completed', name: 'Completed', color: '#22c55e', order: 3 },
+    ],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'pipeline-maintenance',
+    name: 'Maintenance Pipeline',
+    description: 'For scheduled and reactive maintenance tasks',
+    stages: [
+      { id: 'stage-m-requested', name: 'Requested', color: '#f59e0b', order: 0 },
+      { id: 'stage-m-scheduled', name: 'Scheduled', color: '#3b82f6', order: 1 },
+      { id: 'stage-m-in-progress', name: 'In Progress', color: '#8b5cf6', order: 2 },
+      { id: 'stage-m-review', name: 'Review', color: '#06b6d4', order: 3 },
+      { id: 'stage-m-completed', name: 'Completed', color: '#22c55e', order: 4 },
+    ],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'pipeline-corrective',
+    name: 'Corrective Action Pipeline',
+    description: 'For compliance and corrective action tracking',
+    stages: [
+      { id: 'stage-c-identified', name: 'Identified', color: '#ef4444', order: 0 },
+      { id: 'stage-c-investigating', name: 'Investigating', color: '#f59e0b', order: 1 },
+      { id: 'stage-c-action', name: 'Action Required', color: '#8b5cf6', order: 2 },
+      { id: 'stage-c-verification', name: 'Verification', color: '#06b6d4', order: 3 },
+      { id: 'stage-c-closed', name: 'Closed', color: '#22c55e', order: 4 },
+    ],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+];
 
 export const mockTasks: Task[] = [
   {
@@ -8,6 +54,8 @@ export const mockTasks: Task[] = [
     type: 'corrective_action',
     status: 'open',
     priority: 'critical',
+    pipelineId: 'pipeline-corrective',
+    stageId: 'stage-c-identified',
     assigneeId: 'staff-1',
     assigneeName: 'Mark John',
     dueDate: '2024-01-24',
@@ -37,6 +85,8 @@ export const mockTasks: Task[] = [
     type: 'maintenance_request',
     status: 'in_progress',
     priority: 'medium',
+    pipelineId: 'pipeline-maintenance',
+    stageId: 'stage-m-in-progress',
     assigneeId: 'staff-2',
     assigneeName: 'Sarah Smith',
     dueDate: '2024-01-25',
@@ -92,6 +142,8 @@ export const mockTasks: Task[] = [
     type: 'work_order',
     status: 'open',
     priority: 'high',
+    pipelineId: 'pipeline-default',
+    stageId: 'stage-open',
     assigneeId: 'staff-3',
     assigneeName: 'Emily Davis',
     dueDate: '2024-01-23',
@@ -138,6 +190,8 @@ export const mockTasks: Task[] = [
     type: 'work_order',
     status: 'completed',
     priority: 'medium',
+    pipelineId: 'pipeline-default',
+    stageId: 'stage-completed',
     assigneeId: 'staff-4',
     assigneeName: 'Lisa Brown',
     dueDate: '2024-01-20',
@@ -192,6 +246,8 @@ export const mockTasks: Task[] = [
     type: 'corrective_action',
     status: 'blocked',
     priority: 'critical',
+    pipelineId: 'pipeline-corrective',
+    stageId: 'stage-c-action',
     assigneeId: 'staff-1',
     assigneeName: 'Mark John',
     dueDate: '2024-01-22',
@@ -245,6 +301,8 @@ export const mockTasks: Task[] = [
     type: 'work_order',
     status: 'open',
     priority: 'high',
+    pipelineId: 'pipeline-default',
+    stageId: 'stage-open',
     assigneeId: '',
     assigneeName: '',
     dueDate: '2024-01-26',
