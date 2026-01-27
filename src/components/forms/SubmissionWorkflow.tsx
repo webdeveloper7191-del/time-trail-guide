@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
   Stack,
@@ -99,6 +99,8 @@ interface GroupedSubmissions {
 
 interface SubmissionWorkflowProps {
   templateId?: string;
+  initialSubmissionId?: string | null;
+  onSubmissionViewed?: () => void;
 }
 
 interface Task {
@@ -184,10 +186,22 @@ const mockFormFields: FormField[] = [
 // Mock sites for grouping
 const mockSites = ['Main Campus', 'North Wing', 'South Building', 'East Annex', 'West Facility'];
 
-export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
+export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissionViewed }: SubmissionWorkflowProps) {
   const [submissions, setSubmissions] = useState<FormSubmission[]>(mockFormSubmissions);
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+
+  // Auto-open submission when navigating from tasks
+  useEffect(() => {
+    if (initialSubmissionId) {
+      const targetSubmission = submissions.find(s => s.id === initialSubmissionId);
+      if (targetSubmission) {
+        setSelectedSubmission(targetSubmission);
+        setDetailDrawerOpen(true);
+        onSubmissionViewed?.();
+      }
+    }
+  }, [initialSubmissionId, submissions, onSubmissionViewed]);
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [reviewComment, setReviewComment] = useState('');
   const [searchQuery, setSearchQuery] = useState('');

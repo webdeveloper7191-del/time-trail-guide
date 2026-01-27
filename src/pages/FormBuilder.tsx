@@ -72,6 +72,21 @@ export default function FormBuilder() {
   const [showCustomTokens, setShowCustomTokens] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [customTokens, setCustomTokens] = useState<AutoPopulateToken[]>([]);
+  const [targetSubmissionId, setTargetSubmissionId] = useState<string | null>(null);
+
+  // Navigation handler for task → submission links
+  const handleNavigateToSubmission = (submissionId: string) => {
+    setTargetSubmissionId(submissionId);
+    setViewMode('submissions');
+  };
+
+  // Clear target submission when leaving submissions tab
+  const handleViewModeChange = (newMode: ViewMode) => {
+    if (viewMode === 'submissions' && newMode !== 'submissions') {
+      setTargetSubmissionId(null);
+    }
+    setViewMode(newMode);
+  };
   // Removed editingName, editingDescription, validationErrors - now handled by EditTemplateDetailsDrawer
 
   // Undo/Redo for template state
@@ -497,13 +512,16 @@ export default function FormBuilder() {
 
       {viewMode === 'submissions' && (
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
-          <SubmissionWorkflow />
+          <SubmissionWorkflow 
+            initialSubmissionId={targetSubmissionId}
+            onSubmissionViewed={() => setTargetSubmissionId(null)}
+          />
         </Box>
       )}
 
       {viewMode === 'tasks' && (
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
-          <TaskManagementPanel />
+          <TaskManagementPanel onNavigateToSubmission={handleNavigateToSubmission} />
         </Box>
       )}
 
