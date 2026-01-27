@@ -14,6 +14,9 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Avatar,
+  FormControl,
+  InputLabel,
+  Select as MuiSelect,
 } from '@mui/material';
 import {
   Plus,
@@ -36,15 +39,18 @@ import {
   LayoutGrid,
   Paperclip,
   MessageSquare,
+  Settings2,
+  GitBranch,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Task, TaskType, TaskStatus, TaskPriority, TaskFormData, TaskAttachment, TaskActivityLog } from '@/types/tasks';
-import { mockTasks } from '@/data/mockTaskData';
+import { Task, TaskType, TaskStatus, TaskPriority, TaskFormData, TaskAttachment, TaskActivityLog, TaskPipeline } from '@/types/tasks';
+import { mockTasks, mockPipelines } from '@/data/mockTaskData';
 import { TaskEditDrawer } from './tasks/TaskEditDrawer';
 import { TaskDetailSheet } from './tasks/TaskDetailSheet';
 import { TaskKanbanBoard } from './tasks/TaskKanbanBoard';
+import { PipelineManagerDrawer } from './tasks/PipelineManagerDrawer';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -71,6 +77,8 @@ const priorityConfig: Record<TaskPriority, { label: string; color: string }> = {
 
 export function TaskManagementPanel() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [pipelines, setPipelines] = useState<TaskPipeline[]>(mockPipelines);
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string>(mockPipelines[0].id);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<TaskType | 'all'>('all');
@@ -81,11 +89,17 @@ export function TaskManagementPanel() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [showEditDrawer, setShowEditDrawer] = useState(false);
+  const [showPipelineDrawer, setShowPipelineDrawer] = useState(false);
   const [editMode, setEditMode] = useState<'create' | 'edit'>('create');
   
   // Context menu
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
+
+  const selectedPipeline = useMemo(() => 
+    pipelines.find(p => p.id === selectedPipelineId) || pipelines[0],
+    [pipelines, selectedPipelineId]
+  );
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
@@ -95,9 +109,10 @@ export function TaskManagementPanel() {
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
       const matchesType = typeFilter === 'all' || task.type === typeFilter;
       const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
-      return matchesSearch && matchesStatus && matchesType && matchesPriority;
+      const matchesPipeline = viewMode === 'list' || task.pipelineId === selectedPipelineId || !task.pipelineId;
+      return matchesSearch && matchesStatus && matchesType && matchesPriority && matchesPipeline;
     });
-  }, [tasks, searchQuery, statusFilter, typeFilter, priorityFilter]);
+  }, [tasks, searchQuery, statusFilter, typeFilter, priorityFilter, viewMode, selectedPipelineId]);
 
   const stats = useMemo(() => ({
     total: tasks.length,
@@ -109,12 +124,11 @@ export function TaskManagementPanel() {
   }), [tasks]);
 
   const addActivityLog = (taskId: string, log: Omit<TaskActivityLog, 'id' | 'timestamp'>): TaskActivityLog => {
-    const newLog: TaskActivityLog = {
+    return {
       ...log,
       id: `log-${Date.now()}`,
       timestamp: new Date().toISOString(),
     };
-    return newLog;
   };
 
   const handleCreateTask = () => {
@@ -136,6 +150,8 @@ export function TaskManagementPanel() {
         id: `task-${Date.now()}`,
         ...formData,
         status: 'open',
+        pipelineId: selectedPipelineId,
+        stageId: selectedPipeline.stages[0]?.id,
         attachments,
         comments: [],
         activityLog: [
@@ -205,12 +221,65 @@ export function TaskManagementPanel() {
       };
     }));
 
-    // Update selected task if viewing
     if (selectedTask?.id === taskId) {
       setSelectedTask(prev => prev ? { ...prev, status: newStatus } : null);
     }
     
     toast.success(`Task status updated to ${statusConfig[newStatus].label}`);
+  };
+
+  const handleStageChange = (taskId: string, newStageId: string) => {
+    const stage = selectedPipeline.stages.find(s => s.id === newStageId);
+    if (!stage) return;
+
+    setTasks(prev => prev.map(t => {
+      if (t.id !== taskId) return t;
+      
+      const oldStage = selectedPipeline.stages.find(s => s.id === t.stageId);
+      const stageLog = addActivityLog(taskId, {
+        type: 'pipeline_change',
+        description: `Moved from "${oldStage?.name || 'Unknown'}" to "${stage.name}"`,
+        userId: 'current-user',
+        userName: 'Current User',
+        metadata: { oldValue: oldStage?.name, newValue: stage.name, fieldName: 'stage' },
+      });
+
+      return {
+        ...t,
+        stageId: newStageId,
+        pipelineId: selectedPipelineId,
+        activityLog: [...t.activityLog, stageLog],
+        updatedAt: new Date().toISOString(),
+      };
+    }));
+
+    toast.success(`Task moved to ${stage.name}`);
+  };
+
+  const handleAssigneeChange = (taskId: string, assigneeId: string, assigneeName: string) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id !== taskId) return t;
+      
+      const assignLog = addActivityLog(taskId, {
+        type: 'assignment_change',
+        description: assigneeName 
+          ? `Assigned to ${assigneeName}` 
+          : 'Removed assignment',
+        userId: 'current-user',
+        userName: 'Current User',
+        metadata: { oldValue: t.assigneeName, newValue: assigneeName, fieldName: 'assignee' },
+      });
+
+      return {
+        ...t,
+        assigneeId,
+        assigneeName,
+        activityLog: [...t.activityLog, assignLog],
+        updatedAt: new Date().toISOString(),
+      };
+    }));
+
+    toast.success(assigneeName ? `Task assigned to ${assigneeName}` : 'Task unassigned');
   };
 
   const handleAddComment = (taskId: string, text: string) => {
@@ -235,7 +304,6 @@ export function TaskManagementPanel() {
         : t
     ));
 
-    // Update selected task if viewing
     if (selectedTask?.id === taskId) {
       setSelectedTask(prev => prev ? { 
         ...prev, 
@@ -260,6 +328,22 @@ export function TaskManagementPanel() {
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
     setShowDetailSheet(true);
+  };
+
+  // Pipeline management
+  const handleCreatePipeline = (pipeline: TaskPipeline) => {
+    setPipelines(prev => [...prev, pipeline]);
+  };
+
+  const handleUpdatePipeline = (pipeline: TaskPipeline) => {
+    setPipelines(prev => prev.map(p => p.id === pipeline.id ? pipeline : p));
+  };
+
+  const handleDeletePipeline = (pipelineId: string) => {
+    setPipelines(prev => prev.filter(p => p.id !== pipelineId));
+    if (selectedPipelineId === pipelineId) {
+      setSelectedPipelineId(pipelines[0].id);
+    }
   };
 
   return (
@@ -287,12 +371,48 @@ export function TaskManagementPanel() {
                 <LayoutGrid size={16} />
               </ToggleButton>
             </ToggleButtonGroup>
+            <Button variant="outline" onClick={() => setShowPipelineDrawer(true)}>
+              <GitBranch className="h-4 w-4 mr-1" />
+              Pipelines
+            </Button>
             <Button onClick={handleCreateTask}>
               <Plus className="h-4 w-4 mr-1" />
               New Task
             </Button>
           </Stack>
         </Stack>
+
+        {/* Pipeline Selector (Kanban mode) */}
+        {viewMode === 'kanban' && (
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">Pipeline:</Typography>
+            <Select value={selectedPipelineId} onValueChange={setSelectedPipelineId}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pipelines.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Stack direction="row" spacing={0.25}>
+                        {p.stages.slice(0, 3).map(s => (
+                          <Box
+                            key={s.id}
+                            sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: s.color }}
+                          />
+                        ))}
+                      </Stack>
+                      <span>{p.name}</span>
+                    </Stack>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Typography variant="caption" color="text.secondary">
+              {selectedPipeline.stages.length} stages
+            </Typography>
+          </Stack>
+        )}
 
         {/* Stats */}
         <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
@@ -519,8 +639,10 @@ export function TaskManagementPanel() {
       ) : (
         <TaskKanbanBoard
           tasks={filteredTasks}
+          pipeline={selectedPipeline}
           onTaskClick={handleTaskClick}
-          onStatusChange={handleStatusChange}
+          onStageChange={handleStageChange}
+          onAssigneeChange={handleAssigneeChange}
         />
       )}
 
@@ -575,6 +697,17 @@ export function TaskManagementPanel() {
         mode={editMode}
         onClose={() => setShowEditDrawer(false)}
         onSave={handleSaveTask}
+      />
+
+      {/* Pipeline Manager Drawer */}
+      <PipelineManagerDrawer
+        open={showPipelineDrawer}
+        pipelines={pipelines}
+        onClose={() => setShowPipelineDrawer(false)}
+        onSave={(p) => setPipelines(p)}
+        onCreatePipeline={handleCreatePipeline}
+        onUpdatePipeline={handleUpdatePipeline}
+        onDeletePipeline={handleDeletePipeline}
       />
     </Box>
   );
