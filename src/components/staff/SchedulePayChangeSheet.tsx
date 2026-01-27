@@ -92,6 +92,13 @@ export function SchedulePayChangeSheet({ open, onOpenChange, staff }: SchedulePa
       return;
     }
 
+    if (rateDifference === 0) {
+      toast.warning('No rate difference', {
+        description: 'Please change the pay rate first before calculating back-pay',
+      });
+      return;
+    }
+
     const calculation = calculateRetrospectivePay({
       employeeId: staff.id,
       employeeName: `${staff.firstName} ${staff.lastName}`,
@@ -320,7 +327,26 @@ export function SchedulePayChangeSheet({ open, onOpenChange, staff }: SchedulePa
                 </div>
               </div>
               
-              <Button onClick={handleCalculateBackPay} variant="outline" className="w-full gap-2">
+              {/* Warning if no rate difference */}
+              {rateDifference === 0 && (
+                <Card className="border-amber-500/30 bg-amber-500/5">
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex gap-3 items-center">
+                      <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                      <p className="text-sm text-amber-700">
+                        Change the pay rate below before calculating back-pay
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              <Button 
+                onClick={handleCalculateBackPay} 
+                variant="outline" 
+                className="w-full gap-2"
+                disabled={rateDifference === 0}
+              >
                 <Calculator className="h-4 w-4" />
                 Calculate Back-Pay
               </Button>
