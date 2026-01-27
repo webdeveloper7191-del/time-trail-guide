@@ -1277,6 +1277,391 @@ export const mockFormSubmissions: FormSubmission[] = [
   },
 ];
 
+// ==========================================
+// CHILDCARE OPERATIONAL CHECKLISTS
+// ==========================================
+
+export const childcareOpeningChecklist: FormTemplate = {
+  id: 'childcare-opening-checklist',
+  name: 'Childcare Opening Checklist (Start of Day)',
+  description: 'Ensure the environment is safe, compliant, and ready before children arrive. Complete this checklist at the start of each operating day.',
+  category: 'safety',
+  version: 1,
+  status: 'published',
+  isEnabled: true,
+  isIndustryTemplate: true,
+  sections: [
+    { id: 'sec-facility', title: 'Facility & Environment', description: 'Check all physical spaces are safe and ready', order: 0 },
+    { id: 'sec-health', title: 'Health & Safety', description: 'Verify health and safety requirements', order: 1 },
+    { id: 'sec-staffing', title: 'Staffing', description: 'Confirm staff attendance and ratios', order: 2 },
+    { id: 'sec-admin', title: 'Administration', description: 'Ensure administrative systems are ready', order: 3 },
+    { id: 'sec-signoff', title: 'Sign-Off', description: 'Complete the checklist', order: 4 },
+  ],
+  fields: [
+    // Facility & Environment
+    { id: 'f-alarm', type: 'checkbox', label: 'Alarm disarmed and premises unlocked securely', required: true, sectionId: 'sec-facility', order: 0, scoring: { enabled: true, passValue: true } },
+    { id: 'f-indoor', type: 'checkbox', label: 'Indoor areas checked for hazards (floors, furniture, power points)', required: true, sectionId: 'sec-facility', order: 1, scoring: { enabled: true, passValue: true } },
+    { id: 'f-outdoor', type: 'checkbox', label: 'Outdoor play areas inspected (gates, surfaces, equipment)', required: true, sectionId: 'sec-facility', order: 2, scoring: { enabled: true, passValue: true } },
+    { id: 'f-toilets', type: 'checkbox', label: 'Toilets, nappy change areas, and handwashing stations clean and stocked', required: true, sectionId: 'sec-facility', order: 3, scoring: { enabled: true, passValue: true } },
+    { id: 'f-ventilation', type: 'checkbox', label: 'Rooms ventilated and temperature appropriate', required: true, sectionId: 'sec-facility', order: 4, scoring: { enabled: true, passValue: true } },
+    { id: 'f-facility-notes', type: 'long_text', label: 'Facility issues or notes', required: false, sectionId: 'sec-facility', order: 5, placeholder: 'Document any issues found during facility checks...' },
+    
+    // Health & Safety
+    { id: 'f-firstaid', type: 'checkbox', label: 'First aid kit fully stocked and accessible', required: true, sectionId: 'sec-health', order: 0, scoring: { enabled: true, passValue: true } },
+    { id: 'f-exits', type: 'checkbox', label: 'Emergency exits clear and unobstructed', required: true, sectionId: 'sec-health', order: 1, scoring: { enabled: true, passValue: true } },
+    { id: 'f-meds', type: 'checkbox', label: 'Medication stored securely', required: true, sectionId: 'sec-health', order: 2, scoring: { enabled: true, passValue: true } },
+    { id: 'f-chemicals', type: 'checkbox', label: 'Cleaning chemicals locked away', required: true, sectionId: 'sec-health', order: 3, scoring: { enabled: true, passValue: true } },
+    { id: 'f-safety-checklist', type: 'checkbox', label: 'Daily safety checklist signed off', required: true, sectionId: 'sec-health', order: 4, scoring: { enabled: true, passValue: true } },
+    
+    // Staffing
+    { id: 'f-staff-attendance', type: 'checkbox', label: 'Staff attendance confirmed', required: true, sectionId: 'sec-staffing', order: 0, scoring: { enabled: true, passValue: true } },
+    { id: 'f-ratios', type: 'checkbox', label: 'Staff-to-child ratios achievable for the day', required: true, sectionId: 'sec-staffing', order: 1, scoring: { enabled: true, passValue: true } },
+    { id: 'f-relief', type: 'checkbox', label: 'Relief staff briefed (if applicable)', required: false, sectionId: 'sec-staffing', order: 2 },
+    { id: 'f-allocations', type: 'checkbox', label: 'Room allocations and responsibilities confirmed', required: true, sectionId: 'sec-staffing', order: 3, scoring: { enabled: true, passValue: true } },
+    { id: 'f-staff-present', type: 'staff_selector', label: 'Staff present today', required: true, sectionId: 'sec-staffing', order: 4, settings: { allowMultiple: true } },
+    
+    // Administration
+    { id: 'f-attendance-system', type: 'checkbox', label: 'Attendance system ready (sign-in/out device or register)', required: true, sectionId: 'sec-admin', order: 0, scoring: { enabled: true, passValue: true } },
+    { id: 'f-child-records', type: 'checkbox', label: 'Child records accessible (medical alerts, allergies)', required: true, sectionId: 'sec-admin', order: 1, scoring: { enabled: true, passValue: true } },
+    { id: 'f-programme', type: 'checkbox', label: 'Daily programme displayed', required: true, sectionId: 'sec-admin', order: 2, scoring: { enabled: true, passValue: true } },
+    
+    // Sign-Off
+    { id: 'f-open-time', type: 'time', label: 'Doors opened at', required: true, sectionId: 'sec-signoff', order: 0 },
+    { id: 'f-open-notes', type: 'long_text', label: 'Additional opening notes', required: false, sectionId: 'sec-signoff', order: 1 },
+    { id: 'f-open-signature', type: 'signature', label: 'Completed by (Signature)', required: true, sectionId: 'sec-signoff', order: 2 },
+  ],
+  scoring: {
+    enabled: true,
+    passingScore: 100,
+    failThreshold: 80,
+  },
+  settings: {
+    allowDrafts: false,
+    requireSignature: true,
+    offlineEnabled: true,
+    autoCreateTask: true,
+    taskTriggerConditions: [
+      { fieldId: 'f-ratios', operator: 'equals', value: 'false' },
+    ],
+  },
+  createdAt: '2025-01-01T00:00:00Z',
+  updatedAt: '2025-01-01T00:00:00Z',
+  publishedAt: '2025-01-01T00:00:00Z',
+  createdBy: 'system',
+};
+
+export const childcareDailyRoomChecklist: FormTemplate = {
+  id: 'childcare-daily-room-checklist',
+  name: 'Childcare Daily Room Checklist (During the Day)',
+  description: 'Maintain safety, hygiene, and learning quality throughout the day. Complete at regular intervals during operating hours.',
+  category: 'safety',
+  version: 1,
+  status: 'published',
+  isEnabled: true,
+  isIndustryTemplate: true,
+  sections: [
+    { id: 'sec-hygiene', title: 'Health & Hygiene', description: 'Monitor hygiene practices throughout the day', order: 0 },
+    { id: 'sec-supervision', title: 'Supervision & Safety', description: 'Ensure active supervision at all times', order: 1 },
+    { id: 'sec-learning', title: 'Learning & Engagement', description: 'Track educational activities and observations', order: 2 },
+    { id: 'sec-signoff', title: 'Sign-Off', description: 'Complete the checklist', order: 3 },
+  ],
+  fields: [
+    // Health & Hygiene
+    { id: 'f-handwashing', type: 'checkbox', label: 'Handwashing routines followed', required: true, sectionId: 'sec-hygiene', order: 0, scoring: { enabled: true, passValue: true } },
+    { id: 'f-toys-cleaned', type: 'checkbox', label: 'Toys and high-touch surfaces cleaned as scheduled', required: true, sectionId: 'sec-hygiene', order: 1, scoring: { enabled: true, passValue: true } },
+    { id: 'f-nappy-logged', type: 'checkbox', label: 'Nappy changes logged correctly', required: true, sectionId: 'sec-hygiene', order: 2, scoring: { enabled: true, passValue: true } },
+    { id: 'f-food-handling', type: 'checkbox', label: 'Food handling procedures followed', required: true, sectionId: 'sec-hygiene', order: 3, scoring: { enabled: true, passValue: true } },
+    { id: 'f-allergies', type: 'checkbox', label: 'Allergies actively monitored', required: true, sectionId: 'sec-hygiene', order: 4, scoring: { enabled: true, passValue: true } },
+    
+    // Supervision & Safety
+    { id: 'f-supervision', type: 'checkbox', label: 'Active supervision maintained at all times', required: true, sectionId: 'sec-supervision', order: 0, scoring: { enabled: true, passValue: true } },
+    { id: 'f-headcounts', type: 'checkbox', label: 'Headcounts conducted and documented', required: true, sectionId: 'sec-supervision', order: 1, scoring: { enabled: true, passValue: true } },
+    { id: 'f-current-headcount', type: 'number', label: 'Current child headcount', required: true, sectionId: 'sec-supervision', order: 2, settings: { min: 0, max: 100 } },
+    { id: 'f-transitions', type: 'checkbox', label: 'Indoor/outdoor transitions logged', required: true, sectionId: 'sec-supervision', order: 3, scoring: { enabled: true, passValue: true } },
+    { id: 'f-incidents-recorded', type: 'checkbox', label: 'Incidents or injuries recorded immediately', required: true, sectionId: 'sec-supervision', order: 4, scoring: { enabled: true, passValue: true } },
+    { id: 'f-incident-details', type: 'long_text', label: 'Incident details (if any)', required: false, sectionId: 'sec-supervision', order: 5, placeholder: 'Document any incidents that occurred...' },
+    
+    // Learning & Engagement
+    { id: 'f-activities', type: 'checkbox', label: 'Planned activities delivered', required: true, sectionId: 'sec-learning', order: 0, scoring: { enabled: true, passValue: true } },
+    { id: 'f-observations', type: 'checkbox', label: 'Child observations recorded', required: true, sectionId: 'sec-learning', order: 1, scoring: { enabled: true, passValue: true } },
+    { id: 'f-behaviour', type: 'checkbox', label: 'Behaviour guidance applied consistently', required: true, sectionId: 'sec-learning', order: 2, scoring: { enabled: true, passValue: true } },
+    { id: 'f-activity-notes', type: 'long_text', label: 'Activity notes and observations', required: false, sectionId: 'sec-learning', order: 3, placeholder: 'Document notable observations or learning moments...' },
+    { id: 'f-activity-photos', type: 'photo_upload', label: 'Activity photos (optional)', required: false, sectionId: 'sec-learning', order: 4, settings: { maxFiles: 5 } },
+    
+    // Sign-Off
+    { id: 'f-room', type: 'dropdown', label: 'Room/Area', required: true, sectionId: 'sec-signoff', order: 0, options: [
+      { id: 'opt-babies', label: 'Babies Room', value: 'babies' },
+      { id: 'opt-toddlers', label: 'Toddlers Room', value: 'toddlers' },
+      { id: 'opt-preschool', label: 'Preschool Room', value: 'preschool' },
+      { id: 'opt-kindy', label: 'Kindy Room', value: 'kindy' },
+      { id: 'opt-outdoor', label: 'Outdoor Area', value: 'outdoor' },
+    ]},
+    { id: 'f-check-time', type: 'time', label: 'Check completed at', required: true, sectionId: 'sec-signoff', order: 1 },
+    { id: 'f-room-signature', type: 'signature', label: 'Staff signature', required: true, sectionId: 'sec-signoff', order: 2 },
+  ],
+  scoring: {
+    enabled: true,
+    passingScore: 100,
+    failThreshold: 80,
+  },
+  settings: {
+    allowDrafts: true,
+    requireSignature: true,
+    offlineEnabled: true,
+    autoCreateTask: true,
+    taskTriggerConditions: [
+      { fieldId: 'f-supervision', operator: 'equals', value: 'false' },
+    ],
+  },
+  createdAt: '2025-01-01T00:00:00Z',
+  updatedAt: '2025-01-01T00:00:00Z',
+  publishedAt: '2025-01-01T00:00:00Z',
+  createdBy: 'system',
+};
+
+export const childcareClosingChecklist: FormTemplate = {
+  id: 'childcare-closing-checklist',
+  name: 'Childcare Closing Checklist (End of Day)',
+  description: 'Leave the service secure, clean, and ready for the next day. Complete before locking up.',
+  category: 'safety',
+  version: 1,
+  status: 'published',
+  isEnabled: true,
+  isIndustryTemplate: true,
+  sections: [
+    { id: 'sec-children', title: 'Children & Records', description: 'Ensure all children are collected and records complete', order: 0 },
+    { id: 'sec-cleaning', title: 'Cleaning & Hygiene', description: 'Complete end-of-day cleaning tasks', order: 1 },
+    { id: 'sec-security', title: 'Facility & Security', description: 'Secure the premises', order: 2 },
+    { id: 'sec-signoff', title: 'Sign-Off', description: 'Complete the checklist', order: 3 },
+  ],
+  fields: [
+    // Children & Records
+    { id: 'f-all-signedout', type: 'checkbox', label: 'All children signed out by authorised persons', required: true, sectionId: 'sec-children', order: 0, scoring: { enabled: true, passValue: true } },
+    { id: 'f-late-pickups', type: 'checkbox', label: 'Late pickups documented', required: false, sectionId: 'sec-children', order: 1 },
+    { id: 'f-late-details', type: 'long_text', label: 'Late pickup details (if any)', required: false, sectionId: 'sec-children', order: 2, placeholder: 'Document any late pickups...' },
+    { id: 'f-attendance-finalised', type: 'checkbox', label: 'Attendance records finalised', required: true, sectionId: 'sec-children', order: 3, scoring: { enabled: true, passValue: true } },
+    { id: 'f-incidents-filed', type: 'checkbox', label: 'Incident reports completed and filed', required: true, sectionId: 'sec-children', order: 4, scoring: { enabled: true, passValue: true } },
+    
+    // Cleaning & Hygiene
+    { id: 'f-toys-sanitised', type: 'checkbox', label: 'Toys cleaned and sanitised', required: true, sectionId: 'sec-cleaning', order: 0, scoring: { enabled: true, passValue: true } },
+    { id: 'f-floors', type: 'checkbox', label: 'Floors swept and mopped', required: true, sectionId: 'sec-cleaning', order: 1, scoring: { enabled: true, passValue: true } },
+    { id: 'f-bins', type: 'checkbox', label: 'Bins emptied', required: true, sectionId: 'sec-cleaning', order: 2, scoring: { enabled: true, passValue: true } },
+    { id: 'f-kitchen', type: 'checkbox', label: 'Kitchen cleaned and food stored correctly', required: true, sectionId: 'sec-cleaning', order: 3, scoring: { enabled: true, passValue: true } },
+    { id: 'f-bathrooms', type: 'checkbox', label: 'Bathrooms sanitised', required: true, sectionId: 'sec-cleaning', order: 4, scoring: { enabled: true, passValue: true } },
+    
+    // Facility & Security
+    { id: 'f-windows-doors', type: 'checkbox', label: 'Windows and doors locked', required: true, sectionId: 'sec-security', order: 0, scoring: { enabled: true, passValue: true } },
+    { id: 'f-appliances', type: 'checkbox', label: 'Electrical appliances switched off', required: true, sectionId: 'sec-security', order: 1, scoring: { enabled: true, passValue: true } },
+    { id: 'f-hvac', type: 'checkbox', label: 'Heating/cooling adjusted', required: true, sectionId: 'sec-security', order: 2, scoring: { enabled: true, passValue: true } },
+    { id: 'f-alarm-armed', type: 'checkbox', label: 'Alarm system armed', required: true, sectionId: 'sec-security', order: 3, scoring: { enabled: true, passValue: true } },
+    { id: 'f-walkthrough', type: 'checkbox', label: 'Final walk-through completed', required: true, sectionId: 'sec-security', order: 4, scoring: { enabled: true, passValue: true } },
+    
+    // Sign-Off
+    { id: 'f-close-time', type: 'time', label: 'Closed at', required: true, sectionId: 'sec-signoff', order: 0 },
+    { id: 'f-close-notes', type: 'long_text', label: 'Notes for tomorrow', required: false, sectionId: 'sec-signoff', order: 1, placeholder: 'Any important notes for the opening staff...' },
+    { id: 'f-close-signature', type: 'signature', label: 'Closing staff signature', required: true, sectionId: 'sec-signoff', order: 2 },
+  ],
+  scoring: {
+    enabled: true,
+    passingScore: 100,
+    failThreshold: 80,
+  },
+  settings: {
+    allowDrafts: false,
+    requireSignature: true,
+    offlineEnabled: true,
+    autoCreateTask: true,
+    taskTriggerConditions: [
+      { fieldId: 'f-all-signedout', operator: 'equals', value: 'false' },
+    ],
+  },
+  createdAt: '2025-01-01T00:00:00Z',
+  updatedAt: '2025-01-01T00:00:00Z',
+  publishedAt: '2025-01-01T00:00:00Z',
+  createdBy: 'system',
+};
+
+export const childcareEmergencyClosureChecklist: FormTemplate = {
+  id: 'childcare-emergency-closure-checklist',
+  name: 'Emergency Closure Checklist',
+  description: 'Use during fire, power outage, flood, extreme weather, or lockdown situations. Document all emergency procedures followed.',
+  category: 'incident',
+  version: 1,
+  status: 'published',
+  isEnabled: true,
+  isIndustryTemplate: true,
+  sections: [
+    { id: 'sec-emergency', title: 'Emergency Response', description: 'Document the emergency situation and response', order: 0 },
+    { id: 'sec-signoff', title: 'Sign-Off', description: 'Complete the report', order: 1 },
+  ],
+  fields: [
+    { id: 'f-emergency-type', type: 'dropdown', label: 'Emergency Type', required: true, sectionId: 'sec-emergency', order: 0, options: [
+      { id: 'opt-fire', label: 'Fire', value: 'fire' },
+      { id: 'opt-power', label: 'Power Outage', value: 'power_outage' },
+      { id: 'opt-flood', label: 'Flood', value: 'flood' },
+      { id: 'opt-weather', label: 'Extreme Weather', value: 'extreme_weather' },
+      { id: 'opt-lockdown', label: 'Lockdown', value: 'lockdown' },
+      { id: 'opt-other', label: 'Other', value: 'other' },
+    ]},
+    { id: 'f-emergency-time', type: 'datetime', label: 'Emergency occurred at', required: true, sectionId: 'sec-emergency', order: 1 },
+    { id: 'f-children-accounted', type: 'checkbox', label: 'Children accounted for', required: true, sectionId: 'sec-emergency', order: 2, scoring: { enabled: true, passValue: true } },
+    { id: 'f-child-count', type: 'number', label: 'Number of children present', required: true, sectionId: 'sec-emergency', order: 3, settings: { min: 0, max: 200 } },
+    { id: 'f-emergency-services', type: 'checkbox', label: 'Emergency services contacted if required', required: true, sectionId: 'sec-emergency', order: 4 },
+    { id: 'f-emergency-service-ref', type: 'short_text', label: 'Emergency services reference number', required: false, sectionId: 'sec-emergency', order: 5, placeholder: 'e.g. Police reference number' },
+    { id: 'f-parents-notified', type: 'checkbox', label: 'Parents notified via approved communication channel', required: true, sectionId: 'sec-emergency', order: 6, scoring: { enabled: true, passValue: true } },
+    { id: 'f-notification-method', type: 'dropdown', label: 'Notification method used', required: true, sectionId: 'sec-emergency', order: 7, options: [
+      { id: 'opt-sms', label: 'SMS/Text', value: 'sms' },
+      { id: 'opt-email', label: 'Email', value: 'email' },
+      { id: 'opt-app', label: 'Parent App', value: 'app' },
+      { id: 'opt-phone', label: 'Phone Calls', value: 'phone' },
+      { id: 'opt-multiple', label: 'Multiple Methods', value: 'multiple' },
+    ]},
+    { id: 'f-procedures-followed', type: 'checkbox', label: 'Evacuation or lockdown procedures followed', required: true, sectionId: 'sec-emergency', order: 8, scoring: { enabled: true, passValue: true } },
+    { id: 'f-incident-documented', type: 'checkbox', label: 'Incident documented', required: true, sectionId: 'sec-emergency', order: 9, scoring: { enabled: true, passValue: true } },
+    { id: 'f-regulatory-notified', type: 'radio', label: 'Regulatory authority notified (if required)', required: true, sectionId: 'sec-emergency', order: 10, options: [
+      { id: 'opt-yes', label: 'Yes - Notified', value: 'yes' },
+      { id: 'opt-no', label: 'No - Not Required', value: 'not_required' },
+      { id: 'opt-pending', label: 'Pending - Will Notify', value: 'pending' },
+    ]},
+    { id: 'f-incident-description', type: 'long_text', label: 'Incident description', required: true, sectionId: 'sec-emergency', order: 11, placeholder: 'Provide a detailed description of the emergency and actions taken...' },
+    { id: 'f-photos', type: 'photo_upload', label: 'Evidence photos (if safe to capture)', required: false, sectionId: 'sec-emergency', order: 12, settings: { maxFiles: 10 } },
+    
+    // Sign-Off
+    { id: 'f-staff-present', type: 'staff_selector', label: 'Staff present during emergency', required: true, sectionId: 'sec-signoff', order: 0, settings: { allowMultiple: true } },
+    { id: 'f-report-signature', type: 'signature', label: 'Report completed by (Signature)', required: true, sectionId: 'sec-signoff', order: 1 },
+  ],
+  scoring: {
+    enabled: true,
+    passingScore: 100,
+    failThreshold: 70,
+  },
+  settings: {
+    allowDrafts: true,
+    requireSignature: true,
+    offlineEnabled: true,
+    reviewRequired: true,
+    autoCreateTask: true,
+  },
+  createdAt: '2025-01-01T00:00:00Z',
+  updatedAt: '2025-01-01T00:00:00Z',
+  publishedAt: '2025-01-01T00:00:00Z',
+  createdBy: 'system',
+};
+
+export const childcarePlannedClosureChecklist: FormTemplate = {
+  id: 'childcare-planned-closure-checklist',
+  name: 'Planned Closure Checklist',
+  description: 'Use for public holidays, staff training days, or scheduled maintenance closures.',
+  category: 'safety',
+  version: 1,
+  status: 'published',
+  isEnabled: true,
+  isIndustryTemplate: true,
+  sections: [
+    { id: 'sec-preparation', title: 'Closure Preparation', description: 'Ensure all stakeholders are informed', order: 0 },
+    { id: 'sec-signoff', title: 'Sign-Off', description: 'Complete the checklist', order: 1 },
+  ],
+  fields: [
+    { id: 'f-closure-reason', type: 'dropdown', label: 'Closure Reason', required: true, sectionId: 'sec-preparation', order: 0, options: [
+      { id: 'opt-holiday', label: 'Public Holiday', value: 'public_holiday' },
+      { id: 'opt-training', label: 'Staff Training Day', value: 'training' },
+      { id: 'opt-maintenance', label: 'Maintenance', value: 'maintenance' },
+      { id: 'opt-other', label: 'Other', value: 'other' },
+    ]},
+    { id: 'f-closure-date', type: 'date', label: 'Closure Date(s)', required: true, sectionId: 'sec-preparation', order: 1 },
+    { id: 'f-reopen-date', type: 'date', label: 'Reopening Date', required: true, sectionId: 'sec-preparation', order: 2 },
+    { id: 'f-parents-notified', type: 'checkbox', label: 'Parents notified in advance', required: true, sectionId: 'sec-preparation', order: 3, scoring: { enabled: true, passValue: true } },
+    { id: 'f-notice-displayed', type: 'checkbox', label: 'Closure notice displayed', required: true, sectionId: 'sec-preparation', order: 4, scoring: { enabled: true, passValue: true } },
+    { id: 'f-bookings-adjusted', type: 'checkbox', label: 'Bookings and billing adjusted', required: true, sectionId: 'sec-preparation', order: 5, scoring: { enabled: true, passValue: true } },
+    { id: 'f-rosters-updated', type: 'checkbox', label: 'Staff rosters updated', required: true, sectionId: 'sec-preparation', order: 6, scoring: { enabled: true, passValue: true } },
+    { id: 'f-security-cleaning', type: 'checkbox', label: 'Security and cleaning arranged', required: true, sectionId: 'sec-preparation', order: 7, scoring: { enabled: true, passValue: true } },
+    { id: 'f-additional-notes', type: 'long_text', label: 'Additional notes', required: false, sectionId: 'sec-preparation', order: 8, placeholder: 'Any special arrangements or notes...' },
+    
+    // Sign-Off
+    { id: 'f-prepared-by', type: 'staff_selector', label: 'Prepared by', required: true, sectionId: 'sec-signoff', order: 0 },
+    { id: 'f-preparation-signature', type: 'signature', label: 'Signature', required: true, sectionId: 'sec-signoff', order: 1 },
+  ],
+  scoring: {
+    enabled: true,
+    passingScore: 100,
+    failThreshold: 80,
+  },
+  settings: {
+    allowDrafts: true,
+    requireSignature: true,
+    offlineEnabled: true,
+  },
+  createdAt: '2025-01-01T00:00:00Z',
+  updatedAt: '2025-01-01T00:00:00Z',
+  publishedAt: '2025-01-01T00:00:00Z',
+  createdBy: 'system',
+};
+
+export const childcareReopeningChecklist: FormTemplate = {
+  id: 'childcare-reopening-checklist',
+  name: 'Re-Opening After Closure Checklist',
+  description: 'Complete following emergency or extended closure before resuming operations.',
+  category: 'safety',
+  version: 1,
+  status: 'published',
+  isEnabled: true,
+  isIndustryTemplate: true,
+  sections: [
+    { id: 'sec-safety', title: 'Safety & Readiness', description: 'Verify the facility is safe and ready to reopen', order: 0 },
+    { id: 'sec-signoff', title: 'Sign-Off', description: 'Authorize reopening', order: 1 },
+  ],
+  fields: [
+    { id: 'f-closure-type', type: 'dropdown', label: 'Previous Closure Type', required: true, sectionId: 'sec-safety', order: 0, options: [
+      { id: 'opt-emergency', label: 'Emergency Closure', value: 'emergency' },
+      { id: 'opt-extended', label: 'Extended Planned Closure', value: 'extended' },
+      { id: 'opt-maintenance', label: 'Maintenance Closure', value: 'maintenance' },
+    ]},
+    { id: 'f-building-inspection', type: 'checkbox', label: 'Building safety inspection completed', required: true, sectionId: 'sec-safety', order: 1, scoring: { enabled: true, passValue: true } },
+    { id: 'f-inspection-report', type: 'file_upload', label: 'Inspection report (if applicable)', required: false, sectionId: 'sec-safety', order: 2 },
+    { id: 'f-deep-cleaning', type: 'checkbox', label: 'Deep cleaning completed', required: true, sectionId: 'sec-safety', order: 3, scoring: { enabled: true, passValue: true } },
+    { id: 'f-utilities', type: 'checkbox', label: 'Utilities restored and tested', required: true, sectionId: 'sec-safety', order: 4, scoring: { enabled: true, passValue: true } },
+    { id: 'f-equipment-checked', type: 'checkbox', label: 'Equipment checked', required: true, sectionId: 'sec-safety', order: 5, scoring: { enabled: true, passValue: true } },
+    { id: 'f-staff-briefing', type: 'checkbox', label: 'Staff briefing completed', required: true, sectionId: 'sec-safety', order: 6, scoring: { enabled: true, passValue: true } },
+    { id: 'f-parents-notified', type: 'checkbox', label: 'Parents notified of reopening', required: true, sectionId: 'sec-safety', order: 7, scoring: { enabled: true, passValue: true } },
+    { id: 'f-reopen-date', type: 'date', label: 'Reopening date', required: true, sectionId: 'sec-safety', order: 8 },
+    { id: 'f-reopen-notes', type: 'long_text', label: 'Reopening notes', required: false, sectionId: 'sec-safety', order: 9, placeholder: 'Any important notes about the reopening...' },
+    { id: 'f-photos', type: 'photo_upload', label: 'Facility photos confirming readiness', required: false, sectionId: 'sec-safety', order: 10, settings: { maxFiles: 5 } },
+    
+    // Sign-Off
+    { id: 'f-authorised-by', type: 'staff_selector', label: 'Reopening authorised by', required: true, sectionId: 'sec-signoff', order: 0 },
+    { id: 'f-authorisation-signature', type: 'signature', label: 'Authorisation signature', required: true, sectionId: 'sec-signoff', order: 1 },
+  ],
+  scoring: {
+    enabled: true,
+    passingScore: 100,
+    failThreshold: 80,
+  },
+  settings: {
+    allowDrafts: true,
+    requireSignature: true,
+    offlineEnabled: true,
+    reviewRequired: true,
+    autoCreateTask: true,
+    taskTriggerConditions: [
+      { fieldId: 'f-building-inspection', operator: 'equals', value: 'false' },
+    ],
+  },
+  createdAt: '2025-01-01T00:00:00Z',
+  updatedAt: '2025-01-01T00:00:00Z',
+  publishedAt: '2025-01-01T00:00:00Z',
+  createdBy: 'system',
+};
+
+// Add childcare operational checklists to the main templates array
+mockFormTemplates.push(
+  childcareOpeningChecklist,
+  childcareDailyRoomChecklist,
+  childcareClosingChecklist,
+  childcareEmergencyClosureChecklist,
+  childcarePlannedClosureChecklist,
+  childcareReopeningChecklist
+);
+
 // Mock assignments
 export const mockFormAssignments: FormAssignment[] = [
   {
