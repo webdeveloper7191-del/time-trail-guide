@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { DemandProvider } from "./contexts/DemandContext";
 import { AwardConfigProvider } from "./contexts/AwardConfigContext";
+import { OvertimeRulesProvider } from "./contexts/OvertimeRulesContext";
 import Index from "./pages/Index";
 import TimesheetSettings from "./pages/TimesheetSettings";
 import TimesheetAdmin from "./pages/TimesheetAdmin";
@@ -27,28 +28,30 @@ const App = () => (
     <ThemeProvider defaultMode="light">
       <DemandProvider>
         <AwardConfigProvider>
-          <TooltipProvider>
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/settings" element={<TimesheetSettings />} />
-                <Route path="/timesheet-admin" element={<TimesheetAdmin />} />
-                <Route path="/employee-portal" element={<EmployeePortal />} />
-                <Route path="/roster" element={<RosterScheduler />} />
-                <Route path="/workforce" element={<StaffList />} />
-                <Route path="/workforce/:id" element={<StaffDetail />} />
-                <Route path="/agency" element={<AgencyPortal />} />
-                <Route path="/performance" element={<PerformanceManagement />} />
-                <Route path="/recognition" element={<RecognitionPage />} />
-                <Route path="/recruitment" element={<RecruitmentPage />} />
-                <Route path="/forms" element={<FormBuilder />} />
-                <Route path="/my-tasks" element={<MyTasksDashboard />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
+          <OvertimeRulesProvider>
+            <TooltipProvider>
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/settings" element={<TimesheetSettings />} />
+                  <Route path="/timesheet-admin" element={<TimesheetAdmin />} />
+                  <Route path="/employee-portal" element={<EmployeePortal />} />
+                  <Route path="/roster" element={<RosterScheduler />} />
+                  <Route path="/workforce" element={<StaffList />} />
+                  <Route path="/workforce/:id" element={<StaffDetail />} />
+                  <Route path="/agency" element={<AgencyPortal />} />
+                  <Route path="/performance" element={<PerformanceManagement />} />
+                  <Route path="/recognition" element={<RecognitionPage />} />
+                  <Route path="/recruitment" element={<RecruitmentPage />} />
+                  <Route path="/forms" element={<FormBuilder />} />
+                  <Route path="/my-tasks" element={<MyTasksDashboard />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </OvertimeRulesProvider>
         </AwardConfigProvider>
       </DemandProvider>
     </ThemeProvider>
