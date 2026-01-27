@@ -11,16 +11,22 @@ import { ConversationDetailSheet } from '@/components/performance/ConversationDe
 import { PerformanceAnalyticsDashboard } from '@/components/performance/PerformanceAnalyticsDashboard';
 import { TeamOverviewDashboard } from '@/components/performance/TeamOverviewDashboard';
 import { PerformanceNotificationBell } from '@/components/performance/PerformanceNotificationBell';
+import { PlanManagementPanel } from '@/components/performance/PlanManagementPanel';
+import { AssignPlanDrawer } from '@/components/performance/AssignPlanDrawer';
+import { PlanDetailSheet } from '@/components/performance/PlanDetailSheet';
+import { PlanTemplatePreviewSheet } from '@/components/performance/PlanTemplatePreviewSheet';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
+import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users } from 'lucide-react';
+import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 
 export default function PerformanceManagement() {
-  const [activeTab, setActiveTab] = useState('goals');
+  const [activeTab, setActiveTab] = useState('plans');
   const [feedbackView, setFeedbackView] = useState<'received' | 'given' | 'all'>('received');
   
   // Detail sheet states
@@ -30,6 +36,13 @@ export default function PerformanceManagement() {
   const [showReviewDetail, setShowReviewDetail] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [showConversationDetail, setShowConversationDetail] = useState(false);
+  
+  // Plan-related states
+  const [selectedTemplate, setSelectedTemplate] = useState<PerformancePlanTemplate | null>(null);
+  const [showAssignDrawer, setShowAssignDrawer] = useState(false);
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<AssignedPlan | null>(null);
+  const [showPlanDetail, setShowPlanDetail] = useState(false);
   
   const {
     reviews, goals, feedback, conversations, loading,
@@ -130,6 +143,45 @@ export default function PerformanceManagement() {
     }
   };
 
+  // Plan handlers
+  const handleAssignPlan = (template: PerformancePlanTemplate) => {
+    setSelectedTemplate(template);
+    setShowAssignDrawer(true);
+  };
+
+  const handleViewTemplate = (template: PerformancePlanTemplate) => {
+    setSelectedTemplate(template);
+    setShowTemplatePreview(true);
+  };
+
+  const handleViewPlan = (plan: AssignedPlan) => {
+    setSelectedPlan(plan);
+    setShowPlanDetail(true);
+  };
+
+  const handleAssignPlanSubmit = async (data: {
+    templateId: string;
+    staffId: string;
+    startDate: Date;
+    notes?: string;
+    selectedGoals: string[];
+    selectedReviews: string[];
+    selectedConversations: string[];
+  }) => {
+    // In a real app, this would create goals, reviews, and conversations
+    // and link them to a new AssignedPlan
+    console.log('Assigning plan:', data);
+    toast.success('Performance plan assigned successfully!');
+    setShowAssignDrawer(false);
+    setSelectedTemplate(null);
+  };
+
+  const handleUpdatePlanStatus = async (planId: string, status: PlanStatus) => {
+    // In a real app, this would update the plan status in the backend
+    console.log('Updating plan status:', planId, status);
+    // Mock update for demonstration
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
@@ -138,7 +190,7 @@ export default function PerformanceManagement() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Performance Management</h1>
-              <p className="text-muted-foreground">Reviews, goals, feedback & continuous conversations</p>
+              <p className="text-muted-foreground">Plans, reviews, goals, feedback & continuous conversations</p>
             </div>
             <PerformanceNotificationBell
               goals={goals}
@@ -152,7 +204,10 @@ export default function PerformanceManagement() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6 max-w-3xl">
+            <TabsList className="grid w-full grid-cols-7 max-w-4xl">
+              <TabsTrigger value="plans" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" /> Plans
+              </TabsTrigger>
               <TabsTrigger value="goals" className="flex items-center gap-2">
                 <Target className="h-4 w-4" /> Goals
               </TabsTrigger>
@@ -172,6 +227,15 @@ export default function PerformanceManagement() {
                 <BarChart3 className="h-4 w-4" /> Analytics
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="plans" className="mt-6">
+              <PlanManagementPanel
+                staff={mockStaff}
+                onAssignPlan={handleAssignPlan}
+                onViewPlan={handleViewPlan}
+                onViewTemplate={handleViewTemplate}
+              />
+            </TabsContent>
 
             <TabsContent value="goals" className="mt-6">
               <GoalsTracker
@@ -278,6 +342,60 @@ export default function PerformanceManagement() {
         }}
         onAddNote={handleAddNote}
         onComplete={handleCompleteConversation}
+      />
+
+      {/* Plan Template Preview Sheet */}
+      <PlanTemplatePreviewSheet
+        open={showTemplatePreview}
+        template={selectedTemplate}
+        onClose={() => {
+          setShowTemplatePreview(false);
+          setSelectedTemplate(null);
+        }}
+        onAssign={(template) => {
+          setShowTemplatePreview(false);
+          handleAssignPlan(template);
+        }}
+      />
+
+      {/* Assign Plan Drawer */}
+      <AssignPlanDrawer
+        open={showAssignDrawer}
+        template={selectedTemplate}
+        staff={mockStaff}
+        currentUserId={CURRENT_USER_ID}
+        onClose={() => {
+          setShowAssignDrawer(false);
+          setSelectedTemplate(null);
+        }}
+        onAssign={handleAssignPlanSubmit}
+      />
+
+      {/* Plan Detail Sheet */}
+      <PlanDetailSheet
+        open={showPlanDetail}
+        plan={selectedPlan}
+        staff={mockStaff}
+        goals={goals}
+        reviews={reviews}
+        conversations={conversations}
+        onClose={() => {
+          setShowPlanDetail(false);
+          setSelectedPlan(null);
+        }}
+        onViewGoal={(goal) => {
+          setShowPlanDetail(false);
+          handleViewGoal(goal);
+        }}
+        onViewReview={(review) => {
+          setShowPlanDetail(false);
+          handleViewReview(review);
+        }}
+        onViewConversation={(conv) => {
+          setShowPlanDetail(false);
+          handleViewConversation(conv);
+        }}
+        onUpdateStatus={handleUpdatePlanStatus}
       />
     </div>
   );
