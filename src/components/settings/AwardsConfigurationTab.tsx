@@ -65,8 +65,7 @@ import { ShiftDifferentialCalculator } from './awards/ShiftDifferentialCalculato
 import { RateSimulationPanel } from './awards/RateSimulationPanel';
 import { AwardsMasterTable } from './awards/AwardsMasterTable';
 import { AwardUpdatesPanel } from './awards/AwardUpdatesPanel';
-import { OnCallSettingsEditor } from './OnCallSettingsEditor';
-import { OnCallConfiguration, DEFAULT_ON_CALL_CONFIGS, AwardType, AWARD_NAMES } from '@/types/allowances';
+import { OnCallAllowancePanel } from './awards/OnCallAllowancePanel';
 import { ModuleDependencyExplorer } from './architecture/ModuleDependencyExplorer';
 
 import { EnterpriseAgreementPanel } from './awards/EnterpriseAgreementPanel';
@@ -148,111 +147,6 @@ export function AwardsConfigurationTab() {
   const formatPercentage = (value: number) => `${value}%`;
 
   const [activeTab, setActiveTab] = useState('fwc-integration');
-  const [onCallConfigs, setOnCallConfigs] = useState<Record<AwardType, OnCallConfiguration>>(DEFAULT_ON_CALL_CONFIGS);
-  const [editingOnCallAward, setEditingOnCallAward] = useState<AwardType | null>(null);
-
-  const handleSaveOnCallConfig = (awardType: AwardType, config: OnCallConfiguration) => {
-    setOnCallConfigs(prev => ({ ...prev, [awardType]: config }));
-  };
-
-  // On-Call Rates Panel Component
-  const OnCallRatesPanel = () => (
-    <div className="space-y-6">
-      <Card className="card-material-elevated border-l-4 border-l-blue-500">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <Phone className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <CardTitle className="text-lg">On-Call Rate Configuration</CardTitle>
-              <CardDescription>
-                Configure standby and callback rates for on-call shifts across different awards
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            On-call employees receive a standby allowance for being available, plus additional callback payment if actually called in to work.
-          </p>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4">
-        {(Object.keys(AWARD_NAMES) as AwardType[]).map(awardType => {
-          const config = onCallConfigs[awardType];
-          return (
-            <Card key={awardType} className="card-material">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                      <Award className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">{AWARD_NAMES[awardType]}</CardTitle>
-                      <CardDescription className="text-xs">
-                        On-call configuration for this award
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setEditingOnCallAward(awardType)}
-                    className="gap-2"
-                  >
-                    <Settings2 className="h-4 w-4" />
-                    Edit Rates
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Standby Rate</p>
-                    <p className="text-lg font-bold text-blue-600">{formatCurrency(config.standbyRate)}</p>
-                    <p className="text-xs text-muted-foreground">per {config.standbyRateType.replace('_', ' ')}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Callback Minimum</p>
-                    <p className="text-lg font-bold text-amber-600">{config.callbackMinimumHours}h</p>
-                    <p className="text-xs text-muted-foreground">at {config.callbackRateMultiplier}x rate</p>
-                  </div>
-                  {config.weekendStandbyRate && (
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Weekend Standby</p>
-                      <p className="text-lg font-bold">{formatCurrency(config.weekendStandbyRate)}</p>
-                      <p className="text-xs text-muted-foreground">per period</p>
-                    </div>
-                  )}
-                  {config.publicHolidayStandbyMultiplier && (
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Public Holiday</p>
-                      <p className="text-lg font-bold text-emerald-600">{config.publicHolidayStandbyMultiplier}x</p>
-                      <p className="text-xs text-muted-foreground">standby multiplier</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* On-Call Settings Editor Dialog */}
-      {editingOnCallAward && (
-        <OnCallSettingsEditor
-          awardType={editingOnCallAward}
-          currentConfig={onCallConfigs[editingOnCallAward]}
-          onSave={(config) => handleSaveOnCallConfig(editingOnCallAward, config)}
-          open={!!editingOnCallAward}
-          onClose={() => setEditingOnCallAward(null)}
-        />
-      )}
-    </div>
-  );
 
   const AwardsOverviewContent = () => (
     <div className="space-y-6">
@@ -861,7 +755,7 @@ export function AwardsConfigurationTab() {
         </TabsContent>
 
         <TabsContent value="on-call" className="mt-0">
-          <OnCallRatesPanel />
+          <OnCallAllowancePanel />
         </TabsContent>
 
         <TabsContent value="enterprise-agreements" className="mt-0">
