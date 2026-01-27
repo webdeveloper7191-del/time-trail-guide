@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StaffMember, PayCondition, employmentTypeLabels, payRateTypeLabels } from '@/types/staff';
 import { australianAwards, getAwardById } from '@/data/australianAwards';
 import {
@@ -11,6 +11,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -21,13 +27,14 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { CalendarIcon, TrendingUp, AlertCircle, Check } from 'lucide-react';
-import { format, isBefore, startOfDay, addDays } from 'date-fns';
+import { 
+  CalendarIcon, TrendingUp, TrendingDown, AlertCircle, Check, Download, 
+  History, Calculator, FileText, Clock, DollarSign, ArrowRight
+} from 'lucide-react';
+import { format, isBefore, startOfDay, addDays, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { calculateRetrospectivePay, BackPayCalculation, formatBackPayReport } from '@/lib/retrospectivePayCalculator';
 
 interface SchedulePayChangeSheetProps {
   open: boolean;
@@ -35,10 +42,15 @@ interface SchedulePayChangeSheetProps {
   staff: StaffMember;
 }
 
+type ChangeType = 'future' | 'retrospective';
+
 export function SchedulePayChangeSheet({ open, onOpenChange, staff }: SchedulePayChangeSheetProps) {
   const currentCondition = staff.currentPayCondition;
   
+  const [changeType, setChangeType] = useState<ChangeType>('future');
   const [effectiveDate, setEffectiveDate] = useState<Date | undefined>(addDays(new Date(), 14));
+  const [retroStartDate, setRetroStartDate] = useState<Date | undefined>(subMonths(new Date(), 1));
+  const [retroEndDate, setRetroEndDate] = useState<Date | undefined>(new Date());
   const [payRateType, setPayRateType] = useState(currentCondition?.payRateType || 'award');
   const [selectedAward, setSelectedAward] = useState(
     australianAwards.find(a => a.name === currentCondition?.industryAward)?.id || ''
@@ -50,6 +62,7 @@ export function SchedulePayChangeSheet({ open, onOpenChange, staff }: SchedulePa
   const [position, setPosition] = useState(currentCondition?.position || '');
   const [contractedHours, setContractedHours] = useState(currentCondition?.contractedHours?.toString() || '38');
   const [reason, setReason] = useState('');
+  const [backPayCalculation, setBackPayCalculation] = useState<BackPayCalculation | null>(null);
 
   const selectedAwardData = getAwardById(selectedAward);
   const selectedClassificationData = selectedAwardData?.classifications.find(
@@ -73,18 +86,64 @@ export function SchedulePayChangeSheet({ open, onOpenChange, staff }: SchedulePa
   const rateDifference = newRate - currentRate;
   const percentageChange = currentRate > 0 ? ((rateDifference / currentRate) * 100).toFixed(1) : '0';
 
+  const handleCalculateBackPay = () => {
+    if (!retroStartDate || !retroEndDate) {
+      toast.error('Please select a date range for retrospective calculation');
+      return;
+    }
+
+    const calculation = calculateRetrospectivePay({
+      employeeId: staff.id,
+      employeeName: `${staff.firstName} ${staff.lastName}`,
+      effectiveFrom: retroStartDate,
+      effectiveTo: retroEndDate,
+      oldHourlyRate: currentRate,
+      newHourlyRate: newRate,
+    });
+
+    setBackPayCalculation(calculation);
+    toast.success('Back-pay calculated', {
+      description: `Total adjustment: $${calculation.totalAdjustment.toFixed(2)}`,
+    });
+  };
+
+  const handleDownloadReport = () => {
+    if (!backPayCalculation) return;
+    
+    const report = formatBackPayReport(backPayCalculation);
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backpay-report-${staff.lastName}-${format(new Date(), 'yyyyMMdd')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Report downloaded');
+  };
+
   const handleSchedule = () => {
-    if (!effectiveDate) {
+    if (changeType === 'future' && !effectiveDate) {
       toast.error('Please select an effective date');
       return;
     }
 
-    if (isBefore(effectiveDate, startOfDay(new Date()))) {
+    if (changeType === 'future' && effectiveDate && isBefore(effectiveDate, startOfDay(new Date()))) {
       toast.error('Effective date must be in the future');
       return;
     }
 
-    toast.success(`Pay change scheduled for ${format(effectiveDate, 'dd MMM yyyy')}`);
+    if (changeType === 'retrospective' && !backPayCalculation) {
+      toast.error('Please calculate back-pay first');
+      return;
+    }
+
+    if (changeType === 'future') {
+      toast.success(`Pay change scheduled for ${format(effectiveDate!, 'dd MMM yyyy')}`);
+    } else {
+      toast.success('Retrospective pay adjustment submitted', {
+        description: `$${backPayCalculation!.totalAdjustment.toFixed(2)} adjustment queued for payroll`,
+      });
+    }
     onOpenChange(false);
   };
 
@@ -94,14 +153,47 @@ export function SchedulePayChangeSheet({ open, onOpenChange, staff }: SchedulePa
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-primary" />
-            Schedule Future Pay Change
+            Schedule Pay Change
           </SheetTitle>
           <SheetDescription>
-            Schedule pay changes for {staff.firstName} {staff.lastName} to take effect on a future date
+            Schedule pay changes for {staff.firstName} {staff.lastName}
           </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-6 mt-6">
+          {/* Change Type Selection */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Change Type</Label>
+            <RadioGroup value={changeType} onValueChange={(v) => setChangeType(v as ChangeType)} className="grid grid-cols-2 gap-4">
+              <div 
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all",
+                  changeType === 'future' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                )}
+                onClick={() => setChangeType('future')}
+              >
+                <RadioGroupItem value="future" id="future" className="mt-1" />
+                <div>
+                  <Label htmlFor="future" className="font-medium cursor-pointer">Future Date</Label>
+                  <p className="text-sm text-muted-foreground">Schedule changes for an upcoming date</p>
+                </div>
+              </div>
+              <div 
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all",
+                  changeType === 'retrospective' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                )}
+                onClick={() => setChangeType('retrospective')}
+              >
+                <RadioGroupItem value="retrospective" id="retrospective" className="mt-1" />
+                <div>
+                  <Label htmlFor="retrospective" className="font-medium cursor-pointer">Previous Pay Cycle</Label>
+                  <p className="text-sm text-muted-foreground">Apply changes retroactively with back-pay</p>
+                </div>
+              </div>
+            </RadioGroup>
+          </div>
+
           {/* Current vs New Summary */}
           <Card className="border-primary/20 bg-primary/5">
             <CardHeader className="pb-3">
@@ -115,10 +207,13 @@ export function SchedulePayChangeSheet({ open, onOpenChange, staff }: SchedulePa
                   <p className="text-xs text-muted-foreground">/hr</p>
                 </div>
                 <div className="flex items-center justify-center">
-                  <TrendingUp className={cn(
-                    "h-6 w-6",
-                    rateDifference > 0 ? "text-green-500" : rateDifference < 0 ? "text-red-500" : "text-muted-foreground"
-                  )} />
+                  {rateDifference > 0 ? (
+                    <TrendingUp className="h-6 w-6 text-green-500" />
+                  ) : rateDifference < 0 ? (
+                    <TrendingDown className="h-6 w-6 text-red-500" />
+                  ) : (
+                    <ArrowRight className="h-6 w-6 text-muted-foreground" />
+                  )}
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">New Rate</p>
@@ -131,37 +226,183 @@ export function SchedulePayChangeSheet({ open, onOpenChange, staff }: SchedulePa
             </CardContent>
           </Card>
 
-          {/* Effective Date */}
-          <div className="space-y-2">
-            <Label>Effective Date *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !effectiveDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {effectiveDate ? format(effectiveDate, 'PPP') : 'Select date'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={effectiveDate}
-                  onSelect={setEffectiveDate}
-                  disabled={(date) => isBefore(date, startOfDay(new Date()))}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            <p className="text-xs text-muted-foreground">
-              Changes will automatically apply on this date
-            </p>
-          </div>
+          {/* Date Selection - Future */}
+          {changeType === 'future' && (
+            <div className="space-y-2">
+              <Label>Effective Date *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !effectiveDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {effectiveDate ? format(effectiveDate, 'PPP') : 'Select date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={effectiveDate}
+                    onSelect={setEffectiveDate}
+                    disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Changes will automatically apply on this date
+              </p>
+            </div>
+          )}
+
+          {/* Date Selection - Retrospective */}
+          {changeType === 'retrospective' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Retrospective From *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !retroStartDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {retroStartDate ? format(retroStartDate, 'PPP') : 'Start date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={retroStartDate}
+                        onSelect={setRetroStartDate}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label>Retrospective To *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !retroEndDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {retroEndDate ? format(retroEndDate, 'PPP') : 'End date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={retroEndDate}
+                        onSelect={setRetroEndDate}
+                        disabled={(date) => date > new Date() || (retroStartDate && date < retroStartDate)}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              
+              <Button onClick={handleCalculateBackPay} variant="outline" className="w-full gap-2">
+                <Calculator className="h-4 w-4" />
+                Calculate Back-Pay
+              </Button>
+
+              {/* Back-Pay Results */}
+              {backPayCalculation && (
+                <Card className="border-emerald-500/30 bg-emerald-500/5">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-emerald-600" />
+                        Back-Pay Calculation
+                      </CardTitle>
+                      <Button variant="outline" size="sm" onClick={handleDownloadReport} className="gap-1">
+                        <Download className="h-3 w-3" />
+                        Report
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Summary Stats */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-3 rounded-lg bg-background/80 text-center">
+                        <p className="text-xs text-muted-foreground">Timesheets</p>
+                        <p className="text-xl font-bold">{backPayCalculation.totalAffectedTimesheets}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-background/80 text-center">
+                        <p className="text-xs text-muted-foreground">Total Hours</p>
+                        <p className="text-xl font-bold">{backPayCalculation.totalAffectedHours.toFixed(1)}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-background/80 text-center">
+                        <p className="text-xs text-muted-foreground">Adjustment</p>
+                        <p className={cn(
+                          "text-xl font-bold",
+                          backPayCalculation.adjustmentType === 'increase' ? 'text-emerald-600' : 'text-red-600'
+                        )}>
+                          {backPayCalculation.adjustmentType === 'increase' ? '+' : '-'}${Math.abs(backPayCalculation.totalAdjustment).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Affected Timesheets Table */}
+                    <div className="border rounded-lg overflow-hidden">
+                      <ScrollArea className="h-[200px]">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="text-xs">Week Ending</TableHead>
+                              <TableHead className="text-xs text-right">Hours</TableHead>
+                              <TableHead className="text-xs text-right">Original</TableHead>
+                              <TableHead className="text-xs text-right">Adjustment</TableHead>
+                              <TableHead className="text-xs">Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {backPayCalculation.affectedTimesheets.map((ts) => (
+                              <TableRow key={ts.id}>
+                                <TableCell className="text-xs">{format(new Date(ts.weekEnding), 'dd MMM')}</TableCell>
+                                <TableCell className="text-xs text-right">{ts.regularHours + ts.overtimeHours}h</TableCell>
+                                <TableCell className="text-xs text-right">${ts.originalPay.toFixed(2)}</TableCell>
+                                <TableCell className={cn(
+                                  "text-xs text-right font-medium",
+                                  ts.adjustment > 0 ? 'text-emerald-600' : ts.adjustment < 0 ? 'text-red-600' : ''
+                                )}>
+                                  {ts.adjustment > 0 ? '+' : ''}{ts.adjustment.toFixed(2)}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={ts.status === 'approved' ? 'default' : 'secondary'} className="text-xs">
+                                    {ts.status}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
 
           <Separator />
 
@@ -328,7 +569,7 @@ export function SchedulePayChangeSheet({ open, onOpenChange, staff }: SchedulePa
             </Button>
             <Button onClick={handleSchedule} className="flex-1">
               <Check className="h-4 w-4 mr-2" />
-              Schedule Change
+              {changeType === 'future' ? 'Schedule Change' : 'Submit Adjustment'}
             </Button>
           </div>
         </div>
