@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Stack,
@@ -29,6 +29,13 @@ import {
   Tooltip,
   Alert,
   AlertTitle,
+  Collapse,
+  TablePagination,
+  Select,
+  FormControl,
+  InputLabel,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   FileText,
@@ -57,6 +64,11 @@ import {
   FileSpreadsheet,
   History,
   ChevronDown,
+  ChevronRight,
+  Users,
+  Building2,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,6 +79,23 @@ import { FormSubmission, FormTemplate, FormField, FIELD_TYPES } from '@/types/fo
 import { mockFormSubmissions, mockFormTemplates } from '@/data/mockFormData';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+
+// Grouping types
+type GroupByOption = 'none' | 'submitter' | 'template' | 'site';
+
+interface GroupedSubmissions {
+  key: string;
+  label: string;
+  icon?: React.ReactNode;
+  submissions: FormSubmission[];
+  stats: {
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+    avgScore?: number;
+  };
+}
 
 interface SubmissionWorkflowProps {
   templateId?: string;
@@ -152,6 +181,9 @@ const mockFormFields: FormField[] = [
   ]},
 ];
 
+// Mock sites for grouping
+const mockSites = ['Main Campus', 'North Wing', 'South Building', 'East Annex', 'West Facility'];
+
 export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
   const [submissions, setSubmissions] = useState<FormSubmission[]>(mockFormSubmissions);
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
@@ -164,6 +196,14 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
   const [bulkMenuAnchor, setBulkMenuAnchor] = useState<null | HTMLElement>(null);
   const [activeTab, setActiveTab] = useState<'responses' | 'audit' | 'tasks'>('responses');
   const [dateFilter, setDateFilter] = useState<{ start: string; end: string }>({ start: '', end: '' });
+  
+  // New state for grouping and pagination
+  const [groupBy, setGroupBy] = useState<GroupByOption>('none');
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [templateFilter, setTemplateFilter] = useState<string>('');
+  const [siteFilter, setSiteFilter] = useState<string>('');
   
   const [autoTasks, setAutoTasks] = useState<Task[]>([
     {
@@ -193,10 +233,30 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
   ]);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
+  const getTemplateName = (id: string) => {
+    return mockFormTemplates.find(t => t.id === id)?.name || 'Unknown Form';
+  };
+
+  // Get a mock site for submissions (simulating location data)
+  const getSubmissionSite = useCallback((submission: FormSubmission) => {
+    if (submission.location?.address) {
+      return submission.location.address.split(',')[0];
+    }
+    // Generate consistent mock site based on submission id
+    const index = submission.id.charCodeAt(submission.id.length - 1) % mockSites.length;
+    return mockSites[index];
+  }, []);
+
   const filteredSubmissions = useMemo(() => {
     let filtered = submissions;
     if (templateId) {
       filtered = filtered.filter(s => s.templateId === templateId);
+    }
+    if (templateFilter) {
+      filtered = filtered.filter(s => s.templateId === templateFilter);
+    }
+    if (siteFilter) {
+      filtered = filtered.filter(s => getSubmissionSite(s) === siteFilter);
     }
     if (statusFilter) {
       if (statusFilter === 'pending') {
@@ -220,10 +280,112 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
       filtered = filtered.filter(s => new Date(s.createdAt) <= new Date(dateFilter.end));
     }
     return filtered.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [submissions, templateId, statusFilter, searchQuery, dateFilter]);
+  }, [submissions, templateId, templateFilter, siteFilter, statusFilter, searchQuery, dateFilter, getSubmissionSite]);
 
-  const getTemplateName = (id: string) => {
-    return mockFormTemplates.find(t => t.id === id)?.name || 'Unknown Form';
+  // Grouped submissions
+  const groupedSubmissions = useMemo((): GroupedSubmissions[] => {
+    if (groupBy === 'none') return [];
+
+    const groups = new Map<string, FormSubmission[]>();
+
+    filteredSubmissions.forEach(submission => {
+      let key: string;
+      switch (groupBy) {
+        case 'submitter':
+          key = submission.submittedBy;
+          break;
+        case 'template':
+          key = submission.templateId;
+          break;
+        case 'site':
+          key = getSubmissionSite(submission);
+          break;
+        default:
+          key = 'other';
+      }
+      
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(submission);
+    });
+
+    return Array.from(groups.entries()).map(([key, subs]) => {
+      const scores = subs.filter(s => s.score !== undefined).map(s => s.score!);
+      const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : undefined;
+
+      let label = key;
+      let icon: React.ReactNode = undefined;
+
+      switch (groupBy) {
+        case 'submitter':
+          icon = <User className="h-4 w-4" />;
+          break;
+        case 'template':
+          label = getTemplateName(key);
+          icon = <FileText className="h-4 w-4" />;
+          break;
+        case 'site':
+          icon = <Building2 className="h-4 w-4" />;
+          break;
+      }
+
+      return {
+        key,
+        label,
+        icon,
+        submissions: subs.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
+        stats: {
+          total: subs.length,
+          pending: subs.filter(s => s.status === 'pending_review' || s.status === 'submitted').length,
+          approved: subs.filter(s => s.status === 'approved').length,
+          rejected: subs.filter(s => s.status === 'rejected').length,
+          avgScore,
+        },
+      };
+    }).sort((a, b) => b.stats.total - a.stats.total);
+  }, [filteredSubmissions, groupBy, getSubmissionSite]);
+
+  // Paginated submissions for flat view
+  const paginatedSubmissions = useMemo(() => {
+    if (groupBy !== 'none') return filteredSubmissions;
+    const start = page * rowsPerPage;
+    return filteredSubmissions.slice(start, start + rowsPerPage);
+  }, [filteredSubmissions, page, rowsPerPage, groupBy]);
+
+  // Available templates for filter
+  const availableTemplates = useMemo(() => {
+    const templateIds = [...new Set(submissions.map(s => s.templateId))];
+    return templateIds.map(id => ({
+      id,
+      name: getTemplateName(id),
+    }));
+  }, [submissions]);
+
+  // Available sites for filter
+  const availableSites = useMemo(() => {
+    return [...new Set(submissions.map(s => getSubmissionSite(s)))].sort();
+  }, [submissions, getSubmissionSite]);
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   const getStatusStep = (status: FormSubmission['status']) => {
@@ -497,7 +659,7 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
 
       {/* Search & Filters */}
       <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
           <TextField
             size="small"
             placeholder="Search submissions..."
@@ -510,8 +672,39 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
                 </InputAdornment>
               ),
             }}
-            sx={{ width: 280 }}
+            sx={{ width: 220 }}
           />
+          
+          {/* Template Filter */}
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Form Template</InputLabel>
+            <Select
+              value={templateFilter}
+              label="Form Template"
+              onChange={(e) => setTemplateFilter(e.target.value)}
+            >
+              <MenuItem value="">All Templates</MenuItem>
+              {availableTemplates.map(t => (
+                <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Site Filter */}
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Site/Location</InputLabel>
+            <Select
+              value={siteFilter}
+              label="Site/Location"
+              onChange={(e) => setSiteFilter(e.target.value)}
+            >
+              <MenuItem value="">All Sites</MenuItem>
+              {availableSites.map(site => (
+                <MenuItem key={site} value={site}>{site}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           <TextField
             size="small"
             type="date"
@@ -519,7 +712,7 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
             value={dateFilter.start}
             onChange={(e) => setDateFilter(prev => ({ ...prev, start: e.target.value }))}
             InputLabelProps={{ shrink: true }}
-            sx={{ width: 150 }}
+            sx={{ width: 140 }}
           />
           <TextField
             size="small"
@@ -528,14 +721,61 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
             value={dateFilter.end}
             onChange={(e) => setDateFilter(prev => ({ ...prev, end: e.target.value }))}
             InputLabelProps={{ shrink: true }}
-            sx={{ width: 150 }}
+            sx={{ width: 140 }}
           />
-          {(dateFilter.start || dateFilter.end || searchQuery) && (
-            <Button variant="ghost" size="sm" onClick={() => { setDateFilter({ start: '', end: '' }); setSearchQuery(''); }}>
+          
+          {(dateFilter.start || dateFilter.end || searchQuery || templateFilter || siteFilter) && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => { 
+                setDateFilter({ start: '', end: '' }); 
+                setSearchQuery(''); 
+                setTemplateFilter('');
+                setSiteFilter('');
+              }}
+            >
               <X className="h-3 w-3 mr-1" />
-              Clear
+              Clear All
             </Button>
           )}
+        </Stack>
+      </Box>
+
+      {/* Grouping & View Controls */}
+      <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>Group by:</Typography>
+            <ToggleButtonGroup
+              size="small"
+              value={groupBy}
+              exclusive
+              onChange={(_e, value) => value && setGroupBy(value)}
+            >
+              <ToggleButton value="none">
+                <List className="h-4 w-4 mr-1" />
+                None
+              </ToggleButton>
+              <ToggleButton value="submitter">
+                <Users className="h-4 w-4 mr-1" />
+                Submitter
+              </ToggleButton>
+              <ToggleButton value="template">
+                <FileText className="h-4 w-4 mr-1" />
+                Template
+              </ToggleButton>
+              <ToggleButton value="site">
+                <Building2 className="h-4 w-4 mr-1" />
+                Site
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
+
+          <Typography variant="body2" color="text.secondary">
+            {filteredSubmissions.length} submissions
+            {groupBy !== 'none' && ` in ${groupedSubmissions.length} groups`}
+          </Typography>
         </Stack>
       </Box>
 
@@ -627,8 +867,10 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
                     onChange={toggleSelectAll}
                   />
                 </TableCell>
+                {groupBy !== 'none' && <TableCell sx={{ width: 40 }} />}
                 <TableCell>Form</TableCell>
                 <TableCell>Submitted By</TableCell>
+                <TableCell>Site</TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Score</TableCell>
@@ -637,7 +879,215 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredSubmissions.map((submission) => (
+              {/* Grouped View */}
+              {groupBy !== 'none' && groupedSubmissions.map((group) => (
+                <>
+                  {/* Group Header Row */}
+                  <TableRow 
+                    key={`group-${group.key}`}
+                    sx={{ 
+                      bgcolor: 'action.hover',
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: 'action.selected' },
+                    }}
+                    onClick={() => toggleGroup(group.key)}
+                  >
+                    <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={group.submissions.every(s => selectedSubmissions.has(s.id))}
+                        indeterminate={group.submissions.some(s => selectedSubmissions.has(s.id)) && !group.submissions.every(s => selectedSubmissions.has(s.id))}
+                        onChange={() => {
+                          const allSelected = group.submissions.every(s => selectedSubmissions.has(s.id));
+                          const newSelected = new Set(selectedSubmissions);
+                          group.submissions.forEach(s => {
+                            if (allSelected) {
+                              newSelected.delete(s.id);
+                            } else {
+                              newSelected.add(s.id);
+                            }
+                          });
+                          setSelectedSubmissions(newSelected);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ width: 40 }}>
+                      {expandedGroups.has(group.key) 
+                        ? <ChevronDown className="h-4 w-4" /> 
+                        : <ChevronRight className="h-4 w-4" />
+                      }
+                    </TableCell>
+                    <TableCell colSpan={2}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        {group.icon}
+                        <Typography variant="body2" fontWeight={600}>{group.label}</Typography>
+                        <Chip label={group.stats.total} size="small" />
+                      </Stack>
+                    </TableCell>
+                    <TableCell />
+                    <TableCell />
+                    <TableCell>
+                      <Stack direction="row" spacing={0.5}>
+                        {group.stats.pending > 0 && (
+                          <Chip 
+                            label={`${group.stats.pending} pending`} 
+                            size="small" 
+                            color="warning"
+                            variant="outlined"
+                          />
+                        )}
+                        {group.stats.approved > 0 && (
+                          <Chip 
+                            label={`${group.stats.approved} approved`} 
+                            size="small" 
+                            color="success"
+                            variant="outlined"
+                          />
+                        )}
+                        {group.stats.rejected > 0 && (
+                          <Chip 
+                            label={`${group.stats.rejected} rejected`} 
+                            size="small" 
+                            color="error"
+                            variant="outlined"
+                          />
+                        )}
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      {group.stats.avgScore !== undefined && (
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Typography variant="body2" fontWeight={500}>
+                            Avg: {group.stats.avgScore}%
+                          </Typography>
+                          <LinearProgress
+                            variant="determinate"
+                            value={group.stats.avgScore}
+                            sx={{ width: 40, height: 4, borderRadius: 2 }}
+                            color={group.stats.avgScore >= 80 ? 'success' : group.stats.avgScore >= 50 ? 'warning' : 'error'}
+                          />
+                        </Stack>
+                      )}
+                    </TableCell>
+                    <TableCell />
+                    <TableCell />
+                  </TableRow>
+
+                  {/* Expanded Group Submissions */}
+                  <TableRow>
+                    <TableCell colSpan={10} sx={{ p: 0 }}>
+                      <Collapse in={expandedGroups.has(group.key)} timeout="auto" unmountOnExit>
+                        <Table size="small">
+                          <TableBody>
+                            {group.submissions.map((submission) => (
+                              <TableRow 
+                                key={submission.id} 
+                                hover 
+                                selected={selectedSubmissions.has(submission.id)}
+                                sx={{ cursor: 'pointer', bgcolor: 'background.paper' }}
+                                onClick={() => handleViewDetails(submission)}
+                              >
+                                <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()} sx={{ pl: 2 }}>
+                                  <Checkbox
+                                    checked={selectedSubmissions.has(submission.id)}
+                                    onChange={() => toggleSelect(submission.id)}
+                                  />
+                                </TableCell>
+                                <TableCell sx={{ width: 40 }} />
+                                <TableCell>
+                                  <Typography variant="body2" fontWeight={500}>
+                                    {getTemplateName(submission.templateId)}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    v{submission.templateVersion}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Stack direction="row" alignItems="center" spacing={1}>
+                                    <Avatar sx={{ width: 24, height: 24 }}>
+                                      <User className="h-3 w-3" />
+                                    </Avatar>
+                                    <Typography variant="body2">{submission.submittedBy}</Typography>
+                                  </Stack>
+                                </TableCell>
+                                <TableCell>
+                                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                                    <Building2 className="h-3 w-3 text-muted-foreground" />
+                                    <Typography variant="body2">{getSubmissionSite(submission)}</Typography>
+                                  </Stack>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography variant="body2">
+                                    {submission.submittedAt 
+                                      ? format(new Date(submission.submittedAt), 'MMM d, yyyy')
+                                      : format(new Date(submission.createdAt), 'MMM d, yyyy')}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {formatDistanceToNow(new Date(submission.updatedAt), { addSuffix: true })}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Stack direction="row" spacing={1}>
+                                    {getStatusBadge(submission.status)}
+                                    {getPassFailBadge(submission.passFail)}
+                                  </Stack>
+                                </TableCell>
+                                <TableCell>
+                                  {submission.score !== undefined ? (
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                      <Typography variant="body2" fontWeight={500}>{submission.score}%</Typography>
+                                      <LinearProgress
+                                        variant="determinate"
+                                        value={submission.score}
+                                        sx={{ width: 40, height: 4, borderRadius: 2 }}
+                                        color={submission.score >= 80 ? 'success' : submission.score >= 50 ? 'warning' : 'error'}
+                                      />
+                                    </Stack>
+                                  ) : (
+                                    <Typography variant="body2" color="text.secondary">—</Typography>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {submission.reviewedBy ? (
+                                    <Typography variant="body2">{submission.reviewedBy}</Typography>
+                                  ) : (
+                                    <Typography variant="body2" color="text.secondary">—</Typography>
+                                  )}
+                                </TableCell>
+                                <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                                  <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                    <Tooltip title="View Details">
+                                      <IconButton size="small" onClick={() => handleViewDetails(submission)}>
+                                        <Eye className="h-4 w-4" />
+                                      </IconButton>
+                                    </Tooltip>
+                                    {(submission.status === 'submitted' || submission.status === 'pending_review') && (
+                                      <Tooltip title="Review">
+                                        <IconButton size="small" color="primary" onClick={() => handleOpenReview(submission)}>
+                                          <ClipboardList className="h-4 w-4" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    )}
+                                    {(submission.status === 'approved' || submission.status === 'rejected') && (
+                                      <Tooltip title="Reopen">
+                                        <IconButton size="small" onClick={() => handleReopen(submission)}>
+                                          <RotateCcw className="h-4 w-4" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    )}
+                                  </Stack>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Collapse>
+                    </TableCell>
+                  </TableRow>
+                </>
+              ))}
+
+              {/* Flat View (no grouping) */}
+              {groupBy === 'none' && paginatedSubmissions.map((submission) => (
                 <TableRow 
                   key={submission.id} 
                   hover 
@@ -665,6 +1115,12 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
                         <User className="h-3 w-3" />
                       </Avatar>
                       <Typography variant="body2">{submission.submittedBy}</Typography>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <Building2 className="h-3 w-3 text-muted-foreground" />
+                      <Typography variant="body2">{getSubmissionSite(submission)}</Typography>
                     </Stack>
                   </TableCell>
                   <TableCell>
@@ -730,9 +1186,11 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
                   </TableCell>
                 </TableRow>
               ))}
+
+              {/* Empty State */}
               {filteredSubmissions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={10}>
                     <Box sx={{ py: 6, textAlign: 'center' }}>
                       <FileText className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
                       <Typography variant="body2" color="text.secondary">
@@ -746,6 +1204,22 @@ export function SubmissionWorkflow({ templateId }: SubmissionWorkflowProps) {
           </Table>
         </TableContainer>
       </Box>
+
+      {/* Pagination (for flat view) */}
+      {groupBy === 'none' && filteredSubmissions.length > 0 && (
+        <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
+          <TablePagination
+            component="div"
+            count={filteredSubmissions.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            labelRowsPerPage="Rows per page:"
+          />
+        </Box>
+      )}
 
       {/* Detail Drawer */}
       <Drawer
