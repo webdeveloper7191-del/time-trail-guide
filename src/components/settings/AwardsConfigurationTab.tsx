@@ -74,6 +74,7 @@ import { AuditTrailViewer } from './awards/AuditTrailViewer';
 import { BOOTCalculatorPanel } from './awards/BOOTCalculatorPanel';
 import { FWCIntegrationPanel } from './awards/FWCIntegrationPanel';
 import { OvertimeCalculatorTest } from './awards/OvertimeCalculatorTest';
+import { OvertimeRulesConfigPanel } from './OvertimeRulesConfigPanel';
 
 interface EnabledAward {
   awardId: string;
@@ -748,7 +749,14 @@ export function AwardsConfigurationTab() {
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">Overtime</span>
+              <span className="hidden sm:inline">OT Test</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="overtime-rules" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">OT Rules</span>
             </TabsTrigger>
             <TabsTrigger 
               value="on-call" 
@@ -846,6 +854,10 @@ export function AwardsConfigurationTab() {
 
         <TabsContent value="overtime" className="mt-0">
           <OvertimeCalculatorTest />
+        </TabsContent>
+
+        <TabsContent value="overtime-rules" className="mt-0">
+          <OvertimeRulesConfigPanel />
         </TabsContent>
 
         <TabsContent value="on-call" className="mt-0">
