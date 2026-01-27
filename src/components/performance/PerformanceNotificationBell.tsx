@@ -7,17 +7,20 @@ import {
   Badge,
   Popover,
   Divider,
-  Alert,
-  AlertTitle,
+  Chip,
 } from '@mui/material';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Goal, PerformanceReview, Conversation } from '@/types/performance';
+import { AssignedPlan } from '@/types/performancePlan';
 import {
   getAllPerformanceNotifications,
-  getNotificationCount,
   PerformanceNotification,
 } from '@/lib/performanceNotificationService';
+import {
+  getAllPlanNotifications,
+  PlanNotification,
+} from '@/lib/planNotificationService';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import {
   Bell,
@@ -25,52 +28,66 @@ import {
   ClipboardCheck,
   MessageSquare,
   X,
-  ChevronRight,
-  AlertTriangle,
-  Clock,
   Calendar,
+  FileText,
+  Flag,
 } from 'lucide-react';
 
 interface PerformanceNotificationBellProps {
   goals: Goal[];
   reviews: PerformanceReview[];
   conversations: Conversation[];
+  plans?: AssignedPlan[];
   currentUserId: string;
   onViewGoal: (goalId: string) => void;
   onViewReview: (reviewId: string) => void;
   onViewConversation: (conversationId: string) => void;
+  onViewPlan?: (planId: string) => void;
 }
 
 const notificationIcons: Record<string, React.ReactNode> = {
   goal: <Target className="h-4 w-4" />,
   review: <ClipboardCheck className="h-4 w-4" />,
   conversation: <MessageSquare className="h-4 w-4" />,
-};
-
-const severityColors: Record<string, 'error' | 'warning' | 'info'> = {
-  error: 'error',
-  warning: 'warning',
-  info: 'info',
+  milestone: <Flag className="h-4 w-4" />,
+  plan: <FileText className="h-4 w-4" />,
 };
 
 export function PerformanceNotificationBell({
   goals,
   reviews,
   conversations,
+  plans = [],
   currentUserId,
   onViewGoal,
   onViewReview,
   onViewConversation,
+  onViewPlan,
 }: PerformanceNotificationBellProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<'all' | 'plans'>('all');
 
-  const notifications = useMemo(() => {
+  // Performance notifications (goals, reviews, conversations)
+  const performanceNotifications = useMemo(() => {
     const all = getAllPerformanceNotifications(goals, reviews, conversations, currentUserId);
     return all.filter((n) => !dismissedIds.has(n.id));
   }, [goals, reviews, conversations, currentUserId, dismissedIds]);
 
-  const counts = useMemo(() => getNotificationCount(notifications), [notifications]);
+  // Plan notifications (milestones, plan reviews, plan conversations)
+  const planNotifications = useMemo(() => {
+    const all = getAllPlanNotifications(plans, goals, reviews, conversations, currentUserId);
+    return all.filter((n) => !dismissedIds.has(n.id));
+  }, [plans, goals, reviews, conversations, currentUserId, dismissedIds]);
+
+  const allNotifications = useMemo(() => {
+    return activeTab === 'plans' ? planNotifications : performanceNotifications;
+  }, [activeTab, performanceNotifications, planNotifications]);
+
+  const totalCount = performanceNotifications.length + planNotifications.length;
+  const errorCount = 
+    performanceNotifications.filter(n => n.severity === 'error').length + 
+    planNotifications.filter(n => n.severity === 'error').length;
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -85,20 +102,28 @@ export function PerformanceNotificationBell({
   };
 
   const handleDismissAll = () => {
-    setDismissedIds(new Set(notifications.map((n) => n.id)));
+    const allIds = [...performanceNotifications, ...planNotifications].map(n => n.id);
+    setDismissedIds(new Set(allIds));
   };
 
-  const handleNotificationClick = (notification: PerformanceNotification) => {
-    switch (notification.entityType) {
-      case 'goal':
-        onViewGoal(notification.entityId);
-        break;
-      case 'review':
-        onViewReview(notification.entityId);
-        break;
-      case 'conversation':
-        onViewConversation(notification.entityId);
-        break;
+  const handleNotificationClick = (notification: PerformanceNotification | PlanNotification) => {
+    if ('entityType' in notification && notification.entityType) {
+      switch (notification.entityType) {
+        case 'goal':
+        case 'milestone':
+          if (notification.entityId) onViewGoal(notification.entityId);
+          break;
+        case 'review':
+          if (notification.entityId) onViewReview(notification.entityId);
+          break;
+        case 'conversation':
+          if (notification.entityId) onViewConversation(notification.entityId);
+          break;
+      }
+    }
+    // Handle plan-level notifications
+    if ('planId' in notification && onViewPlan) {
+      onViewPlan(notification.planId);
     }
     handleClose();
   };
@@ -109,8 +134,8 @@ export function PerformanceNotificationBell({
     <>
       <IconButton onClick={handleClick} size="small">
         <Badge
-          badgeContent={counts.total}
-          color={counts.error > 0 ? 'error' : counts.warning > 0 ? 'warning' : 'primary'}
+          badgeContent={totalCount}
+          color={errorCount > 0 ? 'error' : totalCount > 0 ? 'warning' : 'primary'}
         >
           <Bell className="h-5 w-5" />
         </Badge>
@@ -137,35 +162,33 @@ export function PerformanceNotificationBell({
             <Typography variant="subtitle1" fontWeight={600}>
               Notifications
             </Typography>
-            {notifications.length > 0 && (
+            {totalCount > 0 && (
               <Button variant="ghost" size="sm" onClick={handleDismissAll}>
                 Clear All
               </Button>
             )}
           </Stack>
-          {counts.total > 0 && (
-            <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-              {counts.error > 0 && (
-                <Typography variant="caption" sx={{ color: 'error.main' }}>
-                  {counts.error} urgent
-                </Typography>
-              )}
-              {counts.warning > 0 && (
-                <Typography variant="caption" sx={{ color: 'warning.main' }}>
-                  {counts.warning} pending
-                </Typography>
-              )}
-              {counts.info > 0 && (
-                <Typography variant="caption" sx={{ color: 'info.main' }}>
-                  {counts.info} upcoming
-                </Typography>
-              )}
-            </Stack>
-          )}
+          {/* Tabs for All vs Plans */}
+          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+            <Chip
+              label={`All (${performanceNotifications.length})`}
+              size="small"
+              color={activeTab === 'all' ? 'primary' : 'default'}
+              onClick={() => setActiveTab('all')}
+              sx={{ cursor: 'pointer' }}
+            />
+            <Chip
+              label={`Plans (${planNotifications.length})`}
+              size="small"
+              color={activeTab === 'plans' ? 'primary' : 'default'}
+              onClick={() => setActiveTab('plans')}
+              sx={{ cursor: 'pointer' }}
+            />
+          </Stack>
         </Box>
 
         <ScrollArea className="max-h-[350px]">
-          {notifications.length === 0 ? (
+          {allNotifications.length === 0 ? (
             <Box sx={{ py: 6, textAlign: 'center' }}>
               <Bell className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
               <Typography variant="body2" color="text.secondary">
@@ -177,62 +200,74 @@ export function PerformanceNotificationBell({
             </Box>
           ) : (
             <Stack divider={<Divider />}>
-              {notifications.map((notification) => (
-                <Box
-                  key={notification.id}
-                  sx={{
-                    p: 2,
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
-                >
-                  <Stack direction="row" spacing={1.5}>
-                    <Box
-                      sx={{
-                        p: 1,
-                        borderRadius: 1,
-                        bgcolor:
-                          notification.severity === 'error'
-                            ? 'error.100'
-                            : notification.severity === 'warning'
-                            ? 'warning.100'
-                            : 'info.100',
-                        height: 'fit-content',
-                      }}
-                    >
-                      {notificationIcons[notification.entityType]}
-                    </Box>
-                    <Box
-                      sx={{ flex: 1, cursor: 'pointer' }}
-                      onClick={() => handleNotificationClick(notification)}
-                    >
-                      <Typography variant="body2" fontWeight={600}>
-                        {notification.title}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {notification.message}
-                      </Typography>
-                      {notification.dueDate && (
-                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDistanceToNow(parseISO(notification.dueDate), { addSuffix: true })}
+              {allNotifications.map((notification) => {
+                const isPlanNotification = 'planId' in notification;
+                const entityType = isPlanNotification 
+                  ? (notification as PlanNotification).entityType || 'plan'
+                  : (notification as PerformanceNotification).entityType;
+                
+                return (
+                  <Box
+                    key={notification.id}
+                    sx={{
+                      p: 2,
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <Stack direction="row" spacing={1.5}>
+                      <Box
+                        sx={{
+                          p: 1,
+                          borderRadius: 1,
+                          bgcolor:
+                            notification.severity === 'error'
+                              ? 'error.100'
+                              : notification.severity === 'warning'
+                              ? 'warning.100'
+                              : 'info.100',
+                          height: 'fit-content',
+                        }}
+                      >
+                        {notificationIcons[entityType || 'plan']}
+                      </Box>
+                      <Box
+                        sx={{ flex: 1, cursor: 'pointer' }}
+                        onClick={() => handleNotificationClick(notification)}
+                      >
+                        <Typography variant="body2" fontWeight={600}>
+                          {notification.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {notification.message}
+                        </Typography>
+                        {isPlanNotification && (
+                          <Typography variant="caption" display="block" sx={{ color: 'primary.main', mt: 0.5 }}>
+                            Plan: {(notification as PlanNotification).planName}
                           </Typography>
-                        </Stack>
-                      )}
-                    </Box>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDismiss(notification.id);
-                      }}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </IconButton>
-                  </Stack>
-                </Box>
-              ))}
+                        )}
+                        {notification.dueDate && (
+                          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <Typography variant="caption" color="text.secondary">
+                              {formatDistanceToNow(parseISO(notification.dueDate), { addSuffix: true })}
+                            </Typography>
+                          </Stack>
+                        )}
+                      </Box>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDismiss(notification.id);
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </IconButton>
+                    </Stack>
+                  </Box>
+                );
+              })}
             </Stack>
           )}
         </ScrollArea>
