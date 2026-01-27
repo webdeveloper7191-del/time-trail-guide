@@ -43,6 +43,7 @@ import {
   XCircle,
   UserCheck,
   User,
+  ClipboardList,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -279,6 +280,12 @@ export default function TimesheetAdmin() {
               <Button variant="outline" size="sm" onClick={() => setIsDelegationOpen(true)}>
                 <UserCheck className="h-4 w-4 mr-1.5" />
                 Delegate
+              </Button>
+
+              {/* My Tasks Link */}
+              <Button variant="outline" size="sm" onClick={() => window.location.href = '/my-tasks'}>
+                <ClipboardList className="h-4 w-4 mr-1.5" />
+                My Tasks
               </Button>
 
               {/* Employee Portal Link */}
