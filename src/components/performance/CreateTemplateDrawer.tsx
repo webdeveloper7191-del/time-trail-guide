@@ -21,6 +21,7 @@ import {
   Building2,
   Clock,
   Tag,
+  Library,
 } from 'lucide-react';
 import { 
   PerformancePlanTemplate, 
@@ -33,6 +34,8 @@ import {
 } from '@/types/performancePlan';
 import { goalCategories } from '@/types/performance';
 import { toast } from 'sonner';
+import { ReusableGoalTemplate, ReusableReviewTemplate } from '@/types/reusableTemplates';
+import { GoalReviewTemplatesLibrary, convertGoalTemplateToPlanGoal, convertReviewTemplateToPlanReview } from './GoalReviewTemplatesLibrary';
 
 interface CreateTemplateDrawerProps {
   open: boolean;
@@ -49,6 +52,8 @@ export function CreateTemplateDrawer({
 }: CreateTemplateDrawerProps) {
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(false);
+  const [showGoalLibrary, setShowGoalLibrary] = useState(false);
+  const [showReviewLibrary, setShowReviewLibrary] = useState(false);
 
   // Template details
   const [name, setName] = useState('');
@@ -169,6 +174,19 @@ export function CreateTemplateDrawer({
 
   const removeReview = (index: number) => {
     setReviews(reviews.filter((_, i) => i !== index));
+  };
+
+  // Import from library
+  const handleImportGoalFromLibrary = (template: ReusableGoalTemplate) => {
+    const planGoal = convertGoalTemplateToPlanGoal(template);
+    setGoals([...goals, planGoal]);
+    toast.success(`Added "${template.name}" goal`);
+  };
+
+  const handleImportReviewFromLibrary = (template: ReusableReviewTemplate) => {
+    const planReview = convertReviewTemplateToPlanReview(template);
+    setReviews([...reviews, planReview]);
+    toast.success(`Added "${template.name}" review`);
   };
 
   // Conversation management
@@ -361,10 +379,16 @@ export function CreateTemplateDrawer({
 
             {/* Goals Tab */}
             <TabsContent value="goals" className="mt-4 space-y-4">
-              <Button onClick={addGoal} variant="outline" className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Goal
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={addGoal} variant="outline" className="flex-1">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Blank Goal
+                </Button>
+                <Button onClick={() => setShowGoalLibrary(true)} variant="secondary" className="flex-1">
+                  <Library className="h-4 w-4 mr-2" />
+                  Import from Library
+                </Button>
+              </div>
 
               {goals.map((goal, gIndex) => (
                 <Card key={goal.id}>
@@ -469,10 +493,16 @@ export function CreateTemplateDrawer({
 
             {/* Reviews Tab */}
             <TabsContent value="reviews" className="mt-4 space-y-4">
-              <Button onClick={addReview} variant="outline" className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Review
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={addReview} variant="outline" className="flex-1">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Blank Review
+                </Button>
+                <Button onClick={() => setShowReviewLibrary(true)} variant="secondary" className="flex-1">
+                  <Library className="h-4 w-4 mr-2" />
+                  Import from Library
+                </Button>
+              </div>
 
               {reviews.map((review, rIndex) => (
                 <Card key={review.id}>
@@ -618,6 +648,22 @@ export function CreateTemplateDrawer({
           </div>
         </div>
       </SheetContent>
+
+      {/* Goal Library Sheet */}
+      <GoalReviewTemplatesLibrary
+        open={showGoalLibrary}
+        onClose={() => setShowGoalLibrary(false)}
+        onSelectGoal={handleImportGoalFromLibrary}
+        mode="select-goal"
+      />
+
+      {/* Review Library Sheet */}
+      <GoalReviewTemplatesLibrary
+        open={showReviewLibrary}
+        onClose={() => setShowReviewLibrary(false)}
+        onSelectReview={handleImportReviewFromLibrary}
+        mode="select-review"
+      />
     </Sheet>
   );
 }

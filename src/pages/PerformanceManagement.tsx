@@ -243,10 +243,15 @@ export default function PerformanceManagement() {
               goals={goals}
               reviews={reviews}
               conversations={conversations}
+              plans={mockAssignedPlans}
               currentUserId={CURRENT_USER_ID}
               onViewGoal={handleNotificationGoal}
               onViewReview={handleNotificationReview}
               onViewConversation={handleNotificationConversation}
+              onViewPlan={(planId) => {
+                const plan = mockAssignedPlans.find(p => p.id === planId);
+                if (plan) handleViewPlan(plan);
+              }}
             />
           </div>
 
