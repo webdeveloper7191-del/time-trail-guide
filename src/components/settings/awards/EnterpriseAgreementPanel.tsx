@@ -73,6 +73,7 @@ import {
   agreementStatusLabels,
 } from '@/types/enterpriseAgreement';
 import { AustralianState, stateLabels } from '@/types/leaveAccrual';
+import { EBAWizard } from './EBAWizard';
 
 // Comprehensive mock EBA data
 const mockEBAs: EnterpriseAgreement[] = [
@@ -286,7 +287,8 @@ export function EnterpriseAgreementPanel() {
   const [selectedEmployee, setSelectedEmployee] = useState<(typeof mockMultiAwardEmployees)[0] | null>(null);
   const [statusFilter, setStatusFilter] = useState<AgreementStatus | 'all'>('all');
   const [selectedClassification, setSelectedClassification] = useState<EBAClassification | null>(null);
-  const [editMode, setEditMode] = useState(false);
+  const [showEditWizard, setShowEditWizard] = useState(false);
+  const [ebas, setEbas] = useState<EnterpriseAgreement[]>(mockEBAs);
 
   // Form state for new agreement
   const [newAgreement, setNewAgreement] = useState({
@@ -313,13 +315,25 @@ export function EnterpriseAgreementPanel() {
     return { status: 'ok', message: `${days} days remaining`, color: 'text-muted-foreground', badge: 'bg-muted text-muted-foreground' };
   };
 
-  const filteredEBAs = mockEBAs.filter(eba => {
+  const filteredEBAs = ebas.filter(eba => {
     const matchesSearch = eba.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       eba.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       eba.fwcApprovalNumber.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || eba.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleEBAComplete = (eba: Partial<EnterpriseAgreement>) => {
+    if (selectedEBA) {
+      // Update existing
+      setEbas(prev => prev.map(e => e.id === selectedEBA.id ? { ...e, ...eba } as EnterpriseAgreement : e));
+      setSelectedEBA(null);
+    } else {
+      // Add new
+      setEbas(prev => [...prev, eba as EnterpriseAgreement]);
+    }
+    setShowEditWizard(false);
+  };
 
   const handleCreateAgreement = () => {
     toast.success('Enterprise Agreement created successfully', {
@@ -458,7 +472,7 @@ export function EnterpriseAgreementPanel() {
                 <Layers className="h-4 w-4 mr-2" />
                 Multi-Award
               </Button>
-              <Button onClick={() => setShowCreatePanel(true)}>
+              <Button onClick={() => setShowEditWizard(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 New Agreement
               </Button>
@@ -534,7 +548,7 @@ export function EnterpriseAgreementPanel() {
       </div>
 
       {/* EBA Detail Side Panel */}
-      <Sheet open={!!selectedEBA} onOpenChange={() => { setSelectedEBA(null); setEditMode(false); }}>
+      <Sheet open={!!selectedEBA && !showEditWizard} onOpenChange={() => { setSelectedEBA(null); }}>
         <SheetContent side="right" className="w-full sm:max-w-2xl p-6">
           {selectedEBA && (
             <ScrollArea className="h-full pr-4">
@@ -905,9 +919,9 @@ export function EnterpriseAgreementPanel() {
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
-                <Button onClick={() => setEditMode(true)}>
+                <Button onClick={() => setShowEditWizard(true)}>
                   <Edit className="h-4 w-4 mr-2" />
-                Edit Agreement
+                  Edit Agreement
                 </Button>
               </SheetFooter>
             </ScrollArea>
@@ -1475,6 +1489,14 @@ export function EnterpriseAgreementPanel() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* EBA Creation/Edit Wizard */}
+      <EBAWizard
+        open={showEditWizard}
+        onOpenChange={setShowEditWizard}
+        onComplete={handleEBAComplete}
+        existingEBA={selectedEBA || undefined}
+      />
     </div>
   );
 }
