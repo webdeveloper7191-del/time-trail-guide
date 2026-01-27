@@ -46,7 +46,9 @@ export function EditTemplateDetailsDrawer({
   const [description, setDescription] = useState('');
   const [headerImage, setHeaderImage] = useState<string | undefined>(undefined);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (template && open) {
@@ -112,10 +114,7 @@ export function EditTemplateDetailsDrawer({
     }, 0);
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const processImageFile = (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
@@ -135,6 +134,43 @@ export function EditTemplateDetailsDrawer({
       toast.success('Header image added');
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    processImageFile(file);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to false if we're leaving the drop zone entirely
+    if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processImageFile(files[0]);
+    }
   };
 
   const handleRemoveImage = () => {
@@ -302,26 +338,32 @@ export function EditTemplateDetailsDrawer({
                 </Box>
               ) : (
                 <Box
+                  ref={dropZoneRef}
                   onClick={() => fileInputRef.current?.click()}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
                   sx={{
                     border: 2,
                     borderStyle: 'dashed',
-                    borderColor: 'divider',
+                    borderColor: isDragging ? 'primary.main' : 'divider',
                     borderRadius: 1,
                     p: 3,
                     textAlign: 'center',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    bgcolor: 'grey.50',
+                    bgcolor: isDragging ? 'primary.50' : 'grey.50',
+                    transform: isDragging ? 'scale(1.02)' : 'scale(1)',
                     '&:hover': {
                       borderColor: 'primary.main',
                       bgcolor: 'primary.50',
                     },
                   }}
                 >
-                  <Upload size={32} style={{ opacity: 0.5, marginBottom: 8 }} />
-                  <Typography variant="body2" color="text.secondary">
-                    Click to upload header image
+                  <Upload size={32} style={{ opacity: isDragging ? 0.8 : 0.5, marginBottom: 8, color: isDragging ? 'var(--mui-palette-primary-main)' : undefined }} />
+                  <Typography variant="body2" color={isDragging ? 'primary.main' : 'text.secondary'} fontWeight={isDragging ? 500 : 400}>
+                    {isDragging ? 'Drop image here' : 'Drag & drop or click to upload'}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
                     PNG, JPG, or GIF (max 5MB)
