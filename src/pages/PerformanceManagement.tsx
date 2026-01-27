@@ -17,12 +17,13 @@ import { BulkAssignPlanDrawer } from '@/components/performance/BulkAssignPlanDra
 import { PlanDetailSheet } from '@/components/performance/PlanDetailSheet';
 import { PlanTemplatePreviewSheet } from '@/components/performance/PlanTemplatePreviewSheet';
 import { CreateTemplateDrawer } from '@/components/performance/CreateTemplateDrawer';
+import { PerformanceTaskManagementPanel } from '@/components/performance/PerformanceTaskManagementPanel';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText } from 'lucide-react';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
@@ -256,9 +257,12 @@ export default function PerformanceManagement() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-7 max-w-4xl">
+            <TabsList className="grid w-full grid-cols-8 max-w-5xl">
               <TabsTrigger value="plans" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" /> Plans
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="flex items-center gap-2">
+                <ListTodo className="h-4 w-4" /> Tasks
               </TabsTrigger>
               <TabsTrigger value="goals" className="flex items-center gap-2">
                 <Target className="h-4 w-4" /> Goals
@@ -293,6 +297,18 @@ export default function PerformanceManagement() {
                 onCreateTemplate={handleCreateTemplate}
                 onEditTemplate={handleEditTemplate}
                 onDuplicateTemplate={handleDuplicateTemplate}
+              />
+            </TabsContent>
+
+            <TabsContent value="tasks" className="mt-6">
+              <PerformanceTaskManagementPanel
+                currentUserId={CURRENT_USER_ID}
+                goals={goals}
+                reviews={reviews}
+                conversations={conversations}
+                onNavigateToGoal={handleNotificationGoal}
+                onNavigateToReview={handleNotificationReview}
+                onNavigateToConversation={handleNotificationConversation}
               />
             </TabsContent>
 
