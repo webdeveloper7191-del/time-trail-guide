@@ -69,6 +69,8 @@ import {
   Building2,
   LayoutGrid,
   List,
+  Plus,
+  ArrowRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -101,6 +103,8 @@ interface SubmissionWorkflowProps {
   templateId?: string;
   initialSubmissionId?: string | null;
   onSubmissionViewed?: () => void;
+  onNavigateToTask?: (taskId: string) => void;
+  onTaskCreated?: (task: { title: string; description: string; submissionId: string; priority: 'low' | 'medium' | 'high' | 'critical' }) => void;
 }
 
 interface Task {
@@ -186,10 +190,14 @@ const mockFormFields: FormField[] = [
 // Mock sites for grouping
 const mockSites = ['Main Campus', 'North Wing', 'South Building', 'East Annex', 'West Facility'];
 
-export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissionViewed }: SubmissionWorkflowProps) {
+export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissionViewed, onNavigateToTask, onTaskCreated }: SubmissionWorkflowProps) {
   const [submissions, setSubmissions] = useState<FormSubmission[]>(mockFormSubmissions);
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+  const [createTaskDrawerOpen, setCreateTaskDrawerOpen] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('high');
 
   // Auto-open submission when navigating from tasks
   useEffect(() => {
@@ -514,6 +522,53 @@ export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissi
     setDetailDrawerOpen(false);
     setSelectedSubmission(null);
     toast.success('Submission deleted');
+  };
+
+  const handleOpenCreateTask = () => {
+    if (!selectedSubmission) return;
+    const templateName = getTemplateName(selectedSubmission.templateId);
+    setNewTaskTitle(`Corrective Action: ${templateName}`);
+    setNewTaskDescription(`Task created from failed audit submission by ${selectedSubmission.submittedBy} on ${format(new Date(selectedSubmission.submittedAt || selectedSubmission.createdAt), 'MMM d, yyyy')}.`);
+    setNewTaskPriority(selectedSubmission.passFail === 'fail' ? 'high' : 'medium');
+    setCreateTaskDrawerOpen(true);
+  };
+
+  const handleCreateTask = () => {
+    if (!selectedSubmission || !newTaskTitle.trim()) return;
+    
+    const newTask = {
+      id: `task-new-${Date.now()}`,
+      title: newTaskTitle,
+      description: newTaskDescription,
+      status: 'open' as const,
+      priority: newTaskPriority,
+      submissionId: selectedSubmission.id,
+      fieldId: '',
+      createdAt: new Date().toISOString(),
+    };
+    
+    // Add to local tasks
+    setAutoTasks(prev => [...prev, newTask]);
+    
+    // Notify parent if callback provided
+    onTaskCreated?.({
+      title: newTaskTitle,
+      description: newTaskDescription,
+      submissionId: selectedSubmission.id,
+      priority: newTaskPriority,
+    });
+    
+    setCreateTaskDrawerOpen(false);
+    setNewTaskTitle('');
+    setNewTaskDescription('');
+    toast.success('Task created successfully');
+  };
+
+  const handleNavigateToTask = (taskId: string) => {
+    if (onNavigateToTask) {
+      setDetailDrawerOpen(false);
+      onNavigateToTask(taskId);
+    }
   };
 
   const handleBulkApprove = () => {
@@ -1400,15 +1455,33 @@ export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissi
 
               {activeTab === 'tasks' && (
                 <Stack spacing={2}>
+                  {/* Create Task Button */}
+                  <Button 
+                    variant="outline" 
+                    onClick={handleOpenCreateTask}
+                    className="w-full border-dashed"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Corrective Action Task
+                  </Button>
+
                   {submissionTasks.length > 0 ? (
                     submissionTasks.map((task) => (
                       <Alert 
                         key={task.id} 
                         severity={task.priority === 'critical' || task.priority === 'high' ? 'error' : 'warning'}
-                        sx={{ '& .MuiAlert-message': { width: '100%' } }}
+                        sx={{ 
+                          '& .MuiAlert-message': { width: '100%' },
+                          cursor: onNavigateToTask ? 'pointer' : 'default',
+                          '&:hover': onNavigateToTask ? { bgcolor: 'action.hover' } : undefined,
+                        }}
+                        onClick={() => handleNavigateToTask(task.id)}
                       >
                         <AlertTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          {task.title}
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            {task.title}
+                            {onNavigateToTask && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+                          </Stack>
                           <Chip label={task.status} size="small" variant="outlined" />
                         </AlertTitle>
                         <Typography variant="body2" sx={{ mb: 1 }}>{task.description}</Typography>
@@ -1432,9 +1505,12 @@ export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissi
                       </Alert>
                     ))
                   ) : (
-                    <Box sx={{ py: 4, textAlign: 'center' }}>
+                    <Box sx={{ py: 2, textAlign: 'center' }}>
                       <ClipboardList className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                      <Typography variant="body2" color="text.secondary">No tasks for this submission</Typography>
+                      <Typography variant="body2" color="text.secondary">No tasks for this submission yet</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Create a corrective action task above
+                      </Typography>
                     </Box>
                   )}
                 </Stack>
@@ -1542,6 +1618,110 @@ export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissi
             </Box>
           </Box>
         )}
+      </Drawer>
+
+      {/* Create Task Drawer */}
+      <Drawer
+        anchor="right"
+        open={createTaskDrawerOpen}
+        onClose={() => setCreateTaskDrawerOpen(false)}
+        PaperProps={{ sx: { width: { xs: '100%', sm: 480 } } }}
+      >
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box sx={{ p: 1, borderRadius: 1, bgcolor: 'warning.100' }}>
+                  <AlertTriangle className="h-5 w-5 text-orange-600" />
+                </Box>
+                <Typography variant="h6" fontWeight={600}>Create Corrective Action</Typography>
+              </Stack>
+              <IconButton onClick={() => setCreateTaskDrawerOpen(false)}>
+                <X className="h-5 w-5" />
+              </IconButton>
+            </Stack>
+          </Box>
+
+          <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+            <Stack spacing={3}>
+              {selectedSubmission && (
+                <Alert severity="info" sx={{ '& .MuiAlert-message': { width: '100%' } }}>
+                  <AlertTitle>Source Submission</AlertTitle>
+                  <Typography variant="body2">
+                    {getTemplateName(selectedSubmission.templateId)} by {selectedSubmission.submittedBy}
+                  </Typography>
+                  {selectedSubmission.passFail === 'fail' && (
+                    <Chip label="Failed Audit" size="small" color="error" sx={{ mt: 1 }} />
+                  )}
+                </Alert>
+              )}
+
+              <div>
+                <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1 }}>
+                  Task Title *
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  placeholder="Enter task title..."
+                />
+              </div>
+
+              <div>
+                <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1 }}>
+                  Description
+                </Typography>
+                <Textarea
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  placeholder="Describe what needs to be done..."
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              <div>
+                <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1 }}>
+                  Priority
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  {(['low', 'medium', 'high', 'critical'] as const).map((p) => (
+                    <Chip
+                      key={p}
+                      label={p.charAt(0).toUpperCase() + p.slice(1)}
+                      size="small"
+                      color={
+                        newTaskPriority === p
+                          ? p === 'critical' || p === 'high'
+                            ? 'error'
+                            : p === 'medium'
+                            ? 'warning'
+                            : 'default'
+                          : 'default'
+                      }
+                      variant={newTaskPriority === p ? 'filled' : 'outlined'}
+                      onClick={() => setNewTaskPriority(p)}
+                      sx={{ cursor: 'pointer' }}
+                    />
+                  ))}
+                </Stack>
+              </div>
+            </Stack>
+          </Box>
+
+          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button variant="outline" onClick={() => setCreateTaskDrawerOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateTask} disabled={!newTaskTitle.trim()}>
+                <Plus className="h-4 w-4 mr-1" />
+                Create Task
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
       </Drawer>
     </Box>
   );
