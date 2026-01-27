@@ -2,10 +2,55 @@
  * Unified Overtime Calculator
  * Single source of truth for overtime calculations across the system
  * Used by both complianceEngine and awardInterpreter
+ * Now integrates with configurable OvertimeRulesContext
  */
 
 import { Jurisdiction } from '@/types/compliance';
 import { australianJurisdiction, getJurisdictionByAward, AwardType, penaltyRatesByAward } from './australianJurisdiction';
+import { OvertimeRuleConfig, getDefaultOvertimeRules } from '@/contexts/OvertimeRulesContext';
+
+// Configurable rules that can be passed in
+let configuredRules: OvertimeRuleConfig[] | null = null;
+
+// Set rules from context (called by components with context access)
+export function setOvertimeRules(rules: OvertimeRuleConfig[]) {
+  configuredRules = rules;
+}
+
+// Get active rules (uses configured or defaults)
+export function getActiveOvertimeRules(): OvertimeRuleConfig[] {
+  const rules = configuredRules || getDefaultOvertimeRules();
+  return rules.filter(r => r.isActive);
+}
+
+// Helper to get specific rule types
+function getActiveDailyRule(): OvertimeRuleConfig | undefined {
+  return getActiveOvertimeRules().find(r => r.category === 'daily');
+}
+
+function getActiveWeeklyRule(): OvertimeRuleConfig | undefined {
+  return getActiveOvertimeRules().find(r => r.category === 'weekly');
+}
+
+function getPenaltyRuleForDay(day: 'weekday' | 'saturday' | 'sunday' | 'public_holiday'): OvertimeRuleConfig | undefined {
+  return getActiveOvertimeRules().find(r => r.category === 'penalty' && r.applicableDays?.includes(day));
+}
+
+function getSpecialLoadingRules(): OvertimeRuleConfig[] {
+  return getActiveOvertimeRules().filter(r => r.category === 'special');
+}
+
+// Check if time falls within a time range (handles overnight ranges)
+function isTimeInRange(hour: number, range: { start: string; end: string }): boolean {
+  const startHour = parseInt(range.start.split(':')[0]);
+  const endHour = parseInt(range.end.split(':')[0]);
+  
+  if (startHour > endHour) {
+    // Overnight range (e.g., 22:00 - 06:00)
+    return hour >= startHour || hour < endHour;
+  }
+  return hour >= startHour && hour < endHour;
+}
 
 // Input for overtime calculation
 export interface OvertimeInput {
@@ -17,6 +62,7 @@ export interface OvertimeInput {
   dayType?: 'weekday' | 'saturday' | 'sunday' | 'public_holiday';
   isNightShift?: boolean;       // If shift includes night hours
   isEveningShift?: boolean;     // If shift includes evening hours
+  shiftStartHour?: number;      // For time-based loading calculation
 }
 
 // Detailed overtime breakdown
@@ -37,6 +83,9 @@ export interface OvertimeBreakdown {
   penaltyLoading: number;
   penaltyPay: number;
   
+  // Special loadings applied
+  specialLoadings: { name: string; amount: number }[];
+  
   // Casual loading
   casualLoadingAmount: number;
   
@@ -47,9 +96,13 @@ export interface OvertimeBreakdown {
   // Flags
   hasOvertime: boolean;
   overtimeReason: string[];
+  
+  // Rules applied
+  rulesApplied: string[];
 }
 
 // Daily overtime calculation (Australian awards typically use daily triggers)
+// Now uses configured rules when available
 export function calculateDailyOvertime(
   input: OvertimeInput,
   jurisdiction: Jurisdiction = australianJurisdiction
@@ -63,20 +116,32 @@ export function calculateDailyOvertime(
     dayType = 'weekday',
     isNightShift = false,
     isEveningShift = false,
+    shiftStartHour,
   } = input;
   
   const penalties = penaltyRatesByAward[awardType];
   const overtimeReasons: string[] = [];
+  const rulesApplied: string[] = [];
+  const specialLoadings: { name: string; amount: number }[] = [];
+  
+  // Get active rules from configuration
+  const dailyRule = getActiveDailyRule();
+  const penaltyRule = getPenaltyRuleForDay(dayType);
+  const specialRules = getSpecialLoadingRules();
   
   // Calculate effective base rate (with casual loading if applicable)
   const casualLoadingAmount = isCasual ? baseHourlyRate * (casualLoading / 100) : 0;
   const effectiveBaseRate = baseHourlyRate + casualLoadingAmount;
   
-  // Casual employees generally don't get overtime under Australian awards
-  // (casual loading compensates for lack of leave entitlements, not overtime)
-  // However, they still get overtime after threshold hours
-  const overtimeThreshold = jurisdiction.overtimeThresholdDaily;
-  const doubleTimeThreshold = jurisdiction.doubleTimeThreshold || overtimeThreshold + 2;
+  // Use configured thresholds if available, otherwise fall back to jurisdiction
+  const overtimeThreshold = dailyRule?.dailyThreshold ?? jurisdiction.overtimeThresholdDaily;
+  const overtimeMultiplier = dailyRule?.overtimeMultiplier ?? jurisdiction.overtimeMultiplier;
+  const doubleTimeThreshold = dailyRule?.doubleTimeThreshold ?? jurisdiction.doubleTimeThreshold ?? overtimeThreshold + 2;
+  const doubleTimeMultiplier = dailyRule?.doubleTimeMultiplier ?? jurisdiction.doubleTimeMultiplier ?? 2;
+  
+  if (dailyRule) {
+    rulesApplied.push(dailyRule.name);
+  }
   
   // Calculate hours breakdown
   let ordinaryHours = Math.min(hoursWorked, overtimeThreshold);
@@ -85,14 +150,16 @@ export function calculateDailyOvertime(
   
   if (hoursWorked > overtimeThreshold) {
     // Casuals DO get overtime in Australia after threshold
-    overtime15Hours = Math.min(hoursWorked - overtimeThreshold, 2);
+    const hoursOverThreshold = hoursWorked - overtimeThreshold;
+    const hoursUntilDouble = doubleTimeThreshold - overtimeThreshold;
+    overtime15Hours = Math.min(hoursOverThreshold, hoursUntilDouble);
     overtime20Hours = Math.max(0, hoursWorked - doubleTimeThreshold);
     
     if (overtime15Hours > 0) {
-      overtimeReasons.push(`Daily threshold of ${overtimeThreshold}h exceeded`);
+      overtimeReasons.push(`Daily threshold of ${overtimeThreshold}h exceeded (${overtimeMultiplier}x rate)`);
     }
     if (overtime20Hours > 0) {
-      overtimeReasons.push(`Extended overtime after ${doubleTimeThreshold}h`);
+      overtimeReasons.push(`Extended overtime after ${doubleTimeThreshold}h (${doubleTimeMultiplier}x rate)`);
     }
   }
   
@@ -100,37 +167,59 @@ export function calculateDailyOvertime(
   
   // Calculate base pay
   let ordinaryPay = ordinaryHours * effectiveBaseRate;
-  const overtime15Pay = overtime15Hours * effectiveBaseRate * jurisdiction.overtimeMultiplier;
-  const overtime20Pay = overtime20Hours * effectiveBaseRate * (jurisdiction.doubleTimeMultiplier || 2);
+  const overtime15Pay = overtime15Hours * effectiveBaseRate * overtimeMultiplier;
+  const overtime20Pay = overtime20Hours * effectiveBaseRate * doubleTimeMultiplier;
   const totalOvertimePay = overtime15Pay + overtime20Pay;
   
-  // Calculate penalty loadings based on day type
+  // Calculate penalty loadings based on day type - use configured rules first
   let penaltyMultiplier = 1;
   let penaltyDescription = '';
   
-  switch (dayType) {
-    case 'saturday':
-      penaltyMultiplier = penalties.saturday;
-      penaltyDescription = 'Saturday penalty';
-      break;
-    case 'sunday':
-      penaltyMultiplier = penalties.sunday;
-      penaltyDescription = 'Sunday penalty';
-      break;
-    case 'public_holiday':
-      penaltyMultiplier = penalties.publicHoliday;
-      penaltyDescription = 'Public holiday penalty';
-      break;
-    case 'weekday':
-      // Evening/night loadings apply to weekdays
-      if (isNightShift) {
-        penaltyMultiplier = 1 + (penalties.night / 100);
-        penaltyDescription = 'Night shift loading';
-      } else if (isEveningShift) {
-        penaltyMultiplier = 1 + (penalties.evening / 100);
-        penaltyDescription = 'Evening shift loading';
+  if (penaltyRule && penaltyRule.penaltyLoading) {
+    penaltyMultiplier = 1 + (penaltyRule.penaltyLoading / 100);
+    penaltyDescription = penaltyRule.name;
+    rulesApplied.push(penaltyRule.name);
+  } else {
+    // Fall back to award-based penalties
+    switch (dayType) {
+      case 'saturday':
+        penaltyMultiplier = penalties.saturday;
+        penaltyDescription = 'Saturday penalty';
+        break;
+      case 'sunday':
+        penaltyMultiplier = penalties.sunday;
+        penaltyDescription = 'Sunday penalty';
+        break;
+      case 'public_holiday':
+        penaltyMultiplier = penalties.publicHoliday;
+        penaltyDescription = 'Public holiday penalty';
+        break;
+      case 'weekday':
+        // Evening/night loadings apply to weekdays
+        if (isNightShift) {
+          penaltyMultiplier = 1 + (penalties.night / 100);
+          penaltyDescription = 'Night shift loading';
+        } else if (isEveningShift) {
+          penaltyMultiplier = 1 + (penalties.evening / 100);
+          penaltyDescription = 'Evening shift loading';
+        }
+        break;
+    }
+  }
+  
+  // Apply special loadings if applicable (time-based)
+  let additionalLoadingPay = 0;
+  if (shiftStartHour !== undefined) {
+    for (const specialRule of specialRules) {
+      if (specialRule.timeRange && specialRule.penaltyLoading) {
+        if (isTimeInRange(shiftStartHour, specialRule.timeRange)) {
+          const loadingAmount = ordinaryHours * effectiveBaseRate * (specialRule.penaltyLoading / 100);
+          additionalLoadingPay += loadingAmount;
+          specialLoadings.push({ name: specialRule.name, amount: loadingAmount });
+          rulesApplied.push(specialRule.name);
+        }
       }
-      break;
+    }
   }
   
   // Apply penalty to ordinary hours (overtime has its own rates)
@@ -142,7 +231,7 @@ export function calculateDailyOvertime(
     overtimeReasons.push(penaltyDescription);
   }
   
-  const grossPay = ordinaryPay + totalOvertimePay;
+  const grossPay = ordinaryPay + totalOvertimePay + additionalLoadingPay;
   const effectiveHourlyRate = hoursWorked > 0 ? grossPay / hoursWorked : effectiveBaseRate;
   
   return {
@@ -156,11 +245,13 @@ export function calculateDailyOvertime(
     totalOvertimePay,
     penaltyLoading,
     penaltyPay,
+    specialLoadings,
     casualLoadingAmount: casualLoadingAmount * ordinaryHours,
     grossPay,
     effectiveHourlyRate,
     hasOvertime: totalOvertimeHours > 0,
     overtimeReason: overtimeReasons,
+    rulesApplied,
   };
 }
 

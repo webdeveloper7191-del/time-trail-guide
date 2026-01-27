@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,12 +11,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { 
   Plus, Clock, Percent, Edit2, Trash2, CheckCircle2, AlertCircle, 
   Zap, TrendingUp, Copy, Scale, Timer, DollarSign, Info,
-  Calendar, Moon, Sun, Star
+  Calendar, Moon, Sun, Star, Play, ChevronDown, ArrowRight, CircleDollarSign
 } from 'lucide-react';
+import { 
+  calculateDailyOvertime, 
+  setOvertimeRules, 
+  OvertimeBreakdown 
+} from '@/lib/unifiedOvertimeCalculator';
 
 // Overtime rule type definition
 export interface OvertimeRuleConfig {
@@ -153,6 +159,25 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
   const [rules, setRules] = useState<OvertimeRuleConfig[]>(defaultRules);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<OvertimeRuleConfig | null>(null);
+  const [isTestOpen, setIsTestOpen] = useState(true);
+  
+  // Test scenario state
+  const [testScenario, setTestScenario] = useState({
+    hoursWorked: 10,
+    baseHourlyRate: 28.50,
+    isCasual: false,
+    dayType: 'weekday' as 'weekday' | 'saturday' | 'sunday' | 'public_holiday',
+    isNightShift: false,
+    isEveningShift: false,
+    shiftStartHour: 9,
+  });
+  const [testResult, setTestResult] = useState<OvertimeBreakdown | null>(null);
+  const [isRunningTest, setIsRunningTest] = useState(false);
+  
+  // Sync rules with the calculator
+  useEffect(() => {
+    setOvertimeRules(rules);
+  }, [rules]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -393,6 +418,264 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
           </CardContent>
         </Card>
       </div>
+
+      {/* Test Scenario Section */}
+      <Collapsible open={isTestOpen} onOpenChange={setIsTestOpen}>
+        <Card className="border-l-4 border-l-emerald-500">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                    <Play className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Test Overtime Rules</CardTitle>
+                    <CardDescription>Run sample scenarios to see how your rules calculate pay</CardDescription>
+                  </div>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${isTestOpen ? 'rotate-180' : ''}`} />
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0 space-y-6">
+              {/* Test Inputs */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm">Hours Worked</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={testScenario.hoursWorked}
+                    onChange={(e) => setTestScenario(prev => ({ ...prev, hoursWorked: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">Base Hourly Rate ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={testScenario.baseHourlyRate}
+                    onChange={(e) => setTestScenario(prev => ({ ...prev, baseHourlyRate: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">Day Type</Label>
+                  <Select 
+                    value={testScenario.dayType} 
+                    onValueChange={(v) => setTestScenario(prev => ({ ...prev, dayType: v as typeof prev.dayType }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      <SelectItem value="weekday">Weekday</SelectItem>
+                      <SelectItem value="saturday">Saturday</SelectItem>
+                      <SelectItem value="sunday">Sunday</SelectItem>
+                      <SelectItem value="public_holiday">Public Holiday</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">Shift Start Hour</Label>
+                  <Select 
+                    value={testScenario.shiftStartHour.toString()} 
+                    onValueChange={(v) => setTestScenario(prev => ({ ...prev, shiftStartHour: parseInt(v) }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          {i.toString().padStart(2, '0')}:00
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Toggle Options */}
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2 p-3 rounded-lg border">
+                  <Switch
+                    checked={testScenario.isCasual}
+                    onCheckedChange={(checked) => setTestScenario(prev => ({ ...prev, isCasual: checked }))}
+                  />
+                  <Label className="text-sm">Casual Employee</Label>
+                </div>
+                <div className="flex items-center gap-2 p-3 rounded-lg border">
+                  <Switch
+                    checked={testScenario.isNightShift}
+                    onCheckedChange={(checked) => setTestScenario(prev => ({ ...prev, isNightShift: checked, isEveningShift: checked ? false : prev.isEveningShift }))}
+                  />
+                  <Label className="text-sm">Night Shift</Label>
+                </div>
+                <div className="flex items-center gap-2 p-3 rounded-lg border">
+                  <Switch
+                    checked={testScenario.isEveningShift}
+                    onCheckedChange={(checked) => setTestScenario(prev => ({ ...prev, isEveningShift: checked, isNightShift: checked ? false : prev.isNightShift }))}
+                  />
+                  <Label className="text-sm">Evening Shift</Label>
+                </div>
+              </div>
+
+              {/* Run Test Button */}
+              <Button 
+                onClick={() => {
+                  setIsRunningTest(true);
+                  const startTime = performance.now();
+                  const result = calculateDailyOvertime({
+                    ...testScenario,
+                    awardType: 'general',
+                  });
+                  const executionTime = performance.now() - startTime;
+                  setTestResult(result);
+                  setIsRunningTest(false);
+                  toast.success(`Test completed in ${executionTime.toFixed(2)}ms`, {
+                    description: `Gross pay: $${result.grossPay.toFixed(2)}`,
+                  });
+                }}
+                className="gap-2 w-full md:w-auto"
+                disabled={isRunningTest}
+              >
+                <Play className="h-4 w-4" />
+                Run Test Scenario
+              </Button>
+
+              {/* Test Results */}
+              {testResult && (
+                <div className="space-y-4">
+                  <Separator />
+                  
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 text-emerald-600 mb-1">
+                          <CircleDollarSign className="h-4 w-4" />
+                          <span className="text-xs font-medium uppercase">Gross Pay</span>
+                        </div>
+                        <p className="text-2xl font-bold">${testResult.grossPay.toFixed(2)}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 text-blue-600 mb-1">
+                          <Clock className="h-4 w-4" />
+                          <span className="text-xs font-medium uppercase">Effective Rate</span>
+                        </div>
+                        <p className="text-2xl font-bold">${testResult.effectiveHourlyRate.toFixed(2)}/hr</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 text-amber-600 mb-1">
+                          <TrendingUp className="h-4 w-4" />
+                          <span className="text-xs font-medium uppercase">Overtime Pay</span>
+                        </div>
+                        <p className="text-2xl font-bold">${testResult.totalOvertimePay.toFixed(2)}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 text-purple-600 mb-1">
+                          <Star className="h-4 w-4" />
+                          <span className="text-xs font-medium uppercase">Penalty Pay</span>
+                        </div>
+                        <p className="text-2xl font-bold">${testResult.penaltyPay.toFixed(2)}</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Detailed Breakdown */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Hours Breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="text-2xl font-bold">{testResult.ordinaryHours.toFixed(1)}h</p>
+                          <p className="text-xs text-muted-foreground">Ordinary Hours</p>
+                          <p className="text-sm text-muted-foreground">${testResult.ordinaryPay.toFixed(2)}</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-amber-500/10">
+                          <p className="text-2xl font-bold text-amber-600">{testResult.overtime15Hours.toFixed(1)}h</p>
+                          <p className="text-xs text-muted-foreground">OT @ 1.5x</p>
+                          <p className="text-sm text-amber-600">${testResult.overtime15Pay.toFixed(2)}</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-red-500/10">
+                          <p className="text-2xl font-bold text-red-600">{testResult.overtime20Hours.toFixed(1)}h</p>
+                          <p className="text-xs text-muted-foreground">OT @ 2x</p>
+                          <p className="text-sm text-red-600">${testResult.overtime20Pay.toFixed(2)}</p>
+                        </div>
+                      </div>
+
+                      {/* Rules Applied */}
+                      {testResult.rulesApplied.length > 0 && (
+                        <div className="pt-3 border-t">
+                          <p className="text-sm font-medium mb-2">Rules Applied</p>
+                          <div className="flex flex-wrap gap-2">
+                            {testResult.rulesApplied.map((rule, i) => (
+                              <Badge key={i} variant="secondary" className="gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-green-600" />
+                                {rule}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Special Loadings */}
+                      {testResult.specialLoadings.length > 0 && (
+                        <div className="pt-3 border-t">
+                          <p className="text-sm font-medium mb-2">Special Loadings Applied</p>
+                          <div className="space-y-2">
+                            {testResult.specialLoadings.map((loading, i) => (
+                              <div key={i} className="flex justify-between items-center p-2 rounded bg-indigo-500/10">
+                                <span className="text-sm">{loading.name}</span>
+                                <span className="font-medium text-indigo-600">+${loading.amount.toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Overtime Reasons */}
+                      {testResult.overtimeReason.length > 0 && (
+                        <div className="pt-3 border-t">
+                          <p className="text-sm font-medium mb-2">Calculation Notes</p>
+                          <div className="space-y-1">
+                            {testResult.overtimeReason.map((reason, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <ArrowRight className="h-3 w-3" />
+                                {reason}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Casual Loading */}
+                      {testResult.casualLoadingAmount > 0 && (
+                        <div className="pt-3 border-t">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Casual Loading (25%)</span>
+                            <span className="font-medium text-primary">+${testResult.casualLoadingAmount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       {/* Rules by Category */}
       <Accordion type="multiple" defaultValue={['daily', 'weekly', 'penalty', 'special']} className="space-y-4">
