@@ -11,6 +11,9 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Switch,
+  Tooltip,
+  Divider,
 } from '@mui/material';
 import {
   Search,
@@ -28,13 +31,18 @@ import {
   Trash2,
   Eye,
   Archive,
-  Send,
+  Power,
+  PowerOff,
+  Building2,
+  Palette,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FormTemplate, FORM_CATEGORIES } from '@/types/forms';
+import { DuplicateTemplateModal } from './DuplicateTemplateModal';
 import { mockFormTemplates } from '@/data/mockFormData';
+import { toast } from 'sonner';
 
 const categoryIcons: Record<string, React.ReactNode> = {
   safety: <Shield className="h-4 w-4" />,
@@ -47,6 +55,20 @@ const categoryIcons: Record<string, React.ReactNode> = {
   custom: <FileText className="h-4 w-4" />,
 };
 
+// Industry groups for filtering
+const INDUSTRY_GROUPS = [
+  { id: 'all', label: 'All Industries' },
+  { id: 'childcare', label: 'Childcare', pattern: 'childcare' },
+  { id: 'agedcare', label: 'Aged Care', pattern: 'agedcare' },
+  { id: 'hospital', label: 'Hospital', pattern: 'hospital' },
+  { id: 'retail', label: 'Retail', pattern: 'retail' },
+  { id: 'cleaning', label: 'Cleaning', pattern: 'cleaning' },
+  { id: 'hospitality', label: 'Hospitality', pattern: 'hospitality' },
+  { id: 'construction', label: 'Construction', pattern: 'construction' },
+  { id: 'security', label: 'Security', pattern: 'security' },
+  { id: 'general', label: 'General', pattern: 'template-[0-9]' },
+];
+
 interface FormTemplatesLibraryProps {
   onSelectTemplate: (template: FormTemplate) => void;
   onPreviewTemplate: (template: FormTemplate) => void;
@@ -54,12 +76,27 @@ interface FormTemplatesLibraryProps {
 }
 
 export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCreateNew }: FormTemplatesLibraryProps) {
-  const [templates, setTemplates] = useState<FormTemplate[]>(mockFormTemplates);
+  // Initialize templates with isEnabled default
+  const [templates, setTemplates] = useState<FormTemplate[]>(
+    mockFormTemplates.map(t => ({
+      ...t,
+      isEnabled: t.isEnabled ?? true,
+      isIndustryTemplate: t.id.includes('-childcare-') || t.id.includes('-agedcare-') || 
+                          t.id.includes('-hospital-') || t.id.includes('-retail-') ||
+                          t.id.includes('-cleaning-') || t.id.includes('-hospitality-') ||
+                          t.id.includes('-construction-') || t.id.includes('-security-') ||
+                          t.id.includes('-maintenance-'),
+    }))
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [enabledFilter, setEnabledFilter] = useState<string | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
+  const [templateToDuplicate, setTemplateToDuplicate] = useState<FormTemplate | null>(null);
 
   const filteredTemplates = useMemo(() => {
     return templates.filter(template => {
@@ -69,10 +106,27 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
       
       const matchesCategory = !selectedCategory || template.category === selectedCategory;
       const matchesStatus = !statusFilter || template.status === statusFilter;
+      
+      // Industry filter
+      let matchesIndustry = true;
+      if (selectedIndustry !== 'all') {
+        const group = INDUSTRY_GROUPS.find(g => g.id === selectedIndustry);
+        if (group?.pattern) {
+          matchesIndustry = new RegExp(group.pattern).test(template.id);
+        }
+      }
 
-      return matchesSearch && matchesCategory && matchesStatus;
+      // Enabled filter
+      let matchesEnabled = true;
+      if (enabledFilter === 'enabled') {
+        matchesEnabled = template.isEnabled !== false;
+      } else if (enabledFilter === 'disabled') {
+        matchesEnabled = template.isEnabled === false;
+      }
+
+      return matchesSearch && matchesCategory && matchesStatus && matchesIndustry && matchesEnabled;
     });
-  }, [templates, searchQuery, selectedCategory, statusFilter]);
+  }, [templates, searchQuery, selectedCategory, statusFilter, selectedIndustry, enabledFilter]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>, templateId: string) => {
     event.stopPropagation();
@@ -85,22 +139,32 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
     setSelectedTemplateId(null);
   };
 
-  const handleDuplicate = () => {
+  const handleToggleEnabled = (templateId: string, event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    setTemplates(prev =>
+      prev.map(t => {
+        if (t.id === templateId) {
+          const newEnabled = !t.isEnabled;
+          toast.success(newEnabled ? 'Template enabled' : 'Template disabled');
+          return { ...t, isEnabled: newEnabled };
+        }
+        return t;
+      })
+    );
+    handleMenuClose();
+  };
+
+  const handleOpenDuplicateModal = () => {
     const template = templates.find(t => t.id === selectedTemplateId);
     if (template) {
-      const duplicated: FormTemplate = {
-        ...template,
-        id: `template-${Date.now()}`,
-        name: `${template.name} (Copy)`,
-        status: 'draft',
-        version: 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        publishedAt: undefined,
-      };
-      setTemplates(prev => [duplicated, ...prev]);
+      setTemplateToDuplicate(template);
+      setDuplicateModalOpen(true);
     }
     handleMenuClose();
+  };
+
+  const handleDuplicateComplete = (newTemplate: FormTemplate) => {
+    setTemplates(prev => [newTemplate, ...prev]);
   };
 
   const handleArchive = () => {
@@ -109,11 +173,13 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
         t.id === selectedTemplateId ? { ...t, status: 'archived' as const } : t
       )
     );
+    toast.success('Template archived');
     handleMenuClose();
   };
 
   const handleDelete = () => {
     setTemplates(prev => prev.filter(t => t.id !== selectedTemplateId));
+    toast.success('Template deleted');
     handleMenuClose();
   };
 
@@ -129,6 +195,8 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
   const getCategoryLabel = (categoryId: string) => {
     return FORM_CATEGORIES.find(c => c.id === categoryId)?.label || categoryId;
   };
+
+  const selectedTemplate = selectedTemplateId ? templates.find(t => t.id === selectedTemplateId) : null;
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -159,10 +227,32 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
           sx={{ mb: 2 }}
         />
 
+        {/* Industry Filter */}
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
+            <Building2 size={14} className="mr-1" /> Industry:
+          </Typography>
+          {INDUSTRY_GROUPS.slice(0, 6).map(group => (
+            <Chip
+              key={group.id}
+              label={group.label}
+              size="small"
+              variant={selectedIndustry === group.id ? 'filled' : 'outlined'}
+              onClick={() => setSelectedIndustry(group.id)}
+            />
+          ))}
+          <Chip
+            label="More..."
+            size="small"
+            variant="outlined"
+            onClick={() => setSelectedIndustry(selectedIndustry === 'all' ? 'general' : 'all')}
+          />
+        </Stack>
+
         {/* Category Filters */}
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
           <Chip
-            label="All"
+            label="All Categories"
             size="small"
             variant={selectedCategory === null ? 'filled' : 'outlined'}
             onClick={() => setSelectedCategory(null)}
@@ -179,7 +269,7 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
           ))}
         </Stack>
 
-        {/* Status Filters */}
+        {/* Status & Enabled Filters */}
         <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
           <Chip
             label="All Status"
@@ -205,6 +295,23 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
             variant={statusFilter === 'archived' ? 'filled' : 'outlined'}
             onClick={() => setStatusFilter('archived')}
           />
+          <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+          <Chip
+            icon={<Power size={14} />}
+            label="Enabled"
+            size="small"
+            color={enabledFilter === 'enabled' ? 'success' : 'default'}
+            variant={enabledFilter === 'enabled' ? 'filled' : 'outlined'}
+            onClick={() => setEnabledFilter(enabledFilter === 'enabled' ? null : 'enabled')}
+          />
+          <Chip
+            icon={<PowerOff size={14} />}
+            label="Disabled"
+            size="small"
+            color={enabledFilter === 'disabled' ? 'error' : 'default'}
+            variant={enabledFilter === 'disabled' ? 'filled' : 'outlined'}
+            onClick={() => setEnabledFilter(enabledFilter === 'disabled' ? null : 'disabled')}
+          />
         </Stack>
       </Box>
 
@@ -214,23 +321,50 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
           {filteredTemplates.map(template => (
             <Card 
               key={template.id} 
-              className="cursor-pointer hover:shadow-md transition-shadow"
+              className={`cursor-pointer hover:shadow-md transition-shadow ${template.isEnabled === false ? 'opacity-60' : ''}`}
               onClick={() => onSelectTemplate(template)}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {categoryIcons[template.category]}
                     <Badge variant={getStatusColor(template.status)}>
                       {template.status}
                     </Badge>
+                    {template.isEnabled === false && (
+                      <Badge variant="outline" className="text-muted-foreground">
+                        <PowerOff className="h-3 w-3 mr-1" />
+                        Disabled
+                      </Badge>
+                    )}
+                    {template.isIndustryTemplate && (
+                      <Tooltip title="Industry Template - Duplicate to customize">
+                        <Badge variant="secondary">
+                          <Building2 className="h-3 w-3 mr-1" />
+                          Industry
+                        </Badge>
+                      </Tooltip>
+                    )}
                   </div>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, template.id)}
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </IconButton>
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Tooltip title={template.isEnabled !== false ? 'Disable template' : 'Enable template'}>
+                      <Switch
+                        size="small"
+                        checked={template.isEnabled !== false}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleToggleEnabled(template.id);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </Tooltip>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, template.id)}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </IconButton>
+                  </Stack>
                 </div>
                 <CardTitle className="text-base mt-2">{template.name}</CardTitle>
                 <CardDescription className="text-sm line-clamp-2">
@@ -238,7 +372,7 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-0">
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1, flexWrap: 'wrap' }}>
                   <Typography variant="caption" color="text.secondary">
                     {getCategoryLabel(template.category)}
                   </Typography>
@@ -250,6 +384,12 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
                   <Typography variant="caption" color="text.secondary">
                     {template.fields.length} fields
                   </Typography>
+                  {template.branding?.logo && (
+                    <>
+                      <Typography variant="caption" color="text.secondary">•</Typography>
+                      <Palette size={12} className="text-primary" />
+                    </>
+                  )}
                 </Stack>
                 
                 <Stack direction="row" spacing={1}>
@@ -316,10 +456,24 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
           <ListItemIcon><Edit className="h-4 w-4" /></ListItemIcon>
           <ListItemText>Edit</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleDuplicate}>
+        <Divider />
+        <MenuItem onClick={handleOpenDuplicateModal}>
           <ListItemIcon><Copy className="h-4 w-4" /></ListItemIcon>
-          <ListItemText>Duplicate</ListItemText>
+          <ListItemText>Duplicate & Customize</ListItemText>
         </MenuItem>
+        <MenuItem onClick={() => handleToggleEnabled(selectedTemplateId!)}>
+          <ListItemIcon>
+            {selectedTemplate?.isEnabled !== false ? (
+              <PowerOff className="h-4 w-4" />
+            ) : (
+              <Power className="h-4 w-4" />
+            )}
+          </ListItemIcon>
+          <ListItemText>
+            {selectedTemplate?.isEnabled !== false ? 'Disable' : 'Enable'}
+          </ListItemText>
+        </MenuItem>
+        <Divider />
         <MenuItem onClick={handleArchive}>
           <ListItemIcon><Archive className="h-4 w-4" /></ListItemIcon>
           <ListItemText>Archive</ListItemText>
@@ -329,6 +483,17 @@ export function FormTemplatesLibrary({ onSelectTemplate, onPreviewTemplate, onCr
           <ListItemText>Delete</ListItemText>
         </MenuItem>
       </Menu>
+
+      {/* Duplicate Modal */}
+      <DuplicateTemplateModal
+        open={duplicateModalOpen}
+        template={templateToDuplicate}
+        onClose={() => {
+          setDuplicateModalOpen(false);
+          setTemplateToDuplicate(null);
+        }}
+        onDuplicate={handleDuplicateComplete}
+      />
     </Box>
   );
 }
