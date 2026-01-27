@@ -1,12 +1,9 @@
 import { useState } from 'react';
-import { StaffMember, employmentTypeLabels, payRateTypeLabels } from '@/types/staff';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StaffMember, employmentTypeLabels, payRateTypeLabels, WeeklyAvailability } from '@/types/staff';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -21,7 +18,6 @@ import {
 } from '@/components/ui/collapsible';
 import {
   DollarSign,
-  Calendar,
   Clock,
   History,
   Award,
@@ -29,19 +25,16 @@ import {
   Settings2,
   ChevronDown,
   ChevronRight,
-  User,
   FileText,
   Plus,
   Trash2,
-  Info,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { StaffAwardRuleSection } from './StaffAwardRuleSection';
 import { PayConditionsHistorySheet } from './PayConditionsHistorySheet';
 import { PayRateComparisonSheet } from './PayRateComparisonSheet';
 import { UnifiedPayChangeSheet } from './UnifiedPayChangeSheet';
-import { locations } from '@/data/mockStaffData';
+import { InlineAvailabilityTable } from './InlineAvailabilityTable';
 
 interface StaffPayConditionsSectionProps {
   staff: StaffMember;
@@ -57,9 +50,6 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
   
   // Collapsible sections
   const [expandedSections, setExpandedSections] = useState<string[]>(['pay-overview', 'availability']);
-  
-  // Availability state
-  const [availabilityPattern, setAvailabilityPattern] = useState(staff.availabilityPattern);
   
   const payCondition = staff.currentPayCondition;
 
@@ -82,15 +72,6 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
     monthly: 'Monthly',
   };
 
-  const daysOfWeek = [
-    { key: 'monday', label: 'Monday' },
-    { key: 'tuesday', label: 'Tuesday' },
-    { key: 'wednesday', label: 'Wednesday' },
-    { key: 'thursday', label: 'Thursday' },
-    { key: 'friday', label: 'Friday' },
-    { key: 'saturday', label: 'Saturday' },
-    { key: 'sunday', label: 'Sunday' },
-  ];
 
   return (
     <div className="space-y-4">
@@ -280,7 +261,7 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
                 <div className="text-left">
                   <h3 className="font-semibold">Weekly Availability</h3>
                   <p className="text-sm text-muted-foreground">
-                    {staff.weeklyAvailability.filter(a => a.isAvailable).length} days available • {availabilityPattern === 'same_every_week' ? 'Same every week' : 'Alternate weekly'}
+                    {staff.weeklyAvailability.filter(a => a.isAvailable).length} days available • {staff.availabilityPattern === 'same_every_week' ? 'Same every week' : 'Alternate weekly'}
                   </p>
                 </div>
               </div>
@@ -294,94 +275,13 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
           <CollapsibleContent>
             <div className="px-6 pb-6 space-y-4">
               <Separator />
-              <RadioGroup 
-                value={availabilityPattern} 
-                onValueChange={(v) => setAvailabilityPattern(v as 'same_every_week' | 'alternate_weekly')} 
-                className="flex gap-6"
-              >
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="same_every_week" id="same" />
-                  <Label htmlFor="same" className="font-medium cursor-pointer">Same Every Week</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="alternate_weekly" id="alternate" />
-                  <Label htmlFor="alternate" className="font-medium cursor-pointer">Alternate Weekly (Week A / Week B)</Label>
-                </div>
-              </RadioGroup>
-
-              <div className="border rounded-lg overflow-hidden">
-                <div className="grid grid-cols-7 gap-0 bg-muted/50 text-sm font-medium">
-                  <div className="px-3 py-2">Day</div>
-                  <div className="px-3 py-2 text-center">Start</div>
-                  <div className="px-3 py-2 text-center">Finish</div>
-                  <div className="px-3 py-2 text-center">Hours</div>
-                  <div className="px-3 py-2 text-center">Break</div>
-                  <div className="px-3 py-2 text-center">Area</div>
-                  <div className="px-3 py-2"></div>
-                </div>
-                {daysOfWeek.map((day) => {
-                  const availability = staff.weeklyAvailability.find(a => a.dayOfWeek === day.key);
-                  
-                  return (
-                    <div key={day.key} className="grid grid-cols-7 gap-0 border-t items-center">
-                      <div className="px-3 py-2">
-                        <p className="font-medium text-sm">{day.label}</p>
-                      </div>
-                      {availability?.isAvailable ? (
-                        <>
-                          <div className="px-2 py-2">
-                            <Input 
-                              type="time" 
-                              defaultValue={availability.startTime} 
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                          <div className="px-2 py-2">
-                            <Input 
-                              type="time" 
-                              defaultValue={availability.endTime}
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                          <div className="px-3 py-2 text-center text-sm">
-                            8h
-                          </div>
-                          <div className="px-3 py-2 text-center text-sm">
-                            {availability.breakMinutes || 30} min
-                          </div>
-                          <div className="px-2 py-2">
-                            <Select defaultValue={availability.area || 'Main Centre'}>
-                              <SelectTrigger className="h-8 text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {locations.map((loc) => (
-                                  <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="px-2 py-2 text-center">
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="col-span-5 px-3 py-2">
-                            <Button variant="outline" size="sm" className="h-7 text-xs">
-                              <Plus className="h-3 w-3 mr-1" />
-                              Add Hours
-                            </Button>
-                          </div>
-                          <div className="px-2 py-2"></div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <InlineAvailabilityTable 
+                staff={staff} 
+                onSave={(availability, pattern) => {
+                  console.log('Saving availability:', { availability, pattern });
+                  // TODO: Integrate with API to save changes
+                }}
+              />
             </div>
           </CollapsibleContent>
         </div>
