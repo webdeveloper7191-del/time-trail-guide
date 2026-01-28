@@ -420,19 +420,22 @@ export function PlanManagementPanel({
                             >
                               Preview
                             </Button>
-                            {!template.isSystem && (
-                              <Button 
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                            <Button 
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (template.isSystem) {
+                                  // For system templates, duplicate first then edit
+                                  onDuplicateTemplate(template);
+                                } else {
                                   onEditTemplate(template);
-                                }}
-                              >
-                                <Edit className="h-4 w-4 mr-1" />
-                                Edit
-                              </Button>
-                            )}
+                                }
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              {template.isSystem ? 'Customize' : 'Edit'}
+                            </Button>
                             <Button 
                               size="sm"
                               onClick={(e) => {
