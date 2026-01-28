@@ -20,7 +20,7 @@ import { CreateTemplateDrawer } from '@/components/performance/CreateTemplateDra
 import { QuickAssignPlanDrawer } from '@/components/performance/QuickAssignPlanDrawer';
 import { PerformanceTaskManagementPanel } from '@/components/performance/PerformanceTaskManagementPanel';
 import { CreateGoalModal } from '@/components/performance/CreateGoalModal';
-import { LMSPanel } from '@/components/performance/LMSPanel';
+import { LMSAdminModule } from '@/components/performance/LMSAdminModule';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
@@ -316,13 +316,9 @@ export default function PerformanceManagement() {
             </TabsContent>
 
             <TabsContent value="lms" className="mt-6">
-              <LMSPanel
+              <LMSAdminModule
                 currentUserId={CURRENT_USER_ID}
                 staff={mockStaff}
-                goals={goals}
-                isAdmin={true}
-                onCreateLearningGoal={() => setShowCreateGoalModal(true)}
-                onUpdateGoalProgress={updateGoalProgress}
               />
             </TabsContent>
 
