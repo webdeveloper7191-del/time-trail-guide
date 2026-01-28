@@ -420,6 +420,19 @@ export function PlanManagementPanel({
                             >
                               Preview
                             </Button>
+                            {!template.isSystem && (
+                              <Button 
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEditTemplate(template);
+                                }}
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit
+                              </Button>
+                            )}
                             <Button 
                               size="sm"
                               onClick={(e) => {
@@ -432,7 +445,7 @@ export function PlanManagementPanel({
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button size="sm" variant="ghost">
+                                <Button size="sm" variant="ghost" className="ml-auto">
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -445,15 +458,6 @@ export function PlanManagementPanel({
                                   Bulk Assign
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                {!template.isSystem && (
-                                  <DropdownMenuItem onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEditTemplate(template);
-                                  }}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit Template
-                                  </DropdownMenuItem>
-                                )}
                                 <DropdownMenuItem onClick={(e) => {
                                   e.stopPropagation();
                                   onDuplicateTemplate(template);
