@@ -44,10 +44,10 @@ interface GoalsTrackerProps {
 }
 
 const priorityColors: Record<string, { bg: string; text: string }> = {
-  low: { bg: 'grey.100', text: 'grey.600' },
-  medium: { bg: 'warning.light', text: 'warning.dark' },
-  high: { bg: 'warning.main', text: 'warning.contrastText' },
-  critical: { bg: 'error.light', text: 'error.dark' },
+  low: { bg: 'grey.50', text: 'grey.700' },
+  medium: { bg: 'rgba(251, 191, 36, 0.15)', text: 'rgb(161, 98, 7)' },
+  high: { bg: 'rgba(249, 115, 22, 0.12)', text: 'rgb(194, 65, 12)' },
+  critical: { bg: 'rgba(239, 68, 68, 0.12)', text: 'rgb(185, 28, 28)' },
 };
 
 const statusColors: Record<string, { bg: string; text: string }> = {
