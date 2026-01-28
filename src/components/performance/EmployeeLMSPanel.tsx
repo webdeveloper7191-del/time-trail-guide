@@ -426,7 +426,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                     <Card key={enrollment.id}>
                       <CardContent className="p-4">
                         {course.complianceRequired && (
-                          <Badge variant="destructive" className="text-xs mb-2">Required</Badge>
+                          <Badge className="text-xs mb-2 bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">Required</Badge>
                         )}
                         <h4 className="font-semibold line-clamp-2">{course.title}</h4>
                         <p className="text-sm text-muted-foreground mt-1 line-clamp-2">

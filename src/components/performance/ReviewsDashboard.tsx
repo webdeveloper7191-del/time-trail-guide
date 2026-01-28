@@ -35,11 +35,11 @@ interface ReviewsDashboardProps {
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
-  draft: { bg: 'grey.100', text: 'grey.600' },
-  pending_self: { bg: 'warning.light', text: 'warning.dark' },
-  pending_manager: { bg: 'info.light', text: 'info.dark' },
-  completed: { bg: 'success.light', text: 'success.dark' },
-  cancelled: { bg: 'grey.200', text: 'grey.500' },
+  draft: { bg: 'rgba(107, 114, 128, 0.1)', text: 'rgb(75, 85, 99)' },
+  pending_self: { bg: 'rgba(251, 191, 36, 0.15)', text: 'rgb(161, 98, 7)' },
+  pending_manager: { bg: 'rgba(59, 130, 246, 0.12)', text: 'rgb(29, 78, 216)' },
+  completed: { bg: 'rgba(34, 197, 94, 0.12)', text: 'rgb(21, 128, 61)' },
+  cancelled: { bg: 'rgba(107, 114, 128, 0.1)', text: 'rgb(107, 114, 128)' },
 };
 
 const statusIcons: Record<string, React.ReactNode> = {
@@ -103,7 +103,7 @@ export function ReviewsDashboard({
               <Typography variant="subtitle2" fontWeight={600} color="warning.dark">
                 Action Required
               </Typography>
-              <Chip label={actionRequired.length} size="small" color="warning" />
+              <Chip label={actionRequired.length} size="small" sx={{ bgcolor: 'rgba(251, 191, 36, 0.15)', color: 'rgb(161, 98, 7)' }} />
             </Stack>
             <Stack spacing={1.5}>
               {actionRequired.map((review) => {

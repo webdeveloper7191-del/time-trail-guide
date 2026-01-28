@@ -90,6 +90,42 @@ const taskTypeIcons: Record<PerformanceTaskType, React.ReactElement> = {
   training_task: <GraduationCap className="h-4 w-4" />,
 };
 
+// Light color styles for task type chips
+const getTaskTypeChipStyle = (type: PerformanceTaskType) => {
+  const styles: Record<string, { bgcolor: string; color: string; borderColor: string }> = {
+    goal_action: { bgcolor: 'rgba(34, 197, 94, 0.1)', color: 'rgb(21, 128, 61)', borderColor: 'rgba(34, 197, 94, 0.3)' },
+    review_followup: { bgcolor: 'rgba(107, 114, 128, 0.1)', color: 'rgb(75, 85, 99)', borderColor: 'rgba(107, 114, 128, 0.3)' },
+    development_task: { bgcolor: 'rgba(59, 130, 246, 0.1)', color: 'rgb(29, 78, 216)', borderColor: 'rgba(59, 130, 246, 0.3)' },
+    coaching_task: { bgcolor: 'rgba(34, 197, 94, 0.1)', color: 'rgb(21, 128, 61)', borderColor: 'rgba(34, 197, 94, 0.3)' },
+    pip_action: { bgcolor: 'rgba(239, 68, 68, 0.1)', color: 'rgb(185, 28, 28)', borderColor: 'rgba(239, 68, 68, 0.3)' },
+    training_task: { bgcolor: 'rgba(251, 191, 36, 0.1)', color: 'rgb(161, 98, 7)', borderColor: 'rgba(251, 191, 36, 0.3)' },
+  };
+  return styles[type] || { bgcolor: 'rgba(107, 114, 128, 0.1)', color: 'rgb(75, 85, 99)', borderColor: 'rgba(107, 114, 128, 0.3)' };
+};
+
+// Light color styles for task status chips
+const getTaskStatusChipStyle = (status: PerformanceTaskStatus) => {
+  const styles: Record<PerformanceTaskStatus, { bgcolor: string; color: string }> = {
+    open: { bgcolor: 'rgba(34, 197, 94, 0.12)', color: 'rgb(21, 128, 61)' },
+    in_progress: { bgcolor: 'rgba(59, 130, 246, 0.12)', color: 'rgb(29, 78, 216)' },
+    blocked: { bgcolor: 'rgba(239, 68, 68, 0.12)', color: 'rgb(185, 28, 28)' },
+    completed: { bgcolor: 'rgba(34, 197, 94, 0.12)', color: 'rgb(21, 128, 61)' },
+    cancelled: { bgcolor: 'rgba(107, 114, 128, 0.1)', color: 'rgb(107, 114, 128)' },
+  };
+  return styles[status];
+};
+
+// Light color styles for task priority chips
+const getTaskPriorityChipStyle = (priority: PerformanceTaskPriority) => {
+  const styles: Record<PerformanceTaskPriority, { bgcolor: string; color: string; borderColor: string }> = {
+    low: { bgcolor: 'rgba(107, 114, 128, 0.08)', color: 'rgb(107, 114, 128)', borderColor: 'rgba(107, 114, 128, 0.3)' },
+    medium: { bgcolor: 'rgba(251, 191, 36, 0.12)', color: 'rgb(161, 98, 7)', borderColor: 'rgba(251, 191, 36, 0.4)' },
+    high: { bgcolor: 'rgba(249, 115, 22, 0.1)', color: 'rgb(194, 65, 12)', borderColor: 'rgba(249, 115, 22, 0.4)' },
+    critical: { bgcolor: 'rgba(239, 68, 68, 0.1)', color: 'rgb(185, 28, 28)', borderColor: 'rgba(239, 68, 68, 0.4)' },
+  };
+  return styles[priority];
+};
+
 const staffOptions = mockStaff.map(s => ({
   id: s.id,
   name: `${s.firstName} ${s.lastName}`,
@@ -485,13 +521,13 @@ export function PerformanceTaskManagementPanel({
 
         {/* Stats */}
         <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-          <Chip label={`Total: ${stats.total}`} size="small" />
-          <Chip label={`Open: ${stats.open}`} size="small" color="info" />
-          <Chip label={`In Progress: ${stats.inProgress}`} size="small" color="primary" />
-          <Chip label={`Blocked: ${stats.blocked}`} size="small" color="error" />
-          <Chip label={`Completed: ${stats.completed}`} size="small" color="success" />
+          <Chip label={`Total: ${stats.total}`} size="small" sx={{ bgcolor: 'rgba(107, 114, 128, 0.1)', color: 'rgb(55, 65, 81)' }} />
+          <Chip label={`Open: ${stats.open}`} size="small" sx={{ bgcolor: 'rgba(34, 197, 94, 0.12)', color: 'rgb(21, 128, 61)' }} />
+          <Chip label={`In Progress: ${stats.inProgress}`} size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.12)', color: 'rgb(29, 78, 216)' }} />
+          <Chip label={`Blocked: ${stats.blocked}`} size="small" sx={{ bgcolor: 'rgba(239, 68, 68, 0.12)', color: 'rgb(185, 28, 28)' }} />
+          <Chip label={`Completed: ${stats.completed}`} size="small" sx={{ bgcolor: 'rgba(34, 197, 94, 0.12)', color: 'rgb(21, 128, 61)' }} />
           {stats.overdue > 0 && (
-            <Chip label={`Overdue: ${stats.overdue}`} size="small" color="error" variant="outlined" />
+            <Chip label={`Overdue: ${stats.overdue}`} size="small" variant="outlined" sx={{ borderColor: 'rgb(239, 68, 68)', color: 'rgb(185, 28, 28)' }} />
           )}
         </Stack>
 
@@ -680,9 +716,12 @@ export function PerformanceTaskManagementPanel({
                             icon={taskTypeIcons[task.type]}
                             label={performanceTaskTypeConfig[task.type].label}
                             size="small"
-                            color={performanceTaskTypeConfig[task.type].color as any}
                             variant="outlined"
-                            sx={{ height: 22, '& .MuiChip-label': { fontSize: '0.7rem' } }}
+                            sx={{ 
+                              height: 22, 
+                              '& .MuiChip-label': { fontSize: '0.7rem' },
+                              ...getTaskTypeChipStyle(task.type),
+                            }}
                           />
                         </Box>
                         
@@ -690,8 +729,10 @@ export function PerformanceTaskManagementPanel({
                           <Chip
                             label={performanceTaskStatusConfig[task.status].label}
                             size="small"
-                            color={performanceTaskStatusConfig[task.status].color as any}
-                            sx={{ height: 22 }}
+                            sx={{ 
+                              height: 22,
+                              ...getTaskStatusChipStyle(task.status),
+                            }}
                           />
                         </Box>
                         
@@ -700,9 +741,11 @@ export function PerformanceTaskManagementPanel({
                             icon={<Flag size={10} />}
                             label={performanceTaskPriorityConfig[task.priority].label}
                             size="small"
-                            color={performanceTaskPriorityConfig[task.priority].color as any}
                             variant="outlined"
-                            sx={{ height: 22 }}
+                            sx={{ 
+                              height: 22,
+                              ...getTaskPriorityChipStyle(task.priority),
+                            }}
                           />
                         </Box>
                         

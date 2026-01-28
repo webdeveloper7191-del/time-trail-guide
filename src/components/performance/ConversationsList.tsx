@@ -227,7 +227,11 @@ export function ConversationsList({
                               variant="outlined"
                               icon={<CheckCircle2 size={12} />}
                               label="Completed"
-                              color="success"
+                              sx={{ 
+                                bgcolor: 'rgba(34, 197, 94, 0.1)', 
+                                color: 'rgb(21, 128, 61)', 
+                                borderColor: 'rgba(34, 197, 94, 0.3)' 
+                              }}
                             />
                           )}
                         </Stack>

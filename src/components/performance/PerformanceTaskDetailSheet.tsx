@@ -154,7 +154,7 @@ export function PerformanceTaskDetailSheet({
                 </Select>
               </Stack>
               {isOverdue && (
-                <Chip label="Overdue" size="small" color="error" />
+                <Chip label="Overdue" size="small" sx={{ bgcolor: 'rgba(239, 68, 68, 0.12)', color: 'rgb(185, 28, 28)' }} />
               )}
             </Stack>
           </Box>

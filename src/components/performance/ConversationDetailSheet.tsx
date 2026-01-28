@@ -157,9 +157,9 @@ export function ConversationDetailSheet({
                       color={typeColors[conversation.type] as any}
                     />
                     {conversation.completed && (
-                      <Chip label="Completed" size="small" color="success" />
+                      <Chip label="Completed" size="small" sx={{ bgcolor: 'rgba(34, 197, 94, 0.12)', color: 'rgb(21, 128, 61)' }} />
                     )}
-                    {isUpcoming && <Chip label="Upcoming" size="small" color="info" />}
+                    {isUpcoming && <Chip label="Upcoming" size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.12)', color: 'rgb(29, 78, 216)' }} />}
                   </Stack>
                 </Box>
               </Stack>

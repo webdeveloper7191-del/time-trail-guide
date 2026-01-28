@@ -94,7 +94,7 @@ export function CourseDetailSheet({
                   {difficultyLabels[course.difficulty]}
                 </Badge>
                 {course.complianceRequired && (
-                  <Badge variant="destructive" className="text-xs">Required</Badge>
+                  <Badge className="text-xs bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">Required</Badge>
                 )}
               </div>
               <h2 className="text-xl font-bold leading-tight">{course.title}</h2>

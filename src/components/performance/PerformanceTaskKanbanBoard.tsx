@@ -239,8 +239,13 @@ export function PerformanceTaskKanbanBoard({
                           <Chip
                             label="!"
                             size="small"
-                            color="error"
-                            sx={{ height: 20, minWidth: 20, '& .MuiChip-label': { px: 0.5 } }}
+                            sx={{ 
+                              height: 20, 
+                              minWidth: 20, 
+                              '& .MuiChip-label': { px: 0.5 },
+                              bgcolor: 'rgba(239, 68, 68, 0.12)', 
+                              color: 'rgb(185, 28, 28)' 
+                            }}
                           />
                         )}
                       </Stack>

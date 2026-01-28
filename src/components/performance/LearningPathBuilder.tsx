@@ -433,7 +433,7 @@ export function LearningPathBuilder({ open, onClose, existingPath, onSave }: Lea
                                     {sc.course.category}
                                   </Badge>
                                   {sc.course.complianceRequired && (
-                                    <Badge variant="destructive" className="text-xs">Required</Badge>
+                                    <Badge className="text-xs bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">Required</Badge>
                                   )}
                                 </div>
                               </div>
