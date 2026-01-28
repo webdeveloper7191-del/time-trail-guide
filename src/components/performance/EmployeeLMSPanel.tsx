@@ -23,6 +23,7 @@ import {
   BookMarked,
   Sparkles,
   Star,
+  Eye,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,8 @@ import {
 import { mockCourses, mockEnrollments, mockLearnerAnalytics, mockCertificates, mockLearningPaths } from '@/data/mockLmsData';
 import { MobileCoursePlayer } from '@/components/performance/MobileCoursePlayer';
 import { CoursePlayer } from '@/components/performance/CoursePlayer';
+import { CourseDetailSheet } from '@/components/performance/CourseDetailSheet';
+import { CourseCompletionCelebration } from '@/components/performance/CourseCompletionCelebration';
 import { GamificationPanel } from '@/components/performance/GamificationPanel';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
@@ -51,6 +54,10 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showCoursePlayer, setShowCoursePlayer] = useState(false);
   const [showMobilePlayer, setShowMobilePlayer] = useState(false);
+  const [showCourseDetail, setShowCourseDetail] = useState(false);
+  const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
+  const [completedCourse, setCompletedCourse] = useState<Course | null>(null);
+  const [completedEnrollment, setCompletedEnrollment] = useState<Enrollment | null>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>(mockEnrollments);
   const isMobile = useIsMobile();
 
@@ -87,7 +94,26 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
       updatedAt: new Date().toISOString(),
     };
     setEnrollments(prev => [...prev, newEnrollment]);
+    setShowCourseDetail(false);
     toast.success(`Enrolled in ${course.title}`);
+  };
+
+  const handleViewCourseDetail = (course: Course) => {
+    setSelectedCourse(course);
+    setShowCourseDetail(true);
+  };
+
+  const handleStartFromDetail = (enrollment: Enrollment) => {
+    const course = mockCourses.find(c => c.id === enrollment.courseId);
+    if (course) {
+      setShowCourseDetail(false);
+      setSelectedCourse(course);
+      if (isMobile) {
+        setShowMobilePlayer(true);
+      } else {
+        setShowCoursePlayer(true);
+      }
+    }
   };
 
   const handleContinueLearning = (enrollment: Enrollment) => {
@@ -150,6 +176,9 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   }, []);
 
   const handleCourseComplete = useCallback((enrollmentId: string) => {
+    const enrollment = enrollments.find(e => e.id === enrollmentId);
+    const course = enrollment ? mockCourses.find(c => c.id === enrollment.courseId) : null;
+    
     setEnrollments(prev => prev.map(e => {
       if (e.id !== enrollmentId) return e;
       return {
@@ -160,11 +189,24 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
         updatedAt: new Date().toISOString(),
       };
     }));
+    
+    // Close players and show celebration
     setShowCoursePlayer(false);
     setShowMobilePlayer(false);
+    
+    if (course && enrollment) {
+      setCompletedCourse(course);
+      setCompletedEnrollment({
+        ...enrollment,
+        status: 'completed',
+        progress: 100,
+        completedAt: new Date().toISOString(),
+      });
+      setShowCompletionCelebration(true);
+    }
+    
     setSelectedCourse(null);
-    toast.success('🎉 Course completed! Certificate earned.');
-  }, []);
+  }, [enrollments]);
 
   const handleAssessmentSubmit = useCallback(async (
     enrollmentId: string, 
@@ -308,14 +350,25 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                               </div>
                               <Progress value={enrollment.progress} className="h-1.5" />
                             </div>
-                            <Button 
-                              size="sm" 
-                              className="mt-2 w-full"
-                              onClick={() => handleContinueLearning(enrollment)}
-                            >
-                              <Play className="h-3 w-3 mr-1" />
-                              Continue
-                            </Button>
+                            <div className="flex gap-2 mt-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => handleViewCourseDetail(course)}
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                Details
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => handleContinueLearning(enrollment)}
+                              >
+                                <Play className="h-3 w-3 mr-1" />
+                                Continue
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
@@ -353,9 +406,16 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                           <Clock className="h-3 w-3" />
                           {course.duration} min
                         </div>
-                        <Button size="sm" className="w-full mt-3" onClick={() => handleContinueLearning(enrollment)}>
-                          Start Course
-                        </Button>
+                        <div className="flex gap-2 mt-3">
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => handleViewCourseDetail(course)}>
+                            <Eye className="h-3 w-3 mr-1" />
+                            Preview
+                          </Button>
+                          <Button size="sm" className="flex-1" onClick={() => handleContinueLearning(enrollment)}>
+                            <Play className="h-3 w-3 mr-1" />
+                            Start
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   );
@@ -438,7 +498,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
               const isEnrolled = !!enrollment;
               
               return (
-                <Card key={course.id} className="hover:shadow-md transition-shadow">
+                <Card key={course.id} className="hover:shadow-md transition-shadow group cursor-pointer" onClick={() => handleViewCourseDetail(course)}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <Badge variant="outline">{course.category}</Badge>
@@ -447,7 +507,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                         <span className="text-xs">{course.rating}</span>
                       </div>
                     </div>
-                    <h4 className="font-semibold line-clamp-2">{course.title}</h4>
+                    <h4 className="font-semibold line-clamp-2 group-hover:text-primary transition-colors">{course.title}</h4>
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                       {course.description}
                     </p>
@@ -456,15 +516,39 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                         {difficultyLabels[course.difficulty]}
                       </Badge>
                       <span>{course.duration} min</span>
+                      <span>{course.modules.length} modules</span>
                     </div>
-                    <Button 
-                      className="w-full mt-3" 
-                      size="sm"
-                      variant={isEnrolled ? "outline" : "default"}
-                      onClick={() => isEnrolled ? handleContinueLearning(enrollment) : handleEnroll(course)}
-                    >
-                      {isEnrolled ? 'Continue' : 'Enroll Now'}
-                    </Button>
+                    {isEnrolled && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">{enrollment.progress}% complete</span>
+                        </div>
+                        <Progress value={enrollment.progress} className="h-1.5" />
+                      </div>
+                    )}
+                    <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleViewCourseDetail(course)}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        Preview
+                      </Button>
+                      <Button 
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => isEnrolled ? handleContinueLearning(enrollment) : handleEnroll(course)}
+                      >
+                        {isEnrolled ? (
+                          <>
+                            <Play className="h-3 w-3 mr-1" />
+                            Continue
+                          </>
+                        ) : 'Enroll Now'}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -533,6 +617,41 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
         onProgressUpdate={handleProgressUpdate}
         onModuleComplete={handleModuleComplete}
         onCourseComplete={handleCourseComplete}
+      />
+
+      {/* Course Detail Sheet */}
+      <CourseDetailSheet
+        open={showCourseDetail}
+        course={selectedCourse}
+        enrollment={selectedCourse ? getEnrollmentForCourse(selectedCourse.id) || null : null}
+        onClose={() => {
+          setShowCourseDetail(false);
+          setSelectedCourse(null);
+        }}
+        onEnroll={handleEnroll}
+        onStartCourse={handleStartFromDetail}
+      />
+
+      {/* Course Completion Celebration */}
+      <CourseCompletionCelebration
+        open={showCompletionCelebration}
+        course={completedCourse}
+        enrollment={completedEnrollment}
+        onClose={() => {
+          setShowCompletionCelebration(false);
+          setCompletedCourse(null);
+          setCompletedEnrollment(null);
+        }}
+        onViewCertificate={() => {
+          setShowCompletionCelebration(false);
+          setActiveTab('certificates');
+        }}
+        onBrowseMore={() => {
+          setShowCompletionCelebration(false);
+          setCompletedCourse(null);
+          setCompletedEnrollment(null);
+          setActiveTab('catalog');
+        }}
       />
     </div>
   );
