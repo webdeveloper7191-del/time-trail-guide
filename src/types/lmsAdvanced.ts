@@ -266,6 +266,7 @@ export interface ContentAuthoringState {
   type: string;
   url?: string;
   file?: File;
+  thumbnailUrl?: string; // For video/image preview
   duration?: number;
   description?: string;
   order: number;

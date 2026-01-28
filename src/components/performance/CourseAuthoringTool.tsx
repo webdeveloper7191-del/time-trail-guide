@@ -46,6 +46,7 @@ import {
   AssessmentAuthoringState,
 } from '@/types/lmsAdvanced';
 import { toast } from 'sonner';
+import { ContentUploader } from './ContentUploader';
 
 interface CourseAuthoringToolProps {
   open: boolean;
@@ -589,52 +590,75 @@ export function CourseAuthoringTool({
                                   const typeConfig = contentTypeConfig.find(t => t.type === content.type);
                                   const Icon = typeConfig?.icon || FileText;
                                   
-                                  return (
+                                    return (
                                     <div
                                       key={content.id}
-                                      className="flex items-center gap-3 p-3 border rounded-lg bg-background hover:bg-muted/50"
+                                      className="p-4 border rounded-lg bg-background space-y-3"
                                     >
-                                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                                      <div className={cn("p-2 rounded", typeConfig?.color)}>
-                                        <Icon className="h-4 w-4" />
-                                      </div>
-                                      <div className="flex-1 grid gap-2 md:grid-cols-4">
-                                        <Input
-                                          value={content.title}
-                                          onChange={(e) => updateContent(moduleIdx, contentIdx, { title: e.target.value })}
-                                          placeholder="Content title"
-                                          className="md:col-span-2"
-                                        />
-                                        <Select
-                                          value={content.type}
-                                          onValueChange={(v) => updateContent(moduleIdx, contentIdx, { type: v })}
+                                      {/* Content Header Row */}
+                                      <div className="flex items-center gap-3">
+                                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                                        <div className={cn("p-2 rounded", typeConfig?.color)}>
+                                          <Icon className="h-4 w-4" />
+                                        </div>
+                                        <div className="flex-1 grid gap-2 md:grid-cols-4">
+                                          <Input
+                                            value={content.title}
+                                            onChange={(e) => updateContent(moduleIdx, contentIdx, { title: e.target.value })}
+                                            placeholder="Content title"
+                                            className="md:col-span-2"
+                                          />
+                                          <Select
+                                            value={content.type}
+                                            onValueChange={(v) => updateContent(moduleIdx, contentIdx, { type: v })}
+                                          >
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {contentTypeConfig.map((type) => (
+                                                <SelectItem key={type.type} value={type.type}>
+                                                  {type.label}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                          <Input
+                                            type="number"
+                                            value={content.duration || ''}
+                                            onChange={(e) => updateContent(moduleIdx, contentIdx, { duration: parseInt(e.target.value) || 0 })}
+                                            placeholder="Duration (min)"
+                                          />
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                          onClick={() => removeContent(moduleIdx, contentIdx)}
                                         >
-                                          <SelectTrigger>
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {contentTypeConfig.map((type) => (
-                                              <SelectItem key={type.type} value={type.type}>
-                                                {type.label}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                        <Input
-                                          type="number"
-                                          value={content.duration || ''}
-                                          onChange={(e) => updateContent(moduleIdx, contentIdx, { duration: parseInt(e.target.value) || 0 })}
-                                          placeholder="Duration"
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                      
+                                      {/* Asset Upload Section */}
+                                      <div className="ml-10">
+                                        <ContentUploader
+                                          contentType={content.type}
+                                          currentUrl={content.url}
+                                          onAssetChange={(url, file) => {
+                                            updateContent(moduleIdx, contentIdx, { 
+                                              url, 
+                                              file,
+                                            });
+                                          }}
+                                          onUploadStatusChange={(status, progress) => {
+                                            updateContent(moduleIdx, contentIdx, { 
+                                              uploadStatus: status,
+                                              uploadProgress: progress,
+                                            });
+                                          }}
                                         />
                                       </div>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                        onClick={() => removeContent(moduleIdx, contentIdx)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
                                     </div>
                                   );
                                 })}
