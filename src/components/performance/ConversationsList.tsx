@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
+import React from 'react';
+import { 
+  Box, 
+  Stack, 
+  Typography, 
+  Chip,
+  Button as MuiButton,
+  Avatar,
+  Divider,
+} from '@mui/material';
+import { Card } from '@/components/mui/Card';
 import { 
   Conversation, 
   ConversationType,
@@ -24,7 +28,6 @@ import {
   StickyNote,
   ListChecks
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface ConversationsListProps {
   conversations: Conversation[];
@@ -34,20 +37,20 @@ interface ConversationsListProps {
   onViewConversation: (conversation: Conversation) => void;
 }
 
-const typeColors: Record<ConversationType, string> = {
-  one_on_one: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  check_in: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  coaching: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  feedback: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  career: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
+const typeColors: Record<ConversationType, { bg: string; text: string }> = {
+  one_on_one: { bg: 'info.light', text: 'info.dark' },
+  check_in: { bg: 'success.light', text: 'success.dark' },
+  coaching: { bg: 'secondary.light', text: 'secondary.dark' },
+  feedback: { bg: 'warning.light', text: 'warning.dark' },
+  career: { bg: 'primary.light', text: 'primary.dark' },
 };
 
 const typeIcons: Record<ConversationType, React.ReactNode> = {
-  one_on_one: <Users className="h-3.5 w-3.5" />,
-  check_in: <CheckCircle2 className="h-3.5 w-3.5" />,
-  coaching: <Video className="h-3.5 w-3.5" />,
-  feedback: <MessageSquare className="h-3.5 w-3.5" />,
-  career: <Calendar className="h-3.5 w-3.5" />,
+  one_on_one: <Users size={14} />,
+  check_in: <CheckCircle2 size={14} />,
+  coaching: <Video size={14} />,
+  feedback: <MessageSquare size={14} />,
+  career: <Calendar size={14} />,
 };
 
 export function ConversationsList({ 
@@ -59,7 +62,6 @@ export function ConversationsList({
 }: ConversationsListProps) {
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
-  // Separate upcoming and past conversations
   const now = new Date();
   const upcoming = conversations
     .filter(c => !c.completed && !isPast(parseISO(c.scheduledDate)))
@@ -77,46 +79,48 @@ export function ConversationsList({
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <MessageSquare className="h-5 w-5 text-primary" />
-            </div>
-            Continuous Conversations
-          </h2>
-          <p className="text-sm text-muted-foreground">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {/* Header */}
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
+              <MessageSquare size={20} style={{ color: 'var(--primary)' }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>Continuous Conversations</Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
             Schedule and track 1:1s, check-ins, and coaching sessions
-          </p>
-        </div>
-        <Button onClick={onScheduleConversation} className="shadow-sm">
-          <Plus className="h-4 w-4 mr-2" />
+          </Typography>
+        </Box>
+        <MuiButton variant="contained" startIcon={<Plus size={16} />} onClick={onScheduleConversation}>
           Schedule Meeting
-        </Button>
-      </div>
+        </MuiButton>
+      </Stack>
 
       {/* Upcoming Meetings */}
-      <div className="space-y-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+      <Box>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="overline" color="text.secondary" fontWeight={600}>
             Upcoming
-          </h3>
-          <span className="text-sm text-muted-foreground">{upcoming.length} meetings</span>
-        </div>
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {upcoming.length} meetings
+          </Typography>
+        </Stack>
         
         {upcoming.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-8 text-center">
-              <Calendar className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No upcoming meetings</p>
-              <Button variant="outline" className="mt-4" onClick={onScheduleConversation}>
+          <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <Calendar size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px' }} />
+              <Typography color="text.secondary">No upcoming meetings</Typography>
+              <MuiButton variant="outlined" sx={{ mt: 2 }} onClick={onScheduleConversation}>
                 Schedule a meeting
-              </Button>
-            </CardContent>
+              </MuiButton>
+            </Box>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <Stack spacing={1.5}>
             {upcoming.map((conv) => {
               const staffMember = getStaffMember(conv.staffId);
               const isManager = conv.managerId === currentUserId;
@@ -126,63 +130,71 @@ export function ConversationsList({
               return (
                 <Card 
                   key={conv.id}
-                  className={cn(
-                    "hover:shadow-md transition-all cursor-pointer",
-                    isToday(meetingDate) && "border-primary/50 bg-primary/5"
-                  )}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '&:hover': { boxShadow: 3 },
+                    ...(isToday(meetingDate) && { 
+                      borderColor: 'primary.main', 
+                      bgcolor: 'primary.50' 
+                    })
+                  }}
                   onClick={() => onViewConversation(conv)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      <div className="text-center min-w-[60px]">
-                        <p className="text-xs font-medium text-muted-foreground uppercase">
+                  <Box sx={{ p: 2 }}>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Box sx={{ textAlign: 'center', minWidth: 60 }}>
+                        <Typography variant="overline" color="text.secondary">
                           {getDateLabel(conv.scheduledDate)}
-                        </p>
-                        <p className="text-lg font-bold">
+                        </Typography>
+                        <Typography variant="h6" fontWeight={700}>
                           {format(meetingDate, 'h:mm a')}
-                        </p>
-                      </div>
+                        </Typography>
+                      </Box>
 
-                      <div className="h-12 w-px bg-border" />
+                      <Divider orientation="vertical" flexItem />
 
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={otherPerson?.avatar} />
-                        <AvatarFallback>
-                          {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
-                        </AvatarFallback>
+                      <Avatar src={otherPerson?.avatar} sx={{ width: 40, height: 40 }}>
+                        {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
                       </Avatar>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold truncate">{conv.title}</p>
-                          <Badge className={typeColors[conv.type]}>
-                            {typeIcons[conv.type]}
-                            <span className="ml-1">{conversationTypeLabels[conv.type]}</span>
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
+                      <Box flex={1} minWidth={0}>
+                        <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
+                          <Typography variant="subtitle2" fontWeight={600} noWrap>
+                            {conv.title}
+                          </Typography>
+                          <Chip
+                            size="small"
+                            icon={typeIcons[conv.type] as any}
+                            label={conversationTypeLabels[conv.type]}
+                            sx={{ 
+                              bgcolor: typeColors[conv.type]?.bg,
+                              color: typeColors[conv.type]?.text,
+                            }}
+                          />
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
                           with {otherPerson?.firstName} {otherPerson?.lastName} • {conv.duration} min
-                        </p>
-                      </div>
+                        </Typography>
+                      </Box>
 
-                      <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
-                    </div>
-                  </CardContent>
+                      <ChevronRight size={20} style={{ color: 'var(--muted-foreground)' }} />
+                    </Stack>
+                  </Box>
                 </Card>
               );
             })}
-          </div>
+          </Stack>
         )}
-      </div>
+      </Box>
 
       {/* Past Meetings */}
       {past.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+        <Box>
+          <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
             Past Meetings ({past.length})
-          </h3>
+          </Typography>
           
-          <div className="space-y-3">
+          <Stack spacing={1.5}>
             {past.slice(0, 5).map((conv) => {
               const staffMember = getStaffMember(conv.staffId);
               const isManager = conv.managerId === currentUserId;
@@ -191,55 +203,67 @@ export function ConversationsList({
               return (
                 <Card 
                   key={conv.id}
-                  className="hover:shadow-sm transition-all cursor-pointer opacity-80"
+                  sx={{ 
+                    cursor: 'pointer',
+                    opacity: 0.85,
+                    '&:hover': { boxShadow: 2 }
+                  }}
                   onClick={() => onViewConversation(conv)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={otherPerson?.avatar} />
-                        <AvatarFallback>
-                          {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
-                        </AvatarFallback>
+                  <Box sx={{ p: 2 }}>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar src={otherPerson?.avatar} sx={{ width: 40, height: 40 }}>
+                        {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
                       </Avatar>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium truncate">{conv.title}</p>
+                      <Box flex={1} minWidth={0}>
+                        <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
+                          <Typography variant="body2" fontWeight={500} noWrap>
+                            {conv.title}
+                          </Typography>
                           {conv.completed && (
-                            <Badge variant="outline" className="text-green-600">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Completed
-                            </Badge>
+                            <Chip
+                              size="small"
+                              variant="outlined"
+                              icon={<CheckCircle2 size={12} />}
+                              label="Completed"
+                              color="success"
+                            />
                           )}
-                        </div>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span>{format(parseISO(conv.scheduledDate), 'MMM d, yyyy')}</span>
+                        </Stack>
+                        <Stack direction="row" alignItems="center" spacing={2}>
+                          <Typography variant="caption" color="text.secondary">
+                            {format(parseISO(conv.scheduledDate), 'MMM d, yyyy')}
+                          </Typography>
                           {conv.notes.length > 0 && (
-                            <span className="flex items-center gap-1">
-                              <StickyNote className="h-3.5 w-3.5" />
-                              {conv.notes.length} notes
-                            </span>
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <StickyNote size={14} style={{ color: 'var(--muted-foreground)' }} />
+                              <Typography variant="caption" color="text.secondary">
+                                {conv.notes.length} notes
+                              </Typography>
+                            </Stack>
                           )}
                           {conv.actionItems.length > 0 && (
-                            <span className="flex items-center gap-1">
-                              <ListChecks className="h-3.5 w-3.5" />
-                              {conv.actionItems.length} action items
-                            </span>
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <ListChecks size={14} style={{ color: 'var(--muted-foreground)' }} />
+                              <Typography variant="caption" color="text.secondary">
+                                {conv.actionItems.length} action items
+                              </Typography>
+                            </Stack>
                           )}
-                        </div>
-                      </div>
+                        </Stack>
+                      </Box>
 
-                      <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
-                    </div>
-                  </CardContent>
+                      <ChevronRight size={20} style={{ color: 'var(--muted-foreground)' }} />
+                    </Stack>
+                  </Box>
                 </Card>
               );
             })}
-          </div>
-        </div>
+          </Stack>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 

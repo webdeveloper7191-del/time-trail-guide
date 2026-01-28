@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  Box, 
+  Stack, 
+  Typography, 
+  Chip,
+  Button as MuiButton,
+  Avatar,
+  ToggleButtonGroup,
+  ToggleButton,
+} from '@mui/material';
+import { Card } from '@/components/mui/Card';
 import { 
   Feedback, 
   FeedbackType,
@@ -19,7 +26,6 @@ import {
   Lock,
   Plus
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { GiveFeedbackDrawer } from './GiveFeedbackDrawer';
 
 interface FeedbackPanelProps {
@@ -31,18 +37,18 @@ interface FeedbackPanelProps {
   onViewChange: (view: 'received' | 'given' | 'all') => void;
 }
 
-const typeColors: Record<FeedbackType, string> = {
-  praise: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  constructive: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  coaching: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  general: 'bg-muted text-muted-foreground',
+const typeColors: Record<FeedbackType, { bg: string; text: string }> = {
+  praise: { bg: 'success.light', text: 'success.dark' },
+  constructive: { bg: 'warning.light', text: 'warning.dark' },
+  coaching: { bg: 'info.light', text: 'info.dark' },
+  general: { bg: 'grey.100', text: 'grey.600' },
 };
 
 const typeIcons: Record<FeedbackType, React.ReactNode> = {
-  praise: <ThumbsUp className="h-3.5 w-3.5" />,
-  constructive: <Lightbulb className="h-3.5 w-3.5" />,
-  coaching: <MessageCircle className="h-3.5 w-3.5" />,
-  general: <MessageCircle className="h-3.5 w-3.5" />,
+  praise: <ThumbsUp size={14} />,
+  constructive: <Lightbulb size={14} />,
+  coaching: <MessageCircle size={14} />,
+  general: <MessageCircle size={14} />,
 };
 
 export function FeedbackPanel({ 
@@ -64,113 +70,128 @@ export function FeedbackPanel({
   });
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <MessageSquareHeart className="h-5 w-5 text-primary" />
-            </div>
-            Feedback & Recognition
-          </h2>
-          <p className="text-sm text-muted-foreground">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {/* Header */}
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
+              <MessageSquareHeart size={20} style={{ color: 'var(--primary)' }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>Feedback & Recognition</Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
             Give and receive feedback from your team
-          </p>
-        </div>
-        <Button onClick={() => setShowFeedbackDrawer(true)} className="shadow-sm">
-          <Plus className="h-4 w-4 mr-2" />
+          </Typography>
+        </Box>
+        <MuiButton variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowFeedbackDrawer(true)}>
           Give Feedback
-        </Button>
-      </div>
+        </MuiButton>
+      </Stack>
 
-      {/* View Toggle - Pills Style */}
-      <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">
-        {(['received', 'given', 'all'] as const).map((v) => (
-          <Button
-            key={v}
-            variant={view === v ? 'default' : 'ghost'}
-            size="sm"
-            className={cn(
-              "rounded-md px-4",
-              view === v ? "shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-            onClick={() => onViewChange(v)}
-          >
-            {v.charAt(0).toUpperCase() + v.slice(1)}
-          </Button>
-        ))}
-      </div>
+      {/* View Toggle */}
+      <ToggleButtonGroup
+        value={view}
+        exclusive
+        onChange={(_, newView) => newView && onViewChange(newView)}
+        size="small"
+        sx={{ 
+          bgcolor: 'grey.100', 
+          p: 0.5, 
+          borderRadius: 2,
+          '& .MuiToggleButton-root': {
+            border: 'none',
+            borderRadius: 1.5,
+            px: 2,
+            py: 0.75,
+            textTransform: 'capitalize',
+            '&.Mui-selected': {
+              bgcolor: 'background.paper',
+              boxShadow: 1,
+              '&:hover': { bgcolor: 'background.paper' },
+            },
+          },
+        }}
+      >
+        <ToggleButton value="received">Received</ToggleButton>
+        <ToggleButton value="given">Given</ToggleButton>
+        <ToggleButton value="all">All</ToggleButton>
+      </ToggleButtonGroup>
 
       {/* Feedback List */}
       {filteredFeedback.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-8 text-center">
-            <Heart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">
+        <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
+          <Box sx={{ py: 4, textAlign: 'center' }}>
+            <Heart size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px' }} />
+            <Typography color="text.secondary">
               {view === 'received' ? 'No feedback received yet' : 
                view === 'given' ? "You haven't given any feedback yet" : 
                'No feedback yet'}
-            </p>
+            </Typography>
             {view !== 'given' && (
-              <Button variant="outline" className="mt-4" onClick={() => setShowFeedbackDrawer(true)}>
+              <MuiButton variant="outlined" sx={{ mt: 2 }} onClick={() => setShowFeedbackDrawer(true)}>
                 Give your first feedback
-              </Button>
+              </MuiButton>
             )}
-          </CardContent>
+          </Box>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <Stack spacing={2}>
           {filteredFeedback.map((item) => {
             const fromStaff = getStaffMember(item.fromStaffId);
             const toStaff = getStaffMember(item.toStaffId);
             const isReceived = item.toStaffId === currentUserId;
 
             return (
-              <Card key={item.id} className="hover:shadow-sm transition-all">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={isReceived ? fromStaff?.avatar : toStaff?.avatar} />
-                      <AvatarFallback>
-                        {isReceived 
-                          ? `${fromStaff?.firstName?.[0]}${fromStaff?.lastName?.[0]}`
-                          : `${toStaff?.firstName?.[0]}${toStaff?.lastName?.[0]}`
-                        }
-                      </AvatarFallback>
+              <Card key={item.id} sx={{ '&:hover': { boxShadow: 2 } }}>
+                <Box sx={{ p: 2 }}>
+                  <Stack direction="row" alignItems="flex-start" spacing={2}>
+                    <Avatar src={isReceived ? fromStaff?.avatar : toStaff?.avatar} sx={{ width: 40, height: 40 }}>
+                      {isReceived 
+                        ? `${fromStaff?.firstName?.[0]}${fromStaff?.lastName?.[0]}`
+                        : `${toStaff?.firstName?.[0]}${toStaff?.lastName?.[0]}`
+                      }
                     </Avatar>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-medium">
+                    <Box flex={1} minWidth={0}>
+                      <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" mb={0.5}>
+                        <Typography variant="body2" fontWeight={500}>
                           {isReceived 
                             ? `${fromStaff?.firstName} ${fromStaff?.lastName}` 
                             : `To: ${toStaff?.firstName} ${toStaff?.lastName}`
                           }
-                        </span>
-                        <Badge className={typeColors[item.type]}>
-                          {typeIcons[item.type]}
-                          <span className="ml-1">{feedbackTypeLabels[item.type]}</span>
-                        </Badge>
+                        </Typography>
+                        <Chip
+                          size="small"
+                          icon={typeIcons[item.type] as any}
+                          label={feedbackTypeLabels[item.type]}
+                          sx={{ 
+                            bgcolor: typeColors[item.type]?.bg,
+                            color: typeColors[item.type]?.text,
+                          }}
+                        />
                         {item.isPrivate && (
-                          <Badge variant="outline" className="text-xs">
-                            <Lock className="h-3 w-3 mr-1" />
-                            Private
-                          </Badge>
+                          <Chip
+                            size="small"
+                            variant="outlined"
+                            icon={<Lock size={12} />}
+                            label="Private"
+                          />
                         )}
-                      </div>
+                      </Stack>
 
-                      <p className="text-sm mt-2">{item.message}</p>
+                      <Typography variant="body2" mt={1}>{item.message}</Typography>
 
-                      <p className="text-xs text-muted-foreground mt-3">
+                      <Typography variant="caption" color="text.secondary" mt={1.5} display="block">
                         {formatDistanceToNow(parseISO(item.createdAt), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
               </Card>
             );
           })}
-        </div>
+        </Stack>
       )}
 
       {/* Give Feedback Drawer */}
@@ -181,7 +202,7 @@ export function FeedbackPanel({
         currentUserId={currentUserId}
         onSendFeedback={onSendFeedback}
       />
-    </div>
+    </Box>
   );
 }
 
