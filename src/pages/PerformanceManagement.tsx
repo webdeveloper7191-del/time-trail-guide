@@ -192,17 +192,40 @@ export default function PerformanceManagement() {
   };
 
   const handleDuplicateTemplate = (template: PerformancePlanTemplate) => {
-    const duplicated = { ...template, name: `${template.name} (Copy)`, isSystem: false };
-    setEditingTemplate(duplicated as PerformancePlanTemplate);
+    // Deep clone with new IDs for all nested items
+    const duplicated: PerformancePlanTemplate = {
+      ...template,
+      id: `tpl-custom-${Date.now()}`,
+      name: `${template.name} (Copy)`,
+      isSystem: false,
+      goals: template.goals.map(g => ({
+        ...g,
+        id: `g-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        milestones: g.milestones.map(m => ({ ...m })),
+      })),
+      reviews: template.reviews.map(r => ({
+        ...r,
+        id: `r-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      })),
+      conversations: template.conversations.map(c => ({
+        ...c,
+        id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      })),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setEditingTemplate(duplicated);
     setShowCreateTemplateDrawer(true);
-    toast.info('Editing duplicate - make changes and save');
+    toast.info('Customize this template and save as your own');
   };
 
   const handleSaveTemplate = async (template: Omit<PerformancePlanTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
     // In a real app, this would save to backend
     console.log('Saving template:', template);
+    const isEditing = editingTemplate !== null;
     setShowCreateTemplateDrawer(false);
     setEditingTemplate(null);
+    toast.success(isEditing ? 'Template updated successfully!' : 'Template created successfully!');
   };
 
   const handleAssignPlanSubmit = async (data: {
