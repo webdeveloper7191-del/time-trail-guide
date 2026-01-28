@@ -65,6 +65,7 @@ export default function PerformanceManagement() {
     fetchReviews, fetchGoals, fetchFeedback, fetchConversations,
     createGoal, updateGoal, updateGoalProgress, deleteGoal,
     createFeedback, submitSelfReview, completeManagerReview,
+    createReview, createConversation,
     addConversationNote, completeConversation
   } = usePerformanceData();
 
@@ -550,9 +551,7 @@ export default function PerformanceManagement() {
         staff={mockStaff}
         managerId={CURRENT_USER_ID}
         onSubmit={async (data) => {
-          console.log('Creating conversation:', data);
-          toast.success('1:1 conversation scheduled successfully!');
-          setShowScheduleConversationModal(false);
+          await createConversation(data);
         }}
       />
 
@@ -563,9 +562,7 @@ export default function PerformanceManagement() {
         staff={mockStaff}
         reviewerId={CURRENT_USER_ID}
         onSubmit={async (data) => {
-          console.log('Creating review:', data);
-          toast.success('Performance review initiated!');
-          setShowStartReviewModal(false);
+          await createReview(data);
         }}
       />
     </div>
