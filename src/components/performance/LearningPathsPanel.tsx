@@ -19,6 +19,8 @@ import {
   Briefcase,
   ArrowRight,
   CheckCircle2,
+  UserPlus,
+  BarChart3,
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -28,8 +30,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { LearningPath, Course } from '@/types/lms';
+import { StaffMember } from '@/types/staff';
 import { mockCourses } from '@/data/mockLmsData';
+import { mockStaff } from '@/data/mockStaffData';
 import { LearningPathBuilder } from './LearningPathBuilder';
+import { AssignLearningPathDrawer } from './AssignLearningPathDrawer';
+import { LearningPathProgressSheet, PathEnrollment } from './LearningPathProgressSheet';
 import { toast } from 'sonner';
 
 // Mock learning paths data
@@ -72,18 +78,66 @@ const mockLearningPaths: LearningPath[] = [
   },
 ];
 
-// Mock enrollment stats per path
-const mockPathStats: Record<string, { enrolled: number; completed: number; inProgress: number }> = {
-  'path-1': { enrolled: 45, completed: 32, inProgress: 10 },
-  'path-2': { enrolled: 12, completed: 5, inProgress: 6 },
-  'path-3': { enrolled: 28, completed: 20, inProgress: 7 },
-};
+// Mock path enrollments
+const mockPathEnrollments: PathEnrollment[] = [
+  {
+    id: 'pe-1',
+    pathId: 'path-1',
+    staffId: 'staff-1',
+    status: 'in_progress',
+    progress: 66,
+    courseProgress: [
+      { courseId: 'course-1', status: 'completed', progress: 100 },
+      { courseId: 'course-2', status: 'completed', progress: 100 },
+      { courseId: 'course-3', status: 'not_started', progress: 0 },
+    ],
+    assignedBy: 'admin',
+    assignedAt: '2024-01-15T10:00:00Z',
+    dueDate: '2024-03-15',
+    startedAt: '2024-01-16T09:00:00Z',
+  },
+  {
+    id: 'pe-2',
+    pathId: 'path-1',
+    staffId: 'staff-2',
+    status: 'completed',
+    progress: 100,
+    courseProgress: [
+      { courseId: 'course-1', status: 'completed', progress: 100 },
+      { courseId: 'course-2', status: 'completed', progress: 100 },
+      { courseId: 'course-3', status: 'completed', progress: 100 },
+    ],
+    assignedBy: 'admin',
+    assignedAt: '2024-01-10T10:00:00Z',
+    dueDate: '2024-02-28',
+    startedAt: '2024-01-11T09:00:00Z',
+    completedAt: '2024-02-20T14:30:00Z',
+  },
+  {
+    id: 'pe-3',
+    pathId: 'path-1',
+    staffId: 'staff-3',
+    status: 'not_started',
+    progress: 0,
+    courseProgress: [
+      { courseId: 'course-1', status: 'not_started', progress: 0 },
+      { courseId: 'course-2', status: 'not_started', progress: 0 },
+      { courseId: 'course-3', status: 'not_started', progress: 0 },
+    ],
+    assignedBy: 'admin',
+    assignedAt: '2024-02-01T10:00:00Z',
+    dueDate: '2024-02-10',
+  },
+];
 
 export function LearningPathsPanel() {
   const [paths, setPaths] = useState<LearningPath[]>(mockLearningPaths);
+  const [enrollments, setEnrollments] = useState<PathEnrollment[]>(mockPathEnrollments);
   const [searchQuery, setSearchQuery] = useState('');
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingPath, setEditingPath] = useState<LearningPath | undefined>();
+  const [assigningPath, setAssigningPath] = useState<LearningPath | null>(null);
+  const [viewingProgressPath, setViewingProgressPath] = useState<LearningPath | null>(null);
 
   const filteredPaths = paths.filter(path =>
     path.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -139,6 +193,42 @@ export function LearningPathsPanel() {
     setEditingPath(undefined);
   };
 
+  const handleAssignPath = (pathId: string, staffIds: string[], dueDate?: Date) => {
+    const path = paths.find(p => p.id === pathId);
+    if (!path) return;
+
+    const newEnrollments: PathEnrollment[] = staffIds.map(staffId => ({
+      id: `pe-${Date.now()}-${staffId}`,
+      pathId,
+      staffId,
+      status: 'not_started' as const,
+      progress: 0,
+      courseProgress: path.courseIds.map(courseId => ({
+        courseId,
+        status: 'not_started' as const,
+        progress: 0,
+      })),
+      assignedBy: 'current-user',
+      assignedAt: new Date().toISOString(),
+      dueDate: dueDate?.toISOString().split('T')[0],
+    }));
+
+    setEnrollments(prev => [...prev, ...newEnrollments]);
+  };
+
+  const getPathStats = (pathId: string) => {
+    const pathEnrollments = enrollments.filter(e => e.pathId === pathId);
+    return {
+      enrolled: pathEnrollments.length,
+      completed: pathEnrollments.filter(e => e.status === 'completed').length,
+      inProgress: pathEnrollments.filter(e => e.status === 'in_progress').length,
+    };
+  };
+
+  const getExistingAssignments = (pathId: string) => {
+    return enrollments.filter(e => e.pathId === pathId).map(e => e.staffId);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -192,7 +282,7 @@ export function LearningPathsPanel() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {Object.values(mockPathStats).reduce((sum, s) => sum + s.enrolled, 0)}
+                  {enrollments.length}
                 </p>
                 <p className="text-xs text-muted-foreground">Total Enrollments</p>
               </div>
@@ -207,7 +297,7 @@ export function LearningPathsPanel() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {Object.values(mockPathStats).reduce((sum, s) => sum + s.completed, 0)}
+                  {enrollments.filter(e => e.status === 'completed').length}
                 </p>
                 <p className="text-xs text-muted-foreground">Completions</p>
               </div>
@@ -234,7 +324,7 @@ export function LearningPathsPanel() {
           </div>
         ) : (
           filteredPaths.map(path => {
-            const stats = mockPathStats[path.id] || { enrolled: 0, completed: 0, inProgress: 0 };
+            const stats = getPathStats(path.id);
             const completionRate = stats.enrolled > 0 
               ? Math.round((stats.completed / stats.enrolled) * 100) 
               : 0;
@@ -262,6 +352,10 @@ export function LearningPathsPanel() {
                         <DropdownMenuItem onClick={() => handleEditPath(path)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Path
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setViewingProgressPath(path)}>
+                          <BarChart3 className="h-4 w-4 mr-2" />
+                          View Progress
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDuplicatePath(path)}>
                           <Copy className="h-4 w-4 mr-2" />
@@ -359,13 +453,17 @@ export function LearningPathsPanel() {
                       variant="outline" 
                       size="sm" 
                       className="flex-1"
-                      onClick={() => handleEditPath(path)}
+                      onClick={() => setViewingProgressPath(path)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
-                      View
+                      Progress
                     </Button>
-                    <Button size="sm" className="flex-1">
-                      <Users className="h-4 w-4 mr-1" />
+                    <Button 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => setAssigningPath(path)}
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
                       Assign
                     </Button>
                   </div>
@@ -383,6 +481,29 @@ export function LearningPathsPanel() {
         existingPath={editingPath}
         onSave={handleSavePath}
       />
+
+      {/* Assign Learning Path Drawer */}
+      {assigningPath && (
+        <AssignLearningPathDrawer
+          open={!!assigningPath}
+          onClose={() => setAssigningPath(null)}
+          path={assigningPath}
+          staff={mockStaff}
+          existingAssignments={getExistingAssignments(assigningPath.id)}
+          onAssign={handleAssignPath}
+        />
+      )}
+
+      {/* Learning Path Progress Sheet */}
+      {viewingProgressPath && (
+        <LearningPathProgressSheet
+          open={!!viewingProgressPath}
+          onClose={() => setViewingProgressPath(null)}
+          path={viewingProgressPath}
+          enrollments={enrollments.filter(e => e.pathId === viewingProgressPath.id)}
+          staff={mockStaff}
+        />
+      )}
     </div>
   );
 }
