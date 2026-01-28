@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -11,7 +10,6 @@ import {
   GraduationCap, 
   Users, 
   Plus,
-  Search,
   BarChart3,
   Clock,
   CheckCircle2,
@@ -20,10 +18,10 @@ import {
   PenTool,
   FileText,
   Package,
+  Route,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
-  Course, 
   Enrollment,
   difficultyLabels,
   difficultyColors,
@@ -32,6 +30,7 @@ import { StaffMember } from '@/types/staff';
 import { mockCourses, mockEnrollments } from '@/data/mockLmsData';
 import { LMSAdminPanel } from './LMSAdminPanel';
 import { CourseAuthoringTool } from './CourseAuthoringTool';
+import { LearningPathsPanel } from './LearningPathsPanel';
 import { CourseAuthoringState } from '@/types/lmsAdvanced';
 import { toast } from 'sonner';
 import { isPast, parseISO } from 'date-fns';
@@ -159,9 +158,12 @@ export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+        <TabsList className="grid w-full max-w-xl grid-cols-4">
           <TabsTrigger value="overview" className="gap-2">
             <BarChart3 className="h-4 w-4" /> Overview
+          </TabsTrigger>
+          <TabsTrigger value="paths" className="gap-2">
+            <Route className="h-4 w-4" /> Learning Paths
           </TabsTrigger>
           <TabsTrigger value="authoring" className="gap-2">
             <PenTool className="h-4 w-4" /> Create Course
@@ -177,6 +179,11 @@ export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
             staff={staff}
             onAssignCourse={handleAssignCourse}
           />
+        </TabsContent>
+
+        {/* Learning Paths Tab */}
+        <TabsContent value="paths" className="mt-6">
+          <LearningPathsPanel />
         </TabsContent>
 
         {/* Authoring Tab */}
