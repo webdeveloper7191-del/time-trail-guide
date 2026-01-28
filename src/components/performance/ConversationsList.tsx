@@ -77,28 +77,33 @@ export function ConversationsList({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
+    <div className="space-y-8">
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <MessageSquare className="h-5 w-5 text-primary" />
+            </div>
             Continuous Conversations
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground">
             Schedule and track 1:1s, check-ins, and coaching sessions
           </p>
         </div>
-        <Button onClick={onScheduleConversation}>
+        <Button onClick={onScheduleConversation} className="shadow-sm">
           <Plus className="h-4 w-4 mr-2" />
           Schedule Meeting
         </Button>
       </div>
 
       {/* Upcoming Meetings */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-          Upcoming ({upcoming.length})
-        </h3>
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            Upcoming
+          </h3>
+          <span className="text-sm text-muted-foreground">{upcoming.length} meetings</span>
+        </div>
         
         {upcoming.length === 0 ? (
           <Card className="border-dashed">

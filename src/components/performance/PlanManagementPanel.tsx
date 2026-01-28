@@ -126,15 +126,17 @@ export function PlanManagementPanel({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <FileText className="h-5 w-5 text-primary" />
+            </div>
             Performance Plans
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground">
             Create and manage development plans for team members
           </p>
         </div>
@@ -143,97 +145,105 @@ export function PlanManagementPanel({
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'assigned' | 'templates')}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <TabsList>
-            <TabsTrigger value="assigned" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Assigned Plans ({mockAssignedPlans.length})
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Plan Templates ({performancePlanTemplates.length})
-            </TabsTrigger>
-          </TabsList>
+          <div className="border-b border-border/60 flex-1">
+            <TabsList className="h-11 bg-transparent p-0 gap-1">
+              <TabsTrigger 
+                value="assigned" 
+                className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Assigned Plans
+                <Badge variant="secondary" className="ml-2 text-xs">{mockAssignedPlans.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="templates" 
+                className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Plan Templates
+                <Badge variant="secondary" className="ml-2 text-xs">{performancePlanTemplates.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+          </div>
           
           {activeTab === 'templates' && (
-            <Button onClick={onCreateTemplate}>
+            <Button onClick={onCreateTemplate} className="shadow-sm">
               <Plus className="h-4 w-4 mr-2" />
               Create Template
             </Button>
           )}
         </div>
 
-        {/* Filters */}
-        <Card className="mt-4">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={activeTab === 'assigned' ? 'Search by employee or plan...' : 'Search templates...'}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              
-              {activeTab === 'templates' && (
-                <Select value={industryFilter} onValueChange={setIndustryFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <Building2 className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Industry" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Industries</SelectItem>
-                    {planIndustries.map((ind) => (
-                      <SelectItem key={ind} value={ind}>{ind}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+        {/* Filters - Clean Design */}
+        <div className="flex items-center gap-3 flex-wrap mt-6">
+          <div className="relative flex-1 min-w-56 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={activeTab === 'assigned' ? 'Search by employee or plan...' : 'Search templates...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 border-border/60"
+            />
+          </div>
+          
+          {activeTab === 'templates' && (
+            <Select value={industryFilter} onValueChange={setIndustryFilter}>
+              <SelectTrigger className="w-40 border-border/60">
+                <Building2 className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Industry" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Industries</SelectItem>
+                {planIndustries.map((ind) => (
+                  <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Plan Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {Object.entries(planTypeLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-44 border-border/60">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Plan Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {Object.entries(planTypeLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-              {activeTab === 'assigned' && (
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    {Object.entries(planStatusLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+          {activeTab === 'assigned' && (
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-36 border-border/60">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                {Object.entries(planStatusLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
 
         {/* Assigned Plans Tab */}
-        <TabsContent value="assigned" className="mt-4">
+        <TabsContent value="assigned" className="mt-6">
           {filteredPlans.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <Card className="border-dashed border-2 bg-transparent">
+              <CardContent className="py-16 text-center">
+                <div className="p-4 rounded-full bg-muted/50 w-fit mx-auto mb-4">
+                  <FileText className="h-10 w-10 text-muted-foreground" />
+                </div>
                 <h3 className="text-lg font-medium mb-2">No Plans Found</h3>
-                <p className="text-muted-foreground mb-4">
+                <p className="text-muted-foreground mb-5 max-w-sm mx-auto">
                   {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
-                    ? 'Try adjusting your filters'
+                    ? 'Try adjusting your filters to find what you\'re looking for'
                     : 'Start by assigning a plan template to a team member'}
                 </p>
-                <Button onClick={() => setActiveTab('templates')}>
+                <Button onClick={() => setActiveTab('templates')} className="shadow-sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Browse Templates
                 </Button>
@@ -243,19 +253,18 @@ export function PlanManagementPanel({
             <div className="grid gap-4">
               {filteredPlans.map((plan) => {
                 const staffMember = getStaffById(plan.staffId);
-                const assignedBy = getStaffById(plan.assignedBy);
                 
                 return (
                   <Card 
                     key={plan.id} 
-                    className="cursor-pointer hover:border-primary/50 transition-colors"
+                    className="group border-0 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
                     onClick={() => onViewPlan(plan)}
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="p-5">
                       <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12">
+                        <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
                           <AvatarImage src={staffMember?.avatar} />
-                          <AvatarFallback>
+                          <AvatarFallback className="bg-primary/10 text-primary font-medium">
                             {staffMember?.firstName[0]}{staffMember?.lastName[0]}
                           </AvatarFallback>
                         </Avatar>
@@ -263,16 +272,16 @@ export function PlanManagementPanel({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <h3 className="font-medium">
+                              <h3 className="font-semibold text-foreground">
                                 {staffMember?.firstName} {staffMember?.lastName}
                               </h3>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-sm text-muted-foreground mt-0.5">
                                 {plan.templateName}
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Badge className={planTypeColors[plan.type]}>
-                                {planTypeLabels[plan.type]}
+                              <Badge className={planTypeColors[plan.type]} variant="secondary">
+                                {planTypeLabels[plan.type].replace(' Plan', '')}
                               </Badge>
                               <Badge className={planStatusColors[plan.status]}>
                                 {planStatusLabels[plan.status]}
@@ -280,43 +289,42 @@ export function PlanManagementPanel({
                             </div>
                           </div>
                           
-                          <div className="mt-3 flex items-center gap-6 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
+                          <div className="mt-4 flex items-center gap-6 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
                               <Calendar className="h-4 w-4" />
-                              {format(parseISO(plan.startDate), 'MMM d, yyyy')} - {format(parseISO(plan.endDate), 'MMM d, yyyy')}
+                              {format(parseISO(plan.startDate), 'MMM d')} - {format(parseISO(plan.endDate), 'MMM d, yyyy')}
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                               <Clock className="h-4 w-4" />
                               {getDaysRemaining(plan.endDate)}
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                               <Target className="h-4 w-4" />
                               {plan.goalIds.length} goals
                             </div>
                           </div>
                           
-                          <div className="mt-3 flex items-center gap-4">
+                          <div className="mt-4 flex items-center gap-4">
                             <div className="flex-1">
-                              {/* Calculate automated progress */}
                               {(() => {
                                 const breakdown = calculatePlanProgress(plan, goals, reviews, conversations);
                                 return (
                                   <>
-                                    <div className="flex items-center justify-between text-sm mb-1">
-                                      <span className="flex items-center gap-2">
+                                    <div className="flex items-center justify-between text-sm mb-1.5">
+                                      <span className="text-muted-foreground">
                                         Progress
-                                        <span className="text-xs text-muted-foreground">
+                                        <span className="text-xs ml-2">
                                           ({breakdown.completedGoals}/{breakdown.totalGoals} goals, {breakdown.completedReviews}/{breakdown.totalReviews} reviews)
                                         </span>
                                       </span>
-                                      <span className="font-medium">{breakdown.totalProgress}%</span>
+                                      <span className="font-semibold">{breakdown.totalProgress}%</span>
                                     </div>
                                     <Progress value={breakdown.totalProgress} className="h-2" />
                                   </>
                                 );
                               })()}
                             </div>
-                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                            <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                         </div>
                       </div>
@@ -329,25 +337,25 @@ export function PlanManagementPanel({
         </TabsContent>
 
         {/* Templates Tab */}
-        <TabsContent value="templates" className="mt-4">
-          <ScrollArea className="h-[calc(100vh-380px)]">
-            <div className="space-y-6 pr-4">
+        <TabsContent value="templates" className="mt-6">
+          <ScrollArea className="h-[calc(100vh-360px)]">
+            <div className="space-y-8 pr-4">
               {Object.entries(templatesByIndustry).map(([industry, templates]) => (
                 <div key={industry}>
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-4">
                     <Building2 className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="font-medium text-muted-foreground">{industry}</h3>
-                    <Badge variant="secondary" className="ml-auto">{templates.length}</Badge>
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{industry}</h3>
+                    <Badge variant="outline" className="ml-2 text-xs">{templates.length}</Badge>
                   </div>
                   
-                  <div className="grid gap-3 md:grid-cols-2">
+                  <div className="grid gap-4 md:grid-cols-2">
                     {templates.map((template) => (
-                      <Card key={template.id} className="group hover:border-primary/50 transition-colors">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex-1">
-                              <h4 className="font-medium line-clamp-1">{template.name}</h4>
-                              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                      <Card key={template.id} className="group border-0 shadow-sm hover:shadow-md transition-all duration-200">
+                        <CardContent className="p-5">
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-foreground line-clamp-1">{template.name}</h4>
+                              <p className="text-sm text-muted-foreground line-clamp-2 mt-1.5">
                                 {template.description}
                               </p>
                             </div>
@@ -356,20 +364,20 @@ export function PlanManagementPanel({
                             </Badge>
                           </div>
                           
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
-                            <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-4 py-3 border-t border-border/50">
+                            <div className="flex items-center gap-1.5">
                               <Clock className="h-3.5 w-3.5" />
                               {template.durationDays} days
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                               <Target className="h-3.5 w-3.5" />
                               {template.goals.length} goals
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                               <ClipboardCheck className="h-3.5 w-3.5" />
                               {template.reviews.length} reviews
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                               <MessageSquare className="h-3.5 w-3.5" />
                               {template.conversations.length} 1:1s
                             </div>

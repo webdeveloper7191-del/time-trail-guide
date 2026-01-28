@@ -102,30 +102,36 @@ export function FeedbackPanel({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <MessageSquareHeart className="h-5 w-5 text-primary" />
+    <div className="space-y-8">
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <MessageSquareHeart className="h-5 w-5 text-primary" />
+            </div>
             Feedback & Recognition
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground">
             Give and receive feedback from your team
           </p>
         </div>
-        <Button onClick={() => setShowCompose(true)}>
+        <Button onClick={() => setShowCompose(true)} className="shadow-sm">
           <Plus className="h-4 w-4 mr-2" />
           Give Feedback
         </Button>
       </div>
 
-      {/* View Toggle */}
-      <div className="flex gap-2">
+      {/* View Toggle - Pills Style */}
+      <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">
         {(['received', 'given', 'all'] as const).map((v) => (
           <Button
             key={v}
-            variant={view === v ? 'default' : 'outline'}
+            variant={view === v ? 'default' : 'ghost'}
             size="sm"
+            className={cn(
+              "rounded-md px-4",
+              view === v ? "shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
             onClick={() => onViewChange(v)}
           >
             {v.charAt(0).toUpperCase() + v.slice(1)}

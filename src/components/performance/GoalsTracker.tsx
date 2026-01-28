@@ -188,162 +188,166 @@ export function GoalsTracker({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Target className="h-5 w-5 text-primary" />
+            </div>
             Goals & Objectives
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Track progress on personal and professional goals
+          <p className="text-sm text-muted-foreground">
+            Track progress on personal and professional development goals
           </p>
         </div>
-        <Button onClick={onCreateGoal}>
+        <Button onClick={onCreateGoal} className="shadow-sm">
           <Plus className="h-4 w-4 mr-2" />
           New Goal
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
+      {/* Stats Cards - Clean Minimalist Design */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="border-0 shadow-sm bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Total Goals</p>
+                <p className="text-3xl font-semibold tracking-tight">{stats.total}</p>
+              </div>
+              <div className="p-3 rounded-full bg-primary/10">
                 <Target className="h-5 w-5 text-primary" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">Total Goals</p>
-              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+        <Card className="border-0 shadow-sm bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+                <p className="text-3xl font-semibold tracking-tight">{stats.active}</p>
+              </div>
+              <div className="p-3 rounded-full bg-blue-500/10">
                 <Clock className="h-5 w-5 text-blue-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.active}</p>
-                <p className="text-xs text-muted-foreground">In Progress</p>
-              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+        <Card className="border-0 shadow-sm bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                <p className="text-3xl font-semibold tracking-tight">{stats.completed}</p>
+              </div>
+              <div className="p-3 rounded-full bg-green-500/10">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.completed}</p>
-                <p className="text-xs text-muted-foreground">Completed</p>
-              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+        <Card className="border-0 shadow-sm bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Overdue</p>
+                <p className="text-3xl font-semibold tracking-tight">{stats.overdue}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.overdue}</p>
-                <p className="text-xs text-muted-foreground">Overdue</p>
+              <div className="p-3 rounded-full bg-red-500/10">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filters - Cleaner Design */}
       {showFilters && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="relative flex-1 min-w-48">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search goals..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as GoalStatus | 'all')}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {Object.entries(goalStatusLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-56 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search goals..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-10 border-border/60 bg-background"
+            />
+          </div>
+          
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as GoalStatus | 'all')}>
+            <SelectTrigger className="w-36 border-border/60">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              {Object.entries(goalStatusLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-              <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as GoalPriority | 'all')}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Priorities</SelectItem>
-                  {Object.entries(goalPriorityLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as GoalPriority | 'all')}>
+            <SelectTrigger className="w-36 border-border/60">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              {Object.entries(goalPriorityLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {availableCategories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-40 border-border/60">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {availableCategories.map(cat => (
+                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X className="h-4 w-4 mr-1" />
-                  Clear
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+              <X className="h-4 w-4 mr-1" />
+              Clear filters
+            </Button>
+          )}
+        </div>
       )}
 
-      {/* Active Goals */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-          Active Goals ({activeGoals.length})
-        </h3>
+      {/* Active Goals - Refined Cards */}
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            Active Goals
+          </h3>
+          <span className="text-sm text-muted-foreground">{activeGoals.length} items</span>
+        </div>
         
         {activeGoals.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-8 text-center">
-              <Target className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="font-medium">
+          <Card className="border-dashed border-2 bg-transparent">
+            <CardContent className="py-12 text-center">
+              <div className="p-4 rounded-full bg-muted/50 w-fit mx-auto mb-4">
+                <Target className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="font-medium text-foreground">
                 {hasActiveFilters ? 'No goals match your filters' : 'No active goals'}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-1.5 max-w-sm mx-auto">
                 {hasActiveFilters 
-                  ? 'Try adjusting your search or filters'
-                  : 'Create your first goal to get started'
+                  ? 'Try adjusting your search or filters to find what you\'re looking for'
+                  : 'Create your first goal to start tracking your objectives'
                 }
               </p>
               {!hasActiveFilters && (
-                <Button onClick={onCreateGoal} className="mt-4">
+                <Button onClick={onCreateGoal} className="mt-5 shadow-sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Goal
                 </Button>
@@ -355,50 +359,46 @@ export function GoalsTracker({
             {activeGoals.map((goal) => (
               <Card 
                 key={goal.id} 
-                className="hover:shadow-md transition-shadow cursor-pointer"
+                className="group border-0 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer bg-card"
                 onClick={() => onViewGoal(goal)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h4 className="font-medium line-clamp-1">{goal.title}</h4>
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-xs font-normal">
+                          {goal.category}
+                        </Badge>
+                        <Badge className={cn("text-xs font-medium", priorityColors[goal.priority])}>
+                          {goalPriorityLabels[goal.priority]}
+                        </Badge>
+                      </div>
+                      <h4 className="font-semibold text-foreground line-clamp-1 mt-2">{goal.title}</h4>
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                         {goal.description}
                       </p>
                     </div>
-                    <div className="flex gap-1 ml-2">
-                      <Badge className={cn("text-xs", priorityColors[goal.priority])}>
-                        {goalPriorityLabels[goal.priority]}
-                      </Badge>
-                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2" />
                   </div>
 
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <Badge variant="outline" className="gap-1">
-                        {statusIcons[goal.status]}
-                        {goalStatusLabels[goal.status]}
-                      </Badge>
-                      <span className="text-muted-foreground">{goal.category}</span>
-                    </div>
-
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium">{goal.progress}%</span>
+                        <span className="font-semibold">{goal.progress}%</span>
                       </div>
                       <Progress value={goal.progress} className="h-2" />
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>Due: {format(parseISO(goal.targetDate), 'MMM d, yyyy')}</span>
+                    <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>Due {format(parseISO(goal.targetDate), 'MMM d, yyyy')}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Flag className="h-3 w-3" />
-                        <span>{goal.milestones.filter(m => m.completed).length}/{goal.milestones.length} milestones</span>
-                      </div>
+                      <Badge variant="outline" className="gap-1 text-xs">
+                        {statusIcons[goal.status]}
+                        {goalStatusLabels[goal.status]}
+                      </Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -408,30 +408,35 @@ export function GoalsTracker({
         )}
       </div>
 
-      {/* Completed Goals */}
+      {/* Completed Goals - Refined */}
       {completedGoals.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Completed Goals ({completedGoals.length})
-          </h3>
-          <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Completed Goals
+            </h3>
+            <span className="text-sm text-muted-foreground">{completedGoals.length} items</span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
             {completedGoals.map((goal) => (
               <Card 
                 key={goal.id} 
-                className="hover:shadow-md transition-shadow cursor-pointer opacity-75"
+                className="group border-0 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer bg-card/80"
                 onClick={() => onViewGoal(goal)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+                    <div className="p-2 rounded-full bg-green-500/10">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">{goal.title}</h4>
+                      <h4 className="font-medium truncate text-foreground">{goal.title}</h4>
                       <p className="text-sm text-muted-foreground">
                         Completed {goal.completedAt && format(parseISO(goal.completedAt), 'MMM d, yyyy')}
                       </p>
                     </div>
-                    <Badge className={cn("text-xs", priorityColors[goal.priority])}>
-                      {goalPriorityLabels[goal.priority]}
+                    <Badge variant="outline" className="text-xs">
+                      {goal.category}
                     </Badge>
                   </div>
                 </CardContent>

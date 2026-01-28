@@ -71,18 +71,20 @@ export function ReviewsDashboard({
   const actionRequired = [...pendingSelfReviews, ...pendingManagerReviews];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <ClipboardCheck className="h-5 w-5 text-primary" />
+    <div className="space-y-8">
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <ClipboardCheck className="h-5 w-5 text-primary" />
+            </div>
             Performance Reviews
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground">
             Manage appraisals and track performance cycles
           </p>
         </div>
-        <Button onClick={onCreateReview}>
+        <Button onClick={onCreateReview} className="shadow-sm">
           <Plus className="h-4 w-4 mr-2" />
           Start Review
         </Button>
@@ -90,11 +92,14 @@ export function ReviewsDashboard({
 
       {/* Action Required Section */}
       {actionRequired.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20">
+        <Card className="border-0 shadow-sm bg-amber-50/80 dark:bg-amber-950/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2 text-amber-800 dark:text-amber-400">
-              <AlertCircle className="h-5 w-5" />
-              Action Required ({actionRequired.length})
+            <CardTitle className="text-base flex items-center gap-2.5 text-amber-800 dark:text-amber-400">
+              <div className="p-1.5 rounded-full bg-amber-500/20">
+                <AlertCircle className="h-4 w-4" />
+              </div>
+              Action Required
+              <Badge variant="secondary" className="ml-1">{actionRequired.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
