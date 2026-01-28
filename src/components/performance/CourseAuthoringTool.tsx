@@ -47,6 +47,7 @@ import {
 } from '@/types/lmsAdvanced';
 import { toast } from 'sonner';
 import { ContentUploader } from './ContentUploader';
+import { ThumbnailUploader } from './ThumbnailUploader';
 
 interface CourseAuthoringToolProps {
   open: boolean;
@@ -328,6 +329,17 @@ export function CourseAuthoringTool({
           <ScrollArea className="flex-1">
             {/* Course Details Tab */}
             <TabsContent value="details" className="p-6 space-y-6 m-0">
+              {/* Thumbnail Section */}
+              <div className="max-w-sm">
+                <ThumbnailUploader
+                  currentThumbnail={course.thumbnail}
+                  onThumbnailChange={(url) => updateCourse({ thumbnail: url })}
+                  aspectRatio="16:9"
+                />
+              </div>
+
+              <Separator />
+
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-4">
                   <div className="space-y-2">
