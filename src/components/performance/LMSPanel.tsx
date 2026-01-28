@@ -39,6 +39,10 @@ import {
   AlertCircle,
   Settings,
   Link as LinkIcon,
+  Sparkles,
+  Smartphone,
+  Package,
+  PenTool,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -59,6 +63,11 @@ import { mockCourses, mockLearningPaths, mockEnrollments, mockCertificates, mock
 import { StaffMember } from '@/types/staff';
 import { CoursePlayer } from './CoursePlayer';
 import { LMSAdminPanel } from './LMSAdminPanel';
+import { GamificationPanel } from './GamificationPanel';
+import { MobileCoursePlayer } from './MobileCoursePlayer';
+import { CourseAuthoringTool } from './CourseAuthoringTool';
+import { CourseAuthoringState } from '@/types/lmsAdvanced';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 
 interface LMSPanelProps {
@@ -87,7 +96,10 @@ export function LMSPanel({
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedPath, setSelectedPath] = useState<LearningPath | null>(null);
   const [showCoursePlayer, setShowCoursePlayer] = useState(false);
+  const [showMobilePlayer, setShowMobilePlayer] = useState(false);
+  const [showAuthoringTool, setShowAuthoringTool] = useState(false);
   const [enrollments, setEnrollments] = useState<Enrollment[]>(mockEnrollments);
+  const isMobile = useIsMobile();
 
   // Get user's enrollments
   const myEnrollments = useMemo(() => 
@@ -141,8 +153,24 @@ export function LMSPanel({
     const course = mockCourses.find(c => c.id === enrollment.courseId);
     if (course) {
       setSelectedCourse(course);
-      setShowCoursePlayer(true);
+      // Use mobile player on mobile devices
+      if (isMobile) {
+        setShowMobilePlayer(true);
+      } else {
+        setShowCoursePlayer(true);
+      }
     }
+  };
+
+  const handleSaveCourse = (course: CourseAuthoringState) => {
+    console.log('Saving course:', course);
+    toast.success('Course saved as draft');
+  };
+
+  const handlePublishCourse = (course: CourseAuthoringState) => {
+    console.log('Publishing course:', course);
+    toast.success('Course published successfully!');
+    setShowAuthoringTool(false);
   };
 
   // Course player handlers
@@ -355,26 +383,34 @@ export function LMSPanel({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={cn("grid w-full max-w-4xl", isAdmin ? "grid-cols-6" : "grid-cols-5")}>
+        <TabsList className={cn("grid w-full max-w-6xl", isAdmin ? "grid-cols-8" : "grid-cols-6")}>
           <TabsTrigger value="my-learning" className="gap-2">
-            <BookMarked className="h-4 w-4" /> My Learning
+            <BookMarked className="h-4 w-4" /> <span className="hidden sm:inline">My Learning</span>
           </TabsTrigger>
           <TabsTrigger value="catalog" className="gap-2">
-            <BookOpen className="h-4 w-4" /> Catalog
+            <BookOpen className="h-4 w-4" /> <span className="hidden sm:inline">Catalog</span>
           </TabsTrigger>
           <TabsTrigger value="paths" className="gap-2">
-            <Target className="h-4 w-4" /> Learning Paths
+            <Target className="h-4 w-4" /> <span className="hidden sm:inline">Paths</span>
+          </TabsTrigger>
+          <TabsTrigger value="gamification" className="gap-2">
+            <Sparkles className="h-4 w-4" /> <span className="hidden sm:inline">Rewards</span>
           </TabsTrigger>
           <TabsTrigger value="certificates" className="gap-2">
-            <Award className="h-4 w-4" /> Certificates
+            <Award className="h-4 w-4" /> <span className="hidden sm:inline">Certificates</span>
           </TabsTrigger>
           <TabsTrigger value="analytics" className="gap-2">
-            <BarChart3 className="h-4 w-4" /> Analytics
+            <BarChart3 className="h-4 w-4" /> <span className="hidden sm:inline">Analytics</span>
           </TabsTrigger>
           {isAdmin && (
-            <TabsTrigger value="admin" className="gap-2">
-              <Settings className="h-4 w-4" /> Admin
-            </TabsTrigger>
+            <>
+              <TabsTrigger value="authoring" className="gap-2">
+                <PenTool className="h-4 w-4" /> <span className="hidden sm:inline">Author</span>
+              </TabsTrigger>
+              <TabsTrigger value="admin" className="gap-2">
+                <Settings className="h-4 w-4" /> <span className="hidden sm:inline">Admin</span>
+              </TabsTrigger>
+            </>
           )}
         </TabsList>
 
@@ -934,6 +970,72 @@ export function LMSPanel({
           </div>
         </TabsContent>
 
+        {/* Gamification Tab */}
+        <TabsContent value="gamification" className="mt-6">
+          <GamificationPanel currentUserId={currentUserId} />
+        </TabsContent>
+
+        {/* Authoring Tab */}
+        {isAdmin && (
+          <TabsContent value="authoring" className="mt-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <PenTool className="h-5 w-5 text-primary" />
+                      Course Authoring
+                    </CardTitle>
+                    <CardDescription>
+                      Create custom courses with drag-and-drop modules, quizzes, and SCORM support
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => setShowAuthoringTool(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Course
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Card className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer" onClick={() => setShowAuthoringTool(true)}>
+                    <CardContent className="flex flex-col items-center justify-center py-8">
+                      <Plus className="h-10 w-10 text-muted-foreground mb-3" />
+                      <p className="font-medium">Blank Course</p>
+                      <p className="text-sm text-muted-foreground">Start from scratch</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowAuthoringTool(true)}>
+                    <CardContent className="flex flex-col items-center justify-center py-8">
+                      <Package className="h-10 w-10 text-orange-500 mb-3" />
+                      <p className="font-medium">Import SCORM</p>
+                      <p className="text-sm text-muted-foreground">Upload SCORM 1.2/2004 package</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowAuthoringTool(true)}>
+                    <CardContent className="flex flex-col items-center justify-center py-8">
+                      <FileText className="h-10 w-10 text-blue-500 mb-3" />
+                      <p className="font-medium">Use Template</p>
+                      <p className="text-sm text-muted-foreground">Start with a pre-built structure</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Separator className="my-6" />
+
+                <div>
+                  <h4 className="font-medium mb-4">Recent Drafts</h4>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                    <p>No draft courses yet</p>
+                    <p className="text-sm">Courses you create will appear here</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
         {/* Admin Tab */}
         {isAdmin && (
           <TabsContent value="admin" className="mt-6">
@@ -945,7 +1047,7 @@ export function LMSPanel({
         )}
       </Tabs>
 
-      {/* Course Player */}
+      {/* Course Player - Desktop */}
       <CoursePlayer
         open={showCoursePlayer}
         course={selectedCourse}
@@ -958,6 +1060,28 @@ export function LMSPanel({
         onModuleComplete={handleModuleComplete}
         onAssessmentSubmit={handleAssessmentSubmit}
         onCourseComplete={handleCourseComplete}
+      />
+
+      {/* Course Player - Mobile */}
+      <MobileCoursePlayer
+        open={showMobilePlayer}
+        course={selectedCourse}
+        enrollment={myEnrollments.find(e => e.courseId === selectedCourse?.id) || null}
+        onClose={() => {
+          setShowMobilePlayer(false);
+          setSelectedCourse(null);
+        }}
+        onProgressUpdate={handleProgressUpdate}
+        onModuleComplete={handleModuleComplete}
+        onCourseComplete={handleCourseComplete}
+      />
+
+      {/* Course Authoring Tool */}
+      <CourseAuthoringTool
+        open={showAuthoringTool}
+        onClose={() => setShowAuthoringTool(false)}
+        onSave={handleSaveCourse}
+        onPublish={handlePublishCourse}
       />
     </div>
   );
