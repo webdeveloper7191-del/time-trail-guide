@@ -26,6 +26,8 @@ import {
   Edit,
   Copy,
   MoreVertical,
+  BookOpen,
+  GraduationCap,
 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { 
@@ -42,7 +44,8 @@ import {
 import { performancePlanTemplates, mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { StaffMember } from '@/types/staff';
 import { Goal, PerformanceReview, Conversation } from '@/types/performance';
-import { calculatePlanProgress } from '@/lib/planProgressCalculator';
+import { calculatePlanProgress, LMSData } from '@/lib/planProgressCalculator';
+import { mockCourses, mockLearningPaths, mockEnrollments } from '@/data/mockLmsData';
 
 interface PlanManagementPanelProps {
   staff: StaffMember[];
@@ -307,19 +310,32 @@ export function PlanManagementPanel({
                           <div className="mt-4 flex items-center gap-4">
                             <div className="flex-1">
                               {(() => {
-                                const breakdown = calculatePlanProgress(plan, goals, reviews, conversations);
+                                const lmsData: LMSData = {
+                                  enrollments: mockEnrollments,
+                                  learningPaths: mockLearningPaths,
+                                  courses: mockCourses,
+                                };
+                                const breakdown = calculatePlanProgress(plan, goals, reviews, conversations, lmsData);
+                                const hasLearning = breakdown.totalCourses > 0;
                                 return (
                                   <>
                                     <div className="flex items-center justify-between text-sm mb-1.5">
                                       <span className="text-muted-foreground">
                                         Progress
                                         <span className="text-xs ml-2">
-                                          ({breakdown.completedGoals}/{breakdown.totalGoals} goals, {breakdown.completedReviews}/{breakdown.totalReviews} reviews)
+                                          ({breakdown.completedGoals}/{breakdown.totalGoals} goals
+                                          {hasLearning && `, ${breakdown.completedCourses}/${breakdown.totalCourses} courses`})
                                         </span>
                                       </span>
                                       <span className="font-semibold">{breakdown.totalProgress}%</span>
                                     </div>
                                     <Progress value={breakdown.totalProgress} className="h-2" />
+                                    {hasLearning && (
+                                      <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                                        <GraduationCap className="h-3.5 w-3.5 text-primary" />
+                                        <span>{plan.learningPathIds?.length || 0} learning paths linked</span>
+                                      </div>
+                                    )}
                                   </>
                                 );
                               })()}

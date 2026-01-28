@@ -24,6 +24,8 @@ import {
   ChevronRight,
   FileText,
   MoreVertical,
+  GraduationCap,
+  BookOpen,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast, isToday } from 'date-fns';
 import { 
@@ -39,6 +41,9 @@ import { Goal, PerformanceReview, Conversation } from '@/types/performance';
 import { StaffMember } from '@/types/staff';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { mockCourses, mockLearningPaths, mockEnrollments } from '@/data/mockLmsData';
+import { calculatePlanProgress, LMSData } from '@/lib/planProgressCalculator';
+import { enrollmentStatusLabels, enrollmentStatusColors } from '@/types/lms';
 
 interface PlanDetailSheetProps {
   open: boolean;
@@ -99,6 +104,46 @@ export function PlanDetailSheet({
     if (!plan) return [];
     return conversations.filter(c => plan.conversationIds.includes(c.id));
   }, [plan, conversations]);
+
+  // LMS Data for learning content
+  const lmsData: LMSData = useMemo(() => ({
+    enrollments: mockEnrollments,
+    learningPaths: mockLearningPaths,
+    courses: mockCourses,
+  }), []);
+
+  // Get linked learning paths and courses
+  const linkedLearningPaths = useMemo(() => {
+    if (!plan?.learningPathIds) return [];
+    return plan.learningPathIds.map(id => mockLearningPaths.find(p => p.id === id)).filter(Boolean);
+  }, [plan]);
+
+  const linkedCourses = useMemo(() => {
+    if (!plan) return [];
+    const courseIds = new Set<string>();
+    
+    // Add directly linked courses
+    plan.courseIds?.forEach(id => courseIds.add(id));
+    
+    // Add courses from learning paths
+    linkedLearningPaths.forEach(path => {
+      path?.courseIds.forEach(id => courseIds.add(id));
+    });
+    
+    return Array.from(courseIds).map(id => mockCourses.find(c => c.id === id)).filter(Boolean);
+  }, [plan, linkedLearningPaths]);
+
+  // Get enrollments for this staff member
+  const staffEnrollments = useMemo(() => {
+    if (!plan) return [];
+    return mockEnrollments.filter(e => e.staffId === plan.staffId);
+  }, [plan]);
+
+  // Calculate progress breakdown with LMS data
+  const progressBreakdown = useMemo(() => {
+    if (!plan) return null;
+    return calculatePlanProgress(plan, goals, reviews, conversations, lmsData);
+  }, [plan, goals, reviews, conversations, lmsData]);
 
   const getDaysRemaining = () => {
     if (!plan) return '';
@@ -212,15 +257,19 @@ export function PlanDetailSheet({
         </SheetHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-4 mt-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="goals">
+          <TabsList className="grid w-full grid-cols-5 mt-4">
+            <TabsTrigger value="overview" className="text-xs px-2">Overview</TabsTrigger>
+            <TabsTrigger value="goals" className="text-xs px-2">
               Goals ({planGoals.length})
             </TabsTrigger>
-            <TabsTrigger value="reviews">
+            <TabsTrigger value="learning" className="text-xs px-2">
+              <GraduationCap className="h-3 w-3 mr-1" />
+              Learning ({linkedCourses.length})
+            </TabsTrigger>
+            <TabsTrigger value="reviews" className="text-xs px-2">
               Reviews ({planReviews.length})
             </TabsTrigger>
-            <TabsTrigger value="conversations">
+            <TabsTrigger value="conversations" className="text-xs px-2">
               1:1s ({planConversations.length})
             </TabsTrigger>
           </TabsList>
@@ -292,25 +341,63 @@ export function PlanDetailSheet({
                   <CardTitle className="text-base">Plan Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-4 gap-3">
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
                       <Target className="h-5 w-5 mx-auto mb-1 text-primary" />
-                      <p className="text-2xl font-bold">{planGoals.length}</p>
+                      <p className="text-xl font-bold">{progressBreakdown?.completedGoals || 0}/{planGoals.length}</p>
                       <p className="text-xs text-muted-foreground">Goals</p>
                     </div>
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <GraduationCap className="h-5 w-5 mx-auto mb-1 text-primary" />
+                      <p className="text-xl font-bold">{progressBreakdown?.completedCourses || 0}/{progressBreakdown?.totalCourses || 0}</p>
+                      <p className="text-xs text-muted-foreground">Courses</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
                       <ClipboardCheck className="h-5 w-5 mx-auto mb-1 text-primary" />
-                      <p className="text-2xl font-bold">{planReviews.length}</p>
+                      <p className="text-xl font-bold">{progressBreakdown?.completedReviews || 0}/{planReviews.length}</p>
                       <p className="text-xs text-muted-foreground">Reviews</p>
                     </div>
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
                       <MessageSquare className="h-5 w-5 mx-auto mb-1 text-primary" />
-                      <p className="text-2xl font-bold">{planConversations.length}</p>
-                      <p className="text-xs text-muted-foreground">1:1 Meetings</p>
+                      <p className="text-xl font-bold">{progressBreakdown?.completedConversations || 0}/{planConversations.length}</p>
+                      <p className="text-xs text-muted-foreground">1:1s</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Learning Progress (if linked) */}
+              {linkedCourses.length > 0 && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4 text-primary" />
+                      Learning Progress
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {progressBreakdown?.completedCourses || 0} of {progressBreakdown?.totalCourses || 0} courses completed
+                        </span>
+                        <span className="font-semibold">{progressBreakdown?.learningProgress || 0}%</span>
+                      </div>
+                      <Progress value={progressBreakdown?.learningProgress || 0} className="h-2" />
+                      {linkedLearningPaths.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {linkedLearningPaths.map((path) => (
+                            <Badge key={path?.id} variant="secondary" className="text-xs">
+                              <BookOpen className="h-3 w-3 mr-1" />
+                              {path?.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="goals" className="mt-4 space-y-3">
@@ -354,6 +441,114 @@ export function PlanDetailSheet({
                     </CardContent>
                   </Card>
                 ))
+              )}
+            </TabsContent>
+
+            {/* Learning Tab */}
+            <TabsContent value="learning" className="mt-4 space-y-3">
+              {linkedCourses.length === 0 ? (
+                <Card className="border-dashed border-2 bg-transparent">
+                  <CardContent className="py-8 text-center">
+                    <GraduationCap className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <h4 className="font-medium mb-1">No Learning Content Linked</h4>
+                    <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                      Link learning paths or courses to this plan to track training progress
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Learning Paths Section */}
+                  {linkedLearningPaths.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        Learning Paths
+                      </h4>
+                      {linkedLearningPaths.map((path) => {
+                        if (!path) return null;
+                        // Calculate path progress
+                        const pathCourseEnrollments = path.courseIds.map(cId => 
+                          staffEnrollments.find(e => e.courseId === cId)
+                        );
+                        const completedInPath = pathCourseEnrollments.filter(e => e?.status === 'completed').length;
+                        const pathProgress = path.courseIds.length > 0 
+                          ? Math.round((completedInPath / path.courseIds.length) * 100) 
+                          : 0;
+                        
+                        return (
+                          <Card key={path.id} className="border-0 shadow-sm">
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between gap-3 mb-3">
+                                <div className="flex-1">
+                                  <h4 className="font-medium">{path.name}</h4>
+                                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                    {path.description}
+                                  </p>
+                                </div>
+                                <Badge variant={pathProgress === 100 ? 'default' : 'secondary'}>
+                                  {pathProgress === 100 ? 'Completed' : `${pathProgress}%`}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
+                                <span>{path.courseIds.length} courses</span>
+                                <span>{Math.round(path.estimatedDuration / 60)}h estimated</span>
+                              </div>
+                              <Progress value={pathProgress} className="h-2" />
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Individual Courses Section */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4" />
+                      Courses ({linkedCourses.length})
+                    </h4>
+                    {linkedCourses.map((course) => {
+                      if (!course) return null;
+                      const enrollment = staffEnrollments.find(e => e.courseId === course.id);
+                      const status = enrollment?.status || 'not_started';
+                      const progress = enrollment?.progress || 0;
+                      
+                      return (
+                        <Card key={course.id} className="border-0 shadow-sm">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  {status === 'completed' ? (
+                                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                                  ) : status === 'in_progress' ? (
+                                    <Play className="h-4 w-4 text-primary shrink-0" />
+                                  ) : (
+                                    <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
+                                  )}
+                                  <h4 className="font-medium line-clamp-1">{course.title}</h4>
+                                </div>
+                                <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                                  {course.category} • {Math.round(course.duration / 60)}h
+                                </p>
+                                {status !== 'not_started' && (
+                                  <div className="flex items-center gap-3 mt-2">
+                                    <Progress value={progress} className="flex-1 h-2" />
+                                    <span className="text-xs font-medium">{progress}%</span>
+                                  </div>
+                                )}
+                              </div>
+                              <Badge className={enrollmentStatusColors[status]}>
+                                {enrollmentStatusLabels[status]}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </TabsContent>
 

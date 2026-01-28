@@ -639,6 +639,8 @@ export const mockAssignedPlans: AssignedPlan[] = [
     goalIds: ['goal-5'],
     reviewIds: [],
     conversationIds: [],
+    learningPathIds: ['path-2'], // Childcare Professional Certification
+    courseIds: ['course-2'], // Child Protection & Safeguarding
     progress: 80,
     createdAt: '2024-09-01T09:00:00Z',
     updatedAt: '2025-01-10T09:00:00Z',
@@ -657,6 +659,8 @@ export const mockAssignedPlans: AssignedPlan[] = [
     goalIds: ['goal-1', 'goal-2'],
     reviewIds: ['review-1'],
     conversationIds: ['conv-1', 'conv-4'],
+    learningPathIds: ['path-3'], // Future Leaders Program
+    courseIds: ['course-3'], // Leadership Excellence Program
     progress: 55,
     createdAt: '2024-09-01T09:00:00Z',
     updatedAt: '2025-01-15T09:00:00Z',
@@ -674,6 +678,8 @@ export const mockAssignedPlans: AssignedPlan[] = [
     goalIds: ['goal-4'],
     reviewIds: ['review-3'],
     conversationIds: ['conv-2'],
+    learningPathIds: ['path-1'], // New Employee Essentials
+    courseIds: [],
     progress: 5,
     createdAt: '2025-01-01T09:00:00Z',
     updatedAt: '2025-01-15T09:00:00Z',
