@@ -171,13 +171,6 @@ export function PlanManagementPanel({
               </TabsTrigger>
             </TabsList>
           </div>
-          
-          {activeTab === 'templates' && (
-            <Button onClick={onCreateTemplate} className="shadow-sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Template
-            </Button>
-          )}
         </div>
 
         {/* Filters - Clean Design */}
@@ -238,6 +231,13 @@ export function PlanManagementPanel({
             <Button onClick={onQuickAssignPlan} className="gap-2 shadow-sm ml-auto">
               <UserPlus className="h-4 w-4" />
               Assign Plan
+            </Button>
+          )}
+
+          {activeTab === 'templates' && (
+            <Button onClick={onCreateTemplate} className="gap-2 shadow-sm ml-auto">
+              <Plus className="h-4 w-4" />
+              Create Template
             </Button>
           )}
         </div>
