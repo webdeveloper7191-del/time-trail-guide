@@ -17,13 +17,15 @@ import { BulkAssignPlanDrawer } from '@/components/performance/BulkAssignPlanDra
 import { PlanDetailSheet } from '@/components/performance/PlanDetailSheet';
 import { PlanTemplatePreviewSheet } from '@/components/performance/PlanTemplatePreviewSheet';
 import { CreateTemplateDrawer } from '@/components/performance/CreateTemplateDrawer';
+import { QuickAssignPlanDrawer } from '@/components/performance/QuickAssignPlanDrawer';
 import { PerformanceTaskManagementPanel } from '@/components/performance/PerformanceTaskManagementPanel';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo } from 'lucide-react';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, UserPlus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
@@ -49,6 +51,7 @@ export default function PerformanceManagement() {
   const [editingTemplate, setEditingTemplate] = useState<PerformancePlanTemplate | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<AssignedPlan | null>(null);
   const [showPlanDetail, setShowPlanDetail] = useState(false);
+  const [showQuickAssignDrawer, setShowQuickAssignDrawer] = useState(false);
   
   const {
     reviews, goals, feedback, conversations, loading,
@@ -240,20 +243,26 @@ export default function PerformanceManagement() {
               <h1 className="text-2xl font-bold">Performance Management</h1>
               <p className="text-muted-foreground">Plans, reviews, goals, feedback & continuous conversations</p>
             </div>
-            <PerformanceNotificationBell
-              goals={goals}
-              reviews={reviews}
-              conversations={conversations}
-              plans={mockAssignedPlans}
-              currentUserId={CURRENT_USER_ID}
-              onViewGoal={handleNotificationGoal}
-              onViewReview={handleNotificationReview}
-              onViewConversation={handleNotificationConversation}
-              onViewPlan={(planId) => {
-                const plan = mockAssignedPlans.find(p => p.id === planId);
-                if (plan) handleViewPlan(plan);
-              }}
-            />
+            <div className="flex items-center gap-3">
+              <Button onClick={() => setShowQuickAssignDrawer(true)} className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                Assign Plan
+              </Button>
+              <PerformanceNotificationBell
+                goals={goals}
+                reviews={reviews}
+                conversations={conversations}
+                plans={mockAssignedPlans}
+                currentUserId={CURRENT_USER_ID}
+                onViewGoal={handleNotificationGoal}
+                onViewReview={handleNotificationReview}
+                onViewConversation={handleNotificationConversation}
+                onViewPlan={(planId) => {
+                  const plan = mockAssignedPlans.find(p => p.id === planId);
+                  if (plan) handleViewPlan(plan);
+                }}
+              />
+            </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -495,6 +504,15 @@ export default function PerformanceManagement() {
           setEditingTemplate(null);
         }}
         onSave={handleSaveTemplate}
+      />
+
+      {/* Quick Assign Plan Drawer */}
+      <QuickAssignPlanDrawer
+        open={showQuickAssignDrawer}
+        staff={mockStaff}
+        currentUserId={CURRENT_USER_ID}
+        onClose={() => setShowQuickAssignDrawer(false)}
+        onAssign={handleAssignPlanSubmit}
       />
     </div>
   );
