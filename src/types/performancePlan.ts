@@ -57,6 +57,10 @@ export interface PerformancePlanTemplate {
   goals: PlanGoalTemplate[];
   reviews: PlanReviewTemplate[];
   conversations: PlanConversationTemplate[];
+  /** Optional: LMS content linked to this template (used to pre-link learning on assignment) */
+  learningPathIds?: string[];
+  /** Optional: individual courses linked to this template */
+  courseIds?: string[];
   tags: string[];
   isSystem: boolean;
   createdAt: string;

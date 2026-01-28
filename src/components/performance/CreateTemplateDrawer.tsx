@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Plus,
   Target,
@@ -22,6 +23,8 @@ import {
   Clock,
   Tag,
   Library,
+  GraduationCap,
+  BookOpen,
 } from 'lucide-react';
 import { 
   PerformancePlanTemplate, 
@@ -36,6 +39,7 @@ import { goalCategories } from '@/types/performance';
 import { toast } from 'sonner';
 import { ReusableGoalTemplate, ReusableReviewTemplate } from '@/types/reusableTemplates';
 import { GoalReviewTemplatesLibrary, convertGoalTemplateToPlanGoal, convertReviewTemplateToPlanReview } from './GoalReviewTemplatesLibrary';
+import { mockCourses, mockLearningPaths } from '@/data/mockLmsData';
 
 interface CreateTemplateDrawerProps {
   open: boolean;
@@ -69,6 +73,10 @@ export function CreateTemplateDrawer({
   const [reviews, setReviews] = useState<PlanReviewTemplate[]>([]);
   const [conversations, setConversations] = useState<PlanConversationTemplate[]>([]);
 
+  // Learning content
+  const [learningPathIds, setLearningPathIds] = useState<string[]>([]);
+  const [courseIds, setCourseIds] = useState<string[]>([]);
+
   // Reset form when template changes
   React.useEffect(() => {
     if (existingTemplate) {
@@ -81,6 +89,8 @@ export function CreateTemplateDrawer({
       setGoals(existingTemplate.goals);
       setReviews(existingTemplate.reviews);
       setConversations(existingTemplate.conversations);
+      setLearningPathIds(existingTemplate.learningPathIds || []);
+      setCourseIds(existingTemplate.courseIds || []);
     } else {
       resetForm();
     }
@@ -96,8 +106,22 @@ export function CreateTemplateDrawer({
     setGoals([]);
     setReviews([]);
     setConversations([]);
+    setLearningPathIds([]);
+    setCourseIds([]);
     setActiveTab('details');
   };
+
+  const toggleId = (list: string[], id: string) => (list.includes(id) ? list.filter(x => x !== id) : [...list, id]);
+
+  const filteredLearningPaths = useMemo(() => {
+    if (!industry) return mockLearningPaths;
+    return mockLearningPaths.filter(p => (p.industry || 'General') === industry || (p.industry || 'General') === 'General');
+  }, [industry]);
+
+  const filteredCourses = useMemo(() => {
+    if (!industry) return mockCourses;
+    return mockCourses.filter(c => (c.industry || 'General') === industry || (c.industry || 'General') === 'General');
+  }, [industry]);
 
   const addTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim().toLowerCase())) {
@@ -244,6 +268,8 @@ export function CreateTemplateDrawer({
         goals,
         reviews,
         conversations,
+        learningPathIds,
+        courseIds,
         tags,
         isSystem: false,
       });
@@ -266,8 +292,11 @@ export function CreateTemplateDrawer({
         </SheetHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-4 mt-4">
+          <TabsList className="grid w-full grid-cols-5 mt-4">
             <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="learning">
+              Learning
+            </TabsTrigger>
             <TabsTrigger value="goals">
               Goals ({goals.length})
             </TabsTrigger>
@@ -374,6 +403,112 @@ export function CreateTemplateDrawer({
                     ))}
                   </div>
                 )}
+              </div>
+            </TabsContent>
+
+            {/* Learning Tab */}
+            <TabsContent value="learning" className="mt-4 space-y-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-primary" />
+                    Learning Content
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Link learning paths and courses to this template (these can be pre-attached when assigning a plan).
+                  </p>
+                </div>
+                <div className="text-xs text-muted-foreground text-right">
+                  {learningPathIds.length} paths • {courseIds.length} courses
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Learning Paths</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{learningPathIds.length} selected</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {filteredLearningPaths.map((path) => (
+                        <button
+                          key={path.id}
+                          type="button"
+                          onClick={() => setLearningPathIds(prev => toggleId(prev, path.id))}
+                          className="w-full text-left flex items-start gap-3 rounded-md border border-border/60 p-3 hover:bg-muted/40 transition-colors"
+                        >
+                          <Checkbox
+                            checked={learningPathIds.includes(path.id)}
+                            onCheckedChange={() => setLearningPathIds(prev => toggleId(prev, path.id))}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium truncate">{path.name}</div>
+                            <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                              {path.description}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground mt-1">
+                              {path.courseIds.length} courses • {path.industry}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                      {filteredLearningPaths.length === 0 && (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <GraduationCap className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No learning paths available</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Courses</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{courseIds.length} selected</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {filteredCourses.map((course) => (
+                        <button
+                          key={course.id}
+                          type="button"
+                          onClick={() => setCourseIds(prev => toggleId(prev, course.id))}
+                          className="w-full text-left flex items-start gap-3 rounded-md border border-border/60 p-3 hover:bg-muted/40 transition-colors"
+                        >
+                          <Checkbox
+                            checked={courseIds.includes(course.id)}
+                            onCheckedChange={() => setCourseIds(prev => toggleId(prev, course.id))}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium truncate">{course.title}</div>
+                            <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                              {course.description}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground mt-1">
+                              {course.duration} min • {course.industry}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                      {filteredCourses.length === 0 && (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No courses available</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 
