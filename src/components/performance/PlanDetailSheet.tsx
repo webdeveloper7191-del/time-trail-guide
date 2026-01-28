@@ -46,9 +46,9 @@ import { toast } from 'sonner';
 import { mockCourses, mockLearningPaths, mockEnrollments } from '@/data/mockLmsData';
 import { calculatePlanProgress, LMSData } from '@/lib/planProgressCalculator';
 import { enrollmentStatusLabels, enrollmentStatusColors } from '@/types/lms';
-import { DeletePlanConfirmDialog } from './DeletePlanConfirmDialog';
-import { ExtendPlanModal } from './ExtendPlanModal';
-import { CancelPlanConfirmDialog } from './CancelPlanConfirmDialog';
+import { DeletePlanDrawer } from './DeletePlanDrawer';
+import { ExtendPlanDrawer } from './ExtendPlanDrawer';
+import { CancelPlanDrawer } from './CancelPlanDrawer';
 
 interface PlanDetailSheetProps {
   open: boolean;
@@ -665,8 +665,8 @@ export function PlanDetailSheet({
         </Tabs>
       </SheetContent>
 
-      {/* Delete Confirmation Dialog */}
-      <DeletePlanConfirmDialog
+      {/* Delete Confirmation Drawer */}
+      <DeletePlanDrawer
         open={showDeleteDialog}
         title="Delete Performance Plan"
         description="This will permanently delete this plan and remove all progress tracking. This action cannot be undone."
@@ -684,8 +684,8 @@ export function PlanDetailSheet({
         onCancel={() => setShowDeleteDialog(false)}
       />
 
-      {/* Extend Plan Modal */}
-      <ExtendPlanModal
+      {/* Extend Plan Drawer */}
+      <ExtendPlanDrawer
         open={showExtendModal}
         plan={plan}
         loading={updating}
@@ -700,8 +700,8 @@ export function PlanDetailSheet({
         onCancel={() => setShowExtendModal(false)}
       />
 
-      {/* Cancel Plan Confirmation Dialog */}
-      <CancelPlanConfirmDialog
+      {/* Cancel Plan Drawer */}
+      <CancelPlanDrawer
         open={showCancelDialog}
         plan={plan}
         loading={updating}
