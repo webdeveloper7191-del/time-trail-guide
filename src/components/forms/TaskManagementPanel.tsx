@@ -639,24 +639,35 @@ export function TaskManagementPanel({ onNavigateToSubmission, initialTaskId, onT
             icon={<AlertTriangle className="h-3 w-3" />}
             label={`Blocked (${stats.blocked})`}
             size="small"
-            color="error"
             variant={statusFilter === 'blocked' ? 'filled' : 'outlined'}
             onClick={() => setStatusFilter('blocked')}
+            sx={{
+              bgcolor: statusFilter === 'blocked' ? 'rgba(239, 68, 68, 0.12)' : 'transparent',
+              color: 'rgb(185, 28, 28)',
+              borderColor: 'rgba(239, 68, 68, 0.4)',
+            }}
           />
           <Chip
             icon={<CheckCircle className="h-3 w-3" />}
             label={`Completed (${stats.completed})`}
             size="small"
-            color="success"
             variant={statusFilter === 'completed' ? 'filled' : 'outlined'}
             onClick={() => setStatusFilter('completed')}
+            sx={{
+              bgcolor: statusFilter === 'completed' ? 'rgba(34, 197, 94, 0.12)' : 'transparent',
+              color: 'rgb(21, 128, 61)',
+              borderColor: 'rgba(34, 197, 94, 0.4)',
+            }}
           />
           {stats.overdue > 0 && (
             <Chip
               icon={<Flag className="h-3 w-3" />}
               label={`Overdue (${stats.overdue})`}
               size="small"
-              color="error"
+              sx={{
+                bgcolor: 'rgba(239, 68, 68, 0.12)',
+                color: 'rgb(185, 28, 28)',
+              }}
             />
           )}
         </Stack>
@@ -835,7 +846,7 @@ export function TaskManagementPanel({ onNavigateToSubmission, initialTaskId, onT
                             variant="outlined"
                           />
                           {isOverdue && (
-                            <Chip label="Overdue" size="small" color="error" />
+                            <Chip label="Overdue" size="small" sx={{ bgcolor: 'rgba(239, 68, 68, 0.12)', color: 'rgb(185, 28, 28)' }} />
                           )}
                           {task.linkedSubmissionId && (
                             <Chip
