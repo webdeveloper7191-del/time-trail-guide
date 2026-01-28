@@ -21,6 +21,8 @@ import { QuickAssignPlanDrawer } from '@/components/performance/QuickAssignPlanD
 import { PerformanceTaskManagementPanel } from '@/components/performance/PerformanceTaskManagementPanel';
 import { CreateGoalModal } from '@/components/performance/CreateGoalModal';
 import { LMSAdminModule } from '@/components/performance/LMSAdminModule';
+import { ScheduleConversationModal } from '@/components/performance/ScheduleConversationModal';
+import { StartReviewModal } from '@/components/performance/StartReviewModal';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
@@ -55,6 +57,8 @@ export default function PerformanceManagement() {
   const [showPlanDetail, setShowPlanDetail] = useState(false);
   const [showQuickAssignDrawer, setShowQuickAssignDrawer] = useState(false);
   const [showCreateGoalModal, setShowCreateGoalModal] = useState(false);
+  const [showScheduleConversationModal, setShowScheduleConversationModal] = useState(false);
+  const [showStartReviewModal, setShowStartReviewModal] = useState(false);
   
   const {
     reviews, goals, feedback, conversations, loading,
@@ -348,7 +352,7 @@ export default function PerformanceManagement() {
                 reviews={reviews}
                 staff={mockStaff}
                 currentUserId={CURRENT_USER_ID}
-                onCreateReview={() => toast.info('Review creation modal - coming soon')}
+                onCreateReview={() => setShowStartReviewModal(true)}
                 onViewReview={handleViewReview}
               />
             </TabsContent>
@@ -369,7 +373,7 @@ export default function PerformanceManagement() {
                 conversations={conversations}
                 staff={mockStaff}
                 currentUserId={CURRENT_USER_ID}
-                onScheduleConversation={() => toast.info('Schedule conversation modal - coming soon')}
+                onScheduleConversation={() => setShowScheduleConversationModal(true)}
                 onViewConversation={handleViewConversation}
               />
             </TabsContent>
@@ -536,6 +540,32 @@ export default function PerformanceManagement() {
         createdBy={CURRENT_USER_ID}
         onSubmit={async (data) => {
           await createGoal(data);
+        }}
+      />
+
+      {/* Schedule Conversation Modal */}
+      <ScheduleConversationModal
+        open={showScheduleConversationModal}
+        onOpenChange={setShowScheduleConversationModal}
+        staff={mockStaff}
+        managerId={CURRENT_USER_ID}
+        onSubmit={async (data) => {
+          console.log('Creating conversation:', data);
+          toast.success('1:1 conversation scheduled successfully!');
+          setShowScheduleConversationModal(false);
+        }}
+      />
+
+      {/* Start Review Modal */}
+      <StartReviewModal
+        open={showStartReviewModal}
+        onOpenChange={setShowStartReviewModal}
+        staff={mockStaff}
+        reviewerId={CURRENT_USER_ID}
+        onSubmit={async (data) => {
+          console.log('Creating review:', data);
+          toast.success('Performance review initiated!');
+          setShowStartReviewModal(false);
         }}
       />
     </div>

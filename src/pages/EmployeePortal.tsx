@@ -26,11 +26,13 @@ import {
   ShieldCheck,
   ShieldAlert,
   GraduationCap,
+  Target,
 } from 'lucide-react';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/timesheet/StatusBadge';
 import { EmployeeLMSPanel } from '@/components/performance/EmployeeLMSPanel';
+import { EmployeePerformancePanel } from '@/components/performance/EmployeePerformancePanel';
 
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
@@ -164,6 +166,9 @@ export function EmployeePortal() {
             <TabsTrigger value="history" className="gap-2">
               <Calendar className="h-4 w-4" /> History
             </TabsTrigger>
+            <TabsTrigger value="performance" className="gap-2">
+              <Target className="h-4 w-4" /> My Performance
+            </TabsTrigger>
             <TabsTrigger value="learning" className="gap-2">
               <GraduationCap className="h-4 w-4" /> My Learning
             </TabsTrigger>
@@ -190,6 +195,10 @@ export function EmployeePortal() {
 
           <TabsContent value="history">
             <HistoryView timesheets={pastTimesheets} />
+          </TabsContent>
+
+          <TabsContent value="performance">
+            <EmployeePerformancePanel currentUserId={currentEmployee.id} />
           </TabsContent>
 
           <TabsContent value="learning">
