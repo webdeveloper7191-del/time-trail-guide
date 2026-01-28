@@ -77,6 +77,8 @@ export interface AssignedPlan {
   goalIds: string[]; // Created goals linked to this plan
   reviewIds: string[]; // Created reviews linked to this plan
   conversationIds: string[]; // Scheduled conversations linked to this plan
+  learningPathIds: string[]; // Linked learning paths from LMS
+  courseIds: string[]; // Linked individual courses from LMS
   progress: number;
   createdAt: string;
   updatedAt: string;
