@@ -19,12 +19,14 @@ import { PlanTemplatePreviewSheet } from '@/components/performance/PlanTemplateP
 import { CreateTemplateDrawer } from '@/components/performance/CreateTemplateDrawer';
 import { QuickAssignPlanDrawer } from '@/components/performance/QuickAssignPlanDrawer';
 import { PerformanceTaskManagementPanel } from '@/components/performance/PerformanceTaskManagementPanel';
+import { CreateGoalModal } from '@/components/performance/CreateGoalModal';
+import { LMSPanel } from '@/components/performance/LMSPanel';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, UserPlus } from 'lucide-react';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, UserPlus, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -52,6 +54,7 @@ export default function PerformanceManagement() {
   const [selectedPlan, setSelectedPlan] = useState<AssignedPlan | null>(null);
   const [showPlanDetail, setShowPlanDetail] = useState(false);
   const [showQuickAssignDrawer, setShowQuickAssignDrawer] = useState(false);
+  const [showCreateGoalModal, setShowCreateGoalModal] = useState(false);
   
   const {
     reviews, goals, feedback, conversations, loading,
@@ -266,9 +269,12 @@ export default function PerformanceManagement() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-8 max-w-5xl">
+            <TabsList className="grid w-full grid-cols-9 max-w-6xl">
               <TabsTrigger value="plans" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" /> Plans
+              </TabsTrigger>
+              <TabsTrigger value="lms" className="flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" /> LMS
               </TabsTrigger>
               <TabsTrigger value="tasks" className="flex items-center gap-2">
                 <ListTodo className="h-4 w-4" /> Tasks
@@ -309,6 +315,15 @@ export default function PerformanceManagement() {
               />
             </TabsContent>
 
+            <TabsContent value="lms" className="mt-6">
+              <LMSPanel
+                currentUserId={CURRENT_USER_ID}
+                staff={mockStaff}
+                goals={goals}
+                onCreateLearningGoal={() => setShowCreateGoalModal(true)}
+              />
+            </TabsContent>
+
             <TabsContent value="tasks" className="mt-6">
               <PerformanceTaskManagementPanel
                 currentUserId={CURRENT_USER_ID}
@@ -324,7 +339,7 @@ export default function PerformanceManagement() {
             <TabsContent value="goals" className="mt-6">
               <GoalsTracker
                 goals={goals}
-                onCreateGoal={() => toast.info('Goal creation modal - use the + button')}
+                onCreateGoal={() => setShowCreateGoalModal(true)}
                 onViewGoal={handleViewGoal}
                 onUpdateProgress={updateGoalProgress}
               />
@@ -513,6 +528,17 @@ export default function PerformanceManagement() {
         currentUserId={CURRENT_USER_ID}
         onClose={() => setShowQuickAssignDrawer(false)}
         onAssign={handleAssignPlanSubmit}
+      />
+
+      {/* Create Goal Modal */}
+      <CreateGoalModal
+        open={showCreateGoalModal}
+        onOpenChange={setShowCreateGoalModal}
+        staffId={CURRENT_USER_ID}
+        createdBy={CURRENT_USER_ID}
+        onSubmit={async (data) => {
+          await createGoal(data);
+        }}
       />
     </div>
   );
