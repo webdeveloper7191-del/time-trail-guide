@@ -332,16 +332,6 @@ export default function PerformanceManagement() {
                 </TabsTrigger>
               </TabsList>
               {/* Contextual Action Buttons */}
-              {activeTab === 'plans' && (
-                <Button 
-                  onClick={() => setShowQuickAssignDrawer(true)} 
-                  className="gap-2 shadow-sm"
-                  size="default"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Assign Plan
-                </Button>
-              )}
               {activeTab === 'goals' && (
                 <Button 
                   onClick={() => setShowCreateGoalModal(true)} 
@@ -387,6 +377,7 @@ export default function PerformanceManagement() {
                 onCreateTemplate={handleCreateTemplate}
                 onEditTemplate={handleEditTemplate}
                 onDuplicateTemplate={handleDuplicateTemplate}
+                onQuickAssignPlan={() => setShowQuickAssignDrawer(true)}
               />
             </TabsContent>
 
