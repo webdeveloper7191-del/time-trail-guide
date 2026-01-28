@@ -28,6 +28,7 @@ import {
   MoreVertical,
   BookOpen,
   GraduationCap,
+  UserPlus,
 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { 
@@ -59,6 +60,7 @@ interface PlanManagementPanelProps {
   onCreateTemplate: () => void;
   onEditTemplate: (template: PerformancePlanTemplate) => void;
   onDuplicateTemplate: (template: PerformancePlanTemplate) => void;
+  onQuickAssignPlan: () => void;
 }
 
 export function PlanManagementPanel({
@@ -73,6 +75,7 @@ export function PlanManagementPanel({
   onCreateTemplate,
   onEditTemplate,
   onDuplicateTemplate,
+  onQuickAssignPlan,
 }: PlanManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<'assigned' | 'templates'>('assigned');
   const [searchTerm, setSearchTerm] = useState('');
@@ -229,6 +232,13 @@ export function PlanManagementPanel({
                 ))}
               </SelectContent>
             </Select>
+          )}
+
+          {activeTab === 'assigned' && (
+            <Button onClick={onQuickAssignPlan} className="gap-2 shadow-sm ml-auto">
+              <UserPlus className="h-4 w-4" />
+              Assign Plan
+            </Button>
           )}
         </div>
 
