@@ -53,6 +53,8 @@ import {
 import { StaffMember } from '@/types/staff';
 import { mockCourses, mockEnrollments, mockLearnerAnalytics } from '@/data/mockLmsData';
 import { toast } from 'sonner';
+import { CourseAuthoringTool } from './CourseAuthoringTool';
+import { CourseAuthoringState } from '@/types/lmsAdvanced';
 
 interface LMSAdminPanelProps {
   staff: StaffMember[];
@@ -66,7 +68,9 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [assignDueDate, setAssignDueDate] = useState<Date | undefined>();
-  const [showCreateCourse, setShowCreateCourse] = useState(false);
+  const [showCourseAuthoring, setShowCourseAuthoring] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<CourseAuthoringState | undefined>();
+  const [courses, setCourses] = useState(mockCourses);
 
   // Analytics
   const totalEnrollments = mockEnrollments.length;
@@ -105,7 +109,7 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
 
   // Course stats
   const courseStats = useMemo(() => {
-    return mockCourses.map(course => {
+    return courses.map(course => {
       const enrollments = mockEnrollments.filter(e => e.courseId === course.id);
       const completed = enrollments.filter(e => e.status === 'completed').length;
       
@@ -120,7 +124,111 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
           : 0,
       };
     });
-  }, []);
+  }, [courses]);
+
+  const handleOpenCreateCourse = () => {
+    setEditingCourse(undefined);
+    setShowCourseAuthoring(true);
+  };
+
+  const handleOpenEditCourse = (course: Course) => {
+    // Convert Course to CourseAuthoringState format
+    const authoringState: CourseAuthoringState = {
+      courseId: course.id,
+      title: course.title,
+      description: course.description,
+      category: course.category,
+      difficulty: course.difficulty,
+      industry: course.industry,
+      complianceRequired: course.complianceRequired,
+      validityPeriod: course.validityPeriod,
+      certificateOnCompletion: true,
+      passingScore: 80,
+      tags: course.tags || [],
+      modules: course.modules.map((m, idx) => ({
+        id: m.id,
+        title: m.title,
+        description: m.description || '',
+        order: m.order,
+        duration: m.duration,
+        content: m.content.map((c, cIdx) => ({
+          id: c.id,
+          title: c.title,
+          type: c.type as any,
+          order: cIdx + 1,
+          mandatory: c.mandatory,
+          duration: c.duration,
+          url: c.url,
+        })),
+        isLocked: m.isLocked,
+        isExpanded: true,
+      })),
+      status: course.status === 'published' ? 'published' : 'draft',
+      isDirty: false,
+    };
+    setEditingCourse(authoringState);
+    setShowCourseAuthoring(true);
+  };
+
+  const handleSaveCourse = (courseData: CourseAuthoringState) => {
+    // Convert CourseAuthoringState back to Course format
+    const newCourse: Course = {
+      id: courseData.courseId,
+      title: courseData.title,
+      description: courseData.description,
+      category: courseData.category,
+      difficulty: courseData.difficulty as Course['difficulty'],
+      duration: courseData.modules.reduce((sum, m) => 
+        sum + m.content.reduce((cSum, c) => cSum + (c.duration || 0), 0), 0
+      ),
+      status: 'draft',
+      modules: courseData.modules.map(m => ({
+        id: m.id,
+        title: m.title,
+        description: m.description,
+        order: m.order,
+        duration: m.duration,
+        content: m.content.map((c, idx) => ({
+          id: c.id,
+          title: c.title,
+          type: c.type as Course['modules'][0]['content'][0]['type'],
+          order: c.order || idx + 1,
+          duration: c.duration,
+          mandatory: c.mandatory,
+          url: c.url,
+        })),
+        isLocked: m.isLocked,
+      })),
+      instructor: 'Admin',
+      prerequisites: [],
+      skills: [],
+      industry: courseData.industry,
+      tags: courseData.tags,
+      complianceRequired: courseData.complianceRequired,
+      certificateOnCompletion: courseData.certificateOnCompletion,
+      validityPeriod: courseData.validityPeriod,
+      passingScore: courseData.passingScore,
+      rating: 0,
+      enrollmentCount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setCourses(prev => {
+      const existingIdx = prev.findIndex(c => c.id === newCourse.id);
+      if (existingIdx >= 0) {
+        const updated = [...prev];
+        updated[existingIdx] = newCourse;
+        return updated;
+      }
+      return [...prev, newCourse];
+    });
+  };
+
+  const handlePublishCourse = (courseData: CourseAuthoringState) => {
+    handleSaveCourse({ ...courseData, status: 'published' });
+    setShowCourseAuthoring(false);
+  };
 
   const handleOpenAssign = (course: Course) => {
     setSelectedCourse(course);
@@ -169,7 +277,7 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
             Manage courses, assignments, and track team learning progress
           </p>
         </div>
-        <Button onClick={() => setShowCreateCourse(true)}>
+        <Button onClick={handleOpenCreateCourse}>
           <Plus className="h-4 w-4 mr-2" />
           Create Course
         </Button>
@@ -436,7 +544,11 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                             <UserPlus className="h-4 w-4 mr-1" />
                             Assign
                           </Button>
-                          <Button variant="ghost" size="icon">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleOpenEditCourse(stat.course)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                         </div>
@@ -697,6 +809,18 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Course Authoring Tool */}
+      <CourseAuthoringTool
+        open={showCourseAuthoring}
+        onClose={() => {
+          setShowCourseAuthoring(false);
+          setEditingCourse(undefined);
+        }}
+        onSave={handleSaveCourse}
+        onPublish={handlePublishCourse}
+        initialCourse={editingCourse}
+      />
     </div>
   );
 }
