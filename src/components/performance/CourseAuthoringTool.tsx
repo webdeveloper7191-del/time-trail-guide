@@ -35,6 +35,7 @@ import {
   Undo,
   Redo,
   AlertCircle,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { lmsCategories, lmsIndustries, difficultyLabels } from '@/types/lms';
@@ -48,6 +49,7 @@ import {
 import { toast } from 'sonner';
 import { ContentUploader } from './ContentUploader';
 import { ThumbnailUploader } from './ThumbnailUploader';
+import { RichTextEditor } from './RichTextEditor';
 
 interface CourseAuthoringToolProps {
   open: boolean;
@@ -58,6 +60,7 @@ interface CourseAuthoringToolProps {
 }
 
 const contentTypeConfig = [
+  { type: 'text', label: 'Text/Article', icon: BookOpen, color: 'text-emerald-500' },
   { type: 'video', label: 'Video', icon: Video, color: 'text-red-500' },
   { type: 'document', label: 'Document', icon: FileText, color: 'text-blue-500' },
   { type: 'quiz', label: 'Quiz', icon: HelpCircle, color: 'text-purple-500' },
@@ -652,24 +655,36 @@ export function CourseAuthoringTool({
                                         </Button>
                                       </div>
                                       
-                                      {/* Asset Upload Section */}
+                                      {/* Content Editor Section */}
                                       <div className="ml-10">
-                                        <ContentUploader
-                                          contentType={content.type}
-                                          currentUrl={content.url}
-                                          onAssetChange={(url, file) => {
-                                            updateContent(moduleIdx, contentIdx, { 
-                                              url, 
-                                              file,
-                                            });
-                                          }}
-                                          onUploadStatusChange={(status, progress) => {
-                                            updateContent(moduleIdx, contentIdx, { 
-                                              uploadStatus: status,
-                                              uploadProgress: progress,
-                                            });
-                                          }}
-                                        />
+                                        {content.type === 'text' ? (
+                                          <div className="space-y-2">
+                                            <Label className="text-xs">Rich Text Content</Label>
+                                            <RichTextEditor
+                                              value={content.description || ''}
+                                              onChange={(html) => updateContent(moduleIdx, contentIdx, { description: html })}
+                                              placeholder="Write your chapter content here... Use the toolbar to format text, add headings, lists, and more."
+                                              minHeight="250px"
+                                            />
+                                          </div>
+                                        ) : (
+                                          <ContentUploader
+                                            contentType={content.type}
+                                            currentUrl={content.url}
+                                            onAssetChange={(url, file) => {
+                                              updateContent(moduleIdx, contentIdx, { 
+                                                url, 
+                                                file,
+                                              });
+                                            }}
+                                            onUploadStatusChange={(status, progress) => {
+                                              updateContent(moduleIdx, contentIdx, { 
+                                                uploadStatus: status,
+                                                uploadProgress: progress,
+                                              });
+                                            }}
+                                          />
+                                        )}
                                       </div>
                                     </div>
                                   );
