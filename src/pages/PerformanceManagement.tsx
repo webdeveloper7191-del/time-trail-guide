@@ -28,7 +28,7 @@ import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, UserPlus, GraduationCap } from 'lucide-react';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, UserPlus, GraduationCap, Plus, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -331,14 +331,47 @@ export default function PerformanceManagement() {
                   <BarChart3 className="h-4 w-4 mr-2" /> Analytics
                 </TabsTrigger>
               </TabsList>
-              <Button 
-                onClick={() => setShowQuickAssignDrawer(true)} 
-                className="gap-2 shadow-sm"
-                size="default"
-              >
-                <UserPlus className="h-4 w-4" />
-                Assign Plan
-              </Button>
+              {/* Contextual Action Buttons */}
+              {activeTab === 'plans' && (
+                <Button 
+                  onClick={() => setShowQuickAssignDrawer(true)} 
+                  className="gap-2 shadow-sm"
+                  size="default"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Assign Plan
+                </Button>
+              )}
+              {activeTab === 'goals' && (
+                <Button 
+                  onClick={() => setShowCreateGoalModal(true)} 
+                  className="gap-2 shadow-sm"
+                  size="default"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Goal
+                </Button>
+              )}
+              {activeTab === 'reviews' && (
+                <Button 
+                  onClick={() => setShowStartReviewModal(true)} 
+                  className="gap-2 shadow-sm"
+                  size="default"
+                >
+                  <Plus className="h-4 w-4" />
+                  Start Review
+                </Button>
+              )}
+              {activeTab === 'conversations' && (
+                <Button 
+                  onClick={() => setShowScheduleConversationModal(true)} 
+                  className="gap-2 shadow-sm"
+                  size="default"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Schedule 1:1
+                </Button>
+              )}
             </div>
 
             <TabsContent value="plans" className="mt-6">
