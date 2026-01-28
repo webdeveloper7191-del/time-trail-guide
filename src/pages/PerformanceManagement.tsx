@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Box, Stack, Typography, Tab } from '@mui/material';
+import { Tabs } from '@/components/mui/Tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { GoalsTracker } from '@/components/performance/GoalsTracker';
 import { ReviewsDashboard } from '@/components/performance/ReviewsDashboard';
@@ -28,8 +29,7 @@ import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, UserPlus, GraduationCap, Plus, Calendar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
@@ -84,7 +84,6 @@ export default function PerformanceManagement() {
 
   const handleUpdateGoal = async (goalId: string, updates: Partial<Goal>) => {
     await updateGoal(goalId, updates);
-    // Update local selected goal if it's the same
     if (selectedGoal?.id === goalId) {
       setSelectedGoal(prev => prev ? { ...prev, ...updates } : null);
     }
@@ -141,23 +140,17 @@ export default function PerformanceManagement() {
   // Notification navigation handlers
   const handleNotificationGoal = (goalId: string) => {
     const goal = goals.find(g => g.id === goalId);
-    if (goal) {
-      handleViewGoal(goal);
-    }
+    if (goal) handleViewGoal(goal);
   };
 
   const handleNotificationReview = (reviewId: string) => {
     const review = reviews.find(r => r.id === reviewId);
-    if (review) {
-      handleViewReview(review);
-    }
+    if (review) handleViewReview(review);
   };
 
   const handleNotificationConversation = (conversationId: string) => {
     const conv = conversations.find(c => c.id === conversationId);
-    if (conv) {
-      handleViewConversation(conv);
-    }
+    if (conv) handleViewConversation(conv);
   };
 
   // Plan handlers
@@ -192,7 +185,6 @@ export default function PerformanceManagement() {
   };
 
   const handleDuplicateTemplate = (template: PerformancePlanTemplate) => {
-    // Deep clone with new IDs for all nested items
     const duplicated: PerformancePlanTemplate = {
       ...template,
       id: `tpl-custom-${Date.now()}`,
@@ -220,7 +212,6 @@ export default function PerformanceManagement() {
   };
 
   const handleSaveTemplate = async (template: Omit<PerformancePlanTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
-    // In a real app, this would save to backend
     console.log('Saving template:', template);
     const isEditing = editingTemplate !== null;
     setShowCreateTemplateDrawer(false);
@@ -229,7 +220,6 @@ export default function PerformanceManagement() {
   };
 
   const handleDeleteTemplate = (templateId: string) => {
-    // In a real app, this would delete from backend
     console.log('Deleting template:', templateId);
     toast.success('Template deleted successfully');
   };
@@ -243,8 +233,6 @@ export default function PerformanceManagement() {
     selectedReviews: string[];
     selectedConversations: string[];
   }) => {
-    // In a real app, this would create goals, reviews, and conversations
-    // and link them to a new AssignedPlan
     console.log('Assigning plan:', data);
     toast.success('Performance plan assigned successfully!');
     setShowAssignDrawer(false);
@@ -257,7 +245,6 @@ export default function PerformanceManagement() {
     selectedReviews: string[],
     selectedConversations: string[]
   ) => {
-    // In a real app, this would create multiple plans
     console.log('Bulk assigning plans:', assignments);
     toast.success(`Plans assigned to ${assignments.length} team members!`);
     setShowBulkAssignDrawer(false);
@@ -265,13 +252,11 @@ export default function PerformanceManagement() {
   };
 
   const handleUpdatePlanStatus = async (planId: string, status: PlanStatus) => {
-    // In a real app, this would update the plan status in the backend
     console.log('Updating plan status:', planId, status);
     toast.success(`Plan status updated to ${status}`);
   };
 
   const handleDeletePlan = async (planId: string) => {
-    // In a real app, this would delete the plan from the backend
     console.log('Deleting plan:', planId);
     toast.success('Plan deleted successfully');
     setShowPlanDetail(false);
@@ -279,26 +264,42 @@ export default function PerformanceManagement() {
   };
 
   const handleExtendPlan = async (planId: string, newEndDate: string) => {
-    // In a real app, this would update the plan end date in the backend
     console.log('Extending plan:', planId, 'to', newEndDate);
     toast.success('Plan extended successfully');
   };
 
+  const tabConfig = [
+    { value: 'plans', label: 'Plans', icon: FileText },
+    { value: 'lms', label: 'Learning', icon: GraduationCap },
+    { value: 'tasks', label: 'Tasks', icon: ListTodo },
+    { value: 'goals', label: 'Goals', icon: Target },
+    { value: 'reviews', label: 'Reviews', icon: ClipboardCheck },
+    { value: 'feedback', label: 'Feedback', icon: MessageSquareHeart },
+    { value: 'conversations', label: '1:1s', icon: MessageSquare },
+    { value: 'team', label: 'Team', icon: Users },
+    { value: 'analytics', label: 'Analytics', icon: BarChart3 },
+  ];
+
   return (
-    <div className="flex min-h-screen bg-background">
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <AdminSidebar />
-      <main className="flex-1 p-8 overflow-auto">
-        <div className="max-w-7xl mx-auto space-y-8">
-          {/* Enhanced Header */}
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+      <Box component="main" sx={{ flex: 1, p: 4, overflow: 'auto' }}>
+        <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+          {/* Header */}
+          <Stack 
+            direction="row" 
+            justifyContent="space-between" 
+            alignItems="flex-start"
+            sx={{ mb: 4 }}
+          >
+            <Box>
+              <Typography variant="h4" fontWeight={600} color="text.primary" gutterBottom>
                 Performance Management
-              </h1>
-              <p className="text-base text-muted-foreground">
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
                 Track development plans, reviews, goals, and continuous feedback
-              </p>
-            </div>
+              </Typography>
+            </Box>
             <PerformanceNotificationBell
               goals={goals}
               reviews={reviews}
@@ -313,70 +314,34 @@ export default function PerformanceManagement() {
                 if (plan) handleViewPlan(plan);
               }}
             />
-          </div>
+          </Stack>
 
-          {/* Refined Tab Navigation */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex items-center justify-between border-b border-border/60">
-              <TabsList className="h-12 bg-transparent p-0 gap-1">
-                <TabsTrigger 
-                  value="plans" 
-                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
-                >
-                  <FileText className="h-4 w-4 mr-2" /> Plans
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="lms" 
-                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
-                >
-                  <GraduationCap className="h-4 w-4 mr-2" /> Learning
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="tasks" 
-                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
-                >
-                  <ListTodo className="h-4 w-4 mr-2" /> Tasks
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="goals" 
-                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
-                >
-                  <Target className="h-4 w-4 mr-2" /> Goals
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="reviews" 
-                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
-                >
-                  <ClipboardCheck className="h-4 w-4 mr-2" /> Reviews
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="feedback" 
-                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
-                >
-                  <MessageSquareHeart className="h-4 w-4 mr-2" /> Feedback
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="conversations" 
-                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" /> 1:1s
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="team" 
-                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
-                >
-                  <Users className="h-4 w-4 mr-2" /> Team
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="analytics" 
-                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" /> Analytics
-                </TabsTrigger>
-              </TabsList>
-            </div>
+          {/* Tab Navigation */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs
+              value={activeTab}
+              onChange={(_, value) => setActiveTab(value)}
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              {tabConfig.map(tab => (
+                <Tab
+                  key={tab.value}
+                  value={tab.value}
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <tab.icon size={16} />
+                      <span>{tab.label}</span>
+                    </Stack>
+                  }
+                />
+              ))}
+            </Tabs>
+          </Box>
 
-            <TabsContent value="plans" className="mt-6">
+          {/* Tab Content */}
+          <Box>
+            {activeTab === 'plans' && (
               <PlanManagementPanel
                 staff={mockStaff}
                 goals={goals}
@@ -392,16 +357,16 @@ export default function PerformanceManagement() {
                 onQuickAssignPlan={() => setShowQuickAssignDrawer(true)}
                 onDeleteTemplate={handleDeleteTemplate}
               />
-            </TabsContent>
+            )}
 
-            <TabsContent value="lms" className="mt-6">
+            {activeTab === 'lms' && (
               <LMSAdminModule
                 currentUserId={CURRENT_USER_ID}
                 staff={mockStaff}
               />
-            </TabsContent>
+            )}
 
-            <TabsContent value="tasks" className="mt-6">
+            {activeTab === 'tasks' && (
               <PerformanceTaskManagementPanel
                 currentUserId={CURRENT_USER_ID}
                 goals={goals}
@@ -411,18 +376,18 @@ export default function PerformanceManagement() {
                 onNavigateToReview={handleNotificationReview}
                 onNavigateToConversation={handleNotificationConversation}
               />
-            </TabsContent>
+            )}
 
-            <TabsContent value="goals" className="mt-6">
+            {activeTab === 'goals' && (
               <GoalsTracker
                 goals={goals}
                 onCreateGoal={() => setShowCreateGoalDrawer(true)}
                 onViewGoal={handleViewGoal}
                 onUpdateProgress={updateGoalProgress}
               />
-            </TabsContent>
+            )}
 
-            <TabsContent value="reviews" className="mt-6">
+            {activeTab === 'reviews' && (
               <ReviewsDashboard
                 reviews={reviews}
                 staff={mockStaff}
@@ -430,9 +395,9 @@ export default function PerformanceManagement() {
                 onCreateReview={() => setShowStartReviewDrawer(true)}
                 onViewReview={handleViewReview}
               />
-            </TabsContent>
+            )}
 
-            <TabsContent value="feedback" className="mt-6">
+            {activeTab === 'feedback' && (
               <FeedbackPanel
                 feedback={feedback}
                 staff={mockStaff}
@@ -441,9 +406,9 @@ export default function PerformanceManagement() {
                 view={feedbackView}
                 onViewChange={setFeedbackView}
               />
-            </TabsContent>
+            )}
 
-            <TabsContent value="conversations" className="mt-6">
+            {activeTab === 'conversations' && (
               <ConversationsList
                 conversations={conversations}
                 staff={mockStaff}
@@ -451,9 +416,9 @@ export default function PerformanceManagement() {
                 onScheduleConversation={() => setShowScheduleConversationModal(true)}
                 onViewConversation={handleViewConversation}
               />
-            </TabsContent>
+            )}
 
-            <TabsContent value="team" className="mt-6">
+            {activeTab === 'team' && (
               <TeamOverviewDashboard
                 staff={mockStaff}
                 goals={goals}
@@ -465,19 +430,19 @@ export default function PerformanceManagement() {
                 onViewReview={handleViewReview}
                 onViewConversation={handleViewConversation}
               />
-            </TabsContent>
+            )}
 
-            <TabsContent value="analytics" className="mt-6">
+            {activeTab === 'analytics' && (
               <PerformanceAnalyticsDashboard
                 goals={goals}
                 reviews={reviews}
                 feedback={feedback}
                 conversations={conversations}
               />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
+            )}
+          </Box>
+        </Box>
+      </Box>
 
       {/* Goal Detail Sheet */}
       <GoalDetailSheet
@@ -641,6 +606,6 @@ export default function PerformanceManagement() {
           await createReview(data);
         }}
       />
-    </div>
+    </Box>
   );
 }
