@@ -230,97 +230,103 @@ export function LearningPathsPanel() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Route className="h-5 w-5 text-primary" />
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h3 className="text-xl font-semibold tracking-tight flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Route className="h-5 w-5 text-primary" />
+            </div>
             Learning Paths
           </h3>
           <p className="text-sm text-muted-foreground">
             Create structured training journeys for onboarding and development
           </p>
         </div>
-        <Button onClick={() => setShowBuilder(true)}>
+        <Button onClick={() => setShowBuilder(true)} className="shadow-sm">
           <Plus className="h-4 w-4 mr-2" />
           Create Path
         </Button>
       </div>
 
       {/* Search */}
-      <div className="relative max-w-sm">
+      <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search paths..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="pl-10 border-border/60"
         />
       </div>
 
-      {/* Stats Overview */}
+      {/* Stats Overview - Clean Minimalist Design */}
       <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Total Paths</p>
+                <p className="text-3xl font-semibold tracking-tight">{paths.length}</p>
+              </div>
+              <div className="p-3 rounded-full bg-primary/10">
                 <Route className="h-5 w-5 text-primary" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{paths.length}</p>
-                <p className="text-xs text-muted-foreground">Total Paths</p>
-              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Enrollments</p>
+                <p className="text-3xl font-semibold tracking-tight">{enrollments.length}</p>
+              </div>
+              <div className="p-3 rounded-full bg-blue-500/10">
                 <Users className="h-5 w-5 text-blue-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {enrollments.length}
-                </p>
-                <p className="text-xs text-muted-foreground">Total Enrollments</p>
-              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Completions</p>
+                <p className="text-3xl font-semibold tracking-tight">
                   {enrollments.filter(e => e.status === 'completed').length}
                 </p>
-                <p className="text-xs text-muted-foreground">Completions</p>
+              </div>
+              <div className="p-3 rounded-full bg-green-500/10">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Paths Grid */}
+      {/* Paths Grid - Refined Cards */}
       <div className="grid gap-4 md:grid-cols-2">
         {filteredPaths.length === 0 ? (
-          <div className="col-span-2 text-center py-12 border-2 border-dashed rounded-lg">
-            <Route className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <p className="font-medium">No learning paths found</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              {searchQuery ? 'Try a different search term' : 'Create your first learning path to get started'}
-            </p>
-            {!searchQuery && (
-              <Button onClick={() => setShowBuilder(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Path
-              </Button>
-            )}
+          <div className="col-span-2">
+            <Card className="border-dashed border-2 bg-transparent">
+              <CardContent className="py-16 text-center">
+                <div className="p-4 rounded-full bg-muted/50 w-fit mx-auto mb-4">
+                  <Route className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <p className="font-medium text-foreground">No learning paths found</p>
+                <p className="text-sm text-muted-foreground mt-1.5 max-w-sm mx-auto">
+                  {searchQuery ? 'Try a different search term' : 'Create your first learning path to get started'}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => setShowBuilder(true)} className="mt-5 shadow-sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Path
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           </div>
         ) : (
           filteredPaths.map(path => {
@@ -330,21 +336,23 @@ export function LearningPathsPanel() {
               : 0;
 
             return (
-              <Card key={path.id} className="hover:shadow-md transition-shadow">
+              <Card key={path.id} className="group border-0 shadow-sm hover:shadow-md transition-all duration-200">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Route className="h-4 w-4 text-primary" />
-                        {path.name}
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-primary/10">
+                          <Route className="h-4 w-4 text-primary" />
+                        </div>
+                        <span className="truncate">{path.name}</span>
                       </CardTitle>
-                      <CardDescription className="line-clamp-2 mt-1">
+                      <CardDescription className="line-clamp-2 mt-2">
                         {path.description}
                       </CardDescription>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>

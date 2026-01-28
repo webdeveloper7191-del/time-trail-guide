@@ -87,91 +87,106 @@ export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
+    <div className="space-y-8">
+      {/* Stats Cards - Clean Minimalist Design */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Courses</p>
+                <p className="text-3xl font-semibold tracking-tight">{mockCourses.length}</p>
+              </div>
+              <div className="p-3 rounded-full bg-primary/10">
                 <BookOpen className="h-5 w-5 text-primary" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{mockCourses.length}</p>
-                <p className="text-xs text-muted-foreground">Total Courses</p>
-              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Enrolled</p>
+                <p className="text-3xl font-semibold tracking-tight">{totalEnrollments}</p>
+              </div>
+              <div className="p-3 rounded-full bg-blue-500/10">
                 <Users className="h-5 w-5 text-blue-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{totalEnrollments}</p>
-                <p className="text-xs text-muted-foreground">Enrollments</p>
-              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Completion</p>
+                <p className="text-3xl font-semibold tracking-tight">{completionRate}%</p>
+              </div>
+              <div className="p-3 rounded-full bg-green-500/10">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{completionRate}%</p>
-                <p className="text-xs text-muted-foreground">Completion Rate</p>
-              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+                <p className="text-3xl font-semibold tracking-tight">{inProgressEnrollments}</p>
+              </div>
+              <div className="p-3 rounded-full bg-amber-500/10">
                 <Clock className="h-5 w-5 text-amber-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{inProgressEnrollments}</p>
-                <p className="text-xs text-muted-foreground">In Progress</p>
-              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                <AlertCircle className="h-5 w-5 text-red-600" />
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Overdue</p>
+                <p className="text-3xl font-semibold tracking-tight">{overdueEnrollments}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{overdueEnrollments}</p>
-                <p className="text-xs text-muted-foreground">Overdue</p>
+              <div className="p-3 rounded-full bg-red-500/10">
+                <AlertCircle className="h-5 w-5 text-red-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Tab Navigation - Clean Design */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-xl grid-cols-4">
-          <TabsTrigger value="overview" className="gap-2">
-            <BarChart3 className="h-4 w-4" /> Overview
-          </TabsTrigger>
-          <TabsTrigger value="paths" className="gap-2">
-            <Route className="h-4 w-4" /> Learning Paths
-          </TabsTrigger>
-          <TabsTrigger value="authoring" className="gap-2">
-            <PenTool className="h-4 w-4" /> Create Course
-          </TabsTrigger>
-          <TabsTrigger value="manage" className="gap-2">
-            <Settings className="h-4 w-4" /> Manage
-          </TabsTrigger>
-        </TabsList>
+        <div className="border-b border-border/60">
+          <TabsList className="h-11 bg-transparent p-0 gap-1">
+            <TabsTrigger 
+              value="overview" 
+              className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" /> Overview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="paths" 
+              className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
+            >
+              <Route className="h-4 w-4 mr-2" /> Learning Paths
+            </TabsTrigger>
+            <TabsTrigger 
+              value="authoring" 
+              className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
+            >
+              <PenTool className="h-4 w-4 mr-2" /> Create Course
+            </TabsTrigger>
+            <TabsTrigger 
+              value="manage" 
+              className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
+            >
+              <Settings className="h-4 w-4 mr-2" /> Manage
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="mt-6">

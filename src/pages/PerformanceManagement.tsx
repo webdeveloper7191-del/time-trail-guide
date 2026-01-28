@@ -244,15 +244,24 @@ export default function PerformanceManagement() {
   return (
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
-      <main className="flex-1 p-6 overflow-auto">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Performance Management</h1>
-              <p className="text-muted-foreground">Plans, reviews, goals, feedback & continuous conversations</p>
+      <main className="flex-1 p-8 overflow-auto">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Enhanced Header */}
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Performance Management
+              </h1>
+              <p className="text-base text-muted-foreground">
+                Track development plans, reviews, goals, and continuous feedback
+              </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button onClick={() => setShowQuickAssignDrawer(true)} className="gap-2">
+              <Button 
+                onClick={() => setShowQuickAssignDrawer(true)} 
+                className="gap-2 shadow-sm"
+                size="default"
+              >
                 <UserPlus className="h-4 w-4" />
                 Assign Plan
               </Button>
@@ -273,36 +282,66 @@ export default function PerformanceManagement() {
             </div>
           </div>
 
+          {/* Refined Tab Navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-9 max-w-6xl">
-              <TabsTrigger value="plans" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" /> Plans
-              </TabsTrigger>
-              <TabsTrigger value="lms" className="flex items-center gap-2">
-                <GraduationCap className="h-4 w-4" /> LMS
-              </TabsTrigger>
-              <TabsTrigger value="tasks" className="flex items-center gap-2">
-                <ListTodo className="h-4 w-4" /> Tasks
-              </TabsTrigger>
-              <TabsTrigger value="goals" className="flex items-center gap-2">
-                <Target className="h-4 w-4" /> Goals
-              </TabsTrigger>
-              <TabsTrigger value="reviews" className="flex items-center gap-2">
-                <ClipboardCheck className="h-4 w-4" /> Reviews
-              </TabsTrigger>
-              <TabsTrigger value="feedback" className="flex items-center gap-2">
-                <MessageSquareHeart className="h-4 w-4" /> Feedback
-              </TabsTrigger>
-              <TabsTrigger value="conversations" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" /> 1:1s
-              </TabsTrigger>
-              <TabsTrigger value="team" className="flex items-center gap-2">
-                <Users className="h-4 w-4" /> Team
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" /> Analytics
-              </TabsTrigger>
-            </TabsList>
+            <div className="border-b border-border/60">
+              <TabsList className="h-12 bg-transparent p-0 gap-1">
+                <TabsTrigger 
+                  value="plans" 
+                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
+                >
+                  <FileText className="h-4 w-4 mr-2" /> Plans
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="lms" 
+                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
+                >
+                  <GraduationCap className="h-4 w-4 mr-2" /> Learning
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="tasks" 
+                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
+                >
+                  <ListTodo className="h-4 w-4 mr-2" /> Tasks
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="goals" 
+                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
+                >
+                  <Target className="h-4 w-4 mr-2" /> Goals
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="reviews" 
+                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
+                >
+                  <ClipboardCheck className="h-4 w-4 mr-2" /> Reviews
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="feedback" 
+                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
+                >
+                  <MessageSquareHeart className="h-4 w-4 mr-2" /> Feedback
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="conversations" 
+                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" /> 1:1s
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="team" 
+                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
+                >
+                  <Users className="h-4 w-4 mr-2" /> Team
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="analytics" 
+                  className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium transition-colors"
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" /> Analytics
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="plans" className="mt-6">
               <PlanManagementPanel
