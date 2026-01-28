@@ -69,6 +69,8 @@ import {
   performanceTaskTypeConfig,
   performanceTaskStatusConfig,
   performanceTaskPriorityConfig,
+  CustomTaskType,
+  getTaskTypeConfig,
 } from '@/types/performanceTasks';
 import { mockPerformanceTasks, mockPerformancePipelines } from '@/data/mockPerformanceTaskData';
 import { mockStaff } from '@/data/mockStaffData';
@@ -116,6 +118,7 @@ export function PerformanceTaskManagementPanel({
 }: PerformanceTaskManagementPanelProps) {
   const [tasks, setTasks] = useState<PerformanceTask[]>(mockPerformanceTasks);
   const [pipelines, setPipelines] = useState<PerformanceTaskPipeline[]>(mockPerformancePipelines);
+  const [customTaskTypes, setCustomTaskTypes] = useState<CustomTaskType[]>([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>(mockPerformancePipelines[0].id);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<PerformanceTaskStatus | 'all'>('all');
@@ -857,8 +860,13 @@ export function PerformanceTaskManagementPanel({
         goals={goals}
         reviews={reviews}
         pipelines={pipelines}
+        customTaskTypes={customTaskTypes}
         onClose={() => setShowEditDrawer(false)}
         onSave={handleSaveTask}
+        onCreateTaskType={(newType) => {
+          setCustomTaskTypes(prev => [...prev, newType]);
+          toast.success(`Created task type: ${newType.label}`);
+        }}
       />
     </Box>
   );

@@ -1,12 +1,23 @@
 // Performance Task Management Types
 
-export type PerformanceTaskType = 
+// Built-in task types
+export type BuiltInPerformanceTaskType = 
   | 'goal_action' 
   | 'review_followup' 
   | 'development_task' 
   | 'coaching_task'
   | 'pip_action'
   | 'training_task';
+
+// Task type can be built-in or custom (string)
+export type PerformanceTaskType = BuiltInPerformanceTaskType | string;
+
+export interface CustomTaskType {
+  id: string;
+  label: string;
+  color: string;
+  createdAt: string;
+}
 
 export type PerformanceTaskStatus = 'open' | 'in_progress' | 'blocked' | 'completed' | 'cancelled';
 export type PerformanceTaskPriority = 'low' | 'medium' | 'high' | 'critical';
@@ -107,13 +118,27 @@ export interface PerformanceTaskFormData {
   stageId?: string;
 }
 
-export const performanceTaskTypeConfig: Record<PerformanceTaskType, { label: string; color: string }> = {
+export const performanceTaskTypeConfig: Record<BuiltInPerformanceTaskType, { label: string; color: string }> = {
   goal_action: { label: 'Goal Action', color: 'primary' },
   review_followup: { label: 'Review Follow-up', color: 'secondary' },
   development_task: { label: 'Development', color: 'info' },
   coaching_task: { label: 'Coaching', color: 'success' },
   pip_action: { label: 'PIP Action', color: 'error' },
   training_task: { label: 'Training', color: 'warning' },
+};
+
+// Helper to get task type config (handles both built-in and custom types)
+export const getTaskTypeConfig = (
+  type: PerformanceTaskType, 
+  customTypes: CustomTaskType[]
+): { label: string; color: string } => {
+  if (type in performanceTaskTypeConfig) {
+    return performanceTaskTypeConfig[type as BuiltInPerformanceTaskType];
+  }
+  const custom = customTypes.find(t => t.id === type);
+  return custom 
+    ? { label: custom.label, color: custom.color }
+    : { label: type, color: 'default' };
 };
 
 export const performanceTaskStatusConfig: Record<PerformanceTaskStatus, { label: string; color: string }> = {
