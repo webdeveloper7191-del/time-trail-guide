@@ -1,37 +1,26 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { 
   Feedback, 
   FeedbackType,
   feedbackTypeLabels 
 } from '@/types/performance';
 import { StaffMember } from '@/types/staff';
-import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, parseISO } from 'date-fns';
 import { 
   MessageSquareHeart, 
-  Send,
   ThumbsUp,
   Lightbulb,
   MessageCircle,
   Heart,
   Lock,
-  Globe,
   Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { GiveFeedbackDrawer } from './GiveFeedbackDrawer';
 
 interface FeedbackPanelProps {
   feedback: Feedback[];
@@ -64,12 +53,7 @@ export function FeedbackPanel({
   view,
   onViewChange
 }: FeedbackPanelProps) {
-  const [showCompose, setShowCompose] = useState(false);
-  const [selectedRecipient, setSelectedRecipient] = useState<string>('');
-  const [feedbackType, setFeedbackType] = useState<FeedbackType>('praise');
-  const [message, setMessage] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [showFeedbackDrawer, setShowFeedbackDrawer] = useState(false);
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
@@ -78,28 +62,6 @@ export function FeedbackPanel({
     if (view === 'given') return f.fromStaffId === currentUserId;
     return true;
   });
-
-  const handleSend = async () => {
-    if (!selectedRecipient || !message.trim()) return;
-    
-    setSending(true);
-    try {
-      await onSendFeedback({
-        fromStaffId: currentUserId,
-        toStaffId: selectedRecipient,
-        type: feedbackType,
-        message: message.trim(),
-        isPrivate,
-      });
-      setShowCompose(false);
-      setSelectedRecipient('');
-      setMessage('');
-      setFeedbackType('praise');
-      setIsPrivate(false);
-    } finally {
-      setSending(false);
-    }
-  };
 
   return (
     <div className="space-y-8">
@@ -115,7 +77,7 @@ export function FeedbackPanel({
             Give and receive feedback from your team
           </p>
         </div>
-        <Button onClick={() => setShowCompose(true)} className="shadow-sm">
+        <Button onClick={() => setShowFeedbackDrawer(true)} className="shadow-sm">
           <Plus className="h-4 w-4 mr-2" />
           Give Feedback
         </Button>
@@ -139,98 +101,6 @@ export function FeedbackPanel({
         ))}
       </div>
 
-      {/* Compose Feedback */}
-      {showCompose && (
-        <Card className="border-primary/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Send Feedback</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Recipient</Label>
-                <Select value={selectedRecipient} onValueChange={setSelectedRecipient}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select team member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {staff.filter(s => s.id !== currentUserId && s.status === 'active').map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={s.avatar} />
-                            <AvatarFallback className="text-xs">
-                              {s.firstName[0]}{s.lastName[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          {s.firstName} {s.lastName}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Select value={feedbackType} onValueChange={(v) => setFeedbackType(v as FeedbackType)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(feedbackTypeLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        <div className="flex items-center gap-2">
-                          {typeIcons[value as FeedbackType]}
-                          {label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Message</Label>
-              <Textarea
-                placeholder="Write your feedback here..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rows={4}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="private"
-                  checked={isPrivate}
-                  onCheckedChange={setIsPrivate}
-                />
-                <Label htmlFor="private" className="flex items-center gap-1.5 cursor-pointer">
-                  {isPrivate ? <Lock className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-                  {isPrivate ? 'Private (only recipient & managers)' : 'Public'}
-                </Label>
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowCompose(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleSend} 
-                  disabled={!selectedRecipient || !message.trim() || sending}
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Feedback
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Feedback List */}
       {filteredFeedback.length === 0 ? (
         <Card className="border-dashed">
@@ -242,7 +112,7 @@ export function FeedbackPanel({
                'No feedback yet'}
             </p>
             {view !== 'given' && (
-              <Button variant="outline" className="mt-4" onClick={() => setShowCompose(true)}>
+              <Button variant="outline" className="mt-4" onClick={() => setShowFeedbackDrawer(true)}>
                 Give your first feedback
               </Button>
             )}
@@ -302,6 +172,15 @@ export function FeedbackPanel({
           })}
         </div>
       )}
+
+      {/* Give Feedback Drawer */}
+      <GiveFeedbackDrawer
+        open={showFeedbackDrawer}
+        onOpenChange={setShowFeedbackDrawer}
+        staff={staff}
+        currentUserId={currentUserId}
+        onSendFeedback={onSendFeedback}
+      />
     </div>
   );
 }
