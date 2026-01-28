@@ -233,7 +233,14 @@ export function PlanManagementPanel({
         </div>
 
         {/* Assigned Plans Tab */}
-        <TabsContent value="assigned" className="mt-6">
+        <TabsContent value="assigned" className="mt-6 space-y-4">
+          <div className="flex items-center justify-end">
+            <Button onClick={() => setActiveTab('templates')} className="shadow-sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Assign Plan
+            </Button>
+          </div>
+          
           {filteredPlans.length === 0 ? (
             <Card className="border-dashed border-2 bg-transparent">
               <CardContent className="py-16 text-center">
