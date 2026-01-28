@@ -647,9 +647,9 @@ export function PlanDetailSheet({
                         </div>
                         <div className="flex items-center gap-2">
                           {conv.completed ? (
-                            <Badge variant="default" className="bg-green-500">Completed</Badge>
+                            <Badge className="bg-green-50 text-green-700 border border-green-200 hover:bg-green-50">Completed</Badge>
                           ) : isPast(parseISO(conv.scheduledDate)) ? (
-                            <Badge variant="destructive">Overdue</Badge>
+                            <Badge className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">Overdue</Badge>
                           ) : (
                             <Badge variant="secondary">Scheduled</Badge>
                           )}

@@ -89,7 +89,7 @@ export function LearningPathProgressSheet({
       return <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Completed</Badge>;
     }
     if (enrollment.dueDate && isPast(new Date(enrollment.dueDate))) {
-      return <Badge variant="destructive">Overdue</Badge>;
+      return <Badge className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">Overdue</Badge>;
     }
     if (enrollment.status === 'in_progress') {
       return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">In Progress</Badge>;

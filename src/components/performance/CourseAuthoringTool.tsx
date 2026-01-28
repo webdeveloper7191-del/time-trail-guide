@@ -904,7 +904,7 @@ export function CourseAuthoringTool({
                     </div>
                     <div className="flex gap-2">
                       {course.complianceRequired && (
-                        <Badge variant="destructive">Compliance Required</Badge>
+                        <Badge className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">Compliance Required</Badge>
                       )}
                       {course.certificateOnCompletion && (
                         <Badge variant="secondary">Certificate</Badge>

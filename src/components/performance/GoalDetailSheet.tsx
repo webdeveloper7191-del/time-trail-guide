@@ -195,7 +195,7 @@ export function GoalDetailSheet({
                       color={priorityColors[goal.priority] as any}
                       variant="outlined"
                     />
-                    {isOverdue && <Chip label="Overdue" size="small" color="error" />}
+                    {isOverdue && <Chip label="Overdue" size="small" sx={{ bgcolor: 'rgba(239, 68, 68, 0.12)', color: 'rgb(185, 28, 28)' }} />}
                   </Stack>
                 </Box>
               </Stack>

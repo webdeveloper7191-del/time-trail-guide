@@ -425,7 +425,7 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                           <p className="text-xs text-muted-foreground">{stat.staff.position}</p>
                         </div>
                         {stat.overdue > 0 && (
-                          <Badge variant="destructive">{stat.overdue} overdue</Badge>
+                          <Badge className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">{stat.overdue} overdue</Badge>
                         )}
                       </div>
                     ))}
@@ -455,7 +455,7 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                       <div key={course.id} className="p-4 border rounded-lg">
                         <div className="flex items-start justify-between gap-2">
                           <h4 className="font-medium line-clamp-2">{course.title}</h4>
-                          <Badge variant="destructive" className="shrink-0 text-xs">
+                          <Badge className="shrink-0 text-xs bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">
                             Required
                           </Badge>
                         </div>
@@ -613,7 +613,7 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                     </TableCell>
                     <TableCell className="text-center">
                       {stat.overdue > 0 ? (
-                        <Badge variant="destructive">{stat.overdue}</Badge>
+                        <Badge className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">{stat.overdue}</Badge>
                       ) : (
                         <span className="text-muted-foreground">0</span>
                       )}
