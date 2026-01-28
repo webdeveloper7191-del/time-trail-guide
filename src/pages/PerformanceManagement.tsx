@@ -374,37 +374,6 @@ export default function PerformanceManagement() {
                   <BarChart3 className="h-4 w-4 mr-2" /> Analytics
                 </TabsTrigger>
               </TabsList>
-              {/* Contextual Action Buttons */}
-              {activeTab === 'goals' && (
-                <Button 
-                  onClick={() => setShowCreateGoalDrawer(true)} 
-                  className="gap-2 shadow-sm"
-                  size="default"
-                >
-                  <Plus className="h-4 w-4" />
-                  New Goal
-                </Button>
-              )}
-              {activeTab === 'reviews' && (
-                <Button 
-                  onClick={() => setShowStartReviewDrawer(true)} 
-                  className="gap-2 shadow-sm"
-                  size="default"
-                >
-                  <Plus className="h-4 w-4" />
-                  Start Review
-                </Button>
-              )}
-              {activeTab === 'conversations' && (
-                <Button 
-                  onClick={() => setShowScheduleConversationModal(true)} 
-                  className="gap-2 shadow-sm"
-                  size="default"
-                >
-                  <Calendar className="h-4 w-4" />
-                  Schedule 1:1
-                </Button>
-              )}
             </div>
 
             <TabsContent value="plans" className="mt-6">
