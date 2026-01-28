@@ -37,6 +37,7 @@ import {
   Target,
   ChevronRight,
   MoreHorizontal,
+  MessageSquare,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ import { StaffMember } from '@/types/staff';
 import { mockCourses, mockEnrollments, mockLearnerAnalytics } from '@/data/mockLmsData';
 import { toast } from 'sonner';
 import { CourseAuthoringTool } from './CourseAuthoringTool';
+import { CourseReviewsPanel } from './CourseReviewsPanel';
 import { CourseAuthoringState } from '@/types/lmsAdvanced';
 
 interface LMSAdminPanelProps {
@@ -358,6 +360,10 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="staff">Staff Progress</TabsTrigger>
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
+          <TabsTrigger value="reviews" className="gap-1">
+            <MessageSquare className="h-3.5 w-3.5" />
+            Reviews
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -699,6 +705,11 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
               </TableBody>
             </Table>
           </div>
+        </TabsContent>
+
+        {/* Reviews Tab */}
+        <TabsContent value="reviews" className="mt-6">
+          <CourseReviewsPanel currentUserId="admin" />
         </TabsContent>
       </Tabs>
 
