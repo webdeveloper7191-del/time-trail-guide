@@ -19,10 +19,10 @@ import { PlanTemplatePreviewSheet } from '@/components/performance/PlanTemplateP
 import { CreateTemplateDrawer } from '@/components/performance/CreateTemplateDrawer';
 import { QuickAssignPlanDrawer } from '@/components/performance/QuickAssignPlanDrawer';
 import { PerformanceTaskManagementPanel } from '@/components/performance/PerformanceTaskManagementPanel';
-import { CreateGoalModal } from '@/components/performance/CreateGoalModal';
+import { CreateGoalDrawer } from '@/components/performance/CreateGoalDrawer';
 import { LMSAdminModule } from '@/components/performance/LMSAdminModule';
 import { ScheduleConversationModal } from '@/components/performance/ScheduleConversationModal';
-import { StartReviewModal } from '@/components/performance/StartReviewModal';
+import { StartReviewDrawer } from '@/components/performance/StartReviewDrawer';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
@@ -56,9 +56,9 @@ export default function PerformanceManagement() {
   const [selectedPlan, setSelectedPlan] = useState<AssignedPlan | null>(null);
   const [showPlanDetail, setShowPlanDetail] = useState(false);
   const [showQuickAssignDrawer, setShowQuickAssignDrawer] = useState(false);
-  const [showCreateGoalModal, setShowCreateGoalModal] = useState(false);
+  const [showCreateGoalDrawer, setShowCreateGoalDrawer] = useState(false);
   const [showScheduleConversationModal, setShowScheduleConversationModal] = useState(false);
-  const [showStartReviewModal, setShowStartReviewModal] = useState(false);
+  const [showStartReviewDrawer, setShowStartReviewDrawer] = useState(false);
   
   const {
     reviews, goals, feedback, conversations, loading,
@@ -377,7 +377,7 @@ export default function PerformanceManagement() {
               {/* Contextual Action Buttons */}
               {activeTab === 'goals' && (
                 <Button 
-                  onClick={() => setShowCreateGoalModal(true)} 
+                  onClick={() => setShowCreateGoalDrawer(true)} 
                   className="gap-2 shadow-sm"
                   size="default"
                 >
@@ -387,7 +387,7 @@ export default function PerformanceManagement() {
               )}
               {activeTab === 'reviews' && (
                 <Button 
-                  onClick={() => setShowStartReviewModal(true)} 
+                  onClick={() => setShowStartReviewDrawer(true)} 
                   className="gap-2 shadow-sm"
                   size="default"
                 >
@@ -447,7 +447,7 @@ export default function PerformanceManagement() {
             <TabsContent value="goals" className="mt-6">
               <GoalsTracker
                 goals={goals}
-                onCreateGoal={() => setShowCreateGoalModal(true)}
+                onCreateGoal={() => setShowCreateGoalDrawer(true)}
                 onViewGoal={handleViewGoal}
                 onUpdateProgress={updateGoalProgress}
               />
@@ -458,7 +458,7 @@ export default function PerformanceManagement() {
                 reviews={reviews}
                 staff={mockStaff}
                 currentUserId={CURRENT_USER_ID}
-                onCreateReview={() => setShowStartReviewModal(true)}
+                onCreateReview={() => setShowStartReviewDrawer(true)}
                 onViewReview={handleViewReview}
               />
             </TabsContent>
@@ -640,10 +640,10 @@ export default function PerformanceManagement() {
         onAssign={handleAssignPlanSubmit}
       />
 
-      {/* Create Goal Modal */}
-      <CreateGoalModal
-        open={showCreateGoalModal}
-        onOpenChange={setShowCreateGoalModal}
+      {/* Create Goal Drawer */}
+      <CreateGoalDrawer
+        open={showCreateGoalDrawer}
+        onOpenChange={setShowCreateGoalDrawer}
         staffId={CURRENT_USER_ID}
         createdBy={CURRENT_USER_ID}
         onSubmit={async (data) => {
@@ -662,10 +662,10 @@ export default function PerformanceManagement() {
         }}
       />
 
-      {/* Start Review Modal */}
-      <StartReviewModal
-        open={showStartReviewModal}
-        onOpenChange={setShowStartReviewModal}
+      {/* Start Review Drawer */}
+      <StartReviewDrawer
+        open={showStartReviewDrawer}
+        onOpenChange={setShowStartReviewDrawer}
         staff={mockStaff}
         reviewerId={CURRENT_USER_ID}
         onSubmit={async (data) => {
