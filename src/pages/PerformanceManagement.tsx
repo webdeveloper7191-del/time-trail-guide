@@ -21,7 +21,7 @@ import { QuickAssignPlanDrawer } from '@/components/performance/QuickAssignPlanD
 import { PerformanceTaskManagementPanel } from '@/components/performance/PerformanceTaskManagementPanel';
 import { CreateGoalDrawer } from '@/components/performance/CreateGoalDrawer';
 import { LMSAdminModule } from '@/components/performance/LMSAdminModule';
-import { ScheduleConversationModal } from '@/components/performance/ScheduleConversationModal';
+import { ScheduleConversationDrawer } from '@/components/performance/ScheduleConversationDrawer';
 import { StartReviewDrawer } from '@/components/performance/StartReviewDrawer';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
@@ -651,8 +651,8 @@ export default function PerformanceManagement() {
         }}
       />
 
-      {/* Schedule Conversation Modal */}
-      <ScheduleConversationModal
+      {/* Schedule Conversation Drawer */}
+      <ScheduleConversationDrawer
         open={showScheduleConversationModal}
         onOpenChange={setShowScheduleConversationModal}
         staff={mockStaff}
