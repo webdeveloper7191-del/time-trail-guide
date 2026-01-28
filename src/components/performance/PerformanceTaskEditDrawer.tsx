@@ -13,8 +13,11 @@ import {
   IconButton,
   Chip,
   Avatar,
+  Divider,
+  ListSubheader,
+  Collapse,
 } from '@mui/material';
-import { X, Upload, FileText, Image, Trash2 } from 'lucide-react';
+import { X, Upload, FileText, Image, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   PerformanceTask,
@@ -25,6 +28,7 @@ import {
   PerformanceTaskPipeline,
   performanceTaskTypeConfig,
   performanceTaskPriorityConfig,
+  CustomTaskType,
 } from '@/types/performanceTasks';
 import { Goal, PerformanceReview } from '@/types/performance';
 import { mockStaff } from '@/data/mockStaffData';
@@ -37,8 +41,10 @@ interface PerformanceTaskEditDrawerProps {
   goals?: Goal[];
   reviews?: PerformanceReview[];
   pipelines: PerformanceTaskPipeline[];
+  customTaskTypes: CustomTaskType[];
   onClose: () => void;
   onSave: (formData: PerformanceTaskFormData, attachments: PerformanceTaskAttachment[]) => void;
+  onCreateTaskType: (type: CustomTaskType) => void;
 }
 
 const staffOptions = mockStaff.map(s => ({
@@ -55,8 +61,10 @@ export function PerformanceTaskEditDrawer({
   goals = [],
   reviews = [],
   pipelines,
+  customTaskTypes,
   onClose,
   onSave,
+  onCreateTaskType,
 }: PerformanceTaskEditDrawerProps) {
   const [formData, setFormData] = useState<PerformanceTaskFormData>({
     title: '',
@@ -73,6 +81,9 @@ export function PerformanceTaskEditDrawer({
   });
   const [attachments, setAttachments] = useState<PerformanceTaskAttachment[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showNewTypeInput, setShowNewTypeInput] = useState(false);
+  const [newTypeName, setNewTypeName] = useState('');
+  const [newTypeColor, setNewTypeColor] = useState('info');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -191,6 +202,44 @@ export function PerformanceTaskEditDrawer({
     onClose();
   };
 
+  const handleCreateNewType = () => {
+    if (!newTypeName.trim()) {
+      toast.error('Please enter a type name');
+      return;
+    }
+    if (newTypeName.length > 50) {
+      toast.error('Type name must be under 50 characters');
+      return;
+    }
+    const typeId = newTypeName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const existsInBuiltIn = typeId in performanceTaskTypeConfig;
+    const existsInCustom = customTaskTypes.some(t => t.id === typeId);
+    if (existsInBuiltIn || existsInCustom) {
+      toast.error('A task type with this name already exists');
+      return;
+    }
+    const newType: CustomTaskType = {
+      id: typeId,
+      label: newTypeName.trim(),
+      color: newTypeColor,
+      createdAt: new Date().toISOString(),
+    };
+    onCreateTaskType(newType);
+    setFormData(prev => ({ ...prev, type: typeId }));
+    setShowNewTypeInput(false);
+    setNewTypeName('');
+    setNewTypeColor('info');
+  };
+
+  const typeColorOptions = [
+    { value: 'primary', label: 'Blue' },
+    { value: 'secondary', label: 'Purple' },
+    { value: 'info', label: 'Cyan' },
+    { value: 'success', label: 'Green' },
+    { value: 'warning', label: 'Orange' },
+    { value: 'error', label: 'Red' },
+  ];
+
   const selectedAssignee = staffOptions.find(s => s.id === formData.assigneeId) || null;
   const selectedForEmployee = staffOptions.find(s => s.id === formData.createdForId) || null;
 
@@ -244,11 +293,27 @@ export function PerformanceTaskEditDrawer({
                 <MuiSelect
                   value={formData.type}
                   label="Task Type"
-                  onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as PerformanceTaskType }))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '__create_new__') {
+                      setShowNewTypeInput(true);
+                    } else {
+                      setFormData(prev => ({ ...prev, type: val as PerformanceTaskType }));
+                    }
+                  }}
                 >
+                  <ListSubheader>Built-in Types</ListSubheader>
                   {Object.entries(performanceTaskTypeConfig).map(([key, config]) => (
                     <MenuItem key={key} value={key}>{config.label}</MenuItem>
                   ))}
+                  {customTaskTypes.length > 0 && <ListSubheader>Custom Types</ListSubheader>}
+                  {customTaskTypes.map((type) => (
+                    <MenuItem key={type.id} value={type.id}>{type.label}</MenuItem>
+                  ))}
+                  <Divider />
+                  <MenuItem value="__create_new__" sx={{ color: 'primary.main' }}>
+                    <Plus className="h-4 w-4 mr-2" /> Create New Type
+                  </MenuItem>
                 </MuiSelect>
               </FormControl>
 
@@ -265,6 +330,64 @@ export function PerformanceTaskEditDrawer({
                 </MuiSelect>
               </FormControl>
             </Stack>
+
+            {/* Inline Create New Task Type */}
+            <Collapse in={showNewTypeInput}>
+              <Box sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}>
+                <Stack spacing={2}>
+                  <Typography variant="subtitle2">Create New Task Type</Typography>
+                  <TextField
+                    label="Type Name"
+                    value={newTypeName}
+                    onChange={(e) => setNewTypeName(e.target.value)}
+                    placeholder="e.g., Onboarding Task"
+                    size="small"
+                    fullWidth
+                    autoFocus
+                  />
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>Color</InputLabel>
+                    <MuiSelect
+                      value={newTypeColor}
+                      label="Color"
+                      onChange={(e) => setNewTypeColor(e.target.value)}
+                    >
+                      {typeColorOptions.map((opt) => (
+                        <MenuItem key={opt.value} value={opt.value}>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Box 
+                              sx={{ 
+                                width: 12, 
+                                height: 12, 
+                                borderRadius: '50%', 
+                                bgcolor: `${opt.value}.main` 
+                              }} 
+                            />
+                            <span>{opt.label}</span>
+                          </Stack>
+                        </MenuItem>
+                      ))}
+                    </MuiSelect>
+                  </FormControl>
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        setShowNewTypeInput(false);
+                        setNewTypeName('');
+                        setNewTypeColor('info');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleCreateNewType}>
+                      <Plus className="h-4 w-4 mr-1" /> Create
+                    </Button>
+                  </Stack>
+                </Stack>
+              </Box>
+            </Collapse>
 
             <Autocomplete
               options={staffOptions}
