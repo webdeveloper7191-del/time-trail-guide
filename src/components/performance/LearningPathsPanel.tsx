@@ -1,0 +1,388 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Route, 
+  Plus, 
+  Search, 
+  BookOpen, 
+  Clock, 
+  Users,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Copy,
+  Eye,
+  Briefcase,
+  ArrowRight,
+  CheckCircle2,
+} from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
+import { LearningPath, Course } from '@/types/lms';
+import { mockCourses } from '@/data/mockLmsData';
+import { LearningPathBuilder } from './LearningPathBuilder';
+import { toast } from 'sonner';
+
+// Mock learning paths data
+const mockLearningPaths: LearningPath[] = [
+  {
+    id: 'path-1',
+    name: 'New Employee Onboarding',
+    description: 'Essential training for all new team members covering company policies, safety, and core skills.',
+    courseIds: ['course-1', 'course-2', 'course-3'],
+    requiredCompletionOrder: true,
+    estimatedDuration: 240,
+    industry: 'General',
+    tags: ['onboarding', 'mandatory', 'new-hire'],
+    createdAt: '2024-01-15T10:00:00Z',
+    updatedAt: '2024-01-20T14:30:00Z',
+  },
+  {
+    id: 'path-2',
+    name: 'Leadership Development Track',
+    description: 'Comprehensive program for emerging leaders covering management skills, communication, and team building.',
+    courseIds: ['course-4', 'course-5'],
+    requiredCompletionOrder: false,
+    estimatedDuration: 180,
+    industry: 'Corporate',
+    tags: ['leadership', 'management', 'development'],
+    createdAt: '2024-02-01T09:00:00Z',
+    updatedAt: '2024-02-10T11:00:00Z',
+  },
+  {
+    id: 'path-3',
+    name: 'Childcare Compliance Essentials',
+    description: 'Mandatory training for childcare workers covering safety regulations, first aid, and child protection.',
+    courseIds: ['course-1', 'course-6'],
+    requiredCompletionOrder: true,
+    estimatedDuration: 150,
+    industry: 'Childcare',
+    tags: ['compliance', 'childcare', 'safety'],
+    createdAt: '2024-01-20T08:00:00Z',
+    updatedAt: '2024-02-05T16:00:00Z',
+  },
+];
+
+// Mock enrollment stats per path
+const mockPathStats: Record<string, { enrolled: number; completed: number; inProgress: number }> = {
+  'path-1': { enrolled: 45, completed: 32, inProgress: 10 },
+  'path-2': { enrolled: 12, completed: 5, inProgress: 6 },
+  'path-3': { enrolled: 28, completed: 20, inProgress: 7 },
+};
+
+export function LearningPathsPanel() {
+  const [paths, setPaths] = useState<LearningPath[]>(mockLearningPaths);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [editingPath, setEditingPath] = useState<LearningPath | undefined>();
+
+  const filteredPaths = paths.filter(path =>
+    path.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    path.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    path.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  };
+
+  const getCourseById = (id: string): Course | undefined => {
+    return mockCourses.find(c => c.id === id);
+  };
+
+  const handleSavePath = (path: LearningPath) => {
+    setPaths(prev => {
+      const exists = prev.find(p => p.id === path.id);
+      if (exists) {
+        return prev.map(p => p.id === path.id ? path : p);
+      }
+      return [...prev, path];
+    });
+  };
+
+  const handleDeletePath = (pathId: string) => {
+    setPaths(prev => prev.filter(p => p.id !== pathId));
+    toast.success('Learning path deleted');
+  };
+
+  const handleDuplicatePath = (path: LearningPath) => {
+    const newPath: LearningPath = {
+      ...path,
+      id: `path-${Date.now()}`,
+      name: `${path.name} (Copy)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setPaths(prev => [...prev, newPath]);
+    toast.success('Learning path duplicated');
+  };
+
+  const handleEditPath = (path: LearningPath) => {
+    setEditingPath(path);
+    setShowBuilder(true);
+  };
+
+  const handleCloseBuilder = () => {
+    setShowBuilder(false);
+    setEditingPath(undefined);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Route className="h-5 w-5 text-primary" />
+            Learning Paths
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Create structured training journeys for onboarding and development
+          </p>
+        </div>
+        <Button onClick={() => setShowBuilder(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Path
+        </Button>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search paths..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Route className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{paths.length}</p>
+                <p className="text-xs text-muted-foreground">Total Paths</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <Users className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {Object.values(mockPathStats).reduce((sum, s) => sum + s.enrolled, 0)}
+                </p>
+                <p className="text-xs text-muted-foreground">Total Enrollments</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {Object.values(mockPathStats).reduce((sum, s) => sum + s.completed, 0)}
+                </p>
+                <p className="text-xs text-muted-foreground">Completions</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Paths Grid */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {filteredPaths.length === 0 ? (
+          <div className="col-span-2 text-center py-12 border-2 border-dashed rounded-lg">
+            <Route className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <p className="font-medium">No learning paths found</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              {searchQuery ? 'Try a different search term' : 'Create your first learning path to get started'}
+            </p>
+            {!searchQuery && (
+              <Button onClick={() => setShowBuilder(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Path
+              </Button>
+            )}
+          </div>
+        ) : (
+          filteredPaths.map(path => {
+            const stats = mockPathStats[path.id] || { enrolled: 0, completed: 0, inProgress: 0 };
+            const completionRate = stats.enrolled > 0 
+              ? Math.round((stats.completed / stats.enrolled) * 100) 
+              : 0;
+
+            return (
+              <Card key={path.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Route className="h-4 w-4 text-primary" />
+                        {path.name}
+                      </CardTitle>
+                      <CardDescription className="line-clamp-2 mt-1">
+                        {path.description}
+                      </CardDescription>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditPath(path)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Path
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicatePath(path)}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => handleDeletePath(path.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Meta Info */}
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <BookOpen className="h-3.5 w-3.5" />
+                      {path.courseIds.length} courses
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      {formatDuration(path.estimatedDuration)}
+                    </span>
+                    {path.industry && (
+                      <span className="flex items-center gap-1">
+                        <Briefcase className="h-3.5 w-3.5" />
+                        {path.industry}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Course Preview */}
+                  <div className="flex items-center gap-1 overflow-hidden">
+                    {path.courseIds.slice(0, 3).map((courseId, idx) => {
+                      const course = getCourseById(courseId);
+                      return (
+                        <React.Fragment key={courseId}>
+                          <div className="flex items-center gap-1 min-w-0">
+                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary flex-shrink-0">
+                              {idx + 1}
+                            </div>
+                            <span className="text-xs truncate max-w-20">
+                              {course?.title || 'Unknown'}
+                            </span>
+                          </div>
+                          {idx < Math.min(path.courseIds.length - 1, 2) && (
+                            <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                    {path.courseIds.length > 3 && (
+                      <Badge variant="outline" className="text-xs ml-1">
+                        +{path.courseIds.length - 3} more
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Stats */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Completion Rate</span>
+                      <span className="font-medium">{completionRate}%</span>
+                    </div>
+                    <Progress value={completionRate} className="h-2" />
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{stats.enrolled} enrolled</span>
+                      <span>{stats.completed} completed</span>
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  {path.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {path.tags.slice(0, 3).map(tag => (
+                        <Badge key={tag} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                      {path.tags.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{path.tags.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleEditPath(path)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Button size="sm" className="flex-1">
+                      <Users className="h-4 w-4 mr-1" />
+                      Assign
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* Learning Path Builder */}
+      <LearningPathBuilder
+        open={showBuilder}
+        onClose={handleCloseBuilder}
+        existingPath={editingPath}
+        onSave={handleSavePath}
+      />
+    </div>
+  );
+}
