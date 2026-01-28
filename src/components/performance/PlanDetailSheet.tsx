@@ -26,8 +26,10 @@ import {
   MoreVertical,
   GraduationCap,
   BookOpen,
+  Trash2,
+  CalendarPlus,
 } from 'lucide-react';
-import { format, parseISO, differenceInDays, isPast, isToday } from 'date-fns';
+import { format, parseISO, differenceInDays, isPast, isToday, addDays } from 'date-fns';
 import { 
   AssignedPlan, 
   planTypeLabels, 
@@ -44,6 +46,9 @@ import { toast } from 'sonner';
 import { mockCourses, mockLearningPaths, mockEnrollments } from '@/data/mockLmsData';
 import { calculatePlanProgress, LMSData } from '@/lib/planProgressCalculator';
 import { enrollmentStatusLabels, enrollmentStatusColors } from '@/types/lms';
+import { DeletePlanConfirmDialog } from './DeletePlanConfirmDialog';
+import { ExtendPlanModal } from './ExtendPlanModal';
+import { CancelPlanConfirmDialog } from './CancelPlanConfirmDialog';
 
 interface PlanDetailSheetProps {
   open: boolean;
@@ -57,6 +62,8 @@ interface PlanDetailSheetProps {
   onViewReview: (review: PerformanceReview) => void;
   onViewConversation: (conversation: Conversation) => void;
   onUpdateStatus: (planId: string, status: PlanStatus) => Promise<void>;
+  onDeletePlan?: (planId: string) => Promise<void>;
+  onExtendPlan?: (planId: string, newEndDate: string) => Promise<void>;
 }
 
 export function PlanDetailSheet({
@@ -71,9 +78,14 @@ export function PlanDetailSheet({
   onViewReview,
   onViewConversation,
   onUpdateStatus,
+  onDeletePlan,
+  onExtendPlan,
 }: PlanDetailSheetProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [updating, setUpdating] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const template = useMemo(() => {
     if (!plan) return null;
@@ -206,7 +218,7 @@ export function PlanDetailSheet({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {plan.status !== 'active' && (
+                {plan.status !== 'active' && plan.status !== 'completed' && (
                   <DropdownMenuItem onClick={() => handleStatusChange('active')}>
                     <Play className="h-4 w-4 mr-2" />
                     Set as Active
@@ -224,14 +236,34 @@ export function PlanDetailSheet({
                     Mark as Completed
                   </DropdownMenuItem>
                 )}
+                {plan.status === 'active' && onExtendPlan && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setShowExtendModal(true)}>
+                      <CalendarPlus className="h-4 w-4 mr-2" />
+                      Extend Plan
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => handleStatusChange('cancelled')}
-                  className="text-destructive"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Cancel Plan
-                </DropdownMenuItem>
+                {plan.status !== 'cancelled' && (
+                  <DropdownMenuItem 
+                    onClick={() => setShowCancelDialog(true)}
+                    className="text-amber-600"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Cancel Plan
+                  </DropdownMenuItem>
+                )}
+                {onDeletePlan && (
+                  <DropdownMenuItem 
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Plan
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -632,6 +664,59 @@ export function PlanDetailSheet({
           </ScrollArea>
         </Tabs>
       </SheetContent>
+
+      {/* Delete Confirmation Dialog */}
+      <DeletePlanConfirmDialog
+        open={showDeleteDialog}
+        title="Delete Performance Plan"
+        description="This will permanently delete this plan and remove all progress tracking. This action cannot be undone."
+        itemName={plan?.templateName || ''}
+        loading={updating}
+        onConfirm={async () => {
+          if (plan && onDeletePlan) {
+            setUpdating(true);
+            await onDeletePlan(plan.id);
+            setUpdating(false);
+            setShowDeleteDialog(false);
+            onClose();
+          }
+        }}
+        onCancel={() => setShowDeleteDialog(false)}
+      />
+
+      {/* Extend Plan Modal */}
+      <ExtendPlanModal
+        open={showExtendModal}
+        plan={plan}
+        loading={updating}
+        onExtend={async (newEndDate) => {
+          if (plan && onExtendPlan) {
+            setUpdating(true);
+            await onExtendPlan(plan.id, newEndDate);
+            setUpdating(false);
+            setShowExtendModal(false);
+          }
+        }}
+        onCancel={() => setShowExtendModal(false)}
+      />
+
+      {/* Cancel Plan Confirmation Dialog */}
+      <CancelPlanConfirmDialog
+        open={showCancelDialog}
+        plan={plan}
+        loading={updating}
+        onConfirm={async (reason) => {
+          if (plan) {
+            setUpdating(true);
+            await onUpdateStatus(plan.id, 'cancelled');
+            // In a real app, we'd also save the cancellation reason
+            console.log('Cancellation reason:', reason);
+            setUpdating(false);
+            setShowCancelDialog(false);
+          }
+        }}
+        onCancel={() => setShowCancelDialog(false)}
+      />
     </Sheet>
   );
 }
