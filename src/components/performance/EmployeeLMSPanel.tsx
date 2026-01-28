@@ -25,7 +25,6 @@ import {
   Star,
   Eye,
   StickyNote,
-  MessageSquare,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -45,7 +44,6 @@ import { CourseCompletionCelebration } from '@/components/performance/CourseComp
 import { GamificationPanel } from '@/components/performance/GamificationPanel';
 import { CourseNotesPanel } from '@/components/performance/CourseNotesPanel';
 import { LearningStreakWidget } from '@/components/performance/LearningStreakWidget';
-import { CourseReviewsPanel } from '@/components/performance/CourseReviewsPanel';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 
@@ -331,7 +329,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex w-full max-w-3xl overflow-x-auto">
+        <TabsList className="flex w-full max-w-2xl overflow-x-auto">
           <TabsTrigger value="my-learning" className="gap-2 flex-shrink-0">
             <BookMarked className="h-4 w-4" /> My Learning
           </TabsTrigger>
@@ -340,9 +338,6 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
           </TabsTrigger>
           <TabsTrigger value="notes" className="gap-2 flex-shrink-0">
             <StickyNote className="h-4 w-4" /> Notes
-          </TabsTrigger>
-          <TabsTrigger value="reviews" className="gap-2 flex-shrink-0">
-            <MessageSquare className="h-4 w-4" /> Reviews
           </TabsTrigger>
           <TabsTrigger value="rewards" className="gap-2 flex-shrink-0">
             <Sparkles className="h-4 w-4" /> Rewards
@@ -601,11 +596,6 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
               <LearningStreakWidget currentUserId={currentUserId} />
             </div>
           </div>
-        </TabsContent>
-
-        {/* Reviews Tab */}
-        <TabsContent value="reviews" className="mt-6">
-          <CourseReviewsPanel currentUserId={currentUserId} />
         </TabsContent>
 
         {/* Rewards Tab */}
