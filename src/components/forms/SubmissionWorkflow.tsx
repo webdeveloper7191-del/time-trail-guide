@@ -430,9 +430,9 @@ export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissi
       case 'pending_review':
         return <Badge variant="default"><Clock className="h-3 w-3 mr-1" />Pending Review</Badge>;
       case 'approved':
-        return <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
+        return <Badge className="bg-green-50 text-green-700 border border-green-200 hover:bg-green-50"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
       case 'rejected':
-        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
+        return <Badge className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-50"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -441,9 +441,9 @@ export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissi
   const getPassFailBadge = (passFail?: 'pass' | 'fail' | 'n/a') => {
     switch (passFail) {
       case 'pass':
-        return <Badge className="bg-green-500">Pass</Badge>;
+        return <Badge className="bg-green-50 text-green-700 border border-green-200 hover:bg-green-50">Pass</Badge>;
       case 'fail':
-        return <Badge variant="destructive">Fail</Badge>;
+        return <Badge className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">Fail</Badge>;
       default:
         return null;
     }
@@ -876,25 +876,36 @@ export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissi
               icon={<CheckCircle className="h-3 w-3" />}
               label={`Approved (${stats.approved})`}
               size="small"
-              color="success"
               variant={statusFilter === 'approved' ? 'filled' : 'outlined'}
               onClick={() => setStatusFilter('approved')}
+              sx={{
+                bgcolor: statusFilter === 'approved' ? 'rgba(34, 197, 94, 0.12)' : 'transparent',
+                color: 'rgb(21, 128, 61)',
+                borderColor: 'rgba(34, 197, 94, 0.4)',
+              }}
             />
             <Chip
               icon={<XCircle className="h-3 w-3" />}
               label={`Rejected (${stats.rejected})`}
               size="small"
-              color="error"
               variant={statusFilter === 'rejected' ? 'filled' : 'outlined'}
               onClick={() => setStatusFilter('rejected')}
+              sx={{
+                bgcolor: statusFilter === 'rejected' ? 'rgba(239, 68, 68, 0.12)' : 'transparent',
+                color: 'rgb(185, 28, 28)',
+                borderColor: 'rgba(239, 68, 68, 0.4)',
+              }}
             />
             {stats.failed > 0 && (
               <Chip
                 icon={<AlertTriangle className="h-3 w-3" />}
                 label={`Failed Audits (${stats.failed})`}
                 size="small"
-                color="warning"
                 variant="outlined"
+                sx={{
+                  color: 'rgb(161, 98, 7)',
+                  borderColor: 'rgba(251, 191, 36, 0.4)',
+                }}
               />
             )}
           </Stack>
@@ -1000,24 +1011,24 @@ export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissi
                           <Chip 
                             label={`${group.stats.pending} pending`} 
                             size="small" 
-                            color="warning"
                             variant="outlined"
+                            sx={{ color: 'rgb(161, 98, 7)', borderColor: 'rgba(251, 191, 36, 0.4)' }}
                           />
                         )}
                         {group.stats.approved > 0 && (
                           <Chip 
                             label={`${group.stats.approved} approved`} 
                             size="small" 
-                            color="success"
                             variant="outlined"
+                            sx={{ color: 'rgb(21, 128, 61)', borderColor: 'rgba(34, 197, 94, 0.4)' }}
                           />
                         )}
                         {group.stats.rejected > 0 && (
                           <Chip 
                             label={`${group.stats.rejected} rejected`} 
                             size="small" 
-                            color="error"
                             variant="outlined"
+                            sx={{ color: 'rgb(185, 28, 28)', borderColor: 'rgba(239, 68, 68, 0.4)' }}
                           />
                         )}
                       </Stack>
@@ -1651,7 +1662,7 @@ export function SubmissionWorkflow({ templateId, initialSubmissionId, onSubmissi
                     {getTemplateName(selectedSubmission.templateId)} by {selectedSubmission.submittedBy}
                   </Typography>
                   {selectedSubmission.passFail === 'fail' && (
-                    <Chip label="Failed Audit" size="small" color="error" sx={{ mt: 1 }} />
+                    <Chip label="Failed Audit" size="small" sx={{ mt: 1, bgcolor: 'rgba(239, 68, 68, 0.12)', color: 'rgb(185, 28, 28)' }} />
                   )}
                 </Alert>
               )}

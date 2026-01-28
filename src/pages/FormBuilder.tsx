@@ -339,8 +339,19 @@ export default function FormBuilder() {
               <Chip 
                 label={template.status} 
                 size="small"
-                color={template.status === 'published' ? 'success' : template.status === 'draft' ? 'warning' : 'default'}
-                sx={{ textTransform: 'capitalize' }}
+                sx={{ 
+                  textTransform: 'capitalize',
+                  bgcolor: template.status === 'published' 
+                    ? 'rgba(34, 197, 94, 0.12)' 
+                    : template.status === 'draft' 
+                      ? 'rgba(251, 191, 36, 0.15)' 
+                      : 'rgba(107, 114, 128, 0.1)',
+                  color: template.status === 'published' 
+                    ? 'rgb(21, 128, 61)' 
+                    : template.status === 'draft' 
+                      ? 'rgb(161, 98, 7)' 
+                      : 'rgb(75, 85, 99)',
+                }}
               />
             )}
           </Stack>

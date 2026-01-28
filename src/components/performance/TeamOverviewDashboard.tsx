@@ -313,8 +313,11 @@ export function TeamOverviewDashboard({
                         <Chip
                           label="Review Due"
                           size="small"
-                          color="warning"
-                          sx={{ fontSize: '0.7rem' }}
+                          sx={{ 
+                            fontSize: '0.7rem',
+                            bgcolor: 'rgba(251, 191, 36, 0.15)',
+                            color: 'rgb(161, 98, 7)',
+                          }}
                         />
                       )}
 
@@ -322,8 +325,11 @@ export function TeamOverviewDashboard({
                         <Chip
                           label={`${summary.stats.overdue} Overdue`}
                           size="small"
-                          color="error"
-                          sx={{ fontSize: '0.7rem' }}
+                          sx={{ 
+                            fontSize: '0.7rem',
+                            bgcolor: 'rgba(239, 68, 68, 0.12)',
+                            color: 'rgb(185, 28, 28)',
+                          }}
                         />
                       )}
 
@@ -423,8 +429,11 @@ export function TeamOverviewDashboard({
                                 <Chip
                                   label={review.status.replace('_', ' ')}
                                   size="small"
-                                  color={review.status === 'completed' ? 'success' : 'warning'}
-                                  sx={{ fontSize: '0.65rem' }}
+                                  sx={{ 
+                                    fontSize: '0.65rem',
+                                    bgcolor: review.status === 'completed' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(251, 191, 36, 0.15)',
+                                    color: review.status === 'completed' ? 'rgb(21, 128, 61)' : 'rgb(161, 98, 7)',
+                                  }}
                                 />
                               </Stack>
                               <Typography variant="caption" color="text.secondary">
