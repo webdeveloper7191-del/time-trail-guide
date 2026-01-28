@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,12 +16,15 @@ import {
   Plus,
   ChevronRight,
   CheckCircle2,
+  GraduationCap,
+  BookOpen,
 } from 'lucide-react';
 import { 
   PerformancePlanTemplate, 
   planTypeLabels, 
   planTypeColors,
 } from '@/types/performancePlan';
+import { mockCourses, mockLearningPaths } from '@/data/mockLmsData';
 
 interface PlanTemplatePreviewSheetProps {
   open: boolean;
@@ -37,6 +40,33 @@ export function PlanTemplatePreviewSheet({
   onAssign,
 }: PlanTemplatePreviewSheetProps) {
   const [activeTab, setActiveTab] = useState('goals');
+
+  // Get linked learning content
+  const linkedLearningPaths = useMemo(() => {
+    if (!template?.learningPathIds?.length) return [];
+    return template.learningPathIds
+      .map(id => mockLearningPaths.find(p => p.id === id))
+      .filter(Boolean);
+  }, [template]);
+
+  const linkedCourses = useMemo(() => {
+    if (!template) return [];
+    const courseIds = new Set<string>();
+    
+    // Add directly linked courses
+    template.courseIds?.forEach(id => courseIds.add(id));
+    
+    // Add courses from learning paths
+    linkedLearningPaths.forEach(path => {
+      path?.courseIds.forEach(id => courseIds.add(id));
+    });
+    
+    return Array.from(courseIds)
+      .map(id => mockCourses.find(c => c.id === id))
+      .filter(Boolean);
+  }, [template, linkedLearningPaths]);
+
+  const hasLearningContent = linkedLearningPaths.length > 0 || linkedCourses.length > 0;
 
   if (!template) return null;
 
@@ -84,34 +114,42 @@ export function PlanTemplatePreviewSheet({
           )}
 
           {/* Summary Stats */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-2">
             <Card className="bg-muted/50">
-              <CardContent className="p-3 text-center">
-                <Target className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <p className="text-lg font-bold">{template.goals.length}</p>
-                <p className="text-xs text-muted-foreground">Goals</p>
+              <CardContent className="p-2.5 text-center">
+                <Target className="h-4 w-4 mx-auto mb-1 text-primary" />
+                <p className="text-base font-bold">{template.goals.length}</p>
+                <p className="text-[10px] text-muted-foreground">Goals</p>
               </CardContent>
             </Card>
             <Card className="bg-muted/50">
-              <CardContent className="p-3 text-center">
-                <ClipboardCheck className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <p className="text-lg font-bold">{template.reviews.length}</p>
-                <p className="text-xs text-muted-foreground">Reviews</p>
+              <CardContent className="p-2.5 text-center">
+                <ClipboardCheck className="h-4 w-4 mx-auto mb-1 text-primary" />
+                <p className="text-base font-bold">{template.reviews.length}</p>
+                <p className="text-[10px] text-muted-foreground">Reviews</p>
               </CardContent>
             </Card>
             <Card className="bg-muted/50">
-              <CardContent className="p-3 text-center">
-                <MessageSquare className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <p className="text-lg font-bold">{template.conversations.length}</p>
-                <p className="text-xs text-muted-foreground">1:1 Meetings</p>
+              <CardContent className="p-2.5 text-center">
+                <MessageSquare className="h-4 w-4 mx-auto mb-1 text-primary" />
+                <p className="text-base font-bold">{template.conversations.length}</p>
+                <p className="text-[10px] text-muted-foreground">1:1s</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-muted/50">
+              <CardContent className="p-2.5 text-center">
+                <GraduationCap className="h-4 w-4 mx-auto mb-1 text-primary" />
+                <p className="text-base font-bold">{linkedCourses.length}</p>
+                <p className="text-[10px] text-muted-foreground">Courses</p>
               </CardContent>
             </Card>
           </div>
         </SheetHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-3 mt-4">
+          <TabsList className="grid w-full grid-cols-4 mt-4">
             <TabsTrigger value="goals">Goals</TabsTrigger>
+            <TabsTrigger value="learning">Learning</TabsTrigger>
             <TabsTrigger value="reviews">Reviews</TabsTrigger>
             <TabsTrigger value="conversations">1:1s</TabsTrigger>
           </TabsList>
@@ -163,6 +201,102 @@ export function PlanTemplatePreviewSheet({
                   </CardContent>
                 </Card>
               ))}
+            </TabsContent>
+
+            {/* Learning Tab */}
+            <TabsContent value="learning" className="mt-4 space-y-3">
+              {!hasLearningContent ? (
+                <Card className="border-dashed border-2 bg-transparent">
+                  <CardContent className="py-8 text-center">
+                    <GraduationCap className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <h4 className="font-medium mb-1">No Learning Content</h4>
+                    <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                      This template doesn't have any learning paths or courses linked yet
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Learning Paths Section */}
+                  {linkedLearningPaths.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        Learning Paths ({linkedLearningPaths.length})
+                      </h4>
+                      {linkedLearningPaths.map((path) => {
+                        if (!path) return null;
+                        return (
+                          <Card key={path.id} className="border-0 shadow-sm">
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between gap-3 mb-2">
+                                <div className="flex-1">
+                                  <h4 className="font-medium">{path.name}</h4>
+                                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                    {path.description}
+                                  </p>
+                                </div>
+                                {path.industry && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {path.industry}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>{path.courseIds.length} courses</span>
+                                <span>{Math.round(path.estimatedDuration / 60)}h estimated</span>
+                                {path.requiredCompletionOrder && (
+                                  <Badge variant="secondary" className="text-[10px]">Sequential</Badge>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Courses Section */}
+                  {linkedCourses.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4" />
+                        Courses ({linkedCourses.length})
+                      </h4>
+                      {linkedCourses.map((course) => {
+                        if (!course) return null;
+                        return (
+                          <Card key={course.id} className="border-0 shadow-sm">
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between gap-3 mb-2">
+                                <div className="flex-1">
+                                  <h4 className="font-medium">{course.title}</h4>
+                                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                    {course.description}
+                                  </p>
+                                </div>
+                                <Badge 
+                                  variant={course.complianceRequired ? 'destructive' : 'secondary'}
+                                  className="text-xs"
+                                >
+                                  {course.complianceRequired ? 'Mandatory' : course.difficulty}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>{course.duration} min</span>
+                                <span>{course.category}</span>
+                                {course.certificateOnCompletion && (
+                                  <Badge variant="outline" className="text-[10px]">Certificate</Badge>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
             </TabsContent>
 
             {/* Reviews Tab */}
