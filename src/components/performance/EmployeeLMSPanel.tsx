@@ -24,6 +24,8 @@ import {
   Sparkles,
   Star,
   Eye,
+  StickyNote,
+  MessageSquare,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -35,11 +37,15 @@ import {
   lmsCategories,
 } from '@/types/lms';
 import { mockCourses, mockEnrollments, mockLearnerAnalytics, mockCertificates, mockLearningPaths } from '@/data/mockLmsData';
+import { mockLearningStreak } from '@/data/mockLmsEngagementData';
 import { MobileCoursePlayer } from '@/components/performance/MobileCoursePlayer';
 import { CoursePlayer } from '@/components/performance/CoursePlayer';
 import { CourseDetailSheet } from '@/components/performance/CourseDetailSheet';
 import { CourseCompletionCelebration } from '@/components/performance/CourseCompletionCelebration';
 import { GamificationPanel } from '@/components/performance/GamificationPanel';
+import { CourseNotesPanel } from '@/components/performance/CourseNotesPanel';
+import { LearningStreakWidget } from '@/components/performance/LearningStreakWidget';
+import { CourseReviewsPanel } from '@/components/performance/CourseReviewsPanel';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 
@@ -80,6 +86,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   }, [searchQuery, categoryFilter]);
 
   const analytics = mockLearnerAnalytics;
+  const streakData = mockLearningStreak;
 
   const handleEnroll = (course: Course) => {
     const newEnrollment: Enrollment = {
@@ -286,33 +293,61 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
+        <Card className="overflow-hidden">
+          <div className={cn(
+            "p-4",
+            streakData.todayMinutes >= streakData.dailyGoalMinutes 
+              ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
+              : ""
+          )}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
-                <Flame className="h-5 w-5 text-orange-600" />
+              <div className={cn(
+                "p-2 rounded-lg",
+                streakData.todayMinutes >= streakData.dailyGoalMinutes
+                  ? "bg-white/20"
+                  : "bg-orange-100 dark:bg-orange-900/30"
+              )}>
+                <Flame className={cn(
+                  "h-5 w-5",
+                  streakData.todayMinutes >= streakData.dailyGoalMinutes
+                    ? "text-white"
+                    : "text-orange-600"
+                )} />
               </div>
               <div>
-                <p className="text-2xl font-bold">{analytics.currentStreak}</p>
-                <p className="text-xs text-muted-foreground">Day Streak 🔥</p>
+                <p className="text-2xl font-bold">{streakData.currentStreak}</p>
+                <p className={cn(
+                  "text-xs",
+                  streakData.todayMinutes >= streakData.dailyGoalMinutes
+                    ? "text-white/80"
+                    : "text-muted-foreground"
+                )}>
+                  Day Streak {streakData.todayMinutes >= streakData.dailyGoalMinutes ? '✓' : '🔥'}
+                </p>
               </div>
             </div>
-          </CardContent>
+          </div>
         </Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-xl grid-cols-4">
-          <TabsTrigger value="my-learning" className="gap-2">
+        <TabsList className="flex w-full max-w-3xl overflow-x-auto">
+          <TabsTrigger value="my-learning" className="gap-2 flex-shrink-0">
             <BookMarked className="h-4 w-4" /> My Learning
           </TabsTrigger>
-          <TabsTrigger value="catalog" className="gap-2">
+          <TabsTrigger value="catalog" className="gap-2 flex-shrink-0">
             <BookOpen className="h-4 w-4" /> Browse
           </TabsTrigger>
-          <TabsTrigger value="rewards" className="gap-2">
+          <TabsTrigger value="notes" className="gap-2 flex-shrink-0">
+            <StickyNote className="h-4 w-4" /> Notes
+          </TabsTrigger>
+          <TabsTrigger value="reviews" className="gap-2 flex-shrink-0">
+            <MessageSquare className="h-4 w-4" /> Reviews
+          </TabsTrigger>
+          <TabsTrigger value="rewards" className="gap-2 flex-shrink-0">
             <Sparkles className="h-4 w-4" /> Rewards
           </TabsTrigger>
-          <TabsTrigger value="certificates" className="gap-2">
+          <TabsTrigger value="certificates" className="gap-2 flex-shrink-0">
             <Award className="h-4 w-4" /> Certificates
           </TabsTrigger>
         </TabsList>
@@ -554,6 +589,23 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
               );
             })}
           </div>
+        </TabsContent>
+
+        {/* Notes & Bookmarks Tab */}
+        <TabsContent value="notes" className="mt-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <CourseNotesPanel currentUserId={currentUserId} />
+            </div>
+            <div>
+              <LearningStreakWidget currentUserId={currentUserId} />
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Reviews Tab */}
+        <TabsContent value="reviews" className="mt-6">
+          <CourseReviewsPanel currentUserId={currentUserId} />
         </TabsContent>
 
         {/* Rewards Tab */}
