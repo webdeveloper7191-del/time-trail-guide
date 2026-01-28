@@ -25,10 +25,12 @@ import {
   Hourglass,
   ShieldCheck,
   ShieldAlert,
+  GraduationCap,
 } from 'lucide-react';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/timesheet/StatusBadge';
+import { EmployeeLMSPanel } from '@/components/performance/EmployeeLMSPanel';
 
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
@@ -156,9 +158,18 @@ export function EmployeePortal() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
-            <TabsTrigger value="current">Current Week</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="summary">Summary</TabsTrigger>
+            <TabsTrigger value="current" className="gap-2">
+              <Clock className="h-4 w-4" /> Current Week
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-2">
+              <Calendar className="h-4 w-4" /> History
+            </TabsTrigger>
+            <TabsTrigger value="learning" className="gap-2">
+              <GraduationCap className="h-4 w-4" /> My Learning
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="gap-2">
+              <TrendingUp className="h-4 w-4" /> Summary
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="current">
@@ -179,6 +190,10 @@ export function EmployeePortal() {
 
           <TabsContent value="history">
             <HistoryView timesheets={pastTimesheets} />
+          </TabsContent>
+
+          <TabsContent value="learning">
+            <EmployeeLMSPanel currentUserId={currentEmployee.id} />
           </TabsContent>
 
           <TabsContent value="summary">
