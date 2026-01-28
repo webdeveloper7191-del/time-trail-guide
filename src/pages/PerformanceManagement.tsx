@@ -228,6 +228,12 @@ export default function PerformanceManagement() {
     toast.success(isEditing ? 'Template updated successfully!' : 'Template created successfully!');
   };
 
+  const handleDeleteTemplate = (templateId: string) => {
+    // In a real app, this would delete from backend
+    console.log('Deleting template:', templateId);
+    toast.success('Template deleted successfully');
+  };
+
   const handleAssignPlanSubmit = async (data: {
     templateId: string;
     staffId: string;
@@ -261,7 +267,21 @@ export default function PerformanceManagement() {
   const handleUpdatePlanStatus = async (planId: string, status: PlanStatus) => {
     // In a real app, this would update the plan status in the backend
     console.log('Updating plan status:', planId, status);
-    // Mock update for demonstration
+    toast.success(`Plan status updated to ${status}`);
+  };
+
+  const handleDeletePlan = async (planId: string) => {
+    // In a real app, this would delete the plan from the backend
+    console.log('Deleting plan:', planId);
+    toast.success('Plan deleted successfully');
+    setShowPlanDetail(false);
+    setSelectedPlan(null);
+  };
+
+  const handleExtendPlan = async (planId: string, newEndDate: string) => {
+    // In a real app, this would update the plan end date in the backend
+    console.log('Extending plan:', planId, 'to', newEndDate);
+    toast.success('Plan extended successfully');
   };
 
   return (
@@ -401,6 +421,7 @@ export default function PerformanceManagement() {
                 onEditTemplate={handleEditTemplate}
                 onDuplicateTemplate={handleDuplicateTemplate}
                 onQuickAssignPlan={() => setShowQuickAssignDrawer(true)}
+                onDeleteTemplate={handleDeleteTemplate}
               />
             </TabsContent>
 
@@ -582,6 +603,8 @@ export default function PerformanceManagement() {
           handleViewConversation(conv);
         }}
         onUpdateStatus={handleUpdatePlanStatus}
+        onDeletePlan={handleDeletePlan}
+        onExtendPlan={handleExtendPlan}
       />
 
       {/* Bulk Assign Plan Drawer */}

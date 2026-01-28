@@ -29,6 +29,7 @@ import {
   BookOpen,
   GraduationCap,
   UserPlus,
+  Trash2,
 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { 
@@ -61,6 +62,7 @@ interface PlanManagementPanelProps {
   onEditTemplate: (template: PerformancePlanTemplate) => void;
   onDuplicateTemplate: (template: PerformancePlanTemplate) => void;
   onQuickAssignPlan: () => void;
+  onDeleteTemplate?: (templateId: string) => void;
 }
 
 export function PlanManagementPanel({
@@ -76,6 +78,7 @@ export function PlanManagementPanel({
   onEditTemplate,
   onDuplicateTemplate,
   onQuickAssignPlan,
+  onDeleteTemplate,
 }: PlanManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<'assigned' | 'templates'>('assigned');
   const [searchTerm, setSearchTerm] = useState('');
@@ -468,6 +471,21 @@ export function PlanManagementPanel({
                                   <Copy className="h-4 w-4 mr-2" />
                                   Duplicate
                                 </DropdownMenuItem>
+                                {!template.isSystem && onDeleteTemplate && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDeleteTemplate(template.id);
+                                      }}
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete Template
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
