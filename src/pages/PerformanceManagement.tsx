@@ -256,35 +256,25 @@ export default function PerformanceManagement() {
                 Track development plans, reviews, goals, and continuous feedback
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <Button 
-                onClick={() => setShowQuickAssignDrawer(true)} 
-                className="gap-2 shadow-sm"
-                size="default"
-              >
-                <UserPlus className="h-4 w-4" />
-                Assign Plan
-              </Button>
-              <PerformanceNotificationBell
-                goals={goals}
-                reviews={reviews}
-                conversations={conversations}
-                plans={mockAssignedPlans}
-                currentUserId={CURRENT_USER_ID}
-                onViewGoal={handleNotificationGoal}
-                onViewReview={handleNotificationReview}
-                onViewConversation={handleNotificationConversation}
-                onViewPlan={(planId) => {
-                  const plan = mockAssignedPlans.find(p => p.id === planId);
-                  if (plan) handleViewPlan(plan);
-                }}
-              />
-            </div>
+            <PerformanceNotificationBell
+              goals={goals}
+              reviews={reviews}
+              conversations={conversations}
+              plans={mockAssignedPlans}
+              currentUserId={CURRENT_USER_ID}
+              onViewGoal={handleNotificationGoal}
+              onViewReview={handleNotificationReview}
+              onViewConversation={handleNotificationConversation}
+              onViewPlan={(planId) => {
+                const plan = mockAssignedPlans.find(p => p.id === planId);
+                if (plan) handleViewPlan(plan);
+              }}
+            />
           </div>
 
           {/* Refined Tab Navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="border-b border-border/60">
+            <div className="flex items-center justify-between border-b border-border/60">
               <TabsList className="h-12 bg-transparent p-0 gap-1">
                 <TabsTrigger 
                   value="plans" 
@@ -341,6 +331,14 @@ export default function PerformanceManagement() {
                   <BarChart3 className="h-4 w-4 mr-2" /> Analytics
                 </TabsTrigger>
               </TabsList>
+              <Button 
+                onClick={() => setShowQuickAssignDrawer(true)} 
+                className="gap-2 shadow-sm"
+                size="default"
+              >
+                <UserPlus className="h-4 w-4" />
+                Assign Plan
+              </Button>
             </div>
 
             <TabsContent value="plans" className="mt-6">
