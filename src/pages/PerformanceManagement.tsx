@@ -24,12 +24,19 @@ import { CreateGoalDrawer } from '@/components/performance/CreateGoalDrawer';
 import { LMSAdminModule } from '@/components/performance/LMSAdminModule';
 import { ScheduleConversationDrawer } from '@/components/performance/ScheduleConversationDrawer';
 import { StartReviewDrawer } from '@/components/performance/StartReviewDrawer';
+// New advanced performance features
+import { Feedback360Panel } from '@/components/performance/Feedback360Panel';
+import { NineBoxTalentGrid } from '@/components/performance/NineBoxTalentGrid';
+import { SkillsCareerPanel } from '@/components/performance/SkillsCareerPanel';
+import { PulseSurveyPanel } from '@/components/performance/PulseSurveyPanel';
+import { WellbeingDashboard } from '@/components/performance/WellbeingDashboard';
+import { CalibrationPanel } from '@/components/performance/CalibrationPanel';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap } from 'lucide-react';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
@@ -275,7 +282,13 @@ export default function PerformanceManagement() {
     { value: 'goals', label: 'Goals', icon: Target },
     { value: 'reviews', label: 'Reviews', icon: ClipboardCheck },
     { value: 'feedback', label: 'Feedback', icon: MessageSquareHeart },
+    { value: '360feedback', label: '360°', icon: Users2 },
     { value: 'conversations', label: '1:1s', icon: MessageSquare },
+    { value: 'talent', label: '9-Box', icon: Grid3X3 },
+    { value: 'skills', label: 'Skills', icon: Compass },
+    { value: 'pulse', label: 'Pulse', icon: Activity },
+    { value: 'wellbeing', label: 'Wellbeing', icon: HeartPulse },
+    { value: 'calibration', label: 'Calibration', icon: Scale },
     { value: 'team', label: 'Team', icon: Users },
     { value: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
@@ -408,6 +421,10 @@ export default function PerformanceManagement() {
               />
             )}
 
+            {activeTab === '360feedback' && (
+              <Feedback360Panel currentUserId={CURRENT_USER_ID} />
+            )}
+
             {activeTab === 'conversations' && (
               <ConversationsList
                 conversations={conversations}
@@ -416,6 +433,26 @@ export default function PerformanceManagement() {
                 onScheduleConversation={() => setShowScheduleConversationModal(true)}
                 onViewConversation={handleViewConversation}
               />
+            )}
+
+            {activeTab === 'talent' && (
+              <NineBoxTalentGrid />
+            )}
+
+            {activeTab === 'skills' && (
+              <SkillsCareerPanel staffId="staff-1" />
+            )}
+
+            {activeTab === 'pulse' && (
+              <PulseSurveyPanel currentUserId={CURRENT_USER_ID} />
+            )}
+
+            {activeTab === 'wellbeing' && (
+              <WellbeingDashboard currentUserId={CURRENT_USER_ID} />
+            )}
+
+            {activeTab === 'calibration' && (
+              <CalibrationPanel currentUserId={CURRENT_USER_ID} />
             )}
 
             {activeTab === 'team' && (
