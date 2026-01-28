@@ -30,6 +30,7 @@ import {
   Clock,
   Save
 } from 'lucide-react';
+import { OnCallPayCalculationPreview } from './OnCallPayCalculationPreview';
 import { toast } from 'sonner';
 import { 
   OnCallConfiguration, 
@@ -367,6 +368,9 @@ export function OnCallAllowancePanel() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pay Calculation Preview */}
+      <OnCallPayCalculationPreview allowances={allowances} />
 
       {/* Allowances List */}
       <div className="grid gap-4">
