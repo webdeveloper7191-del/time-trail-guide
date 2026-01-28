@@ -320,7 +320,9 @@ export default function PerformanceManagement() {
                 currentUserId={CURRENT_USER_ID}
                 staff={mockStaff}
                 goals={goals}
+                isAdmin={true}
                 onCreateLearningGoal={() => setShowCreateGoalModal(true)}
+                onUpdateGoalProgress={updateGoalProgress}
               />
             </TabsContent>
 

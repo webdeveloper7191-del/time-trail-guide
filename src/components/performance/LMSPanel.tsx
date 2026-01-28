@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,8 @@ import {
   ArrowRight,
   Building2,
   AlertCircle,
+  Settings,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -55,22 +57,28 @@ import {
 import { Goal } from '@/types/performance';
 import { mockCourses, mockLearningPaths, mockEnrollments, mockCertificates, mockLearnerAnalytics } from '@/data/mockLmsData';
 import { StaffMember } from '@/types/staff';
+import { CoursePlayer } from './CoursePlayer';
+import { LMSAdminPanel } from './LMSAdminPanel';
 import { toast } from 'sonner';
 
 interface LMSPanelProps {
   currentUserId: string;
   staff: StaffMember[];
   goals: Goal[];
+  isAdmin?: boolean;
   onLinkGoalToCourse?: (goalId: string, courseId: string) => void;
   onCreateLearningGoal?: () => void;
+  onUpdateGoalProgress?: (goalId: string, progress: number) => void;
 }
 
 export function LMSPanel({ 
   currentUserId, 
   staff, 
   goals,
+  isAdmin = true, // Show admin by default for demo
   onLinkGoalToCourse,
   onCreateLearningGoal,
+  onUpdateGoalProgress,
 }: LMSPanelProps) {
   const [activeTab, setActiveTab] = useState('my-learning');
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,11 +86,13 @@ export function LMSPanel({
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedPath, setSelectedPath] = useState<LearningPath | null>(null);
+  const [showCoursePlayer, setShowCoursePlayer] = useState(false);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>(mockEnrollments);
 
   // Get user's enrollments
   const myEnrollments = useMemo(() => 
-    mockEnrollments.filter(e => e.staffId === currentUserId),
-    [currentUserId]
+    enrollments.filter(e => e.staffId === currentUserId),
+    [currentUserId, enrollments]
   );
 
   const inProgressEnrollments = myEnrollments.filter(e => e.status === 'in_progress');
@@ -112,15 +122,165 @@ export function LMSPanel({
     myEnrollments.find(e => e.courseId === courseId);
 
   const handleEnroll = (course: Course) => {
+    const newEnrollment: Enrollment = {
+      id: `enroll-${Date.now()}`,
+      staffId: currentUserId,
+      courseId: course.id,
+      status: 'not_started',
+      progress: 0,
+      moduleProgress: [],
+      assessmentAttempts: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setEnrollments(prev => [...prev, newEnrollment]);
     toast.success(`Enrolled in ${course.title}`);
-    // In real app, would create enrollment
   };
 
   const handleContinueLearning = (enrollment: Enrollment) => {
     const course = mockCourses.find(c => c.id === enrollment.courseId);
     if (course) {
       setSelectedCourse(course);
+      setShowCoursePlayer(true);
     }
+  };
+
+  // Course player handlers
+  const handleProgressUpdate = useCallback((enrollmentId: string, moduleId: string, contentId: string, completed: boolean) => {
+    setEnrollments(prev => prev.map(e => {
+      if (e.id !== enrollmentId) return e;
+      
+      const moduleProgress = [...e.moduleProgress];
+      let mp = moduleProgress.find(p => p.moduleId === moduleId);
+      
+      if (!mp) {
+        mp = { moduleId, status: 'in_progress', progress: 0, completedContentIds: [], startedAt: new Date().toISOString() };
+        moduleProgress.push(mp);
+      }
+      
+      if (completed && !mp.completedContentIds.includes(contentId)) {
+        mp.completedContentIds.push(contentId);
+      }
+      
+      // Recalculate progress
+      const course = mockCourses.find(c => c.id === e.courseId);
+      if (course) {
+        const totalContent = course.modules.reduce((sum, m) => sum + m.content.length, 0);
+        const completedContent = moduleProgress.reduce((sum, p) => sum + p.completedContentIds.length, 0);
+        const newProgress = Math.round((completedContent / totalContent) * 100);
+        
+        return {
+          ...e,
+          moduleProgress,
+          progress: newProgress,
+          status: newProgress > 0 ? 'in_progress' : e.status,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      
+      return { ...e, moduleProgress };
+    }));
+  }, []);
+
+  const handleModuleComplete = useCallback((enrollmentId: string, moduleId: string) => {
+    setEnrollments(prev => prev.map(e => {
+      if (e.id !== enrollmentId) return e;
+      
+      const moduleProgress = e.moduleProgress.map(mp => 
+        mp.moduleId === moduleId 
+          ? { ...mp, status: 'completed' as const, completedAt: new Date().toISOString() }
+          : mp
+      );
+      
+      return { ...e, moduleProgress, updatedAt: new Date().toISOString() };
+    }));
+  }, []);
+
+  const handleAssessmentSubmit = useCallback(async (
+    enrollmentId: string, 
+    assessmentId: string, 
+    answers: Record<string, string | string[]>
+  ): Promise<{ score: number; passed: boolean }> => {
+    // Find the assessment and calculate score
+    const enrollment = enrollments.find(e => e.id === enrollmentId);
+    const course = mockCourses.find(c => c.id === enrollment?.courseId);
+    let assessment: any = null;
+    
+    for (const module of course?.modules || []) {
+      if (module.assessment?.id === assessmentId) {
+        assessment = module.assessment;
+        break;
+      }
+    }
+    
+    if (!assessment) return { score: 0, passed: false };
+    
+    // Calculate score
+    let correctAnswers = 0;
+    for (const q of assessment.questions) {
+      const userAnswer = answers[q.id];
+      if (JSON.stringify(userAnswer) === JSON.stringify(q.correctAnswer)) {
+        correctAnswers++;
+      }
+    }
+    
+    const score = Math.round((correctAnswers / assessment.questions.length) * 100);
+    const passed = score >= assessment.passingScore;
+    
+    return { score, passed };
+  }, [enrollments]);
+
+  const handleCourseComplete = useCallback((enrollmentId: string) => {
+    setEnrollments(prev => prev.map(e => {
+      if (e.id !== enrollmentId) return e;
+      
+      const updated: Enrollment = {
+        ...e,
+        status: 'completed',
+        progress: 100,
+        completedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      
+      // Update linked goals
+      const course = mockCourses.find(c => c.id === e.courseId);
+      if (course && onUpdateGoalProgress) {
+        // Find goals linked to this course's skills
+        const linkedGoals = goals.filter(g => 
+          g.category === 'Skill Development' && 
+          course.skills.some(skill => g.title.toLowerCase().includes(skill.toLowerCase()))
+        );
+        
+        linkedGoals.forEach(goal => {
+          // Increase goal progress when course completes
+          const newProgress = Math.min(100, goal.progress + 25);
+          onUpdateGoalProgress(goal.id, newProgress);
+        });
+      }
+      
+      return updated;
+    }));
+    
+    setShowCoursePlayer(false);
+    setSelectedCourse(null);
+  }, [goals, onUpdateGoalProgress]);
+
+  const handleAssignCourse = (courseId: string, staffIds: string[], dueDate?: Date) => {
+    const newEnrollments = staffIds.map(staffId => ({
+      id: `enroll-${Date.now()}-${staffId}`,
+      staffId,
+      courseId,
+      status: 'not_started' as const,
+      progress: 0,
+      moduleProgress: [],
+      assessmentAttempts: [],
+      assignedBy: currentUserId,
+      dueDate: dueDate?.toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+    
+    setEnrollments(prev => [...prev, ...newEnrollments]);
   };
 
   return (
@@ -195,7 +355,7 @@ export function LMSPanel({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+        <TabsList className={cn("grid w-full max-w-4xl", isAdmin ? "grid-cols-6" : "grid-cols-5")}>
           <TabsTrigger value="my-learning" className="gap-2">
             <BookMarked className="h-4 w-4" /> My Learning
           </TabsTrigger>
@@ -211,6 +371,11 @@ export function LMSPanel({
           <TabsTrigger value="analytics" className="gap-2">
             <BarChart3 className="h-4 w-4" /> Analytics
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="admin" className="gap-2">
+              <Settings className="h-4 w-4" /> Admin
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* My Learning Tab */}
@@ -768,7 +933,32 @@ export function LMSPanel({
             </Card>
           </div>
         </TabsContent>
+
+        {/* Admin Tab */}
+        {isAdmin && (
+          <TabsContent value="admin" className="mt-6">
+            <LMSAdminPanel 
+              staff={staff}
+              onAssignCourse={handleAssignCourse}
+            />
+          </TabsContent>
+        )}
       </Tabs>
+
+      {/* Course Player */}
+      <CoursePlayer
+        open={showCoursePlayer}
+        course={selectedCourse}
+        enrollment={myEnrollments.find(e => e.courseId === selectedCourse?.id) || null}
+        onClose={() => {
+          setShowCoursePlayer(false);
+          setSelectedCourse(null);
+        }}
+        onProgressUpdate={handleProgressUpdate}
+        onModuleComplete={handleModuleComplete}
+        onAssessmentSubmit={handleAssessmentSubmit}
+        onCourseComplete={handleCourseComplete}
+      />
     </div>
   );
 }
