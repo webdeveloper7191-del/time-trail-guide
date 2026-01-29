@@ -175,7 +175,7 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
         { label: loading ? 'Starting...' : 'Start Review', onClick: handleSubmit, variant: 'primary', disabled: loading, loading },
       ]}
     >
-      <div className="space-y-5">
+      <div className="space-y-4 sm:space-y-5">
         <div className="space-y-2">
           <Label>Team Member *</Label>
           <Select value={staffId} onValueChange={setStaffId}>
@@ -213,7 +213,7 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
           </Select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-2">
             <Label>Period Start *</Label>
             <Popover>

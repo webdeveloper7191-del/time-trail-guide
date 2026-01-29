@@ -143,29 +143,29 @@ export function QuickAssignPlanDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-xl overflow-hidden flex flex-col">
-        <SheetHeader className="space-y-1 pb-4 border-b">
-          <SheetTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+      <SheetContent className="w-full sm:max-w-xl overflow-hidden flex flex-col p-0">
+        <SheetHeader className="space-y-1 px-4 sm:px-6 py-3 sm:py-4 border-b">
+          <SheetTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
             {step === 'select-template' ? 'Select Plan Template' : 'Assign Performance Plan'}
           </SheetTitle>
           {selectedTemplate && step === 'configure' && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge className={planTypeColors[selectedTemplate.type]}>
                 {planTypeLabels[selectedTemplate.type]}
               </Badge>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {selectedTemplate.durationDays} days
               </span>
             </div>
           )}
         </SheetHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1 -mx-0 px-4 sm:px-6">
           {step === 'select-template' ? (
-            <div className="space-y-4 py-4">
+            <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
               {/* Search and Filters */}
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -175,7 +175,7 @@ export function QuickAssignPlanDrawer({
                     className="pl-9"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as PlanType | 'all')}>
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Plan Type" />
@@ -209,7 +209,7 @@ export function QuickAssignPlanDrawer({
               {/* Template List */}
               <div className="space-y-2">
                 {filteredTemplates.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-6 sm:py-8 text-muted-foreground">
                     No templates found
                   </div>
                 ) : (
@@ -219,39 +219,39 @@ export function QuickAssignPlanDrawer({
                       className="cursor-pointer hover:border-primary/50 transition-colors"
                       onClick={() => handleSelectTemplate(template)}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-3">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex items-start justify-between gap-2 sm:gap-3">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium truncate">{template.name}</h3>
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            <h3 className="font-medium truncate text-sm sm:text-base">{template.name}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                               {template.description}
                             </p>
-                            <div className="flex flex-wrap items-center gap-2 mt-3">
+                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3">
                               <Badge className={cn("text-xs", planTypeColors[template.type])}>
                                 {planTypeLabels[template.type]}
                               </Badge>
                               {template.industry && (
-                                <Badge variant="outline" className="text-xs gap-1">
+                                <Badge variant="outline" className="text-xs gap-1 hidden sm:inline-flex">
                                   <Building2 className="h-3 w-3" />
                                   {template.industry}
                                 </Badge>
                               )}
                               <span className="text-xs text-muted-foreground">
-                                {template.durationDays} days
+                                {template.durationDays}d
                               </span>
                             </div>
-                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-3 sm:gap-4 mt-2 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
-                                <Target className="h-3.5 w-3.5" />
-                                {template.goals.length} goals
+                                <Target className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                {template.goals.length}
                               </span>
                               <span className="flex items-center gap-1">
-                                <ClipboardCheck className="h-3.5 w-3.5" />
-                                {template.reviews.length} reviews
+                                <ClipboardCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                {template.reviews.length}
                               </span>
                               <span className="flex items-center gap-1">
-                                <MessageSquare className="h-3.5 w-3.5" />
-                                {template.conversations.length} 1:1s
+                                <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                {template.conversations.length}
                               </span>
                             </div>
                           </div>
@@ -263,15 +263,15 @@ export function QuickAssignPlanDrawer({
               </div>
             </div>
           ) : (
-            <div className="space-y-6 py-4">
+            <div className="space-y-4 sm:space-y-6 py-3 sm:py-4">
               {/* Template Info */}
               {selectedTemplate && (
                 <Card className="bg-muted/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-medium">{selectedTemplate.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-medium text-sm sm:text-base truncate">{selectedTemplate.name}</h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                           {selectedTemplate.description}
                         </p>
                       </div>
@@ -279,22 +279,23 @@ export function QuickAssignPlanDrawer({
                         variant="ghost" 
                         size="sm"
                         onClick={() => setStep('select-template')}
+                        className="shrink-0"
                       >
                         Change
                       </Button>
                     </div>
-                    <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <Target className="h-3.5 w-3.5" />
-                        {selectedTemplate.goals.length} goals
+                        <Target className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        {selectedTemplate.goals.length}
                       </span>
                       <span className="flex items-center gap-1">
-                        <ClipboardCheck className="h-3.5 w-3.5" />
-                        {selectedTemplate.reviews.length} reviews
+                        <ClipboardCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        {selectedTemplate.reviews.length}
                       </span>
                       <span className="flex items-center gap-1">
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        {selectedTemplate.conversations.length} 1:1s
+                        <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        {selectedTemplate.conversations.length}
                       </span>
                     </div>
                   </CardContent>
@@ -374,18 +375,23 @@ export function QuickAssignPlanDrawer({
         </ScrollArea>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 pt-4 border-t mt-auto">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t mt-auto">
           {step === 'configure' && (
             <Button 
               variant="outline" 
               onClick={() => setStep('select-template')}
+              className="w-full sm:w-auto"
             >
               Back
             </Button>
           )}
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
           {step === 'configure' && (
-            <Button onClick={handleSubmit} disabled={loading || !staffId || !selectedTemplate}>
+            <Button 
+              onClick={handleSubmit} 
+              disabled={loading || !staffId || !selectedTemplate}
+              className="w-full sm:w-auto"
+            >
               {loading ? 'Assigning...' : 'Assign Plan'}
             </Button>
           )}
