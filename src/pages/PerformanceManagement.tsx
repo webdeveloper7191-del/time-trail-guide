@@ -21,6 +21,8 @@ import { CreateTemplateDrawer } from '@/components/performance/CreateTemplateDra
 import { QuickAssignPlanDrawer } from '@/components/performance/QuickAssignPlanDrawer';
 import { PerformanceTaskManagementPanel } from '@/components/performance/PerformanceTaskManagementPanel';
 import { CreateGoalDrawer } from '@/components/performance/CreateGoalDrawer';
+import { AssignGoalDrawer } from '@/components/performance/AssignGoalDrawer';
+import { EditGoalDrawer } from '@/components/performance/EditGoalDrawer';
 import { LMSAdminModule } from '@/components/performance/LMSAdminModule';
 import { ScheduleConversationDrawer } from '@/components/performance/ScheduleConversationDrawer';
 import { StartReviewDrawer } from '@/components/performance/StartReviewDrawer';
@@ -65,6 +67,9 @@ export default function PerformanceManagement() {
   const [showPlanDetail, setShowPlanDetail] = useState(false);
   const [showQuickAssignDrawer, setShowQuickAssignDrawer] = useState(false);
   const [showCreateGoalDrawer, setShowCreateGoalDrawer] = useState(false);
+  const [showAssignGoalDrawer, setShowAssignGoalDrawer] = useState(false);
+  const [showEditGoalDrawer, setShowEditGoalDrawer] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [showScheduleConversationModal, setShowScheduleConversationModal] = useState(false);
   const [showStartReviewDrawer, setShowStartReviewDrawer] = useState(false);
   
@@ -101,6 +106,11 @@ export default function PerformanceManagement() {
     await deleteGoal(goalId);
     setShowGoalDetail(false);
     setSelectedGoal(null);
+  };
+
+  const handleEditGoal = (goal: Goal) => {
+    setEditingGoal(goal);
+    setShowEditGoalDrawer(true);
   };
 
   // Review handlers
@@ -401,7 +411,9 @@ export default function PerformanceManagement() {
               <GoalsTracker
                 goals={goals}
                 onCreateGoal={() => setShowCreateGoalDrawer(true)}
+                onAssignGoal={() => setShowAssignGoalDrawer(true)}
                 onViewGoal={handleViewGoal}
+                onEditGoal={handleEditGoal}
                 onUpdateProgress={updateGoalProgress}
               />
             )}
@@ -626,6 +638,31 @@ export default function PerformanceManagement() {
         onSubmit={async (data) => {
           await createGoal(data);
         }}
+      />
+
+      {/* Assign Goal to Employees Drawer */}
+      <AssignGoalDrawer
+        open={showAssignGoalDrawer}
+        onOpenChange={setShowAssignGoalDrawer}
+        staff={mockStaff}
+        createdBy={CURRENT_USER_ID}
+        onSubmit={async (data) => {
+          await createGoal(data);
+        }}
+      />
+
+      {/* Edit Goal Drawer */}
+      <EditGoalDrawer
+        open={showEditGoalDrawer}
+        onOpenChange={(open) => {
+          setShowEditGoalDrawer(open);
+          if (!open) setEditingGoal(null);
+        }}
+        goal={editingGoal}
+        onSubmit={async (goalId, data) => {
+          await updateGoal(goalId, data);
+        }}
+        onDelete={handleDeleteGoal}
       />
 
       {/* Schedule Conversation Drawer */}

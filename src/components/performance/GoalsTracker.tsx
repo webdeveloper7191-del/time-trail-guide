@@ -31,13 +31,17 @@ import {
   Plus,
   Search,
   X,
+  Users,
+  Edit,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface GoalsTrackerProps {
   goals: Goal[];
   onCreateGoal: () => void;
+  onAssignGoal?: () => void;
   onViewGoal: (goal: Goal) => void;
+  onEditGoal?: (goal: Goal) => void;
   onUpdateProgress: (goalId: string, progress: number) => void;
   compact?: boolean;
   showFilters?: boolean;
@@ -69,7 +73,9 @@ const statusIcons: Record<string, React.ReactNode> = {
 export function GoalsTracker({ 
   goals, 
   onCreateGoal, 
+  onAssignGoal,
   onViewGoal, 
+  onEditGoal,
   onUpdateProgress,
   compact = false,
   showFilters = true,
@@ -198,9 +204,16 @@ export function GoalsTracker({
             Track progress on personal and professional development goals
           </Typography>
         </Box>
-        <MuiButton variant="contained" startIcon={<Plus size={16} />} onClick={onCreateGoal}>
-          New Goal
-        </MuiButton>
+        <Stack direction="row" spacing={1}>
+          {onAssignGoal && (
+            <MuiButton variant="outlined" startIcon={<Users size={16} />} onClick={onAssignGoal}>
+              Assign Goal
+            </MuiButton>
+          )}
+          <MuiButton variant="contained" startIcon={<Plus size={16} />} onClick={onCreateGoal}>
+            New Goal
+          </MuiButton>
+        </Stack>
       </Stack>
 
       {/* Stats Cards */}
