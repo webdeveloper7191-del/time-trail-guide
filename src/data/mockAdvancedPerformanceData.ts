@@ -292,6 +292,178 @@ export const mockPulseSurveys: PulseSurvey[] = [
     createdAt: '2024-12-15T09:00:00Z',
     updatedAt: '2024-12-15T09:00:00Z',
   },
+  {
+    id: 'pulse-3',
+    title: 'Q1 Culture Check-in',
+    questions: [
+      { id: 'q7', text: 'I feel my work is meaningful and contributes to our mission', type: 'rating', category: 'culture', required: true },
+      { id: 'q8', text: 'I feel comfortable sharing ideas and opinions with my team', type: 'rating', category: 'culture', required: true },
+      { id: 'q9', text: 'I have opportunities for professional growth here', type: 'rating', category: 'growth', required: true },
+    ],
+    frequency: 'quarterly',
+    status: 'completed',
+    targetAudience: 'all',
+    anonymousResponses: true,
+    startDate: '2024-10-01',
+    endDate: '2024-12-31',
+    createdBy: 'staff-2',
+    createdAt: '2024-09-15T09:00:00Z',
+    updatedAt: '2025-01-05T09:00:00Z',
+  },
+];
+
+// Survey responses from staff
+export const mockPulseResponses: PulseResponse[] = [
+  // Weekly Wellbeing Check responses - Week of Jan 27
+  { id: 'resp-1', surveyId: 'pulse-1', responses: [{ questionId: 'q1', value: 4 }, { questionId: 'q2', value: 4 }, { questionId: 'q3', value: 5 }, { questionId: 'q4', value: 'Great week overall!' }], submittedAt: '2025-01-27T10:30:00Z' },
+  { id: 'resp-2', surveyId: 'pulse-1', responses: [{ questionId: 'q1', value: 3 }, { questionId: 'q2', value: 2 }, { questionId: 'q3', value: 4 }, { questionId: 'q4', value: 'Workload was heavy this week' }], submittedAt: '2025-01-27T11:00:00Z' },
+  { id: 'resp-3', surveyId: 'pulse-1', responses: [{ questionId: 'q1', value: 5 }, { questionId: 'q2', value: 5 }, { questionId: 'q3', value: 5 }, { questionId: 'q4', value: '' }], submittedAt: '2025-01-27T09:15:00Z' },
+  { id: 'resp-4', surveyId: 'pulse-1', responses: [{ questionId: 'q1', value: 4 }, { questionId: 'q2', value: 3 }, { questionId: 'q3', value: 4 }, { questionId: 'q4', value: 'Need more resources for the project' }], submittedAt: '2025-01-27T14:20:00Z' },
+  { id: 'resp-5', surveyId: 'pulse-1', responses: [{ questionId: 'q1', value: 3 }, { questionId: 'q2', value: 3 }, { questionId: 'q3', value: 3 }, { questionId: 'q4', value: '' }], submittedAt: '2025-01-27T16:00:00Z' },
+  { id: 'resp-6', surveyId: 'pulse-1', responses: [{ questionId: 'q1', value: 4 }, { questionId: 'q2', value: 4 }, { questionId: 'q3', value: 4 }, { questionId: 'q4', value: 'Enjoyed the team lunch!' }], submittedAt: '2025-01-27T15:30:00Z' },
+  { id: 'resp-7', surveyId: 'pulse-1', responses: [{ questionId: 'q1', value: 2 }, { questionId: 'q2', value: 1 }, { questionId: 'q3', value: 3 }, { questionId: 'q4', value: 'Feeling burned out, need support' }], submittedAt: '2025-01-27T17:00:00Z' },
+  { id: 'resp-8', surveyId: 'pulse-1', responses: [{ questionId: 'q1', value: 5 }, { questionId: 'q2', value: 4 }, { questionId: 'q3', value: 5 }, { questionId: 'q4', value: '' }], submittedAt: '2025-01-27T12:00:00Z' },
+  
+  // Monthly eNPS responses
+  { id: 'resp-20', surveyId: 'pulse-2', responses: [{ questionId: 'q5', value: 9 }, { questionId: 'q6', value: 'Great team culture and growth opportunities' }], submittedAt: '2025-01-15T10:00:00Z' },
+  { id: 'resp-21', surveyId: 'pulse-2', responses: [{ questionId: 'q5', value: 8 }, { questionId: 'q6', value: 'Good benefits and work-life balance' }], submittedAt: '2025-01-15T11:00:00Z' },
+  { id: 'resp-22', surveyId: 'pulse-2', responses: [{ questionId: 'q5', value: 10 }, { questionId: 'q6', value: 'Best job I have ever had!' }], submittedAt: '2025-01-15T09:30:00Z' },
+  { id: 'resp-23', surveyId: 'pulse-2', responses: [{ questionId: 'q5', value: 7 }, { questionId: 'q6', value: 'Good overall but salary could be better' }], submittedAt: '2025-01-15T14:00:00Z' },
+  { id: 'resp-24', surveyId: 'pulse-2', responses: [{ questionId: 'q5', value: 6 }, { questionId: 'q6', value: 'Some communication issues' }], submittedAt: '2025-01-15T15:00:00Z' },
+  { id: 'resp-25', surveyId: 'pulse-2', responses: [{ questionId: 'q5', value: 9 }, { questionId: 'q6', value: 'Love the flexibility' }], submittedAt: '2025-01-15T16:00:00Z' },
+  { id: 'resp-26', surveyId: 'pulse-2', responses: [{ questionId: 'q5', value: 4 }, { questionId: 'q6', value: 'Management needs improvement' }], submittedAt: '2025-01-15T13:00:00Z' },
+  { id: 'resp-27', surveyId: 'pulse-2', responses: [{ questionId: 'q5', value: 8 }, { questionId: 'q6', value: '' }], submittedAt: '2025-01-15T12:00:00Z' },
+  
+  // Q1 Culture Check-in responses (completed survey)
+  { id: 'resp-40', surveyId: 'pulse-3', responses: [{ questionId: 'q7', value: 5 }, { questionId: 'q8', value: 4 }, { questionId: 'q9', value: 4 }], submittedAt: '2024-12-20T10:00:00Z' },
+  { id: 'resp-41', surveyId: 'pulse-3', responses: [{ questionId: 'q7', value: 4 }, { questionId: 'q8', value: 5 }, { questionId: 'q9', value: 3 }], submittedAt: '2024-12-21T10:00:00Z' },
+  { id: 'resp-42', surveyId: 'pulse-3', responses: [{ questionId: 'q7', value: 4 }, { questionId: 'q8', value: 4 }, { questionId: 'q9', value: 5 }], submittedAt: '2024-12-22T10:00:00Z' },
+  { id: 'resp-43', surveyId: 'pulse-3', responses: [{ questionId: 'q7', value: 3 }, { questionId: 'q8', value: 3 }, { questionId: 'q9', value: 3 }], submittedAt: '2024-12-23T10:00:00Z' },
+  { id: 'resp-44', surveyId: 'pulse-3', responses: [{ questionId: 'q7', value: 5 }, { questionId: 'q8', value: 5 }, { questionId: 'q9', value: 4 }], submittedAt: '2024-12-24T10:00:00Z' },
+];
+
+// Aggregated survey results
+export interface SurveyResultSummary {
+  surveyId: string;
+  totalResponses: number;
+  responseRate: number;
+  questionResults: {
+    questionId: string;
+    questionText: string;
+    questionType: string;
+    averageRating?: number;
+    ratingDistribution?: { rating: number; count: number }[];
+    textResponses?: string[];
+  }[];
+  completedAt?: string;
+}
+
+export const mockSurveyResults: SurveyResultSummary[] = [
+  {
+    surveyId: 'pulse-1',
+    totalResponses: 8,
+    responseRate: 80,
+    questionResults: [
+      {
+        questionId: 'q1',
+        questionText: 'How would you rate your overall satisfaction this week?',
+        questionType: 'rating',
+        averageRating: 3.75,
+        ratingDistribution: [
+          { rating: 1, count: 0 },
+          { rating: 2, count: 1 },
+          { rating: 3, count: 2 },
+          { rating: 4, count: 3 },
+          { rating: 5, count: 2 },
+        ],
+      },
+      {
+        questionId: 'q2',
+        questionText: 'How manageable was your workload?',
+        questionType: 'rating',
+        averageRating: 3.25,
+        ratingDistribution: [
+          { rating: 1, count: 1 },
+          { rating: 2, count: 1 },
+          { rating: 3, count: 2 },
+          { rating: 4, count: 3 },
+          { rating: 5, count: 1 },
+        ],
+      },
+      {
+        questionId: 'q3',
+        questionText: 'Do you feel supported by your manager?',
+        questionType: 'rating',
+        averageRating: 4.13,
+        ratingDistribution: [
+          { rating: 1, count: 0 },
+          { rating: 2, count: 0 },
+          { rating: 3, count: 2 },
+          { rating: 4, count: 3 },
+          { rating: 5, count: 3 },
+        ],
+      },
+      {
+        questionId: 'q4',
+        questionText: 'Any comments or concerns?',
+        questionType: 'text',
+        textResponses: [
+          'Great week overall!',
+          'Workload was heavy this week',
+          'Need more resources for the project',
+          'Enjoyed the team lunch!',
+          'Feeling burned out, need support',
+        ],
+      },
+    ],
+  },
+  {
+    surveyId: 'pulse-3',
+    totalResponses: 5,
+    responseRate: 100,
+    questionResults: [
+      {
+        questionId: 'q7',
+        questionText: 'I feel my work is meaningful and contributes to our mission',
+        questionType: 'rating',
+        averageRating: 4.2,
+        ratingDistribution: [
+          { rating: 1, count: 0 },
+          { rating: 2, count: 0 },
+          { rating: 3, count: 1 },
+          { rating: 4, count: 2 },
+          { rating: 5, count: 2 },
+        ],
+      },
+      {
+        questionId: 'q8',
+        questionText: 'I feel comfortable sharing ideas and opinions with my team',
+        questionType: 'rating',
+        averageRating: 4.2,
+        ratingDistribution: [
+          { rating: 1, count: 0 },
+          { rating: 2, count: 0 },
+          { rating: 3, count: 1 },
+          { rating: 4, count: 2 },
+          { rating: 5, count: 2 },
+        ],
+      },
+      {
+        questionId: 'q9',
+        questionText: 'I have opportunities for professional growth here',
+        questionType: 'rating',
+        averageRating: 3.8,
+        ratingDistribution: [
+          { rating: 1, count: 0 },
+          { rating: 2, count: 0 },
+          { rating: 3, count: 2 },
+          { rating: 4, count: 2 },
+          { rating: 5, count: 1 },
+        ],
+      },
+    ],
+    completedAt: '2025-01-05T09:00:00Z',
+  },
 ];
 
 export const mockENPSResults: ENPSResult[] = [
