@@ -6,13 +6,12 @@ import {
   Chip,
   Avatar,
   LinearProgress,
-  Divider,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Briefcase, 
   GraduationCap, 
@@ -23,6 +22,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowRight,
+  Plus,
 } from 'lucide-react';
 import { 
   Skill, 
@@ -40,6 +40,8 @@ import {
   mockCareerProgress 
 } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
+import { SkillAssessmentDrawer } from './SkillAssessmentDrawer';
+import { toast } from 'sonner';
 
 interface SkillsCareerPanelProps {
   staffId?: string;
@@ -69,8 +71,11 @@ const getGapPriorityColor = (priority: string) => {
 export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProps) {
   const [selectedStaffId, setSelectedStaffId] = useState(staffId);
   const [showCareerPathSheet, setShowCareerPathSheet] = useState(false);
+  const [showAssessDrawer, setShowAssessDrawer] = useState(false);
+  const [staffSkillsData, setStaffSkillsData] = useState(mockStaffSkills);
+  const [editingSkill, setEditingSkill] = useState<StaffSkill | null>(null);
 
-  const staffSkills = mockStaffSkills[selectedStaffId] || [];
+  const staffSkills = staffSkillsData[selectedStaffId] || [];
   const careerProgress = mockCareerProgress.find(p => p.staffId === selectedStaffId);
   const staff = mockStaff.find(s => s.id === selectedStaffId);
 
@@ -95,6 +100,37 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
     return target > 0 ? (current / target) * 100 : 0;
   };
 
+  const handleAssessSkill = (skill?: Skill) => {
+    if (skill) {
+      const existingStaffSkill = staffSkills.find(s => s.skillId === skill.id);
+      setEditingSkill(existingStaffSkill || null);
+    } else {
+      setEditingSkill(null);
+    }
+    setShowAssessDrawer(true);
+  };
+
+  const handleSaveAssessment = (newSkill: Partial<StaffSkill>) => {
+    setStaffSkillsData(prev => {
+      const currentSkills = prev[selectedStaffId] || [];
+      const existingIndex = currentSkills.findIndex(s => s.skillId === newSkill.skillId);
+      
+      let updatedSkills: StaffSkill[];
+      if (existingIndex >= 0) {
+        updatedSkills = currentSkills.map((s, i) => 
+          i === existingIndex ? { ...s, ...newSkill } as StaffSkill : s
+        );
+      } else {
+        updatedSkills = [...currentSkills, newSkill as StaffSkill];
+      }
+      
+      return {
+        ...prev,
+        [selectedStaffId]: updatedSkills,
+      };
+    });
+  };
+
   const renderSkillMatrix = () => (
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
@@ -106,10 +142,33 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
             Competency assessment and skill tracking
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<Target size={16} />}>
-          Assess Skills
+        <Button 
+          variant="contained" 
+          startIcon={<Plus size={16} />}
+          onClick={() => handleAssessSkill()}
+        >
+          Assess Skill
         </Button>
       </Stack>
+
+      {/* Staff selector */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+          Select Employee
+        </Typography>
+        <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+          <SelectTrigger className="w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {mockStaff.map(s => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.firstName} {s.lastName} - {s.position}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Box>
 
       <Stack spacing={3}>
         {Object.entries(skillsByCategory).map(([category, skills]) => (
@@ -125,7 +184,17 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                 const staffSkill = staffSkills.find(s => s.skillId === skill.id);
 
                 return (
-                  <Box key={skill.id}>
+                  <Box 
+                    key={skill.id}
+                    sx={{ 
+                      cursor: 'pointer',
+                      p: 1.5,
+                      borderRadius: 1,
+                      transition: 'background-color 0.2s',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                    onClick={() => handleAssessSkill(skill)}
+                  >
                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <Typography variant="body2" fontWeight={500}>
@@ -450,6 +519,17 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
           {renderCareerPath()}
         </TabsContent>
       </Tabs>
+
+      <SkillAssessmentDrawer
+        open={showAssessDrawer}
+        onClose={() => {
+          setShowAssessDrawer(false);
+          setEditingSkill(null);
+        }}
+        onSave={handleSaveAssessment}
+        staffId={selectedStaffId}
+        existingSkill={editingSkill}
+      />
     </Box>
   );
 }
