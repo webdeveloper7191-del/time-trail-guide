@@ -190,34 +190,61 @@ export function GoalsTracker({
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, md: 4 } }}>
       {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'flex-start' }}
+        spacing={{ xs: 2, sm: 0 }}
+      >
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
               <Target className="h-5 w-5" style={{ color: 'var(--primary)' }} />
             </Box>
-            <Typography variant="h6" fontWeight={600}>Goals & Objectives</Typography>
+            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
+              Goals & Objectives
+            </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
+          <Typography 
+            variant="body2" 
+            color="text.secondary"
+            sx={{ display: { xs: 'none', sm: 'block' } }}
+          >
             Track progress on personal and professional development goals
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1}>
+        <Stack 
+          direction={{ xs: 'column', sm: 'row' }} 
+          spacing={1}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           {onAssignGoal && (
-            <MuiButton variant="outlined" startIcon={<Users size={16} />} onClick={onAssignGoal}>
+            <MuiButton 
+              variant="outlined" 
+              startIcon={<Users size={16} />} 
+              onClick={onAssignGoal}
+              fullWidth
+              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+            >
               Assign Goal
             </MuiButton>
           )}
-          <MuiButton variant="contained" startIcon={<Plus size={16} />} onClick={onCreateGoal}>
+          <MuiButton 
+            variant="contained" 
+            startIcon={<Plus size={16} />} 
+            onClick={onCreateGoal}
+            fullWidth
+            sx={{ width: { sm: 'auto' } }}
+          >
             New Goal
           </MuiButton>
         </Stack>
       </Stack>
 
       {/* Stats Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
         {[
           { label: 'Total Goals', value: stats.total, icon: Target, color: 'primary' },
           { label: 'In Progress', value: stats.active, icon: Clock, color: 'info' },
@@ -225,21 +252,31 @@ export function GoalsTracker({
           { label: 'Overdue', value: stats.overdue, icon: AlertTriangle, color: 'error' },
         ].map((stat) => (
           <Card key={stat.label} sx={{ p: 0 }}>
-            <Box sx={{ p: 2.5 }}>
+            <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Box>
-                  <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary" 
+                    fontWeight={500}
+                    sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}
+                  >
                     {stat.label}
                   </Typography>
-                  <Typography variant="h4" fontWeight={600} mt={0.5}>
+                  <Typography 
+                    variant="h4" 
+                    fontWeight={600} 
+                    mt={0.5}
+                    sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}
+                  >
                     {stat.value}
                   </Typography>
                 </Box>
                 <Box sx={{ 
-                  p: 1.5, 
+                  p: { xs: 1, md: 1.5 }, 
                   borderRadius: '50%', 
                   bgcolor: `${stat.color}.light`,
-                  display: 'flex',
+                  display: { xs: 'none', sm: 'flex' },
                 }}>
                   <stat.icon size={20} style={{ color: `var(--${stat.color === 'primary' ? 'primary' : stat.color})` }} />
                 </Box>
@@ -251,13 +288,18 @@ export function GoalsTracker({
 
       {/* Filters */}
       {showFilters && (
-        <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
+        <Stack 
+          direction={{ xs: 'column', md: 'row' }} 
+          spacing={{ xs: 1.5, md: 2 }} 
+          flexWrap="wrap" 
+          alignItems={{ xs: 'stretch', md: 'center' }}
+        >
           <TextField
             placeholder="Search goals..."
             size="small"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            sx={{ minWidth: 220, maxWidth: 360, flex: 1 }}
+            sx={{ minWidth: { xs: '100%', md: 220 }, maxWidth: { md: 360 }, flex: { md: 1 } }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -267,21 +309,22 @@ export function GoalsTracker({
             }}
           />
           
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <MuiSelect
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as GoalStatus | 'all')}
-            >
-              <MenuItem value="all">All Statuses</MenuItem>
-              {Object.entries(goalStatusLabels).map(([value, label]) => (
-                <MenuItem key={value} value={value}>{label}</MenuItem>
-              ))}
-            </MuiSelect>
-          </FormControl>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+            <FormControl size="small" sx={{ minWidth: { xs: 'calc(50% - 4px)', sm: 140 }, flex: { xs: 1, sm: 'none' } }}>
+              <MuiSelect
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as GoalStatus | 'all')}
+              >
+                <MenuItem value="all">All Statuses</MenuItem>
+                {Object.entries(goalStatusLabels).map(([value, label]) => (
+                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                ))}
+              </MuiSelect>
+            </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <MuiSelect
-              value={priorityFilter}
+            <FormControl size="small" sx={{ minWidth: { xs: 'calc(50% - 4px)', sm: 140 }, flex: { xs: 1, sm: 'none' } }}>
+              <MuiSelect
+                value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value as GoalPriority | 'all')}
             >
               <MenuItem value="all">All Priorities</MenuItem>
@@ -291,17 +334,18 @@ export function GoalsTracker({
             </MuiSelect>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <MuiSelect
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value as string)}
-            >
-              <MenuItem value="all">All Categories</MenuItem>
-              {availableCategories.map(cat => (
-                <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-              ))}
-            </MuiSelect>
-          </FormControl>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: 1, sm: 'none' } }}>
+              <MuiSelect
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value as string)}
+              >
+                <MenuItem value="all">All Categories</MenuItem>
+                {availableCategories.map(cat => (
+                  <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                ))}
+              </MuiSelect>
+            </FormControl>
+          </Stack>
 
           {hasActiveFilters && (
             <MuiButton 
@@ -309,7 +353,7 @@ export function GoalsTracker({
               size="small" 
               startIcon={<X size={16} />}
               onClick={clearFilters}
-              sx={{ color: 'text.secondary' }}
+              sx={{ color: 'text.secondary', alignSelf: { xs: 'flex-start', md: 'center' } }}
             >
               Clear filters
             </MuiButton>
@@ -358,9 +402,9 @@ export function GoalsTracker({
             </Box>
           </Card>
         ) : (
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
+          <Box sx={{ display: 'grid', gap: { xs: 1.5, md: 2 }, gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' } }}>
             {activeGoals.map((goal) => (
-              <Card 
+              <Card
                 key={goal.id} 
                 sx={{ 
                   cursor: 'pointer',
@@ -372,21 +416,22 @@ export function GoalsTracker({
                 }}
                 onClick={() => onViewGoal(goal)}
               >
-                <Box sx={{ p: 2.5 }}>
+                <Box sx={{ p: { xs: 2, md: 2.5 } }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
                     <Box flex={1} minWidth={0}>
-                      <Stack direction="row" spacing={1} mb={1}>
-                        <Chip label={goal.category} size="small" variant="outlined" />
+                      <Stack direction="row" spacing={0.5} mb={1} flexWrap="wrap" gap={0.5}>
+                        <Chip label={goal.category} size="small" variant="outlined" sx={{ fontSize: { xs: '0.7rem', sm: '0.8125rem' } }} />
                         <Chip 
                           label={goalPriorityLabels[goal.priority]} 
                           size="small" 
                           sx={{ 
                             bgcolor: priorityColors[goal.priority]?.bg,
                             color: priorityColors[goal.priority]?.text,
+                            fontSize: { xs: '0.7rem', sm: '0.8125rem' },
                           }}
                         />
                       </Stack>
-                      <Typography variant="subtitle1" fontWeight={600} noWrap>
+                      <Typography variant="subtitle1" fontWeight={600} noWrap sx={{ fontSize: { xs: '0.95rem', md: '1rem' } }}>
                         {goal.title}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{
@@ -395,6 +440,7 @@ export function GoalsTracker({
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
+                        fontSize: { xs: '0.8rem', md: '0.875rem' },
                       }}>
                         {goal.description}
                       </Typography>
@@ -415,9 +461,10 @@ export function GoalsTracker({
                   </Box>
 
                   <Stack 
-                    direction="row" 
+                    direction={{ xs: 'column', sm: 'row' }}
                     justifyContent="space-between" 
-                    alignItems="center" 
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    spacing={{ xs: 1, sm: 0 }}
                     mt={2} 
                     pt={2} 
                     sx={{ borderTop: 1, borderColor: 'divider' }}
@@ -433,6 +480,7 @@ export function GoalsTracker({
                       variant="outlined"
                       icon={statusIcons[goal.status] as any}
                       label={goalStatusLabels[goal.status]}
+                      sx={{ fontSize: { xs: '0.7rem', sm: '0.8125rem' } }}
                     />
                   </Stack>
                 </Box>
@@ -449,11 +497,11 @@ export function GoalsTracker({
             <Typography variant="overline" color="text.secondary" fontWeight={600}>
               Completed Goals
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary">
               {completedGoals.length} items
             </Typography>
           </Stack>
-          <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
+          <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' } }}>
             {completedGoals.map((goal) => (
               <Card 
                 key={goal.id} 

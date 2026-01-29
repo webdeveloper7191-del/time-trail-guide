@@ -308,20 +308,31 @@ export default function PerformanceManagement() {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <AdminSidebar />
-      <Box component="main" sx={{ flex: 1, p: 4, overflow: 'auto' }}>
+      <Box component="main" sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, overflow: 'auto' }}>
         <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
           {/* Header */}
           <Stack 
-            direction="row" 
+            direction={{ xs: 'column', sm: 'row' }}
             justifyContent="space-between" 
-            alignItems="flex-start"
-            sx={{ mb: 4 }}
+            alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
+            spacing={{ xs: 2, sm: 0 }}
+            sx={{ mb: { xs: 3, md: 4 } }}
           >
             <Box>
-              <Typography variant="h4" fontWeight={600} color="text.primary" gutterBottom>
+              <Typography 
+                variant="h4" 
+                fontWeight={600} 
+                color="text.primary" 
+                gutterBottom
+                sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' } }}
+              >
                 Performance Management
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography 
+                variant="body1" 
+                color="text.secondary"
+                sx={{ display: { xs: 'none', sm: 'block' } }}
+              >
                 Track development plans, reviews, goals, and continuous feedback
               </Typography>
             </Box>

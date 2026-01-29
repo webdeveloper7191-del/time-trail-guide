@@ -135,17 +135,17 @@ export function PlanManagementPanel({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <FileText className="h-5 w-5 text-primary" />
+          <h2 className="text-lg md:text-xl font-semibold tracking-tight flex items-center gap-2.5">
+            <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+              <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />
             </div>
             Performance Plans
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground hidden sm:block">
             Create and manage development plans for team members
           </p>
         </div>
@@ -153,110 +153,114 @@ export function PlanManagementPanel({
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'assigned' | 'templates')}>
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="border-b border-border/60 flex-1">
-            <TabsList className="h-11 bg-transparent p-0 gap-1">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
+          <div className="border-b border-border/60 w-full md:flex-1 overflow-x-auto">
+            <TabsList className="h-10 md:h-11 bg-transparent p-0 gap-1 whitespace-nowrap">
               <TabsTrigger 
                 value="assigned" 
-                className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
+                className="px-3 md:px-4 py-2 md:py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium text-sm"
               >
-                <Users className="h-4 w-4 mr-2" />
-                Assigned Plans
-                <Badge variant="secondary" className="ml-2 text-xs">{mockAssignedPlans.length}</Badge>
+                <Users className="h-4 w-4 mr-1.5 md:mr-2" />
+                <span className="hidden sm:inline">Assigned </span>Plans
+                <Badge variant="secondary" className="ml-1.5 md:ml-2 text-xs">{mockAssignedPlans.length}</Badge>
               </TabsTrigger>
               <TabsTrigger 
                 value="templates" 
-                className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
+                className="px-3 md:px-4 py-2 md:py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium text-sm"
               >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Plan Templates
-                <Badge variant="secondary" className="ml-2 text-xs">{performancePlanTemplates.length}</Badge>
+                <Sparkles className="h-4 w-4 mr-1.5 md:mr-2" />
+                Templates
+                <Badge variant="secondary" className="ml-1.5 md:ml-2 text-xs">{performancePlanTemplates.length}</Badge>
               </TabsTrigger>
             </TabsList>
           </div>
         </div>
 
         {/* Filters - Clean Design */}
-        <div className="flex items-center gap-3 flex-wrap mt-6">
-          <div className="relative flex-1 min-w-56 max-w-md">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-4 md:mt-6">
+          <div className="relative flex-1 min-w-0 sm:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={activeTab === 'assigned' ? 'Search by employee or plan...' : 'Search templates...'}
+              placeholder={activeTab === 'assigned' ? 'Search...' : 'Search templates...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 border-border/60"
             />
           </div>
           
-          {activeTab === 'templates' && (
-            <Select value={industryFilter} onValueChange={setIndustryFilter}>
-              <SelectTrigger className="w-40 border-border/60">
-                <Building2 className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Industry" />
+          <div className="flex flex-wrap gap-2">
+            {activeTab === 'templates' && (
+              <Select value={industryFilter} onValueChange={setIndustryFilter}>
+                <SelectTrigger className="w-full sm:w-36 border-border/60">
+                  <Building2 className="h-4 w-4 mr-1.5 shrink-0" />
+                  <SelectValue placeholder="Industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Industries</SelectItem>
+                  {planIndustries.map((ind) => (
+                    <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[calc(50%-4px)] sm:w-36 border-border/60">
+                <Filter className="h-4 w-4 mr-1.5 shrink-0" />
+                <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Industries</SelectItem>
-                {planIndustries.map((ind) => (
-                  <SelectItem key={ind} value={ind}>{ind}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-44 border-border/60">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Plan Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {Object.entries(planTypeLabels).map(([value, label]) => (
-                <SelectItem key={value} value={value}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {activeTab === 'assigned' && (
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-36 border-border/60">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {Object.entries(planStatusLabels).map(([value, label]) => (
+                <SelectItem value="all">All Types</SelectItem>
+                {Object.entries(planTypeLabels).map(([value, label]) => (
                   <SelectItem key={value} value={value}>{label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          )}
+
+            {activeTab === 'assigned' && (
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[calc(50%-4px)] sm:w-32 border-border/60">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  {Object.entries(planStatusLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
 
           {activeTab === 'assigned' && (
-            <Button onClick={onQuickAssignPlan} className="gap-2 shadow-sm ml-auto">
+            <Button onClick={onQuickAssignPlan} className="gap-2 shadow-sm w-full sm:w-auto sm:ml-auto mt-2 sm:mt-0">
               <UserPlus className="h-4 w-4" />
-              Assign Plan
+              <span className="sm:hidden lg:inline">Assign Plan</span>
+              <span className="hidden sm:inline lg:hidden">Assign</span>
             </Button>
           )}
 
           {activeTab === 'templates' && (
-            <Button onClick={onCreateTemplate} className="gap-2 shadow-sm ml-auto">
+            <Button onClick={onCreateTemplate} className="gap-2 shadow-sm w-full sm:w-auto sm:ml-auto mt-2 sm:mt-0">
               <Plus className="h-4 w-4" />
-              Create Template
+              <span className="sm:hidden lg:inline">Create Template</span>
+              <span className="hidden sm:inline lg:hidden">Create</span>
             </Button>
           )}
         </div>
 
         {/* Assigned Plans Tab */}
-        <TabsContent value="assigned" className="mt-6">
+        <TabsContent value="assigned" className="mt-4 md:mt-6">
           {filteredPlans.length === 0 ? (
             <Card className="border-dashed border-2 bg-transparent">
-              <CardContent className="py-16 text-center">
-                <div className="p-4 rounded-full bg-muted/50 w-fit mx-auto mb-4">
-                  <FileText className="h-10 w-10 text-muted-foreground" />
+              <CardContent className="py-10 md:py-16 text-center">
+                <div className="p-3 md:p-4 rounded-full bg-muted/50 w-fit mx-auto mb-3 md:mb-4">
+                  <FileText className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">No Plans Found</h3>
-                <p className="text-muted-foreground mb-5 max-w-sm mx-auto">
+                <h3 className="text-base md:text-lg font-medium mb-2">No Plans Found</h3>
+                <p className="text-sm text-muted-foreground mb-4 md:mb-5 max-w-sm mx-auto">
                   {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
-                    ? 'Try adjusting your filters to find what you\'re looking for'
+                    ? 'Try adjusting your filters'
                     : 'Start by assigning a plan template to a team member'}
                 </p>
                 <Button onClick={() => setActiveTab('templates')} className="shadow-sm">
@@ -266,7 +270,7 @@ export function PlanManagementPanel({
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-3 md:gap-4">
               {filteredPlans.map((plan) => {
                 const staffMember = getStaffById(plan.staffId);
                 
@@ -276,26 +280,26 @@ export function PlanManagementPanel({
                     className="group border-0 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
                     onClick={() => onViewPlan(plan)}
                   >
-                    <CardContent className="p-5">
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
+                    <CardContent className="p-3 md:p-5">
+                      <div className="flex items-start gap-3 md:gap-4">
+                        <Avatar className="h-10 w-10 md:h-12 md:w-12 border-2 border-background shadow-sm shrink-0">
                           <AvatarImage src={staffMember?.avatar} />
-                          <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                          <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm md:text-base">
                             {staffMember?.firstName[0]}{staffMember?.lastName[0]}
                           </AvatarFallback>
                         </Avatar>
                         
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <h3 className="font-semibold text-foreground">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
+                            <div className="min-w-0">
+                              <h3 className="font-semibold text-foreground text-sm md:text-base truncate">
                                 {staffMember?.firstName} {staffMember?.lastName}
                               </h3>
-                              <p className="text-sm text-muted-foreground mt-0.5">
+                              <p className="text-xs md:text-sm text-muted-foreground mt-0.5 truncate">
                                 {plan.templateName}
                               </p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 mt-1 sm:mt-0 shrink-0">
                               <Badge className={planTypeColors[plan.type]} variant="secondary">
                                 {planTypeLabels[plan.type].replace(' Plan', '')}
                               </Badge>
@@ -305,22 +309,23 @@ export function PlanManagementPanel({
                             </div>
                           </div>
                           
-                          <div className="mt-4 flex items-center gap-6 text-sm text-muted-foreground">
+                          <div className="mt-3 md:mt-4 flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground">
                             <div className="flex items-center gap-1.5">
-                              <Calendar className="h-4 w-4" />
-                              {format(parseISO(plan.startDate), 'MMM d')} - {format(parseISO(plan.endDate), 'MMM d, yyyy')}
+                              <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                              <span className="hidden sm:inline">{format(parseISO(plan.startDate), 'MMM d')} - </span>
+                              {format(parseISO(plan.endDate), 'MMM d, yyyy')}
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <Clock className="h-4 w-4" />
+                              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4" />
                               {getDaysRemaining(plan.endDate)}
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <Target className="h-4 w-4" />
+                              <Target className="h-3.5 w-3.5 md:h-4 md:w-4" />
                               {plan.goalIds.length} goals
                             </div>
                           </div>
                           
-                          <div className="mt-4 flex items-center gap-4">
+                          <div className="mt-3 md:mt-4 flex items-center gap-3 md:gap-4">
                             <div className="flex-1">
                               {(() => {
                                 const lmsData: LMSData = {
@@ -332,28 +337,28 @@ export function PlanManagementPanel({
                                 const hasLearning = breakdown.totalCourses > 0;
                                 return (
                                   <>
-                                    <div className="flex items-center justify-between text-sm mb-1.5">
+                                    <div className="flex items-center justify-between text-xs md:text-sm mb-1 md:mb-1.5">
                                       <span className="text-muted-foreground">
                                         Progress
-                                        <span className="text-xs ml-2">
+                                        <span className="text-xs ml-1 md:ml-2 hidden sm:inline">
                                           ({breakdown.completedGoals}/{breakdown.totalGoals} goals
                                           {hasLearning && `, ${breakdown.completedCourses}/${breakdown.totalCourses} courses`})
                                         </span>
                                       </span>
                                       <span className="font-semibold">{breakdown.totalProgress}%</span>
                                     </div>
-                                    <Progress value={breakdown.totalProgress} className="h-2" />
+                                    <Progress value={breakdown.totalProgress} className="h-1.5 md:h-2" />
                                     {hasLearning && (
-                                      <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-                                        <GraduationCap className="h-3.5 w-3.5 text-primary" />
-                                        <span>{plan.learningPathIds?.length || 0} learning paths linked</span>
+                                      <div className="flex items-center gap-1.5 mt-1.5 md:mt-2 text-xs text-muted-foreground">
+                                        <GraduationCap className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary" />
+                                        <span>{plan.learningPathIds?.length || 0} learning paths</span>
                                       </div>
                                     )}
                                   </>
                                 );
                               })()}
                             </div>
-                            <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
                           </div>
                         </div>
                       </div>
@@ -366,56 +371,57 @@ export function PlanManagementPanel({
         </TabsContent>
 
         {/* Templates Tab */}
-        <TabsContent value="templates" className="mt-6">
-          <ScrollArea className="h-[calc(100vh-360px)]">
-            <div className="space-y-8 pr-4">
+        <TabsContent value="templates" className="mt-4 md:mt-6">
+          <ScrollArea className="h-[calc(100vh-300px)] md:h-[calc(100vh-360px)]">
+            <div className="space-y-6 md:space-y-8 pr-2 md:pr-4">
               {Object.entries(templatesByIndustry).map(([industry, templates]) => (
                 <div key={industry}>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{industry}</h3>
-                    <Badge variant="outline" className="ml-2 text-xs">{templates.length}</Badge>
+                  <div className="flex items-center gap-2 mb-3 md:mb-4">
+                    <Building2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
+                    <h3 className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider">{industry}</h3>
+                    <Badge variant="outline" className="ml-1.5 md:ml-2 text-xs">{templates.length}</Badge>
                   </div>
                   
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-3 md:gap-4 grid-cols-1 lg:grid-cols-2">
                     {templates.map((template) => (
                       <Card key={template.id} className="group border-0 shadow-sm hover:shadow-md transition-all duration-200">
-                        <CardContent className="p-5">
-                          <div className="flex items-start justify-between gap-3 mb-3">
+                        <CardContent className="p-3 md:p-5">
+                          <div className="flex items-start justify-between gap-2 mb-2 md:mb-3">
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-foreground line-clamp-1">{template.name}</h4>
-                              <p className="text-sm text-muted-foreground line-clamp-2 mt-1.5">
+                              <h4 className="font-semibold text-foreground line-clamp-1 text-sm md:text-base">{template.name}</h4>
+                              <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 mt-1 md:mt-1.5">
                                 {template.description}
                               </p>
                             </div>
-                            <Badge className={planTypeColors[template.type]} variant="secondary">
+                            <Badge className={`${planTypeColors[template.type]} text-xs shrink-0`} variant="secondary">
                               {planTypeLabels[template.type].replace(' Plan', '').replace(' (PIP)', '')}
                             </Badge>
                           </div>
                           
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-4 py-3 border-t border-border/50">
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="h-3.5 w-3.5" />
-                              {template.durationDays} days
+                          <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs text-muted-foreground mt-3 md:mt-4 py-2 md:py-3 border-t border-border/50">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                              {template.durationDays}d
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <Target className="h-3.5 w-3.5" />
-                              {template.goals.length} goals
+                            <div className="flex items-center gap-1">
+                              <Target className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                              {template.goals.length}
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <ClipboardCheck className="h-3.5 w-3.5" />
-                              {template.reviews.length} reviews
+                            <div className="flex items-center gap-1">
+                              <ClipboardCheck className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                              {template.reviews.length}
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <MessageSquare className="h-3.5 w-3.5" />
-                              {template.conversations.length} 1:1s
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                              {template.conversations.length}
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2 mt-4">
+                          <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mt-3 md:mt-4">
                             <Button 
                               size="sm" 
                               variant="outline"
+                              className="h-8 px-2 md:px-3 text-xs md:text-sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onViewTemplate(template);
@@ -426,27 +432,28 @@ export function PlanManagementPanel({
                             <Button 
                               size="sm"
                               variant="outline"
+                              className="h-8 px-2 md:px-3 text-xs md:text-sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (template.isSystem) {
-                                  // For system templates, duplicate first then edit
                                   onDuplicateTemplate(template);
                                 } else {
                                   onEditTemplate(template);
                                 }
                               }}
                             >
-                              <Edit className="h-4 w-4 mr-1" />
-                              {template.isSystem ? 'Customize' : 'Edit'}
+                              <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                              <span className="hidden sm:inline">{template.isSystem ? 'Customize' : 'Edit'}</span>
                             </Button>
                             <Button 
                               size="sm"
+                              className="h-8 px-2 md:px-3 text-xs md:text-sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onAssignPlan(template);
                               }}
                             >
-                              <Plus className="h-4 w-4 mr-1" />
+                              <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                               Assign
                             </Button>
                             <DropdownMenu>
