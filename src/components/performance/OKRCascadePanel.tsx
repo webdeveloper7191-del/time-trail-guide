@@ -9,12 +9,12 @@ import {
   Collapse,
   IconButton,
   Divider,
+  Slider,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { 
   Target, 
   Plus, 
@@ -25,11 +25,11 @@ import {
   User,
   TrendingUp,
   AlertTriangle,
-  CheckCircle2,
-  Clock,
   Link2,
   BarChart3,
-  Eye,
+  Check,
+  Edit3,
+  Clock,
 } from 'lucide-react';
 import { 
   Objective, 
@@ -39,9 +39,11 @@ import {
   okrLevelLabels,
   okrStatusLabels,
 } from '@/types/okr';
-import { mockObjectives, mockOKRCycles, mockTeams } from '@/data/mockOKRData';
+import { mockObjectives as initialMockObjectives, mockOKRCycles, mockTeams } from '@/data/mockOKRData';
 import { mockStaff } from '@/data/mockStaffData';
 import { format } from 'date-fns';
+import { CreateOKRDrawer } from './CreateOKRDrawer';
+import { toast } from 'sonner';
 
 interface OKRCascadePanelProps {
   currentUserId: string;
@@ -83,10 +85,13 @@ const getProgressColor = (progress: number) => {
 };
 
 export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
+  const [objectives, setObjectives] = useState<Objective[]>(initialMockObjectives);
   const [expandedObjectives, setExpandedObjectives] = useState<Set<string>>(new Set(['obj-company-1']));
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [selectedCycle, setSelectedCycle] = useState('all');
+  const [editingKR, setEditingKR] = useState<string | null>(null);
 
   const getStaffName = (id: string) => {
     const staff = mockStaff.find(s => s.id === id);
@@ -115,23 +120,55 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
     setShowDetailSheet(true);
   };
 
+  const handleUpdateKRProgress = (objectiveId: string, krId: string, newValue: number) => {
+    setObjectives(prev => prev.map(obj => {
+      if (obj.id === objectiveId) {
+        const updatedKRs = obj.keyResults.map(kr => {
+          if (kr.id === krId) {
+            const progress = Math.round(((newValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100);
+            return { ...kr, currentValue: newValue, progress: Math.max(0, Math.min(100, progress)) };
+          }
+          return kr;
+        });
+        const avgProgress = Math.round(updatedKRs.reduce((sum, kr) => sum + kr.progress, 0) / updatedKRs.length);
+        return { ...obj, keyResults: updatedKRs, progress: avgProgress };
+      }
+      return obj;
+    }));
+    toast.success('Progress updated');
+  };
+
+  const handleCreateOKR = (newOKR: Partial<Objective>) => {
+    const objective: Objective = {
+      ...newOKR as Objective,
+      id: `obj-new-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      startDate: new Date().toISOString(),
+      endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+    setObjectives(prev => [...prev, objective]);
+    toast.success('Objective created successfully');
+  };
+
   // Build hierarchy
-  const companyObjectives = mockObjectives.filter(o => o.level === 'company');
-  const teamObjectives = mockObjectives.filter(o => o.level === 'team');
-  const individualObjectives = mockObjectives.filter(o => o.level === 'individual');
+  const companyObjectives = objectives.filter(o => o.level === 'company');
+  const teamObjectives = objectives.filter(o => o.level === 'team');
+  const individualObjectives = objectives.filter(o => o.level === 'individual');
 
   const getChildObjectives = (parentId: string) => {
-    return mockObjectives.filter(o => o.parentObjectiveId === parentId);
+    return objectives.filter(o => o.parentObjectiveId === parentId);
   };
 
   // Stats
-  const totalObjectives = mockObjectives.length;
-  const onTrackCount = mockObjectives.filter(o => o.status === 'on_track' || o.status === 'completed').length;
-  const atRiskCount = mockObjectives.filter(o => o.status === 'at_risk').length;
-  const avgProgress = Math.round(mockObjectives.reduce((sum, o) => sum + o.progress, 0) / totalObjectives);
+  const totalObjectives = objectives.length;
+  const onTrackCount = objectives.filter(o => o.status === 'on_track' || o.status === 'completed').length;
+  const atRiskCount = objectives.filter(o => o.status === 'at_risk').length;
+  const avgProgress = Math.round(objectives.reduce((sum, o) => sum + o.progress, 0) / totalObjectives);
 
-  const renderKeyResult = (kr: KeyResult) => {
+  const renderKeyResult = (kr: KeyResult, objectiveId: string, allowEdit: boolean = false) => {
     const progressColor = getProgressColor(kr.progress);
+    const isEditing = editingKR === kr.id;
     
     return (
       <Box key={kr.id} sx={{ py: 1.5 }}>
@@ -153,18 +190,60 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
                 color: kr.progress >= 70 ? 'rgb(22, 163, 74)' : kr.progress >= 40 ? 'rgb(161, 98, 7)' : 'rgb(220, 38, 38)',
               }}
             />
+            {allowEdit && (
+              <IconButton 
+                size="small" 
+                onClick={() => setEditingKR(isEditing ? null : kr.id)}
+                sx={{ ml: 0.5 }}
+              >
+                {isEditing ? <Check size={14} /> : <Edit3 size={14} />}
+              </IconButton>
+            )}
           </Stack>
         </Stack>
-        <LinearProgress 
-          variant="determinate" 
-          value={kr.progress}
-          sx={{ 
-            height: 4, 
-            borderRadius: 1,
-            bgcolor: 'rgba(0,0,0,0.08)',
-            '& .MuiLinearProgress-bar': { bgcolor: progressColor },
-          }}
-        />
+        
+        {isEditing ? (
+          <Box sx={{ px: 1, pt: 1 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Typography variant="caption" color="text.secondary" sx={{ minWidth: 32 }}>
+                {kr.startValue}
+              </Typography>
+              <Slider
+                value={kr.currentValue}
+                min={kr.startValue}
+                max={kr.targetValue}
+                onChange={(_, value) => handleUpdateKRProgress(objectiveId, kr.id, value as number)}
+                valueLabelDisplay="on"
+                size="small"
+                sx={{
+                  color: progressColor,
+                  '& .MuiSlider-thumb': {
+                    width: 16,
+                    height: 16,
+                  },
+                  '& .MuiSlider-valueLabel': {
+                    fontSize: 11,
+                    bgcolor: progressColor,
+                  },
+                }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ minWidth: 32 }}>
+                {kr.targetValue}
+              </Typography>
+            </Stack>
+          </Box>
+        ) : (
+          <LinearProgress 
+            variant="determinate" 
+            value={kr.progress}
+            sx={{ 
+              height: 4, 
+              borderRadius: 1,
+              bgcolor: 'rgba(0,0,0,0.08)',
+              '& .MuiLinearProgress-bar': { bgcolor: progressColor },
+            }}
+          />
+        )}
       </Box>
     );
   };
@@ -288,7 +367,7 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
                 {/* Key Results Preview */}
                 {objective.keyResults.length > 0 && (
                   <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-                    {objective.keyResults.slice(0, 2).map(renderKeyResult)}
+                    {objective.keyResults.slice(0, 2).map(kr => renderKeyResult(kr, objective.id, true))}
                     {objective.keyResults.length > 2 && (
                       <Typography 
                         variant="caption" 
@@ -333,7 +412,7 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
     const statusStyle = getStatusStyle(selectedObjective.status);
     const ownerName = getStaffName(selectedObjective.ownerId);
     const parentObjective = selectedObjective.parentObjectiveId 
-      ? mockObjectives.find(o => o.id === selectedObjective.parentObjectiveId)
+      ? objectives.find(o => o.id === selectedObjective.parentObjectiveId)
       : null;
     const children = getChildObjectives(selectedObjective.id);
 
@@ -447,7 +526,7 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
               Key Results ({selectedObjective.keyResults.length})
             </Typography>
             <Stack spacing={0} divider={<Divider />}>
-              {selectedObjective.keyResults.map(renderKeyResult)}
+              {selectedObjective.keyResults.map(kr => renderKeyResult(kr, selectedObjective.id, true))}
             </Stack>
 
             {/* Child Objectives */}
@@ -511,7 +590,7 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
             Company, team, and individual objectives with cascading alignment
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />}>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)}>
           Create Objective
         </Button>
       </Stack>
@@ -574,6 +653,12 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
       </Tabs>
 
       {renderDetailSheet()}
+      
+      <CreateOKRDrawer
+        open={showCreateDrawer}
+        onClose={() => setShowCreateDrawer(false)}
+        onSave={handleCreateOKR}
+      />
     </Box>
   );
 }
