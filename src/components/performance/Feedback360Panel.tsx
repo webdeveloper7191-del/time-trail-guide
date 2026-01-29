@@ -33,6 +33,7 @@ import {
   Feedback360Competency,
   feedbackSourceLabels,
   feedback360StatusLabels,
+  FeedbackSourceType,
 } from '@/types/advancedPerformance';
 import { 
   mock360Requests, 
@@ -41,6 +42,8 @@ import {
 } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { format } from 'date-fns';
+import { Request360FeedbackDrawer } from './Request360FeedbackDrawer';
+import { toast } from 'sonner';
 
 interface Feedback360PanelProps {
   currentUserId: string;
@@ -72,6 +75,7 @@ const getSourceChipStyle = (source: string) => {
 export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
   const [selectedRequest, setSelectedRequest] = useState<Feedback360Request | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
+  const [showRequest360Drawer, setShowRequest360Drawer] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
 
   const getStaffName = (id: string) => {
@@ -96,6 +100,21 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
   const handleViewRequest = (request: Feedback360Request) => {
     setSelectedRequest(request);
     setShowDetailSheet(true);
+  };
+
+  const handleSubmit360Request = async (data: {
+    subjectStaffId: string;
+    title: string;
+    description: string;
+    dueDate: string;
+    anonymousResponses: boolean;
+    includeSelfAssessment: boolean;
+    selectedCompetencies: string[];
+    responders: { staffId: string; sourceType: FeedbackSourceType }[];
+  }) => {
+    // In a real app, this would call an API
+    console.log('Creating 360 feedback request:', data);
+    toast.success(`360° feedback request created for ${getStaffName(data.subjectStaffId)}`);
   };
 
   const renderRequestCard = (request: Feedback360Request) => {
@@ -375,10 +394,18 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
             Multi-source feedback collection for comprehensive evaluations
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />}>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowRequest360Drawer(true)}>
           Request 360° Feedback
         </Button>
       </Stack>
+
+      <Request360FeedbackDrawer
+        open={showRequest360Drawer}
+        onOpenChange={setShowRequest360Drawer}
+        onSubmit={handleSubmit360Request}
+        staff={mockStaff}
+        currentUserId={currentUserId}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
