@@ -70,21 +70,38 @@ export function FeedbackPanel({
   });
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, md: 4 } }}>
       {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'flex-start' }}
+        spacing={{ xs: 2, sm: 0 }}
+      >
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
               <MessageSquareHeart size={20} style={{ color: 'var(--primary)' }} />
             </Box>
-            <Typography variant="h6" fontWeight={600}>Feedback & Recognition</Typography>
+            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
+              Feedback & Recognition
+            </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
+          <Typography 
+            variant="body2" 
+            color="text.secondary"
+            sx={{ display: { xs: 'none', sm: 'block' } }}
+          >
             Give and receive feedback from your team
           </Typography>
         </Box>
-        <MuiButton variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowFeedbackDrawer(true)}>
+        <MuiButton 
+          variant="contained" 
+          startIcon={<Plus size={16} />} 
+          onClick={() => setShowFeedbackDrawer(true)}
+          fullWidth
+          sx={{ width: { sm: 'auto' } }}
+        >
           Give Feedback
         </MuiButton>
       </Stack>
