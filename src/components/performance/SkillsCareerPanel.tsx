@@ -9,11 +9,13 @@ import {
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { 
   Briefcase, 
   GraduationCap, 
@@ -30,6 +32,10 @@ import {
   Star,
   MessageSquare,
   User,
+  Pencil,
+  History,
+  Save,
+  X,
 } from 'lucide-react';
 import { 
   Skill, 
@@ -52,6 +58,23 @@ import { mockStaff } from '@/data/mockStaffData';
 import { SkillAssessmentDrawer } from './SkillAssessmentDrawer';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+
+// Manager rating type
+interface ManagerRating {
+  id: string;
+  competency: string;
+  rating: number;
+  comment: string;
+  lastUpdated: string;
+}
+
+// Historical rating entry
+interface RatingHistoryEntry {
+  date: string;
+  ratings: Record<string, number>;
+  overallRating: number;
+}
 
 interface SkillsCareerPanelProps {
   staffId?: string;
@@ -96,6 +119,33 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   const [editingSkill, setEditingSkill] = useState<StaffSkill | null>(null);
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [isStaffSelectorOpen, setIsStaffSelectorOpen] = useState(false);
+  
+  // Manager Insights state
+  const [showEditRatingSheet, setShowEditRatingSheet] = useState(false);
+  const [editingRatingIndex, setEditingRatingIndex] = useState<number | null>(null);
+  const [showHistorySheet, setShowHistorySheet] = useState(false);
+  
+  // Initialize manager ratings with state
+  const [managerRatings, setManagerRatings] = useState<ManagerRating[]>([
+    { id: 'tech', competency: 'Technical Skills', rating: 4.2, comment: 'Strong foundation, continues to improve', lastUpdated: '2025-01-15' },
+    { id: 'comm', competency: 'Communication', rating: 4.5, comment: 'Excellent verbal and written communication', lastUpdated: '2025-01-15' },
+    { id: 'problem', competency: 'Problem Solving', rating: 3.8, comment: 'Good analytical thinking, can improve creativity', lastUpdated: '2025-01-15' },
+    { id: 'team', competency: 'Teamwork', rating: 4.7, comment: 'Outstanding collaborator and team player', lastUpdated: '2025-01-15' },
+    { id: 'lead', competency: 'Leadership Potential', rating: 3.5, comment: 'Emerging leadership qualities, needs mentoring', lastUpdated: '2025-01-15' },
+    { id: 'adapt', competency: 'Adaptability', rating: 4.0, comment: 'Handles change well, flexible approach', lastUpdated: '2025-01-15' },
+  ]);
+
+  // Historical ratings data
+  const [ratingHistory] = useState<RatingHistoryEntry[]>([
+    { date: '2024-04', ratings: { tech: 3.5, comm: 4.0, problem: 3.2, team: 4.2, lead: 3.0, adapt: 3.5 }, overallRating: 3.6 },
+    { date: '2024-07', ratings: { tech: 3.8, comm: 4.2, problem: 3.5, team: 4.4, lead: 3.2, adapt: 3.7 }, overallRating: 3.8 },
+    { date: '2024-10', ratings: { tech: 4.0, comm: 4.3, problem: 3.6, team: 4.5, lead: 3.3, adapt: 3.9 }, overallRating: 3.9 },
+    { date: '2025-01', ratings: { tech: 4.2, comm: 4.5, problem: 3.8, team: 4.7, lead: 3.5, adapt: 4.0 }, overallRating: 4.1 },
+  ]);
+
+  // Edit form state
+  const [editFormRating, setEditFormRating] = useState(0);
+  const [editFormComment, setEditFormComment] = useState('');
 
   const staffSkills = staffSkillsData[selectedStaffId] || [];
   const careerProgress = mockCareerProgress.find(p => p.staffId === selectedStaffId);
@@ -118,6 +168,41 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
       r.status === 'completed'
     );
   }, []);
+
+  // Chart data for trends
+  const trendChartData = useMemo(() => {
+    return ratingHistory.map(entry => ({
+      date: entry.date,
+      'Overall': entry.overallRating,
+      'Technical': entry.ratings.tech,
+      'Communication': entry.ratings.comm,
+      'Teamwork': entry.ratings.team,
+      'Leadership': entry.ratings.lead,
+    }));
+  }, [ratingHistory]);
+
+  // Handle opening edit sheet
+  const handleEditRating = (index: number) => {
+    setEditingRatingIndex(index);
+    setEditFormRating(managerRatings[index].rating);
+    setEditFormComment(managerRatings[index].comment);
+    setShowEditRatingSheet(true);
+  };
+
+  // Handle saving rating
+  const handleSaveRating = () => {
+    if (editingRatingIndex === null) return;
+    
+    setManagerRatings(prev => prev.map((r, i) => 
+      i === editingRatingIndex 
+        ? { ...r, rating: editFormRating, comment: editFormComment, lastUpdated: format(new Date(), 'yyyy-MM-dd') }
+        : r
+    ));
+    
+    toast.success('Rating updated successfully');
+    setShowEditRatingSheet(false);
+    setEditingRatingIndex(null);
+  };
 
   const getSkillById = (id: string) => mockSkills.find(s => s.id === id);
 
@@ -507,16 +592,6 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
 
   // Render Manager Insights section
   const renderManagerInsights = () => {
-    // Mock manager insights data
-    const managerRatings = [
-      { competency: 'Technical Skills', rating: 4.2, comment: 'Strong foundation, continues to improve' },
-      { competency: 'Communication', rating: 4.5, comment: 'Excellent verbal and written communication' },
-      { competency: 'Problem Solving', rating: 3.8, comment: 'Good analytical thinking, can improve creativity' },
-      { competency: 'Teamwork', rating: 4.7, comment: 'Outstanding collaborator and team player' },
-      { competency: 'Leadership Potential', rating: 3.5, comment: 'Emerging leadership qualities, needs mentoring' },
-      { competency: 'Adaptability', rating: 4.0, comment: 'Handles change well, flexible approach' },
-    ];
-
     const overallRating = managerRatings.reduce((sum, r) => sum + r.rating, 0) / managerRatings.length;
 
     return (
@@ -530,6 +605,13 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
               Performance observations and competency ratings from management
             </Typography>
           </Box>
+          <Button 
+            variant="outlined" 
+            startIcon={<History size={16} />}
+            onClick={() => setShowHistorySheet(true)}
+          >
+            View History
+          </Button>
         </Stack>
 
         {/* Overall Rating Card */}
@@ -560,22 +642,33 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
           </Stack>
         </Card>
 
-        {/* Competency Ratings */}
+        {/* Competency Ratings - Editable */}
         <Stack spacing={2}>
           {managerRatings.map((item, index) => {
             const ratingColor = item.rating >= 4 ? pastelColors.green : 
                                item.rating >= 3 ? pastelColors.amber : pastelColors.rose;
             
             return (
-              <Card key={index} sx={{ p: 2.5 }}>
+              <Card key={item.id} sx={{ p: 2.5 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      {item.competency}
-                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        {item.competency}
+                      </Typography>
+                      <button 
+                        onClick={() => handleEditRating(index)}
+                        className="p-1 rounded hover:bg-muted/50 transition-colors"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </Stack>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                       <MessageSquare className="inline h-3 w-3 mr-1" />
                       {item.comment}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                      Last updated: {item.lastUpdated}
                     </Typography>
                   </Box>
                   <Stack direction="row" alignItems="center" spacing={1}>
@@ -618,6 +711,74 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
             );
           })}
         </Stack>
+
+        {/* Rating Trend Chart */}
+        <Card sx={{ p: 3, mt: 3 }}>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
+            <TrendingUp className="inline h-4 w-4 mr-1" />
+            Rating Trends Over Time
+          </Typography>
+          <Box sx={{ height: 250 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }} 
+                  stroke="hsl(var(--muted-foreground))"
+                />
+                <YAxis 
+                  domain={[0, 5]} 
+                  tick={{ fontSize: 12 }} 
+                  stroke="hsl(var(--muted-foreground))"
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: 8,
+                  }}
+                />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="Overall" 
+                  stroke="hsl(262, 83%, 58%)" 
+                  strokeWidth={3}
+                  dot={{ fill: 'hsl(262, 83%, 58%)' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Technical" 
+                  stroke="hsl(217, 91%, 60%)" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(217, 91%, 60%)' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Communication" 
+                  stroke="hsl(142, 76%, 36%)" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(142, 76%, 36%)' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Teamwork" 
+                  stroke="hsl(38, 92%, 50%)" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(38, 92%, 50%)' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Leadership" 
+                  stroke="hsl(346, 77%, 50%)" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(346, 77%, 50%)' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Box>
+        </Card>
 
         {/* Strengths & Development Areas */}
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mt: 3 }}>
@@ -781,6 +942,247 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
         staffId={selectedStaffId}
         existingSkill={editingSkill}
       />
+
+      {/* Edit Rating Sheet */}
+      <Sheet open={showEditRatingSheet} onOpenChange={setShowEditRatingSheet}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-violet-600" />
+              Edit Competency Rating
+            </SheetTitle>
+          </SheetHeader>
+
+          {editingRatingIndex !== null && (
+            <div className="mt-6 space-y-6">
+              <div className={cn("p-4 rounded-lg border", pastelColors.purple.bg, pastelColors.purple.border)}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {managerRatings[editingRatingIndex].competency}
+                </Typography>
+              </div>
+
+              {/* Rating Selector */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Rating</label>
+                <Typography variant="caption" color="text.secondary" className="block mb-3">
+                  Click on a star to set the rating (1-5)
+                </Typography>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setEditFormRating(star)}
+                      className="p-1 hover:scale-110 transition-transform"
+                    >
+                      <Star 
+                        className={cn(
+                          "h-8 w-8 transition-colors",
+                          star <= editFormRating 
+                            ? "text-amber-400 fill-amber-400" 
+                            : "text-muted-foreground/30 hover:text-amber-200"
+                        )} 
+                      />
+                    </button>
+                  ))}
+                  <span className="ml-2 text-2xl font-bold text-violet-600">
+                    {editFormRating.toFixed(1)}
+                  </span>
+                </div>
+                {/* Fine-tune slider */}
+                <div className="mt-4">
+                  <Typography variant="caption" color="text.secondary" className="block mb-2">
+                    Fine-tune rating (use slider for decimal values)
+                  </Typography>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="0.1"
+                    value={editFormRating}
+                    onChange={(e) => setEditFormRating(parseFloat(e.target.value))}
+                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-violet-600"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>1.0</span>
+                    <span>2.0</span>
+                    <span>3.0</span>
+                    <span>4.0</span>
+                    <span>5.0</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Comment */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Manager Comments</label>
+                <Typography variant="caption" color="text.secondary" className="block mb-2">
+                  Provide specific observations and actionable feedback
+                </Typography>
+                <Textarea
+                  value={editFormComment}
+                  onChange={(e) => setEditFormComment(e.target.value)}
+                  placeholder="Enter your observations and feedback..."
+                  rows={4}
+                  className="resize-none"
+                />
+              </div>
+            </div>
+          )}
+
+          <SheetFooter className="mt-8">
+            <Button 
+              variant="outlined" 
+              onClick={() => setShowEditRatingSheet(false)}
+              startIcon={<X size={16} />}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleSaveRating}
+              startIcon={<Save size={16} />}
+            >
+              Save Rating
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Rating History Sheet */}
+      <Sheet open={showHistorySheet} onOpenChange={setShowHistorySheet}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-blue-600" />
+              Rating History
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-6">
+            {/* Trend Chart */}
+            <Card className="p-4">
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
+                Performance Trend
+              </Typography>
+              <Box sx={{ height: 280 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 12 }} 
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <YAxis 
+                      domain={[0, 5]} 
+                      tick={{ fontSize: 12 }} 
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: 8,
+                      }}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="Overall" 
+                      stroke="hsl(262, 83%, 58%)" 
+                      strokeWidth={3}
+                      dot={{ fill: 'hsl(262, 83%, 58%)' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="Technical" 
+                      stroke="hsl(217, 91%, 60%)" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(217, 91%, 60%)' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="Communication" 
+                      stroke="hsl(142, 76%, 36%)" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(142, 76%, 36%)' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="Teamwork" 
+                      stroke="hsl(38, 92%, 50%)" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(38, 92%, 50%)' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="Leadership" 
+                      stroke="hsl(346, 77%, 50%)" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(346, 77%, 50%)' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
+            </Card>
+
+            {/* Historical Entries */}
+            <div>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
+                Historical Records
+              </Typography>
+              <Stack spacing={2}>
+                {ratingHistory.slice().reverse().map((entry, index) => (
+                  <Card key={index} className="p-4">
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        {entry.date}
+                      </Typography>
+                      <Chip 
+                        label={`Overall: ${entry.overallRating.toFixed(1)}`}
+                        size="small"
+                        className={cn(
+                          entry.overallRating >= 4 ? cn(pastelColors.green.bg, pastelColors.green.text) :
+                          entry.overallRating >= 3 ? cn(pastelColors.amber.bg, pastelColors.amber.text) :
+                          cn(pastelColors.rose.bg, pastelColors.rose.text)
+                        )}
+                      />
+                    </Stack>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(entry.ratings).map(([key, value]) => {
+                        const competencyName = {
+                          tech: 'Technical',
+                          comm: 'Communication',
+                          problem: 'Problem Solving',
+                          team: 'Teamwork',
+                          lead: 'Leadership',
+                          adapt: 'Adaptability',
+                        }[key] || key;
+                        
+                        return (
+                          <div key={key} className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{competencyName}</span>
+                            <div className="flex items-center gap-1">
+                              <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+                              <span className="font-medium">{value.toFixed(1)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                ))}
+              </Stack>
+            </div>
+          </div>
+
+          <SheetFooter className="mt-8">
+            <Button variant="outlined" onClick={() => setShowHistorySheet(false)}>
+              Close
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </Box>
   );
 }
