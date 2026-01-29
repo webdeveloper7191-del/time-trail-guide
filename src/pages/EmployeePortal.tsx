@@ -27,12 +27,17 @@ import {
   ShieldAlert,
   GraduationCap,
   Target,
+  MessageSquare,
+  Users,
 } from 'lucide-react';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/timesheet/StatusBadge';
 import { EmployeeLMSPanel } from '@/components/performance/EmployeeLMSPanel';
 import { EmployeePerformancePanel } from '@/components/performance/EmployeePerformancePanel';
+import { EmployeeOKRPanel } from '@/components/performance/EmployeeOKRPanel';
+import { EmployeeSurveyPanel } from '@/components/performance/EmployeeSurveyPanel';
+import { Employee360Panel } from '@/components/performance/Employee360Panel';
 
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
@@ -159,21 +164,24 @@ export function EmployeePortal() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="current" className="gap-2">
-              <Clock className="h-4 w-4" /> Current Week
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
-              <Calendar className="h-4 w-4" /> History
+              <Clock className="h-4 w-4" /> Timesheets
             </TabsTrigger>
             <TabsTrigger value="performance" className="gap-2">
-              <Target className="h-4 w-4" /> My Performance
+              <Target className="h-4 w-4" /> Performance
+            </TabsTrigger>
+            <TabsTrigger value="okrs" className="gap-2">
+              <Target className="h-4 w-4" /> My OKRs
+            </TabsTrigger>
+            <TabsTrigger value="surveys" className="gap-2">
+              <MessageSquare className="h-4 w-4" /> Surveys
+            </TabsTrigger>
+            <TabsTrigger value="360" className="gap-2">
+              <Users className="h-4 w-4" /> 360° Feedback
             </TabsTrigger>
             <TabsTrigger value="learning" className="gap-2">
-              <GraduationCap className="h-4 w-4" /> My Learning
-            </TabsTrigger>
-            <TabsTrigger value="summary" className="gap-2">
-              <TrendingUp className="h-4 w-4" /> Summary
+              <GraduationCap className="h-4 w-4" /> Learning
             </TabsTrigger>
           </TabsList>
 
@@ -193,20 +201,24 @@ export function EmployeePortal() {
             )}
           </TabsContent>
 
-          <TabsContent value="history">
-            <HistoryView timesheets={pastTimesheets} />
-          </TabsContent>
-
           <TabsContent value="performance">
             <EmployeePerformancePanel currentUserId={currentEmployee.id} />
           </TabsContent>
 
-          <TabsContent value="learning">
-            <EmployeeLMSPanel currentUserId={currentEmployee.id} />
+          <TabsContent value="okrs">
+            <EmployeeOKRPanel currentUserId={currentEmployee.id} />
           </TabsContent>
 
-          <TabsContent value="summary">
-            <SummaryView timesheets={myTimesheets} stats={stats} />
+          <TabsContent value="surveys">
+            <EmployeeSurveyPanel currentUserId={currentEmployee.id} />
+          </TabsContent>
+
+          <TabsContent value="360">
+            <Employee360Panel currentUserId={currentEmployee.id} />
+          </TabsContent>
+
+          <TabsContent value="learning">
+            <EmployeeLMSPanel currentUserId={currentEmployee.id} />
           </TabsContent>
         </Tabs>
       </main>
