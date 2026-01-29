@@ -52,6 +52,8 @@ import { mockStaff, departments, locations } from '@/data/mockStaffData';
 import { StaffMember, employmentStatusLabels, employmentTypeLabels, EmploymentStatus, EmploymentType } from '@/types/staff';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { StaffImportModal } from '@/components/workforce/StaffImportModal';
+import { StaffImportResult } from '@/lib/etl/staffETL';
 
 export default function StaffList() {
   const navigate = useNavigate();
@@ -61,6 +63,13 @@ export default function StaffList() {
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
+  const [showImportModal, setShowImportModal] = useState(false);
+
+  const handleImportComplete = (result: StaffImportResult) => {
+    console.log('Import completed:', result);
+    // In a real app, this would refresh the staff list
+    toast.success(`Imported ${result.success} staff records`);
+  };
 
   const toggleStaffSelection = (staffId: string) => {
     const newSelection = new Set(selectedStaff);
@@ -163,7 +172,7 @@ export default function StaffList() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
                   <Upload className="h-4 w-4 mr-2" />
                   Import
                 </Button>
@@ -499,6 +508,13 @@ export default function StaffList() {
           </Card>
         </div>
       </main>
+      
+      {/* Import Modal */}
+      <StaffImportModal
+        open={showImportModal}
+        onOpenChange={setShowImportModal}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   );
 }
