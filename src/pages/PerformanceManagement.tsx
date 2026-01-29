@@ -31,12 +31,13 @@ import { SkillsCareerPanel } from '@/components/performance/SkillsCareerPanel';
 import { PulseSurveyPanel } from '@/components/performance/PulseSurveyPanel';
 import { WellbeingDashboard } from '@/components/performance/WellbeingDashboard';
 import { CalibrationPanel } from '@/components/performance/CalibrationPanel';
+import { OKRCascadePanel } from '@/components/performance/OKRCascadePanel';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity } from 'lucide-react';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
@@ -277,6 +278,7 @@ export default function PerformanceManagement() {
 
   const tabConfig = [
     { value: 'plans', label: 'Plans', icon: FileText },
+    { value: 'okr', label: 'OKRs', icon: Crosshair },
     { value: 'lms', label: 'Learning', icon: GraduationCap },
     { value: 'tasks', label: 'Tasks', icon: ListTodo },
     { value: 'goals', label: 'Goals', icon: Target },
@@ -370,6 +372,10 @@ export default function PerformanceManagement() {
                 onQuickAssignPlan={() => setShowQuickAssignDrawer(true)}
                 onDeleteTemplate={handleDeleteTemplate}
               />
+            )}
+
+            {activeTab === 'okr' && (
+              <OKRCascadePanel currentUserId={CURRENT_USER_ID} />
             )}
 
             {activeTab === 'lms' && (
