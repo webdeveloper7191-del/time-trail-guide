@@ -127,6 +127,9 @@ export function SkillAssessmentDrawer({
                   ))}
                 </SelectContent>
               </Select>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Core skills are essential competencies required for the role
+              </Typography>
             </Box>
 
             {selectedSkill && (
@@ -153,6 +156,9 @@ export function SkillAssessmentDrawer({
             {/* Current Level */}
             <Box>
               <Label className="mb-2 block">Current Proficiency Level</Label>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                Select the level that best describes current demonstrated capability
+              </Typography>
               <div className="flex gap-2 flex-wrap">
                 {skillLevelOptions.map((level) => {
                   const style = getSkillLevelColor(level);
@@ -181,6 +187,9 @@ export function SkillAssessmentDrawer({
             {/* Target Level */}
             <Box>
               <Label className="mb-2 block">Target Proficiency Level</Label>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                Set a realistic goal level to achieve within the next development cycle
+              </Typography>
               <div className="flex gap-2 flex-wrap">
                 {skillLevelOptions.filter(l => skillLevelValues[l] >= skillLevelValues[currentLevel]).map((level) => {
                   const style = getSkillLevelColor(level);
@@ -243,6 +252,9 @@ export function SkillAssessmentDrawer({
                 placeholder="Add notes about proficiency, training needs, observations..."
                 rows={3}
               />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Include specific examples, recommended training, or mentorship opportunities
+              </Typography>
             </Box>
           </Stack>
         </Box>

@@ -166,6 +166,9 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
             {/* Level Selection */}
             <Box>
               <Label className="mb-2 block">Objective Level</Label>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                Company objectives cascade to teams, which cascade to individuals
+              </Typography>
               <div className="flex gap-2">
                 {(['company', 'team', 'individual'] as OKRLevel[]).map((l) => {
                   const style = getLevelStyle(l);
@@ -258,6 +261,9 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="What do you want to achieve?"
               />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Start with a verb. Be ambitious but achievable. Example: "Increase customer satisfaction"
+              </Typography>
             </Box>
 
             {/* Description */}
@@ -270,6 +276,9 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
                 placeholder="Why is this objective important?"
                 rows={3}
               />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Explain the business impact and why this matters to the organization
+              </Typography>
             </Box>
 
             {/* Owner */}
@@ -287,6 +296,9 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
                   ))}
                 </SelectContent>
               </Select>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                The person accountable for driving progress on this objective
+              </Typography>
             </Box>
 
             {/* Team (for company/team level) */}
@@ -327,7 +339,7 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
 
             {/* Key Results */}
             <Box>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Label>Key Results *</Label>
                 <Button 
                   variant="outlined" 
@@ -338,6 +350,9 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
                   Add KR
                 </Button>
               </Stack>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                Add 3-5 measurable outcomes. Each should be specific, time-bound, and challenging but achievable.
+              </Typography>
 
               <Stack spacing={2}>
                 {keyResults.map((kr, index) => (

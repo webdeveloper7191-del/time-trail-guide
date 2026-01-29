@@ -145,6 +145,9 @@ export function TalentAssessmentDrawer({
                   ))}
                 </SelectContent>
               </Select>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Choose the employee you want to assess for the 9-Box talent grid
+              </Typography>
             </Box>
 
             {staff && (
@@ -171,6 +174,9 @@ export function TalentAssessmentDrawer({
                   {performanceScore}/10
                 </Typography>
               </Stack>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Rate based on goal achievement, quality of work, and productivity over the past period
+              </Typography>
               <Slider
                 value={performanceScore}
                 onChange={(_, val) => setPerformanceScore(val as number)}
@@ -197,6 +203,9 @@ export function TalentAssessmentDrawer({
                   {potentialScore}/10
                 </Typography>
               </Stack>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Estimate growth capacity based on learning agility, leadership qualities, and career aspirations
+              </Typography>
               <Slider
                 value={potentialScore}
                 onChange={(_, val) => setPotentialScore(val as number)}
@@ -232,6 +241,9 @@ export function TalentAssessmentDrawer({
                   <SelectItem value="high">High Risk</SelectItem>
                 </SelectContent>
               </Select>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Consider factors like job satisfaction, market demand for their skills, and recent life changes
+              </Typography>
             </Box>
 
             {/* Succession Readiness */}
@@ -248,6 +260,9 @@ export function TalentAssessmentDrawer({
                   <SelectItem value="ready_now">Ready Now</SelectItem>
                 </SelectContent>
               </Select>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                How soon could this person step into a higher-level role?
+              </Typography>
             </Box>
 
             {/* Notes */}
@@ -260,6 +275,9 @@ export function TalentAssessmentDrawer({
                 placeholder="Add notes about this assessment..."
                 rows={3}
               />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Document specific examples, achievements, or concerns that support your assessment
+              </Typography>
             </Box>
 
             {/* Development Recommendations */}
