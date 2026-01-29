@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithCreate } from '@/components/ui/select-with-create';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +20,7 @@ import { CalendarIcon, ClipboardCheck, Plus, Trash2, GripVertical } from 'lucide
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { toast } from 'sonner';
 
 const reviewSchema = z.object({
   staffId: z.string().min(1, 'Team member is required'),
@@ -56,6 +58,11 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
   const [newCriteriaDesc, setNewCriteriaDesc] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [customCycles, setCustomCycles] = useState<{value: string; label: string}[]>([]);
+
+  const defaultCycleOptions = Object.entries(reviewCycleLabels).map(([value, label]) => ({ value, label }));
+  const cycleOptions = useMemo(() => 
+    [...defaultCycleOptions, ...customCycles], [customCycles]);
 
   const totalWeight = criteria.reduce((sum, c) => sum + c.weight, 0);
 
@@ -201,16 +208,17 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
 
         <div className="space-y-2">
           <Label>Review Cycle *</Label>
-          <Select value={reviewCycle} onValueChange={v => handleCycleChange(v as ReviewCycle)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(reviewCycleLabels).map(([value, label]) => (
-                <SelectItem key={value} value={value}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SelectWithCreate
+            value={reviewCycle}
+            onValueChange={v => handleCycleChange(v as ReviewCycle)}
+            options={cycleOptions}
+            onCreateNew={(newCycle) => {
+              setCustomCycles(prev => [...prev, { value: newCycle.toLowerCase().replace(/\s+/g, '_'), label: newCycle }]);
+              toast.success(`Review cycle "${newCycle}" created`);
+            }}
+            placeholder="Select cycle"
+            createLabel="Create new cycle"
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">

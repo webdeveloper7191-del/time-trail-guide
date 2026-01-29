@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithCreate } from '@/components/ui/select-with-create';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +58,16 @@ export function EditGoalDrawer({ open, onOpenChange, goal, onSubmit, onDelete }:
   const [linkType, setLinkType] = useState<'form' | 'learning_path' | 'course'>('form');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [customPriorities, setCustomPriorities] = useState<{value: string; label: string}[]>([]);
+
+  const allCategories = useMemo(() => [...goalCategories, ...customCategories], [customCategories]);
+  const categoryOptions = useMemo(() => 
+    allCategories.map(cat => ({ value: cat, label: cat })), [allCategories]);
+  
+  const defaultPriorityOptions = Object.entries(goalPriorityLabels).map(([value, label]) => ({ value, label }));
+  const priorityOptions = useMemo(() => 
+    [...defaultPriorityOptions, ...customPriorities], [customPriorities]);
 
   // Populate form when goal changes
   useEffect(() => {
@@ -279,31 +290,34 @@ export function EditGoalDrawer({ open, onOpenChange, goal, onSubmit, onDelete }:
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Category *</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className={errors.category ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {goalCategories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SelectWithCreate
+              value={category}
+              onValueChange={setCategory}
+              options={categoryOptions}
+              onCreateNew={(newCat) => {
+                setCustomCategories(prev => [...prev, newCat]);
+                toast.success(`Category "${newCat}" created`);
+              }}
+              placeholder="Select category"
+              createLabel="Create new category"
+              error={!!errors.category}
+            />
             {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
           </div>
 
           <div className="space-y-2">
             <Label>Priority *</Label>
-            <Select value={priority} onValueChange={v => setPriority(v as GoalPriority)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(goalPriorityLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SelectWithCreate
+              value={priority}
+              onValueChange={v => setPriority(v as GoalPriority)}
+              options={priorityOptions}
+              onCreateNew={(newPriority) => {
+                setCustomPriorities(prev => [...prev, { value: newPriority.toLowerCase(), label: newPriority }]);
+                toast.success(`Priority "${newPriority}" created`);
+              }}
+              placeholder="Select priority"
+              createLabel="Create new priority"
+            />
           </div>
         </div>
 

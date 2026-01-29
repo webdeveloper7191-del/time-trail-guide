@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithCreate } from '@/components/ui/select-with-create';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -61,6 +62,11 @@ export function LearningPathBuilder({ open, onClose, existingPath, onSave }: Lea
   });
   const [showPreview, setShowPreview] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [customIndustries, setCustomIndustries] = useState<string[]>([]);
+
+  const allIndustries = useMemo(() => [...lmsIndustries, ...customIndustries], [customIndustries]);
+  const industryOptions = useMemo(() => 
+    allIndustries.map(ind => ({ value: ind, label: ind })), [allIndustries]);
 
   const availableCourses = mockCourses.filter(
     course => !selectedCourses.some(sc => sc.courseId === course.id)
@@ -191,16 +197,17 @@ export function LearningPathBuilder({ open, onClose, existingPath, onSave }: Lea
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Industry</Label>
-                      <Select value={industry} onValueChange={setIndustry}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select industry" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {lmsIndustries.map(ind => (
-                            <SelectItem key={ind} value={ind}>{ind}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <SelectWithCreate
+                        value={industry}
+                        onValueChange={setIndustry}
+                        options={industryOptions}
+                        onCreateNew={(newIndustry) => {
+                          setCustomIndustries(prev => [...prev, newIndustry]);
+                          toast.success(`Industry "${newIndustry}" created`);
+                        }}
+                        placeholder="Select industry"
+                        createLabel="Create new industry"
+                      />
                     </div>
 
                     <div className="space-y-2">
