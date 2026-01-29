@@ -6,10 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Conversation, ConversationType, conversationTypeLabels } from '@/types/performance';
 import { StaffMember } from '@/types/staff';
 import { format, setHours, setMinutes } from 'date-fns';
-import { CalendarIcon, Clock, X } from 'lucide-react';
+import { CalendarIcon, Clock, Video, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
@@ -20,12 +21,15 @@ const conversationSchema = z.object({
   title: z.string().min(3, 'Title is required').max(100),
   scheduledDate: z.date({ required_error: 'Date is required' }),
   duration: z.number().min(15).max(120),
+  meetingLink: z.string().url().optional().or(z.literal('')),
 });
+
+type MeetingPlatform = 'zoom' | 'teams' | 'meet' | 'other';
 
 interface ScheduleConversationDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onSubmit: (data: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'> & { meetingLink?: string; meetingPlatform?: MeetingPlatform }) => Promise<void>;
   staff: StaffMember[];
   managerId: string;
 }
@@ -37,6 +41,13 @@ const timeSlots = Array.from({ length: 20 }, (_, i) => {
   return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
 });
 
+const meetingPlatforms: { id: MeetingPlatform; label: string; color: string; placeholder: string }[] = [
+  { id: 'zoom', label: 'Zoom', color: 'bg-blue-100 text-blue-700', placeholder: 'https://zoom.us/j/...' },
+  { id: 'teams', label: 'Teams', color: 'bg-purple-100 text-purple-700', placeholder: 'https://teams.microsoft.com/...' },
+  { id: 'meet', label: 'Google Meet', color: 'bg-green-100 text-green-700', placeholder: 'https://meet.google.com/...' },
+  { id: 'other', label: 'Other', color: 'bg-slate-100 text-slate-700', placeholder: 'https://...' },
+];
+
 export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff, managerId }: ScheduleConversationDrawerProps) {
   const [staffId, setStaffId] = useState('');
   const [type, setType] = useState<ConversationType>('one_on_one');
@@ -44,13 +55,18 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState('10:00');
   const [duration, setDuration] = useState(30);
+  const [meetingPlatform, setMeetingPlatform] = useState<MeetingPlatform | ''>('');
+  const [meetingLink, setMeetingLink] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async () => {
     const scheduledDate = date ? setMinutes(setHours(date, parseInt(time.split(':')[0])), parseInt(time.split(':')[1])) : undefined;
     
-    const validation = conversationSchema.safeParse({ staffId, type, title, scheduledDate, duration });
+    const validation = conversationSchema.safeParse({ 
+      staffId, type, title, scheduledDate, duration, 
+      meetingLink: meetingLink || undefined 
+    });
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
       validation.error.errors.forEach(err => {
@@ -72,6 +88,7 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
         completed: false,
         notes: [],
         actionItems: [],
+        ...(meetingLink && { meetingLink, meetingPlatform: meetingPlatform as MeetingPlatform }),
       });
       onOpenChange(false);
       resetForm();
@@ -87,6 +104,8 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
     setDate(undefined);
     setTime('10:00');
     setDuration(30);
+    setMeetingPlatform('');
+    setMeetingLink('');
     setErrors({});
   };
 
@@ -209,6 +228,43 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Meeting Link Section */}
+        <div className="space-y-3 pt-2">
+          <Label className="flex items-center gap-2">
+            <Video className="h-4 w-4" />
+            Video Meeting (Optional)
+          </Label>
+          
+          <div className="flex flex-wrap gap-2">
+            {meetingPlatforms.map(platform => (
+              <Badge
+                key={platform.id}
+                variant={meetingPlatform === platform.id ? 'default' : 'outline'}
+                className={cn(
+                  'cursor-pointer transition-colors',
+                  meetingPlatform === platform.id && platform.color
+                )}
+                onClick={() => setMeetingPlatform(meetingPlatform === platform.id ? '' : platform.id)}
+              >
+                {platform.label}
+              </Badge>
+            ))}
+          </div>
+
+          {meetingPlatform && (
+            <div className="relative">
+              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={meetingPlatforms.find(p => p.id === meetingPlatform)?.placeholder || 'Enter meeting link'}
+                value={meetingLink}
+                onChange={e => setMeetingLink(e.target.value)}
+                className={cn('pl-9', errors.meetingLink && 'border-destructive')}
+              />
+              {errors.meetingLink && <p className="text-xs text-destructive mt-1">{errors.meetingLink}</p>}
+            </div>
+          )}
         </div>
       </div>
     </PrimaryOffCanvas>
