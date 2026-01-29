@@ -170,7 +170,7 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
         { label: loading ? 'Creating...' : 'Create Goal', onClick: handleSubmit, variant: 'primary', disabled: loading, loading },
       ]}
     >
-      <div className="space-y-5">
+      <div className="space-y-4 sm:space-y-5">
         <div className="space-y-2">
           <Label htmlFor="title">Goal Title *</Label>
           <Input
@@ -196,7 +196,7 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
           {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-2">
             <Label>Category *</Label>
             <Select value={category} onValueChange={setCategory}>
@@ -254,7 +254,7 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
             </Button>
           </div>
           {milestones.map((ms, i) => (
-            <div key={i} className="flex gap-2 items-start">
+            <div key={i} className="flex flex-col sm:flex-row gap-2 items-start">
               <Input
                 placeholder="Milestone title"
                 value={ms.title}
@@ -263,29 +263,34 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
                   updated[i].title = e.target.value;
                   setMilestones(updated);
                 }}
-                className="flex-1"
+                className="flex-1 w-full"
               />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="icon" className="shrink-0">
-                    <CalendarIcon className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={ms.targetDate}
-                    onSelect={date => {
-                      const updated = [...milestones];
-                      updated[i].targetDate = date;
-                      setMilestones(updated);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-              <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveMilestone(i)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none sm:w-auto justify-start sm:justify-center">
+                      <CalendarIcon className="h-4 w-4 sm:mr-0" />
+                      <span className="ml-2 sm:hidden">
+                        {ms.targetDate ? format(ms.targetDate, 'MMM d') : 'Pick date'}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={ms.targetDate}
+                      onSelect={date => {
+                        const updated = [...milestones];
+                        updated[i].targetDate = date;
+                        setMilestones(updated);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveMilestone(i)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>

@@ -120,23 +120,23 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
           className
         )}
         style={{ 
-          width: isHorizontal ? `min(${computedWidth}, 95vw)` : undefined,
-          maxWidth: isHorizontal ? '95vw' : undefined,
+          width: isHorizontal ? `min(${computedWidth}, 100vw)` : undefined,
+          maxWidth: isHorizontal ? '100vw' : undefined,
         }}
       >
         {/* Header */}
-        <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 !mb-0 !pb-4">
+        <SheetHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border flex-shrink-0 !mb-0 !pb-3 sm:!pb-4">
           <div className="flex items-center justify-between pr-8">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {Icon && (
-                <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10">
-                  <Icon className="h-5 w-5 text-primary" />
+                <div className="flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-primary/10">
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
               )}
               <div>
-                <SheetTitle className="text-lg font-semibold">{title}</SheetTitle>
+                <SheetTitle className="text-base sm:text-lg font-semibold">{title}</SheetTitle>
                 {description && (
-                  <SheetDescription className="mt-0.5 text-sm text-muted-foreground">
+                  <SheetDescription className="mt-0.5 text-xs sm:text-sm text-muted-foreground hidden sm:block">
                     {description}
                   </SheetDescription>
                 )}
@@ -153,7 +153,7 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
         {/* Content - flex-1 to fill remaining space, w-full ensures children stretch */}
         <div className="flex-1 min-h-0 overflow-hidden w-full">
           <ScrollArea className="h-full w-full">
-            <div className={cn("px-6 py-4 w-full", contentClassName)}>
+            <div className={cn("px-4 sm:px-6 py-3 sm:py-4 w-full", contentClassName)}>
               <div className="w-full">
                 {children}
               </div>
@@ -163,8 +163,8 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
 
         {/* Footer with actions */}
         {showFooter && actions.length > 0 && (
-          <SheetFooter className="px-6 py-4 border-t border-border flex-shrink-0 !mt-0 !pt-4">
-            <div className="flex justify-end gap-3 w-full">
+          <SheetFooter className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border flex-shrink-0 !mt-0 !pt-3 sm:!pt-4">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 w-full">
               {actions.map((action, index) => (
                 <Button
                   key={index}
@@ -175,6 +175,12 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
                   disabled={action.disabled || action.loading}
                   size="medium"
                   startIcon={action.icon}
+                  fullWidth
+                  sx={{ 
+                    '@media (min-width: 640px)': { 
+                      width: 'auto' 
+                    } 
+                  }}
                 >
                   {action.loading ? 'Loading...' : action.label}
                 </Button>

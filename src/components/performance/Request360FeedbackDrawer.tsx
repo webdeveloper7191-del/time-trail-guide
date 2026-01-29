@@ -189,7 +189,7 @@ export function Request360FeedbackDrawer({
         { label: loading ? 'Sending...' : 'Send Requests', onClick: handleSubmit, variant: 'primary', disabled: loading || responders.length === 0, loading },
       ]}
     >
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Subject Selection */}
         <div className="space-y-2">
           <Label>Employee to Receive Feedback *</Label>
@@ -205,8 +205,7 @@ export function Request360FeedbackDrawer({
                       <AvatarImage src={s.avatar} />
                       <AvatarFallback className="text-xs">{s.firstName[0]}{s.lastName[0]}</AvatarFallback>
                     </Avatar>
-                    {s.firstName} {s.lastName}
-                    <span className="text-muted-foreground text-xs">• {s.position}</span>
+                    <span className="truncate">{s.firstName} {s.lastName}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -238,7 +237,7 @@ export function Request360FeedbackDrawer({
         </div>
 
         {/* Due Date & Settings */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-2">
             <Label>Due Date *</Label>
             <Popover>
@@ -263,7 +262,7 @@ export function Request360FeedbackDrawer({
             </Popover>
           </div>
 
-          <div className="space-y-3 pt-6">
+          <div className="space-y-2 sm:space-y-3 sm:pt-6">
             <div className="flex items-center gap-2">
               <Checkbox 
                 id="anonymous" 
@@ -315,9 +314,9 @@ export function Request360FeedbackDrawer({
             Feedback Responders ({responders.length})
           </Label>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Select value={responderSourceType} onValueChange={v => setResponderSourceType(v as FeedbackSourceType)}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
