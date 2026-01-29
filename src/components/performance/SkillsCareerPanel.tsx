@@ -43,6 +43,7 @@ import {
   CareerPath, 
   StaffCareerProgress,
   SkillGap,
+  SkillLevel,
   skillLevelLabels,
   skillLevelValues,
 } from '@/types/advancedPerformance';
@@ -125,6 +126,47 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   const [editingRatingIndex, setEditingRatingIndex] = useState<number | null>(null);
   const [showHistorySheet, setShowHistorySheet] = useState(false);
   
+  // Creation drawers state
+  const [showAddSkillSheet, setShowAddSkillSheet] = useState(false);
+  const [showAddInsightSheet, setShowAddInsightSheet] = useState(false);
+  const [showAddSkillGapSheet, setShowAddSkillGapSheet] = useState(false);
+  const [showAddCareerPathSheet, setShowAddCareerPathSheet] = useState(false);
+  
+  // Skills list state (mutable)
+  const [skillsList, setSkillsList] = useState<Skill[]>(mockSkills);
+  
+  // Skill gaps state (mutable)
+  const [skillGapsList, setSkillGapsList] = useState<SkillGap[]>(
+    mockCareerProgress.find(p => p.staffId === staffId)?.skillGaps || []
+  );
+  
+  // Career paths state (mutable)
+  const [careerPathsList, setCareerPathsList] = useState<CareerPath[]>(mockCareerPaths);
+  
+  // New skill form state
+  const [newSkillName, setNewSkillName] = useState('');
+  const [newSkillCategory, setNewSkillCategory] = useState('');
+  const [newSkillDescription, setNewSkillDescription] = useState('');
+  const [newSkillIsCore, setNewSkillIsCore] = useState(false);
+  
+  // New insight category form state
+  const [newInsightName, setNewInsightName] = useState('');
+  const [newInsightRating, setNewInsightRating] = useState(3);
+  const [newInsightComment, setNewInsightComment] = useState('');
+  
+  // New skill gap form state
+  const [newGapSkillId, setNewGapSkillId] = useState('');
+  const [newGapCurrentLevel, setNewGapCurrentLevel] = useState<SkillLevel>('beginner');
+  const [newGapRequiredLevel, setNewGapRequiredLevel] = useState<SkillLevel>('advanced');
+  const [newGapPriority, setNewGapPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
+  
+  // New career path form state
+  const [newPathName, setNewPathName] = useState('');
+  const [newPathDescription, setNewPathDescription] = useState('');
+  const [newPathLevels, setNewPathLevels] = useState<Array<{ title: string; experienceYears: number }>>([
+    { title: '', experienceYears: 0 }
+  ]);
+  
   // Initialize manager ratings with state
   const [managerRatings, setManagerRatings] = useState<ManagerRating[]>([
     { id: 'tech', competency: 'Technical Skills', rating: 4.2, comment: 'Strong foundation, continues to improve', lastUpdated: '2025-01-15' },
@@ -204,9 +246,132 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
     setEditingRatingIndex(null);
   };
 
-  const getSkillById = (id: string) => mockSkills.find(s => s.id === id);
+  // Handle adding new skill
+  const handleAddSkill = () => {
+    if (!newSkillName.trim() || !newSkillCategory.trim()) {
+      toast.error('Please fill in skill name and category');
+      return;
+    }
+    
+    const newSkill: Skill = {
+      id: `skill-${Date.now()}`,
+      name: newSkillName.trim(),
+      category: newSkillCategory.trim(),
+      description: newSkillDescription.trim(),
+      isCore: newSkillIsCore,
+    };
+    
+    setSkillsList(prev => [...prev, newSkill]);
+    toast.success('Skill added successfully');
+    setShowAddSkillSheet(false);
+    setNewSkillName('');
+    setNewSkillCategory('');
+    setNewSkillDescription('');
+    setNewSkillIsCore(false);
+  };
 
-  const skillsByCategory = mockSkills.reduce((acc, skill) => {
+  // Handle adding new insight category
+  const handleAddInsight = () => {
+    if (!newInsightName.trim()) {
+      toast.error('Please enter a category name');
+      return;
+    }
+    
+    const newInsight: ManagerRating = {
+      id: `insight-${Date.now()}`,
+      competency: newInsightName.trim(),
+      rating: newInsightRating,
+      comment: newInsightComment.trim() || 'No comments yet',
+      lastUpdated: format(new Date(), 'yyyy-MM-dd'),
+    };
+    
+    setManagerRatings(prev => [...prev, newInsight]);
+    toast.success('Insight category added successfully');
+    setShowAddInsightSheet(false);
+    setNewInsightName('');
+    setNewInsightRating(3);
+    setNewInsightComment('');
+  };
+
+  // Handle adding new skill gap
+  const handleAddSkillGap = () => {
+    if (!newGapSkillId) {
+      toast.error('Please select a skill');
+      return;
+    }
+    
+    const skill = skillsList.find(s => s.id === newGapSkillId);
+    const gapSize = skillLevelValues[newGapRequiredLevel] - skillLevelValues[newGapCurrentLevel];
+    
+    const newGap: SkillGap = {
+      skillId: newGapSkillId,
+      skillName: skill?.name || 'Unknown Skill',
+      currentLevel: newGapCurrentLevel,
+      requiredLevel: newGapRequiredLevel,
+      gapSize: Math.max(0, gapSize),
+      priority: newGapPriority,
+    };
+    
+    setSkillGapsList(prev => [...prev, newGap]);
+    toast.success('Skill gap added successfully');
+    setShowAddSkillGapSheet(false);
+    setNewGapSkillId('');
+    setNewGapCurrentLevel('beginner');
+    setNewGapRequiredLevel('advanced');
+    setNewGapPriority('medium');
+  };
+
+  // Handle adding new career path
+  const handleAddCareerPath = () => {
+    if (!newPathName.trim()) {
+      toast.error('Please enter a path name');
+      return;
+    }
+    
+    const validLevels = newPathLevels.filter(l => l.title.trim());
+    if (validLevels.length === 0) {
+      toast.error('Please add at least one career level');
+      return;
+    }
+    
+    const newPath: CareerPath = {
+      id: `path-${Date.now()}`,
+      name: newPathName.trim(),
+      description: newPathDescription.trim(),
+      levels: validLevels.map((l, i) => ({
+        id: `level-${Date.now()}-${i}`,
+        title: l.title.trim(),
+        level: i + 1,
+        requiredSkills: [],
+        requiredExperienceYears: l.experienceYears,
+      })),
+    };
+    
+    setCareerPathsList(prev => [...prev, newPath]);
+    toast.success('Career path added successfully');
+    setShowAddCareerPathSheet(false);
+    setNewPathName('');
+    setNewPathDescription('');
+    setNewPathLevels([{ title: '', experienceYears: 0 }]);
+  };
+
+  const addCareerLevel = () => {
+    setNewPathLevels(prev => [...prev, { title: '', experienceYears: prev.length }]);
+  };
+
+  const removeCareerLevel = (index: number) => {
+    setNewPathLevels(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateCareerLevel = (index: number, field: 'title' | 'experienceYears', value: string | number) => {
+    setNewPathLevels(prev => prev.map((l, i) => 
+      i === index ? { ...l, [field]: value } : l
+    ));
+  };
+
+  const getSkillById = (id: string) => skillsList.find(s => s.id === id);
+
+  const skillsByCategory = skillsList.reduce((acc, skill) => {
     if (!acc[skill.category]) acc[skill.category] = [];
     acc[skill.category].push(skill);
     return acc;
@@ -267,13 +432,22 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
             Competency assessment and skill tracking
           </Typography>
         </Box>
-        <Button 
-          variant="contained" 
-          startIcon={<Plus size={16} />}
-          onClick={() => handleAssessSkill()}
-        >
-          Assess Skill
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button 
+            variant="outlined" 
+            startIcon={<Plus size={16} />}
+            onClick={() => setShowAddSkillSheet(true)}
+          >
+            Add Skill
+          </Button>
+          <Button 
+            variant="contained" 
+            startIcon={<Target size={16} />}
+            onClick={() => handleAssessSkill()}
+          >
+            Assess Skill
+          </Button>
+        </Stack>
       </Stack>
 
       <Stack spacing={3}>
@@ -364,31 +538,30 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   );
 
   const renderSkillGaps = () => {
-    if (!careerProgress) {
-      return (
-        <Card sx={{ p: 4, textAlign: 'center' }}>
-          <AlertCircle size={40} className="mx-auto mb-2 text-muted-foreground" />
-          <Typography variant="subtitle1" fontWeight={600}>
-            No career path assigned
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Assign a career path to see skill gaps
-          </Typography>
-        </Card>
-      );
-    }
-
+    const gapsToShow = skillGapsList.length > 0 ? skillGapsList : (careerProgress?.skillGaps || []);
+    
     return (
       <Box>
-        <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
-          Skill Gaps
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Skills needed to progress to the next level
-        </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+          <Box>
+            <Typography variant="h6" fontWeight={600} color="text.primary">
+              Skill Gaps
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Skills needed to progress to the next level
+            </Typography>
+          </Box>
+          <Button 
+            variant="contained" 
+            startIcon={<Plus size={16} />}
+            onClick={() => setShowAddSkillGapSheet(true)}
+          >
+            Add Skill Gap
+          </Button>
+        </Stack>
 
         <Stack spacing={2}>
-          {careerProgress.skillGaps.map(gap => {
+          {gapsToShow.map(gap => {
             const priorityStyle = getGapPriorityColor(gap.priority);
             const currentStyle = getSkillLevelColor(gap.currentLevel);
             const requiredStyle = getSkillLevelColor(gap.requiredLevel);
@@ -437,11 +610,11 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
               </Card>
             );
           })}
-          {careerProgress.skillGaps.length === 0 && (
-            <Card sx={{ p: 3, textAlign: 'center' }}>
-              <CheckCircle2 size={32} className="mx-auto mb-2 text-green-600" />
+          {gapsToShow.length === 0 && (
+            <Card sx={{ p: 3, textAlign: 'center' }} className="border-dashed">
+              <AlertCircle size={32} className="mx-auto mb-2 text-muted-foreground" />
               <Typography variant="body2" color="text.secondary">
-                No skill gaps identified
+                No skill gaps identified. Click "Add Skill Gap" to define areas for development.
               </Typography>
             </Card>
           )}
@@ -451,19 +624,54 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   };
 
   const renderCareerPath = () => {
-    const path = mockCareerPaths.find(p => p.id === careerProgress?.currentPathId);
+    const path = careerPathsList.find(p => p.id === careerProgress?.currentPathId);
     if (!path) {
       return (
-        <Card sx={{ p: 4, textAlign: 'center' }}>
-          <Briefcase size={40} className="mx-auto mb-2 text-muted-foreground" />
-          <Typography variant="subtitle1" fontWeight={600}>
-            No career path assigned
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Assign a career path to track progression
-          </Typography>
-          <Button variant="outlined">Assign Career Path</Button>
-        </Card>
+        <Box>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+            <Box>
+              <Typography variant="h6" fontWeight={600} color="text.primary">
+                Career Paths
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Define progression pathways for employees
+              </Typography>
+            </Box>
+            <Button 
+              variant="contained" 
+              startIcon={<Plus size={16} />}
+              onClick={() => setShowAddCareerPathSheet(true)}
+            >
+              Create Path
+            </Button>
+          </Stack>
+          
+          {careerPathsList.length === 0 ? (
+            <Card sx={{ p: 4, textAlign: 'center' }} className="border-dashed">
+              <Briefcase size={40} className="mx-auto mb-2 text-muted-foreground" />
+              <Typography variant="subtitle1" fontWeight={600}>
+                No career paths defined
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Create career paths to track employee progression
+              </Typography>
+            </Card>
+          ) : (
+            <Stack spacing={2}>
+              {careerPathsList.map(p => (
+                <Card key={p.id} sx={{ p: 3 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={600}>{p.name}</Typography>
+                      <Typography variant="body2" color="text.secondary">{p.description}</Typography>
+                    </Box>
+                    <Chip label={`${p.levels.length} levels`} size="small" />
+                  </Stack>
+                </Card>
+              ))}
+            </Stack>
+          )}
+        </Box>
       );
     }
 
@@ -480,9 +688,18 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
               {path.name}
             </Typography>
           </Box>
-          <Button variant="outlined" onClick={() => setShowCareerPathSheet(true)}>
-            View Full Path
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button 
+              variant="outlined" 
+              startIcon={<Plus size={16} />}
+              onClick={() => setShowAddCareerPathSheet(true)}
+            >
+              Create Path
+            </Button>
+            <Button variant="outlined" onClick={() => setShowCareerPathSheet(true)}>
+              View Full Path
+            </Button>
+          </Stack>
         </Stack>
 
         <Card sx={{ p: 3 }}>
@@ -605,13 +822,22 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
               Performance observations and competency ratings from management
             </Typography>
           </Box>
-          <Button 
-            variant="outlined" 
-            startIcon={<History size={16} />}
-            onClick={() => setShowHistorySheet(true)}
-          >
-            View History
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button 
+              variant="outlined" 
+              startIcon={<Plus size={16} />}
+              onClick={() => setShowAddInsightSheet(true)}
+            >
+              Add Category
+            </Button>
+            <Button 
+              variant="outlined" 
+              startIcon={<History size={16} />}
+              onClick={() => setShowHistorySheet(true)}
+            >
+              View History
+            </Button>
+          </Stack>
         </Stack>
 
         {/* Overall Rating Card */}
@@ -1179,6 +1405,337 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
           <SheetFooter className="mt-8">
             <Button variant="outlined" onClick={() => setShowHistorySheet(false)}>
               Close
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Add New Skill Sheet */}
+      <Sheet open={showAddSkillSheet} onOpenChange={setShowAddSkillSheet}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5 text-blue-600" />
+              Add New Skill
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Skill Name *</label>
+              <Input
+                value={newSkillName}
+                onChange={(e) => setNewSkillName(e.target.value)}
+                placeholder="e.g., Project Management"
+              />
+              <Typography variant="caption" color="text.secondary" className="mt-1">
+                Enter a clear, descriptive name for the skill
+              </Typography>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Category *</label>
+              <Input
+                value={newSkillCategory}
+                onChange={(e) => setNewSkillCategory(e.target.value)}
+                placeholder="e.g., Leadership, Technical, Soft Skills"
+              />
+              <Typography variant="caption" color="text.secondary" className="mt-1">
+                Group skills by category for easy organization
+              </Typography>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Description</label>
+              <Textarea
+                value={newSkillDescription}
+                onChange={(e) => setNewSkillDescription(e.target.value)}
+                placeholder="Describe what this skill entails..."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="isCore"
+                checked={newSkillIsCore}
+                onChange={(e) => setNewSkillIsCore(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <label htmlFor="isCore" className="text-sm font-medium">
+                Core Competency
+              </label>
+            </div>
+            <Typography variant="caption" color="text.secondary">
+              Core competencies are essential skills required for the role
+            </Typography>
+          </div>
+
+          <SheetFooter className="mt-8">
+            <Button variant="outlined" onClick={() => setShowAddSkillSheet(false)}>
+              Cancel
+            </Button>
+            <Button variant="contained" onClick={handleAddSkill} startIcon={<Plus size={16} />}>
+              Add Skill
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Add New Insight Category Sheet */}
+      <Sheet open={showAddInsightSheet} onOpenChange={setShowAddInsightSheet}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-violet-600" />
+              Add Insight Category
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Category Name *</label>
+              <Input
+                value={newInsightName}
+                onChange={(e) => setNewInsightName(e.target.value)}
+                placeholder="e.g., Punctuality, Learning Agility"
+              />
+              <Typography variant="caption" color="text.secondary" className="mt-1">
+                Name the competency or behavioral trait to track
+              </Typography>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Initial Rating</label>
+              <div className="flex items-center gap-2 mt-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setNewInsightRating(star)}
+                    className="p-1 hover:scale-110 transition-transform"
+                  >
+                    <Star 
+                      className={cn(
+                        "h-7 w-7 transition-colors",
+                        star <= newInsightRating 
+                          ? "text-amber-400 fill-amber-400" 
+                          : "text-muted-foreground/30"
+                      )} 
+                    />
+                  </button>
+                ))}
+                <span className="ml-2 text-xl font-bold text-violet-600">
+                  {newInsightRating}.0
+                </span>
+              </div>
+              <Typography variant="caption" color="text.secondary" className="mt-2">
+                Set the initial rating for this employee
+              </Typography>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Initial Comments</label>
+              <Textarea
+                value={newInsightComment}
+                onChange={(e) => setNewInsightComment(e.target.value)}
+                placeholder="Add observations about this competency..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <SheetFooter className="mt-8">
+            <Button variant="outlined" onClick={() => setShowAddInsightSheet(false)}>
+              Cancel
+            </Button>
+            <Button variant="contained" onClick={handleAddInsight} startIcon={<Plus size={16} />}>
+              Add Category
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Add Skill Gap Sheet */}
+      <Sheet open={showAddSkillGapSheet} onOpenChange={setShowAddSkillGapSheet}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+              Add Skill Gap
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Skill *</label>
+              <select
+                value={newGapSkillId}
+                onChange={(e) => setNewGapSkillId(e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              >
+                <option value="">Choose a skill...</option>
+                {skillsList.map(skill => (
+                  <option key={skill.id} value={skill.id}>
+                    {skill.name} ({skill.category})
+                  </option>
+                ))}
+              </select>
+              <Typography variant="caption" color="text.secondary" className="mt-1">
+                Select the skill that needs development
+              </Typography>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Current Level</label>
+              <select
+                value={newGapCurrentLevel}
+                onChange={(e) => setNewGapCurrentLevel(e.target.value as SkillLevel)}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              >
+                {Object.entries(skillLevelLabels).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Required Level</label>
+              <select
+                value={newGapRequiredLevel}
+                onChange={(e) => setNewGapRequiredLevel(e.target.value as SkillLevel)}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              >
+                {Object.entries(skillLevelLabels).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Priority</label>
+              <select
+                value={newGapPriority}
+                onChange={(e) => setNewGapPriority(e.target.value as 'low' | 'medium' | 'high' | 'critical')}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+              <Typography variant="caption" color="text.secondary" className="mt-1">
+                Higher priority gaps should be addressed first
+              </Typography>
+            </div>
+          </div>
+
+          <SheetFooter className="mt-8">
+            <Button variant="outlined" onClick={() => setShowAddSkillGapSheet(false)}>
+              Cancel
+            </Button>
+            <Button variant="contained" onClick={handleAddSkillGap} startIcon={<Plus size={16} />}>
+              Add Skill Gap
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Add Career Path Sheet */}
+      <Sheet open={showAddCareerPathSheet} onOpenChange={setShowAddCareerPathSheet}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5 text-green-600" />
+              Create Career Path
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Path Name *</label>
+              <Input
+                value={newPathName}
+                onChange={(e) => setNewPathName(e.target.value)}
+                placeholder="e.g., Software Engineer Track"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Description</label>
+              <Textarea
+                value={newPathDescription}
+                onChange={(e) => setNewPathDescription(e.target.value)}
+                placeholder="Describe this career progression path..."
+                rows={2}
+              />
+            </div>
+
+            <div>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                <label className="block text-sm font-medium">Career Levels</label>
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  startIcon={<Plus size={14} />}
+                  onClick={addCareerLevel}
+                >
+                  Add Level
+                </Button>
+              </Stack>
+              <Typography variant="caption" color="text.secondary" className="block mb-3">
+                Define the progression stages from entry to senior positions
+              </Typography>
+              
+              <Stack spacing={2}>
+                {newPathLevels.map((level, index) => (
+                  <Card key={index} className="p-3">
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <div className={cn(
+                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                        pastelColors.blue.bg, pastelColors.blue.text
+                      )}>
+                        {index + 1}
+                      </div>
+                      <Box sx={{ flex: 1 }}>
+                        <Input
+                          value={level.title}
+                          onChange={(e) => updateCareerLevel(index, 'title', e.target.value)}
+                          placeholder={`Level ${index + 1} title (e.g., Junior Engineer)`}
+                          className="mb-2"
+                        />
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Years experience:</span>
+                          <Input
+                            type="number"
+                            value={level.experienceYears}
+                            onChange={(e) => updateCareerLevel(index, 'experienceYears', parseInt(e.target.value) || 0)}
+                            className="w-20"
+                            min={0}
+                          />
+                        </div>
+                      </Box>
+                      {newPathLevels.length > 1 && (
+                        <button
+                          onClick={() => removeCareerLevel(index)}
+                          className="p-1 rounded hover:bg-muted/50 text-muted-foreground"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </Stack>
+                  </Card>
+                ))}
+              </Stack>
+            </div>
+          </div>
+
+          <SheetFooter className="mt-8">
+            <Button variant="outlined" onClick={() => setShowAddCareerPathSheet(false)}>
+              Cancel
+            </Button>
+            <Button variant="contained" onClick={handleAddCareerPath} startIcon={<Plus size={16} />}>
+              Create Path
             </Button>
           </SheetFooter>
         </SheetContent>
