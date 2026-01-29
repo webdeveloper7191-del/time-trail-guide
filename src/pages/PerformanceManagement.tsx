@@ -38,12 +38,14 @@ import { OKRCascadePanel } from '@/components/performance/OKRCascadePanel';
 import { UnifiedRecognitionPanel } from '@/components/performance/UnifiedRecognitionPanel';
 import { HappinessScoreWidget } from '@/components/performance/HappinessScoreWidget';
 import { PerformanceExecutiveDashboard } from '@/components/performance/PerformanceExecutiveDashboard';
+import { PerformanceSettingsDrawer, PerformanceSettings } from '@/components/performance/PerformanceSettingsDrawer';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp } from 'lucide-react';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp, Settings } from 'lucide-react';
+import { Button } from '@/components/mui/Button';
 import { toast } from 'sonner';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
@@ -76,7 +78,17 @@ export default function PerformanceManagement() {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [showScheduleConversationModal, setShowScheduleConversationModal] = useState(false);
   const [showStartReviewDrawer, setShowStartReviewDrawer] = useState(false);
-  
+  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
+  const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettings>({
+    recognition: {
+      visibleInEmployeePortal: true,
+      employeesCanAwardPoints: true,
+      maxPointsPerPraise: 50,
+      requireApprovalForRewards: false,
+    },
+    surveys: { anonymousByDefault: true },
+    goals: { allowSelfCreation: true },
+  });
   const {
     reviews, goals, feedback, conversations, loading,
     fetchReviews, fetchGoals, fetchFeedback, fetchConversations,
@@ -343,20 +355,30 @@ export default function PerformanceManagement() {
                 Track development plans, reviews, goals, and continuous feedback
               </Typography>
             </Box>
-            <PerformanceNotificationBell
-              goals={goals}
-              reviews={reviews}
-              conversations={conversations}
-              plans={mockAssignedPlans}
-              currentUserId={CURRENT_USER_ID}
-              onViewGoal={handleNotificationGoal}
-              onViewReview={handleNotificationReview}
-              onViewConversation={handleNotificationConversation}
-              onViewPlan={(planId) => {
-                const plan = mockAssignedPlans.find(p => p.id === planId);
-                if (plan) handleViewPlan(plan);
-              }}
-            />
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Settings size={16} />}
+                onClick={() => setShowSettingsDrawer(true)}
+              >
+                Settings
+              </Button>
+              <PerformanceNotificationBell
+                goals={goals}
+                reviews={reviews}
+                conversations={conversations}
+                plans={mockAssignedPlans}
+                currentUserId={CURRENT_USER_ID}
+                onViewGoal={handleNotificationGoal}
+                onViewReview={handleNotificationReview}
+                onViewConversation={handleNotificationConversation}
+                onViewPlan={(planId) => {
+                  const plan = mockAssignedPlans.find(p => p.id === planId);
+                  if (plan) handleViewPlan(plan);
+                }}
+              />
+            </Stack>
           </Stack>
 
           {/* Tab Navigation */}
@@ -726,6 +748,14 @@ export default function PerformanceManagement() {
         onSubmit={async (data) => {
           await createReview(data);
         }}
+      />
+
+      {/* Performance Settings Drawer */}
+      <PerformanceSettingsDrawer
+        open={showSettingsDrawer}
+        onOpenChange={setShowSettingsDrawer}
+        settings={performanceSettings}
+        onSave={setPerformanceSettings}
       />
     </Box>
   );

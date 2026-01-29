@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Box, 
   Stack, 
@@ -12,9 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithCreate } from '@/components/ui/select-with-create';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Trash2, MessageSquare, Lock, Eye } from 'lucide-react';
 import type { PulseSurvey, PulseQuestion, PulseSurveyFrequency } from '@/types/advancedPerformance';
+import { toast } from 'sonner';
 
 interface CreateSurveyDrawerProps {
   open: boolean;
@@ -40,6 +42,15 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
   const [questions, setQuestions] = useState<QuestionInput[]>([
     { id: '1', text: '', type: 'rating', category: 'engagement', required: true }
   ]);
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+
+  const defaultCategories = ['engagement', 'satisfaction', 'wellbeing', 'leadership', 'culture'];
+  const allCategories = useMemo(() => [...defaultCategories, ...customCategories], [customCategories]);
+  const categoryOptions = useMemo(() => 
+    allCategories.map(cat => ({ 
+      value: cat, 
+      label: cat.charAt(0).toUpperCase() + cat.slice(1) 
+    })), [allCategories]);
 
   const addQuestion = () => {
     setQuestions([
@@ -278,21 +289,17 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
                           <SelectItem value="enps">eNPS (0-10)</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Select 
-                        value={q.category} 
+                      <SelectWithCreate
+                        value={q.category}
                         onValueChange={(v) => updateQuestion(q.id, 'category', v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="engagement">Engagement</SelectItem>
-                          <SelectItem value="satisfaction">Satisfaction</SelectItem>
-                          <SelectItem value="wellbeing">Wellbeing</SelectItem>
-                          <SelectItem value="leadership">Leadership</SelectItem>
-                          <SelectItem value="culture">Culture</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={categoryOptions}
+                        onCreateNew={(newCat) => {
+                          setCustomCategories(prev => [...prev, newCat.toLowerCase()]);
+                          toast.success(`Category "${newCat}" created`);
+                        }}
+                        placeholder="Select category"
+                        createLabel="Create category"
+                      />
                     </div>
                   </Box>
                 ))}

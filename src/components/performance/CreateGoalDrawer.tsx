@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithCreate } from '@/components/ui/select-with-create';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ import { z } from 'zod';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { mockCourses, mockLearningPaths } from '@/data/mockLmsData';
+import { toast } from 'sonner';
 
 const goalSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(100),
@@ -54,6 +56,12 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
   const [linkType, setLinkType] = useState<'form' | 'learning_path' | 'course'>('form');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+
+  // Combine default and custom categories
+  const allCategories = useMemo(() => [...goalCategories, ...customCategories], [customCategories]);
+  const categoryOptions = useMemo(() => 
+    allCategories.map(cat => ({ value: cat, label: cat })), [allCategories]);
 
   // Filter published forms/courses/paths
   const availableForms = useMemo(() => 
@@ -199,16 +207,18 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-2">
             <Label>Category *</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className={errors.category ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {goalCategories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SelectWithCreate
+              value={category}
+              onValueChange={setCategory}
+              options={categoryOptions}
+              onCreateNew={(newCategory) => {
+                setCustomCategories(prev => [...prev, newCategory]);
+                toast.success(`Category "${newCategory}" created`);
+              }}
+              placeholder="Select category"
+              createLabel="Create new category"
+              error={!!errors.category}
+            />
             {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
           </div>
 

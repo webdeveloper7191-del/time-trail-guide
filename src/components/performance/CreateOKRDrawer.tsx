@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithCreate } from '@/components/ui/select-with-create';
 import { 
   Target, 
   Plus, 
@@ -36,6 +37,7 @@ import type {
 } from '@/types/okr';
 import { mockObjectives, mockOKRCycles, mockTeams } from '@/data/mockOKRData';
 import { mockStaff } from '@/data/mockStaffData';
+import { toast } from 'sonner';
 
 interface CreateOKRDrawerProps {
   open: boolean;
@@ -80,6 +82,11 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
   const [keyResults, setKeyResults] = useState<KeyResultInput[]>([
     { id: '1', title: '', targetValue: 100, unit: '%', startValue: 0 }
   ]);
+  const [customTeams, setCustomTeams] = useState<{id: string; name: string}[]>([]);
+
+  const allTeams = useMemo(() => [...mockTeams, ...customTeams], [customTeams]);
+  const teamOptions = useMemo(() => 
+    allTeams.map(team => ({ value: team.id, label: team.name })), [allTeams]);
 
   // Filter parent objectives based on level hierarchy
   const availableParents = useMemo(() => {
@@ -305,18 +312,19 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
             {level !== 'individual' && (
               <Box>
                 <Label className="mb-2 block">Team</Label>
-                <Select value={teamId} onValueChange={setTeamId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select team..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockTeams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SelectWithCreate
+                  value={teamId}
+                  onValueChange={setTeamId}
+                  options={teamOptions}
+                  onCreateNew={(newTeamName) => {
+                    const newTeamId = `team-custom-${Date.now()}`;
+                    setCustomTeams(prev => [...prev, { id: newTeamId, name: newTeamName }]);
+                    setTeamId(newTeamId);
+                    toast.success(`Team "${newTeamName}" created`);
+                  }}
+                  placeholder="Select team..."
+                  createLabel="Create new team"
+                />
               </Box>
             )}
 
