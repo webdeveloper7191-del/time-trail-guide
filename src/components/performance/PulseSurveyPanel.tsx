@@ -29,7 +29,7 @@ import {
   PulseSurvey, 
   ENPSResult,
 } from '@/types/advancedPerformance';
-import { mockPulseSurveys, mockENPSResults } from '@/data/mockAdvancedPerformanceData';
+import { mockPulseSurveys as initialSurveys, mockENPSResults } from '@/data/mockAdvancedPerformanceData';
 import { 
   AreaChart, 
   Area, 
@@ -38,11 +38,10 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell,
 } from 'recharts';
 import { format } from 'date-fns';
+import { CreateSurveyDrawer } from './CreateSurveyDrawer';
+import { toast } from 'sonner';
 
 interface PulseSurveyPanelProps {
   currentUserId: string;
@@ -74,11 +73,24 @@ const getENPSColor = (score: number) => {
 };
 
 export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
+  const [surveys, setSurveys] = useState(initialSurveys);
   const [selectedSurvey, setSelectedSurvey] = useState<PulseSurvey | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
 
   const latestENPS = mockENPSResults[0];
-  const activeSurveys = mockPulseSurveys.filter(s => s.status === 'active');
+  const activeSurveys = surveys.filter(s => s.status === 'active');
+
+  const handleCreateSurvey = (newSurvey: Partial<PulseSurvey>) => {
+    const survey: PulseSurvey = {
+      ...newSurvey as PulseSurvey,
+      createdBy: currentUserId,
+      startDate: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setSurveys(prev => [...prev, survey]);
+    toast.success('Survey created successfully');
+  };
 
   const enpsChartData = mockENPSResults.slice().reverse().map(r => ({
     period: r.period,
@@ -310,7 +322,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
             Quick engagement checks and employee satisfaction tracking
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />}>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)}>
           Create Survey
         </Button>
       </Stack>
@@ -343,12 +355,18 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
 
         <TabsContent value="all">
           <div className="grid gap-4 md:grid-cols-2">
-            {mockPulseSurveys.map(renderSurveyCard)}
+            {surveys.map(renderSurveyCard)}
           </div>
         </TabsContent>
       </Tabs>
 
       {renderSurveyDetailSheet()}
+      
+      <CreateSurveyDrawer
+        open={showCreateDrawer}
+        onClose={() => setShowCreateDrawer(false)}
+        onSave={handleCreateSurvey}
+      />
     </Box>
   );
 }
