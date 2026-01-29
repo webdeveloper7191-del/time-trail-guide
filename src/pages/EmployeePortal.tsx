@@ -29,6 +29,7 @@ import {
   Target,
   MessageSquare,
   Users,
+  Sparkles,
 } from 'lucide-react';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ import { EmployeePerformancePanel } from '@/components/performance/EmployeePerfo
 import { EmployeeOKRPanel } from '@/components/performance/EmployeeOKRPanel';
 import { EmployeeSurveyPanel } from '@/components/performance/EmployeeSurveyPanel';
 import { Employee360Panel } from '@/components/performance/Employee360Panel';
+import { EmployeeRecognitionPanel } from '@/components/performance/EmployeeRecognitionPanel';
 
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
@@ -168,6 +170,9 @@ export function EmployeePortal() {
             <TabsTrigger value="current" className="gap-2">
               <Clock className="h-4 w-4" /> Timesheets
             </TabsTrigger>
+            <TabsTrigger value="recognition" className="gap-2">
+              <Sparkles className="h-4 w-4" /> Recognition
+            </TabsTrigger>
             <TabsTrigger value="performance" className="gap-2">
               <Target className="h-4 w-4" /> Performance
             </TabsTrigger>
@@ -199,6 +204,10 @@ export function EmployeePortal() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="recognition">
+            <EmployeeRecognitionPanel currentUserId={currentEmployee.id} />
           </TabsContent>
 
           <TabsContent value="performance">
