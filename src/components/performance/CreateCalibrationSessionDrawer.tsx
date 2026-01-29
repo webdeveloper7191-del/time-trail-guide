@@ -90,6 +90,9 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave }: Create
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Q1 Performance Calibration - Engineering"
               />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Include the review period and team/department for easy identification
+              </Typography>
             </Box>
 
             {/* Review Cycle */}
@@ -106,6 +109,9 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave }: Create
                   <SelectItem value="Mid-Year 2024">Mid-Year 2024 Review</SelectItem>
                 </SelectContent>
               </Select>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Link this session to the performance review period being calibrated
+              </Typography>
             </Box>
 
             {/* Date & Time */}
@@ -120,6 +126,9 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave }: Create
                 value={scheduledDate}
                 onChange={(e) => setScheduledDate(e.target.value)}
               />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Schedule 2-3 hours to allow thorough discussion of all employee ratings
+              </Typography>
             </Box>
 
             {/* Facilitator */}
@@ -137,6 +146,9 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave }: Create
                   ))}
                 </SelectContent>
               </Select>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Choose an HR lead or senior manager to guide the discussion objectively
+              </Typography>
             </Box>
 
             {/* Participants */}
@@ -157,6 +169,9 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave }: Create
                   ))}
                 </SelectContent>
               </Select>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Include all managers who have direct reports in the review cycle
+              </Typography>
 
               {participantIds.length > 0 && (
                 <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2 }}>
@@ -188,6 +203,9 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave }: Create
                 placeholder="Agenda items, focus areas, preparation required..."
                 rows={3}
               />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Outline the agenda, any pre-work required, and specific employees to focus on
+              </Typography>
             </Box>
           </Stack>
         </Box>

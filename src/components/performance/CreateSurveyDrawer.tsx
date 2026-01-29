@@ -119,6 +119,9 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Weekly Engagement Check-in"
               />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Choose a clear, descriptive title that employees will recognize
+              </Typography>
             </Box>
 
             {/* Frequency & Audience */}
@@ -135,6 +138,9 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
                     <SelectItem value="monthly">Monthly</SelectItem>
                   </SelectContent>
                 </Select>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  Weekly surveys get higher response rates but less depth
+                </Typography>
               </Box>
               <Box>
                 <Label className="mb-2 block">Target Audience</Label>
@@ -148,6 +154,9 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
                     <SelectItem value="department">Department</SelectItem>
                   </SelectContent>
                 </Select>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  Who should receive this survey?
+                </Typography>
               </Box>
             </div>
 
@@ -156,7 +165,7 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
               <Box>
                 <Typography variant="body2" fontWeight={500}>Anonymous Responses</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Respondent names will be hidden
+                  Respondent names will be hidden. Recommended for sensitive topics to encourage honest feedback.
                 </Typography>
               </Box>
               <Switch checked={anonymous} onCheckedChange={setAnonymous} />
@@ -164,7 +173,7 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
 
             {/* Questions */}
             <Box>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Label>Questions *</Label>
                 <Button 
                   variant="outlined" 
@@ -175,6 +184,9 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
                   Add Question
                 </Button>
               </Stack>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                Keep surveys short (3-5 questions) for better completion rates. Use eNPS for measuring loyalty.
+              </Typography>
 
               <Stack spacing={2}>
                 {questions.map((q, index) => (

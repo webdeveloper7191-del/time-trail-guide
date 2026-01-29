@@ -79,7 +79,10 @@ export function WellbeingCheckInModal({ open, onClose, onSubmit, staffId }: Well
           <Stack spacing={4}>
             {/* Mood Selection */}
             <Box>
-              <Label className="mb-3 block">How are you feeling today?</Label>
+              <Label className="mb-2 block">How are you feeling today?</Label>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                Select the emoji that best matches your overall mood right now
+              </Typography>
               <Stack direction="row" spacing={1} justifyContent="center">
                 {moodOptions.map((option) => {
                   const Icon = option.icon;
@@ -127,6 +130,9 @@ export function WellbeingCheckInModal({ open, onClose, onSubmit, staffId }: Well
                 </Label>
                 <Typography variant="body2" fontWeight={600}>{energyLevel}/10</Typography>
               </Stack>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                How energetic and motivated do you feel physically and mentally?
+              </Typography>
               <Slider
                 value={energyLevel}
                 onChange={(_, val) => setEnergyLevel(val as number)}
@@ -153,6 +159,9 @@ export function WellbeingCheckInModal({ open, onClose, onSubmit, staffId }: Well
                 </Label>
                 <Typography variant="body2" fontWeight={600}>{stressLevel}/10</Typography>
               </Stack>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Rate your current stress from work demands, deadlines, or other factors
+              </Typography>
               <Slider
                 value={stressLevel}
                 onChange={(_, val) => setStressLevel(val as number)}
@@ -179,6 +188,9 @@ export function WellbeingCheckInModal({ open, onClose, onSubmit, staffId }: Well
                 </Label>
                 <Typography variant="body2" fontWeight={600}>{workloadRating}/10</Typography>
               </Stack>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Is your current workload manageable? Consider tasks, meetings, and deadlines.
+              </Typography>
               <Slider
                 value={workloadRating}
                 onChange={(_, val) => setWorkloadRating(val as number)}
@@ -206,6 +218,9 @@ export function WellbeingCheckInModal({ open, onClose, onSubmit, staffId }: Well
                 placeholder="Share any thoughts, concerns, or wins..."
                 rows={3}
               />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                This is private and helps your manager understand how to support you better
+              </Typography>
             </Box>
           </Stack>
         </Box>
