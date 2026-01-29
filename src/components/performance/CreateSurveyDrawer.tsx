@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, MessageSquare } from 'lucide-react';
+import { Plus, Trash2, MessageSquare, Lock, Eye } from 'lucide-react';
 import type { PulseSurvey, PulseQuestion, PulseSurveyFrequency } from '@/types/advancedPerformance';
 
 interface CreateSurveyDrawerProps {
@@ -160,16 +160,59 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
               </Box>
             </div>
 
-            {/* Anonymous Toggle */}
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography variant="body2" fontWeight={500}>Anonymous Responses</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Respondent names will be hidden. Recommended for sensitive topics to encourage honest feedback.
-                </Typography>
-              </Box>
-              <Switch checked={anonymous} onCheckedChange={setAnonymous} />
-            </Stack>
+            {/* Anonymous Toggle - Enhanced */}
+            <Box 
+              sx={{ 
+                p: 2.5, 
+                borderRadius: 1.5, 
+                border: '2px solid',
+                borderColor: anonymous ? 'primary.main' : 'divider',
+                bgcolor: anonymous ? 'rgba(59, 130, 246, 0.04)' : 'transparent',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
+                <Box sx={{ flex: 1 }}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="body2" fontWeight={600}>
+                      🔒 Anonymous Responses
+                    </Typography>
+                    {anonymous && (
+                      <Chip 
+                        label="Enabled" 
+                        size="small" 
+                        sx={{ 
+                          height: 20, 
+                          fontSize: 10, 
+                          bgcolor: 'rgba(34, 197, 94, 0.12)', 
+                          color: 'rgb(22, 163, 74)',
+                        }} 
+                      />
+                    )}
+                  </Stack>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    {anonymous 
+                      ? 'Responses are completely anonymous. Names will never be shown, encouraging honest feedback.'
+                      : 'Responses will be attributed to staff members. Consider enabling for sensitive topics.'
+                    }
+                  </Typography>
+                  {!anonymous && (
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        display: 'block', 
+                        mt: 1, 
+                        color: 'warning.main',
+                        fontWeight: 500,
+                      }}
+                    >
+                      ⚠️ Non-anonymous surveys typically have 30% lower response rates
+                    </Typography>
+                  )}
+                </Box>
+                <Switch checked={anonymous} onCheckedChange={setAnonymous} />
+              </Stack>
+            </Box>
 
             {/* Questions */}
             <Box>

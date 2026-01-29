@@ -34,12 +34,16 @@ import { PulseSurveyPanel } from '@/components/performance/PulseSurveyPanel';
 import { WellbeingDashboard } from '@/components/performance/WellbeingDashboard';
 import { CalibrationPanel } from '@/components/performance/CalibrationPanel';
 import { OKRCascadePanel } from '@/components/performance/OKRCascadePanel';
+// New Employment Hero-style features
+import { UnifiedRecognitionPanel } from '@/components/performance/UnifiedRecognitionPanel';
+import { HappinessScoreWidget } from '@/components/performance/HappinessScoreWidget';
+import { PerformanceExecutiveDashboard } from '@/components/performance/PerformanceExecutiveDashboard';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair } from 'lucide-react';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
@@ -295,6 +299,8 @@ export default function PerformanceManagement() {
     { value: 'reviews', label: 'Reviews', icon: ClipboardCheck },
     { value: 'feedback', label: 'Feedback', icon: MessageSquareHeart },
     { value: '360feedback', label: '360°', icon: Users2 },
+    { value: 'recognition', label: 'Recognition', icon: Sparkles },
+    { value: 'happiness', label: 'Happiness', icon: Smile },
     { value: 'conversations', label: '1:1s', icon: MessageSquare },
     { value: 'talent', label: '9-Box', icon: Grid3X3 },
     { value: 'skills', label: 'Skills', icon: Compass },
@@ -302,6 +308,7 @@ export default function PerformanceManagement() {
     { value: 'wellbeing', label: 'Wellbeing', icon: HeartPulse },
     { value: 'calibration', label: 'Calibration', icon: Scale },
     { value: 'team', label: 'Team', icon: Users },
+    { value: 'summary', label: 'Summary', icon: TrendingUp },
     { value: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
 
@@ -454,6 +461,20 @@ export default function PerformanceManagement() {
               <Feedback360Panel currentUserId={CURRENT_USER_ID} />
             )}
 
+            {activeTab === 'recognition' && (
+              <UnifiedRecognitionPanel
+                staff={mockStaff}
+                currentUserId={CURRENT_USER_ID}
+              />
+            )}
+
+            {activeTab === 'happiness' && (
+              <HappinessScoreWidget
+                currentUserId={CURRENT_USER_ID}
+                isManager={true}
+              />
+            )}
+
             {activeTab === 'conversations' && (
               <ConversationsList
                 conversations={conversations}
@@ -495,6 +516,15 @@ export default function PerformanceManagement() {
                 onViewGoal={handleViewGoal}
                 onViewReview={handleViewReview}
                 onViewConversation={handleViewConversation}
+              />
+            )}
+
+            {activeTab === 'summary' && (
+              <PerformanceExecutiveDashboard
+                goals={goals}
+                reviews={reviews}
+                conversations={conversations}
+                feedback={feedback}
               />
             )}
 
