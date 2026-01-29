@@ -228,7 +228,7 @@ export function StaffImportModal({ open, onOpenChange, onImportComplete }: Staff
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-hidden flex flex-col">
+      <SheetContent className="w-full sm:max-w-4xl lg:max-w-5xl overflow-hidden flex flex-col">
         <SheetHeader>
           <SheetTitle>Import Staff</SheetTitle>
           <SheetDescription>
