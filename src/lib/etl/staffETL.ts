@@ -289,116 +289,219 @@ export class StaffETLPipeline {
     return this.mappings;
   }
   
-  // Auto-detect column mappings based on header names
-  autoDetectMappings(headers: string[]): ColumnMappingConfig[] {
-    const detected: ColumnMappingConfig[] = [];
+  // Calculate similarity score between two strings (0-1)
+  private calculateSimilarity(str1: string, str2: string): number {
+    const s1 = str1.toLowerCase().replace(/[_\-\s]+/g, '');
+    const s2 = str2.toLowerCase().replace(/[_\-\s]+/g, '');
     
-    const headerMappings: Record<string, { target: string; transform?: TransformType }> = {
+    if (s1 === s2) return 1;
+    if (s1.length === 0 || s2.length === 0) return 0;
+    
+    // Check if one contains the other
+    if (s1.includes(s2) || s2.includes(s1)) {
+      const ratio = Math.min(s1.length, s2.length) / Math.max(s1.length, s2.length);
+      return 0.7 + (ratio * 0.3);
+    }
+    
+    // Levenshtein distance based similarity
+    const matrix: number[][] = [];
+    for (let i = 0; i <= s1.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= s2.length; j++) {
+      matrix[0][j] = j;
+    }
+    for (let i = 1; i <= s1.length; i++) {
+      for (let j = 1; j <= s2.length; j++) {
+        const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+    const distance = matrix[s1.length][s2.length];
+    const maxLen = Math.max(s1.length, s2.length);
+    return 1 - (distance / maxLen);
+  }
+
+  // Get all keywords/aliases for a target field
+  private getFieldAliases(): Record<string, { aliases: string[]; transform?: TransformType }> {
+    return {
       // Personal
-      'first name': { target: 'firstName' },
-      'firstname': { target: 'firstName' },
-      'first_name': { target: 'firstName' },
-      'given name': { target: 'firstName' },
-      'last name': { target: 'lastName' },
-      'lastname': { target: 'lastName' },
-      'last_name': { target: 'lastName' },
-      'surname': { target: 'lastName' },
-      'family name': { target: 'lastName' },
-      'middle name': { target: 'middleName' },
-      'middlename': { target: 'middleName' },
-      'preferred name': { target: 'preferredName' },
-      'email': { target: 'email' },
-      'email address': { target: 'email' },
-      'mobile': { target: 'mobilePhone', transform: 'phone_au' },
-      'mobile phone': { target: 'mobilePhone', transform: 'phone_au' },
-      'phone': { target: 'mobilePhone', transform: 'phone_au' },
-      'work phone': { target: 'workPhone', transform: 'phone_au' },
-      'gender': { target: 'gender', transform: 'gender' },
-      'sex': { target: 'gender', transform: 'gender' },
-      'dob': { target: 'dateOfBirth', transform: 'date_dmy' },
-      'date of birth': { target: 'dateOfBirth', transform: 'date_dmy' },
-      'birth date': { target: 'dateOfBirth', transform: 'date_dmy' },
+      'firstName': { aliases: ['first name', 'firstname', 'first_name', 'given name', 'givenname', 'forename'] },
+      'lastName': { aliases: ['last name', 'lastname', 'last_name', 'surname', 'family name', 'familyname'] },
+      'middleName': { aliases: ['middle name', 'middlename', 'middle_name', 'middle'] },
+      'preferredName': { aliases: ['preferred name', 'preferredname', 'preferred_name', 'nickname', 'known as'] },
+      'email': { aliases: ['email', 'email address', 'emailaddress', 'e-mail', 'mail'] },
+      'mobilePhone': { aliases: ['mobile', 'mobile phone', 'mobilephone', 'cell', 'cell phone', 'cellphone', 'phone', 'telephone', 'contact number'], transform: 'phone_au' },
+      'workPhone': { aliases: ['work phone', 'workphone', 'work_phone', 'office phone', 'business phone'], transform: 'phone_au' },
+      'gender': { aliases: ['gender', 'sex'], transform: 'gender' },
+      'dateOfBirth': { aliases: ['date of birth', 'dateofbirth', 'dob', 'birth date', 'birthdate', 'birthday'], transform: 'date_dmy' },
       
       // Employment
-      'employee id': { target: 'employeeId' },
-      'employeeid': { target: 'employeeId' },
-      'employee_id': { target: 'employeeId' },
-      'emp id': { target: 'employeeId' },
-      'staff id': { target: 'employeeId' },
-      'start date': { target: 'employmentStartDate', transform: 'date_dmy' },
-      'employment start': { target: 'employmentStartDate', transform: 'date_dmy' },
-      'hire date': { target: 'employmentStartDate', transform: 'date_dmy' },
-      'end date': { target: 'employmentEndDate', transform: 'date_dmy' },
-      'termination date': { target: 'employmentEndDate', transform: 'date_dmy' },
-      'status': { target: 'status', transform: 'employment_status' },
-      'employment status': { target: 'status', transform: 'employment_status' },
-      'department': { target: 'department' },
-      'dept': { target: 'department' },
-      'position': { target: 'position' },
-      'job title': { target: 'position' },
-      'title': { target: 'position' },
-      'role': { target: 'position' },
+      'employeeId': { aliases: ['employee id', 'employeeid', 'employee_id', 'emp id', 'empid', 'staff id', 'staffid', 'id', 'employee number', 'emp no', 'employee no'] },
+      'employmentStartDate': { aliases: ['start date', 'startdate', 'start_date', 'employment start', 'hire date', 'hiredate', 'hired', 'commenced', 'commencement date'], transform: 'date_dmy' },
+      'employmentEndDate': { aliases: ['end date', 'enddate', 'end_date', 'termination date', 'terminationdate', 'finish date', 'finishdate', 'left date'], transform: 'date_dmy' },
+      'status': { aliases: ['status', 'employment status', 'employmentstatus', 'emp status', 'active', 'state'], transform: 'employment_status' },
+      'department': { aliases: ['department', 'dept', 'division', 'team', 'unit', 'group', 'section'] },
+      'position': { aliases: ['position', 'job title', 'jobtitle', 'title', 'role', 'occupation', 'job', 'designation'] },
       
       // Address
-      'address': { target: 'address.line1' },
-      'address line 1': { target: 'address.line1' },
-      'street': { target: 'address.line1' },
-      'address line 2': { target: 'address.line2' },
-      'suburb': { target: 'address.suburb' },
-      'city': { target: 'address.suburb' },
-      'state': { target: 'address.state' },
-      'postcode': { target: 'address.postcode' },
-      'zip': { target: 'address.postcode' },
-      'postal code': { target: 'address.postcode' },
-      'country': { target: 'address.country' },
+      'address.line1': { aliases: ['address', 'address line 1', 'addressline1', 'address1', 'street', 'street address', 'line1'] },
+      'address.line2': { aliases: ['address line 2', 'addressline2', 'address2', 'line2', 'unit', 'apt', 'apartment'] },
+      'address.suburb': { aliases: ['suburb', 'city', 'town', 'locality'] },
+      'address.state': { aliases: ['state', 'province', 'region'] },
+      'address.postcode': { aliases: ['postcode', 'post code', 'zip', 'zipcode', 'zip code', 'postal code', 'postalcode'] },
+      'address.country': { aliases: ['country', 'nation'] },
       
       // Bank
-      'bsb': { target: 'bankDetails.bsb' },
-      'account number': { target: 'bankDetails.accountNumber' },
-      'account name': { target: 'bankDetails.accountName' },
-      'bank account': { target: 'bankDetails.accountNumber' },
-      'super fund': { target: 'bankDetails.superFundName' },
-      'super member': { target: 'bankDetails.superMemberNumber' },
-      'tfn': { target: 'taxFileNumber' },
-      'tax file number': { target: 'taxFileNumber' },
+      'bankDetails.bsb': { aliases: ['bsb', 'bsb number', 'bsbnumber', 'bank bsb', 'routing number'] },
+      'bankDetails.accountNumber': { aliases: ['account number', 'accountnumber', 'account_number', 'bank account', 'acc no', 'acc number'] },
+      'bankDetails.accountName': { aliases: ['account name', 'accountname', 'account_name', 'bank account name'] },
+      'bankDetails.superFundName': { aliases: ['super fund', 'superfund', 'super fund name', 'superannuation', 'super'] },
+      'bankDetails.superMemberNumber': { aliases: ['super member', 'supermember', 'super member number', 'member number', 'super no'] },
+      'taxFileNumber': { aliases: ['tfn', 'tax file number', 'taxfilenumber', 'tax_file_number'] },
       
       // Pay
-      'hourly rate': { target: 'currentPayCondition.hourlyRate', transform: 'number' },
-      'rate': { target: 'currentPayCondition.hourlyRate', transform: 'number' },
-      'pay rate': { target: 'currentPayCondition.hourlyRate', transform: 'number' },
-      'salary': { target: 'currentPayCondition.annualSalary', transform: 'number' },
-      'annual salary': { target: 'currentPayCondition.annualSalary', transform: 'number' },
-      'employment type': { target: 'currentPayCondition.employmentType', transform: 'employment_type' },
-      'contract type': { target: 'currentPayCondition.employmentType', transform: 'employment_type' },
-      'contracted hours': { target: 'currentPayCondition.contractedHours', transform: 'number' },
-      'hours': { target: 'currentPayCondition.contractedHours', transform: 'number' },
-      'award': { target: 'currentPayCondition.industryAward' },
-      'industry award': { target: 'currentPayCondition.industryAward' },
-      'classification': { target: 'currentPayCondition.classification' },
-      'level': { target: 'currentPayCondition.classification' },
+      'currentPayCondition.hourlyRate': { aliases: ['hourly rate', 'hourlyrate', 'rate', 'pay rate', 'payrate', 'hour rate', 'rate per hour'], transform: 'number' },
+      'currentPayCondition.annualSalary': { aliases: ['salary', 'annual salary', 'annualsalary', 'yearly salary', 'annual pay'], transform: 'number' },
+      'currentPayCondition.employmentType': { aliases: ['employment type', 'employmenttype', 'emp type', 'contract type', 'work type', 'type'], transform: 'employment_type' },
+      'currentPayCondition.contractedHours': { aliases: ['contracted hours', 'contractedhours', 'hours', 'weekly hours', 'work hours'], transform: 'number' },
+      'currentPayCondition.industryAward': { aliases: ['award', 'industry award', 'industryaward', 'modern award'] },
+      'currentPayCondition.classification': { aliases: ['classification', 'class', 'level', 'grade', 'pay level'] },
       
       // Other
-      'payroll id': { target: 'payrollId' },
-      'passcode': { target: 'timeClockPasscode' },
-      'pin': { target: 'timeClockPasscode' },
-      'notes': { target: 'notes' },
-      'comments': { target: 'notes' },
+      'payrollId': { aliases: ['payroll id', 'payrollid', 'payroll_id', 'payroll number', 'payroll no'] },
+      'timeClockPasscode': { aliases: ['passcode', 'time clock passcode', 'pin', 'clock pin', 'time pin'] },
+      'notes': { aliases: ['notes', 'comments', 'remarks', 'memo', 'additional info'] },
     };
+  }
+
+  // Auto-detect column mappings based on header name similarity
+  autoDetectMappings(headers: string[]): ColumnMappingConfig[] {
+    const detected: ColumnMappingConfig[] = [];
+    const usedTargets = new Set<string>();
+    const fieldAliases = this.getFieldAliases();
+    
+    // Score each header against all target fields
+    const scoredMappings: Array<{
+      header: string;
+      target: string;
+      score: number;
+      transform?: TransformType;
+    }> = [];
     
     for (const header of headers) {
-      const normalized = header.toLowerCase().trim();
-      const mapping = headerMappings[normalized];
+      const normalizedHeader = header.toLowerCase().trim();
       
-      if (mapping) {
+      for (const [targetField, config] of Object.entries(fieldAliases)) {
+        let bestScore = 0;
+        
+        // Check exact match with aliases
+        for (const alias of config.aliases) {
+          const similarity = this.calculateSimilarity(normalizedHeader, alias);
+          bestScore = Math.max(bestScore, similarity);
+        }
+        
+        // Also check against the target field label
+        const fieldDef = STAFF_TARGET_FIELDS.find(f => f.path === targetField);
+        if (fieldDef) {
+          const labelSimilarity = this.calculateSimilarity(normalizedHeader, fieldDef.label);
+          bestScore = Math.max(bestScore, labelSimilarity);
+        }
+        
+        if (bestScore > 0.5) { // Threshold for suggesting a match
+          scoredMappings.push({
+            header,
+            target: targetField,
+            score: bestScore,
+            transform: config.transform,
+          });
+        }
+      }
+    }
+    
+    // Sort by score descending and pick best non-conflicting mappings
+    scoredMappings.sort((a, b) => b.score - a.score);
+    const usedHeaders = new Set<string>();
+    
+    for (const mapping of scoredMappings) {
+      if (!usedHeaders.has(mapping.header) && !usedTargets.has(mapping.target)) {
         detected.push({
-          sourceColumn: header,
+          sourceColumn: mapping.header,
           targetField: mapping.target,
           transformType: mapping.transform || 'none',
         });
+        usedHeaders.add(mapping.header);
+        usedTargets.add(mapping.target);
       }
     }
     
     return detected;
+  }
+  
+  // Get suggested mappings with confidence scores for UI display
+  getSuggestedMappings(headers: string[]): Array<{
+    sourceColumn: string;
+    suggestions: Array<{
+      targetField: string;
+      confidence: number;
+      transform?: TransformType;
+    }>;
+  }> {
+    const fieldAliases = this.getFieldAliases();
+    const results: Array<{
+      sourceColumn: string;
+      suggestions: Array<{
+        targetField: string;
+        confidence: number;
+        transform?: TransformType;
+      }>;
+    }> = [];
+    
+    for (const header of headers) {
+      const normalizedHeader = header.toLowerCase().trim();
+      const suggestions: Array<{
+        targetField: string;
+        confidence: number;
+        transform?: TransformType;
+      }> = [];
+      
+      for (const [targetField, config] of Object.entries(fieldAliases)) {
+        let bestScore = 0;
+        
+        for (const alias of config.aliases) {
+          const similarity = this.calculateSimilarity(normalizedHeader, alias);
+          bestScore = Math.max(bestScore, similarity);
+        }
+        
+        const fieldDef = STAFF_TARGET_FIELDS.find(f => f.path === targetField);
+        if (fieldDef) {
+          const labelSimilarity = this.calculateSimilarity(normalizedHeader, fieldDef.label);
+          bestScore = Math.max(bestScore, labelSimilarity);
+        }
+        
+        if (bestScore > 0.4) { // Lower threshold for showing suggestions
+          suggestions.push({
+            targetField,
+            confidence: Math.round(bestScore * 100),
+            transform: config.transform,
+          });
+        }
+      }
+      
+      // Sort suggestions by confidence
+      suggestions.sort((a, b) => b.confidence - a.confidence);
+      
+      results.push({
+        sourceColumn: header,
+        suggestions: suggestions.slice(0, 3), // Top 3 suggestions
+      });
+    }
+    
+    return results;
   }
   
   // Transform a single record

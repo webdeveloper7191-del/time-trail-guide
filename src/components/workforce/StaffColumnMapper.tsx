@@ -18,7 +18,8 @@ import {
   ColumnMappingConfig, 
   STAFF_TARGET_FIELDS, 
   TransformType,
-  TargetFieldDefinition 
+  TargetFieldDefinition,
+  staffETL 
 } from '@/lib/etl/staffETL';
 import { cn } from '@/lib/utils';
 
@@ -61,6 +62,19 @@ export function StaffColumnMapper({
   sampleData = []
 }: StaffColumnMapperProps) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>('Personal');
+
+  // Get suggested mappings with confidence scores
+  const suggestedMappings = useMemo(() => {
+    return staffETL.getSuggestedMappings(sourceColumns);
+  }, [sourceColumns]);
+
+  // Get confidence for a mapping
+  const getConfidence = (sourceColumn: string, targetField: string): number | null => {
+    const columnSuggestions = suggestedMappings.find(s => s.sourceColumn === sourceColumn);
+    if (!columnSuggestions) return null;
+    const suggestion = columnSuggestions.suggestions.find(s => s.targetField === targetField);
+    return suggestion?.confidence || null;
+  };
 
   // Group target fields by category
   const fieldsByCategory = useMemo(() => {
@@ -181,6 +195,26 @@ export function StaffColumnMapper({
                               <X className="h-4 w-4 text-muted-foreground shrink-0" />
                             )}
                             <span className="font-medium text-sm truncate">{column}</span>
+                            {/* Confidence badge */}
+                            {mapping && (() => {
+                              const confidence = getConfidence(column, mapping.targetField);
+                              if (confidence && confidence >= 70) {
+                                return (
+                                  <Badge 
+                                    variant="secondary" 
+                                    className={cn(
+                                      "text-[10px] px-1.5 py-0",
+                                      confidence >= 90 ? "bg-green-100 text-green-700" :
+                                      confidence >= 80 ? "bg-blue-100 text-blue-700" :
+                                      "bg-amber-100 text-amber-700"
+                                    )}
+                                  >
+                                    {confidence}% match
+                                  </Badge>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                           {sampleValue && (
                             <p className="text-xs text-muted-foreground mt-1 ml-6 truncate">
