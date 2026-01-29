@@ -6,7 +6,6 @@ import {
   Chip,
   Avatar,
   Tooltip,
-  IconButton,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
@@ -20,6 +19,8 @@ import {
   Award,
   ChevronRight,
   Info,
+  Plus,
+  Edit3,
 } from 'lucide-react';
 import { 
   TalentAssessment, 
@@ -27,8 +28,10 @@ import {
   PerformanceLevel,
   PotentialLevel,
 } from '@/types/advancedPerformance';
-import { mockTalentAssessments } from '@/data/mockAdvancedPerformanceData';
+import { mockTalentAssessments as initialMockAssessments } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
+import { TalentAssessmentDrawer } from './TalentAssessmentDrawer';
+import { toast } from 'sonner';
 
 interface NineBoxTalentGridProps {
   assessments?: TalentAssessment[];
@@ -64,9 +67,12 @@ const getFlightRiskStyle = (risk: string) => {
   return styles[risk] || styles.low;
 };
 
-export function NineBoxTalentGrid({ assessments = mockTalentAssessments, onSelectStaff }: NineBoxTalentGridProps) {
+export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectStaff }: NineBoxTalentGridProps) {
+  const [assessments, setAssessments] = useState(initialAssessments || initialMockAssessments);
   const [selectedAssessment, setSelectedAssessment] = useState<TalentAssessment | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
+  const [showAssessmentDrawer, setShowAssessmentDrawer] = useState(false);
+  const [editingAssessment, setEditingAssessment] = useState<TalentAssessment | null>(null);
 
   const getStaffInfo = (id: string) => {
     return mockStaff.find(s => s.id === id);
@@ -99,6 +105,30 @@ export function NineBoxTalentGrid({ assessments = mockTalentAssessments, onSelec
   const handleSelectAssessment = (assessment: TalentAssessment) => {
     setSelectedAssessment(assessment);
     setShowDetailSheet(true);
+  };
+
+  const handleSaveAssessment = (newAssessment: Partial<TalentAssessment>) => {
+    if (editingAssessment) {
+      setAssessments(prev => prev.map(a => 
+        a.id === editingAssessment.id ? { ...a, ...newAssessment } as TalentAssessment : a
+      ));
+      toast.success('Assessment updated');
+    } else {
+      const completeAssessment: TalentAssessment = {
+        ...newAssessment as TalentAssessment,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setAssessments(prev => [...prev, completeAssessment]);
+      toast.success('Assessment created');
+    }
+    setEditingAssessment(null);
+  };
+
+  const handleEditAssessment = (assessment: TalentAssessment) => {
+    setEditingAssessment(assessment);
+    setShowDetailSheet(false);
+    setShowAssessmentDrawer(true);
   };
 
   const renderGridCell = (performance: PerformanceLevel, potential: PotentialLevel) => {
@@ -318,9 +348,14 @@ export function NineBoxTalentGrid({ assessments = mockTalentAssessments, onSelec
             Visual talent mapping for succession planning and calibration
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<TrendingUp size={16} />}>
-          Run Calibration
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<TrendingUp size={16} />}>
+            Run Calibration
+          </Button>
+          <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowAssessmentDrawer(true)}>
+            Add Assessment
+          </Button>
+        </Stack>
       </Stack>
 
       <Card sx={{ p: 3 }}>
@@ -408,6 +443,13 @@ export function NineBoxTalentGrid({ assessments = mockTalentAssessments, onSelec
       </Card>
 
       {renderDetailSheet()}
+      
+      <TalentAssessmentDrawer
+        open={showAssessmentDrawer}
+        onClose={() => { setShowAssessmentDrawer(false); setEditingAssessment(null); }}
+        onSave={handleSaveAssessment}
+        assessment={editingAssessment}
+      />
     </Box>
   );
 }
