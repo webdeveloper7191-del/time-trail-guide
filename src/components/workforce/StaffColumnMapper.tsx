@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { 
-  ArrowRight, Check, AlertTriangle, X, Wand2, 
+  ArrowRight, ArrowLeft, Check, AlertTriangle, X, 
   User, Briefcase, MapPin, Building2, CreditCard, FileText 
 } from 'lucide-react';
 import { 
@@ -310,28 +310,66 @@ export function StaffColumnMapper({
                               <div 
                                 key={field.path}
                                 className={cn(
-                                  "flex items-center justify-between p-2 rounded text-sm",
+                                  "flex items-center justify-between p-2 rounded text-sm gap-2",
                                   mapping ? "bg-green-500/10" : ""
                                 )}
                               >
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
                                   {mapping ? (
-                                    <Check className="h-3 w-3 text-green-500" />
+                                    <Check className="h-3 w-3 text-green-500 shrink-0" />
                                   ) : field.required ? (
-                                    <AlertTriangle className="h-3 w-3 text-amber-500" />
+                                    <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
                                   ) : (
-                                    <div className="h-3 w-3" />
+                                    <div className="h-3 w-3 shrink-0" />
                                   )}
-                                  <span className={cn(field.required && "font-medium")}>
+                                  <span className={cn("truncate", field.required && "font-medium")}>
                                     {field.label}
                                     {field.required && <span className="text-red-500 ml-1">*</span>}
                                   </span>
                                 </div>
-                                {mapping && (
-                                  <span className="text-xs text-muted-foreground truncate max-w-[120px]">
-                                    ← {mapping.sourceColumn}
-                                  </span>
-                                )}
+                                
+                                {/* Mapping dropdown for database field */}
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <ArrowLeft className="h-3 w-3 text-muted-foreground" />
+                                  <Select
+                                    value={mapping?.sourceColumn || 'unmapped'}
+                                    onValueChange={(value) => {
+                                      if (value === 'unmapped') {
+                                        // Remove mapping for this target
+                                        onMappingsChange(mappings.filter(m => m.targetField !== field.path));
+                                      } else {
+                                        updateMapping(value, field.path);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-[140px] h-7 text-xs">
+                                      <SelectValue placeholder="Select source..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="unmapped">
+                                        <span className="text-muted-foreground">Not mapped</span>
+                                      </SelectItem>
+                                      {sourceColumns.map((col) => {
+                                        const isUsed = getMappingForSource(col) && 
+                                                       getMappingForSource(col)?.targetField !== field.path;
+                                        return (
+                                          <SelectItem 
+                                            key={col} 
+                                            value={col}
+                                            disabled={isUsed}
+                                          >
+                                            <span className="flex items-center gap-2">
+                                              {col}
+                                              {isUsed && (
+                                                <span className="text-xs text-muted-foreground">(used)</span>
+                                              )}
+                                            </span>
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </div>
                             );
                           })}
