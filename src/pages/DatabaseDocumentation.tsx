@@ -841,307 +841,8 @@ const erdSections: ERDSection[] = [
   },
 ];
 
-// SQL Schema content (abbreviated for display)
-const sqlSchemaContent = `/*
-================================================================================
-PERFORMANCE MANAGEMENT MODULE - MS SQL DATABASE SCHEMA
-================================================================================
-Multi-Tenant SaaS Application | Microservice Architecture
-Version: 1.0.0
-
-ARCHITECTURE NOTES:
-- All tables include tenant_id for multi-tenancy isolation
-- Row-Level Security (RLS) should be enabled on all tables
-- Soft deletes supported via is_deleted + deleted_at columns
-- Audit trail via created_at, updated_at, created_by, updated_by
-================================================================================
-*/
-
--- ============================================================================
--- SECTION 1: CORE / SHARED TABLES
--- ============================================================================
-
--- Tenants (Organizations)
-CREATE TABLE core.Tenants (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    name NVARCHAR(255) NOT NULL,
-    subdomain NVARCHAR(100) UNIQUE NOT NULL,
-    plan_type NVARCHAR(50) NOT NULL DEFAULT 'standard',
-    industry NVARCHAR(100),
-    timezone NVARCHAR(100) DEFAULT 'UTC',
-    locale NVARCHAR(20) DEFAULT 'en-US',
-    currency_code NVARCHAR(3) DEFAULT 'USD',
-    logo_url NVARCHAR(500),
-    settings NVARCHAR(MAX), -- JSON for tenant-specific settings
-    is_active BIT DEFAULT 1,
-    trial_ends_at DATETIME2,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE()
-);
-
--- Users / Staff
-CREATE TABLE core.Users (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    email NVARCHAR(255) NOT NULL,
-    first_name NVARCHAR(100) NOT NULL,
-    last_name NVARCHAR(100) NOT NULL,
-    display_name NVARCHAR(255),
-    avatar_url NVARCHAR(500),
-    phone NVARCHAR(50),
-    employee_id NVARCHAR(50),
-    department_id UNIQUEIDENTIFIER REFERENCES core.Departments(id),
-    location_id UNIQUEIDENTIFIER REFERENCES core.Locations(id),
-    manager_id UNIQUEIDENTIFIER REFERENCES core.Users(id),
-    position_title NVARCHAR(255),
-    employment_type NVARCHAR(50),
-    hire_date DATE,
-    years_experience DECIMAL(5,2),
-    is_manager BIT DEFAULT 0,
-    is_active BIT DEFAULT 1,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE(),
-    CONSTRAINT UQ_Users_TenantEmail UNIQUE (tenant_id, email)
-);
-
--- Departments
-CREATE TABLE core.Departments (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    name NVARCHAR(255) NOT NULL,
-    code NVARCHAR(50),
-    parent_department_id UNIQUEIDENTIFIER REFERENCES core.Departments(id),
-    head_user_id UNIQUEIDENTIFIER,
-    cost_center NVARCHAR(50),
-    is_active BIT DEFAULT 1,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE(),
-    CONSTRAINT UQ_Departments_TenantName UNIQUE (tenant_id, name)
-);
-
--- ============================================================================
--- SECTION 2: GOALS & OKR SERVICE
--- ============================================================================
-
--- OKR Cycles
-CREATE TABLE goals.OKRCycles (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    name NVARCHAR(100) NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    is_active BIT DEFAULT 0,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE()
-);
-
--- Objectives
-CREATE TABLE goals.Objectives (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    cycle_id UNIQUEIDENTIFIER NOT NULL REFERENCES goals.OKRCycles(id),
-    title NVARCHAR(500) NOT NULL,
-    description NVARCHAR(MAX),
-    level NVARCHAR(20) NOT NULL, -- 'company', 'team', 'individual'
-    status NVARCHAR(20) NOT NULL DEFAULT 'draft',
-    owner_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Users(id),
-    team_id UNIQUEIDENTIFIER REFERENCES core.Teams(id),
-    parent_objective_id UNIQUEIDENTIFIER REFERENCES goals.Objectives(id),
-    progress DECIMAL(5,2) DEFAULT 0,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    is_deleted BIT DEFAULT 0,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE()
-);
-
--- Key Results
-CREATE TABLE goals.KeyResults (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    objective_id UNIQUEIDENTIFIER NOT NULL REFERENCES goals.Objectives(id),
-    title NVARCHAR(500) NOT NULL,
-    description NVARCHAR(MAX),
-    result_type NVARCHAR(20) NOT NULL,
-    unit NVARCHAR(50),
-    start_value DECIMAL(18,4) DEFAULT 0,
-    target_value DECIMAL(18,4) NOT NULL,
-    current_value DECIMAL(18,4) DEFAULT 0,
-    progress DECIMAL(5,2) DEFAULT 0,
-    owner_id UNIQUEIDENTIFIER REFERENCES core.Users(id),
-    due_date DATE,
-    is_deleted BIT DEFAULT 0,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE()
-);
-
--- ============================================================================
--- SECTION 3: REVIEWS SERVICE
--- ============================================================================
-
--- Performance Reviews
-CREATE TABLE reviews.PerformanceReviews (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    cycle_id UNIQUEIDENTIFIER REFERENCES reviews.ReviewCycles(id),
-    criteria_template_id UNIQUEIDENTIFIER,
-    staff_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Users(id),
-    reviewer_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Users(id),
-    status NVARCHAR(20) NOT NULL DEFAULT 'draft',
-    period_start DATE NOT NULL,
-    period_end DATE NOT NULL,
-    overall_self_rating DECIMAL(3,2),
-    overall_manager_rating DECIMAL(3,2),
-    self_summary NVARCHAR(MAX),
-    manager_summary NVARCHAR(MAX),
-    strengths NVARCHAR(MAX),
-    areas_for_improvement NVARCHAR(MAX),
-    development_plan NVARCHAR(MAX),
-    is_deleted BIT DEFAULT 0,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE()
-);
-
--- ============================================================================
--- SECTION 4: FEEDBACK SERVICE
--- ============================================================================
-
--- 360 Feedback Requests
-CREATE TABLE feedback.Feedback360Requests (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    subject_staff_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Users(id),
-    requester_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Users(id),
-    cycle_id UNIQUEIDENTIFIER,
-    title NVARCHAR(255) NOT NULL,
-    description NVARCHAR(MAX),
-    due_date DATE NOT NULL,
-    status NVARCHAR(20) DEFAULT 'draft',
-    anonymous_responses BIT DEFAULT 1,
-    is_deleted BIT DEFAULT 0,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE()
-);
-
--- Praise Posts
-CREATE TABLE feedback.PraisePosts (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    from_staff_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Users(id),
-    to_staff_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Users(id),
-    category NVARCHAR(50),
-    message NVARCHAR(MAX) NOT NULL,
-    points_awarded INT DEFAULT 0,
-    is_public BIT DEFAULT 1,
-    is_deleted BIT DEFAULT 0,
-    created_at DATETIME2 DEFAULT GETUTCDATE()
-);
-
--- ============================================================================
--- SECTION 5: LMS SERVICE
--- ============================================================================
-
--- Courses
-CREATE TABLE lms.Courses (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    title NVARCHAR(255) NOT NULL,
-    description NVARCHAR(MAX),
-    thumbnail_url NVARCHAR(500),
-    category_id UNIQUEIDENTIFIER,
-    difficulty NVARCHAR(20) DEFAULT 'intermediate',
-    duration_minutes INT NOT NULL,
-    status NVARCHAR(20) DEFAULT 'draft',
-    instructor_id UNIQUEIDENTIFIER REFERENCES core.Users(id),
-    compliance_required BIT DEFAULT 0,
-    certificate_on_completion BIT DEFAULT 0,
-    passing_score DECIMAL(5,2) DEFAULT 70,
-    average_rating DECIMAL(3,2) DEFAULT 0,
-    enrollment_count INT DEFAULT 0,
-    is_deleted BIT DEFAULT 0,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE()
-);
-
--- Enrollments
-CREATE TABLE lms.Enrollments (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    staff_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Users(id),
-    course_id UNIQUEIDENTIFIER NOT NULL REFERENCES lms.Courses(id),
-    status NVARCHAR(20) DEFAULT 'not_started',
-    progress DECIMAL(5,2) DEFAULT 0,
-    started_at DATETIME2,
-    completed_at DATETIME2,
-    expires_at DATETIME2,
-    assigned_by UNIQUEIDENTIFIER REFERENCES core.Users(id),
-    due_date DATE,
-    is_deleted BIT DEFAULT 0,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE(),
-    CONSTRAINT UQ_Enrollments UNIQUE (staff_id, course_id)
-);
-
--- ============================================================================
--- SECTION 6: TALENT SERVICE
--- ============================================================================
-
--- Skills
-CREATE TABLE talent.Skills (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    name NVARCHAR(255) NOT NULL,
-    category NVARCHAR(100),
-    description NVARCHAR(MAX),
-    is_core BIT DEFAULT 0,
-    is_active BIT DEFAULT 1,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    CONSTRAINT UQ_Skills UNIQUE (tenant_id, name)
-);
-
--- Career Paths
-CREATE TABLE talent.CareerPaths (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    name NVARCHAR(255) NOT NULL,
-    description NVARCHAR(MAX),
-    department_id UNIQUEIDENTIFIER REFERENCES core.Departments(id),
-    is_active BIT DEFAULT 1,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE()
-);
-
--- 9-Box Talent Assessments
-CREATE TABLE talent.TalentAssessments (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    tenant_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Tenants(id),
-    staff_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Users(id),
-    assessor_id UNIQUEIDENTIFIER NOT NULL REFERENCES core.Users(id),
-    assessment_date DATE NOT NULL,
-    performance_level NVARCHAR(10) NOT NULL,
-    potential_level NVARCHAR(10) NOT NULL,
-    performance_score DECIMAL(3,2),
-    potential_score DECIMAL(3,2),
-    flight_risk NVARCHAR(10) DEFAULT 'low',
-    readiness NVARCHAR(20) DEFAULT 'not_ready',
-    is_current BIT DEFAULT 1,
-    created_at DATETIME2 DEFAULT GETUTCDATE(),
-    updated_at DATETIME2 DEFAULT GETUTCDATE()
-);
-
--- ============================================================================
--- SECTION 7: INDEXES FOR PERFORMANCE
--- ============================================================================
-
-CREATE INDEX IX_Users_TenantId ON core.Users(tenant_id);
-CREATE INDEX IX_Users_ManagerId ON core.Users(manager_id);
-CREATE INDEX IX_Users_DepartmentId ON core.Users(department_id);
-CREATE INDEX IX_Goals_TenantStaff ON goals.Goals(tenant_id, staff_id);
-CREATE INDEX IX_PerformanceReviews_TenantStaff ON reviews.PerformanceReviews(tenant_id, staff_id);
-CREATE INDEX IX_Enrollments_TenantStaff ON lms.Enrollments(tenant_id, staff_id);
-
--- Full schema available in docs/database/PerformanceModule_MSSQL_Schema.sql
-`;
+// SQL Schema will be loaded from file
+const SQL_SCHEMA_URL = '/database/PerformanceModule_MSSQL_Schema.sql';
 
 const MermaidDiagram: React.FC<{ chart: string; id: string }> = ({ chart, id }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1213,6 +914,29 @@ const DatabaseDocumentation: React.FC = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('architecture');
   const [expandedSections, setExpandedSections] = useState<string[]>(['architecture']);
+  const [sqlSchemaContent, setSqlSchemaContent] = useState<string>('Loading schema...');
+  const [isLoadingSchema, setIsLoadingSchema] = useState(true);
+
+  // Load SQL schema from file
+  useEffect(() => {
+    const loadSchema = async () => {
+      try {
+        const response = await fetch(SQL_SCHEMA_URL);
+        if (response.ok) {
+          const text = await response.text();
+          setSqlSchemaContent(text);
+        } else {
+          setSqlSchemaContent('-- Failed to load schema file');
+        }
+      } catch (error) {
+        console.error('Error loading schema:', error);
+        setSqlSchemaContent('-- Error loading schema file');
+      } finally {
+        setIsLoadingSchema(false);
+      }
+    };
+    loadSchema();
+  }, []);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => 
@@ -1346,28 +1070,58 @@ const DatabaseDocumentation: React.FC = () => {
           <TabsContent value="sql" className="space-y-4">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-4">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <FileCode className="h-5 w-5" />
-                      MS SQL Schema
+                      MS SQL Schema (Complete)
                     </CardTitle>
                     <CardDescription>
-                      Multi-tenant database schema for Performance Management Module
+                      Full multi-tenant database schema with all {totalTables}+ tables and fields
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Badge variant="outline">MS SQL Server</Badge>
                     <Badge variant="outline">Multi-Tenant</Badge>
                     <Badge variant="outline">RLS Ready</Badge>
+                    <Badge variant="outline">2000+ Lines</Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const blob = new Blob([sqlSchemaContent], { type: 'text/sql' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'PerformanceModule_MSSQL_Schema.sql';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      disabled={isLoadingSchema}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Download SQL
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <CodeBlock code={sqlSchemaContent} language="sql" />
-                <p className="mt-4 text-sm text-muted-foreground">
-                  📄 Full schema available at: <code className="bg-muted px-1 rounded">docs/database/PerformanceModule_MSSQL_Schema.sql</code>
-                </p>
+                {isLoadingSchema ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <span className="ml-3 text-muted-foreground">Loading complete schema...</span>
+                  </div>
+                ) : (
+                  <CodeBlock code={sqlSchemaContent} language="sql" />
+                )}
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    📄 This is the <strong>complete</strong> schema with all tables, fields, constraints, and indexes.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    File location: <code className="bg-background px-1 rounded">docs/database/PerformanceModule_MSSQL_Schema.sql</code>
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
