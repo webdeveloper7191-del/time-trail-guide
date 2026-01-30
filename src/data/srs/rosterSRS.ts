@@ -1185,9 +1185,486 @@ export const rosterSRS: ModuleSRS = {
           "Sarah manually swaps Tom with equally-qualified Maria",
           "New score: 94 (improved by fixing preference)",
           "Sarah accepts the roster",
-          "All 40 shifts assigned in 5 minutes total"
+        "All 40 shifts assigned in 5 minutes total"
         ],
         outcome: "AI reduces roster creation time by 80% while optimizing for multiple objectives. Manager retains control for fine-tuning."
+      }
+    },
+    {
+      id: "US-RST-016",
+      title: "Configure Geofence Zones for Clock Validation",
+      actors: ["System Administrator", "Centre Manager"],
+      description: "As a System Administrator, I want to define geofence zones around each centre, so that clock-in/out events can be validated against the employee's physical location.",
+      acceptanceCriteria: [
+        "Can set centre coordinates (latitude/longitude)",
+        "Can define radius in meters for geofence zone",
+        "Can create multiple zones per centre (main building, outdoor areas)",
+        "System validates clock events against zones",
+        "Out-of-zone events flagged with distance from boundary",
+        "Override capability for managers with documented reason"
+      ],
+      businessLogic: [
+        "Default radius: 100 meters from centre coordinates",
+        "GPS accuracy must be ≤50 meters for reliable validation",
+        "Distance calculated using Haversine formula",
+        "Buffer zone: +20 meters before flagging as violation",
+        "Outdoor zones may have larger radius",
+        "Mobile GPS may be less accurate indoors - tolerance applied"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Time & Attendance", relationship: "Clock events validated against geofence" },
+        { module: "Compliance", relationship: "Location validation supports audit requirements" }
+      ],
+      endToEndJourney: [
+        "1. System Admin opens Centre Configuration for Sunshine Centre",
+        "2. Navigates to Geofence Settings",
+        "3. Map displays centre location with satellite view",
+        "4. Enters centre coordinates: -37.8136, 144.9631",
+        "5. Sets primary zone radius: 80 meters",
+        "6. Draws secondary zone for outdoor play area",
+        "7. Secondary zone: 150 meters (accounts for larger area)",
+        "8. Names zones: 'Main Building', 'Outdoor Play'",
+        "9. Saves configuration",
+        "10. Tests with sample GPS coordinates",
+        "11. Point inside: 'Within Geofence ✓'",
+        "12. Point outside: 'Outside Geofence - 45m from boundary'"
+      ],
+      realWorldExample: {
+        scenario: "Sunshine Centre has main building plus outdoor natural play area. Both need geofence coverage.",
+        steps: [
+          "System Admin opens Sunshine Centre configuration",
+          "Google Maps view shows centre location",
+          "Creates Zone 1: 'Main Building' - 80m radius",
+          "Creates Zone 2: 'Bush Kinder Area' - 100m radius",
+          "Saves geofence configuration",
+          "Educator clocks in from parking lot - validated as within zone",
+          "Clock events now geo-validated automatically"
+        ],
+        outcome: "Multi-zone geofencing accommodates complex site layouts. Staff can clock in from any valid location."
+      }
+    },
+    {
+      id: "US-RST-017",
+      title: "Generate Timesheet from Roster and Clock Events",
+      actors: ["Centre Manager", "Payroll Administrator"],
+      description: "As a Centre Manager, I want to generate timesheets that compare rostered hours against actual clock events, so that I can approve accurate worked hours for payroll.",
+      acceptanceCriteria: [
+        "Timesheet shows rostered vs actual hours side by side",
+        "Variance highlighted when actual differs from rostered",
+        "Automatic calculation of overtime based on thresholds",
+        "Allowances auto-applied based on shift conditions",
+        "Manager can approve, adjust, or query timesheets",
+        "Approved timesheets exported for payroll processing"
+      ],
+      businessLogic: [
+        "Actual hours = Clock out - Clock in - Unpaid breaks",
+        "Variance threshold for flagging: ±15 minutes",
+        "Overtime calculated after 7.6 hours daily or 38 hours weekly",
+        "Penalty rates applied for weekend/public holiday work",
+        "Allowances triggered by shift conditions",
+        "Timesheet period: Weekly or fortnightly"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Awards", relationship: "Provides rates and allowances for calculation" },
+        { module: "Payroll", relationship: "Approved timesheets exported for payment" }
+      ],
+      endToEndJourney: [
+        "1. End of fortnight, Centre Manager opens Timesheet Review",
+        "2. Sees list of 15 staff with pending timesheets",
+        "3. Each row shows: Staff name, Rostered hours, Actual hours, Variance",
+        "4. Emma: Rostered 76 hrs, Actual 78.5 hrs, Variance +2.5 hrs",
+        "5. Clicks into Emma's timesheet for detail",
+        "6. Day-by-day breakdown shows each shift",
+        "7. Wednesday: Rostered 7:00-3:00, Actual 7:02-3:45 (+43 min)",
+        "8. Overtime calculated: 2.5 hours at 1.5x rate",
+        "9. Allowances shown: 1x meal allowance, 1x first aid",
+        "10. Manager approves with comment on Wednesday overtime",
+        "11. All approved timesheets exported to payroll"
+      ],
+      realWorldExample: {
+        scenario: "Fortnight end timesheet review at Sunshine Centre for 15 staff before payroll processing.",
+        steps: [
+          "Monday morning, Manager opens Timesheet Review",
+          "Dashboard shows 15 pending, 3 flagged with overtime",
+          "Reviews each timesheet, approves with adjustments as needed",
+          "Exports approved timesheets as CSV for payroll",
+          "Complete review takes 30 minutes vs 3 hours manually"
+        ],
+        outcome: "Accurate timesheets with automated overtime and allowance calculations. Efficient review process."
+      }
+    },
+    {
+      id: "US-RST-018",
+      title: "Broadcast Urgent Shift to Available Staff",
+      actors: ["Centre Manager"],
+      description: "As a Centre Manager, I want to broadcast an urgent open shift to all eligible staff simultaneously, so that I can fill last-minute gaps quickly.",
+      acceptanceCriteria: [
+        "Can select shift and click 'Broadcast Urgent'",
+        "System identifies all eligible staff based on qualifications",
+        "Push notification sent to all eligible staff",
+        "First responder to accept gets the shift",
+        "Other staff notified that shift has been filled",
+        "Broadcast expires after configurable time"
+      ],
+      businessLogic: [
+        "Eligibility: Correct qualifications, available, not already rostered",
+        "Notification channels: Push, SMS (configurable)",
+        "First-come-first-served assignment",
+        "Concurrency handling: Only one acceptance processed",
+        "Overtime implications shown before staff accept",
+        "If unfilled after expiry, reverts to regular open shift"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Notifications", relationship: "Push/SMS broadcasts to staff" },
+        { module: "Awards", relationship: "Shows pay implications including OT" }
+      ],
+      endToEndJourney: [
+        "1. 6 AM: Educator calls in sick for 7 AM shift",
+        "2. Centre Manager opens app on phone",
+        "3. Finds the now-unassigned shift, taps 'Broadcast Urgent'",
+        "4. System shows 8 eligible staff",
+        "5. All receive push notification",
+        "6. Tom accepts first, shift assigned to him",
+        "7. Other 7 staff notified shift is filled",
+        "8. Tom arrives at 7 AM, coverage maintained"
+      ],
+      realWorldExample: {
+        scenario: "Early morning sick call requires urgent coverage in Nursery room.",
+        steps: [
+          "Manager broadcasts urgent shift to 8 eligible staff",
+          "Within 3 minutes, Tom accepts",
+          "System confirms Tom, notifies others",
+          "Shift filled with minimal gap"
+        ],
+        outcome: "Critical shift filled in 3 minutes despite 45-minute notice. Broadcast enables rapid response."
+      }
+    },
+    {
+      id: "US-RST-019",
+      title: "Manage Sleepover and On-Call Shifts",
+      actors: ["Centre Manager", "Educator (Staff)"],
+      description: "As a Centre Manager, I want to schedule sleepover and on-call shifts with appropriate allowances, so that overnight care is properly staffed and compensated.",
+      acceptanceCriteria: [
+        "Can create 'sleepover' shift type with overnight hours",
+        "Sleepover allowance automatically applied",
+        "Wake-up calls trigger callback rate if work required",
+        "On-call shifts track standby time separately",
+        "Callback during on-call paid at appropriate rate",
+        "Clear rules for when sleepover converts to ordinary hours"
+      ],
+      businessLogic: [
+        "Sleepover: Overnight presence, minimal active work expected",
+        "Sleepover allowance: Flat rate (e.g., $75 per night)",
+        "If woken for work: First 15 min included, thereafter paid",
+        "On-call: Available but not on-site, standby allowance",
+        "Callback from on-call: Minimum 3-hour payment",
+        "Disturbance thresholds determine if sleepover converts to work"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Awards", relationship: "Sleepover and on-call allowances configured" },
+        { module: "Timesheet", relationship: "Sleepover vs work hours tracked separately" }
+      ],
+      endToEndJourney: [
+        "1. Centre Manager creates sleepover shift 8 PM - 7 AM",
+        "2. Selects shift type: 'Sleepover'",
+        "3. System applies sleepover allowance: $75",
+        "4. Assigns qualified educator Maria",
+        "5. During night, child wakes at 2 AM requiring care",
+        "6. Maria logs 45 minutes of active work",
+        "7. System calculates: Sleepover allowance + 45 min at night rate",
+        "8. Timesheet shows sleepover and work hours separately"
+      ],
+      realWorldExample: {
+        scenario: "Family emergency requires overnight care. Sleepover shift with wake-up disturbance.",
+        steps: [
+          "Manager creates sleepover shift 8 PM - 7 AM",
+          "Educator Maria assigned with $75 allowance",
+          "Child wakes at 3 AM, 35 min care required",
+          "20 min payable at night rate (15 min included in allowance)",
+          "Total: $75 + $11.01 = $86.01"
+        ],
+        outcome: "Sleepover correctly compensated with automatic allowance and triggered work payment."
+      }
+    },
+    {
+      id: "US-RST-020",
+      title: "View Staff Utilization Reports",
+      actors: ["Area Manager", "Finance Director"],
+      description: "As an Area Manager, I want to view staff utilization reports across centres, so that I can identify efficiency opportunities and optimize labour allocation.",
+      acceptanceCriteria: [
+        "Dashboard shows utilization percentage per staff member",
+        "Can aggregate by centre, department, or role",
+        "Comparison against contracted hours shown",
+        "Overtime trends identified and highlighted",
+        "Under-utilization flagged for review",
+        "Export capability for detailed analysis"
+      ],
+      businessLogic: [
+        "Utilization = Actual worked / Contracted hours × 100",
+        "Target utilization: 90-100%",
+        "Under 80%: Under-utilized flag",
+        "Over 110%: Over-utilized (burnout risk)",
+        "Calculation period: Weekly, monthly, quarterly",
+        "Includes leave deductions for fair calculation"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Budgeting", relationship: "Utilization impacts labour cost projections" },
+        { module: "HR", relationship: "Patterns may indicate staffing level issues" }
+      ],
+      endToEndJourney: [
+        "1. Area Manager opens Analytics Dashboard",
+        "2. Selects 'Staff Utilization' report for last month",
+        "3. Overview shows average utilization 94%",
+        "4. One centre flagged at 82% - under-utilized",
+        "5. Drills into details: 3 part-time staff at 70% each",
+        "6. Identifies opportunity to optimize contracts",
+        "7. Exports report for Centre Manager discussion"
+      ],
+      realWorldExample: {
+        scenario: "Quarterly review identifies under-utilization at one centre.",
+        steps: [
+          "Report shows Rainbow Centre at 84% utilization",
+          "3 part-time staff consistently under-used",
+          "Analysis leads to contract rebalancing",
+          "Q2 projects 12% labour cost saving"
+        ],
+        outcome: "Data-driven identification of inefficiency leads to cost optimization."
+      }
+    },
+    {
+      id: "US-RST-021",
+      title: "Manage Cross-Centre Staff Deployments",
+      actors: ["Area Manager", "Centre Manager"],
+      description: "As an Area Manager, I want to deploy staff across multiple centres, so that I can balance workload without agency staff.",
+      acceptanceCriteria: [
+        "Can view staff availability across all centres",
+        "Can assign staff to shifts at other centres",
+        "Travel time and allowances calculated automatically",
+        "Staff preferences for multi-site work respected",
+        "Cross-centre shifts clearly marked in roster",
+        "Cost charged to receiving centre's budget"
+      ],
+      businessLogic: [
+        "Staff must be flagged as 'multi-site' eligible",
+        "Travel allowance: Per km or flat rate by distance",
+        "Time between centres counts as work time",
+        "Home centre remains primary for entitlements",
+        "Manager approval required from both centres",
+        "Cross-deployment cost allocated to receiving centre"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Staff Profiles", relationship: "Multi-site flag and preferences" },
+        { module: "Awards", relationship: "Travel allowances calculated per rules" }
+      ],
+      endToEndJourney: [
+        "1. Sunshine Centre short-staffed, Rainbow has excess",
+        "2. Area Manager views regional availability",
+        "3. Creates cross-deployment for Maria: Rainbow → Sunshine",
+        "4. Travel allowance calculated: $15 (12 km)",
+        "5. Both Centre Managers approve",
+        "6. Maria notified of assignment at Sunshine",
+        "7. Works shift, clocks in at Sunshine",
+        "8. Travel allowance included in timesheet"
+      ],
+      realWorldExample: {
+        scenario: "Training day leaves Sunshine short-staffed. Rainbow has spare capacity.",
+        steps: [
+          "Area Manager deploys 2 staff from Rainbow to Sunshine",
+          "Travel allowance added: $10.20 each",
+          "Both centres approve, staff notified",
+          "Gap filled without agency cost"
+        ],
+        outcome: "Cross-centre deployment maximizes internal staff utilization."
+      }
+    },
+    {
+      id: "US-RST-022",
+      title: "Configure Break Coverage and Staggering",
+      actors: ["Centre Manager", "Lead Educator"],
+      description: "As a Centre Manager, I want to plan staggered breaks that maintain room coverage, so that NQF ratios are never breached during meal breaks.",
+      acceptanceCriteria: [
+        "Can schedule breaks with specific times per staff",
+        "System validates coverage before confirming",
+        "Staggering suggestions based on ratio requirements",
+        "Lead Educator can adjust break times during day",
+        "Break taken vs scheduled captured in timesheet",
+        "Alerts if ratio would be breached during break"
+      ],
+      businessLogic: [
+        "Break duration based on shift length",
+        "Minimum 2 educators in room at all times",
+        "Breaks cannot overlap if it causes ratio breach",
+        "Suggested stagger interval: 15-30 minutes",
+        "Floater staff may cover multiple rooms during breaks",
+        "Break times recorded for pay deduction"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Compliance", relationship: "Break coverage validation for ratios" },
+        { module: "Timesheet", relationship: "Break times recorded for pay" }
+      ],
+      endToEndJourney: [
+        "1. Centre Manager opens break planning for Toddler room",
+        "2. 4 educators on shift, 15 children expected",
+        "3. Required ratio 1:5 = minimum 3 educators always",
+        "4. System suggests staggered 30-min breaks",
+        "5. Manager approves break schedule",
+        "6. Lead Educator manages actual break times",
+        "7. Coverage maintained throughout lunch period"
+      ],
+      realWorldExample: {
+        scenario: "Toddler room lunch period requires careful break staggering.",
+        steps: [
+          "System generates optimized break schedule",
+          "Each educator takes break while 3 remain",
+          "Ratio never breached during lunch period",
+          "Break times automatically recorded"
+        ],
+        outcome: "Systematic break scheduling ensures continuous compliance."
+      }
+    },
+    {
+      id: "US-RST-023",
+      title: "Integrate Child Attendance for Dynamic Staffing",
+      actors: ["Centre Manager", "System Administrator"],
+      description: "As a Centre Manager, I want staffing recommendations based on actual child attendance, so that levels respond to real demand.",
+      acceptanceCriteria: [
+        "System receives real-time child check-in data",
+        "Staffing recommendations update as attendance changes",
+        "Alerts when child count exceeds staff capacity",
+        "End-of-day reconciliation compares planned vs actual",
+        "Historical patterns inform future planning",
+        "Integration with child booking system"
+      ],
+      businessLogic: [
+        "Child check-in updates room occupancy in real-time",
+        "Ratio calculation: Children present / Educators clocked in",
+        "Understaffing alert when ratio >95% of threshold",
+        "Overstaffing opportunity when ratio <60%",
+        "15-minute refresh cycle for recommendations",
+        "Late arrivals and early departures tracked"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Child Booking System", relationship: "Provides attendance data" },
+        { module: "Compliance", relationship: "Real-time ratio monitoring" }
+      ],
+      endToEndJourney: [
+        "1. Morning: Centre opens with 3 educators",
+        "2. Children check in throughout morning",
+        "3. System tracks ratio as attendance increases",
+        "4. Alert at 9 AM: Nursery approaching capacity",
+        "5. Manager assigns floater to Nursery",
+        "6. Later: Early departures create overstaffing opportunity",
+        "7. End of day report shows peak ratio times"
+      ],
+      realWorldExample: {
+        scenario: "Flu season causes higher child absences than expected.",
+        steps: [
+          "Only 60% of expected children arrive",
+          "System recommends releasing 2 casual staff",
+          "Manager contacts casuals, reduces hours by consent",
+          "$420 saved while maintaining compliance"
+        ],
+        outcome: "Real-time integration enables dynamic cost optimization."
+      }
+    },
+    {
+      id: "US-RST-024",
+      title: "Export Roster to Personal Calendar",
+      actors: ["Educator (Staff)"],
+      description: "As an Educator, I want to sync my roster to my personal calendar, so that I see work alongside personal commitments.",
+      acceptanceCriteria: [
+        "Can generate personal iCal feed URL",
+        "Shifts appear in Google Calendar, Outlook, Apple",
+        "Updates sync automatically when roster changes",
+        "Can choose what details to include",
+        "Privacy options for shared calendars",
+        "Feed remains active while employed"
+      ],
+      businessLogic: [
+        "iCal feed URL unique per staff member",
+        "Feed includes published shifts only",
+        "Refresh frequency: Every 15-30 minutes",
+        "Changed/cancelled shifts update in synced calendar",
+        "Location field populated with centre address",
+        "Reminder settings controlled by user's calendar app"
+      ],
+      priority: "low",
+      relatedModules: [
+        { module: "Notifications", relationship: "Changes trigger notification" },
+        { module: "Staff Portal", relationship: "Feed URL in portal settings" }
+      ],
+      endToEndJourney: [
+        "1. Educator opens Portal > Calendar Sync",
+        "2. Generates unique iCal URL",
+        "3. Adds URL to Google Calendar",
+        "4. All shifts appear in personal calendar",
+        "5. Future roster changes sync automatically",
+        "6. Work schedule visible alongside personal events"
+      ],
+      realWorldExample: {
+        scenario: "Staff member wants work shifts in Google Calendar with family events.",
+        steps: [
+          "Generates iCal link from Employee Portal",
+          "Adds to Google Calendar",
+          "All shifts appear with location and times",
+          "Roster updates sync within 30 minutes"
+        ],
+        outcome: "Personal calendar always shows current roster. No manual entry needed."
+      }
+    },
+    {
+      id: "US-RST-025",
+      title: "Manage Trainee and Student Placements",
+      actors: ["Centre Manager", "HR Administrator"],
+      description: "As a Centre Manager, I want to schedule trainee placements separately, so they don't count toward ratios but are visible in the roster.",
+      acceptanceCriteria: [
+        "Can create 'trainee' or 'student' placement type",
+        "Placements visible but not counted in ratios",
+        "Supervisor assignment for each placement",
+        "Placement hours tracked for training records",
+        "Different duration limits per placement type",
+        "Reports show placement hours by trainee"
+      ],
+      businessLogic: [
+        "Supernumerary: Not counted for ratio compliance",
+        "Types: Cert III Student, Diploma Student, Trainee, Work Experience",
+        "Supervisor must be qualified educator on same shift",
+        "Maximum placement hours may apply",
+        "Hours contribute to qualification progress",
+        "No pay or reduced trainee rate"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "HR", relationship: "Trainee records and placement agreements" },
+        { module: "Compliance", relationship: "Placement hours tracked for audit" }
+      ],
+      endToEndJourney: [
+        "1. TAFE sends Cert III student for placement",
+        "2. HR creates Student Placement profile",
+        "3. Manager schedules placement with supervisor",
+        "4. Placement appears in roster with 'Student' badge",
+        "5. Not counted in ratio calculations",
+        "6. Supervisor confirms hours each day",
+        "7. Weekly report sent to TAFE with cumulative hours"
+      ],
+      realWorldExample: {
+        scenario: "Centre hosts 2 TAFE students on placement.",
+        steps: [
+          "HR creates student profiles with placement agreements",
+          "Manager schedules 2 days/week each",
+          "Supervisors assigned to each student",
+          "Hours tracked toward 120-hour requirement",
+          "Reports generated for TAFE verification"
+        ],
+        outcome: "Student placements tracked without affecting ratio compliance."
       }
     }
   ],
