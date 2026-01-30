@@ -6,7 +6,7 @@ import {
   BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, 
   Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, 
   Sparkles, Smile, TrendingUp, ChevronDown, Check, Heart, Wallet,
-  UserPlus,
+  UserPlus, Calendar, Lightbulb,
   LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,6 +28,7 @@ const tabGroups: TabGroup[] = [
     items: [
       { value: 'plans', label: 'Plans', icon: FileText },
       { value: 'goals', label: 'Goals', icon: Target },
+      { value: 'goal-recommendations', label: 'Goal Suggestions', icon: Lightbulb },
       { value: 'okr', label: 'OKRs', icon: Crosshair },
       { value: 'lms', label: 'Learning', icon: GraduationCap },
       { value: 'pip', label: 'PIPs', icon: Activity },
@@ -68,6 +69,7 @@ const tabGroups: TabGroup[] = [
     items: [
       { value: 'tasks', label: 'Tasks', icon: ListTodo },
       { value: 'conversations', label: '1:1 Conversations', icon: MessageSquare },
+      { value: 'calendar', label: 'Calendar Sync', icon: Calendar },
     ],
   },
   {
