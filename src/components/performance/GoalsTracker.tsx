@@ -216,27 +216,40 @@ export function GoalsTracker({
           </Typography>
         </Box>
         <Stack 
-          direction={{ xs: 'column', sm: 'row' }} 
+          direction="row" 
           spacing={1}
-          sx={{ width: { xs: '100%', sm: 'auto' } }}
+          alignItems="center"
         >
           {onAssignGoal && (
             <MuiButton 
               variant="outlined" 
+              size="small"
               startIcon={<Users size={16} />} 
               onClick={onAssignGoal}
-              fullWidth
-              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+              sx={{ 
+                display: { xs: 'none', sm: 'inline-flex' },
+                borderColor: 'divider',
+                color: 'text.primary',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  bgcolor: 'primary.light',
+                },
+              }}
             >
               Assign Goal
             </MuiButton>
           )}
           <MuiButton 
             variant="contained" 
+            size="small"
             startIcon={<Plus size={16} />} 
             onClick={onCreateGoal}
-            fullWidth
-            sx={{ width: { sm: 'auto' } }}
+            sx={{
+              boxShadow: 'none',
+              '&:hover': {
+                boxShadow: 1,
+              },
+            }}
           >
             New Goal
           </MuiButton>
