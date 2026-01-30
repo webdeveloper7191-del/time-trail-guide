@@ -6,10 +6,10 @@ export const awardsSRS: ModuleSRS = {
   moduleName: "Awards & Pay Compliance",
   version: "1.0.0",
   lastUpdated: "2026-01-30",
-  overview: `The Awards & Pay Compliance module provides comprehensive management of Australian employment awards, enterprise bargaining agreements (EBAs), and pay rate calculations. It ensures organizations remain compliant with Fair Work Commission requirements while supporting complex pay scenarios including penalty rates, allowances, overtime calculations, and shift differentials. The system automatically tracks award updates and provides tools for customization while maintaining compliance audit trails.`,
+  overview: `The Awards & Pay Compliance module provides comprehensive management of employment awards, enterprise bargaining agreements (EBAs), and pay rate calculations across all industries. It ensures organizations remain compliant with Fair Work Commission requirements while supporting complex pay scenarios including penalty rates, allowances, overtime calculations, and shift differentials. The system automatically tracks award updates and provides tools for customization while maintaining compliance audit trails.`,
   
   objectives: [
-    "Ensure 100% compliance with Australian Modern Awards and Fair Work requirements",
+    "Ensure 100% compliance with Modern Awards and Fair Work requirements",
     "Automate complex pay calculations including penalties, allowances, and overtime",
     "Reduce payroll errors by 95% through automated rate application",
     "Provide real-time visibility into pay compliance status",
@@ -19,7 +19,7 @@ export const awardsSRS: ModuleSRS = {
   ],
 
   scope: [
-    "Australian Modern Award configuration and management",
+    "Modern Award configuration and management across industries",
     "Classification levels and pay rate schedules",
     "Penalty rate calculations (weekend, public holiday, evening, night)",
     "Allowance management (meal, travel, uniform, first aid, etc.)",
@@ -73,7 +73,7 @@ export const awardsSRS: ModuleSRS = {
       ]
     },
     {
-      name: "Centre Manager",
+      name: "Location Manager",
       description: "Operational manager who needs visibility into staff pay conditions",
       permissions: [
         "View applicable awards for their staff",
@@ -105,7 +105,7 @@ export const awardsSRS: ModuleSRS = {
   ],
 
   functionalRequirements: [
-    { id: "FR-AWD-001", category: "Award Management", requirement: "System shall maintain a library of Australian Modern Awards with classifications", priority: "Critical" },
+    { id: "FR-AWD-001", category: "Award Management", requirement: "System shall maintain a library of Modern Awards with classifications", priority: "Critical" },
     { id: "FR-AWD-002", category: "Award Management", requirement: "System shall support multiple effective-dated rate schedules per classification", priority: "Critical" },
     { id: "FR-AWD-003", category: "Award Management", requirement: "System shall allow enabling/disabling specific awards per organization", priority: "High" },
     { id: "FR-AWD-004", category: "Classification", requirement: "System shall define classification levels with minimum qualifications and experience", priority: "High" },
@@ -179,26 +179,26 @@ export const awardsSRS: ModuleSRS = {
         "1. HR Manager receives notification of new employee starting",
         "2. Opens Staff Profile > Pay Conditions section",
         "3. Clicks 'Configure Award' button",
-        "4. Searches for 'Children's Services Award'",
-        "5. Selects 'Children's Services Award 2010 [MA000120]'",
+        "4. Searches for applicable industry award",
+        "5. Selects appropriate Modern Award",
         "6. Browses classification levels, sees employee qualifications",
-        "7. Employee has Diploma - selects 'Level 4.1 - Qualified Educator'",
+        "7. Employee has relevant qualification - selects appropriate Level",
         "8. Selects employment type: Part-time",
-        "9. System shows: Base rate $32.47/hr, 25 hours/week",
+        "9. System shows: Base rate and weekly hours",
         "10. Sets effective date: Employee start date",
         "11. Clicks 'Save Award Assignment'",
         "12. Confirmation shows classification applied",
         "13. Staff profile updates with award badge and rate"
       ],
       realWorldExample: {
-        scenario: "Maria joins Sunshine Childcare as a qualified Diploma educator on a permanent part-time contract (25 hours/week).",
+        scenario: "Maria joins the organization as a qualified staff member on a permanent part-time contract (25 hours/week).",
         steps: [
           "HR Manager Sarah opens Maria's new employee profile",
           "Goes to Pay Conditions and clicks 'Set Up Award'",
-          "Searches for 'Children's Services' and selects the MA000120 award",
+          "Searches for applicable award and selects it",
           "Reviews the classification table",
-          "Maria has a Diploma of Early Childhood Education",
-          "Sarah selects 'Level 4.1 - Qualified Educator with Diploma'",
+          "Maria has relevant Diploma qualification",
+          "Sarah selects 'Level 4.1 - Qualified with Diploma'",
           "Chooses 'Part-time' employment type",
           "System calculates: $32.47/hr base rate",
           "Weekly rate: $811.75 (25 hours at base)",
