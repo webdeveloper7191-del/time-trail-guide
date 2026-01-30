@@ -212,10 +212,22 @@ export function AssignPlanDrawer({
 
             {/* Employee Selection - Multi-user */}
             <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Assign To ({selectedStaffIds.length}) *
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Assign To ({selectedStaffIds.length}) *
+                </Label>
+                {filteredStaff.length > 0 && selectedStaffIds.length < activeStaff.length && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSelectedStaffIds(activeStaff.map(s => s.id))}
+                    className="h-auto py-1 px-2 text-xs"
+                  >
+                    Select All
+                  </Button>
+                )}
+              </div>
               
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -227,12 +239,12 @@ export function AssignPlanDrawer({
                 />
               </div>
 
-              {/* Search Results */}
-              {staffSearch && filteredStaff.length > 0 && (
-                <Card>
-                  <ScrollArea className="h-32">
+              {/* Employee List - Always visible */}
+              {filteredStaff.length > 0 && (
+                <Card className="bg-background border">
+                  <ScrollArea className="h-40">
                     <div className="p-2 space-y-1">
-                      {filteredStaff.slice(0, 5).map(s => (
+                      {filteredStaff.slice(0, 10).map(s => (
                         <div
                           key={s.id}
                           onClick={() => handleAddStaff(s.id)}
@@ -249,6 +261,11 @@ export function AssignPlanDrawer({
                           <Plus className="h-4 w-4 text-primary" />
                         </div>
                       ))}
+                      {filteredStaff.length > 10 && (
+                        <p className="text-xs text-muted-foreground text-center py-2">
+                          +{filteredStaff.length - 10} more — use search to filter
+                        </p>
+                      )}
                     </div>
                   </ScrollArea>
                 </Card>
