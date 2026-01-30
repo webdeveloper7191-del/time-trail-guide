@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Stack, Typography, Tab } from '@mui/material';
-import { Tabs } from '@/components/mui/Tabs';
+import { Box, Stack, Typography } from '@mui/material';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { GoalsTracker } from '@/components/performance/GoalsTracker';
 import { ReviewsDashboard } from '@/components/performance/ReviewsDashboard';
@@ -39,12 +38,13 @@ import { UnifiedRecognitionPanel } from '@/components/performance/UnifiedRecogni
 import { HappinessScoreWidget } from '@/components/performance/HappinessScoreWidget';
 import { PerformanceExecutiveDashboard } from '@/components/performance/PerformanceExecutiveDashboard';
 import { PerformanceSettingsDrawer, PerformanceSettings } from '@/components/performance/PerformanceSettingsDrawer';
+import { PerformanceNavigation } from '@/components/performance/PerformanceNavigation';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { Button } from '@/components/mui/Button';
 import { toast } from 'sonner';
 
@@ -303,27 +303,6 @@ export default function PerformanceManagement() {
     toast.success('Plan extended successfully');
   };
 
-  const tabConfig = [
-    { value: 'plans', label: 'Plans', icon: FileText },
-    { value: 'okr', label: 'OKRs', icon: Crosshair },
-    { value: 'lms', label: 'Learning', icon: GraduationCap },
-    { value: 'tasks', label: 'Tasks', icon: ListTodo },
-    { value: 'goals', label: 'Goals', icon: Target },
-    { value: 'reviews', label: 'Reviews', icon: ClipboardCheck },
-    { value: 'feedback', label: 'Feedback', icon: MessageSquareHeart },
-    { value: '360feedback', label: '360°', icon: Users2 },
-    { value: 'recognition', label: 'Recognition', icon: Sparkles },
-    { value: 'happiness', label: 'Happiness', icon: Smile },
-    { value: 'conversations', label: '1:1s', icon: MessageSquare },
-    { value: 'talent', label: '9-Box', icon: Grid3X3 },
-    { value: 'skills', label: 'Skills', icon: Compass },
-    { value: 'pulse', label: 'Pulse', icon: Activity },
-    { value: 'wellbeing', label: 'Wellbeing', icon: HeartPulse },
-    { value: 'calibration', label: 'Calibration', icon: Scale },
-    { value: 'team', label: 'Team', icon: Users },
-    { value: 'summary', label: 'Summary', icon: TrendingUp },
-    { value: 'analytics', label: 'Analytics', icon: BarChart3 },
-  ];
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -383,27 +362,10 @@ export default function PerformanceManagement() {
           </Stack>
 
           {/* Tab Navigation */}
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-            <Tabs
-              value={activeTab}
-              onChange={(_, value) => setActiveTab(value)}
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              {tabConfig.map(tab => (
-                <Tab
-                  key={tab.value}
-                  value={tab.value}
-                  label={
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <tab.icon size={16} />
-                      <span>{tab.label}</span>
-                    </Stack>
-                  }
-                />
-              ))}
-            </Tabs>
-          </Box>
+          <PerformanceNavigation 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab} 
+          />
 
           {/* Tab Content */}
           <Box>
