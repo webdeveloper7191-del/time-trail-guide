@@ -44,8 +44,10 @@ import {
   Info,
   Building2,
   Globe,
+  Settings,
 } from 'lucide-react';
 import { Goal, PerformanceReview, Feedback } from '@/types/performance';
+import { BenchmarkingSettingsDrawer, BenchmarkingSettings } from './BenchmarkingSettingsDrawer';
 
 interface BenchmarkingDashboardProps {
   goals: Goal[];
@@ -149,6 +151,8 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
 export function BenchmarkingDashboard({ goals, reviews, feedback }: BenchmarkingDashboardProps) {
   const [selectedIndustry, setSelectedIndustry] = useState<Industry>('technology');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
+  const [benchmarkSettings, setBenchmarkSettings] = useState<BenchmarkingSettings | undefined>(undefined);
 
   // Calculate actual metrics from data
   const calculatedMetrics = useMemo(() => {
@@ -271,7 +275,7 @@ export function BenchmarkingDashboard({ goals, reviews, feedback }: Benchmarking
           </Typography>
         </Box>
         
-        <Stack direction="row" spacing={2}>
+        <Stack direction="row" spacing={2} flexWrap="wrap">
           <FormControl size="small" sx={{ minWidth: 160 }}>
             <InputLabel>Industry</InputLabel>
             <MuiSelect
@@ -299,6 +303,15 @@ export function BenchmarkingDashboard({ goals, reviews, feedback }: Benchmarking
               <MenuItem value="retention">Retention</MenuItem>
             </MuiSelect>
           </FormControl>
+          
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setShowSettingsDrawer(true)}
+          >
+            <Settings className="h-4 w-4 mr-1" />
+            Settings
+          </Button>
         </Stack>
       </Stack>
 
@@ -433,6 +446,14 @@ export function BenchmarkingDashboard({ goals, reviews, feedback }: Benchmarking
           );
         })}
       </Box>
+
+      {/* Settings Drawer */}
+      <BenchmarkingSettingsDrawer
+        open={showSettingsDrawer}
+        onOpenChange={setShowSettingsDrawer}
+        onSave={setBenchmarkSettings}
+        currentSettings={benchmarkSettings}
+      />
     </Box>
   );
 }
