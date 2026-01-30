@@ -28,8 +28,10 @@ import {
   Wallet,
   Shield,
   Bell,
-  ArrowLeft
+  ArrowLeft,
+  Clock
 } from 'lucide-react';
+import { rosterErdSections, rosterSchemaContent, rosterTableCount, rosterSchemaCount } from '@/data/rosterDatabaseSchema';
 import { useNavigate } from 'react-router-dom';
 import mermaid from 'mermaid';
 
@@ -2425,7 +2427,7 @@ CREATE INDEX IX_StaffAwardAssignments_IsCurrent ON staff_awards.StaffAwardAssign
               <div>
                 <h1 className="text-xl font-bold">Database Documentation</h1>
                 <p className="text-sm text-muted-foreground">
-                  Performance ({totalTables}+ tables) • Awards ({awardsTableCount}+ tables) • Multi-Tenant Schemas
+                  Performance ({totalTables}+ tables) • Awards ({awardsTableCount}+ tables) • Roster ({rosterTableCount}+ tables) • Multi-Tenant Schemas
                 </p>
               </div>
             </div>
@@ -2435,22 +2437,30 @@ CREATE INDEX IX_StaffAwardAssignments_IsCurrent ON staff_awards.StaffAwardAssign
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="performance-erd" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsList className="grid w-full max-w-4xl grid-cols-6">
             <TabsTrigger value="performance-erd" className="flex items-center gap-2">
               <Layers className="h-4 w-4" />
-              Performance ERD
+              <span className="hidden sm:inline">Performance</span> ERD
             </TabsTrigger>
             <TabsTrigger value="performance-sql" className="flex items-center gap-2">
               <FileCode className="h-4 w-4" />
-              Performance SQL
+              <span className="hidden sm:inline">Performance</span> SQL
             </TabsTrigger>
             <TabsTrigger value="awards-erd" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              Awards ERD
+              <span className="hidden sm:inline">Awards</span> ERD
             </TabsTrigger>
             <TabsTrigger value="awards-sql" className="flex items-center gap-2">
               <FileCode className="h-4 w-4" />
-              Awards SQL
+              <span className="hidden sm:inline">Awards</span> SQL
+            </TabsTrigger>
+            <TabsTrigger value="roster-erd" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span className="hidden sm:inline">Roster</span> ERD
+            </TabsTrigger>
+            <TabsTrigger value="roster-sql" className="flex items-center gap-2">
+              <FileCode className="h-4 w-4" />
+              <span className="hidden sm:inline">Roster</span> SQL
             </TabsTrigger>
           </TabsList>
 
@@ -2775,6 +2785,164 @@ CREATE INDEX IX_StaffAwardAssignments_IsCurrent ON staff_awards.StaffAwardAssign
                 <CardContent className="pt-6">
                   <div className="text-2xl font-bold text-primary">EBA</div>
                   <p className="text-sm text-muted-foreground">Support</p>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Roster ERD Diagrams Tab */}
+          <TabsContent value="roster-erd" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Sidebar Navigation */}
+              <div className="lg:col-span-1">
+                <Card className="sticky top-24">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Roster Schemas</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1">
+                    {rosterErdSections.map((section) => (
+                      <Button
+                        key={section.id}
+                        variant={activeSection === section.id ? 'secondary' : 'ghost'}
+                        className="w-full justify-start gap-2 text-sm"
+                        onClick={() => {
+                          setActiveSection(section.id);
+                          if (!expandedSections.includes(section.id)) {
+                            toggleSection(section.id);
+                          }
+                        }}
+                      >
+                        {section.icon}
+                        <span className="truncate">{section.title}</span>
+                        {section.tableCount > 0 && (
+                          <Badge variant="outline" className="ml-auto text-xs">
+                            {section.tableCount}
+                          </Badge>
+                        )}
+                      </Button>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Main Content */}
+              <div className="lg:col-span-3 space-y-4">
+                {rosterErdSections.map((section) => (
+                  <Collapsible
+                    key={section.id}
+                    open={expandedSections.includes(section.id)}
+                    onOpenChange={() => toggleSection(section.id)}
+                  >
+                    <Card id={section.id}>
+                      <CollapsibleTrigger className="w-full">
+                        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-primary/10 rounded-lg">
+                                {section.icon}
+                              </div>
+                              <div className="text-left">
+                                <CardTitle className="text-lg">{section.title}</CardTitle>
+                                <CardDescription>{section.description}</CardDescription>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {section.tableCount > 0 && (
+                                <Badge>{section.tableCount} tables</Badge>
+                              )}
+                              {expandedSections.includes(section.id) ? (
+                                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </div>
+                          </div>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <CardContent className="pt-0">
+                          <MermaidDiagram chart={section.diagram} id={section.id} />
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Roster SQL Schema Tab */}
+          <TabsContent value="roster-sql" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileCode className="h-5 w-5" />
+                      Roster Module - MS SQL Schema
+                    </CardTitle>
+                    <CardDescription>
+                      Childcare workforce scheduling schema with {rosterTableCount}+ tables
+                    </CardDescription>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">MS SQL Server</Badge>
+                    <Badge variant="outline">Multi-Tenant</Badge>
+                    <Badge variant="outline">NQF Compliant</Badge>
+                    <Badge variant="outline">GPS Validation</Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const blob = new Blob([rosterSchemaContent], { type: 'text/sql' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'RosterModule_MSSQL_Schema.sql';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Download SQL
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CodeBlock code={rosterSchemaContent} language="sql" />
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    📄 This schema covers workforce scheduling, attendance tracking, NQF compliance, and fatigue management.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Roster Schema Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-primary">{rosterSchemaCount}</div>
+                  <p className="text-sm text-muted-foreground">Schemas</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-primary">{rosterTableCount}+</div>
+                  <p className="text-sm text-muted-foreground">Tables</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-primary">NQF</div>
+                  <p className="text-sm text-muted-foreground">Compliant</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-primary">GPS</div>
+                  <p className="text-sm text-muted-foreground">Validation</p>
                 </CardContent>
               </Card>
             </div>
