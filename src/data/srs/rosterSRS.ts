@@ -706,6 +706,489 @@ export const rosterSRS: ModuleSRS = {
         ],
         outcome: "Emergency staffing crisis resolved within hours. Centre maintained compliance despite 25% of regular staff being absent."
       }
+    },
+    {
+      id: "US-RST-009",
+      title: "Submit Leave Request with Coverage Check",
+      actors: ["Educator (Staff)", "Centre Manager"],
+      description: "As an Educator, I want to submit a leave request that automatically checks roster impact, so that my manager can make informed approval decisions.",
+      acceptanceCriteria: [
+        "Can select leave type from approved list",
+        "Can specify date range and partial days",
+        "System shows current shifts affected by leave dates",
+        "System indicates coverage gaps that would result",
+        "Manager sees impact summary when reviewing request",
+        "Approved leave blocks shift assignment for those dates"
+      ],
+      businessLogic: [
+        "Leave types: Annual, Sick, Personal, Parental, Long Service, Unpaid",
+        "Annual leave requires minimum 2 weeks notice (configurable)",
+        "Sick leave can be submitted same-day with certificate upload",
+        "System calculates hours against entitlement balance",
+        "Approved leave creates 'unavailable' blocks in roster",
+        "Partial day leave reduces available hours for that day"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Awards", relationship: "Leave entitlements calculated per award conditions" },
+        { module: "Payroll", relationship: "Leave hours exported for leave pay processing" }
+      ],
+      endToEndJourney: [
+        "1. Educator Emma wants to take 5 days annual leave in 3 weeks",
+        "2. Opens Employee Portal and clicks 'Request Leave'",
+        "3. Selects leave type: Annual Leave",
+        "4. Sets dates: Monday 24 Feb to Friday 28 Feb",
+        "5. System shows: 5 days, 38 hours of entitlement",
+        "6. Current balance: 12.5 days available ✓",
+        "7. Impact check shows: 3 scheduled shifts will be affected",
+        "8. Emma adds note: 'Family holiday - booked flights'",
+        "9. Submits request",
+        "10. Manager Sarah receives notification",
+        "11. Opens request, sees shift impact summary",
+        "12. Notes: Nursery room needs coverage Mon/Wed/Fri",
+        "13. Sarah checks other staff availability",
+        "14. Approves leave request",
+        "15. Emma receives approval notification",
+        "16. Her shifts for those dates auto-convert to open shifts"
+      ],
+      realWorldExample: {
+        scenario: "Emma has a family holiday planned and needs to request 5 days of annual leave during a typically busy period.",
+        steps: [
+          "Emma opens the Employee Portal on Sunday evening",
+          "Clicks 'Request Leave' from the dashboard",
+          "Selects 'Annual Leave' from dropdown",
+          "Picks dates: 24-28 February (Mon-Fri)",
+          "System calculates: 5 days = 38 hours",
+          "Shows current balance: 12.5 days (95 hours)",
+          "After approval, balance will be: 7.5 days (57 hours)",
+          "Impact preview shows 3 shifts she's rostered for",
+          "Adds note explaining the family holiday",
+          "Attaches no documents (not required for annual leave)",
+          "Submits the request",
+          "Manager Sarah gets push notification",
+          "Sarah opens the request in her app",
+          "Sees: 3 shifts need coverage, Nursery room affected",
+          "Checks Maria and Tom's availability - both can cover",
+          "Approves with comment: 'Enjoy your holiday!'",
+          "Emma's shifts become open shifts for reassignment",
+          "Sarah assigns Maria to Monday, Tom to Wed/Fri"
+        ],
+        outcome: "Leave processed with full visibility of roster impact. Coverage arranged before leave begins. No compliance gaps."
+      }
+    },
+    {
+      id: "US-RST-010",
+      title: "Validate Fatigue Compliance Before Publishing",
+      actors: ["Centre Manager"],
+      description: "As a Centre Manager, I want the system to check fatigue compliance before I publish the roster, so that I don't inadvertently breach OH&S requirements.",
+      acceptanceCriteria: [
+        "Validation runs automatically before publish",
+        "Checks minimum rest hours between shifts (10 hours)",
+        "Checks maximum consecutive days (5 days)",
+        "Checks maximum hours per week (50 hours)",
+        "Violations flagged with severity level",
+        "Can override warnings with documented justification"
+      ],
+      businessLogic: [
+        "Minimum rest period: 10 hours between shift end and next start",
+        "Maximum consecutive days: 5 without 2 consecutive days off",
+        "Maximum weekly hours: 50 (or contract limit)",
+        "Daily maximum: 12 hours including overtime",
+        "Violations categorized: Error (must fix) or Warning (can override)",
+        "Override requires manager justification stored for audit"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Compliance", relationship: "Fatigue violations logged for regulatory reporting" },
+        { module: "Awards", relationship: "Award-specific fatigue rules apply" }
+      ],
+      endToEndJourney: [
+        "1. Centre Manager Sarah finishes scheduling next week's roster",
+        "2. Clicks 'Publish Roster' button",
+        "3. System runs fatigue validation scan",
+        "4. Progress bar shows checking 15 staff members",
+        "5. Results: 2 issues found",
+        "6. Error: Tom has only 8 hours between Thursday PM and Friday AM",
+        "7. Warning: Emma has 6 consecutive work days",
+        "8. Sarah clicks Tom's error to see details",
+        "9. Thursday shift ends 9 PM, Friday starts 5 AM = 8 hours rest",
+        "10. Sarah edits Friday shift to start 7 AM (10 hours rest ✓)",
+        "11. For Emma's warning, Sarah documents: 'Staff shortage, Emma agreed'",
+        "12. Re-runs validation: 0 errors, 1 documented warning",
+        "13. Proceeds with publish",
+        "14. All staff notified of published roster",
+        "15. Audit log records Emma's override justification"
+      ],
+      realWorldExample: {
+        scenario: "Sarah is finalizing the weekly roster but the validation catches two potential fatigue compliance issues.",
+        steps: [
+          "Sarah completes roster scheduling for next week",
+          "Clicks 'Publish' expecting smooth publishing",
+          "Validation screen appears with progress indicator",
+          "After 5 seconds: '2 issues found - please review'",
+          "Issue 1 (Red Error): Tom - Insufficient rest period",
+          "Details: Thursday 1-9 PM, Friday 5 AM-1 PM",
+          "Rest period: Only 8 hours (minimum 10 required)",
+          "Issue 2 (Yellow Warning): Emma - 6 consecutive days",
+          "Emma works Mon-Sat with Sunday off",
+          "Award allows 5 consecutive before mandatory rest",
+          "Sarah adjusts Tom's Friday shift to 7 AM start",
+          "New rest period: 10 hours ✓",
+          "For Emma, Sarah clicks 'Override with Justification'",
+          "Types: 'Staff shortage due to flu outbreak. Emma consulted and agreed.'",
+          "Links to Emma's written consent (uploaded earlier)",
+          "Re-validates: 0 errors, 1 documented override",
+          "Publishes roster successfully",
+          "System logs override for compliance audit"
+        ],
+        outcome: "Roster published with full fatigue compliance or documented exceptions. Organization protected from OH&S violations."
+      }
+    },
+    {
+      id: "US-RST-011",
+      title: "Generate Demand Forecast for Staffing",
+      actors: ["Centre Manager", "Area Manager"],
+      description: "As a Centre Manager, I want to see AI-generated staffing demand forecasts based on child bookings and historical patterns, so that I can plan adequate coverage.",
+      acceptanceCriteria: [
+        "System analyzes historical booking patterns",
+        "Forecast shows expected children per room per day",
+        "Staffing requirements calculated from forecasted demand",
+        "Weather and holiday adjustments applied",
+        "Forecast displayed alongside roster planning view",
+        "Accuracy metrics shown for past forecasts"
+      ],
+      businessLogic: [
+        "Base forecast from historical same-day-of-week patterns",
+        "Adjusted for known factors: holidays, school terms, events",
+        "Weather API integration for rain/heat adjustments",
+        "Minimum staffing: Always meet NQF ratios",
+        "Buffer staffing: Add 10% for unexpected demand",
+        "Forecast generated weekly, updated daily"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Child Booking System", relationship: "Imports confirmed and projected bookings" },
+        { module: "Costing", relationship: "Forecast staffing drives budget projections" }
+      ],
+      endToEndJourney: [
+        "1. It's Friday, Sarah is planning next week's roster",
+        "2. Opens Demand Forecast section",
+        "3. System displays predicted children per day per room",
+        "4. Monday: Nursery 12, Toddler 18, Preschool 22, Kindy 24",
+        "5. Thursday shows higher demand (payday week pattern)",
+        "6. System recommends: 4-4-3-2 educators per room Monday",
+        "7. Thursday recommendation: 4-5-3-3 (extra toddler coverage)",
+        "8. Weather adjustment: Tuesday rain forecast = +5% bookings expected",
+        "9. Sarah sees historical accuracy: 94% for this centre",
+        "10. Accepts recommended staffing levels",
+        "11. System auto-generates shift requirements",
+        "12. Sarah assigns staff to meet recommendations"
+      ],
+      realWorldExample: {
+        scenario: "Sarah uses AI-powered demand forecasting to optimize next week's staffing at Sunshine Centre.",
+        steps: [
+          "Friday afternoon, Sarah opens the Roster module",
+          "Clicks 'Demand Forecast' tab for next week view",
+          "System has analyzed:",
+          "  - Last 12 weeks of same-day patterns",
+          "  - Current bookings vs. historical conversion rates",
+          "  - School holiday impact (not during holidays)",
+          "  - Weather forecast (rain Tuesday, sunny rest of week)",
+          "Forecast displayed:",
+          "  - Monday: 76 children (typical start of week)",
+          "  - Tuesday: 82 children (+5% rain adjustment)",
+          "  - Wednesday: 74 children (mid-week dip)",
+          "  - Thursday: 85 children (payday pattern)",
+          "  - Friday: 68 children (typical drop-off)",
+          "Staffing requirements calculated per room:",
+          "  - Nursery: Consistent 4 educators (1:4 ratio)",
+          "  - Toddler: 4-5 educators based on demand",
+          "  - Preschool/Kindy: 2-3 based on ratios",
+          "Total recommended hours: 412 for the week",
+          "Compared to last week actual: 398 hours",
+          "Sarah accepts recommendations as baseline",
+          "Begins assigning staff to generated requirements"
+        ],
+        outcome: "Data-driven staffing plan reduces over/under-staffing by 15%. Labour costs optimized while maintaining compliance."
+      }
+    },
+    {
+      id: "US-RST-012",
+      title: "Manage Staff Qualifications and Expiry Alerts",
+      actors: ["HR Administrator", "Centre Manager"],
+      description: "As an HR Administrator, I want to track staff qualifications with expiry dates and receive renewal alerts, so that we maintain a compliant workforce.",
+      acceptanceCriteria: [
+        "Can add multiple qualifications per staff member",
+        "Each qualification has issue and expiry date",
+        "Alerts generated 90/60/30 days before expiry",
+        "Dashboard shows upcoming expiries across all staff",
+        "Can upload qualification certificates as evidence",
+        "Expired qualifications block certain shift assignments"
+      ],
+      businessLogic: [
+        "Required qualifications: First Aid, CPR, Child Protection, WWC",
+        "Role-specific: Diploma ECE, Bachelor ECE, Food Safety",
+        "Alert recipients: Staff member, their manager, HR",
+        "Grace period: 7 days after expiry before blocking",
+        "Expired WWC: Immediate block from all shifts",
+        "Qualification verification linked to regulatory body APIs where available"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Compliance", relationship: "Qualification status feeds compliance dashboard" },
+        { module: "LMS", relationship: "Some qualifications earned through internal training" }
+      ],
+      endToEndJourney: [
+        "1. HR Administrator opens Staff Qualifications dashboard",
+        "2. Summary shows: 3 expiring in 30 days, 5 expiring in 60 days",
+        "3. Clicks through to 30-day list",
+        "4. Educator Tom's First Aid expires in 25 days",
+        "5. HR sends reminder via system notification",
+        "6. Tom books renewal course externally",
+        "7. After completing course, Tom uploads new certificate",
+        "8. HR reviews and approves the uploaded certificate",
+        "9. Qualification extended with new expiry date",
+        "10. Tom removed from expiring list",
+        "11. For staff who don't renew, system flags at expiry",
+        "12. Manager sees warning when trying to assign expired staff"
+      ],
+      realWorldExample: {
+        scenario: "Monthly qualification review reveals several upcoming expiries that need proactive management.",
+        steps: [
+          "HR Admin Jenny opens the Qualification Dashboard",
+          "Dashboard shows traffic light summary:",
+          "  - Green: 45 staff with all current qualifications",
+          "  - Amber: 8 staff with qualifications expiring soon",
+          "  - Red: 2 staff with expired qualifications (grace period)",
+          "Jenny drills into the Amber list",
+          "Tom's First Aid: Expires in 25 days",
+          "Maria's CPR: Expires in 45 days",
+          "Emma's WWC: Expires in 55 days",
+          "Jenny sends bulk reminder to all 8 staff",
+          "Notification includes: Qualification, expiry date, renewal instructions",
+          "Tom books external First Aid course",
+          "After completion, uploads certificate via app",
+          "Jenny reviews: Valid certificate from approved provider",
+          "Approves update: New expiry date 3 years from issue",
+          "Red list: John's CPR expired 5 days ago",
+          "System shows warning on any shift assignment for John",
+          "John's manager sees: 'CPR expired - cannot assign to regulated shifts'",
+          "Jenny escalates: John books emergency CPR refresher",
+          "After renewal, John's block is lifted"
+        ],
+        outcome: "Proactive qualification management ensures continuous compliance. No staff assigned without required certifications."
+      }
+    },
+    {
+      id: "US-RST-013",
+      title: "Configure NQF Ratio Requirements Per Room",
+      actors: ["System Administrator", "Centre Manager"],
+      description: "As a System Administrator, I want to configure NQF educator-to-child ratios for each room type, so that the compliance engine uses correct regulatory requirements.",
+      acceptanceCriteria: [
+        "Can set ratio requirements per age group",
+        "Can specify qualified educator percentage requirements",
+        "State/territory-specific variations supported",
+        "ECT requirements configurable per room count",
+        "Changes logged with audit trail",
+        "Effective dates allow future ratio changes"
+      ],
+      businessLogic: [
+        "National ratios: Birth-24m 1:4, 24-36m 1:5, 36m-preschool 1:10, Kindy 1:11",
+        "50% educators must hold approved Diploma (or higher)",
+        "ECT required per: 25+ preschool children or 25+ kindy children",
+        "State variations: Some states have stricter ratios",
+        "Ratios apply during operating hours only",
+        "Different ratios may apply during excursions"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Compliance Dashboard", relationship: "Uses ratios for real-time monitoring" },
+        { module: "AI Scheduler", relationship: "Uses ratios as hard constraints in optimization" }
+      ],
+      endToEndJourney: [
+        "1. System Admin opens Centre Configuration",
+        "2. Selects Sunshine Centre",
+        "3. Opens Room Settings > Compliance Requirements",
+        "4. For Nursery Room (0-24 months):",
+        "5. Sets ratio: 1 educator per 4 children",
+        "6. Sets qualification: 50% Diploma minimum",
+        "7. For Toddler Room (24-36 months):",
+        "8. Sets ratio: 1:5",
+        "9. For Preschool (3-4 years):",
+        "10. Sets ratio: 1:10, requires ECT if >25 children",
+        "11. For Kindy (4-5 years):",
+        "12. Sets ratio: 1:11, requires ECT if >25 children",
+        "13. Saves configuration with effective date",
+        "14. Compliance engine now uses these settings",
+        "15. All ratio calculations update to new requirements"
+      ],
+      realWorldExample: {
+        scenario: "New Victoria state regulations require stricter ratios for toddler rooms. Admin updates the system configuration.",
+        steps: [
+          "Victorian government announces new regulation",
+          "Toddler room ratio changing from 1:5 to 1:4",
+          "Effective date: 1 July 2026",
+          "System Admin receives notification from HR",
+          "Opens Compliance Configuration",
+          "Selects 'Victorian Centres' location group",
+          "Finds Toddler Room age group settings",
+          "Current setting: 1 educator per 5 children",
+          "Creates new ratio rule:",
+          "  - Ratio: 1:4",
+          "  - Age group: 24-36 months",
+          "  - Effective from: 1 July 2026",
+          "  - Applies to: All Victorian centres",
+          "Saves with audit note: 'New VIC regulation compliance'",
+          "System shows: Will affect 3 centres, ~15 toddler rooms",
+          "Impact analysis: Will need 1-2 extra educators per centre",
+          "Configuration scheduled to activate automatically",
+          "On 1 July, compliance calculations use new ratio",
+          "Any understaffing immediately flagged"
+        ],
+        outcome: "Regulatory change implemented system-wide with zero manual ratio adjustments needed on go-live date."
+      }
+    },
+    {
+      id: "US-RST-014",
+      title: "Track Budget vs Actual Labour Costs",
+      actors: ["Centre Manager", "Finance Director"],
+      description: "As a Centre Manager, I want to see real-time budget vs actual labour costs for my roster, so that I can manage within approved limits.",
+      acceptanceCriteria: [
+        "Budget target set per centre per period",
+        "Real-time actual cost calculated from roster",
+        "Variance displayed as dollar and percentage",
+        "Breakdown by cost type (ordinary, overtime, penalty, allowances)",
+        "Trends shown over time (week, month, quarter)",
+        "Alerts when approaching or exceeding budget"
+      ],
+      businessLogic: [
+        "Budget set at weekly or monthly level",
+        "Actual = Rostered hours × applicable rates",
+        "Includes all pay elements: base, OT, penalties, allowances",
+        "Variance calculated as Budget - Actual",
+        "Positive variance = under budget, Negative = over budget",
+        "Threshold alerts at 90%, 100%, 110% of budget"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Awards", relationship: "Provides rates for cost calculation" },
+        { module: "Finance System", relationship: "Exports actuals for financial reporting" }
+      ],
+      endToEndJourney: [
+        "1. Centre Manager Sarah opens Budget Dashboard",
+        "2. Current period: Week of 24 February",
+        "3. Budget: $12,500 weekly labour cost",
+        "4. Current rostered: $11,850 (94.8%)",
+        "5. Variance: +$650 under budget ✓",
+        "6. Breakdown shows:",
+        "7. Ordinary hours: $10,200",
+        "8. Overtime: $450",
+        "9. Penalty rates: $850",
+        "10. Allowances: $350",
+        "11. Week-over-week trend shows consistent performance",
+        "12. Finance Director can see all centres consolidated",
+        "13. Export to Excel for monthly reporting"
+      ],
+      realWorldExample: {
+        scenario: "Sarah monitors labour costs weekly to ensure her centre stays within the approved budget while maintaining compliance.",
+        steps: [
+          "Monday morning, Sarah checks the Budget Dashboard",
+          "Weekly budget for Sunshine Centre: $12,500",
+          "Current roster shows $11,200 committed (89.6%)",
+          "Sarah still needs to fill 2 open shifts",
+          "If filled with regular staff: Total would be $11,850",
+          "If filled with agency: Total would be $12,350",
+          "Agency fills would be 98.8% of budget - acceptable",
+          "Sarah tries internal first - sends shift to available staff",
+          "Emma picks up one shift (saves $50 vs agency)",
+          "No internal takers for second shift - assigns to agency",
+          "Final roster cost: $12,100 (96.8% of budget)",
+          "Dashboard shows green status - within target",
+          "Cost breakdown:",
+          "  - Ordinary: $9,800 (78.4%)",
+          "  - Overtime: $320 (2.6%)",
+          "  - Penalties: $1,200 (9.6%) - includes weekend",
+          "  - Agency: $580 (4.6%)",
+          "  - Allowances: $200 (1.6%)",
+          "Sarah notes high penalty due to 2 Sunday shifts",
+          "Plans to review Sunday staffing for next roster"
+        ],
+        outcome: "Centre meets budget target while maintaining full staffing. Manager has visibility to optimize costs proactively."
+      }
+    },
+    {
+      id: "US-RST-015",
+      title: "Run AI-Powered Schedule Optimization",
+      actors: ["Centre Manager", "Area Manager"],
+      description: "As a Centre Manager, I want the AI to suggest an optimal roster that balances compliance, staff preferences, and cost, so that I can create efficient schedules faster.",
+      acceptanceCriteria: [
+        "Can initiate AI optimization for selected date range",
+        "AI considers: compliance, availability, preferences, fairness, cost",
+        "Results show multiple scenario options",
+        "Can compare scenarios by different metrics",
+        "Can accept AI suggestions or modify manually",
+        "Optimization runs complete within 60 seconds"
+      ],
+      businessLogic: [
+        "Hard constraints: NQF ratios, qualifications, availability, leave",
+        "Soft constraints: Staff preferences, fairness, overtime minimization",
+        "Objectives: Minimize cost while meeting coverage requirements",
+        "Fairness: Balance shift distribution across eligible staff",
+        "Preference matching: Higher weight to shift time preferences",
+        "Solution quality scored 0-100 based on constraint satisfaction"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Staff Availability", relationship: "Availability windows are hard constraints" },
+        { module: "Awards", relationship: "Rates influence cost optimization" }
+      ],
+      endToEndJourney: [
+        "1. Centre Manager Sarah has 35 open shifts for next week",
+        "2. Opens AI Scheduler and clicks 'Optimize Roster'",
+        "3. Selects date range and rooms to optimize",
+        "4. Sets priorities: Compliance > Cost > Staff Preference",
+        "5. Clicks 'Generate Options'",
+        "6. Progress shows AI working through constraints",
+        "7. After 45 seconds, 3 options presented:",
+        "8. Option A: Score 94, Cost $11,200, All compliant",
+        "9. Option B: Score 91, Cost $10,800, 2 preference conflicts",
+        "10. Option C: Score 88, Cost $10,500, 4 preference conflicts",
+        "11. Sarah reviews Option A in detail",
+        "12. Sees shift assignments by day and room",
+        "13. One suggestion: Tom on Friday, but he prefers not to work Fridays",
+        "14. Sarah swaps Tom with Maria (who is indifferent)",
+        "15. Accepts modified Option A",
+        "16. All 35 shifts populated with staff assignments"
+      ],
+      realWorldExample: {
+        scenario: "Week's roster has 40 shifts to fill across 4 rooms. Sarah uses AI optimization to create an efficient schedule.",
+        steps: [
+          "Sarah applied weekly template - 40 open shifts created",
+          "15 permanent staff available with various preferences",
+          "Manual assignment would take 2+ hours",
+          "Opens AI Scheduler panel",
+          "Clicks 'Optimize' for week of 3 March",
+          "Sets constraint priorities:",
+          "  1. Compliance (must meet all ratios)",
+          "  2. Cost (minimize overtime and agency)",
+          "  3. Fairness (distribute hours evenly)",
+          "  4. Preferences (honor stated preferences)",
+          "AI processes in 40 seconds",
+          "Three scenarios generated:",
+          "  Option A: Balanced - Score 92, $12,100",
+          "  Option B: Cost-Focused - Score 88, $11,400",
+          "  Option C: Preference-Focused - Score 90, $12,600",
+          "Sarah examines Option A details",
+          "All rooms fully staffed with correct ratios",
+          "Only 2 preference conflicts (out of 40 shifts)",
+          "Tom assigned Friday despite 'prefer not' - AI chose for qualification reasons",
+          "Sarah manually swaps Tom with equally-qualified Maria",
+          "New score: 94 (improved by fixing preference)",
+          "Sarah accepts the roster",
+          "All 40 shifts assigned in 5 minutes total"
+        ],
+        outcome: "AI reduces roster creation time by 80% while optimizing for multiple objectives. Manager retains control for fine-tuning."
+      }
     }
   ],
 

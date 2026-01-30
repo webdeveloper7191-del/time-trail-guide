@@ -2416,21 +2416,27 @@ CREATE INDEX IX_StaffAwardAssignments_IsCurrent ON staff_awards.StaffAwardAssign
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Database className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Database Documentation</h1>
-                <p className="text-sm text-muted-foreground">
-                  Performance ({totalTables}+ tables) • Awards ({awardsTableCount}+ tables) • Roster ({rosterTableCount}+ tables) • Multi-Tenant Schemas
-                </p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Database className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold">Database Documentation</h1>
+                  <p className="text-sm text-muted-foreground">
+                    Performance ({totalTables}+ tables) • Awards ({awardsTableCount}+ tables) • Roster ({rosterTableCount}+ tables) • Multi-Tenant Schemas
+                  </p>
+                </div>
               </div>
             </div>
+            <Button variant="outline" onClick={() => navigate('/docs/srs')} className="gap-2">
+              <FileCode className="h-4 w-4" />
+              SRS Documentation
+            </Button>
           </div>
         </div>
       </div>

@@ -665,6 +665,514 @@ export const awardsSRS: ModuleSRS = {
         ],
         outcome: "Informed budgeting decision made with accurate cost projections. Organisation prepared for wage increase regardless of final FWC determination."
       }
+    },
+    {
+      id: "US-AWD-009",
+      title: "Configure Enterprise Bargaining Agreement",
+      actors: ["HR Manager", "Payroll Administrator"],
+      description: "As an HR Manager, I want to configure an Enterprise Bargaining Agreement with custom terms that override standard award conditions, so that our negotiated agreement is correctly applied.",
+      acceptanceCriteria: [
+        "Can create new EBA with name, code, and effective dates",
+        "Can define custom classification levels and rates",
+        "Can configure custom allowances and conditions",
+        "EBA rates can exceed but not fall below award minimums",
+        "Staff can be assigned to EBA instead of Modern Award",
+        "System validates 'better off overall' test requirements"
+      ],
+      businessLogic: [
+        "EBA must pass Better Off Overall Test (BOOT)",
+        "Each condition compared against relevant award",
+        "EBA rates must equal or exceed award minimums",
+        "EBA allowances may differ from award allowances",
+        "Effective period defined (typically 3-4 years)",
+        "Nominal expiry triggers renegotiation workflow"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Staff Profiles", relationship: "Staff assigned to EBA coverage" },
+        { module: "Compliance", relationship: "BOOT validation runs on EBA configuration" }
+      ],
+      endToEndJourney: [
+        "1. HR Manager Sarah receives approved EBA from Fair Work",
+        "2. Opens Awards module > Enterprise Agreements",
+        "3. Clicks 'Create New EBA'",
+        "4. Enters details: 'Sunshine Childcare EBA 2026'",
+        "5. Sets effective dates: 1 July 2026 to 30 June 2030",
+        "6. Moves to Classifications tab",
+        "7. Creates 5 custom levels with negotiated rates",
+        "8. Level 1: $30.50/hr (Award: $28.73 - exceeds ✓)",
+        "9. Configures custom allowances",
+        "10. Professional Development Allowance: $500/year",
+        "11. Sets leave conditions: 5 weeks annual leave (Award: 4)",
+        "12. Runs BOOT validation against Children's Services Award",
+        "13. All conditions pass - better off overall",
+        "14. Submits for Finance Director approval",
+        "15. Upon approval, EBA becomes active option",
+        "16. Staff can be assigned to EBA coverage"
+      ],
+      realWorldExample: {
+        scenario: "Sunshine Childcare has negotiated an enterprise agreement with enhanced conditions. HR needs to configure it in the system.",
+        steps: [
+          "EBA approved by Fair Work Commission",
+          "HR Manager Sarah opens Enterprise Agreements section",
+          "Creates new agreement: 'Sunshine Childcare EBA 2026-2030'",
+          "Agreement code: EBA-SC-2026",
+          "Commencement: 1 July 2026",
+          "Nominal Expiry: 30 June 2030",
+          "Defines 5 classification levels:",
+          "  Level 1: Support Worker - $30.50/hr",
+          "  Level 2: Educator - $33.25/hr",
+          "  Level 3: Qualified Educator - $36.00/hr",
+          "  Level 4: Room Leader - $39.50/hr",
+          "  Level 5: Educational Leader - $44.00/hr",
+          "Configures EBA-specific allowances:",
+          "  - Professional Development: $500/year",
+          "  - Wellness Allowance: $200/year",
+          "  - Phone Allowance: $25/month",
+          "Leave entitlements:",
+          "  - Annual Leave: 5 weeks (vs 4 weeks award)",
+          "  - Personal Leave: 12 days (vs 10 days award)",
+          "System runs BOOT comparison:",
+          "  All rates exceed award ✓",
+          "  Leave conditions exceed award ✓",
+          "  Allowances provide additional benefits ✓",
+          "  BOOT PASSED",
+          "Finance Director reviews and approves",
+          "EBA active from 1 July, ready for staff assignment"
+        ],
+        outcome: "Enterprise Agreement correctly configured with all negotiated terms. System ensures ongoing BOOT compliance for all calculations."
+      }
+    },
+    {
+      id: "US-AWD-010",
+      title: "Apply Casual Loading Automatically",
+      actors: ["Payroll Administrator"],
+      description: "As a Payroll Administrator, I want casual loading to be automatically applied to all casual employee pay calculations, so that casuals receive correct rates without manual intervention.",
+      acceptanceCriteria: [
+        "System identifies casual employment type from staff profile",
+        "25% loading automatically added to base rate",
+        "Loading shows as separate line item in pay breakdown",
+        "Casual loading applies before penalty rate calculations",
+        "Can configure loading percentage per award if different",
+        "Historical casual rates maintained for auditing"
+      ],
+      businessLogic: [
+        "Standard casual loading: 25% of base rate",
+        "Loading in lieu of: Annual leave, personal leave, notice period",
+        "Loading applies to ordinary hours only",
+        "Penalty rates calculate on base rate (not loaded rate)",
+        "Minimum engagement: 3 hours per shift for casuals",
+        "Casual conversion rights trigger after 12 months regular pattern"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Roster", relationship: "Casual shift costing includes loading" },
+        { module: "Staff Profiles", relationship: "Employment type determines loading application" }
+      ],
+      endToEndJourney: [
+        "1. Casual educator Emma works a shift Monday 8 AM - 4 PM",
+        "2. Her classification: Level 3.1, base rate $28.73/hr",
+        "3. System calculates casual loading: $28.73 × 25% = $7.18",
+        "4. Emma's casual rate: $28.73 + $7.18 = $35.91/hr",
+        "5. Shift is 8 hours with 30 min unpaid break = 7.5 hours",
+        "6. Gross pay: 7.5 × $35.91 = $269.33",
+        "7. Pay breakdown shows:",
+        "8. Base rate hours: 7.5 × $28.73 = $215.48",
+        "9. Casual loading: 7.5 × $7.18 = $53.85",
+        "10. Total: $269.33",
+        "11. If shift was Sunday, penalty calculated on base rate",
+        "12. Sunday: $28.73 × 200% = $57.46/hr + $7.18 loading = $64.64/hr"
+      ],
+      realWorldExample: {
+        scenario: "Emma is a casual educator working two shifts this week - one regular weekday and one Sunday shift.",
+        steps: [
+          "Emma's profile shows: Employment Type = Casual",
+          "Classification: Level 3.1, Base Rate: $28.73/hr",
+          "Shift 1: Monday 8 AM - 4 PM (7.5 paid hours)",
+          "System calculates:",
+          "  Base: 7.5 hrs × $28.73 = $215.48",
+          "  Casual Loading (25%): 7.5 × $7.18 = $53.85",
+          "  Monday Total: $269.33",
+          "Shift 2: Sunday 8 AM - 4 PM (7.5 paid hours)",
+          "Sunday is a penalty day for casuals:",
+          "  Base rate: $28.73",
+          "  Sunday penalty for casual: 200%",
+          "  Penalty rate: $28.73 × 2.0 = $57.46",
+          "  Casual loading still applies: +$7.18",
+          "  Sunday Total Rate: $64.64/hr",
+          "  Sunday Pay: 7.5 × $64.64 = $484.80",
+          "Weekly timesheet shows:",
+          "  Monday: $269.33 (ordinary + loading)",
+          "  Sunday: $484.80 (penalty + loading)",
+          "  Week Total: $754.13",
+          "Pay slip line items:",
+          "  Ordinary Hours: $215.48",
+          "  Casual Loading: $53.85",
+          "  Sunday Penalty: $431.25",
+          "  Sunday Casual Loading: $53.85"
+        ],
+        outcome: "Casual loading automatically calculated on all shifts. Penalty rates correctly applied on base before loading. No manual adjustment needed."
+      }
+    },
+    {
+      id: "US-AWD-011",
+      title: "View Staff Award Classification History",
+      actors: ["HR Manager", "Payroll Administrator"],
+      description: "As an HR Manager, I want to view the complete history of a staff member's award classification changes, so that I can audit pay history and resolve disputes.",
+      acceptanceCriteria: [
+        "Can view full classification change history",
+        "Each change shows: old value, new value, date, who changed",
+        "Reason for change is captured and displayed",
+        "Can export history to PDF for audit purposes",
+        "History retained for 7 years per record-keeping requirements",
+        "Search and filter by date range and change type"
+      ],
+      businessLogic: [
+        "All classification changes logged automatically",
+        "Captures: award, classification, employment type, rate",
+        "Links to approval workflow where applicable",
+        "Backdated changes create adjustment records",
+        "History immutable - corrections add new records",
+        "Supports Fair Work information requests"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Audit Trail", relationship: "Classification changes part of master audit log" },
+        { module: "Compliance Reports", relationship: "History feeds into compliance documentation" }
+      ],
+      endToEndJourney: [
+        "1. Staff member questions pay rate from 2 years ago",
+        "2. HR Manager opens their Staff Profile",
+        "3. Navigates to Pay Conditions > Classification History",
+        "4. Views timeline of all changes since hire date",
+        "5. January 2024: Hired as Level 3.1 - $26.80/hr",
+        "6. July 2024: FWC increase - $27.55/hr (auto-updated)",
+        "7. September 2024: Promoted to Level 4.1 - $30.50/hr",
+        "8. July 2025: FWC increase - $31.55/hr",
+        "9. Each entry shows who made change and approval chain",
+        "10. HR exports history as PDF for staff member",
+        "11. PDF includes all rates, dates, and reasons",
+        "12. Staff member satisfied with documentation"
+      ],
+      realWorldExample: {
+        scenario: "Employee Tom believes he was underpaid after his promotion in 2024. HR investigates using classification history.",
+        steps: [
+          "Tom emails HR: 'I think my rate was wrong after my September 2024 promotion'",
+          "HR Manager Sarah opens Tom's profile",
+          "Goes to Pay Conditions > View Classification History",
+          "Timeline shows:",
+          "  15 Jan 2024: Initial hire - Level 3.1 - $26.80/hr",
+          "    Reason: New employee - qualified educator",
+          "    Approved by: Sarah Johnson (HR)",
+          "  1 Jul 2024: FWC Rate Update - $27.55/hr",
+          "    Reason: Annual Wage Review 2024 (2.8% increase)",
+          "    Approved by: System (Automatic FWC update)",
+          "  15 Sep 2024: Promotion - Level 4.1 - $30.50/hr",
+          "    Reason: Promoted to Room Leader position",
+          "    Approved by: Sarah Johnson (HR), Mike Director (Exec)",
+          "  1 Jul 2025: FWC Rate Update - $31.55/hr",
+          "    Reason: Annual Wage Review 2025 (3.4% increase)",
+          "    Approved by: System (Automatic)",
+          "Sarah reviews the September 2024 change",
+          "Correct rate for Level 4.1 at that date: $30.50 ✓",
+          "No underpayment - rate was correctly applied",
+          "Sarah exports PDF and schedules call with Tom",
+          "Shows him the audit trail with all approvals",
+          "Tom understands and is satisfied with explanation"
+        ],
+        outcome: "Complete audit trail resolves employee query. Documentation demonstrates compliance. Trust maintained through transparency."
+      }
+    },
+    {
+      id: "US-AWD-012",
+      title: "Calculate Split Shift Pay Correctly",
+      actors: ["Payroll Administrator"],
+      description: "As a Payroll Administrator, I want split shifts to be calculated with correct allowances and minimum payments, so that staff working broken shifts are paid fairly per award requirements.",
+      acceptanceCriteria: [
+        "System identifies split shifts (gap > 1 hour between segments)",
+        "Split shift allowance applied automatically",
+        "Minimum payment rules apply per segment",
+        "Travel time consideration if required to leave premises",
+        "Both segments contribute to daily/weekly hour totals",
+        "Clear breakdown showing split shift calculation"
+      ],
+      businessLogic: [
+        "Split shift: Break of more than 1 hour during shift",
+        "Split shift allowance: varies by award (typically $15-25)",
+        "Minimum engagement: Each segment minimum 2 hours",
+        "Daily hours: Sum of both segments for overtime",
+        "May attract meal allowance if second segment > threshold",
+        "Some awards prohibit split shifts without consent"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Roster", relationship: "Split shift indicator in roster view" },
+        { module: "Timesheet", relationship: "Actual segments recorded for pay" }
+      ],
+      endToEndJourney: [
+        "1. Educator Emma works a split shift: 7 AM - 10 AM, then 3 PM - 6 PM",
+        "2. Gap between segments: 5 hours (split shift ✓)",
+        "3. System identifies this as split shift pattern",
+        "4. First segment: 3 hours ordinary time",
+        "5. Second segment: 3 hours ordinary time",
+        "6. Total daily hours: 6 hours",
+        "7. Split shift allowance added: $16.50",
+        "8. Second segment triggers meal allowance: $12.30",
+        "9. Pay breakdown:",
+        "10. Ordinary hours: 6 × $28.73 = $172.38",
+        "11. Split shift allowance: $16.50",
+        "12. Meal allowance: $12.30",
+        "13. Total: $201.18"
+      ],
+      realWorldExample: {
+        scenario: "Due to programming needs, Emma is rostered for a split shift covering morning and afternoon sessions with a long break.",
+        steps: [
+          "Roster shows Emma:",
+          "  Segment 1: 7:00 AM - 10:00 AM (Nursery)",
+          "  Break: 10:00 AM - 3:00 PM (5 hours off-site)",
+          "  Segment 2: 3:00 PM - 6:00 PM (Nursery)",
+          "Gap exceeds 1 hour - classified as split shift",
+          "System calculates per Children's Services Award:",
+          "Segment 1:",
+          "  3 hours × $28.73 = $86.19",
+          "Segment 2:",
+          "  3 hours × $28.73 = $86.19",
+          "Total ordinary hours: 6 hours",
+          "Split shift allowance: $16.50 per award",
+          "Meal allowance for Segment 2 (after 3 PM start): $12.30",
+          "Gross pay calculation:",
+          "  Ordinary: $172.38",
+          "  Split Allowance: $16.50",
+          "  Meal Allowance: $12.30",
+          "  Total: $201.18",
+          "Timesheet shows:",
+          "  Hours: 6.0",
+          "  Allowances: 2 (Split, Meal)",
+          "  Pay Rate: $28.73/hr",
+          "  Allowance Total: $28.80",
+          "  Gross: $201.18",
+          "Pay slip line items clearly show each component"
+        ],
+        outcome: "Split shift correctly identified and compensated. Staff receives fair pay for inconvenience of broken schedule."
+      }
+    },
+    {
+      id: "US-AWD-013",
+      title: "Manage Public Holiday Penalty Rates",
+      actors: ["Payroll Administrator", "HR Manager"],
+      description: "As a Payroll Administrator, I want public holiday penalty rates to be automatically applied when staff work on gazetted public holidays, including state-specific variations.",
+      acceptanceCriteria: [
+        "System maintains calendar of public holidays",
+        "State/territory specific holidays supported",
+        "Correct penalty rate applied (typically 250%)",
+        "Substitute day provisions handled",
+        "Part-day public holiday provisions supported",
+        "Staff working on PH shown in reports"
+      ],
+      businessLogic: [
+        "National public holidays apply to all states",
+        "State holidays apply only to relevant locations",
+        "Public holiday rate typically 250% (2.5x base)",
+        "Casual rate: Base + 25% loading + PH penalty",
+        "Minimum payment provisions may apply",
+        "Day in lieu may be offered as alternative"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Calendar", relationship: "Public holiday calendar maintained centrally" },
+        { module: "Roster", relationship: "Shows PH indicator on affected dates" }
+      ],
+      endToEndJourney: [
+        "1. Australia Day falls on Monday 26 January",
+        "2. Sunshine Centre operates on public holidays",
+        "3. Centre Manager rosters 4 staff to work",
+        "4. System identifies date as national public holiday",
+        "5. All rostered shifts flagged with PH indicator",
+        "6. Pay calculation for Emma (Level 3.1, $28.73 base):",
+        "7. Public holiday rate: $28.73 × 250% = $71.83/hr",
+        "8. Emma works 7.5 hours: 7.5 × $71.83 = $538.73",
+        "9. For casual staff, loading also applies",
+        "10. Reports show: 4 staff worked PH, total PH cost: $1,850",
+        "11. Each staff receives PH rate in pay breakdown",
+        "12. Payroll export includes PH hours separately"
+      ],
+      realWorldExample: {
+        scenario: "Easter Monday is a public holiday. Several staff are rostered as the centre remains open for families who need care.",
+        steps: [
+          "Easter Monday: 21 April 2026 (national public holiday)",
+          "Sunshine Centre open for essential care",
+          "4 staff rostered:",
+          "  Emma (permanent): 7.5 hours",
+          "  Tom (permanent): 7.5 hours",
+          "  Maria (casual): 7.5 hours",
+          "  John (permanent): 5 hours",
+          "System applies Easter Monday penalty rates:",
+          "Emma & Tom (permanent, Level 3.1, $28.73):",
+          "  PH Rate: $28.73 × 250% = $71.83/hr",
+          "  Emma: 7.5 × $71.83 = $538.73",
+          "  Tom: 7.5 × $71.83 = $538.73",
+          "Maria (casual, Level 3.1, $28.73):",
+          "  Base + Loading: $35.91",
+          "  PH Rate: $28.73 × 275% = $79.01/hr",
+          "  (Casual PH = Base × 250% + 25% loading)",
+          "  Maria: 7.5 × $79.01 = $592.58",
+          "John (permanent, Level 4.1, $32.47):",
+          "  PH Rate: $32.47 × 250% = $81.18/hr",
+          "  John: 5 × $81.18 = $405.90",
+          "Total PH labour cost: $2,075.94",
+          "Budget report shows PH premium: $1,350 above ordinary rates",
+          "All PH hours exported with correct penalty codes"
+        ],
+        outcome: "Public holiday pay correctly calculated for all employment types. Compliance ensured, payroll accurate, cost visibility maintained."
+      }
+    },
+    {
+      id: "US-AWD-014",
+      title: "Import Award Updates from Fair Work Database",
+      actors: ["System Administrator", "Payroll Administrator"],
+      description: "As a System Administrator, I want to import award updates directly from Fair Work Commission data feeds, so that our award definitions remain current and accurate.",
+      acceptanceCriteria: [
+        "Can connect to FWC data source",
+        "Detects new versions of configured awards",
+        "Shows detailed change comparison",
+        "Can preview updates before applying",
+        "Full audit trail of import and application",
+        "Rollback capability if issues discovered"
+      ],
+      businessLogic: [
+        "FWC publishes award variations via public data feeds",
+        "Variations include: rate changes, clause changes, new allowances",
+        "Import process validates data integrity",
+        "Changes staged for review before activation",
+        "Multiple awards can be updated in batch",
+        "Notification sent to relevant administrators"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Notifications", relationship: "Alerts sent when updates available" },
+        { module: "Audit", relationship: "All imports logged with full details" }
+      ],
+      endToEndJourney: [
+        "1. System detects FWC update published for Children's Services Award",
+        "2. Alert sent to Payroll Administrator and HR Manager",
+        "3. Admin opens Award Updates section",
+        "4. Sees: 'Update Available: MA000120 Version 23'",
+        "5. Clicks 'View Changes' to see comparison",
+        "6. Changes: 3.5% rate increase, new allowance clause",
+        "7. Side-by-side shows old vs new values",
+        "8. Admin clicks 'Import to Staging'",
+        "9. System downloads and validates data",
+        "10. Validation passed: data consistent with schema",
+        "11. Admin sets effective date: 1 July 2026",
+        "12. Submits for HR Manager approval",
+        "13. HR Manager reviews and approves",
+        "14. Update scheduled for automatic activation",
+        "15. On 1 July, new rates become active"
+      ],
+      realWorldExample: {
+        scenario: "Fair Work Commission releases annual wage review. Multiple awards need updating across the organization.",
+        steps: [
+          "Late June: FWC publishes annual wage review decision",
+          "System automatically checks for updates daily",
+          "Detection: 3 awards have new versions available:",
+          "  - Children's Services Award (MA000120)",
+          "  - Clerks Private Sector Award (MA000002)",
+          "  - Miscellaneous Award (MA000104)",
+          "Alert sent to system admin and payroll team",
+          "Admin opens Award Updates console",
+          "For each award, clicks 'View Changes':",
+          "Children's Services (MA000120):",
+          "  Rate increase: 3.75%",
+          "  All classifications affected",
+          "  New meal allowance rate: $14.55 (was $14.15)",
+          "  Effective: 1 July 2026",
+          "Admin clicks 'Import All' for 3 awards",
+          "Progress: Downloading... Validating... Complete",
+          "All 3 imports successful",
+          "Admin sets effective date for each: 1 July 2026",
+          "Generates impact report: 67 staff, $145,000 annual increase",
+          "Submits batch for HR Director approval",
+          "HR Director reviews and approves",
+          "System schedules activation for 1 July 00:01 AM",
+          "On 1 July, all calculations use new rates automatically"
+        ],
+        outcome: "Multi-award update processed in 30 minutes. Zero manual rate entry. Compliance guaranteed from first pay run after effective date."
+      }
+    },
+    {
+      id: "US-AWD-015",
+      title: "Generate Better Off Overall Test Report",
+      actors: ["HR Manager", "Finance Director"],
+      description: "As an HR Manager, I want to generate a Better Off Overall Test (BOOT) report comparing an EBA against the relevant Modern Award, so that I can demonstrate compliance to Fair Work.",
+      acceptanceCriteria: [
+        "Report compares each EBA condition against award",
+        "Line-by-line assessment: better, same, or worse",
+        "Monetary value calculated for each difference",
+        "Overall assessment determines BOOT pass/fail",
+        "Report formatted for Fair Work submission",
+        "Can run for individual or all EBA-covered staff"
+      ],
+      businessLogic: [
+        "BOOT requires EBA be better off overall than award",
+        "Individual conditions can be lower if offset by others",
+        "Monetary value of each condition calculated",
+        "Typical comparison points: rates, allowances, leave, conditions",
+        "Annual value used for comparison",
+        "Must consider 'typical' employee scenarios"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "EBA Configuration", relationship: "Uses EBA terms for comparison" },
+        { module: "Compliance", relationship: "BOOT reports part of compliance documentation" }
+      ],
+      endToEndJourney: [
+        "1. HR Manager preparing EBA renewal needs BOOT analysis",
+        "2. Opens Compliance > BOOT Assessment tool",
+        "3. Selects: Sunshine Childcare EBA 2026",
+        "4. Comparison Award: Children's Services Award MA000120",
+        "5. Selects employee scenario: Level 3 Full-time",
+        "6. System generates detailed comparison:",
+        "7. Base Rate: EBA $33.25 vs Award $28.73 (+$4.52 BETTER)",
+        "8. Annual Leave: EBA 5 weeks vs Award 4 weeks (+$1,150 BETTER)",
+        "9. Personal Leave: Same at 10 days",
+        "10. Overtime: Same rates and thresholds",
+        "11. Allowances: EBA additional $700/year (BETTER)",
+        "12. Overall: Employee $8,940/year better off",
+        "13. BOOT Assessment: PASSED ✓",
+        "14. Report exported in Fair Work submission format"
+      ],
+      realWorldExample: {
+        scenario: "Sunshine Childcare is renewing its EBA and needs to demonstrate BOOT compliance for Fair Work approval.",
+        steps: [
+          "Current EBA expires 30 June 2026",
+          "Negotiated new terms with employee representatives",
+          "HR Manager must demonstrate BOOT compliance",
+          "Opens BOOT Assessment tool",
+          "Selects proposed 'Sunshine Childcare EBA 2026-2030'",
+          "Comparison base: Children's Services Award MA000120",
+          "Creates 3 test scenarios (required by FWC):",
+          "Scenario 1: Level 3 Full-time Educator",
+          "  Annual Award Earnings: $59,500",
+          "  Annual EBA Earnings: $68,900",
+          "  Difference: +$9,400 (15.8% better)",
+          "  Assessment: PASSED",
+          "Scenario 2: Level 4 Part-time (0.6 FTE)",
+          "  Annual Award Earnings: $40,300",
+          "  Annual EBA Earnings: $44,100",
+          "  Difference: +$3,800 (9.4% better)",
+          "  Assessment: PASSED",
+          "Scenario 3: Level 2 Casual (average 20 hrs/wk)",
+          "  Annual Award Earnings: $35,100",
+          "  Annual EBA Earnings: $38,400",
+          "  Difference: +$3,300 (9.4% better)",
+          "  Assessment: PASSED",
+          "Consolidated BOOT Report generated",
+          "All scenarios better off - EBA passes BOOT",
+          "PDF formatted for Fair Work submission",
+          "Attached to EBA application package"
+        ],
+        outcome: "Comprehensive BOOT analysis demonstrates all employee types better off. Fair Work approval expedited with thorough documentation."
+      }
     }
   ],
 

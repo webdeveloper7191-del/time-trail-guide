@@ -20,6 +20,7 @@ import RecruitmentPage from "./pages/RecruitmentPage";
 import FormBuilder from "./pages/FormBuilder";
 import MyTasksDashboard from "./pages/MyTasksDashboard";
 import DatabaseDocumentation from "./pages/DatabaseDocumentation";
+import SRSDocumentation from "./pages/SRSDocumentation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
                   <Route path="/forms" element={<FormBuilder />} />
                   <Route path="/my-tasks" element={<MyTasksDashboard />} />
                   <Route path="/docs/database" element={<DatabaseDocumentation />} />
+                  <Route path="/docs/srs" element={<SRSDocumentation />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
