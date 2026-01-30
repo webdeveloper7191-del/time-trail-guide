@@ -11,7 +11,7 @@ import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
 import { StaffMember } from '@/types/staff';
-import { Settings } from 'lucide-react';
+import { Settings, Database } from 'lucide-react';
 import { Button } from '@/components/mui/Button';
 import { toast } from 'sonner';
 
@@ -637,6 +637,14 @@ export default function PerformanceManagement() {
               </Typography>
             </Box>
             <Stack direction="row" alignItems="center" spacing={1}>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Database size={16} />}
+                onClick={() => navigate('/docs/database')}
+              >
+                DB Docs
+              </Button>
               <Button
                 variant="outlined"
                 size="small"
