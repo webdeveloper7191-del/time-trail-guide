@@ -41,6 +41,8 @@ const SuccessionPlanningPanel = lazy(() => import('@/components/performance/Succ
 const PeerNominationsPanel = lazy(() => import('@/components/performance/engagement/PeerNominationsPanel').then(m => ({ default: m.PeerNominationsPanel })));
 const MentorshipMatchingPanel = lazy(() => import('@/components/performance/engagement/MentorshipMatchingPanel').then(m => ({ default: m.MentorshipMatchingPanel })));
 const DevelopmentBudgetTracker = lazy(() => import('@/components/performance/engagement/DevelopmentBudgetTracker').then(m => ({ default: m.DevelopmentBudgetTracker })));
+const CalendarIntegrationPanel = lazy(() => import('@/components/performance/engagement/CalendarIntegrationPanel').then(m => ({ default: m.CalendarIntegrationPanel })));
+const GoalRecommendationsPanel = lazy(() => import('@/components/performance/goals/GoalRecommendationsPanel').then(m => ({ default: m.GoalRecommendationsPanel })));
 
 // Eagerly load sheets/drawers as they're used across tabs
 import { GoalDetailSheet } from '@/components/performance/GoalDetailSheet';
@@ -62,11 +64,11 @@ const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 
 // Valid tab values for URL routing
 const VALID_TABS = [
-  'plans', 'goals', 'okr', 'lms', 'pip',
+  'plans', 'goals', 'goal-recommendations', 'okr', 'lms', 'pip',
   'reviews', 'feedback', '360feedback', 'calibration',
   'recognition', 'happiness', 'pulse', 'wellbeing', 'nominations', 'mentorship', 'budget',
   'talent', 'skills', 'succession', 'team',
-  'tasks', 'conversations',
+  'tasks', 'conversations', 'calendar',
   'summary', 'analytics', 'compensation'
 ];
 
@@ -542,6 +544,38 @@ export default function PerformanceManagement() {
           <DevelopmentBudgetTracker
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
+          />
+        )}
+
+        {activeTab === 'calendar' && (
+          <CalendarIntegrationPanel />
+        )}
+
+        {activeTab === 'goal-recommendations' && (
+          <GoalRecommendationsPanel
+            staff={mockStaff}
+            currentStaffId={CURRENT_USER_ID}
+            existingGoals={goals}
+            onAdoptGoal={(rec) => {
+              createGoal({
+                staffId: CURRENT_USER_ID,
+                title: rec.title,
+                description: rec.description,
+                category: rec.category,
+                priority: rec.priority,
+                status: 'not_started',
+                progress: 0,
+                startDate: new Date().toISOString().split('T')[0],
+                targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                milestones: rec.suggestedMilestones.map((ms, i) => ({
+                  id: `ms-${Date.now()}-${i}`,
+                  title: ms,
+                  targetDate: new Date(Date.now() + (30 * (i + 1)) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                  completed: false,
+                })),
+                createdBy: CURRENT_USER_ID,
+              });
+            }}
           />
         )}
       </Suspense>
