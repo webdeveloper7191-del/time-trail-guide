@@ -260,7 +260,7 @@ export default function PerformanceManagement() {
 
   const handleAssignPlanSubmit = async (data: {
     templateId: string;
-    staffId: string;
+    staffIds: string[];
     startDate: Date;
     notes?: string;
     selectedGoals: string[];
@@ -268,8 +268,9 @@ export default function PerformanceManagement() {
     selectedConversations: string[];
   }) => {
     console.log('Assigning plan:', data);
-    toast.success('Performance plan assigned successfully!');
+    toast.success(`Performance plan assigned to ${data.staffIds.length} employee${data.staffIds.length > 1 ? 's' : ''}!`);
     setShowAssignDrawer(false);
+    setShowQuickAssignDrawer(false);
     setSelectedTemplate(null);
   };
 

@@ -21,6 +21,9 @@ import {
   Clock,
   Building2,
   FileText,
+  Users,
+  Plus,
+  X,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -41,7 +44,7 @@ interface QuickAssignPlanDrawerProps {
   onClose: () => void;
   onAssign: (data: {
     templateId: string;
-    staffId: string;
+    staffIds: string[];
     startDate: Date;
     notes?: string;
     selectedGoals: string[];
@@ -59,7 +62,8 @@ export function QuickAssignPlanDrawer({
 }: QuickAssignPlanDrawerProps) {
   const [step, setStep] = useState<'select-template' | 'configure'>('select-template');
   const [selectedTemplate, setSelectedTemplate] = useState<PerformancePlanTemplate | null>(null);
-  const [staffId, setStaffId] = useState('');
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+  const [staffSearch, setStaffSearch] = useState('');
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,7 +76,8 @@ export function QuickAssignPlanDrawer({
     if (!open) {
       setStep('select-template');
       setSelectedTemplate(null);
-      setStaffId('');
+      setSelectedStaffIds([]);
+      setStaffSearch('');
       setStartDate(new Date());
       setNotes('');
       setSearchQuery('');
@@ -84,6 +89,28 @@ export function QuickAssignPlanDrawer({
   const activeStaff = useMemo(() => {
     return staff.filter(s => s.status === 'active' && s.id !== currentUserId);
   }, [staff, currentUserId]);
+
+  const filteredStaffForSelection = useMemo(() => {
+    return activeStaff
+      .filter(s => !selectedStaffIds.includes(s.id))
+      .filter(s =>
+        staffSearch.trim() === '' ||
+        `${s.firstName} ${s.lastName}`.toLowerCase().includes(staffSearch.toLowerCase()) ||
+        s.position?.toLowerCase().includes(staffSearch.toLowerCase()) ||
+        s.department?.toLowerCase().includes(staffSearch.toLowerCase())
+      );
+  }, [activeStaff, selectedStaffIds, staffSearch]);
+
+  const handleAddStaff = (staffId: string) => {
+    setSelectedStaffIds(prev => [...prev, staffId]);
+    setStaffSearch('');
+  };
+
+  const handleRemoveStaff = (staffId: string) => {
+    setSelectedStaffIds(prev => prev.filter(id => id !== staffId));
+  };
+
+  const getStaffById = (id: string) => staff.find(s => s.id === id);
 
   const filteredTemplates = useMemo(() => {
     return performancePlanTemplates.filter(t => {
@@ -114,8 +141,8 @@ export function QuickAssignPlanDrawer({
   };
 
   const handleSubmit = async () => {
-    if (!selectedTemplate || !staffId) {
-      toast.error('Please select a team member');
+    if (!selectedTemplate || selectedStaffIds.length === 0) {
+      toast.error('Please select at least one team member');
       return;
     }
 
@@ -123,7 +150,7 @@ export function QuickAssignPlanDrawer({
     try {
       await onAssign({
         templateId: selectedTemplate.id,
-        staffId,
+        staffIds: selectedStaffIds,
         startDate,
         notes: notes.trim() || undefined,
         selectedGoals: selectedTemplate.goals.map(g => g.id),
@@ -131,8 +158,7 @@ export function QuickAssignPlanDrawer({
         selectedConversations: selectedTemplate.conversations.map(c => c.id),
       });
       
-      const staffMember = staff.find(s => s.id === staffId);
-      toast.success(`Plan assigned to ${staffMember?.firstName} ${staffMember?.lastName}`);
+      toast.success(`Plan assigned to ${selectedStaffIds.length} employee${selectedStaffIds.length > 1 ? 's' : ''}`);
       onClose();
     } catch (error) {
       toast.error('Failed to assign plan');
@@ -304,30 +330,76 @@ export function QuickAssignPlanDrawer({
 
               <Separator />
 
-              {/* Employee Selection */}
-              <div className="space-y-2">
-                <Label>Assign To *</Label>
-                <Select value={staffId} onValueChange={setStaffId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select team member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeStaff.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={s.avatar} />
-                            <AvatarFallback className="text-xs">
-                              {s.firstName[0]}{s.lastName[0]}
-                            </AvatarFallback>
+              {/* Employee Selection - Multi-user */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Assign To ({selectedStaffIds.length}) *
+                </Label>
+                
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search employees..."
+                    value={staffSearch}
+                    onChange={(e) => setStaffSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                {/* Search Results */}
+                {staffSearch && filteredStaffForSelection.length > 0 && (
+                  <Card>
+                    <ScrollArea className="h-32">
+                      <div className="p-2 space-y-1">
+                        {filteredStaffForSelection.slice(0, 5).map(s => (
+                          <div
+                            key={s.id}
+                            onClick={() => handleAddStaff(s.id)}
+                            className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer"
+                          >
+                            <Avatar className="h-7 w-7">
+                              <AvatarImage src={s.avatar} />
+                              <AvatarFallback className="text-xs">{s.firstName[0]}{s.lastName[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{s.firstName} {s.lastName}</p>
+                              <p className="text-xs text-muted-foreground truncate">{s.position}</p>
+                            </div>
+                            <Plus className="h-4 w-4 text-primary" />
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </Card>
+                )}
+
+                {/* Selected Staff */}
+                {selectedStaffIds.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedStaffIds.map(id => {
+                      const member = getStaffById(id);
+                      if (!member) return null;
+                      return (
+                        <Badge key={id} variant="secondary" className="flex items-center gap-1 pr-1">
+                          <Avatar className="h-4 w-4">
+                            <AvatarFallback className="text-[8px]">{member.firstName[0]}{member.lastName[0]}</AvatarFallback>
                           </Avatar>
-                          {s.firstName} {s.lastName}
-                          <span className="text-muted-foreground">• {s.position}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                          {member.firstName} {member.lastName}
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-4 w-4 ml-1 hover:bg-transparent"
+                            onClick={() => handleRemoveStaff(id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Start Date */}
@@ -389,10 +461,10 @@ export function QuickAssignPlanDrawer({
           {step === 'configure' && (
             <Button 
               onClick={handleSubmit} 
-              disabled={loading || !staffId || !selectedTemplate}
+              disabled={loading || selectedStaffIds.length === 0 || !selectedTemplate}
               className="w-full sm:w-auto"
             >
-              {loading ? 'Assigning...' : 'Assign Plan'}
+              {loading ? 'Assigning...' : `Assign to ${selectedStaffIds.length} Employee${selectedStaffIds.length !== 1 ? 's' : ''}`}
             </Button>
           )}
         </div>
