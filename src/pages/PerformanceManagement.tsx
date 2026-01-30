@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Stack, Typography, CircularProgress } from '@mui/material';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
-import { PerformanceNavigation } from '@/components/performance/shared';
+import { PerformanceNavigation, GlobalSearch } from '@/components/performance/shared';
 import { PerformanceNotificationBell } from '@/components/performance/PerformanceNotificationBell';
 import { PerformanceSettingsDrawer, PerformanceSettings } from '@/components/performance/PerformanceSettingsDrawer';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
@@ -10,6 +10,7 @@ import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
+import { StaffMember } from '@/types/staff';
 import { Settings } from 'lucide-react';
 import { Button } from '@/components/mui/Button';
 import { toast } from 'sonner';
@@ -510,7 +511,7 @@ export default function PerformanceManagement() {
             justifyContent="space-between" 
             alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
             spacing={{ xs: 2, sm: 0 }}
-            sx={{ mb: { xs: 3, md: 4 } }}
+            sx={{ mb: { xs: 2, md: 3 } }}
           >
             <Box>
               <Typography 
@@ -555,6 +556,25 @@ export default function PerformanceManagement() {
               />
             </Stack>
           </Stack>
+
+          {/* Global Search */}
+          <Box sx={{ mb: 2 }}>
+            <GlobalSearch
+              goals={goals}
+              reviews={reviews}
+              conversations={conversations}
+              staff={mockStaff}
+              onSelectGoal={handleViewGoal}
+              onSelectReview={handleViewReview}
+              onSelectConversation={handleViewConversation}
+              onSelectStaff={(staff: StaffMember) => {
+                // Navigate to team overview with this staff member highlighted
+                handleTabChange('team');
+                toast.info(`Viewing ${staff.firstName} ${staff.lastName}'s profile`);
+              }}
+              onNavigateToTab={handleTabChange}
+            />
+          </Box>
 
           {/* Tab Navigation - URL-based */}
           <PerformanceNavigation 
