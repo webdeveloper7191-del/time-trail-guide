@@ -6,7 +6,7 @@ import {
   BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, 
   Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, 
   Sparkles, Smile, TrendingUp, ChevronDown, Check, Heart, Wallet,
-  UserPlus, Calendar, Lightbulb,
+  UserPlus, Calendar, Lightbulb, Brain, GitCompareArrows, Route,
   LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -60,6 +60,7 @@ const tabGroups: TabGroup[] = [
     items: [
       { value: 'talent', label: '9-Box Grid', icon: Grid3X3 },
       { value: 'skills', label: 'Skills & Careers', icon: Compass },
+      { value: 'career-pathing', label: 'Career Paths', icon: Route },
       { value: 'succession', label: 'Succession', icon: Users },
       { value: 'team', label: 'Team Overview', icon: Users2 },
     ],
@@ -77,6 +78,8 @@ const tabGroups: TabGroup[] = [
     items: [
       { value: 'summary', label: 'Executive Summary', icon: TrendingUp },
       { value: 'analytics', label: 'Analytics', icon: BarChart3 },
+      { value: 'sentiment', label: 'Sentiment Analysis', icon: Brain },
+      { value: 'benchmarking', label: 'Benchmarking', icon: GitCompareArrows },
       { value: 'compensation', label: 'Compensation', icon: TrendingUp },
     ],
   },

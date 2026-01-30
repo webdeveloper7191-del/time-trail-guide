@@ -43,6 +43,9 @@ const MentorshipMatchingPanel = lazy(() => import('@/components/performance/enga
 const DevelopmentBudgetTracker = lazy(() => import('@/components/performance/engagement/DevelopmentBudgetTracker').then(m => ({ default: m.DevelopmentBudgetTracker })));
 const CalendarIntegrationPanel = lazy(() => import('@/components/performance/engagement/CalendarIntegrationPanel').then(m => ({ default: m.CalendarIntegrationPanel })));
 const GoalRecommendationsPanel = lazy(() => import('@/components/performance/goals/GoalRecommendationsPanel').then(m => ({ default: m.GoalRecommendationsPanel })));
+const CareerPathingVisualization = lazy(() => import('@/components/performance/talent/CareerPathingVisualization').then(m => ({ default: m.CareerPathingVisualization })));
+const SentimentAnalysisPanel = lazy(() => import('@/components/performance/insights/SentimentAnalysisPanel').then(m => ({ default: m.SentimentAnalysisPanel })));
+const BenchmarkingDashboard = lazy(() => import('@/components/performance/insights/BenchmarkingDashboard').then(m => ({ default: m.BenchmarkingDashboard })));
 
 // Eagerly load sheets/drawers as they're used across tabs
 import { GoalDetailSheet } from '@/components/performance/GoalDetailSheet';
@@ -67,9 +70,9 @@ const VALID_TABS = [
   'plans', 'goals', 'goal-recommendations', 'okr', 'lms', 'pip',
   'reviews', 'feedback', '360feedback', 'calibration',
   'recognition', 'happiness', 'pulse', 'wellbeing', 'nominations', 'mentorship', 'budget',
-  'talent', 'skills', 'succession', 'team',
+  'talent', 'skills', 'career-pathing', 'succession', 'team',
   'tasks', 'conversations', 'calendar',
-  'summary', 'analytics', 'compensation'
+  'summary', 'analytics', 'sentiment', 'benchmarking', 'compensation'
 ];
 
 // Loading fallback component
@@ -576,6 +579,26 @@ export default function PerformanceManagement() {
                 createdBy: CURRENT_USER_ID,
               });
             }}
+          />
+        )}
+
+        {activeTab === 'career-pathing' && (
+          <CareerPathingVisualization staffId={CURRENT_USER_ID} />
+        )}
+
+        {activeTab === 'sentiment' && (
+          <SentimentAnalysisPanel
+            feedback={feedback}
+            staff={mockStaff}
+            currentUserId={CURRENT_USER_ID}
+          />
+        )}
+
+        {activeTab === 'benchmarking' && (
+          <BenchmarkingDashboard
+            goals={goals}
+            reviews={reviews}
+            feedback={feedback}
           />
         )}
       </Suspense>
