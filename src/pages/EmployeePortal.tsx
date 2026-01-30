@@ -40,6 +40,7 @@ import { EmployeeOKRPanel } from '@/components/performance/EmployeeOKRPanel';
 import { EmployeeSurveyPanel } from '@/components/performance/EmployeeSurveyPanel';
 import { Employee360Panel } from '@/components/performance/Employee360Panel';
 import { EmployeeRecognitionPanel } from '@/components/performance/EmployeeRecognitionPanel';
+import { EmployeeCareerPathingPanel } from '@/components/performance/employee/EmployeeCareerPathingPanel';
 
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
@@ -179,6 +180,9 @@ export function EmployeePortal() {
             <TabsTrigger value="okrs" className="gap-2">
               <Target className="h-4 w-4" /> My OKRs
             </TabsTrigger>
+            <TabsTrigger value="career" className="gap-2">
+              <TrendingUp className="h-4 w-4" /> Career Path
+            </TabsTrigger>
             <TabsTrigger value="surveys" className="gap-2">
               <MessageSquare className="h-4 w-4" /> Surveys
             </TabsTrigger>
@@ -216,6 +220,10 @@ export function EmployeePortal() {
 
           <TabsContent value="okrs">
             <EmployeeOKRPanel currentUserId={currentEmployee.id} />
+          </TabsContent>
+
+          <TabsContent value="career">
+            <EmployeeCareerPathingPanel currentUserId={currentEmployee.id} />
           </TabsContent>
 
           <TabsContent value="surveys">
