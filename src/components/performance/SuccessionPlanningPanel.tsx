@@ -37,8 +37,15 @@ import {
   readinessColors,
   successionRiskLabels,
 } from '@/types/compensation';
-import { mockKeyRoles, mockSuccessionCandidates } from '@/data/mockCompensationData';
+import { mockKeyRoles as initialMockKeyRoles, mockSuccessionCandidates as initialMockCandidates } from '@/data/mockCompensationData';
 import { toast } from 'sonner';
+import {
+  AddKeyRoleDrawer,
+  AddCandidateDrawer,
+  EditKeyRoleDrawer,
+  EditCandidateDrawer,
+  KeyRoleDetailSheet,
+} from './succession';
 
 interface SuccessionPlanningPanelProps {
   staff: StaffMember[];
@@ -46,29 +53,113 @@ interface SuccessionPlanningPanelProps {
 }
 
 export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlanningPanelProps) {
-  const [selectedRole, setSelectedRole] = useState<KeyRole | null>(null);
+  const [keyRoles, setKeyRoles] = useState<KeyRole[]>(initialMockKeyRoles);
+  const [candidates, setCandidates] = useState<SuccessionCandidate[]>(initialMockCandidates);
+  
   const [activeView, setActiveView] = useState<'pipeline' | 'candidates'>('pipeline');
+  
+  // Drawer/Sheet states
+  const [showAddRoleDrawer, setShowAddRoleDrawer] = useState(false);
+  const [showAddCandidateDrawer, setShowAddCandidateDrawer] = useState(false);
+  const [showEditRoleDrawer, setShowEditRoleDrawer] = useState(false);
+  const [showEditCandidateDrawer, setShowEditCandidateDrawer] = useState(false);
+  const [showRoleDetailSheet, setShowRoleDetailSheet] = useState(false);
+  
+  const [selectedRole, setSelectedRole] = useState<KeyRole | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<SuccessionCandidate | null>(null);
+  const [addCandidateForRoleId, setAddCandidateForRoleId] = useState<string | undefined>();
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
   const pipelines = useMemo<SuccessionPipeline[]>(() => {
-    return mockKeyRoles.map(role => {
-      const candidates = mockSuccessionCandidates.filter(c => c.keyRoleId === role.id);
-      const readyNowCount = candidates.filter(c => c.readiness === 'ready_now').length;
-      const benchStrength = candidates.length > 0 ? (readyNowCount / candidates.length) * 100 : 0;
-      return { keyRole: role, candidates, readyNowCount, benchStrength };
+    return keyRoles.map(role => {
+      const roleCandidates = candidates.filter(c => c.keyRoleId === role.id);
+      const readyNowCount = roleCandidates.filter(c => c.readiness === 'ready_now').length;
+      const benchStrength = roleCandidates.length > 0 ? (readyNowCount / roleCandidates.length) * 100 : 0;
+      return { keyRole: role, candidates: roleCandidates, readyNowCount, benchStrength };
     });
-  }, []);
+  }, [keyRoles, candidates]);
 
   const stats = useMemo(() => {
-    const totalRoles = mockKeyRoles.length;
-    const rolesAtRisk = mockKeyRoles.filter(r => r.vacancyRisk === 'high' || r.vacancyRisk === 'critical').length;
-    const readyNowTotal = mockSuccessionCandidates.filter(c => c.readiness === 'ready_now').length;
+    const totalRoles = keyRoles.length;
+    const rolesAtRisk = keyRoles.filter(r => r.vacancyRisk === 'high' || r.vacancyRisk === 'critical').length;
+    const readyNowTotal = candidates.filter(c => c.readiness === 'ready_now').length;
     const avgBenchStrength = pipelines.length > 0 
       ? pipelines.reduce((sum, p) => sum + p.benchStrength, 0) / pipelines.length 
       : 0;
     return { totalRoles, rolesAtRisk, readyNowTotal, avgBenchStrength };
-  }, [pipelines]);
+  }, [keyRoles, candidates, pipelines]);
+
+  // CRUD handlers
+  const handleAddRole = (role: Omit<KeyRole, 'id'>) => {
+    const newRole: KeyRole = { ...role, id: `role-${Date.now()}` };
+    setKeyRoles([...keyRoles, newRole]);
+    toast.success(`Key role "${role.title}" added`);
+  };
+
+  const handleEditRole = (role: KeyRole) => {
+    setKeyRoles(keyRoles.map(r => r.id === role.id ? role : r));
+    toast.success(`Key role "${role.title}" updated`);
+    setShowEditRoleDrawer(false);
+    setShowRoleDetailSheet(false);
+  };
+
+  const handleDeleteRole = (roleId: string) => {
+    const role = keyRoles.find(r => r.id === roleId);
+    setKeyRoles(keyRoles.filter(r => r.id !== roleId));
+    setCandidates(candidates.filter(c => c.keyRoleId !== roleId));
+    toast.success(`Key role "${role?.title}" deleted`);
+    setShowRoleDetailSheet(false);
+  };
+
+  const handleAddCandidate = (candidateData: Omit<SuccessionCandidate, 'id' | 'competencyGaps' | 'developmentActions' | 'overallScore'>) => {
+    const overallScore = Math.round(
+      (candidateData.performanceScore * 0.4) + 
+      (candidateData.potentialScore * 0.35) + 
+      (candidateData.experienceScore * 0.25)
+    );
+    const newCandidate: SuccessionCandidate = {
+      ...candidateData,
+      id: `candidate-${Date.now()}`,
+      overallScore,
+      competencyGaps: [],
+      developmentActions: [],
+    };
+    setCandidates([...candidates, newCandidate]);
+    toast.success('Candidate added to succession pipeline');
+  };
+
+  const handleEditCandidate = (candidate: SuccessionCandidate) => {
+    setCandidates(candidates.map(c => c.id === candidate.id ? candidate : c));
+    toast.success('Candidate updated');
+    setShowEditCandidateDrawer(false);
+  };
+
+  const handleDeleteCandidate = (candidateId: string) => {
+    setCandidates(candidates.filter(c => c.id !== candidateId));
+    toast.success('Candidate removed from pipeline');
+  };
+
+  // Open handlers
+  const openRoleDetail = (role: KeyRole) => {
+    setSelectedRole(role);
+    setShowRoleDetailSheet(true);
+  };
+
+  const openEditRole = (role: KeyRole) => {
+    setSelectedRole(role);
+    setShowEditRoleDrawer(true);
+  };
+
+  const openAddCandidateForRole = (roleId: string) => {
+    setAddCandidateForRoleId(roleId);
+    setShowAddCandidateDrawer(true);
+  };
+
+  const openEditCandidate = (candidate: SuccessionCandidate) => {
+    setSelectedCandidate(candidate);
+    setShowEditCandidateDrawer(true);
+  };
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
@@ -91,7 +182,10 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
             <Box sx={{ p: 3 }}>
               {/* Role Header */}
               <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={3}>
-                <Box>
+                <Box 
+                  sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
+                  onClick={() => openRoleDetail(pipeline.keyRole)}
+                >
                   <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
                     <Crown size={20} style={{ color: 'var(--primary)' }} />
                     <Typography variant="h6" fontWeight={600}>{pipeline.keyRole.title}</Typography>
@@ -106,10 +200,10 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
                   </Typography>
                 </Box>
                 <Stack direction="row" spacing={1}>
-                  <Button variant="ghost" size="small" onClick={() => setSelectedRole(pipeline.keyRole)}>
+                  <Button variant="ghost" size="small" onClick={() => openEditRole(pipeline.keyRole)}>
                     <Edit size={14} className="mr-1" /> Edit
                   </Button>
-                  <Button variant="outline" size="small" onClick={() => toast.info('Add successor')}>
+                  <Button variant="outline" size="small" onClick={() => openAddCandidateForRole(pipeline.keyRole.id)}>
                     <Plus size={14} className="mr-1" /> Add Candidate
                   </Button>
                 </Stack>
@@ -223,13 +317,13 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
 
   const renderCandidatesView = () => (
     <Stack spacing={2}>
-      {mockSuccessionCandidates.map((candidate) => {
+      {candidates.map((candidate) => {
         const staffMember = getStaffMember(candidate.staffId);
-        const keyRole = mockKeyRoles.find(r => r.id === candidate.keyRoleId);
+        const keyRole = keyRoles.find(r => r.id === candidate.keyRoleId);
         const mentor = candidate.mentorId ? getStaffMember(candidate.mentorId) : null;
 
         return (
-          <Card key={candidate.id} sx={{ cursor: 'pointer', '&:hover': { boxShadow: 3 } }}>
+          <Card key={candidate.id} sx={{ cursor: 'pointer', '&:hover': { boxShadow: 3 } }} onClick={() => openEditCandidate(candidate)}>
             <Box sx={{ p: 2.5 }}>
               <Stack direction="row" alignItems="flex-start" spacing={2}>
                 <Avatar src={staffMember?.avatar} sx={{ width: 56, height: 56 }}>
@@ -391,7 +485,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
           >
             Candidates
           </Button>
-          <Button variant="default" size="small" onClick={() => toast.info('Add key role')}>
+          <Button variant="default" size="small" onClick={() => setShowAddRoleDrawer(true)}>
             <Plus size={16} className="mr-1" /> Add Role
           </Button>
         </Stack>
@@ -447,6 +541,64 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
 
       {/* Content */}
       {activeView === 'pipeline' ? renderPipelineView() : renderCandidatesView()}
+
+      {/* Drawers and Sheets */}
+      <AddKeyRoleDrawer
+        open={showAddRoleDrawer}
+        onClose={() => setShowAddRoleDrawer(false)}
+        staff={staff}
+        onSave={handleAddRole}
+      />
+
+      <AddCandidateDrawer
+        open={showAddCandidateDrawer}
+        onClose={() => {
+          setShowAddCandidateDrawer(false);
+          setAddCandidateForRoleId(undefined);
+        }}
+        staff={staff}
+        keyRoles={keyRoles}
+        selectedRoleId={addCandidateForRoleId}
+        existingCandidates={candidates}
+        onSave={handleAddCandidate}
+      />
+
+      <EditKeyRoleDrawer
+        open={showEditRoleDrawer}
+        onClose={() => setShowEditRoleDrawer(false)}
+        role={selectedRole}
+        staff={staff}
+        onSave={handleEditRole}
+      />
+
+      <EditCandidateDrawer
+        open={showEditCandidateDrawer}
+        onClose={() => setShowEditCandidateDrawer(false)}
+        candidate={selectedCandidate}
+        staff={staff}
+        keyRoles={keyRoles}
+        onSave={handleEditCandidate}
+      />
+
+      <KeyRoleDetailSheet
+        open={showRoleDetailSheet}
+        onClose={() => setShowRoleDetailSheet(false)}
+        role={selectedRole}
+        candidates={selectedRole ? candidates.filter(c => c.keyRoleId === selectedRole.id) : []}
+        staff={staff}
+        onEdit={() => {
+          setShowRoleDetailSheet(false);
+          setShowEditRoleDrawer(true);
+        }}
+        onAddCandidate={() => {
+          if (selectedRole) {
+            setAddCandidateForRoleId(selectedRole.id);
+            setShowAddCandidateDrawer(true);
+          }
+        }}
+        onEditCandidate={openEditCandidate}
+        onDeleteRole={() => selectedRole && handleDeleteRole(selectedRole.id)}
+      />
     </Box>
   );
 }
