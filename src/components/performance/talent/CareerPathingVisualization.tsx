@@ -27,11 +27,17 @@ import {
   Clock,
   Zap,
   Lock,
+  Plus,
+  Settings,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import { CareerPath, StaffCareerProgress, SkillLevel, skillLevelLabels } from '@/types/advancedPerformance';
-import { mockCareerPaths, mockCareerProgress } from '@/data/mockAdvancedPerformanceData';
+import { mockCareerPaths, mockCareerProgress, mockSkills } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { cn } from '@/lib/utils';
+import { CareerPathSetupDrawer } from './CareerPathSetupDrawer';
+import { toast } from 'sonner';
 
 interface CareerPathingVisualizationProps {
   staffId?: string;
@@ -58,10 +64,38 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill 
   const [selectedPath, setSelectedPath] = useState<CareerPath | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<CareerLevelDisplay | null>(null);
   const [showLevelSheet, setShowLevelSheet] = useState(false);
+  const [showSetupDrawer, setShowSetupDrawer] = useState(false);
+  const [editingPath, setEditingPath] = useState<CareerPath | null>(null);
+  const [careerPaths, setCareerPaths] = useState<CareerPath[]>(mockCareerPaths);
 
   const staff = mockStaff.find(s => s.id === staffId);
   const careerProgress = mockCareerProgress.find(p => p.staffId === staffId);
-  const currentPath = careerProgress ? mockCareerPaths.find(p => p.id === careerProgress.currentPathId) : null;
+  const currentPath = careerProgress ? careerPaths.find(p => p.id === careerProgress.currentPathId) : null;
+  
+  const availableSkills = mockSkills.map(s => ({ id: s.id, name: s.name }));
+
+  const handleSaveCareerPath = (path: CareerPath) => {
+    if (editingPath) {
+      setCareerPaths(careerPaths.map(p => p.id === path.id ? path : p));
+    } else {
+      setCareerPaths([...careerPaths, path]);
+    }
+    setEditingPath(null);
+  };
+
+  const handleEditPath = (path: CareerPath) => {
+    setEditingPath(path);
+    setShowSetupDrawer(true);
+  };
+
+  const handleDeletePath = (pathId: string) => {
+    if (careerPaths.length <= 1) {
+      toast.error('Cannot delete the last career path');
+      return;
+    }
+    setCareerPaths(careerPaths.filter(p => p.id !== pathId));
+    toast.success('Career path deleted');
+  };
 
   // Calculate which level the staff is at based on currentLevelId
   const currentLevel = useMemo(() => {
@@ -245,6 +279,17 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill 
             Interactive career ladder showing your progression path and skill requirements
           </Typography>
         </Box>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => {
+            setEditingPath(null);
+            setShowSetupDrawer(true);
+          }}
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          New Career Path
+        </Button>
       </Stack>
 
       {/* Current Status Card */}
@@ -285,7 +330,7 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill 
 
       {/* Career Paths Grid */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' }, gap: 3 }}>
-        {mockCareerPaths.map((path) => {
+        {careerPaths.map((path) => {
           const isCurrentPath = currentPath?.id === path.id;
           
           return (
@@ -298,7 +343,7 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill 
             >
               <Box sx={{ p: 3 }}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-                  <Box>
+                  <Box flex={1}>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Typography variant="subtitle1" fontWeight={600}>
                         {path.name}
@@ -314,11 +359,41 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill 
                       {path.description}
                     </Typography>
                   </Box>
-                  <Chip 
-                    size="small" 
-                    label={`${path.levels.length} levels`}
-                    variant="outlined"
-                  />
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Chip 
+                      size="small" 
+                      label={`${path.levels.length} levels`}
+                      variant="outlined"
+                    />
+                    <Tooltip title="Edit Path">
+                      <Button
+                        variant="text"
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditPath(path);
+                        }}
+                        sx={{ minWidth: 'auto', p: 0.5 }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="Delete Path">
+                      <Button
+                        variant="text"
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePath(path.id);
+                        }}
+                        sx={{ minWidth: 'auto', p: 0.5 }}
+                        disabled={careerPaths.length <= 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </Tooltip>
+                  </Stack>
                 </Stack>
 
                 {renderCareerLadder(path)}
@@ -417,6 +492,15 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill 
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Career Path Setup Drawer */}
+      <CareerPathSetupDrawer
+        open={showSetupDrawer}
+        onOpenChange={setShowSetupDrawer}
+        careerPath={editingPath}
+        onSave={handleSaveCareerPath}
+        availableSkills={availableSkills}
+      />
     </Box>
   );
 }

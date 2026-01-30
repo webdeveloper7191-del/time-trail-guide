@@ -40,10 +40,12 @@ import {
   RefreshCw,
   Filter,
   Calendar,
+  Settings,
 } from 'lucide-react';
 import { Feedback, feedbackTypeLabels } from '@/types/performance';
 import { StaffMember } from '@/types/staff';
 import { formatDistanceToNow, parseISO, format, subMonths } from 'date-fns';
+import { SentimentSettingsDrawer, SentimentSettings } from './SentimentSettingsDrawer';
 
 interface SentimentAnalysisPanelProps {
   feedback: Feedback[];
@@ -153,6 +155,8 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId }: Senti
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<SentimentResult[]>([]);
   const [timeRange, setTimeRange] = useState<'all' | '3m' | '6m' | '1y'>('all');
+  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
+  const [settings, setSettings] = useState<SentimentSettings | undefined>(undefined);
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
@@ -297,7 +301,7 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId }: Senti
           </Typography>
         </Box>
         
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
           {(['3m', '6m', '1y', 'all'] as const).map((range) => (
             <Button
               key={range}
@@ -308,6 +312,14 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId }: Senti
               {range === 'all' ? 'All Time' : range.toUpperCase()}
             </Button>
           ))}
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setShowSettingsDrawer(true)}
+          >
+            <Settings className="h-4 w-4 mr-1" />
+            Settings
+          </Button>
         </Stack>
       </Stack>
 
@@ -513,6 +525,14 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId }: Senti
           })}
         </Stack>
       </Box>
+
+      {/* Settings Drawer */}
+      <SentimentSettingsDrawer
+        open={showSettingsDrawer}
+        onOpenChange={setShowSettingsDrawer}
+        onSave={setSettings}
+        currentSettings={settings}
+      />
     </Box>
   );
 }
