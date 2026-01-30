@@ -1674,6 +1674,753 @@ export const rosterSRS: ModuleSRS = {
         ],
         outcome: "Student placements tracked without affecting ratio compliance."
       }
+    },
+    // ============================================================================
+    // ADDITIONAL USER STORIES - BACKGROUND PROCESSES & ADVANCED FEATURES
+    // ============================================================================
+    {
+      id: "US-RST-026",
+      title: "Detect Expiring Recurring Shift Series (Background)",
+      actors: ["System", "Location Manager"],
+      description: "As a System, I want to automatically detect recurring shift series that are about to expire, so that managers can extend or renew patterns before they end.",
+      acceptanceCriteria: [
+        "System scans all recurring shift patterns nightly",
+        "Identifies series ending within 14 days (warning) or 7 days (critical)",
+        "Counts remaining occurrences for each expiring series",
+        "Generates in-app alerts for affected managers",
+        "Sends email notifications to staff and managers",
+        "Expiry notifications include pattern details and renewal options"
+      ],
+      businessLogic: [
+        "Background job runs daily at 2 AM",
+        "Warning threshold: 14 days from last occurrence",
+        "Critical threshold: 7 days from last occurrence",
+        "Notification deduplication: Don't re-notify within 3 days",
+        "Email template includes: Staff name, pattern type, end date, occurrences remaining",
+        "In-app badge shows count of expiring series"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Notifications", relationship: "Triggers email and in-app alerts" },
+        { module: "Recurring Patterns", relationship: "Scans active pattern definitions" }
+      ],
+      endToEndJourney: [
+        "1. Background service runs at 2 AM daily",
+        "2. Scans all shifts with recurrence_group_id",
+        "3. Groups by series and finds last occurrence date",
+        "4. Emma's 'Mon/Wed/Fri' pattern ends in 5 days",
+        "5. System creates notification: severity 'critical'",
+        "6. Manager Sarah receives in-app alert",
+        "7. Emma receives email: 'Your recurring schedule ends soon'",
+        "8. Sarah extends the pattern for another 8 weeks",
+        "9. System generates new shift instances",
+        "10. Notification cleared from dashboard"
+      ],
+      realWorldExample: {
+        scenario: "Tom's weekly pattern was set with an end date 6 days away.",
+        steps: [
+          "Nightly job detects Tom's series ending in 6 days",
+          "Critical notification created",
+          "Manager receives alert with 'Extend Series' button",
+          "Manager clicks through, extends pattern indefinitely",
+          "System generates shifts for next 8 weeks"
+        ],
+        outcome: "Pattern extended before disruption. Staff schedule continuity maintained."
+      }
+    },
+    {
+      id: "US-RST-027",
+      title: "Calculate Fatigue Scores in Real-Time (Background)",
+      actors: ["System", "Location Manager"],
+      description: "As a System, I want to continuously calculate fatigue scores for all staff based on their work patterns, so that managers can identify burnout risks proactively.",
+      acceptanceCriteria: [
+        "Fatigue score calculated from multiple factors",
+        "Weekly hours contribution (0-35 points)",
+        "Consecutive days contribution (0-30 points)",
+        "Night shift frequency contribution (0-20 points)",
+        "Rest period adequacy contribution (0-15 points)",
+        "Risk levels: Low (<40), Moderate (40-60), High (60-80), Critical (>80)"
+      ],
+      businessLogic: [
+        "Score recalculated when: shift added/modified, daily batch refresh",
+        "Factors weighted: Hours 35%, Consecutive 30%, Nights 20%, Rest 15%",
+        "14-day rolling window for calculations",
+        "Violations logged separately from scores",
+        "Recommendations generated based on contributing factors",
+        "Projected next-week score estimated from scheduled shifts"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Compliance", relationship: "Violations feed compliance dashboard" },
+        { module: "Roster", relationship: "Score visible when assigning shifts" }
+      ],
+      endToEndJourney: [
+        "1. Emma works 45 hours in 6 consecutive days",
+        "2. System calculates fatigue score:",
+        "3. Weekly hours: 45/40 × 35 = 39 points",
+        "4. Consecutive days: 6/5 × 30 = 36 points",
+        "5. Night shifts: 2/3 × 20 = 13 points",
+        "6. Rest periods: 8h min / 10h required × 15 = 3 points",
+        "7. Total: 91 points = CRITICAL",
+        "8. Manager receives urgent alert",
+        "9. Recommendation: 'Schedule rest day immediately'",
+        "10. Manager adjusts upcoming roster"
+      ],
+      realWorldExample: {
+        scenario: "Staff member approaching burnout detected before injury.",
+        steps: [
+          "Fatigue dashboard shows 3 staff at 'High' risk",
+          "Tom at 78 points: worked 6 days, averaged 9h sleep gap",
+          "System recommends 2 consecutive days off",
+          "Manager reassigns Tom's Wednesday shift",
+          "Score projects to drop to 52 (Moderate)"
+        ],
+        outcome: "Proactive intervention prevents fatigue-related incident."
+      }
+    },
+    {
+      id: "US-RST-028",
+      title: "Detect Cross-Location Shift Conflicts (Background)",
+      actors: ["System", "Location Manager"],
+      description: "As a System, I want to detect when staff are scheduled at multiple locations simultaneously, so that impossible schedules are prevented.",
+      acceptanceCriteria: [
+        "Cross-location conflict detection runs on shift save",
+        "Checks all locations for the same staff member",
+        "Identifies time overlaps using precise start/end times",
+        "Blocks publication of conflicting rosters",
+        "Shows conflict panel with details from both locations",
+        "Cannot override cross-location overlaps (hard constraint)"
+      ],
+      businessLogic: [
+        "Query all shifts for staff across all locations on save",
+        "Time overlap = Start1 < End2 AND Start2 < End1",
+        "Cross-location conflicts are blocking (severity: error)",
+        "Same-location conflicts may be warnings if shift types differ",
+        "Conflict message includes both location names and times",
+        "Publish validation checks all draft shifts for conflicts"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Multi-Location", relationship: "Staff can work at multiple sites" },
+        { module: "Publishing", relationship: "Conflicts block roster publication" }
+      ],
+      endToEndJourney: [
+        "1. Emma works at Downtown (primary) and Uptown (secondary)",
+        "2. Manager A schedules Emma: Downtown 9 AM - 3 PM Monday",
+        "3. Manager B schedules Emma: Uptown 12 PM - 6 PM Monday",
+        "4. On save, system detects overlap (12 PM - 3 PM)",
+        "5. Error: 'Cross-location conflict at Uptown 12:00-15:00'",
+        "6. Manager B adjusts to Uptown 3:30 PM - 6 PM",
+        "7. Conflict resolved, shift saved successfully",
+        "8. Both managers see Emma's full schedule"
+      ],
+      realWorldExample: {
+        scenario: "Multi-site staff accidentally double-booked.",
+        steps: [
+          "During publish, conflict panel appears",
+          "Shows: Emma has overlap at Downtown and Uptown",
+          "Cannot proceed until resolved",
+          "Manager contacts Uptown, they adjust timing",
+          "Publish completes with all conflicts cleared"
+        ],
+        outcome: "Staff never assigned to impossible schedules."
+      }
+    },
+    {
+      id: "US-RST-029",
+      title: "Auto-Escalate Agency Shift Broadcasts (Background)",
+      actors: ["System", "Location Manager"],
+      description: "As a System, I want to automatically escalate unfilled agency shift broadcasts based on time thresholds, so that urgent shifts get progressively more attention.",
+      acceptanceCriteria: [
+        "Escalation rules configurable per location",
+        "Tier escalation: Notify additional agencies after X minutes",
+        "Urgency escalation: Increase urgency level after X minutes",
+        "Rate escalation: Offer higher pay rate after X minutes",
+        "Supervisor notification after final escalation",
+        "Full escalation history logged for audit"
+      ],
+      businessLogic: [
+        "Default escalation tiers: 30min → Tier 2, 60min → Urgent, 120min → Tier 3, 180min → Critical",
+        "Each escalation creates event record",
+        "Rate increase: +10% per escalation tier (configurable)",
+        "Maximum 3 tiers of escalation",
+        "After all tiers exhausted, notify supervisor for manual intervention",
+        "Escalation pauses if candidates submitted"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Agency Portal", relationship: "Agencies receive escalated notifications" },
+        { module: "Notifications", relationship: "Supervisors alerted at final tier" }
+      ],
+      endToEndJourney: [
+        "1. Manager broadcasts shift to 3 preferred agencies",
+        "2. 30 minutes pass, no response",
+        "3. System escalates to Tier 2: adds 2 more agencies",
+        "4. 60 minutes pass, still no response",
+        "5. System increases urgency to 'Urgent', rate +10%",
+        "6. Agency A submits 2 candidates at 65 minutes",
+        "7. Escalation pauses while manager reviews",
+        "8. Manager accepts one candidate",
+        "9. Shift marked 'filled', escalation ends"
+      ],
+      realWorldExample: {
+        scenario: "Same-day shift broadcast escalates through all tiers.",
+        steps: [
+          "Shift broadcasted at 6 AM for 8 AM start",
+          "No response by 6:30 AM - escalate to Tier 2",
+          "No response by 7 AM - urgency to Critical, rate +20%",
+          "Agency responds at 7:15 AM with candidate",
+          "Manager accepts, candidate arrives at 7:55 AM"
+        ],
+        outcome: "Automatic escalation filled critical shift despite slow initial response."
+      }
+    },
+    {
+      id: "US-RST-030",
+      title: "Validate Ratio Compliance Before Shift Actions (Background)",
+      actors: ["System", "Location Manager"],
+      description: "As a System, I want to validate staffing ratio compliance before any shift is created, modified, or deleted, so that ratio breaches are prevented proactively.",
+      acceptanceCriteria: [
+        "Validation runs on shift create/edit/delete",
+        "Simulates the action to check resulting compliance",
+        "Blocks actions that would cause ratio breach",
+        "Warns for qualification shortfalls",
+        "Provides suggested actions to resolve issues",
+        "Supports manager override with documented justification"
+      ],
+      businessLogic: [
+        "Ratio = Booked Clients / Scheduled Staff",
+        "Required staff = ceil(Clients / Required Ratio)",
+        "Qualification check: 50% must hold required qualification",
+        "Breach = shortfall > 0 (blocking)",
+        "Warning = qualification shortfall only",
+        "Override requires reason text stored for audit"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Compliance", relationship: "Ratio status displayed on dashboard" },
+        { module: "Demand", relationship: "Client bookings drive ratio calculations" }
+      ],
+      endToEndJourney: [
+        "1. Manager tries to delete Tom's shift (only 3 staff for 15 clients)",
+        "2. System simulates deletion: 2 staff for 15 clients",
+        "3. Required ratio 1:5 = need 3 staff minimum",
+        "4. Result: Would cause shortfall of 1 staff",
+        "5. Action blocked with message: 'Ratio breach: 2/3 staff'",
+        "6. Suggested: 'Add another staff member first'",
+        "7. Manager assigns Emma to cover, then retries delete",
+        "8. Deletion now allowed (3 staff remains)"
+      ],
+      realWorldExample: {
+        scenario: "Staff removal blocked to prevent compliance breach.",
+        steps: [
+          "Manager attempts to reassign Maria to different department",
+          "Validation shows current department would drop to 1:6 ratio",
+          "Required is 1:5, action blocked",
+          "Manager assigns agency staff to original department first",
+          "Reassignment now proceeds"
+        ],
+        outcome: "Ratio compliance enforced before any breach can occur."
+      }
+    },
+    {
+      id: "US-RST-031",
+      title: "Generate Labour Cost Forecasts (Background)",
+      actors: ["System", "Finance Director", "Location Manager"],
+      description: "As a System, I want to generate multi-week labour cost forecasts based on current roster patterns, so that budget planning is data-driven.",
+      acceptanceCriteria: [
+        "Forecasts generated for 4-12 weeks ahead",
+        "Based on current week's roster as baseline",
+        "Adjusts for public holidays (reduced demand, higher rates)",
+        "Adjusts for school holidays (increased demand)",
+        "Integrates weather forecasts for demand adjustment",
+        "Shows variance vs budget with risk factors"
+      ],
+      businessLogic: [
+        "Baseline: Current week's actual roster pattern",
+        "Public holiday adjustment: 70% reduction, 250% rate",
+        "School holiday adjustment: 20% increase in shifts",
+        "Weather adjustment: Rain = +5% demand",
+        "Cost = Hours × Rate × Penalty Multiplier + Super (11.5%)",
+        "Risk factors: PH count, budget overrun weeks, OT trends"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Awards", relationship: "Pay rates and penalties for cost calculation" },
+        { module: "Budgeting", relationship: "Forecast compared against budget allocations" }
+      ],
+      endToEndJourney: [
+        "1. Finance Director opens Labour Forecasting",
+        "2. Selects 4-week forecast period",
+        "3. System analyzes current week: 15 staff, 520 hours, $16,400 cost",
+        "4. Week 2 has Australia Day (PH): Projects $18,200 (+11%)",
+        "5. Week 3 normal: Projects $16,100",
+        "6. Week 4 has school holidays: Projects $17,800 (+8%)",
+        "7. Total 4-week forecast: $68,500",
+        "8. Budget: $64,000 → Projected $4,500 over",
+        "9. Risk factors: 1 PH, 2 weeks over budget",
+        "10. Recommendation: 'Reduce weekend shifts in Week 2'"
+      ],
+      realWorldExample: {
+        scenario: "Quarterly budget planning uses forecast data.",
+        steps: [
+          "Generate 12-week forecast for Q2",
+          "Identifies Easter week as high-cost (+45%)",
+          "3 public holidays in period",
+          "Total projected: $195,000 vs budget $180,000",
+          "Adjustments made to reduce Sunday staffing",
+          "Revised forecast: $183,000 (within budget)"
+        ],
+        outcome: "Data-driven budget planning avoids quarter-end surprises."
+      }
+    },
+    {
+      id: "US-RST-032",
+      title: "Accrue Leave Balances Per Pay Period (Background)",
+      actors: ["System", "Payroll Administrator"],
+      description: "As a System, I want to automatically calculate and accrue leave balances based on hours worked each pay period, so that entitlements are always accurate.",
+      acceptanceCriteria: [
+        "Annual leave accrues at NES rate (4 weeks/year)",
+        "Personal leave accrues at NES rate (10 days/year)",
+        "Long Service Leave accrues per state-specific rules",
+        "Casual employees excluded (leave loaded in rate)",
+        "Accruals calculated per hour worked",
+        "Transaction history maintained for audit"
+      ],
+      businessLogic: [
+        "Annual leave rate: 0.07692 hours per hour worked",
+        "Personal leave rate: 0.03846 hours per hour worked",
+        "LSL: State-specific (e.g., NSW: 2 months after 10 years)",
+        "Accrual formula: hoursWorked × accrualRate",
+        "Pro-rata for part-time based on actual hours",
+        "Transactions recorded: type, hours, balance after"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Timesheet", relationship: "Approved hours trigger accrual calculation" },
+        { module: "Payroll", relationship: "Leave balances exported for pay processing" }
+      ],
+      endToEndJourney: [
+        "1. End of fortnight, timesheets approved",
+        "2. Emma worked 76 hours this period",
+        "3. Annual leave accrual: 76 × 0.07692 = 5.85 hours",
+        "4. Personal leave accrual: 76 × 0.03846 = 2.92 hours",
+        "5. LSL accrual: 76 × state rate = 0.58 hours",
+        "6. Balances updated:",
+        "7. Annual: 45.2 → 51.05 hours",
+        "8. Personal: 22.1 → 25.02 hours",
+        "9. LSL: 38.4 → 38.98 hours",
+        "10. Transaction log shows all accruals"
+      ],
+      realWorldExample: {
+        scenario: "Part-time staff accrues proportional leave.",
+        steps: [
+          "Tom works 20 hours/week (part-time)",
+          "Fortnightly accrual: 40 hours × 0.07692 = 3.08 hours AL",
+          "Full-time equivalent would be 5.85 hours",
+          "Tom's balance correctly reflects actual hours",
+          "Year-end: 80 hours AL (2 weeks, pro-rata)"
+        ],
+        outcome: "Accurate pro-rata accruals for all employment types."
+      }
+    },
+    {
+      id: "US-RST-033",
+      title: "Skill Match Staff to Shift Requirements (Background)",
+      actors: ["System", "Location Manager"],
+      description: "As a System, I want to calculate skill match scores between staff and shift requirements, so that auto-assignment uses the best-fit staff.",
+      acceptanceCriteria: [
+        "Match score calculated from multiple factors",
+        "Required qualifications are mandatory (pass/fail)",
+        "Preferred skills contribute to score (weighted)",
+        "Skill levels compared to minimum requirements",
+        "Staff ranked by score for each shift",
+        "Auto-assign uses ranked list"
+      ],
+      businessLogic: [
+        "Mandatory = Must have qualification, or score capped at 40",
+        "Each skill: (staffLevel / requiredLevel) × weight",
+        "Weights configurable per organization",
+        "Score normalized to 0-100 scale",
+        "Staff with >50 score and mandatory=true eligible",
+        "Break ties by: lowest hourly rate (cost optimization)"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Staff Profiles", relationship: "Qualifications and skills stored" },
+        { module: "AI Scheduler", relationship: "Uses scores for optimization" }
+      ],
+      endToEndJourney: [
+        "1. Open shift requires: First Aid (mandatory), Leadership (preferred)",
+        "2. System evaluates available staff:",
+        "3. Emma: First Aid ✓, Leadership 4/5 = Score 85",
+        "4. Tom: First Aid ✓, Leadership 3/5 = Score 72",
+        "5. Maria: First Aid ✗ = Score 38 (capped, ineligible)",
+        "6. Ranked list: Emma (85), Tom (72)",
+        "7. Manager sees recommendation: Emma is best match",
+        "8. Auto-assign selects Emma",
+        "9. Skill match details visible in assignment panel"
+      ],
+      realWorldExample: {
+        scenario: "Auto-fill 10 open shifts using skill matching.",
+        steps: [
+          "10 shifts need staffing, 12 available staff",
+          "System calculates 120 match scores (10 × 12)",
+          "Optimizes: maximize total match while covering all shifts",
+          "Result: All shifts filled with avg score 78",
+          "2 staff not assigned (lowest match scores)",
+          "Manager reviews and accepts recommendations"
+        ],
+        outcome: "Best-fit assignments reduce training gaps and improve quality."
+      }
+    },
+    {
+      id: "US-RST-034",
+      title: "Detect Timesheet Anomalies and Patterns (Background)",
+      actors: ["System", "Payroll Administrator"],
+      description: "As a System, I want to detect irregular clock patterns and potential fraud indicators, so that anomalies are flagged for review before payroll.",
+      acceptanceCriteria: [
+        "Detects missing clock out events",
+        "Flags unusually early clock in (before 5 AM)",
+        "Flags unusually late clock out (after 10 PM)",
+        "Detects pattern drift from historical average",
+        "Identifies excessive daily hours (>12h)",
+        "Buddy punching indicators when device data available"
+      ],
+      businessLogic: [
+        "Missing clock out: Critical severity, blocks approval",
+        "Early/late punches: Warning severity",
+        "Pattern drift: >60 min from average = info flag",
+        "Excessive hours: Critical, requires investigation",
+        "Buddy punch detection: Same device, multiple staff, similar times",
+        "Historical comparison uses 30-day rolling average"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Compliance", relationship: "Anomalies logged for audit" },
+        { module: "Timesheet", relationship: "Flags shown in timesheet review" }
+      ],
+      endToEndJourney: [
+        "1. Timesheet review opens for 15 staff",
+        "2. System shows: 2 anomalies detected",
+        "3. Anomaly 1: Tom missing clock out on Wednesday",
+        "4. Anomaly 2: Emma clocked in at 4:30 AM (unusual)",
+        "5. Payroll Admin investigates Tom's entry",
+        "6. Contacts Tom: He forgot to clock out, left at 3 PM",
+        "7. Admin manually enters 3 PM clock out",
+        "8. Emma's early start confirmed (special event)",
+        "9. Both anomalies resolved, approval proceeds",
+        "10. Audit log shows resolution notes"
+      ],
+      realWorldExample: {
+        scenario: "Pattern drift catches time theft attempt.",
+        steps: [
+          "Staff member historically clocks in at 8:00 AM average",
+          "Last 5 days showing 7:15 AM clock in",
+          "Pattern drift flag raised: 45 min earlier than usual",
+          "Manager investigates: No approved early starts",
+          "Conversation reveals misunderstanding of shift times",
+          "Issue corrected, no payroll impact"
+        ],
+        outcome: "Anomaly detection prevents unintentional overpayment."
+      }
+    },
+    {
+      id: "US-RST-035",
+      title: "Determine Approval Chain Based on Rules (Background)",
+      actors: ["System", "Payroll Administrator"],
+      description: "As a System, I want to automatically determine the correct approval chain for each timesheet based on configurable rules, so that approvals route correctly.",
+      acceptanceCriteria: [
+        "Auto-approve: Normal hours, no exceptions, no overtime",
+        "Manager approval: Overtime <8 hours or exceptions",
+        "Senior Manager: Overtime >8 hours",
+        "HR approval: Compliance violations",
+        "Escalation if SLA deadline exceeded",
+        "Full approval history maintained"
+      ],
+      businessLogic: [
+        "Auto-approve conditions: No flags, no OT, all breaks taken",
+        "Tier order: Auto → Manager → Senior Manager → HR → Director",
+        "SLA deadlines: Manager 24h, Senior 48h, HR 72h",
+        "Escalation adds next tier if SLA exceeded",
+        "Each step logs: approver, timestamp, notes",
+        "Completion when final required tier approves"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Timesheet", relationship: "Approval status visible on timesheet" },
+        { module: "Notifications", relationship: "Approvers notified when action needed" }
+      ],
+      endToEndJourney: [
+        "1. Emma submits timesheet: 38 hours, no flags",
+        "2. System evaluates: Normal hours ✓, No OT ✓, No exceptions ✓",
+        "3. Auto-approval triggered",
+        "4. Tom submits timesheet: 42 hours, 4h OT",
+        "5. System evaluates: OT >2h = Manager approval required",
+        "6. Manager Sarah receives notification",
+        "7. Sarah approves within 12 hours (under SLA)",
+        "8. Maria submits: 12h day flagged for excessive hours",
+        "9. System routes to Manager + HR",
+        "10. Both must approve before payroll export"
+      ],
+      realWorldExample: {
+        scenario: "Complex timesheet requires multi-tier approval.",
+        steps: [
+          "Staff worked 52 hours with missed break and 14 OT hours",
+          "System creates 3-tier chain: Manager → Senior → HR",
+          "Manager approves OT (business need documented)",
+          "Senior Manager approves high OT (justified by emergency)",
+          "HR reviews missed break (compliance documented)",
+          "All tiers complete, timesheet approved"
+        ],
+        outcome: "Appropriate oversight for exceptional circumstances."
+      }
+    },
+    {
+      id: "US-RST-036",
+      title: "Rate Agency Workers Post-Placement (Feedback Loop)",
+      actors: ["Location Manager", "System"],
+      description: "As a Location Manager, I want to rate agency workers after each placement, so that future recommendations prioritize reliable workers.",
+      acceptanceCriteria: [
+        "Rating prompt appears after agency shift completes",
+        "5-star rating scale for overall performance",
+        "Specific criteria: Punctuality, Skills, Teamwork, Attitude",
+        "Free-text feedback option",
+        "Ratings aggregate into reliability score",
+        "Preferred worker flag for frequent high performers"
+      ],
+      businessLogic: [
+        "Rating request triggered 2 hours after shift end",
+        "Reminder sent if not rated within 24 hours",
+        "Reliability score = weighted average of all ratings",
+        "Preferred flag: avg rating >4.5 across 3+ placements",
+        "Low ratings (<3) trigger agency notification",
+        "Historical ratings visible when reviewing candidates"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Agency Portal", relationship: "Ratings shared with agencies" },
+        { module: "Shift Matching", relationship: "Reliability score influences ranking" }
+      ],
+      endToEndJourney: [
+        "1. Agency worker Sarah completes shift at 3 PM",
+        "2. At 5 PM, Manager receives rating prompt",
+        "3. Rates Sarah: Overall 5★, Punctuality 5★, Skills 4★",
+        "4. Adds note: 'Excellent with toddlers'",
+        "5. Rating saved, Sarah's reliability score updates: 4.8",
+        "6. Sarah flagged as 'Preferred Worker' for this location",
+        "7. Next agency broadcast prioritizes Sarah",
+        "8. Agency sees positive feedback, offers Sarah more shifts",
+        "9. Location builds pool of reliable agency workers"
+      ],
+      realWorldExample: {
+        scenario: "Consistent ratings identify best agency talent.",
+        steps: [
+          "Over 6 months, 5 agency workers used 40 times total",
+          "Ratings show: 2 workers at 4.7+, 2 at 4.0, 1 at 2.8",
+          "System recommends top 2 for future shifts",
+          "Low-rated worker no longer proposed by agency",
+          "Fill rate improves, quality consistent"
+        ],
+        outcome: "Data-driven agency worker selection improves quality."
+      }
+    },
+    {
+      id: "US-RST-037",
+      title: "Copy Week Roster to Future Date Range",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to copy an existing week's roster to a future date range, so that I can quickly replicate successful schedules.",
+      acceptanceCriteria: [
+        "Select source week with complete roster",
+        "Choose target week(s) for copying",
+        "Option to copy with or without staff assignments",
+        "Skip dates that already have shifts",
+        "Preview shows shifts to be created",
+        "Bulk create with single confirmation"
+      ],
+      businessLogic: [
+        "Source week must have at least 1 shift",
+        "Target dates calculated by day-of-week offset",
+        "Conflict detection: Skip if matching shift exists",
+        "Staff assignment optional (creates open shifts if unchecked)",
+        "Copied shifts created in 'draft' status",
+        "Maximum 4 weeks can be copied at once"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Roster Templates", relationship: "Alternative to template application" },
+        { module: "Publishing", relationship: "Copied shifts require publication" }
+      ],
+      endToEndJourney: [
+        "1. Manager completes excellent roster for week of March 3",
+        "2. Wants to replicate for next 2 weeks",
+        "3. Opens 'Copy Week' from roster toolbar",
+        "4. Selects source: March 3-9",
+        "5. Selects targets: March 10-16, March 17-23",
+        "6. Checks 'Include staff assignments'",
+        "7. Preview shows: 70 shifts to create across 2 weeks",
+        "8. Confirms copy",
+        "9. All shifts created in draft status",
+        "10. Manager reviews and publishes"
+      ],
+      realWorldExample: {
+        scenario: "Holiday closure roster replicated for multiple weeks.",
+        steps: [
+          "Reduced roster created for holiday period",
+          "Only 3 staff per day instead of usual 6",
+          "Copy applied to all 3 weeks of January holidays",
+          "105 shifts created (3 staff × 5 days × 7 weeks)",
+          "Minor adjustments made, then published"
+        ],
+        outcome: "3 weeks of roster created in 5 minutes."
+      }
+    },
+    {
+      id: "US-RST-038",
+      title: "Generate and Print Roster View",
+      actors: ["Location Manager", "Staff Member"],
+      description: "As a Location Manager, I want to generate a printable roster view, so that I can post physical schedules and share with staff who prefer paper.",
+      acceptanceCriteria: [
+        "Print-optimized layout with clear formatting",
+        "Configurable date range (day, week, fortnight)",
+        "Option to show all staff or specific department",
+        "Staff names and shift times clearly visible",
+        "Totals per staff member shown",
+        "PDF export option for digital sharing"
+      ],
+      businessLogic: [
+        "Print layout uses A4 landscape orientation",
+        "Color-coding matches on-screen display",
+        "Page breaks at department boundaries",
+        "Header shows location, date range, generated timestamp",
+        "Footer shows page numbers",
+        "PDF generated client-side for privacy"
+      ],
+      priority: "low",
+      relatedModules: [
+        { module: "Reporting", relationship: "Part of report generation system" },
+        { module: "Staff Portal", relationship: "Staff can print own schedule" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Roster for week view",
+        "2. Clicks 'Print' button in toolbar",
+        "3. Print preview opens in new tab",
+        "4. Layout formatted for A4 landscape",
+        "5. All shifts visible with staff names",
+        "6. Manager clicks Print → Physical printer",
+        "7. Poster placed in staff break room",
+        "8. Alternatively clicks 'Download PDF'",
+        "9. Emails PDF to staff without app access"
+      ],
+      realWorldExample: {
+        scenario: "Weekly roster printed for staff notice board.",
+        steps: [
+          "Friday afternoon, roster finalized",
+          "Manager prints week view for main location",
+          "Second print for satellite location",
+          "Posted in break rooms before weekend",
+          "All staff see schedule on Monday morning"
+        ],
+        outcome: "Traditional communication supported alongside digital."
+      }
+    },
+    {
+      id: "US-RST-039",
+      title: "View Shift History and Audit Trail",
+      actors: ["Location Manager", "HR Administrator"],
+      description: "As a Location Manager, I want to view the complete history of changes to any shift, so that I can audit who made changes and when.",
+      acceptanceCriteria: [
+        "Every shift modification logged with timestamp",
+        "Shows: old value, new value, changed by, reason",
+        "History accessible from shift detail panel",
+        "Searchable by date range and user",
+        "Export capability for compliance reports",
+        "Retention period of 7 years"
+      ],
+      businessLogic: [
+        "Logged events: create, edit, delete, publish, unpublish",
+        "Each event captures: field changed, before/after values",
+        "User ID stored with each event",
+        "System actions (auto-escalation) logged as 'System'",
+        "Soft delete: shifts marked deleted but retained in history",
+        "Archive to cold storage after 2 years"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Compliance", relationship: "Audit trail for regulatory requirements" },
+        { module: "Reporting", relationship: "Exportable for compliance reports" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens shift detail panel for Monday 8 AM shift",
+        "2. Clicks 'View History' tab",
+        "3. Timeline shows 5 events:",
+        "4. Created: Jan 5 10:30 AM by Sarah",
+        "5. Staff changed: Jan 6 2:15 PM by Sarah (Emma → Tom)",
+        "6. Time changed: Jan 7 9:00 AM by Sarah (8:00 → 8:30)",
+        "7. Published: Jan 7 4:00 PM by Sarah",
+        "8. Swap requested: Jan 8 6:00 PM by Tom",
+        "9. Each entry expandable for full details",
+        "10. Export generates PDF audit report"
+      ],
+      realWorldExample: {
+        scenario: "Employee disputes shift assignment during investigation.",
+        steps: [
+          "HR receives complaint about unfair scheduling",
+          "Opens audit trail for disputed shifts",
+          "Shows all changes with timestamps and users",
+          "Evidence shows shifts assigned fairly and consistently",
+          "Complaint resolved with documented proof"
+        ],
+        outcome: "Audit trail supports fair investigation outcomes."
+      }
+    },
+    {
+      id: "US-RST-040",
+      title: "Integrate Weather Data for Demand Forecasting",
+      actors: ["System", "Location Manager"],
+      description: "As a System, I want to integrate weather forecast data into staffing demand predictions, so that outdoor-sensitive operations can plan appropriately.",
+      acceptanceCriteria: [
+        "Weather API integration retrieves 7-day forecast",
+        "Adjustments applied based on weather conditions",
+        "Rain: +5% indoor demand, -20% outdoor activities",
+        "Extreme heat: Reduced outdoor programs",
+        "Weather icons visible in forecast view",
+        "Configurable adjustment percentages per location"
+      ],
+      businessLogic: [
+        "Weather data fetched daily at 6 AM",
+        "Location coordinates used for local forecast",
+        "Adjustment rules configurable per industry",
+        "Default: Rain = +5%, Heat >35°C = +10%, Cold <10°C = +5%",
+        "Forecast confidence decreases beyond 3 days",
+        "Manual override available for managers"
+      ],
+      priority: "low",
+      relatedModules: [
+        { module: "Demand Forecasting", relationship: "Weather is one demand factor" },
+        { module: "Budgeting", relationship: "Weather impacts labour cost projections" }
+      ],
+      endToEndJourney: [
+        "1. System fetches weather for Downtown Branch",
+        "2. Tuesday forecast: Heavy rain all day",
+        "3. Demand adjustment: +5% expected attendance",
+        "4. Staffing recommendation increases by 1 staff",
+        "5. Manager sees weather icon on forecast chart",
+        "6. Adjusts roster to add casual for rainy Tuesday",
+        "7. Actual attendance matches adjusted forecast",
+        "8. Historical accuracy improves with weather data"
+      ],
+      realWorldExample: {
+        scenario: "Outdoor facility adjusts for heat wave.",
+        steps: [
+          "Forecast shows 40°C for Thursday-Friday",
+          "System recommends reduced outdoor activities",
+          "Manager cancels outdoor excursions",
+          "Indoor programs staffed at +15%",
+          "Smooth operation despite extreme weather"
+        ],
+        outcome: "Weather-aware planning prevents operational issues."
+      }
     }
   ],
 
@@ -1838,6 +2585,21 @@ export const rosterSRS: ModuleSRS = {
     { id: "BR-RST-007", rule: "Cross-location shifts require travel allowance calculation", rationale: "Fair compensation for additional travel" },
     { id: "BR-RST-008", rule: "Agency staff must have verified qualifications before assignment", rationale: "Regulatory compliance and quality assurance" },
     { id: "BR-RST-009", rule: "Break scheduling must maintain minimum staffing ratios at all times", rationale: "Continuous regulatory compliance" },
-    { id: "BR-RST-010", rule: "Shift swaps require same or higher qualification level", rationale: "Maintains service quality and compliance" }
+    { id: "BR-RST-010", rule: "Shift swaps require same or higher qualification level", rationale: "Maintains service quality and compliance" },
+    { id: "BR-RST-011", rule: "Recurring shift patterns must generate shifts at least 8 weeks in advance", rationale: "Ensures staff visibility into future schedules" },
+    { id: "BR-RST-012", rule: "Expiring recurring series must trigger notifications 14 days before end date", rationale: "Prevents unexpected schedule gaps" },
+    { id: "BR-RST-013", rule: "Fatigue score above 80 requires immediate manager intervention", rationale: "OH&S compliance and duty of care" },
+    { id: "BR-RST-014", rule: "Cross-location conflicts are non-overridable blocking errors", rationale: "Physical impossibility of being in two places" },
+    { id: "BR-RST-015", rule: "Agency shift broadcasts must auto-escalate after 30 minutes without response", rationale: "Ensures urgent shifts get filled in time" },
+    { id: "BR-RST-016", rule: "Ratio compliance validation must run before any shift create/edit/delete", rationale: "Proactive breach prevention" },
+    { id: "BR-RST-017", rule: "Leave accruals must be calculated per hour worked, not per shift", rationale: "Accurate pro-rata entitlements for part-time staff" },
+    { id: "BR-RST-018", rule: "All shift modifications must be logged with user, timestamp, and before/after values", rationale: "Complete audit trail for compliance" },
+    { id: "BR-RST-019", rule: "Timesheet anomalies must be flagged before approval workflow begins", rationale: "Prevents payroll errors and potential fraud" },
+    { id: "BR-RST-020", rule: "Agency worker ratings must be collected within 24 hours of shift completion", rationale: "Fresh feedback improves future matching" },
+    { id: "BR-RST-021", rule: "GPS clock validation requires accuracy ≤50 meters for valid status", rationale: "Reliable location verification" },
+    { id: "BR-RST-022", rule: "Sleepover shifts convert to ordinary hours if disturbances exceed threshold", rationale: "Fair compensation for actual work performed" },
+    { id: "BR-RST-023", rule: "Maximum weekly hours including overtime cannot exceed 50 without director approval", rationale: "Legal compliance and fatigue management" },
+    { id: "BR-RST-024", rule: "Trainee placements must not count toward regulatory staffing ratios", rationale: "Supernumerary status per training agreements" },
+    { id: "BR-RST-025", rule: "Qualification expiry alerts must trigger 90/60/30 days before expiry", rationale: "Adequate time for renewal" }
   ]
 };
