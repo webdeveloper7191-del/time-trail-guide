@@ -5,14 +5,7 @@ import {
   Typography,
   Avatar,
   Chip,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
   Divider,
-  IconButton,
-  Tooltip,
-  LinearProgress,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
@@ -22,30 +15,32 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  FileText,
-  MessageSquare,
   Plus,
   Calendar,
   Target,
-  ChevronRight,
-  User,
-  Upload,
 } from 'lucide-react';
 import { StaffMember } from '@/types/staff';
 import {
   PerformanceImprovementPlan,
   PIPStatus,
   pipStatusLabels,
-  pipOutcomeLabels,
+  PIPCheckIn,
+  PIPOutcome,
 } from '@/types/compensation';
 import { mockPIPs } from '@/data/mockCompensationData';
-import { format, parseISO, differenceInDays, isAfter } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
+import {
+  CreatePIPDrawer,
+  AddCheckInDrawer,
+  RecordOutcomeDrawer,
+  EditPIPDrawer,
+  PIPDetailSheet,
+} from './pip';
 
 interface PIPManagementPanelProps {
   staff: StaffMember[];
   currentUserId: string;
-  onCreatePIP?: () => void;
 }
 
 const statusColors: Record<PIPStatus, string> = {
@@ -57,13 +52,21 @@ const statusColors: Record<PIPStatus, string> = {
   cancelled: 'default',
 };
 
-export function PIPManagementPanel({ staff, currentUserId, onCreatePIP }: PIPManagementPanelProps) {
+export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelProps) {
+  const [pips, setPips] = useState<PerformanceImprovementPlan[]>(mockPIPs);
   const [selectedPIP, setSelectedPIP] = useState<PerformanceImprovementPlan | null>(null);
+  
+  // Drawer states
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
+  const [showDetailSheet, setShowDetailSheet] = useState(false);
+  const [showCheckInDrawer, setShowCheckInDrawer] = useState(false);
+  const [showOutcomeDrawer, setShowOutcomeDrawer] = useState(false);
+  const [showEditDrawer, setShowEditDrawer] = useState(false);
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
-  const activePIPs = mockPIPs.filter(p => p.status === 'active' || p.status === 'extended');
-  const completedPIPs = mockPIPs.filter(p => p.status.startsWith('completed'));
+  const activePIPs = pips.filter(p => p.status === 'active' || p.status === 'extended');
+  const completedPIPs = pips.filter(p => p.status.startsWith('completed'));
 
   const calculateProgress = (pip: PerformanceImprovementPlan) => {
     const completedMilestones = pip.milestones.filter(m => m.status === 'completed').length;
@@ -74,6 +77,84 @@ export function PIPManagementPanel({ staff, currentUserId, onCreatePIP }: PIPMan
     const endDate = parseISO(pip.currentEndDate);
     const today = new Date();
     return differenceInDays(endDate, today);
+  };
+
+  // Handlers
+  const handleCreatePIP = (data: any) => {
+    const newPIP: PerformanceImprovementPlan = {
+      id: `pip-${Date.now()}`,
+      staffId: data.staffId,
+      managerId: data.managerId,
+      hrPartnerId: data.hrPartnerId,
+      status: 'active',
+      reason: data.reason,
+      performanceGaps: data.performanceGaps,
+      expectedOutcomes: data.expectedOutcomes,
+      supportProvided: data.supportProvided,
+      startDate: data.startDate,
+      originalEndDate: data.endDate,
+      currentEndDate: data.endDate,
+      extensionCount: 0,
+      milestones: data.milestones.map((m: any, i: number) => ({
+        id: `ms-${Date.now()}-${i}`,
+        ...m,
+        status: 'pending' as const,
+      })),
+      checkIns: [],
+      documents: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setPips([...pips, newPIP]);
+  };
+
+  const handleAddCheckIn = (checkIn: Omit<PIPCheckIn, 'id'>) => {
+    if (!selectedPIP) return;
+    const newCheckIn: PIPCheckIn = {
+      id: `ci-${Date.now()}`,
+      ...checkIn,
+    };
+    const updatedPIP = { ...selectedPIP, checkIns: [...selectedPIP.checkIns, newCheckIn], updatedAt: new Date().toISOString() };
+    const updated = pips.map(p => p.id === selectedPIP.id ? updatedPIP : p);
+    setPips(updated);
+    setSelectedPIP(updatedPIP);
+  };
+
+  const handleRecordOutcome = (outcome: PIPOutcome, notes: string, effectiveDate?: string) => {
+    if (!selectedPIP) return;
+    const newStatus: PIPStatus = 
+      outcome === 'improved' ? 'completed_success' :
+      outcome === 'extended' ? 'extended' :
+      outcome === 'terminated' || outcome === 'resigned' ? 'completed_failure' :
+      selectedPIP.status;
+    
+    const updatedPIP = {
+      ...selectedPIP,
+      status: newStatus,
+      outcome,
+      outcomeNotes: notes,
+      outcomeDate: effectiveDate || new Date().toISOString(),
+      currentEndDate: outcome === 'extended' && effectiveDate ? effectiveDate : selectedPIP.currentEndDate,
+      extensionCount: outcome === 'extended' ? selectedPIP.extensionCount + 1 : selectedPIP.extensionCount,
+      updatedAt: new Date().toISOString(),
+    };
+    const updated = pips.map(p => p.id === selectedPIP.id ? updatedPIP : p);
+    setPips(updated);
+    setShowDetailSheet(false);
+    setSelectedPIP(null);
+  };
+
+  const handleEditPIP = (updatedData: Partial<PerformanceImprovementPlan>) => {
+    if (!selectedPIP) return;
+    const updatedPIP = { ...selectedPIP, ...updatedData };
+    const updated = pips.map(p => p.id === selectedPIP.id ? updatedPIP : p);
+    setPips(updated);
+    setSelectedPIP(updatedPIP);
+  };
+
+  const handleCardClick = (pip: PerformanceImprovementPlan) => {
+    setSelectedPIP(pip);
+    setShowDetailSheet(true);
   };
 
   const renderPIPCard = (pip: PerformanceImprovementPlan) => {
@@ -87,7 +168,7 @@ export function PIPManagementPanel({ staff, currentUserId, onCreatePIP }: PIPMan
       <Card
         key={pip.id}
         sx={{ cursor: 'pointer', '&:hover': { boxShadow: 3 } }}
-        onClick={() => setSelectedPIP(pip)}
+        onClick={() => handleCardClick(pip)}
       >
         <Box sx={{ p: 2.5 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
@@ -164,314 +245,185 @@ export function PIPManagementPanel({ staff, currentUserId, onCreatePIP }: PIPMan
     );
   };
 
-  const renderPIPDetail = (pip: PerformanceImprovementPlan) => {
-    const staffMember = getStaffMember(pip.staffId);
-    const manager = getStaffMember(pip.managerId);
-    const hrPartner = pip.hrPartnerId ? getStaffMember(pip.hrPartnerId) : null;
-    const progress = calculateProgress(pip);
-
-    return (
-      <Box>
-        <Button variant="ghost" size="small" onClick={() => setSelectedPIP(null)} className="mb-4">
-          ← Back to list
-        </Button>
-
-        <Card sx={{ mb: 3 }}>
-          <Box sx={{ p: 3 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={3}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar src={staffMember?.avatar} sx={{ width: 64, height: 64 }}>
-                  {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight={600}>
-                    {staffMember?.firstName} {staffMember?.lastName}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {staffMember?.position}
-                  </Typography>
-                  <Stack direction="row" spacing={1} mt={1}>
-                    <Chip label={pipStatusLabels[pip.status]} color={statusColors[pip.status] as any} size="small" />
-                    {pip.extensionCount > 0 && (
-                      <Chip label={`Extended ${pip.extensionCount}x`} variant="outlined" size="small" />
-                    )}
-                  </Stack>
-                </Box>
-              </Stack>
-              <Stack direction="row" spacing={1}>
-                <Button variant="outline" size="small" onClick={() => toast.info('Schedule check-in')}>
-                  <MessageSquare size={16} className="mr-1" /> Add Check-in
-                </Button>
-                <Button variant="outline" size="small" onClick={() => toast.info('Upload document')}>
-                  <Upload size={16} className="mr-1" /> Upload
-                </Button>
-                <Button variant="default" size="small" onClick={() => toast.info('Record outcome')}>
-                  Record Outcome
-                </Button>
-              </Stack>
-            </Stack>
-
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                <Typography variant="caption" color="text.secondary">Manager</Typography>
-                <Typography variant="body2" fontWeight={500}>{manager?.firstName} {manager?.lastName}</Typography>
-              </Box>
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                <Typography variant="caption" color="text.secondary">HR Partner</Typography>
-                <Typography variant="body2" fontWeight={500}>
-                  {hrPartner ? `${hrPartner.firstName} ${hrPartner.lastName}` : 'Not assigned'}
-                </Typography>
-              </Box>
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                <Typography variant="caption" color="text.secondary">Duration</Typography>
-                <Typography variant="body2" fontWeight={500}>
-                  {format(parseISO(pip.startDate), 'MMM d')} - {format(parseISO(pip.currentEndDate), 'MMM d, yyyy')}
-                </Typography>
-              </Box>
-            </Box>
-
-            <Box mb={3}>
-              <Typography variant="subtitle2" fontWeight={600} mb={1}>Reason for PIP</Typography>
-              <Typography variant="body2" color="text.secondary">{pip.reason}</Typography>
-            </Box>
-
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
-              <Box>
-                <Typography variant="subtitle2" fontWeight={600} mb={1} color="error.main">Performance Gaps</Typography>
-                <Stack spacing={1}>
-                  {pip.performanceGaps.map((gap, i) => (
-                    <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
-                      <XCircle size={14} style={{ color: 'var(--destructive)', marginTop: 4 }} />
-                      <Typography variant="body2">{gap}</Typography>
-                    </Stack>
-                  ))}
-                </Stack>
-              </Box>
-              <Box>
-                <Typography variant="subtitle2" fontWeight={600} mb={1} color="success.main">Expected Outcomes</Typography>
-                <Stack spacing={1}>
-                  {pip.expectedOutcomes.map((outcome, i) => (
-                    <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
-                      <Target size={14} style={{ color: 'var(--success)', marginTop: 4 }} />
-                      <Typography variant="body2">{outcome}</Typography>
-                    </Stack>
-                  ))}
-                </Stack>
-              </Box>
-              <Box>
-                <Typography variant="subtitle2" fontWeight={600} mb={1} color="primary.main">Support Provided</Typography>
-                <Stack spacing={1}>
-                  {pip.supportProvided.map((support, i) => (
-                    <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
-                      <CheckCircle2 size={14} style={{ color: 'var(--primary)', marginTop: 4 }} />
-                      <Typography variant="body2">{support}</Typography>
-                    </Stack>
-                  ))}
-                </Stack>
-              </Box>
-            </Box>
-          </Box>
-        </Card>
-
-        {/* Milestones */}
-        <Card sx={{ mb: 3 }}>
-          <Box sx={{ p: 3 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="subtitle1" fontWeight={600}>Milestones</Typography>
-              <Chip label={`${Math.round(progress)}% Complete`} color="primary" size="small" />
-            </Stack>
-            <Stepper orientation="vertical">
-              {pip.milestones.map((milestone) => (
-                <Step key={milestone.id} active={milestone.status === 'in_progress'} completed={milestone.status === 'completed'}>
-                  <StepLabel
-                    error={milestone.status === 'missed'}
-                    StepIconProps={{
-                      sx: {
-                        color: milestone.status === 'completed' ? 'success.main' : milestone.status === 'missed' ? 'error.main' : undefined,
-                      }
-                    }}
-                  >
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" width="100%">
-                      <Typography variant="body2" fontWeight={500}>{milestone.title}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Due: {format(parseISO(milestone.targetDate), 'MMM d, yyyy')}
-                      </Typography>
-                    </Stack>
-                  </StepLabel>
-                  <StepContent>
-                    <Typography variant="body2" color="text.secondary" mb={1}>{milestone.description}</Typography>
-                    {milestone.completedDate && (
-                      <Chip label={`Completed ${format(parseISO(milestone.completedDate), 'MMM d')}`} size="small" color="success" />
-                    )}
-                  </StepContent>
-                </Step>
-              ))}
-            </Stepper>
-          </Box>
-        </Card>
-
-        {/* Check-ins */}
-        <Card>
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" fontWeight={600} mb={2}>Check-in History</Typography>
-            <Stack spacing={2}>
-              {pip.checkIns.map((checkIn) => (
-                <Box key={checkIn.id} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                    <Typography variant="body2" fontWeight={500}>
-                      {format(parseISO(checkIn.completedDate || checkIn.scheduledDate), 'MMM d, yyyy')}
-                    </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography variant="caption" color="text.secondary">Progress:</Typography>
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <Box
-                          key={n}
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            bgcolor: n <= checkIn.progressRating ? 'primary.main' : 'grey.300',
-                          }}
-                        />
-                      ))}
-                    </Stack>
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary">{checkIn.notes}</Typography>
-                  {checkIn.nextSteps && (
-                    <Typography variant="caption" color="primary.main" mt={1} display="block">
-                      Next: {checkIn.nextSteps}
-                    </Typography>
-                  )}
-                </Box>
-              ))}
-            </Stack>
-          </Box>
-        </Card>
-      </Box>
-    );
-  };
-
-  if (selectedPIP) {
-    return renderPIPDetail(selectedPIP);
-  }
-
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
-        <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'warning.light', display: 'flex' }}>
-              <AlertTriangle size={20} style={{ color: 'var(--warning)' }} />
-            </Box>
-            <Typography variant="h6" fontWeight={600}>
-              Performance Improvement Plans
+    <>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Header */}
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
+          <Box>
+            <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+              <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'warning.light', display: 'flex' }}>
+                <AlertTriangle size={20} style={{ color: 'var(--warning)' }} />
+              </Box>
+              <Typography variant="h6" fontWeight={600}>
+                Performance Improvement Plans
+              </Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Manage formal improvement plans with milestones and documentation
             </Typography>
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            Manage formal improvement plans with milestones and documentation
-          </Typography>
-        </Box>
-        <Button variant="default" onClick={onCreatePIP}>
-          <Plus size={16} className="mr-1" /> Create PIP
-        </Button>
-      </Stack>
+          </Box>
+          <Button variant="default" onClick={() => setShowCreateDrawer(true)}>
+            <Plus size={16} className="mr-1" /> Create PIP
+          </Button>
+        </Stack>
 
-      {/* Stats */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
-        <Card>
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Clock size={20} style={{ color: 'var(--warning)' }} />
-              <Box>
-                <Typography variant="h5" fontWeight={700}>{activePIPs.length}</Typography>
-                <Typography variant="caption" color="text.secondary">Active PIPs</Typography>
-              </Box>
+        {/* Stats */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+          <Card>
+            <Box sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Clock size={20} style={{ color: 'var(--warning)' }} />
+                <Box>
+                  <Typography variant="h5" fontWeight={700}>{activePIPs.length}</Typography>
+                  <Typography variant="caption" color="text.secondary">Active PIPs</Typography>
+                </Box>
+              </Stack>
+            </Box>
+          </Card>
+          <Card>
+            <Box sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
+                <Box>
+                  <Typography variant="h5" fontWeight={700}>
+                    {pips.filter(p => p.status === 'completed_success').length}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">Successful</Typography>
+                </Box>
+              </Stack>
+            </Box>
+          </Card>
+          <Card>
+            <Box sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <XCircle size={20} style={{ color: 'var(--destructive)' }} />
+                <Box>
+                  <Typography variant="h5" fontWeight={700}>
+                    {pips.filter(p => p.status === 'completed_failure').length}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">Unsuccessful</Typography>
+                </Box>
+              </Stack>
+            </Box>
+          </Card>
+          <Card>
+            <Box sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Target size={20} style={{ color: 'var(--primary)' }} />
+                <Box>
+                  <Typography variant="h5" fontWeight={700}>
+                    {activePIPs.length > 0 
+                      ? Math.round(activePIPs.reduce((sum, p) => sum + calculateProgress(p), 0) / activePIPs.length) 
+                      : 0}%
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">Avg Progress</Typography>
+                </Box>
+              </Stack>
+            </Box>
+          </Card>
+        </Box>
+
+        {/* Active PIPs */}
+        {activePIPs.length > 0 && (
+          <Box>
+            <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
+              Active Plans
+            </Typography>
+            <Stack spacing={2}>
+              {activePIPs.map(renderPIPCard)}
             </Stack>
           </Box>
-        </Card>
-        <Card>
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
-              <Box>
-                <Typography variant="h5" fontWeight={700}>
-                  {mockPIPs.filter(p => p.status === 'completed_success').length}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">Successful</Typography>
-              </Box>
+        )}
+
+        {/* Completed PIPs */}
+        {completedPIPs.length > 0 && (
+          <Box>
+            <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
+              Completed Plans
+            </Typography>
+            <Stack spacing={2}>
+              {completedPIPs.map(renderPIPCard)}
             </Stack>
           </Box>
-        </Card>
-        <Card>
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <XCircle size={20} style={{ color: 'var(--destructive)' }} />
-              <Box>
-                <Typography variant="h5" fontWeight={700}>
-                  {mockPIPs.filter(p => p.status === 'completed_failure').length}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">Unsuccessful</Typography>
-              </Box>
-            </Stack>
-          </Box>
-        </Card>
-        <Card>
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Target size={20} style={{ color: 'var(--primary)' }} />
-              <Box>
-                <Typography variant="h5" fontWeight={700}>
-                  {activePIPs.length > 0 
-                    ? Math.round(activePIPs.reduce((sum, p) => sum + calculateProgress(p), 0) / activePIPs.length) 
-                    : 0}%
-                </Typography>
-                <Typography variant="caption" color="text.secondary">Avg Progress</Typography>
-              </Box>
-            </Stack>
-          </Box>
-        </Card>
+        )}
+
+        {pips.length === 0 && (
+          <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
+            <Box sx={{ py: 6, textAlign: 'center' }}>
+              <AlertTriangle size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px' }} />
+              <Typography fontWeight={500}>No Performance Improvement Plans</Typography>
+              <Typography variant="body2" color="text.secondary" mt={0.5}>
+                Create a PIP when formal intervention is needed
+              </Typography>
+              <Button variant="default" onClick={() => setShowCreateDrawer(true)} className="mt-4">
+                <Plus size={16} className="mr-1" /> Create First PIP
+              </Button>
+            </Box>
+          </Card>
+        )}
       </Box>
 
-      {/* Active PIPs */}
-      {activePIPs.length > 0 && (
-        <Box>
-          <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
-            Active Plans
-          </Typography>
-          <Stack spacing={2}>
-            {activePIPs.map(renderPIPCard)}
-          </Stack>
-        </Box>
-      )}
+      {/* Drawers and Sheets */}
+      <CreatePIPDrawer
+        open={showCreateDrawer}
+        onClose={() => setShowCreateDrawer(false)}
+        staff={staff}
+        currentUserId={currentUserId}
+        onSubmit={handleCreatePIP}
+      />
 
-      {/* Completed PIPs */}
-      {completedPIPs.length > 0 && (
-        <Box>
-          <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
-            Completed Plans
-          </Typography>
-          <Stack spacing={2}>
-            {completedPIPs.map(renderPIPCard)}
-          </Stack>
-        </Box>
-      )}
+      {selectedPIP && (
+        <>
+          <PIPDetailSheet
+            open={showDetailSheet}
+            onClose={() => {
+              setShowDetailSheet(false);
+              setSelectedPIP(null);
+            }}
+            pip={selectedPIP}
+            staff={staff}
+            onAddCheckIn={() => {
+              setShowCheckInDrawer(true);
+            }}
+            onRecordOutcome={() => {
+              setShowOutcomeDrawer(true);
+            }}
+            onEdit={() => {
+              setShowEditDrawer(true);
+            }}
+            onUploadDocument={() => {
+              toast.info('Document upload coming soon');
+            }}
+          />
 
-      {mockPIPs.length === 0 && (
-        <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
-          <Box sx={{ py: 6, textAlign: 'center' }}>
-            <AlertTriangle size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px' }} />
-            <Typography fontWeight={500}>No Performance Improvement Plans</Typography>
-            <Typography variant="body2" color="text.secondary" mt={0.5}>
-              Create a PIP when formal intervention is needed
-            </Typography>
-            <Button variant="default" onClick={onCreatePIP} className="mt-4">
-              <Plus size={16} className="mr-1" /> Create First PIP
-            </Button>
-          </Box>
-        </Card>
+          <AddCheckInDrawer
+            open={showCheckInDrawer}
+            onClose={() => setShowCheckInDrawer(false)}
+            pip={selectedPIP}
+            staff={staff}
+            currentUserId={currentUserId}
+            onSubmit={handleAddCheckIn}
+          />
+
+          <RecordOutcomeDrawer
+            open={showOutcomeDrawer}
+            onClose={() => setShowOutcomeDrawer(false)}
+            pip={selectedPIP}
+            staff={staff}
+            onSubmit={handleRecordOutcome}
+          />
+
+          <EditPIPDrawer
+            open={showEditDrawer}
+            onClose={() => setShowEditDrawer(false)}
+            pip={selectedPIP}
+            staff={staff}
+            onSubmit={handleEditPIP}
+          />
+        </>
       )}
-    </Box>
+    </>
   );
 }
 
