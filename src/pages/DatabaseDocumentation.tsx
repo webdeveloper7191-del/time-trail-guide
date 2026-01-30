@@ -38,27 +38,61 @@ mermaid.initialize({
   startOnLoad: false,
   theme: 'base',
   themeVariables: {
-    primaryColor: '#6366f1',
-    primaryTextColor: '#ffffff',
-    primaryBorderColor: '#4f46e5',
-    lineColor: '#94a3b8',
+    // Node colors
+    primaryColor: '#e0e7ff',
+    primaryTextColor: '#1e1b4b',
+    primaryBorderColor: '#6366f1',
+    // Secondary elements
     secondaryColor: '#f1f5f9',
-    tertiaryColor: '#e2e8f0',
+    secondaryTextColor: '#1e293b',
+    secondaryBorderColor: '#cbd5e1',
+    // Tertiary elements
+    tertiaryColor: '#fef3c7',
+    tertiaryTextColor: '#78350f',
+    tertiaryBorderColor: '#f59e0b',
+    // Lines and labels
+    lineColor: '#64748b',
+    textColor: '#1e293b',
+    // Background
     background: '#ffffff',
-    mainBkg: '#f8fafc',
-    nodeBorder: '#cbd5e1',
-    clusterBkg: '#f1f5f9',
-    titleColor: '#1e293b',
+    mainBkg: '#e0e7ff',
+    nodeBorder: '#6366f1',
+    // Clusters/subgraphs
+    clusterBkg: '#f8fafc',
+    clusterBorder: '#94a3b8',
+    // Title
+    titleColor: '#0f172a',
+    // Edge labels
     edgeLabelBackground: '#ffffff',
+    // Notes
+    noteBkgColor: '#fef9c3',
+    noteTextColor: '#713f12',
+    noteBorderColor: '#facc15',
+    // Actor (for sequence diagrams)
+    actorTextColor: '#1e293b',
+    actorBkg: '#e0e7ff',
+    actorBorder: '#6366f1',
+    // Signals
+    signalColor: '#1e293b',
+    signalTextColor: '#1e293b',
+    // Labels
+    labelColor: '#1e293b',
+    labelTextColor: '#1e293b',
+    // ER Diagram specific
+    attributeBackgroundColorOdd: '#f8fafc',
+    attributeBackgroundColorEven: '#f1f5f9',
   },
   flowchart: {
     useMaxWidth: true,
     htmlLabels: true,
     curve: 'basis',
+    nodeSpacing: 50,
+    rankSpacing: 50,
   },
   er: {
     useMaxWidth: true,
     layoutDirection: 'TB',
+    entityPadding: 15,
   },
 });
 
