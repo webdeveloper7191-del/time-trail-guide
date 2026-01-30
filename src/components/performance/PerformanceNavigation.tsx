@@ -5,7 +5,8 @@ import {
   Target, ClipboardCheck, MessageSquareHeart, MessageSquare, 
   BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, 
   Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, 
-  Sparkles, Smile, TrendingUp, ChevronDown, Check,
+  Sparkles, Smile, TrendingUp, ChevronDown, Check, Heart, Wallet,
+  UserPlus,
   LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,9 @@ const tabGroups: TabGroup[] = [
       { value: 'happiness', label: 'Happiness', icon: Smile },
       { value: 'pulse', label: 'Pulse Surveys', icon: Activity },
       { value: 'wellbeing', label: 'Wellbeing', icon: HeartPulse },
+      { value: 'nominations', label: 'Peer Nominations', icon: UserPlus },
+      { value: 'mentorship', label: 'Mentorship', icon: Heart },
+      { value: 'budget', label: 'Dev Budget', icon: Wallet },
     ],
   },
   {

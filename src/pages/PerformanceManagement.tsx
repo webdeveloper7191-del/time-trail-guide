@@ -38,6 +38,9 @@ const PerformanceAnalyticsDashboard = lazy(() => import('@/components/performanc
 const CompensationPanel = lazy(() => import('@/components/performance/CompensationPanel').then(m => ({ default: m.CompensationPanel })));
 const PIPManagementPanel = lazy(() => import('@/components/performance/PIPManagementPanel').then(m => ({ default: m.PIPManagementPanel })));
 const SuccessionPlanningPanel = lazy(() => import('@/components/performance/SuccessionPlanningPanel').then(m => ({ default: m.SuccessionPlanningPanel })));
+const PeerNominationsPanel = lazy(() => import('@/components/performance/engagement/PeerNominationsPanel').then(m => ({ default: m.PeerNominationsPanel })));
+const MentorshipMatchingPanel = lazy(() => import('@/components/performance/engagement/MentorshipMatchingPanel').then(m => ({ default: m.MentorshipMatchingPanel })));
+const DevelopmentBudgetTracker = lazy(() => import('@/components/performance/engagement/DevelopmentBudgetTracker').then(m => ({ default: m.DevelopmentBudgetTracker })));
 
 // Eagerly load sheets/drawers as they're used across tabs
 import { GoalDetailSheet } from '@/components/performance/GoalDetailSheet';
@@ -61,7 +64,7 @@ const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 const VALID_TABS = [
   'plans', 'goals', 'okr', 'lms', 'pip',
   'reviews', 'feedback', '360feedback', 'calibration',
-  'recognition', 'happiness', 'pulse', 'wellbeing',
+  'recognition', 'happiness', 'pulse', 'wellbeing', 'nominations', 'mentorship', 'budget',
   'talent', 'skills', 'succession', 'team',
   'tasks', 'conversations',
   'summary', 'analytics', 'compensation'
@@ -516,6 +519,27 @@ export default function PerformanceManagement() {
 
         {activeTab === 'succession' && (
           <SuccessionPlanningPanel
+            staff={mockStaff}
+            currentUserId={CURRENT_USER_ID}
+          />
+        )}
+
+        {activeTab === 'nominations' && (
+          <PeerNominationsPanel
+            staff={mockStaff}
+            currentUserId={CURRENT_USER_ID}
+          />
+        )}
+
+        {activeTab === 'mentorship' && (
+          <MentorshipMatchingPanel
+            staff={mockStaff}
+            currentUserId={CURRENT_USER_ID}
+          />
+        )}
+
+        {activeTab === 'budget' && (
+          <DevelopmentBudgetTracker
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
           />
