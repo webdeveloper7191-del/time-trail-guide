@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Stack, 
@@ -6,6 +6,7 @@ import {
   Chip,
   Button as MuiButton,
   Avatar,
+  Checkbox,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { 
@@ -17,7 +18,6 @@ import { StaffMember } from '@/types/staff';
 import { format, parseISO } from 'date-fns';
 import { 
   ClipboardCheck, 
-  Calendar, 
   Star,
   ChevronRight,
   Plus,
@@ -25,6 +25,8 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
+import { BulkActionsBar, createReviewBulkActions } from './shared/BulkActionsBar';
+import { toast } from 'sonner';
 
 interface ReviewsDashboardProps {
   reviews: PerformanceReview[];
@@ -32,6 +34,9 @@ interface ReviewsDashboardProps {
   currentUserId: string;
   onCreateReview: () => void;
   onViewReview: (review: PerformanceReview) => void;
+  onBulkSendReminders?: (reviewIds: string[]) => void;
+  onBulkReassign?: (reviewIds: string[]) => void;
+  onBulkCancel?: (reviewIds: string[]) => void;
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -55,8 +60,13 @@ export function ReviewsDashboard({
   staff, 
   currentUserId,
   onCreateReview, 
-  onViewReview 
+  onViewReview,
+  onBulkSendReminders,
+  onBulkReassign,
+  onBulkCancel,
 }: ReviewsDashboardProps) {
+  const [selectedReviewIds, setSelectedReviewIds] = useState<Set<string>>(new Set());
+
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
   const pendingSelfReviews = reviews.filter(r => 
@@ -69,8 +79,61 @@ export function ReviewsDashboard({
     r.status === 'draft' || r.status === 'pending_self'
   );
   const completedReviews = reviews.filter(r => r.status === 'completed');
+  const selectableReviews = reviews.filter(r => r.status !== 'completed' && r.status !== 'cancelled');
 
   const actionRequired = [...pendingSelfReviews, ...pendingManagerReviews];
+
+  // Bulk selection handlers
+  const handleToggleSelect = (reviewId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedReviewIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(reviewId)) {
+        newSet.delete(reviewId);
+      } else {
+        newSet.add(reviewId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedReviewIds(new Set(selectableReviews.map(r => r.id)));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedReviewIds(new Set());
+  };
+
+  const handleBulkSendReminders = () => {
+    if (onBulkSendReminders) {
+      onBulkSendReminders(Array.from(selectedReviewIds));
+    }
+    toast.success(`Reminders sent for ${selectedReviewIds.size} reviews`);
+    handleClearSelection();
+  };
+
+  const handleBulkReassign = () => {
+    if (onBulkReassign) {
+      onBulkReassign(Array.from(selectedReviewIds));
+    }
+    toast.info('Reassignment would open a drawer to select new reviewers');
+    handleClearSelection();
+  };
+
+  const handleBulkCancel = () => {
+    if (onBulkCancel) {
+      onBulkCancel(Array.from(selectedReviewIds));
+    }
+    toast.success(`${selectedReviewIds.size} reviews cancelled`);
+    handleClearSelection();
+  };
+
+  const bulkActions = createReviewBulkActions(
+    handleBulkSendReminders,
+    handleBulkReassign,
+    handleBulkCancel
+  );
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, md: 4 } }}>
@@ -100,10 +163,10 @@ export function ReviewsDashboard({
         </Box>
         <MuiButton 
           variant="contained" 
+          size="small"
           startIcon={<Plus size={16} />} 
           onClick={onCreateReview}
-          fullWidth
-          sx={{ width: { sm: 'auto' } }}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
         >
           Start Review
         </MuiButton>
@@ -248,9 +311,26 @@ export function ReviewsDashboard({
 
       {/* All Reviews List */}
       <Box>
-        <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
-          All Reviews
-        </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography variant="overline" color="text.secondary" fontWeight={600}>
+              All Reviews
+            </Typography>
+            {selectableReviews.length > 0 && (
+              <MuiButton
+                size="small"
+                variant="text"
+                onClick={selectedReviewIds.size === selectableReviews.length ? handleClearSelection : handleSelectAll}
+                sx={{ fontSize: '0.75rem' }}
+              >
+                {selectedReviewIds.size === selectableReviews.length ? 'Deselect All' : 'Select All'}
+              </MuiButton>
+            )}
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            {reviews.length} reviews
+          </Typography>
+        </Stack>
         
         {reviews.length === 0 ? (
           <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
@@ -267,18 +347,29 @@ export function ReviewsDashboard({
             {reviews.map((review) => {
               const staffMember = getStaffMember(review.staffId);
               const reviewer = getStaffMember(review.reviewerId);
+              const isSelected = selectedReviewIds.has(review.id);
+              const isSelectable = review.status !== 'completed' && review.status !== 'cancelled';
               
               return (
                 <Card 
                   key={review.id}
                   sx={{ 
                     cursor: 'pointer',
+                    border: isSelected ? 2 : 1,
+                    borderColor: isSelected ? 'primary.main' : 'divider',
                     '&:hover': { boxShadow: 3 }
                   }}
                   onClick={() => onViewReview(review)}
                 >
                   <Box sx={{ p: 2 }}>
                     <Stack direction="row" alignItems="center" spacing={2}>
+                      {isSelectable && (
+                        <Checkbox
+                          checked={isSelected}
+                          onClick={(e) => handleToggleSelect(review.id, e)}
+                          size="small"
+                        />
+                      )}
                       <Avatar src={staffMember?.avatar} sx={{ width: 48, height: 48 }}>
                         {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
                       </Avatar>
@@ -326,6 +417,16 @@ export function ReviewsDashboard({
           </Stack>
         )}
       </Box>
+
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedCount={selectedReviewIds.size}
+        totalCount={selectableReviews.length}
+        onClearSelection={handleClearSelection}
+        onSelectAll={handleSelectAll}
+        actions={bulkActions}
+        entityName="reviews"
+      />
     </Box>
   );
 }

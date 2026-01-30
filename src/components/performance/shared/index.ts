@@ -5,3 +5,5 @@ export { PerformanceNotificationBell } from '../PerformanceNotificationBell';
 export { PerformanceSettingsDrawer } from '../PerformanceSettingsDrawer';
 export type { PerformanceSettings } from '../PerformanceSettingsDrawer';
 export { RichTextEditor } from '../RichTextEditor';
+export { BulkActionsBar, createGoalBulkActions, createReviewBulkActions } from './BulkActionsBar';
+export { GlobalSearch } from './GlobalSearch';
