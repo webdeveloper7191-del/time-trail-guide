@@ -35,6 +35,9 @@ const PerformanceTaskManagementPanel = lazy(() => import('@/components/performan
 const ConversationsList = lazy(() => import('@/components/performance/ConversationsList').then(m => ({ default: m.ConversationsList })));
 const PerformanceExecutiveDashboard = lazy(() => import('@/components/performance/PerformanceExecutiveDashboard').then(m => ({ default: m.PerformanceExecutiveDashboard })));
 const PerformanceAnalyticsDashboard = lazy(() => import('@/components/performance/PerformanceAnalyticsDashboard').then(m => ({ default: m.PerformanceAnalyticsDashboard })));
+const CompensationPanel = lazy(() => import('@/components/performance/CompensationPanel').then(m => ({ default: m.CompensationPanel })));
+const PIPManagementPanel = lazy(() => import('@/components/performance/PIPManagementPanel').then(m => ({ default: m.PIPManagementPanel })));
+const SuccessionPlanningPanel = lazy(() => import('@/components/performance/SuccessionPlanningPanel').then(m => ({ default: m.SuccessionPlanningPanel })));
 
 // Eagerly load sheets/drawers as they're used across tabs
 import { GoalDetailSheet } from '@/components/performance/GoalDetailSheet';
@@ -56,12 +59,12 @@ const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 
 // Valid tab values for URL routing
 const VALID_TABS = [
-  'plans', 'goals', 'okr', 'lms',
+  'plans', 'goals', 'okr', 'lms', 'pip',
   'reviews', 'feedback', '360feedback', 'calibration',
   'recognition', 'happiness', 'pulse', 'wellbeing',
-  'talent', 'skills', 'team',
+  'talent', 'skills', 'succession', 'team',
   'tasks', 'conversations',
-  'summary', 'analytics'
+  'summary', 'analytics', 'compensation'
 ];
 
 // Loading fallback component
@@ -494,6 +497,27 @@ export default function PerformanceManagement() {
             reviews={reviews}
             feedback={feedback}
             conversations={conversations}
+          />
+        )}
+
+        {activeTab === 'compensation' && (
+          <CompensationPanel
+            staff={mockStaff}
+            currentUserId={CURRENT_USER_ID}
+          />
+        )}
+
+        {activeTab === 'pip' && (
+          <PIPManagementPanel
+            staff={mockStaff}
+            currentUserId={CURRENT_USER_ID}
+          />
+        )}
+
+        {activeTab === 'succession' && (
+          <SuccessionPlanningPanel
+            staff={mockStaff}
+            currentUserId={CURRENT_USER_ID}
           />
         )}
       </Suspense>

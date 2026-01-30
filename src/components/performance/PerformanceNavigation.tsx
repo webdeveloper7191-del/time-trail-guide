@@ -29,6 +29,7 @@ const tabGroups: TabGroup[] = [
       { value: 'goals', label: 'Goals', icon: Target },
       { value: 'okr', label: 'OKRs', icon: Crosshair },
       { value: 'lms', label: 'Learning', icon: GraduationCap },
+      { value: 'pip', label: 'PIPs', icon: Activity },
     ],
   },
   {
@@ -54,7 +55,8 @@ const tabGroups: TabGroup[] = [
     items: [
       { value: 'talent', label: '9-Box Grid', icon: Grid3X3 },
       { value: 'skills', label: 'Skills & Careers', icon: Compass },
-      { value: 'team', label: 'Team Overview', icon: Users },
+      { value: 'succession', label: 'Succession', icon: Users },
+      { value: 'team', label: 'Team Overview', icon: Users2 },
     ],
   },
   {
@@ -69,6 +71,7 @@ const tabGroups: TabGroup[] = [
     items: [
       { value: 'summary', label: 'Executive Summary', icon: TrendingUp },
       { value: 'analytics', label: 'Analytics', icon: BarChart3 },
+      { value: 'compensation', label: 'Compensation', icon: TrendingUp },
     ],
   },
 ];
