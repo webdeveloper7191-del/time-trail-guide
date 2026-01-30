@@ -1169,9 +1169,598 @@ export const awardsSRS: ModuleSRS = {
           "Consolidated BOOT Report generated",
           "All scenarios better off - EBA passes BOOT",
           "PDF formatted for Fair Work submission",
-          "Attached to EBA application package"
+        "Attached to EBA application package"
         ],
         outcome: "Comprehensive BOOT analysis demonstrates all employee types better off. Fair Work approval expedited with thorough documentation."
+      }
+    },
+    {
+      id: "US-AWD-016",
+      title: "Configure On-Call Allowance Rules",
+      actors: ["Payroll Administrator", "HR Manager"],
+      description: "As a Payroll Administrator, I want to configure on-call allowance rules with callback rates and stacking options, so that staff on standby are correctly compensated.",
+      acceptanceCriteria: [
+        "Can create on-call allowance with trigger type",
+        "Standby, callback, and recall rates configurable",
+        "Weekend and public holiday multipliers supported",
+        "Stackability rules define what can combine",
+        "Mutual exclusion rules prevent double-payment",
+        "Priority field resolves conflicts"
+      ],
+      businessLogic: [
+        "On-call types: Standby, Callback, Recall, Emergency",
+        "Standby: Flat rate for being available",
+        "Callback: Rate when actually called back to work",
+        "Minimum callback duration: Typically 3 hours",
+        "Weekend on-call: Higher allowance rate applies",
+        "Stacking rules: Some allowances combine, others exclude"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Roster", relationship: "On-call shifts trigger allowance calculation" },
+        { module: "Timesheet", relationship: "Callback hours recorded with rates" }
+      ],
+      endToEndJourney: [
+        "1. Payroll Admin opens Allowances > On-Call Configuration",
+        "2. Creates new allowance: 'Weekend Standby'",
+        "3. Sets trigger type: Standby",
+        "4. Base rate: $35 per on-call period",
+        "5. Weekend multiplier: 1.5x ($52.50)",
+        "6. Stackability: Can combine with callback allowance",
+        "7. Excludes: Cannot combine with sleepover allowance",
+        "8. Creates callback allowance: $50 minimum + hourly rate",
+        "9. Links callback to standby for escalation",
+        "10. Tests configuration with sample scenario",
+        "11. Saves and activates allowance rules"
+      ],
+      realWorldExample: {
+        scenario: "Centre Director on weekend standby receives callback. Both allowances apply correctly.",
+        steps: [
+          "Director Sarah on weekend standby Saturday-Sunday",
+          "Standby allowance: 2 days × $52.50 = $105",
+          "Sunday 3 PM: Called in for emergency (pipe burst)",
+          "Callback triggered: $50 minimum + hourly rate",
+          "Works 2 hours: 2 × $55 (Sunday rate) = $110",
+          "Since < 3 hours, minimum $150 applies",
+          "Total Sunday callback: $150",
+          "Weekend total: $105 standby + $150 callback = $255",
+          "System correctly stacked both allowances"
+        ],
+        outcome: "Complex on-call scenarios correctly calculated with stacking rules applied."
+      }
+    },
+    {
+      id: "US-AWD-017",
+      title: "Build Custom Pay Rules with Conditional Logic",
+      actors: ["HR Manager", "System Administrator"],
+      description: "As an HR Manager, I want to create custom pay rules using conditional logic, so that complex organizational requirements are automated.",
+      acceptanceCriteria: [
+        "Can create rules with multiple conditions",
+        "AND/OR operators for combining conditions",
+        "Condition grouping for complex logic",
+        "Available parameters: Employment type, hours, tenure, etc.",
+        "Rule actions: Apply rate, add allowance, trigger alert",
+        "Rules can be tested before activation"
+      ],
+      businessLogic: [
+        "Rule structure: IF (conditions) THEN (actions)",
+        "Conditions can reference: Employment type, award, hours, day type",
+        "Operators: equals, greater than, between, contains",
+        "Actions: Multiply rate, add flat amount, percentage increase",
+        "Rules evaluated in priority order",
+        "First matching rule wins (or all rules apply, configurable)"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Payroll", relationship: "Custom rules applied during pay calculation" },
+        { module: "Compliance", relationship: "Rules must meet award minimums" }
+      ],
+      endToEndJourney: [
+        "1. HR Manager opens Custom Rules Builder",
+        "2. Creates new rule: 'Long Service Loading'",
+        "3. Adds condition group: (Years of Service >= 5) AND (Employment Type = Permanent)",
+        "4. Sets action: Add 5% to base rate",
+        "5. Adds second condition group with OR: (Years of Service >= 10)",
+        "6. Sets additional action: Add 7.5% to base rate",
+        "7. Sets priority: 100 (high)",
+        "8. Tests rule with sample employees",
+        "9. Result: 5+ year employees get 5%, 10+ get 7.5%",
+        "10. Activates rule with effective date"
+      ],
+      realWorldExample: {
+        scenario: "Organization wants to reward long-service employees with pay loading above award.",
+        steps: [
+          "HR creates rule: 'Long Service Recognition'",
+          "Condition: Years of Service >= 5",
+          "Action: 5% loading on base rate",
+          "Additional tier: Years >= 10 = 7.5%",
+          "Rule tested against 52 staff:",
+          "  18 staff qualify at 5% tier",
+          "  7 staff qualify at 7.5% tier",
+          "Annual cost impact: $45,000",
+          "Rule approved by Finance, activated",
+          "Pay calculations automatically apply loadings"
+        ],
+        outcome: "Complex conditional logic implemented without custom code. Retention incentive automated."
+      }
+    },
+    {
+      id: "US-AWD-018",
+      title: "Calculate Shift Differential for Evening and Night Work",
+      actors: ["Payroll Administrator"],
+      description: "As a Payroll Administrator, I want shift differentials calculated for evening and night work, so that staff working unsociable hours are correctly compensated.",
+      acceptanceCriteria: [
+        "Time-of-day loadings configurable per award",
+        "Evening rate: Typically after 6 PM",
+        "Night rate: Typically after 10 PM or midnight",
+        "Early morning rate: Before 6 AM",
+        "Loadings can be percentage or fixed amount",
+        "Compound with other penalties where applicable"
+      ],
+      businessLogic: [
+        "Evening loading: 10-15% after 6 PM",
+        "Night loading: 15-25% after 10 PM",
+        "Early morning loading: 10-15% before 6 AM",
+        "Loadings calculated on base rate",
+        "May compound with weekend penalties (award-specific)",
+        "Shift crossing midnight: Each portion calculated separately"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Roster", relationship: "Shift times determine applicable differentials" },
+        { module: "Timesheet", relationship: "Actual times used for final calculation" }
+      ],
+      endToEndJourney: [
+        "1. Staff member works 4 PM - 12 AM shift",
+        "2. System identifies three time segments",
+        "3. Segment 1: 4 PM - 6 PM = 2 hours ordinary",
+        "4. Segment 2: 6 PM - 10 PM = 4 hours evening loading",
+        "5. Segment 3: 10 PM - 12 AM = 2 hours night loading",
+        "6. Base rate: $28.73",
+        "7. Evening rate: $28.73 × 1.10 = $31.60",
+        "8. Night rate: $28.73 × 1.15 = $33.04",
+        "9. Calculation: (2 × $28.73) + (4 × $31.60) + (2 × $33.04)",
+        "10. Total shift pay: $57.46 + $126.40 + $66.08 = $249.94"
+      ],
+      realWorldExample: {
+        scenario: "Extended care educator works afternoon to midnight shift with multiple loading tiers.",
+        steps: [
+          "Shift: 4:00 PM to 12:00 AM (8 hours total)",
+          "Award: Children's Services MA000120",
+          "Classification: Level 3.1, Base rate $28.73",
+          "Time segment breakdown:",
+          "  4-6 PM: 2 hrs @ $28.73 = $57.46",
+          "  6-10 PM: 4 hrs @ $31.60 (evening) = $126.40",
+          "  10 PM-12 AM: 2 hrs @ $33.04 (night) = $66.08",
+          "30-minute unpaid break deducted",
+          "Net paid hours: 7.5",
+          "Adjusted total: $234.32",
+          "Timesheet shows all segments with rates"
+        ],
+        outcome: "Shift differential calculated correctly across multiple time-of-day boundaries."
+      }
+    },
+    {
+      id: "US-AWD-019",
+      title: "Manage Junior and Apprentice Pay Rates",
+      actors: ["Payroll Administrator", "HR Manager"],
+      description: "As a Payroll Administrator, I want junior and apprentice rates calculated based on age and training stage, so that these employees are paid correctly.",
+      acceptanceCriteria: [
+        "Junior rates based on age (percentage of adult rate)",
+        "Apprentice rates based on year of training",
+        "Age-based rates auto-update on birthday",
+        "Training progression updates rates",
+        "Clear audit trail of rate progressions",
+        "Transition to adult rate handled automatically"
+      ],
+      businessLogic: [
+        "Junior rates: Under 21, percentage of adult rate",
+        "Typical: 16yr=50%, 17yr=60%, 18yr=70%, 19yr=80%, 20yr=90%, 21+=100%",
+        "Apprentice: Year 1=55%, Year 2=65%, Year 3=80%, Year 4=95%",
+        "Rate auto-progression on birthday (juniors)",
+        "Training anniversary updates apprentice rate",
+        "Notification sent before rate changes"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Staff Profiles", relationship: "Date of birth and training dates stored" },
+        { module: "Notifications", relationship: "Alerts before rate changes" }
+      ],
+      endToEndJourney: [
+        "1. New junior employee starts, age 17",
+        "2. HR creates profile with date of birth",
+        "3. System calculates: 60% of adult rate",
+        "4. Adult rate $28.73 → Junior rate $17.24",
+        "5. Employee turns 18 in 3 months",
+        "6. System schedules rate change for birthday",
+        "7. Alert sent 14 days before birthday",
+        "8. On birthday, rate auto-updates to 70% = $20.11",
+        "9. All future pay uses new rate",
+        "10. Audit log shows progression history"
+      ],
+      realWorldExample: {
+        scenario: "School-based trainee progresses through age-based rates while completing Certificate III.",
+        steps: [
+          "17-year-old starts as school-based trainee",
+          "Junior rate: 60% of Level 2.1 ($26.50)",
+          "Initial rate: $15.90/hr",
+          "Works 12 hours/week during school year",
+          "Turns 18 in June",
+          "Rate auto-updates to 70%: $18.55/hr",
+          "Completes Cert III in December (age 18)",
+          "Progresses to Level 3.1 adult rate: $28.73 × 70% = $20.11",
+          "Turns 19 in next June",
+          "Rate updates to 80%: $22.98",
+          "Continues progression until 21 = adult rate"
+        ],
+        outcome: "Complex junior rate progression fully automated. No manual rate adjustments needed."
+      }
+    },
+    {
+      id: "US-AWD-020",
+      title: "Track Annualized Salary Reconciliation",
+      actors: ["Payroll Administrator", "Finance Director"],
+      description: "As a Payroll Administrator, I want to reconcile annualized salaries against actual hours worked, so that I can identify any underpayment requiring correction.",
+      acceptanceCriteria: [
+        "System tracks expected vs actual hours for salary staff",
+        "Quarterly reconciliation compares pay to award entitlement",
+        "Flags any shortfall requiring adjustment",
+        "Accounts for overtime, penalties, and allowances",
+        "Reconciliation report for each salaried employee",
+        "Catch-up payments calculated if underpaid"
+      ],
+      businessLogic: [
+        "Annualized salary absorbs certain components (defined in contract)",
+        "Still must pay at least what award would provide",
+        "Reconciliation compares: Salary paid vs Award calculation",
+        "Award calc = Base hours + OT + Penalties + Allowances",
+        "If Salary < Award, catch-up required",
+        "Reconciliation typically quarterly or annually"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Staff Profiles", relationship: "Salary and absorption terms stored" },
+        { module: "Compliance", relationship: "Reconciliation is compliance requirement" }
+      ],
+      endToEndJourney: [
+        "1. End of quarter, Payroll runs salary reconciliation",
+        "2. System identifies 8 staff on annualized salary",
+        "3. For each, calculates: Salary paid vs Award entitlement",
+        "4. Employee A: Salary $65,000/qtr, Award calc $62,000 ✓",
+        "5. Employee B: Salary $52,000/qtr, Award calc $54,500 ✗",
+        "6. Employee B shortfall: $2,500 catch-up required",
+        "7. Drill-down shows: 45 hours OT not absorbed",
+        "8. Payroll prepares catch-up payment",
+        "9. Employee B receives $2,500 adjustment",
+        "10. Reconciliation documented for audit"
+      ],
+      realWorldExample: {
+        scenario: "Annual salary reconciliation reveals one manager worked significant overtime not covered by absorption clause.",
+        steps: [
+          "Centre Director on $85,000 annual salary",
+          "Absorption clause: First 5 hours OT per week included",
+          "Actual OT worked: Average 8 hours/week = 156 hours/year",
+          "Absorbed: 5 × 52 = 260 hours",
+          "Non-absorbed OT: 156 - 130 = 26 hours (actual exceeded some weeks)",
+          "Detailed calculation:",
+          "  Base award entitlement: $78,400",
+          "  Absorbed OT value: $4,200",
+          "  Non-absorbed OT: 26 hrs × $65/hr = $1,690",
+          "  Penalty loadings: $2,400",
+          "  Allowances: $1,200",
+          "  Award total: $87,890",
+          "Salary paid: $85,000",
+          "Shortfall: $2,890",
+          "Catch-up payment processed",
+          "Recommendation: Review absorption clause"
+        ],
+        outcome: "Reconciliation identifies underpayment risk. Catch-up payment ensures compliance."
+      }
+    },
+    {
+      id: "US-AWD-021",
+      title: "Configure Leave Loading Calculations",
+      actors: ["Payroll Administrator"],
+      description: "As a Payroll Administrator, I want leave loading correctly calculated and applied, so that staff receive their annual leave entitlement with loading.",
+      acceptanceCriteria: [
+        "Leave loading rate configurable per award (typically 17.5%)",
+        "Applied to annual leave pay correctly",
+        "Higher duties and shift premiums considered",
+        "Pro-rata for part-time employees",
+        "Visible in pay breakdown",
+        "Loading calculation documented for audit"
+      ],
+      businessLogic: [
+        "Standard leave loading: 17.5% of base rate during leave",
+        "Alternative: Average of regular shift penalties",
+        "Whichever is higher applies (some awards)",
+        "Loading paid when leave taken or on termination",
+        "Casual employees: No leave loading (included in 25% casual loading)",
+        "Some EBAs may have different loading arrangements"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Leave Management", relationship: "Leave records trigger loading calculation" },
+        { module: "Payroll", relationship: "Loading included in leave pay" }
+      ],
+      endToEndJourney: [
+        "1. Staff member takes 2 weeks annual leave",
+        "2. System calculates leave pay at base rate",
+        "3. Base rate: $28.73/hr × 76 hours = $2,183.48",
+        "4. Leave loading: 17.5% × $2,183.48 = $382.11",
+        "5. Alternative check: Average shift penalties",
+        "6. Average penalties: $320 (lower than 17.5%)",
+        "7. Leave loading applies: $382.11",
+        "8. Total leave pay: $2,183.48 + $382.11 = $2,565.59",
+        "9. Payslip shows base and loading separately",
+        "10. Audit trail documents calculation method"
+      ],
+      realWorldExample: {
+        scenario: "Educator taking 4 weeks leave with comparison between standard loading and average penalties.",
+        steps: [
+          "Emma takes 4 weeks annual leave",
+          "Base rate: $32.47/hr (Level 4.1)",
+          "Leave hours: 152 (4 × 38)",
+          "Base leave pay: 152 × $32.47 = $4,935.44",
+          "Standard loading (17.5%): $863.70",
+          "Alternative: Average shift penalties last 12 months",
+          "Emma worked regular weekdays, minimal penalties",
+          "Average penalty per week: $45",
+          "Alternative loading: 4 × $45 = $180",
+          "17.5% is higher, so that applies",
+          "Total leave pay: $4,935.44 + $863.70 = $5,799.14",
+          "Comparison: Tom works many weekends",
+          "Tom's average weekly penalty: $280",
+          "Tom's alternative: 4 × $280 = $1,120",
+          "Tom gets $1,120 (higher than 17.5% of his base)"
+        ],
+        outcome: "Leave loading correctly calculated using whichever method is more favorable."
+      }
+    },
+    {
+      id: "US-AWD-022",
+      title: "Generate Payroll Export with Rate Breakdown",
+      actors: ["Payroll Administrator"],
+      description: "As a Payroll Administrator, I want to export timesheet data with full rate breakdown, so that payroll system receives accurate categorized pay data.",
+      acceptanceCriteria: [
+        "Export includes all pay components separately",
+        "Ordinary, OT, penalties, allowances categorized",
+        "Earnings codes mapped to payroll system",
+        "Export format compatible with major payroll systems",
+        "Validation checks before export",
+        "Export log maintained for audit"
+      ],
+      businessLogic: [
+        "Standard categories: Ordinary, OT1.5, OT2.0, Saturday, Sunday, PH",
+        "Allowances mapped to separate pay codes",
+        "Deductions included if applicable",
+        "Format options: CSV, XML, API integration",
+        "Earnings codes configurable per organization",
+        "Export locked after payroll processes"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Timesheet", relationship: "Source data for export" },
+        { module: "Payroll System", relationship: "Receives export data for processing" }
+      ],
+      endToEndJourney: [
+        "1. Pay period ends, all timesheets approved",
+        "2. Payroll Admin opens Export function",
+        "3. Selects pay period and reviews summary",
+        "4. 52 staff, $125,000 total gross pay",
+        "5. Breakdown: Ordinary $98K, OT $12K, Penalties $8K, Allow $7K",
+        "6. Runs validation: All timesheets approved ✓",
+        "7. Generates export file in Xero format",
+        "8. CSV contains one row per earnings code per employee",
+        "9. Downloads and imports into Xero",
+        "10. Pay run processed in payroll system",
+        "11. Export marked as 'Processed' in system"
+      ],
+      realWorldExample: {
+        scenario: "Fortnightly payroll export to Xero for 52 staff across 3 centres.",
+        steps: [
+          "Fortnight ends Sunday, export runs Monday 8 AM",
+          "System validates: 52 timesheets approved",
+          "Pre-export summary:",
+          "  Ordinary Hours: $98,450",
+          "  Overtime (1.5x): $8,200",
+          "  Overtime (2.0x): $3,800",
+          "  Saturday Penalty: $2,100",
+          "  Sunday Penalty: $3,400",
+          "  Public Holiday: $2,500",
+          "  Allowances: $7,200",
+          "  Total: $125,650",
+          "Export format: Xero CSV template",
+          "File generated: payroll_2026-02-15.csv",
+          "Contains 312 rows (52 staff × 6 avg earnings codes)",
+          "Each row: Employee ID, Earnings Code, Hours, Amount",
+          "Imported into Xero pay run",
+          "Verification: Totals match ✓",
+          "Pay run submitted for processing"
+        ],
+        outcome: "Accurate, categorized payroll export processed in 15 minutes. No manual data entry errors."
+      }
+    },
+    {
+      id: "US-AWD-023",
+      title: "Handle Higher Duties Pay Automatically",
+      actors: ["Payroll Administrator", "Centre Manager"],
+      description: "As a Centre Manager, I want staff acting in higher roles to automatically receive higher duties pay, so that they're compensated fairly for additional responsibility.",
+      acceptanceCriteria: [
+        "Higher duties flag can be set on shift",
+        "System calculates pay at higher classification rate",
+        "Minimum duration for higher duties configurable",
+        "Records which classification staff acted in",
+        "Reports show higher duties usage and cost",
+        "Supports partial shift higher duties"
+      ],
+      businessLogic: [
+        "Higher duties: Paid at the rate of the role being performed",
+        "Minimum duration: Typically 2+ hours or full shift",
+        "Must be formally assigned (not just helping out)",
+        "Rate difference paid as allowance or base rate change",
+        "Common scenario: Educator acting as Room Leader",
+        "Documentation required: Why and who authorized"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Roster", relationship: "Higher duties flag on shift assignment" },
+        { module: "Staff Profiles", relationship: "Base classification for comparison" }
+      ],
+      endToEndJourney: [
+        "1. Room Leader calls in sick",
+        "2. Centre Manager assigns Emma to act as Room Leader",
+        "3. Creates shift with 'Higher Duties' flag",
+        "4. Selects acting role: Level 4.2 Room Leader",
+        "5. Emma's base: Level 3.1 $28.73/hr",
+        "6. Acting rate: Level 4.2 $35.50/hr",
+        "7. Emma works 8-hour shift in higher role",
+        "8. Pay calculated at $35.50: 7.5 × $35.50 = $266.25",
+        "9. vs base rate: 7.5 × $28.73 = $215.48",
+        "10. Higher duties loading: $50.77",
+        "11. Timesheet shows higher duties breakdown"
+      ],
+      realWorldExample: {
+        scenario: "Room Leader on leave for 2 weeks. Senior Educator acts in the role with higher duties pay.",
+        steps: [
+          "Room Leader Sarah on 2 weeks annual leave",
+          "Emma (Level 3.1) nominated to act as Room Leader",
+          "Manager creates shifts with Higher Duties flag",
+          "Acting role: Level 4.2 Room Leader",
+          "Emma's normal rate: $28.73/hr",
+          "Higher duties rate: $35.50/hr",
+          "Differential: $6.77/hr",
+          "Week 1: 38 hours at $35.50 = $1,349.00",
+          "Week 2: 38 hours at $35.50 = $1,349.00",
+          "vs normal pay: 76 × $28.73 = $2,183.48",
+          "Higher duties total: $514.52 extra",
+          "Timesheet shows:",
+          "  Base rate hours: 0",
+          "  Higher Duties hours: 76",
+          "  Higher Duties rate: $35.50",
+          "Emma's skills also being developed"
+        ],
+        outcome: "Acting arrangements fairly compensated. Clear audit trail of who acted in what role."
+      }
+    },
+    {
+      id: "US-AWD-024",
+      title: "Validate Minimum Engagement for Casual Staff",
+      actors: ["Centre Manager", "Payroll Administrator"],
+      description: "As a Centre Manager, I want minimum engagement rules enforced for casual shifts, so that casual staff receive their entitled minimum hours.",
+      acceptanceCriteria: [
+        "Minimum engagement period enforced per award",
+        "Short shifts auto-extended to minimum for pay purposes",
+        "Warning shown when creating shifts below minimum",
+        "Actual hours tracked separately from paid hours",
+        "Reports show minimum engagement top-ups",
+        "Different minimums by employment type/award"
+      ],
+      businessLogic: [
+        "Casual minimum engagement: Typically 3-4 hours per shift",
+        "If called in and sent home early, minimum still applies",
+        "Pay for minimum even if worked less",
+        "Broken shift: Each segment may have minimum",
+        "Part-time: Different minimum may apply",
+        "Award-specific: Check each award's terms"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Roster", relationship: "Shift duration validated against minimum" },
+        { module: "Timesheet", relationship: "Minimum engagement applied to pay" }
+      ],
+      endToEndJourney: [
+        "1. Manager creates 2-hour shift for casual Emma",
+        "2. System warns: 'Below 3-hour minimum engagement'",
+        "3. Manager confirms: Staff agreed to 2-hour shift",
+        "4. Emma works the 2-hour shift",
+        "5. Timesheet created: Worked 2 hours",
+        "6. System applies minimum engagement: Paid 3 hours",
+        "7. Pay calculation: 3 × $35.91 (casual rate) = $107.73",
+        "8. Notes: '2 hours worked + 1 hour minimum top-up'",
+        "9. Payroll export shows 3 paid hours"
+      ],
+      realWorldExample: {
+        scenario: "Casual called in for emergency cover, situation resolves after 90 minutes. Minimum engagement still applies.",
+        steps: [
+          "Emergency: Extra educator needed 8 AM",
+          "Casual Tom called in at 7:30 AM",
+          "Tom arrives 8:00 AM",
+          "Situation resolves - cover no longer needed by 9:30 AM",
+          "Tom worked: 1.5 hours actual",
+          "Award minimum engagement: 3 hours",
+          "Tom sent home at 9:30 AM",
+          "Timesheet records:",
+          "  Actual hours: 1.5",
+          "  Paid hours: 3.0 (minimum engagement)",
+          "  Rate: $35.91 (casual L3.1)",
+          "  Pay: 3 × $35.91 = $107.73",
+          "Manager notes: 'Called in for emergency cover'",
+          "Report shows: 1.5 hour minimum engagement top-up"
+        ],
+        outcome: "Casual staff correctly paid minimum engagement. Compliance maintained even for short-notice calls."
+      }
+    },
+    {
+      id: "US-AWD-025",
+      title: "Configure Multi-Award Staff Classification",
+      actors: ["HR Manager", "Payroll Administrator"],
+      description: "As an HR Manager, I want staff covered by multiple awards to have correct rates applied per role, so that people working across different functions are paid correctly.",
+      acceptanceCriteria: [
+        "Staff can have multiple award classifications",
+        "Different classifications for different roles",
+        "Shift assignment determines which rate applies",
+        "Clear visibility of which classification per shift",
+        "Overtime calculated per primary classification",
+        "Reports show hours by classification"
+      ],
+      businessLogic: [
+        "Multi-award: Staff may work under different awards for different duties",
+        "Example: Educator (Children's Services) + Cook (Hospitality)",
+        "Each shift flagged with applicable classification",
+        "Primary classification for overtime purposes",
+        "Pro-rata entitlements based on hours per classification",
+        "Leave accrues based on primary role"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Staff Profiles", relationship: "Multiple classifications stored" },
+        { module: "Roster", relationship: "Shift role determines classification" }
+      ],
+      endToEndJourney: [
+        "1. Staff member Maria works as Educator and Cook",
+        "2. HR sets up dual classification:",
+        "3. Primary: Children's Services Award Level 3.1",
+        "4. Secondary: Hospitality Award Cook Level 2",
+        "5. Week schedule: Mon-Wed Educator, Thu-Fri Kitchen",
+        "6. Mon-Wed shifts tagged: Children's Services classification",
+        "7. Thu-Fri shifts tagged: Hospitality classification",
+        "8. Pay calculation:",
+        "9. Educator hours: 22.5 × $28.73 = $646.43",
+        "10. Cook hours: 15 × $26.50 = $397.50",
+        "11. Total: $1,043.93 (different rates correctly applied)"
+      ],
+      realWorldExample: {
+        scenario: "Centre cook also holds ECE qualification and sometimes works in rooms when kitchen is closed.",
+        steps: [
+          "Maria: Primary role = Cook (Hospitality Award)",
+          "Secondary qualification: Cert III Early Childhood",
+          "Mon-Thu: Works in kitchen (20 hours)",
+          "Friday: Kitchen closed, works in Toddler room (7.5 hours)",
+          "Classifications set up:",
+          "  Primary: Hospitality Award Cook L2 - $26.50/hr",
+          "  Secondary: Children's Services Award L2.1 - $26.50/hr",
+          "(Same rate in this case, but tracked separately)",
+          "Roster shows:",
+          "  Mon-Thu shifts: Kitchen role",
+          "  Friday shift: Educator role",
+          "Timesheet breakdown:",
+          "  Hospitality Award: 20 hours",
+          "  Children's Services Award: 7.5 hours",
+          "If rates differed, each would apply to respective hours",
+          "Overtime based on total hours, rate based on when OT occurred"
+        ],
+        outcome: "Multi-award staff correctly tracked with appropriate rates per role. Flexibility maintained."
       }
     }
   ],
