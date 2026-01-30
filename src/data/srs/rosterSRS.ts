@@ -1,0 +1,874 @@
+// Roster Module - Software Requirements Specification
+
+export interface UserStory {
+  id: string;
+  title: string;
+  actors: string[];
+  description: string;
+  acceptanceCriteria: string[];
+  businessLogic: string[];
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  relatedModules: { module: string; relationship: string }[];
+  endToEndJourney: string[];
+  realWorldExample: {
+    scenario: string;
+    steps: string[];
+    outcome: string;
+  };
+}
+
+export interface FieldSpec {
+  name: string;
+  type: string;
+  mandatory: boolean;
+  description: string;
+  validation?: string;
+  defaultValue?: string;
+  foreignKey?: string;
+}
+
+export interface TableSpec {
+  name: string;
+  schema: string;
+  description: string;
+  fields: FieldSpec[];
+}
+
+export interface ModuleSRS {
+  moduleName: string;
+  version: string;
+  lastUpdated: string;
+  overview: string;
+  objectives: string[];
+  scope: string[];
+  outOfScope: string[];
+  actors: { name: string; description: string; permissions: string[] }[];
+  functionalRequirements: { id: string; category: string; requirement: string; priority: string }[];
+  nonFunctionalRequirements: { id: string; category: string; requirement: string }[];
+  userStories: UserStory[];
+  tableSpecs: TableSpec[];
+  integrations: { system: string; type: string; description: string }[];
+  businessRules: { id: string; rule: string; rationale: string }[];
+}
+
+export const rosterSRS: ModuleSRS = {
+  moduleName: "Roster & Workforce Scheduling",
+  version: "1.0.0",
+  lastUpdated: "2026-01-30",
+  overview: `The Roster & Workforce Scheduling module provides comprehensive workforce management capabilities for childcare centres. It enables centre managers to create, manage, and optimize staff schedules while ensuring compliance with National Quality Framework (NQF) ratios, fatigue management regulations, and Australian employment awards. The system supports multi-centre operations, agency staff integration, GPS-validated time and attendance, and AI-powered schedule optimization.`,
+  
+  objectives: [
+    "Reduce manual scheduling effort by 70% through automation and templates",
+    "Ensure 100% compliance with NQF educator-to-child ratios",
+    "Minimize overtime costs through intelligent scheduling optimization",
+    "Provide real-time visibility into staffing levels and compliance status",
+    "Enable staff self-service for availability, leave requests, and shift swaps",
+    "Integrate seamlessly with payroll through accurate time and attendance tracking",
+    "Support multi-location operations with cross-centre staff deployment"
+  ],
+
+  scope: [
+    "Centre and room configuration with capacity and ratio settings",
+    "Staff profile management including qualifications and availability",
+    "Shift creation, assignment, and template management",
+    "Recurring shift pattern automation",
+    "Open shift broadcasting and claim workflow",
+    "GPS-validated clock in/out with geofencing",
+    "Break scheduling with coverage validation",
+    "Leave request and approval workflow",
+    "Fatigue management and compliance monitoring",
+    "NQF ratio compliance tracking and alerting",
+    "Demand forecasting with external factor integration",
+    "Cost tracking and budget variance analysis",
+    "Roster publishing and staff notifications",
+    "Shift swap request management"
+  ],
+
+  outOfScope: [
+    "Payroll processing and payment disbursement",
+    "Child enrollment and booking management",
+    "Parent communication and billing",
+    "HR onboarding and offboarding workflows",
+    "Learning management for staff training"
+  ],
+
+  actors: [
+    {
+      name: "Centre Manager",
+      description: "Responsible for day-to-day operations of a single childcare centre, including roster creation and staff management",
+      permissions: [
+        "Create, edit, and delete shifts for assigned centre",
+        "Approve/reject leave requests and shift swaps",
+        "View and manage staff availability",
+        "Publish rosters and send notifications",
+        "Override compliance warnings with justification",
+        "Access cost and budget reports for centre"
+      ]
+    },
+    {
+      name: "Area Manager",
+      description: "Oversees multiple centres within a region, with visibility across locations",
+      permissions: [
+        "All Centre Manager permissions across multiple centres",
+        "Deploy staff across centres within region",
+        "Access consolidated reporting and analytics",
+        "Configure regional settings and policies",
+        "Approve cross-centre transfers"
+      ]
+    },
+    {
+      name: "Educator (Staff)",
+      description: "Front-line childcare worker who works assigned shifts and interacts with children",
+      permissions: [
+        "View own roster and upcoming shifts",
+        "Submit availability and preferences",
+        "Request time off and submit leave applications",
+        "Clock in/out via mobile app",
+        "Apply for open shifts",
+        "Request shift swaps with colleagues"
+      ]
+    },
+    {
+      name: "Lead Educator",
+      description: "Senior educator with room leadership responsibilities",
+      permissions: [
+        "All Educator permissions",
+        "View room roster and coverage",
+        "Record break times for team members",
+        "Flag compliance issues",
+        "Approve minor shift adjustments"
+      ]
+    },
+    {
+      name: "HR Administrator",
+      description: "Manages staff records, qualifications, and employment details",
+      permissions: [
+        "Manage staff profiles and employment records",
+        "Track and update qualifications and certifications",
+        "Configure pay rates and classifications",
+        "Access audit logs and compliance reports",
+        "Manage agency staff records"
+      ]
+    },
+    {
+      name: "System Administrator",
+      description: "Technical administrator responsible for system configuration",
+      permissions: [
+        "Configure centres, rooms, and geofence zones",
+        "Set up shift templates and roster templates",
+        "Configure fatigue rules and compliance thresholds",
+        "Manage integrations and API access",
+        "Access all system logs and diagnostics"
+      ]
+    },
+    {
+      name: "Agency Coordinator",
+      description: "External agency representative who manages agency staff placements",
+      permissions: [
+        "View open shifts available for agency staff",
+        "Assign agency workers to open shifts",
+        "Update agency staff availability",
+        "View timesheet reports for agency staff"
+      ]
+    }
+  ],
+
+  functionalRequirements: [
+    { id: "FR-RST-001", category: "Centre Setup", requirement: "System shall allow configuration of multiple centres with unique operating hours, rooms, and capacity settings", priority: "Critical" },
+    { id: "FR-RST-002", category: "Centre Setup", requirement: "System shall support room configuration with age groups, capacity limits, and NQF ratio requirements", priority: "Critical" },
+    { id: "FR-RST-003", category: "Centre Setup", requirement: "System shall allow definition of geofence zones for GPS-based clock validation", priority: "High" },
+    { id: "FR-RST-004", category: "Staff Management", requirement: "System shall maintain staff profiles with employment type, role, qualifications, and pay rates", priority: "Critical" },
+    { id: "FR-RST-005", category: "Staff Management", requirement: "System shall track qualification expiry dates and generate alerts 30/60/90 days before expiry", priority: "High" },
+    { id: "FR-RST-006", category: "Staff Management", requirement: "System shall allow staff to define weekly availability with start/end times per day", priority: "High" },
+    { id: "FR-RST-007", category: "Staff Management", requirement: "System shall support alternate week availability patterns with configurable anchor dates", priority: "Medium" },
+    { id: "FR-RST-008", category: "Shift Management", requirement: "System shall allow creation of shifts with date, time, room, and staff assignment", priority: "Critical" },
+    { id: "FR-RST-009", category: "Shift Management", requirement: "System shall support shift templates for rapid shift creation", priority: "High" },
+    { id: "FR-RST-010", category: "Shift Management", requirement: "System shall detect and prevent scheduling conflicts (overlapping shifts, outside availability)", priority: "Critical" },
+    { id: "FR-RST-011", category: "Recurring Shifts", requirement: "System shall support creation of recurring shift patterns (daily, weekly, fortnightly, monthly)", priority: "High" },
+    { id: "FR-RST-012", category: "Recurring Shifts", requirement: "System shall auto-generate future shifts based on recurring patterns", priority: "High" },
+    { id: "FR-RST-013", category: "Recurring Shifts", requirement: "System shall allow bulk editing of all future instances in a recurring series", priority: "Medium" },
+    { id: "FR-RST-014", category: "Open Shifts", requirement: "System shall allow creation of unassigned open shifts for staff to claim", priority: "High" },
+    { id: "FR-RST-015", category: "Open Shifts", requirement: "System shall filter eligible staff for open shifts based on qualifications and availability", priority: "High" },
+    { id: "FR-RST-016", category: "Open Shifts", requirement: "System shall notify eligible staff when new open shifts are posted", priority: "Medium" },
+    { id: "FR-RST-017", category: "Time & Attendance", requirement: "System shall capture clock in/out events with timestamp and GPS coordinates", priority: "Critical" },
+    { id: "FR-RST-018", category: "Time & Attendance", requirement: "System shall validate clock events against geofence zones and flag violations", priority: "High" },
+    { id: "FR-RST-019", category: "Time & Attendance", requirement: "System shall calculate worked hours and variance from scheduled hours", priority: "Critical" },
+    { id: "FR-RST-020", category: "Break Management", requirement: "System shall schedule breaks based on shift duration and award requirements", priority: "High" },
+    { id: "FR-RST-021", category: "Break Management", requirement: "System shall validate room coverage during scheduled breaks", priority: "High" },
+    { id: "FR-RST-022", category: "Leave Management", requirement: "System shall allow staff to submit leave requests with type and date range", priority: "High" },
+    { id: "FR-RST-023", category: "Leave Management", requirement: "System shall track leave entitlements and balances by leave type", priority: "High" },
+    { id: "FR-RST-024", category: "Leave Management", requirement: "System shall prevent shift assignment on approved leave dates", priority: "Critical" },
+    { id: "FR-RST-025", category: "Compliance", requirement: "System shall calculate real-time educator-to-child ratios per room", priority: "Critical" },
+    { id: "FR-RST-026", category: "Compliance", requirement: "System shall generate alerts when ratio thresholds are breached or at risk", priority: "Critical" },
+    { id: "FR-RST-027", category: "Compliance", requirement: "System shall track qualified vs unqualified educator counts for 50% diploma rule", priority: "Critical" },
+    { id: "FR-RST-028", category: "Fatigue Management", requirement: "System shall enforce maximum consecutive days worked limits", priority: "High" },
+    { id: "FR-RST-029", category: "Fatigue Management", requirement: "System shall enforce minimum rest hours between shifts", priority: "High" },
+    { id: "FR-RST-030", category: "Fatigue Management", requirement: "System shall calculate fatigue scores and flag high-risk staff", priority: "Medium" },
+    { id: "FR-RST-031", category: "Publishing", requirement: "System shall allow batch publishing of roster for a date range", priority: "High" },
+    { id: "FR-RST-032", category: "Publishing", requirement: "System shall send notifications to affected staff upon roster publication", priority: "High" },
+    { id: "FR-RST-033", category: "Swap Requests", requirement: "System shall allow staff to request shift swaps with specific colleagues", priority: "Medium" },
+    { id: "FR-RST-034", category: "Swap Requests", requirement: "System shall validate swap eligibility (qualifications, availability) before approval", priority: "Medium" },
+    { id: "FR-RST-035", category: "Costing", requirement: "System shall calculate shift costs based on hourly rates, overtime, and penalties", priority: "High" },
+    { id: "FR-RST-036", category: "Costing", requirement: "System shall track budget vs actual costs with variance reporting", priority: "High" },
+    { id: "FR-RST-037", category: "Demand Forecasting", requirement: "System shall integrate child booking data to forecast staffing needs", priority: "Medium" },
+    { id: "FR-RST-038", category: "Demand Forecasting", requirement: "System shall adjust demand forecasts based on external factors (weather, holidays)", priority: "Low" }
+  ],
+
+  nonFunctionalRequirements: [
+    { id: "NFR-RST-001", category: "Performance", requirement: "Roster grid shall load within 2 seconds for up to 50 staff and 7-day view" },
+    { id: "NFR-RST-002", category: "Performance", requirement: "GPS clock event shall be processed within 500ms including geofence validation" },
+    { id: "NFR-RST-003", category: "Availability", requirement: "System shall maintain 99.5% uptime during centre operating hours (6AM-7PM)" },
+    { id: "NFR-RST-004", category: "Scalability", requirement: "System shall support up to 500 concurrent users across 100 centres" },
+    { id: "NFR-RST-005", category: "Security", requirement: "All API endpoints shall require authentication and role-based authorization" },
+    { id: "NFR-RST-006", category: "Security", requirement: "GPS coordinates shall be encrypted in transit and at rest" },
+    { id: "NFR-RST-007", category: "Compliance", requirement: "All data shall be stored in Australian data centres for privacy compliance" },
+    { id: "NFR-RST-008", category: "Usability", requirement: "Mobile clock in/out shall work offline with sync when connectivity restored" },
+    { id: "NFR-RST-009", category: "Audit", requirement: "All shift modifications shall be logged with user, timestamp, and change details" },
+    { id: "NFR-RST-010", category: "Integration", requirement: "System shall provide REST API for payroll system integration" }
+  ],
+
+  userStories: [
+    {
+      id: "US-RST-001",
+      title: "Create Weekly Roster from Template",
+      actors: ["Centre Manager"],
+      description: "As a Centre Manager, I want to apply a weekly roster template to quickly create a baseline schedule for the upcoming week, so that I can save time on repetitive scheduling tasks.",
+      acceptanceCriteria: [
+        "Can select from saved roster templates for my centre",
+        "Template creates open shifts for each room/day/time combination",
+        "Existing shifts on target dates are not overwritten",
+        "Confirmation shows count of shifts to be created vs skipped",
+        "Created shifts appear in draft status for review before publishing"
+      ],
+      businessLogic: [
+        "Template shifts are created as Open Shifts without staff assignment",
+        "Duplicate detection: Skip if matching room + date + start time already exists",
+        "Template shifts inherit qualification requirements and role preferences",
+        "Shifts are created in 'draft' status, not visible to staff until published"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Awards", relationship: "Shift cost preview uses award rates for budget estimation" },
+        { module: "Compliance", relationship: "Created shifts trigger ratio compliance pre-check" }
+      ],
+      endToEndJourney: [
+        "1. Centre Manager opens Roster view and selects week starting Monday",
+        "2. Clicks 'Apply Template' button in toolbar",
+        "3. Selects 'Standard Week' template from dropdown",
+        "4. System validates no conflicting shifts exist",
+        "5. Preview modal shows 35 shifts to create, 0 skipped",
+        "6. Manager confirms application",
+        "7. System creates 35 open shifts across 5 rooms × 7 days",
+        "8. Roster grid refreshes showing new open shifts",
+        "9. Manager begins assigning staff to shifts",
+        "10. Once complete, Manager clicks 'Publish' to notify staff"
+      ],
+      realWorldExample: {
+        scenario: "Sarah, Centre Manager at Sunshine Early Learning, prepares the roster for next week. Her centre has 5 rooms with consistent staffing patterns.",
+        steps: [
+          "Sarah logs in Monday morning to prepare next week's roster",
+          "She navigates to the Roster view and clicks 'Apply Template'",
+          "Selects 'Standard Week - Full Capacity' template",
+          "System shows preview: 35 shifts will be created for Nursery, Toddler, Junior Preschool, Senior Preschool, and Kindy rooms",
+          "Sarah confirms and the shifts appear as open (unassigned)",
+          "She then drags staff members onto each shift based on their availability",
+          "For the Nursery room, she ensures at least one ECT-qualified educator per shift",
+          "Once all shifts are assigned, she clicks 'Publish' on Friday afternoon",
+          "All staff receive email and app notifications with their schedules"
+        ],
+        outcome: "The weekly roster is created in 15 minutes instead of 2 hours, with all compliance checks passed automatically."
+      }
+    },
+    {
+      id: "US-RST-002",
+      title: "Clock In with GPS Validation",
+      actors: ["Educator (Staff)"],
+      description: "As an Educator, I want to clock in using my mobile phone when I arrive at the centre, so that my attendance is accurately recorded with location verification.",
+      acceptanceCriteria: [
+        "Can clock in via mobile app with single tap",
+        "GPS coordinates are captured automatically",
+        "System validates location against centre geofence",
+        "Visual confirmation shows clock time and location status",
+        "Clock event is recorded even if outside geofence (with warning)",
+        "Offline clock-in queues for sync when online"
+      ],
+      businessLogic: [
+        "GPS accuracy must be ≤50 meters for valid location check",
+        "Distance calculated using Haversine formula from centre coordinates",
+        "Within geofence radius + buffer = 'valid', outside = 'warning'",
+        "Clock time rounded to nearest minute for payroll",
+        "Early clock-in (>15 min before shift) flagged for review",
+        "Device info and IP captured for audit trail"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Awards", relationship: "Clock times determine shift duration for pay calculation" },
+        { module: "Compliance", relationship: "Clock events update real-time ratio calculations" }
+      ],
+      endToEndJourney: [
+        "1. Educator Emma arrives at the centre car park at 6:25 AM",
+        "2. Opens the staff app on her phone",
+        "3. App shows her scheduled shift: 6:30 AM - 2:30 PM in Nursery",
+        "4. Taps 'Clock In' button",
+        "5. Phone requests GPS permission (if not already granted)",
+        "6. App captures coordinates: -33.8688, 151.2093",
+        "7. System calculates distance from centre: 45 meters",
+        "8. Distance is within 100m geofence + 50m buffer",
+        "9. Clock event created: 6:25 AM, status 'valid'",
+        "10. App shows confirmation: 'Clocked in at 6:25 AM ✓'",
+        "11. Manager dashboard updates to show Emma 'On Shift'"
+      ],
+      realWorldExample: {
+        scenario: "Emma is an educator at Little Stars Childcare. She needs to clock in for her early shift while the building is still locked.",
+        steps: [
+          "Emma arrives at 6:25 AM, 5 minutes before her shift",
+          "She waits in the car park for the Lead Educator to arrive with keys",
+          "Opens the staff app and sees her shift details",
+          "Taps 'Clock In' - the app shows a spinner briefly",
+          "Confirmation appears: 'Clocked in at 6:25 AM - Location verified ✓'",
+          "The Lead arrives at 6:28 AM and unlocks the building",
+          "Emma enters and begins setting up the Nursery room",
+          "At 2:35 PM, she clocks out from inside the building",
+          "Her timesheet shows 8 hours 10 minutes worked"
+        ],
+        outcome: "Accurate attendance record with GPS verification proves Emma was at the centre, even though she clocked in before entering the building."
+      }
+    },
+    {
+      id: "US-RST-003",
+      title: "Request and Approve Leave",
+      actors: ["Educator (Staff)", "Centre Manager"],
+      description: "As an Educator, I want to request time off through the system, so that my leave is properly tracked and my shifts can be covered. As a Centre Manager, I want to review and approve leave requests, ensuring adequate coverage before approval.",
+      acceptanceCriteria: [
+        "Staff can submit leave request with type, dates, and optional notes",
+        "System calculates hours/days requested based on typical schedule",
+        "Manager receives notification of pending request",
+        "Manager can view leave calendar showing all requests",
+        "Manager can approve or reject with reason",
+        "Approved leave blocks shift assignment for those dates",
+        "Leave balance is updated upon approval"
+      ],
+      businessLogic: [
+        "Leave types: Annual, Sick, Personal, Unpaid - each with different balance tracking",
+        "Hours calculated based on staff's typical hours (max_hours_per_week / 5)",
+        "Pending leave shows as tentative in roster (staff still assignable)",
+        "Approved leave creates 'on_leave' block preventing shift assignment",
+        "Rejection requires mandatory reason text",
+        "Sick leave can be backdated; other types require future dates"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Awards", relationship: "Leave loading percentages applied to Annual Leave payouts" },
+        { module: "Performance", relationship: "Excessive sick leave may trigger performance conversation" }
+      ],
+      endToEndJourney: [
+        "1. Educator John plans a family holiday in school holidays",
+        "2. Opens staff app 6 weeks in advance",
+        "3. Navigates to 'Leave' section",
+        "4. Taps 'Request Leave' button",
+        "5. Selects 'Annual Leave' type",
+        "6. Picks dates: Monday 14th to Friday 18th (5 days)",
+        "7. Adds note: 'Family holiday to Queensland'",
+        "8. System shows: '38 hours from Annual Leave balance (72 hours available)'",
+        "9. John submits the request",
+        "10. Centre Manager Sarah receives notification",
+        "11. Sarah opens leave calendar, sees John's pending request",
+        "12. Checks roster coverage - adequate staff available",
+        "13. Sarah approves the request",
+        "14. John receives approval notification",
+        "15. His balance updates to 34 hours remaining",
+        "16. Roster shows John as 'On Leave' for those dates"
+      ],
+      realWorldExample: {
+        scenario: "John, a permanent part-time educator (3 days/week), wants to take his kids to the Gold Coast during April school holidays.",
+        steps: [
+          "In February, John opens the app and goes to Leave",
+          "He selects 'Annual Leave' and picks April 14-18",
+          "The system calculates 22.8 hours (3 days × 7.6 hours)",
+          "His balance shows 45.6 hours available",
+          "He submits with note: 'School holiday trip with kids'",
+          "Manager Sarah reviews on her dashboard",
+          "She sees April is busy but has agency staff available",
+          "Sarah approves the request the same day",
+          "John gets push notification: 'Leave Approved!'",
+          "When Sarah creates the April roster, system blocks those dates for John",
+          "She assigns an Anzuk agency educator to cover John's shifts"
+        ],
+        outcome: "John's leave is approved and recorded, his balance is deducted, and the roster is planned around his absence with agency cover arranged."
+      }
+    },
+    {
+      id: "US-RST-004",
+      title: "Monitor Real-Time Ratio Compliance",
+      actors: ["Centre Manager", "Lead Educator"],
+      description: "As a Centre Manager, I want to see real-time educator-to-child ratios for each room, so that I can ensure NQF compliance throughout the day and respond quickly to any breaches.",
+      acceptanceCriteria: [
+        "Dashboard shows current ratio for each room",
+        "Colour coding: Green (compliant), Amber (at risk), Red (breach)",
+        "Alert generated when ratio exceeds threshold",
+        "Historical ratio snapshots saved for audit",
+        "Drill-down shows which educators are present in each room",
+        "Projected ratios shown for upcoming breaks/shift changes"
+      ],
+      businessLogic: [
+        "Ratio = Booked Children / Educators Present",
+        "NQF Ratios: Nursery 1:4, Toddler 1:5, Preschool 1:10, Kindy 1:11",
+        "Breach if actual ratio > required ratio",
+        "At Risk if ratio within 0.5 of threshold",
+        "'Qualified' educator = Diploma ECE or higher",
+        "50% rule: At least half of educators must be qualified",
+        "Snapshots recorded every 15 minutes during operating hours"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Roster", relationship: "Shift assignments determine educator presence" },
+        { module: "Compliance", relationship: "Ratio breaches logged for regulatory reporting" }
+      ],
+      endToEndJourney: [
+        "1. It's 10:30 AM, all rooms are at full capacity",
+        "2. Centre Manager Sarah opens the Compliance Dashboard",
+        "3. Dashboard shows: Nursery (1:3 ✓), Toddler (1:4 ✓), Preschool (1:9 ✓), Kindy (1:10 ✓)",
+        "4. At 10:45 AM, an educator in Toddler room goes on break",
+        "5. Dashboard updates: Toddler (1:6 ⚠️) - yellow warning",
+        "6. Alert notification appears on Sarah's screen",
+        "7. Sarah clicks through to see details",
+        "8. Shows: 12 children, 2 educators, ratio 1:6 (required: 1:5)",
+        "9. Sarah radios Lead Educator to send floater to Toddler",
+        "10. Floater moves from Kindy (has excess coverage)",
+        "11. Dashboard updates: Toddler (1:4 ✓) - green",
+        "12. Ratio breach incident logged with 8-minute duration"
+      ],
+      realWorldExample: {
+        scenario: "Bright Futures Childcare has 75 children enrolled across 4 rooms. During the busy 10 AM period, an unexpected educator absence creates a ratio challenge.",
+        steps: [
+          "Sarah arrives at 8 AM and checks the compliance dashboard",
+          "All rooms show green - adequate staffing for current enrolments",
+          "At 9:30 AM, educator Lisa calls in sick",
+          "Dashboard shows Preschool turning amber: 1:11 (threshold 1:10)",
+          "Sarah receives an urgent alert on her phone",
+          "She immediately calls the agency to request emergency cover",
+          "Meanwhile, she moves the admin assistant (who holds Certificate III) to Preschool as temporary support",
+          "Dashboard shows Preschool back to 1:8 (green)",
+          "Agency educator arrives at 10:30 AM",
+          "Sarah documents the incident and temporary measure in the system",
+          "End-of-day report shows 45-minute 'at risk' period with mitigation actions"
+        ],
+        outcome: "Despite unexpected absence, NQF compliance was maintained through real-time monitoring and quick response. Full documentation available for regulatory inspection."
+      }
+    },
+    {
+      id: "US-RST-005",
+      title: "Claim Open Shift",
+      actors: ["Educator (Staff)"],
+      description: "As an Educator, I want to view and claim available open shifts, so that I can pick up extra hours when I'm available.",
+      acceptanceCriteria: [
+        "Can view list of open shifts matching my qualifications",
+        "Each open shift shows date, time, room, and urgency level",
+        "Can filter by date range and centre",
+        "Can submit interest in a shift with one tap",
+        "Receive notification when shift is confirmed or given to someone else",
+        "Confirmed shift appears in my schedule automatically"
+      ],
+      businessLogic: [
+        "Open shifts filtered by: qualification match, availability, no conflicts",
+        "Staff can only see shifts they're eligible for based on role and qualifications",
+        "First-come-first-served or manager approval depending on centre settings",
+        "Claimed shift converts from OpenShift to Shift record",
+        "Overtime threshold checked before allowing claim",
+        "Cross-centre shifts only shown if staff has multi-location flag"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Awards", relationship: "Claimed shift may trigger overtime rates" },
+        { module: "Fatigue", relationship: "System checks rest hours before allowing claim" }
+      ],
+      endToEndJourney: [
+        "1. Educator Emma wants extra hours this week",
+        "2. Opens app and goes to 'Available Shifts' section",
+        "3. Sees 3 open shifts matching her qualifications",
+        "4. Views details: Thursday 7AM-3PM Nursery (Urgent)",
+        "5. Checks her calendar - she's available Thursday",
+        "6. Taps 'Claim This Shift' button",
+        "7. System validates: Emma has Diploma ECE (required ✓)",
+        "8. System validates: No conflict with existing shifts ✓",
+        "9. System validates: Won't exceed 45 hours this week ✓",
+        "10. Shift assigned to Emma immediately (auto-approve enabled)",
+        "11. Emma sees confirmation: 'Shift Confirmed!'",
+        "12. Shift appears in her 'My Roster' view",
+        "13. Manager receives notification of filled shift"
+      ],
+      realWorldExample: {
+        scenario: "Emma is a casual educator at two centres. She's looking for extra shifts after a colleague went on parental leave.",
+        steps: [
+          "On Sunday evening, Emma opens the app to plan her week",
+          "She sees 5 open shifts across both centres she works at",
+          "One shift is marked 'Urgent' - tomorrow morning at Sunshine Centre",
+          "Emma taps to view details: Monday 6:30AM-2:30PM, Nursery Room",
+          "Requirements show: Certificate III minimum (Emma has Diploma ✓)",
+          "She taps 'Claim Shift'",
+          "System shows: 'This will bring your weekly total to 42 hours'",
+          "Emma confirms - she's happy with the extra hours",
+          "Confirmation appears: 'You're confirmed for Monday 6:30 AM at Sunshine Centre'",
+          "She receives an email summary with the shift details",
+          "Monday morning, she arrives and clocks in as normal"
+        ],
+        outcome: "The urgent shift was filled within hours of posting, and Emma earned extra income while the centre maintained adequate staffing."
+      }
+    },
+    {
+      id: "US-RST-006",
+      title: "Create Recurring Shift Pattern",
+      actors: ["Centre Manager"],
+      description: "As a Centre Manager, I want to create recurring shift patterns for staff with fixed schedules, so that their shifts are automatically generated each week without manual entry.",
+      acceptanceCriteria: [
+        "Can create pattern with days of week, times, and room",
+        "Can assign staff member to the pattern",
+        "Pattern generates future shifts automatically",
+        "Can set end date or number of occurrences",
+        "Generated shifts appear as 'AI Generated' in roster",
+        "Can edit single instance without affecting pattern",
+        "Can bulk edit all future instances in series"
+      ],
+      businessLogic: [
+        "Pattern types: Daily, Weekly, Fortnightly, Monthly",
+        "Weekly: Select specific days (Mon, Wed, Fri)",
+        "Fortnightly: Week 1 vs Week 2 pattern with anchor date",
+        "Auto-generation runs nightly for next 8 weeks",
+        "Pattern expiry triggers notification 14 days before",
+        "Single edit: Breaks link to pattern for that instance only",
+        "Series edit: Updates pattern definition and regenerates future shifts"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Staff Availability", relationship: "Pattern validates against staff availability" },
+        { module: "Leave", relationship: "Generated shifts skip approved leave dates" }
+      ],
+      endToEndJourney: [
+        "1. Centre Manager Sarah hires permanent staff member Tom",
+        "2. Tom will work Monday, Tuesday, Thursday 7AM-3PM in Toddler room",
+        "3. Sarah opens Roster and clicks 'Create Recurring Pattern'",
+        "4. Enters name: 'Tom - Regular Weekly'",
+        "5. Selects pattern: Weekly",
+        "6. Checks days: Monday, Tuesday, Thursday",
+        "7. Sets times: 7:00 AM to 3:00 PM",
+        "8. Selects room: Toddler Room",
+        "9. Assigns staff: Tom Wilson",
+        "10. Sets duration: Ongoing (no end date)",
+        "11. Sarah clicks 'Create Pattern'",
+        "12. System generates 24 shifts (8 weeks × 3 days)",
+        "13. Roster grid shows shifts with green recurring icon",
+        "14. Each Monday, Tuesday, Thursday for 8 weeks shows Tom assigned"
+      ],
+      realWorldExample: {
+        scenario: "Tom joins Happy Kids Childcare as a permanent part-time educator. His contract specifies fixed days each week.",
+        steps: [
+          "Sarah receives Tom's signed contract: Mon/Tue/Thu, 7AM-3PM",
+          "She opens the Roster system and clicks 'Recurring Patterns'",
+          "Clicks 'New Pattern' and enters 'Tom Wilson - PT Schedule'",
+          "Selects Weekly recurrence and ticks Monday, Tuesday, Thursday",
+          "Sets shift times 7:00 AM - 3:00 PM with 30 min break",
+          "Assigns to Toddler Room (Tom's primary room)",
+          "Links to Tom's staff profile",
+          "Leaves end date blank (ongoing)",
+          "Saves the pattern",
+          "System immediately creates shifts for next 8 weeks",
+          "Tom can now see his entire schedule in the staff app",
+          "Each week, his shifts appear automatically without Sarah doing anything"
+        ],
+        outcome: "Tom's fixed schedule is set up once and automatically maintained, saving Sarah 15 minutes per week on manual shift entry."
+      }
+    },
+    {
+      id: "US-RST-007",
+      title: "Request and Approve Shift Swap",
+      actors: ["Educator (Staff)", "Centre Manager"],
+      description: "As an Educator, I want to request a shift swap with a colleague when I can't work my assigned shift, so that coverage is maintained without creating an open shift.",
+      acceptanceCriteria: [
+        "Can view colleagues who are available and qualified to swap",
+        "Can send swap request with reason",
+        "Target colleague can accept or decline",
+        "Manager receives notification for final approval",
+        "Manager can approve or reject the swap",
+        "Approved swap updates both staff members' rosters",
+        "All parties notified of final outcome"
+      ],
+      businessLogic: [
+        "Swap partner must have matching or higher qualifications",
+        "Swap partner must not have conflicting shift",
+        "Swap partner must be available (not on leave)",
+        "Manager approval required for cross-room swaps",
+        "Swaps within same room can be auto-approved if setting enabled",
+        "Both original and new assignments logged for audit"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Notifications", relationship: "Multi-party notification workflow" },
+        { module: "Compliance", relationship: "Swap validates qualification requirements" }
+      ],
+      endToEndJourney: [
+        "1. Educator Emma has a shift Friday 7AM-3PM but her child is sick",
+        "2. Opens app Thursday evening and views Friday shift",
+        "3. Taps 'Request Swap' button",
+        "4. System shows eligible colleagues: Maria, David, Sarah",
+        "5. Emma selects Maria and adds reason: 'Child unwell, need to stay home'",
+        "6. Sends swap request",
+        "7. Maria receives notification on her phone",
+        "8. Maria views request: 'Emma wants to swap Friday shift'",
+        "9. Maria is free Friday and taps 'Accept Swap'",
+        "10. Centre Manager Sarah receives approval request",
+        "11. Sarah sees swap: Emma → Maria, Nursery room, same qualifications",
+        "12. Sarah approves the swap",
+        "13. Emma receives: 'Swap Approved - Maria will cover your Friday shift'",
+        "14. Maria receives: 'Swap Confirmed - You're working Friday 7AM-3PM'",
+        "15. Roster updates to show Maria on Friday, Emma's shift removed"
+      ],
+      realWorldExample: {
+        scenario: "Emma, a nursery room educator, discovers Thursday evening that her 5-year-old has chickenpox and she can't work Friday.",
+        steps: [
+          "Emma opens the app at 7 PM Thursday",
+          "She views her Friday shift: 7 AM - 3 PM in Nursery",
+          "Taps 'Request Swap' - she doesn't want to just cancel and leave them short",
+          "System shows 3 colleagues with Diploma ECE who aren't working Friday",
+          "Emma sees Maria is available and rostered off",
+          "She selects Maria and types: 'Daughter has chickenpox, need to stay home'",
+          "Sends the request",
+          "Maria gets a push notification at 7:05 PM",
+          "Maria checks her calendar - she was planning chores but can help",
+          "Taps 'Accept' on the swap request",
+          "Manager Sarah reviews at 7:15 PM",
+          "She approves - Maria is fully qualified for Nursery",
+          "Emma is relieved - shift is covered without a gap",
+          "Maria earns extra hours she wasn't expecting"
+        ],
+        outcome: "Same-day swap request handled in 15 minutes. Nursery maintains qualified educator coverage, Emma can care for her sick child, and Maria gains extra income."
+      }
+    },
+    {
+      id: "US-RST-008",
+      title: "Manage Agency Staff Placement",
+      actors: ["Centre Manager", "Agency Coordinator"],
+      description: "As a Centre Manager, I want to request and manage agency staff placements for shifts I cannot fill with internal staff, so that I maintain required coverage levels.",
+      acceptanceCriteria: [
+        "Can mark open shift as 'Agency Required'",
+        "Agency receives notification of available shifts",
+        "Agency can propose specific staff for shifts",
+        "Manager can accept or reject agency proposals",
+        "Accepted agency staff appear in roster with agency badge",
+        "Agency staff can clock in/out like internal staff",
+        "Separate cost tracking for agency labour"
+      ],
+      businessLogic: [
+        "Agency shift rates loaded from agency contract settings",
+        "Agency markup percentage applied on top of base rate",
+        "Agency staff qualifications verified before acceptance",
+        "Agency staff do not accrue leave or entitlements",
+        "Agency timesheets routed to agency for invoicing",
+        "Agency staff flagged with agency type (Anzuk, Randstad, etc.)"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Awards", relationship: "Agency rates may differ from award rates" },
+        { module: "Costing", relationship: "Agency costs tracked separately in budget" }
+      ],
+      endToEndJourney: [
+        "1. Centre Manager Sarah has 2 open shifts she can't fill internally",
+        "2. Opens each open shift and marks as 'Agency Required'",
+        "3. Selects preferred agency: Anzuk Education",
+        "4. Adds notes: 'Must have ECT qualification for Nursery'",
+        "5. Agency Coordinator at Anzuk receives notification",
+        "6. Reviews available staff matching requirements",
+        "7. Proposes 'Jennifer Lee' for Shift 1, 'Mark Wong' for Shift 2",
+        "8. Sarah receives proposal notification",
+        "9. Opens proposal: sees Jennifer and Mark's qualifications and experience",
+        "10. Sarah accepts both proposals",
+        "11. Jennifer and Mark appear in roster with Anzuk badge",
+        "12. Both receive shift details via Anzuk's system",
+        "13. On shift day, they clock in using visitor tablets",
+        "14. Timesheets at week end show internal vs agency hours",
+        "15. Agency cost report shows $890 agency labour for week"
+      ],
+      realWorldExample: {
+        scenario: "Rainbow Early Learning has a flu outbreak among staff. 4 educators are off sick and Sarah needs agency cover urgently.",
+        steps: [
+          "Monday morning, Sarah sees 4 sick calls - roster has major gaps",
+          "She has 6 open shifts across Tuesday to Friday",
+          "Fills 2 with overtime offers to existing staff",
+          "Remaining 4 shifts marked as 'Agency Required - Urgent'",
+          "Sends to Anzuk with qualification requirements listed",
+          "Anzuk coordinator Julia responds within an hour",
+          "Proposes 4 agency educators with matching qualifications",
+          "Sarah reviews each profile - all have current WWC and First Aid",
+          "She accepts all 4 proposals",
+          "Agency staff receive details and arrive on schedule",
+          "They clock in with temporary access badges",
+          "All 4 shifts covered, ratios maintained throughout the week",
+          "End of week: $1,780 in agency costs, but zero ratio breaches"
+        ],
+        outcome: "Emergency staffing crisis resolved within hours. Centre maintained compliance despite 25% of regular staff being absent."
+      }
+    }
+  ],
+
+  tableSpecs: [
+    {
+      name: "Centres",
+      schema: "roster_core",
+      description: "Stores childcare centre locations and configuration",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key, auto-generated UUID" },
+        { name: "tenant_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Multi-tenancy identifier", foreignKey: "tenants.id" },
+        { name: "name", type: "NVARCHAR(255)", mandatory: true, description: "Display name of the centre", validation: "1-255 characters" },
+        { name: "code", type: "NVARCHAR(50)", mandatory: true, description: "Unique short code for the centre", validation: "Unique per tenant" },
+        { name: "address", type: "NVARCHAR(500)", mandatory: false, description: "Street address" },
+        { name: "suburb", type: "NVARCHAR(100)", mandatory: false, description: "Suburb/city name" },
+        { name: "state", type: "NVARCHAR(50)", mandatory: false, description: "State/territory code (e.g., NSW, VIC)" },
+        { name: "postcode", type: "NVARCHAR(20)", mandatory: false, description: "Postal code" },
+        { name: "latitude", type: "DECIMAL(10,7)", mandatory: false, description: "GPS latitude for geofencing" },
+        { name: "longitude", type: "DECIMAL(10,7)", mandatory: false, description: "GPS longitude for geofencing" },
+        { name: "phone", type: "NVARCHAR(50)", mandatory: false, description: "Contact phone number" },
+        { name: "email", type: "NVARCHAR(255)", mandatory: false, description: "Contact email address" },
+        { name: "is_active", type: "BIT", mandatory: true, description: "Whether centre is operational", defaultValue: "1" },
+        { name: "created_at", type: "DATETIME2", mandatory: true, description: "Record creation timestamp", defaultValue: "GETUTCDATE()" },
+        { name: "updated_at", type: "DATETIME2", mandatory: true, description: "Last update timestamp", defaultValue: "GETUTCDATE()" }
+      ]
+    },
+    {
+      name: "Rooms",
+      schema: "roster_core",
+      description: "Defines rooms within centres with age groups and capacity",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "centre_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Parent centre", foreignKey: "roster_core.Centres.id" },
+        { name: "name", type: "NVARCHAR(100)", mandatory: true, description: "Room display name" },
+        { name: "code", type: "NVARCHAR(50)", mandatory: false, description: "Short code for the room" },
+        { name: "age_group", type: "NVARCHAR(50)", mandatory: true, description: "Age category: nursery, toddler, preschool, kindy" },
+        { name: "capacity", type: "INT", mandatory: true, description: "Maximum children allowed" },
+        { name: "min_age_months", type: "INT", mandatory: false, description: "Minimum age in months" },
+        { name: "max_age_months", type: "INT", mandatory: false, description: "Maximum age in months" },
+        { name: "required_ratio", type: "DECIMAL(5,2)", mandatory: true, description: "NQF educator-to-child ratio requirement" },
+        { name: "min_qualified_staff", type: "INT", mandatory: true, description: "Minimum number of qualified educators", defaultValue: "1" },
+        { name: "color", type: "NVARCHAR(50)", mandatory: false, description: "Display color for UI" },
+        { name: "display_order", type: "INT", mandatory: true, description: "Sort order in UI", defaultValue: "0" },
+        { name: "is_active", type: "BIT", mandatory: true, description: "Whether room is active", defaultValue: "1" }
+      ]
+    },
+    {
+      name: "Staff",
+      schema: "roster_staff",
+      description: "Employee and agency worker profiles",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "tenant_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Multi-tenancy identifier" },
+        { name: "employee_id", type: "NVARCHAR(50)", mandatory: false, description: "HR system employee ID" },
+        { name: "first_name", type: "NVARCHAR(100)", mandatory: true, description: "Staff member's first name" },
+        { name: "last_name", type: "NVARCHAR(100)", mandatory: true, description: "Staff member's last name" },
+        { name: "email", type: "NVARCHAR(255)", mandatory: false, description: "Email address for notifications" },
+        { name: "phone", type: "NVARCHAR(50)", mandatory: false, description: "Mobile phone number" },
+        { name: "avatar_url", type: "NVARCHAR(500)", mandatory: false, description: "Profile photo URL" },
+        { name: "role", type: "NVARCHAR(50)", mandatory: true, description: "Job role: lead_educator, educator, assistant, cook, admin" },
+        { name: "employment_type", type: "NVARCHAR(50)", mandatory: true, description: "permanent or casual" },
+        { name: "agency_type", type: "NVARCHAR(50)", mandatory: false, description: "Agency name if external: anzuk, randstad, hays" },
+        { name: "default_centre_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Primary work location", foreignKey: "roster_core.Centres.id" },
+        { name: "hourly_rate", type: "DECIMAL(10,2)", mandatory: false, description: "Base hourly pay rate" },
+        { name: "overtime_rate", type: "DECIMAL(10,2)", mandatory: false, description: "Overtime pay rate" },
+        { name: "max_hours_per_week", type: "INT", mandatory: true, description: "Maximum contracted hours", defaultValue: "38" },
+        { name: "is_active", type: "BIT", mandatory: true, description: "Active employee flag", defaultValue: "1" }
+      ]
+    },
+    {
+      name: "Shifts",
+      schema: "roster_shifts",
+      description: "Individual shift assignments with timing and status",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "tenant_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Multi-tenancy identifier" },
+        { name: "centre_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Centre location", foreignKey: "roster_core.Centres.id" },
+        { name: "room_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Room assignment", foreignKey: "roster_core.Rooms.id" },
+        { name: "staff_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Assigned staff member (null for open shifts)", foreignKey: "roster_staff.Staff.id" },
+        { name: "shift_date", type: "DATE", mandatory: true, description: "Date of the shift" },
+        { name: "start_time", type: "TIME", mandatory: true, description: "Shift start time" },
+        { name: "end_time", type: "TIME", mandatory: true, description: "Shift end time" },
+        { name: "break_minutes", type: "INT", mandatory: true, description: "Scheduled break duration", defaultValue: "0" },
+        { name: "status", type: "NVARCHAR(50)", mandatory: true, description: "draft, published, confirmed, completed", defaultValue: "draft" },
+        { name: "shift_type", type: "NVARCHAR(50)", mandatory: true, description: "regular, on_call, sleepover, broken", defaultValue: "regular" },
+        { name: "is_open_shift", type: "BIT", mandatory: true, description: "Whether unassigned and available for claiming", defaultValue: "0" },
+        { name: "is_ai_generated", type: "BIT", mandatory: true, description: "Created by AI solver", defaultValue: "0" },
+        { name: "ai_generated_at", type: "DATETIME2", mandatory: false, description: "Timestamp of AI generation" },
+        { name: "recurrence_group_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Links shifts in recurring series" },
+        { name: "is_absent", type: "BIT", mandatory: true, description: "Staff marked absent", defaultValue: "0" },
+        { name: "absence_reason", type: "NVARCHAR(50)", mandatory: false, description: "leave, sick, no_show, other" },
+        { name: "replacement_staff_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Staff covering for absent original", foreignKey: "roster_staff.Staff.id" },
+        { name: "notes", type: "NVARCHAR(MAX)", mandatory: false, description: "Free text notes" },
+        { name: "created_at", type: "DATETIME2", mandatory: true, description: "Record creation timestamp" },
+        { name: "updated_at", type: "DATETIME2", mandatory: true, description: "Last update timestamp" }
+      ]
+    },
+    {
+      name: "ClockEvents",
+      schema: "roster_attendance",
+      description: "Time and attendance clock events with GPS validation",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "tenant_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Multi-tenancy identifier" },
+        { name: "shift_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Associated shift", foreignKey: "roster_shifts.Shifts.id" },
+        { name: "staff_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Staff member", foreignKey: "roster_staff.Staff.id" },
+        { name: "event_type", type: "NVARCHAR(50)", mandatory: true, description: "clock_in, clock_out, break_start, break_end" },
+        { name: "scheduled_time", type: "DATETIME2", mandatory: false, description: "Expected time based on shift" },
+        { name: "actual_time", type: "DATETIME2", mandatory: true, description: "Actual recorded time" },
+        { name: "latitude", type: "DECIMAL(10,7)", mandatory: false, description: "GPS latitude" },
+        { name: "longitude", type: "DECIMAL(10,7)", mandatory: false, description: "GPS longitude" },
+        { name: "accuracy_meters", type: "INT", mandatory: false, description: "GPS accuracy in meters" },
+        { name: "geofence_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Validated geofence zone", foreignKey: "roster_core.GeofenceZones.id" },
+        { name: "within_geofence", type: "BIT", mandatory: false, description: "Whether within allowed zone" },
+        { name: "distance_from_centre", type: "INT", mandatory: false, description: "Distance from centre in meters" },
+        { name: "validation_status", type: "NVARCHAR(50)", mandatory: true, description: "valid, warning, invalid, manual_override", defaultValue: "valid" },
+        { name: "validation_notes", type: "NVARCHAR(MAX)", mandatory: false, description: "Explanation for non-valid status" },
+        { name: "device_info", type: "NVARCHAR(255)", mandatory: false, description: "Device/browser info for audit" },
+        { name: "ip_address", type: "NVARCHAR(50)", mandatory: false, description: "IP address for audit" }
+      ]
+    },
+    {
+      name: "TimeOffRequests",
+      schema: "roster_leave",
+      description: "Leave and time off requests with approval workflow",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "tenant_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Multi-tenancy identifier" },
+        { name: "staff_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Requesting staff member", foreignKey: "roster_staff.Staff.id" },
+        { name: "leave_type", type: "NVARCHAR(50)", mandatory: true, description: "annual_leave, sick_leave, personal_leave, unpaid_leave" },
+        { name: "start_date", type: "DATE", mandatory: true, description: "First day of leave" },
+        { name: "end_date", type: "DATE", mandatory: true, description: "Last day of leave" },
+        { name: "hours_requested", type: "DECIMAL(10,2)", mandatory: false, description: "Total hours for partial day requests" },
+        { name: "status", type: "NVARCHAR(50)", mandatory: true, description: "pending, approved, rejected, cancelled", defaultValue: "pending" },
+        { name: "notes", type: "NVARCHAR(MAX)", mandatory: false, description: "Reason or additional notes" },
+        { name: "approved_by", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Manager who approved", foreignKey: "roster_staff.Staff.id" },
+        { name: "approved_at", type: "DATETIME2", mandatory: false, description: "Approval timestamp" },
+        { name: "rejection_reason", type: "NVARCHAR(MAX)", mandatory: false, description: "Reason for rejection" }
+      ]
+    }
+  ],
+
+  integrations: [
+    { system: "Awards Module", type: "Internal", description: "Provides pay rates, penalty calculations, and allowances for shift costing" },
+    { system: "Performance Module", type: "Internal", description: "Links attendance patterns to performance reviews; leave patterns visible in 1:1 conversations" },
+    { system: "Child Booking System", type: "External", description: "Imports daily child bookings for demand-based staffing calculations" },
+    { system: "Payroll System", type: "External", description: "Exports approved timesheets with hours, rates, and allowances for payment processing" },
+    { system: "HR System", type: "External", description: "Syncs staff profiles, employment details, and qualification records" },
+    { system: "Agency Portals", type: "External", description: "Receives agency staff availability and sends shift requests to preferred agencies" },
+    { system: "SMS/Email Gateway", type: "External", description: "Sends shift notifications, roster publications, and urgent alerts to staff" },
+    { system: "Weather API", type: "External", description: "Fetches weather forecasts for demand adjustment factors" }
+  ],
+
+  businessRules: [
+    { id: "BR-RST-001", rule: "Staff cannot be assigned to overlapping shifts at different centres", rationale: "Prevents impossible scheduling and ensures clear accountability" },
+    { id: "BR-RST-002", rule: "Minimum 10 hours rest required between shift end and next shift start", rationale: "Fatigue management compliance and OH&S requirements" },
+    { id: "BR-RST-003", rule: "Maximum 5 consecutive days worked before mandatory day off", rationale: "Fatigue management and award compliance" },
+    { id: "BR-RST-004", rule: "NQF ratios must be maintained at all times during operating hours", rationale: "Regulatory compliance - breach is a notifiable incident" },
+    { id: "BR-RST-005", rule: "50% of educators in each room must hold Diploma ECE or higher", rationale: "NQF qualification requirements for service approval" },
+    { id: "BR-RST-006", rule: "At least one First Aid qualified person must be on-site at all times", rationale: "OH&S and regulatory compliance" },
+    { id: "BR-RST-007", rule: "Published rosters cannot be edited without manager approval", rationale: "Staff rely on published schedules for planning" },
+    { id: "BR-RST-008", rule: "Leave requests must be submitted minimum 2 weeks in advance for annual leave", rationale: "Allows adequate time for coverage planning (except sick leave)" },
+    { id: "BR-RST-009", rule: "Shift swaps require matching or higher qualification levels", rationale: "Maintains compliance and service quality" },
+    { id: "BR-RST-010", rule: "GPS clock validation fails if accuracy exceeds 100 meters", rationale: "Ensures location data is reliable for compliance verification" }
+  ]
+};
