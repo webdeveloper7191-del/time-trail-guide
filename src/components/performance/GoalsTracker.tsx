@@ -264,112 +264,172 @@ export function GoalsTracker({
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, md: 4 } }}>
-      {/* Header */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 4, md: 5 } }}>
+      {/* Premium Header */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between" 
-        alignItems={{ xs: 'stretch', sm: 'flex-start' }}
-        spacing={{ xs: 2, sm: 0 }}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        spacing={2}
       >
         <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
-              <Target className="h-5 w-5" style={{ color: 'var(--primary)' }} />
-            </Box>
-            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
-              Goals & Objectives
-            </Typography>
-          </Stack>
           <Typography 
-            variant="body2" 
-            color="text.secondary"
-            sx={{ display: { xs: 'none', sm: 'block' } }}
+            sx={{ 
+              fontSize: { xs: '1.25rem', md: '1.5rem' },
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              color: 'grey.900',
+            }}
           >
-            Track progress on personal and professional development goals
+            Goals & Objectives
+          </Typography>
+          <Typography 
+            sx={{ 
+              mt: 0.5,
+              fontSize: '0.875rem',
+              color: 'grey.500',
+              display: { xs: 'none', sm: 'block' },
+            }}
+          >
+            Track progress on personal and professional development
           </Typography>
         </Box>
-        <Stack 
-          direction="row" 
-          spacing={1}
-          alignItems="center"
-        >
+        <Stack direction="row" spacing={1.5} alignItems="center">
           {onAssignGoal && (
-            <MuiButton 
-              variant="outlined" 
-              size="small"
-              startIcon={<Users size={16} />} 
+            <Box
+              component="button"
               onClick={onAssignGoal}
-              sx={{ 
-                display: { xs: 'none', sm: 'inline-flex' },
-                borderColor: 'divider',
-                color: 'text.primary',
+              sx={{
+                display: { xs: 'none', sm: 'flex' },
+                alignItems: 'center',
+                gap: 1,
+                px: 2,
+                py: 1,
+                border: '1px solid',
+                borderColor: 'grey.200',
+                borderRadius: 2,
+                bgcolor: 'white',
+                color: 'grey.700',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
                 '&:hover': {
-                  borderColor: 'primary.main',
-                  bgcolor: 'primary.light',
+                  borderColor: 'grey.300',
+                  bgcolor: 'grey.50',
                 },
               }}
             >
-              Assign Goal
-            </MuiButton>
+              <Users size={16} />
+              Assign
+            </Box>
           )}
-          <MuiButton 
-            variant="contained" 
-            size="small"
-            startIcon={<Plus size={16} />} 
+          <Box
+            component="button"
             onClick={onCreateGoal}
             sx={{
-              boxShadow: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 2.5,
+              py: 1,
+              border: 'none',
+              borderRadius: 2,
+              bgcolor: 'primary.main',
+              color: 'white',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
               '&:hover': {
-                boxShadow: 1,
+                bgcolor: 'primary.dark',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               },
             }}
           >
+            <Plus size={16} />
             New Goal
-          </MuiButton>
+          </Box>
         </Stack>
       </Stack>
 
-      {/* Stats Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
+      {/* Premium Stats Grid */}
+      <Box 
+        sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, 
+          gap: 2,
+        }}
+      >
         {[
-          { label: 'Total Goals', value: stats.total, icon: Target, color: 'primary' },
-          { label: 'In Progress', value: stats.active, icon: Clock, color: 'info' },
-          { label: 'Completed', value: stats.completed, icon: CheckCircle2, color: 'success' },
-          { label: 'Overdue', value: stats.overdue, icon: AlertTriangle, color: 'error' },
+          { label: 'Total', value: stats.total, icon: Target, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+          { label: 'In Progress', value: stats.active, icon: Clock, gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' },
+          { label: 'Completed', value: stats.completed, icon: CheckCircle2, gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' },
+          { label: 'Overdue', value: stats.overdue, icon: AlertTriangle, gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' },
         ].map((stat) => (
-          <Card key={stat.label} sx={{ p: 0 }}>
-            <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary" 
-                    fontWeight={500}
-                    sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}
-                  >
-                    {stat.label}
-                  </Typography>
-                  <Typography 
-                    variant="h4" 
-                    fontWeight={600} 
-                    mt={0.5}
-                    sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}
-                  >
-                    {stat.value}
-                  </Typography>
-                </Box>
-                <Box sx={{ 
-                  p: { xs: 1, md: 1.5 }, 
-                  borderRadius: '50%', 
-                  bgcolor: `${stat.color}.light`,
-                  display: { xs: 'none', sm: 'flex' },
-                }}>
-                  <stat.icon size={20} style={{ color: `var(--${stat.color === 'primary' ? 'primary' : stat.color})` }} />
-                </Box>
-              </Stack>
-            </Box>
-          </Card>
+          <Box
+            key={stat.label}
+            sx={{
+              position: 'relative',
+              p: 2.5,
+              borderRadius: 2.5,
+              bgcolor: 'white',
+              border: '1px solid',
+              borderColor: 'grey.100',
+              overflow: 'hidden',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                borderColor: 'grey.200',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box>
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    color: 'grey.500',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    mb: 0.5,
+                  }}
+                >
+                  {stat.label}
+                </Typography>
+                <Typography 
+                  sx={{ 
+                    fontSize: { xs: '1.75rem', md: '2rem' },
+                    fontWeight: 700,
+                    color: 'grey.900',
+                    lineHeight: 1,
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  {stat.value}
+                </Typography>
+              </Box>
+              <Box 
+                sx={{ 
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  background: stat.gradient,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                }}
+              >
+                <stat.icon size={18} />
+              </Box>
+            </Stack>
+          </Box>
         ))}
       </Box>
 
