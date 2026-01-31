@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import {
@@ -30,6 +29,7 @@ import {
   GraduationCap,
   UserPlus,
   Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { 
@@ -48,6 +48,8 @@ import { StaffMember } from '@/types/staff';
 import { Goal, PerformanceReview, Conversation } from '@/types/performance';
 import { calculatePlanProgress, LMSData } from '@/lib/planProgressCalculator';
 import { mockCourses, mockLearningPaths, mockEnrollments } from '@/data/mockLmsData';
+import { SemanticProgressBar, getProgressStatus, StatusBadge } from './shared';
+import { cn } from '@/lib/utils';
 
 interface PlanManagementPanelProps {
   staff: StaffMember[];
@@ -273,11 +275,17 @@ export function PlanManagementPanel({
             <div className="grid gap-3 md:gap-4">
               {filteredPlans.map((plan) => {
                 const staffMember = getStaffById(plan.staffId);
+                const isOverdueStatus = differenceInDays(parseISO(plan.endDate), new Date()) < 0;
                 
                 return (
                   <Card 
                     key={plan.id} 
-                    className="group border-0 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                    className={cn(
+                      "group border shadow-sm cursor-pointer",
+                      "transition-all duration-200 ease-in-out",
+                      "hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5",
+                      isOverdueStatus && "border-l-4 border-l-red-500"
+                    )}
                     onClick={() => onViewPlan(plan)}
                   >
                     <CardContent className="p-3 md:p-5">
@@ -335,19 +343,21 @@ export function PlanManagementPanel({
                                 };
                                 const breakdown = calculatePlanProgress(plan, goals, reviews, conversations, lmsData);
                                 const hasLearning = breakdown.totalCourses > 0;
+                                const daysRemaining = differenceInDays(parseISO(plan.endDate), new Date());
+                                const isOverdue = daysRemaining < 0;
+                                const progressStatus = getProgressStatus(breakdown.totalProgress, daysRemaining, isOverdue);
+                                
                                 return (
                                   <>
-                                    <div className="flex items-center justify-between text-xs md:text-sm mb-1 md:mb-1.5">
-                                      <span className="text-muted-foreground">
-                                        Progress
-                                        <span className="text-xs ml-1 md:ml-2 hidden sm:inline">
-                                          ({breakdown.completedGoals}/{breakdown.totalGoals} goals
-                                          {hasLearning && `, ${breakdown.completedCourses}/${breakdown.totalCourses} courses`})
-                                        </span>
-                                      </span>
-                                      <span className="font-semibold">{breakdown.totalProgress}%</span>
-                                    </div>
-                                    <Progress value={breakdown.totalProgress} className="h-1.5 md:h-2" />
+                                    <SemanticProgressBar
+                                      value={breakdown.totalProgress}
+                                      status={progressStatus}
+                                      showLabel
+                                      showPercentage
+                                      label="Progress"
+                                      sublabel={`${breakdown.completedGoals}/${breakdown.totalGoals} goals${hasLearning ? `, ${breakdown.completedCourses}/${breakdown.totalCourses} courses` : ''}`}
+                                      size="sm"
+                                    />
                                     {hasLearning && (
                                       <div className="flex items-center gap-1.5 mt-1.5 md:mt-2 text-xs text-muted-foreground">
                                         <GraduationCap className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary" />
