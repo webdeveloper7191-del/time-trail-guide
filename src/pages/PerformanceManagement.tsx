@@ -606,97 +606,155 @@ export default function PerformanceManagement() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#fafafa' }}>
       <AdminSidebar />
-      <Box component="main" sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, overflow: 'auto' }}>
-        <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
-          {/* Header */}
-          <Stack 
-            direction={{ xs: 'column', sm: 'row' }}
-            justifyContent="space-between" 
-            alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
-            spacing={{ xs: 2, sm: 0 }}
-            sx={{ mb: { xs: 2, md: 3 } }}
-          >
-            <Box>
-              <Typography 
-                variant="h4" 
-                fontWeight={600} 
-                color="text.primary" 
-                gutterBottom
-                sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' } }}
-              >
-                Performance Management
-              </Typography>
-              <Typography 
-                variant="body1" 
-                color="text.secondary"
-                sx={{ display: { xs: 'none', sm: 'block' } }}
-              >
-                Track development plans, reviews, goals, and continuous feedback
-              </Typography>
-            </Box>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<Database size={16} />}
-                onClick={() => navigate('/docs/database')}
-              >
-                DB Docs
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<Settings size={16} />}
-                onClick={() => setShowSettingsDrawer(true)}
-              >
-                Settings
-              </Button>
-              <PerformanceNotificationBell
-                goals={goals}
-                reviews={reviews}
-                conversations={conversations}
-                plans={mockAssignedPlans}
-                currentUserId={CURRENT_USER_ID}
-                onViewGoal={handleNotificationGoal}
-                onViewReview={handleNotificationReview}
-                onViewConversation={handleNotificationConversation}
-                onViewPlan={(planId) => {
-                  const plan = mockAssignedPlans.find(p => p.id === planId);
-                  if (plan) handleViewPlan(plan);
-                }}
-              />
+      <Box 
+        component="main" 
+        sx={{ 
+          flex: 1, 
+          p: { xs: 2, sm: 3, md: 4, lg: 5 }, 
+          overflow: 'auto',
+        }}
+      >
+        <Box sx={{ maxWidth: 1440, mx: 'auto' }}>
+          {/* Premium Header */}
+          <Box sx={{ mb: 4 }}>
+            <Stack 
+              direction={{ xs: 'column', lg: 'row' }}
+              justifyContent="space-between" 
+              alignItems={{ xs: 'flex-start', lg: 'center' }}
+              spacing={3}
+            >
+              <Box>
+                <Typography 
+                  sx={{ 
+                    fontSize: { xs: '1.75rem', sm: '2rem', md: '2.25rem' },
+                    fontWeight: 700,
+                    letterSpacing: '-0.025em',
+                    color: 'grey.900',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Performance
+                </Typography>
+                <Typography 
+                  sx={{ 
+                    mt: 0.5,
+                    fontSize: '0.9375rem',
+                    color: 'grey.500',
+                    fontWeight: 400,
+                    display: { xs: 'none', sm: 'block' },
+                  }}
+                >
+                  Manage goals, reviews, and team development in one place
+                </Typography>
+              </Box>
+              
+              <Stack direction="row" alignItems="center" spacing={1.5}>
+                {/* Global Search - Refined */}
+                <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                  <GlobalSearch
+                    goals={goals}
+                    reviews={reviews}
+                    conversations={conversations}
+                    staff={mockStaff}
+                    onSelectGoal={handleViewGoal}
+                    onSelectReview={handleViewReview}
+                    onSelectConversation={handleViewConversation}
+                    onSelectStaff={(staff: StaffMember) => {
+                      handleTabChange('team');
+                      toast.info(`Viewing ${staff.firstName} ${staff.lastName}'s profile`);
+                    }}
+                    onNavigateToTab={handleTabChange}
+                  />
+                </Box>
+                
+                <Box
+                  component="button"
+                  onClick={() => navigate('/docs/database')}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 40,
+                    height: 40,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                    bgcolor: 'white',
+                    color: 'grey.600',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    '&:hover': {
+                      borderColor: 'grey.300',
+                      bgcolor: 'grey.50',
+                      color: 'grey.900',
+                    },
+                  }}
+                >
+                  <Database size={18} />
+                </Box>
+                <Box
+                  component="button"
+                  onClick={() => setShowSettingsDrawer(true)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 40,
+                    height: 40,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                    bgcolor: 'white',
+                    color: 'grey.600',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    '&:hover': {
+                      borderColor: 'grey.300',
+                      bgcolor: 'grey.50',
+                      color: 'grey.900',
+                    },
+                  }}
+                >
+                  <Settings size={18} />
+                </Box>
+                <PerformanceNotificationBell
+                  goals={goals}
+                  reviews={reviews}
+                  conversations={conversations}
+                  plans={mockAssignedPlans}
+                  currentUserId={CURRENT_USER_ID}
+                  onViewGoal={handleNotificationGoal}
+                  onViewReview={handleNotificationReview}
+                  onViewConversation={handleNotificationConversation}
+                  onViewPlan={(planId) => {
+                    const plan = mockAssignedPlans.find(p => p.id === planId);
+                    if (plan) handleViewPlan(plan);
+                  }}
+                />
+              </Stack>
             </Stack>
-          </Stack>
-
-          {/* Global Search */}
-          <Box sx={{ mb: 2 }}>
-            <GlobalSearch
-              goals={goals}
-              reviews={reviews}
-              conversations={conversations}
-              staff={mockStaff}
-              onSelectGoal={handleViewGoal}
-              onSelectReview={handleViewReview}
-              onSelectConversation={handleViewConversation}
-              onSelectStaff={(staff: StaffMember) => {
-                // Navigate to team overview with this staff member highlighted
-                handleTabChange('team');
-                toast.info(`Viewing ${staff.firstName} ${staff.lastName}'s profile`);
-              }}
-              onNavigateToTab={handleTabChange}
-            />
           </Box>
 
-          {/* Tab Navigation - URL-based */}
+          {/* Tab Navigation */}
           <PerformanceNavigation 
             activeTab={activeTab} 
             onTabChange={handleTabChange} 
           />
 
-          {/* Tab Content with Suspense */}
-          <Box>
+          {/* Content Area with subtle card styling */}
+          <Box
+            sx={{
+              bgcolor: 'white',
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'grey.100',
+              p: { xs: 2, sm: 3, md: 4 },
+              minHeight: 400,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            }}
+          >
             {renderTabContent()}
           </Box>
         </Box>

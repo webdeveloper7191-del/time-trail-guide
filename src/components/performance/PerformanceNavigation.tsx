@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Box, Stack, Typography, Popper, Fade, Paper, ClickAwayListener } from '@mui/material';
-import { Button } from '@/components/mui/Button';
+import { Box, Stack, Typography, Popper, Fade, Paper, ClickAwayListener, alpha } from '@mui/material';
 import { 
   Target, ClipboardCheck, MessageSquareHeart, MessageSquare, 
   BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, 
@@ -85,7 +84,6 @@ const tabGroups: TabGroup[] = [
   },
 ];
 
-// Get all items flattened for finding active tab info
 const allItems = tabGroups.flatMap(g => g.items);
 
 interface PerformanceNavigationProps {
@@ -99,16 +97,14 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
   const anchorRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Toggle dropdown on click - DO NOT auto-select first item
   const handleGroupClick = useCallback((groupLabel: string) => {
     setOpenGroup(prev => {
       const newOpen = prev === groupLabel ? null : groupLabel;
-      setFocusedIndex(-1); // Reset focus when opening/closing
+      setFocusedIndex(-1);
       return newOpen;
     });
   }, []);
 
-  // Select item and close dropdown
   const handleItemClick = useCallback((value: string) => {
     onTabChange(value);
     setOpenGroup(null);
@@ -120,7 +116,6 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
     setFocusedIndex(-1);
   }, []);
 
-  // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent, group: TabGroup) => {
     const items = group.items;
     
@@ -162,7 +157,6 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
     }
   }, [openGroup, focusedIndex, handleItemClick, handleClose]);
 
-  // Close on outside click or escape
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') handleClose();
@@ -184,14 +178,22 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
   const activeTabInfo = getActiveTabInfo(activeTab);
 
   return (
-    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+    <Box 
+      sx={{ 
+        mb: 4,
+        py: 1,
+      }}
+    >
       <Stack 
         direction="row" 
-        spacing={0.5} 
         sx={{ 
           flexWrap: 'wrap',
-          gap: 0.5,
-          py: 1,
+          gap: 1,
+          p: 1,
+          bgcolor: 'grey.50',
+          borderRadius: 2.5,
+          border: '1px solid',
+          borderColor: 'grey.100',
         }}
       >
         {tabGroups.map((group) => {
@@ -200,35 +202,33 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
           
           return (
             <Box key={group.label} sx={{ position: 'relative' }}>
-              <Button
-                ref={(el) => { anchorRefs.current[group.label] = el; }}
-                variant={isActiveGroup ? 'contained' : 'text'}
-                size="small"
+              <Box
+                component="button"
+                ref={(el: HTMLButtonElement | null) => { anchorRefs.current[group.label] = el; }}
                 onClick={() => handleGroupClick(group.label)}
-                onKeyDown={(e) => handleKeyDown(e, group)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => handleKeyDown(e, group)}
                 aria-expanded={isOpen}
                 aria-haspopup="menu"
-                endIcon={
-                  <ChevronDown 
-                    size={14} 
-                    className={cn(
-                      'transition-transform duration-200',
-                      isOpen && 'rotate-180'
-                    )} 
-                  />
-                }
                 sx={{
-                  textTransform: 'none',
-                  fontWeight: isActiveGroup ? 600 : 400,
-                  px: 1.5,
-                  py: 0.75,
-                  minHeight: 36,
-                  borderRadius: 1,
-                  color: isActiveGroup ? 'primary.contrastText' : 'text.secondary',
-                  transition: 'all 0.15s ease-in-out',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 2,
+                  py: 1.25,
+                  border: 'none',
+                  borderRadius: 2,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  fontSize: '0.875rem',
+                  fontWeight: isActiveGroup ? 600 : 500,
+                  letterSpacing: '-0.01em',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  bgcolor: isActiveGroup ? 'white' : 'transparent',
+                  color: isActiveGroup ? 'grey.900' : 'grey.600',
+                  boxShadow: isActiveGroup ? '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
                   '&:hover': {
-                    bgcolor: isActiveGroup ? 'primary.dark' : 'action.hover',
-                    transform: 'translateY(-1px)',
+                    bgcolor: isActiveGroup ? 'white' : 'grey.100',
+                    color: 'grey.900',
                   },
                   '&:focus-visible': {
                     outline: '2px solid',
@@ -237,26 +237,45 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                   },
                 }}
               >
-                <Stack direction="row" alignItems="center" spacing={0.75}>
-                  {isActiveGroup && activeTabInfo && (
-                    <activeTabInfo.icon size={14} />
-                  )}
-                  <span>{group.label}</span>
-                  {isActiveGroup && (
-                    <Typography 
-                      component="span" 
-                      sx={{ 
-                        fontSize: '0.7rem', 
-                        opacity: 0.85,
-                        fontWeight: 400,
-                        display: { xs: 'none', sm: 'inline' },
-                      }}
-                    >
-                      ({activeTabInfo?.label})
-                    </Typography>
-                  )}
-                </Stack>
-              </Button>
+                {isActiveGroup && activeTabInfo && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 22,
+                      height: 22,
+                      borderRadius: 1,
+                      bgcolor: 'primary.50',
+                      color: 'primary.600',
+                    }}
+                  >
+                    <activeTabInfo.icon size={13} />
+                  </Box>
+                )}
+                <span>{group.label}</span>
+                {isActiveGroup && (
+                  <Typography 
+                    component="span" 
+                    sx={{ 
+                      fontSize: '0.75rem', 
+                      color: 'grey.500',
+                      fontWeight: 400,
+                      display: { xs: 'none', sm: 'inline' },
+                    }}
+                  >
+                    · {activeTabInfo?.label}
+                  </Typography>
+                )}
+                <ChevronDown 
+                  size={14} 
+                  className={cn(
+                    'transition-transform duration-200 ml-0.5',
+                    isOpen && 'rotate-180'
+                  )} 
+                  style={{ color: 'inherit', opacity: 0.5 }}
+                />
+              </Box>
 
               <Popper
                 open={isOpen}
@@ -269,21 +288,37 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                   <Fade {...TransitionProps} timeout={150}>
                     <Paper 
                       ref={menuRef}
-                      elevation={8}
+                      elevation={0}
                       role="menu"
                       sx={{ 
-                        mt: 0.5, 
+                        mt: 1, 
                         minWidth: 220,
-                        py: 0.5,
-                        bgcolor: 'background.paper',
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1.5,
+                        py: 1,
+                        bgcolor: 'white',
+                        border: '1px solid',
+                        borderColor: 'grey.200',
+                        borderRadius: 2.5,
+                        boxShadow: '0 10px 40px -10px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.05)',
                         overflow: 'hidden',
                       }}
                     >
                       <ClickAwayListener onClickAway={handleClose}>
                         <Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              display: 'block',
+                              px: 2,
+                              py: 1,
+                              color: 'grey.400',
+                              fontWeight: 600,
+                              letterSpacing: '0.05em',
+                              textTransform: 'uppercase',
+                              fontSize: '0.65rem',
+                            }}
+                          >
+                            {group.label}
+                          </Typography>
                           {group.items.map((item, itemIndex) => {
                             const isActive = activeTab === item.value;
                             const isFocused = focusedIndex === itemIndex && isOpen;
@@ -301,49 +336,61 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                                   gap: 1.5,
                                   px: 2,
                                   py: 1.25,
+                                  mx: 1,
+                                  borderRadius: 1.5,
                                   cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
                                   bgcolor: isActive 
-                                    ? 'primary.main' 
+                                    ? 'primary.50' 
                                     : isFocused 
-                                      ? 'action.hover' 
+                                      ? 'grey.50' 
                                       : 'transparent',
-                                  color: isActive ? 'primary.contrastText' : 'text.primary',
-                                  transition: 'all 0.1s ease-in-out',
+                                  color: isActive ? 'primary.700' : 'grey.700',
                                   '&:hover': {
-                                    bgcolor: isActive ? 'primary.dark' : 'action.hover',
+                                    bgcolor: isActive ? 'primary.100' : 'grey.50',
                                   },
-                                  // Focus ring for keyboard navigation
-                                  ...(isFocused && !isActive && {
-                                    outline: '2px solid',
-                                    outlineColor: 'primary.light',
-                                    outlineOffset: -2,
-                                  }),
                                 }}
                               >
                                 <Box
                                   sx={{
-                                    p: 0.75,
-                                    borderRadius: 1,
-                                    bgcolor: isActive 
-                                      ? 'rgba(255,255,255,0.2)' 
-                                      : 'action.hover',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 1.5,
+                                    bgcolor: isActive ? 'primary.100' : 'grey.100',
+                                    color: isActive ? 'primary.600' : 'grey.500',
+                                    transition: 'all 0.15s ease',
                                   }}
                                 >
                                   <Icon size={14} />
                                 </Box>
                                 <Typography 
-                                  variant="body2" 
                                   sx={{ 
                                     flex: 1,
+                                    fontSize: '0.875rem',
                                     fontWeight: isActive ? 600 : 400,
                                   }}
                                 >
                                   {item.label}
                                 </Typography>
-                                {isActive && <Check size={14} />}
+                                {isActive && (
+                                  <Box
+                                    sx={{
+                                      width: 18,
+                                      height: 18,
+                                      borderRadius: '50%',
+                                      bgcolor: 'primary.500',
+                                      color: 'white',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <Check size={11} strokeWidth={3} />
+                                  </Box>
+                                )}
                               </Box>
                             );
                           })}
