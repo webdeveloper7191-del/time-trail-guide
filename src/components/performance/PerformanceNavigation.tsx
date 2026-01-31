@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Box, Stack, Typography, Popper, Fade, Paper, ClickAwayListener } from '@mui/material';
 import { Button } from '@/components/mui/Button';
 import { 
@@ -95,20 +95,81 @@ interface PerformanceNavigationProps {
 
 export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNavigationProps) {
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const anchorRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleGroupClick = (groupLabel: string) => {
-    setOpenGroup(prev => prev === groupLabel ? null : groupLabel);
-  };
+  // Toggle dropdown on click - DO NOT auto-select first item
+  const handleGroupClick = useCallback((groupLabel: string) => {
+    setOpenGroup(prev => {
+      const newOpen = prev === groupLabel ? null : groupLabel;
+      setFocusedIndex(-1); // Reset focus when opening/closing
+      return newOpen;
+    });
+  }, []);
 
-  const handleItemClick = (value: string) => {
+  // Select item and close dropdown
+  const handleItemClick = useCallback((value: string) => {
     onTabChange(value);
     setOpenGroup(null);
-  };
+    setFocusedIndex(-1);
+  }, [onTabChange]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setOpenGroup(null);
-  };
+    setFocusedIndex(-1);
+  }, []);
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, group: TabGroup) => {
+    const items = group.items;
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        if (openGroup !== group.label) {
+          setOpenGroup(group.label);
+          setFocusedIndex(0);
+        } else {
+          setFocusedIndex(prev => Math.min(prev + 1, items.length - 1));
+        }
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (focusedIndex > 0) {
+          setFocusedIndex(prev => prev - 1);
+        } else if (focusedIndex === 0) {
+          setOpenGroup(null);
+          setFocusedIndex(-1);
+        }
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        if (openGroup === group.label && focusedIndex >= 0) {
+          handleItemClick(items[focusedIndex].value);
+        } else {
+          setOpenGroup(prev => prev === group.label ? null : group.label);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        handleClose();
+        break;
+      case 'Tab':
+        handleClose();
+        break;
+    }
+  }, [openGroup, focusedIndex, handleItemClick, handleClose]);
+
+  // Close on outside click or escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [handleClose]);
 
   const getActiveGroupForTab = (tabValue: string): string | undefined => {
     const group = tabGroups.find(g => g.items.some(item => item.value === tabValue));
@@ -144,7 +205,18 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                 variant={isActiveGroup ? 'contained' : 'text'}
                 size="small"
                 onClick={() => handleGroupClick(group.label)}
-                endIcon={<ChevronDown size={14} className={cn('transition-transform', isOpen && 'rotate-180')} />}
+                onKeyDown={(e) => handleKeyDown(e, group)}
+                aria-expanded={isOpen}
+                aria-haspopup="menu"
+                endIcon={
+                  <ChevronDown 
+                    size={14} 
+                    className={cn(
+                      'transition-transform duration-200',
+                      isOpen && 'rotate-180'
+                    )} 
+                  />
+                }
                 sx={{
                   textTransform: 'none',
                   fontWeight: isActiveGroup ? 600 : 400,
@@ -153,8 +225,15 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                   minHeight: 36,
                   borderRadius: 1,
                   color: isActiveGroup ? 'primary.contrastText' : 'text.secondary',
+                  transition: 'all 0.15s ease-in-out',
                   '&:hover': {
                     bgcolor: isActiveGroup ? 'primary.dark' : 'action.hover',
+                    transform: 'translateY(-1px)',
+                  },
+                  '&:focus-visible': {
+                    outline: '2px solid',
+                    outlineColor: 'primary.main',
+                    outlineOffset: 2,
                   },
                 }}
               >
@@ -189,25 +268,32 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                 {({ TransitionProps }) => (
                   <Fade {...TransitionProps} timeout={150}>
                     <Paper 
+                      ref={menuRef}
                       elevation={8}
+                      role="menu"
                       sx={{ 
                         mt: 0.5, 
-                        minWidth: 200,
+                        minWidth: 220,
                         py: 0.5,
                         bgcolor: 'background.paper',
                         border: 1,
                         borderColor: 'divider',
+                        borderRadius: 1.5,
+                        overflow: 'hidden',
                       }}
                     >
                       <ClickAwayListener onClickAway={handleClose}>
                         <Box>
-                          {group.items.map((item) => {
+                          {group.items.map((item, itemIndex) => {
                             const isActive = activeTab === item.value;
+                            const isFocused = focusedIndex === itemIndex && isOpen;
                             const Icon = item.icon;
                             
                             return (
                               <Box
                                 key={item.value}
+                                role="menuitem"
+                                tabIndex={-1}
                                 onClick={() => handleItemClick(item.value)}
                                 sx={{
                                   display: 'flex',
@@ -216,14 +302,38 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                                   px: 2,
                                   py: 1.25,
                                   cursor: 'pointer',
-                                  bgcolor: isActive ? 'primary.main' : 'transparent',
+                                  bgcolor: isActive 
+                                    ? 'primary.main' 
+                                    : isFocused 
+                                      ? 'action.hover' 
+                                      : 'transparent',
                                   color: isActive ? 'primary.contrastText' : 'text.primary',
+                                  transition: 'all 0.1s ease-in-out',
                                   '&:hover': {
                                     bgcolor: isActive ? 'primary.dark' : 'action.hover',
                                   },
+                                  // Focus ring for keyboard navigation
+                                  ...(isFocused && !isActive && {
+                                    outline: '2px solid',
+                                    outlineColor: 'primary.light',
+                                    outlineOffset: -2,
+                                  }),
                                 }}
                               >
-                                <Icon size={16} />
+                                <Box
+                                  sx={{
+                                    p: 0.75,
+                                    borderRadius: 1,
+                                    bgcolor: isActive 
+                                      ? 'rgba(255,255,255,0.2)' 
+                                      : 'action.hover',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <Icon size={14} />
+                                </Box>
                                 <Typography 
                                   variant="body2" 
                                   sx={{ 

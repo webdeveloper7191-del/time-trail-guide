@@ -11,9 +11,15 @@ import {
   Select as MuiSelect,
   FormControl,
   Checkbox,
+  Badge,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
-import { Progress } from '@/components/ui/progress';
+import { 
+  SemanticProgressBar, 
+  getProgressStatus, 
+  StatusBadge,
+  EnhancedCard,
+} from './shared';
 import { 
   Goal, 
   GoalStatus,
@@ -21,7 +27,7 @@ import {
   goalStatusLabels, 
   goalPriorityLabels,
 } from '@/types/performance';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { 
   Target, 
   Calendar, 
@@ -33,6 +39,7 @@ import {
   Search,
   X,
   Users,
+  Filter,
 } from 'lucide-react';
 import { BulkActionsBar, createGoalBulkActions } from './shared/BulkActionsBar';
 import { toast } from 'sonner';
@@ -58,20 +65,16 @@ const priorityColors: Record<string, { bg: string; text: string }> = {
   critical: { bg: 'rgba(239, 68, 68, 0.12)', text: 'rgb(185, 28, 28)' },
 };
 
-const statusColors: Record<string, { bg: string; text: string }> = {
-  not_started: { bg: 'grey.100', text: 'grey.600' },
-  in_progress: { bg: 'info.light', text: 'info.dark' },
-  completed: { bg: 'success.light', text: 'success.dark' },
-  overdue: { bg: 'error.light', text: 'error.dark' },
-  cancelled: { bg: 'grey.200', text: 'grey.500' },
-};
-
-const statusIcons: Record<string, React.ReactNode> = {
-  not_started: <Clock className="h-3.5 w-3.5" />,
-  in_progress: <Target className="h-3.5 w-3.5" />,
-  completed: <CheckCircle2 className="h-3.5 w-3.5" />,
-  overdue: <AlertTriangle className="h-3.5 w-3.5" />,
-  cancelled: <Clock className="h-3.5 w-3.5" />,
+// Map goal status to StatusBadge type
+const getStatusBadgeType = (status: GoalStatus): 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'cancelled' => {
+  switch (status) {
+    case 'not_started': return 'not_started';
+    case 'in_progress': return 'in_progress';
+    case 'completed': return 'completed';
+    case 'overdue': return 'overdue';
+    case 'cancelled': return 'cancelled';
+    default: return 'not_started';
+  }
 };
 
 export function GoalsTracker({ 
@@ -239,7 +242,12 @@ export function GoalsTracker({
               >
                 <Typography variant="body2" fontWeight={500} noWrap>{goal.title}</Typography>
                 <Stack direction="row" alignItems="center" spacing={1} mt={0.5}>
-                  <Progress value={goal.progress} className="h-1.5 flex-1" />
+                  <SemanticProgressBar 
+                    value={goal.progress} 
+                    status={getProgressStatus(goal.progress, undefined, goal.status === 'overdue')}
+                    size="xs"
+                    showPercentage={false}
+                  />
                   <Typography variant="caption" color="text.secondary">{goal.progress}%</Typography>
                 </Stack>
               </Box>
@@ -556,13 +564,22 @@ export function GoalsTracker({
                       />
                     </Stack>
 
-                    <Box>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
-                        <Typography variant="body2" color="text.secondary">Progress</Typography>
-                        <Typography variant="body2" fontWeight={600}>{goal.progress}%</Typography>
-                      </Stack>
-                      <Progress value={goal.progress} className="h-2" />
-                    </Box>
+                    {/* Semantic Progress Bar */}
+                    {(() => {
+                      const daysRemaining = differenceInDays(parseISO(goal.targetDate), new Date());
+                      const progressStatus = getProgressStatus(goal.progress, daysRemaining, goal.status === 'overdue');
+                      
+                      return (
+                        <SemanticProgressBar
+                          value={goal.progress}
+                          status={progressStatus}
+                          showLabel
+                          showPercentage
+                          size="md"
+                          sublabel={`${goal.milestones?.filter(m => m.completed).length || 0}/${goal.milestones?.length || 0} milestones`}
+                        />
+                      );
+                    })()}
 
                     <Stack 
                       direction={{ xs: 'column', sm: 'row' }}
@@ -579,12 +596,10 @@ export function GoalsTracker({
                           Due {format(parseISO(goal.targetDate), 'MMM d, yyyy')}
                         </Typography>
                       </Stack>
-                      <Chip 
-                        size="small"
-                        variant="outlined"
-                        icon={statusIcons[goal.status] as any}
+                      <StatusBadge 
+                        status={getStatusBadgeType(goal.status)}
                         label={goalStatusLabels[goal.status]}
-                        sx={{ fontSize: { xs: '0.7rem', sm: '0.8125rem' } }}
+                        pulse={goal.status === 'overdue'}
                       />
                     </Stack>
                   </Box>

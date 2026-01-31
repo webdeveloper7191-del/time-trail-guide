@@ -285,34 +285,74 @@ export function PerformanceExecutiveDashboard({
           <Box sx={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={mockTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} />
-                <Tooltip />
-                <Legend />
+                <defs>
+                  <linearGradient id="goalGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0.05}/>
+                  </linearGradient>
+                  <linearGradient id="reviewGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={COLORS.success} stopOpacity={0.05}/>
+                  </linearGradient>
+                  <linearGradient id="engagementGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.purple} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={COLORS.purple} stopOpacity={0.05}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" vertical={false} />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 12, fill: '#64748b' }} 
+                  axisLine={{ stroke: '#e2e8f0' }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: '#64748b' }} 
+                  domain={[0, 100]} 
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'rgba(255,255,255,0.95)',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: 16 }}
+                  iconType="circle"
+                />
                 <Area 
                   type="monotone" 
                   dataKey="goalCompletion" 
                   name="Goals"
                   stroke={COLORS.primary} 
-                  fill={`${COLORS.primary}20`}
-                  strokeWidth={2}
+                  fill="url(#goalGradient)"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: COLORS.primary, strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="reviewCompletion" 
                   name="Reviews"
                   stroke={COLORS.success} 
-                  fill={`${COLORS.success}20`}
-                  strokeWidth={2}
+                  fill="url(#reviewGradient)"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: COLORS.success, strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="engagement" 
                   name="Engagement"
                   stroke={COLORS.purple} 
-                  fill={`${COLORS.purple}20`}
-                  strokeWidth={2}
+                  fill="url(#engagementGradient)"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: COLORS.purple, strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
                 />
               </AreaChart>
             </ResponsiveContainer>
