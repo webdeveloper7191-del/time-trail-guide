@@ -491,16 +491,16 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
             </div>
           </div>
 
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead>Course</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Difficulty</TableHead>
-                  <TableHead className="text-center">Enrollments</TableHead>
-                  <TableHead className="text-center">Completion</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-28">Category</TableHead>
+                  <TableHead className="w-24">Difficulty</TableHead>
+                  <TableHead className="w-24 text-center">Enrollments</TableHead>
+                  <TableHead className="w-36 text-center">Completion</TableHead>
+                  <TableHead className="w-32 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -510,52 +510,65 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                     s.course.category.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map((stat) => (
-                    <TableRow key={stat.course.id}>
+                    <TableRow key={stat.course.id} className="group hover:bg-muted/50">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
                             <GraduationCap className="h-5 w-5 text-primary" />
                           </div>
                           <div>
                             <p className="font-medium">{stat.course.title}</p>
                             <p className="text-xs text-muted-foreground">
-                              {stat.course.duration} min
-                              {stat.course.complianceRequired && ' • Compliance'}
+                              {stat.course.duration} min • {stat.course.modules.length} modules
+                              {stat.course.complianceRequired && (
+                                <Badge className="ml-2 text-[10px] h-4 bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">Required</Badge>
+                              )}
                             </p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{stat.course.category}</Badge>
+                        <Badge variant="outline" className="text-xs">{stat.course.category}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={difficultyColors[stat.course.difficulty]}>
+                        <Badge className={cn("text-xs", difficultyColors[stat.course.difficulty])}>
                           {difficultyLabels[stat.course.difficulty]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center">{stat.totalEnrollments}</TableCell>
                       <TableCell className="text-center">
+                        <span className="font-medium">{stat.totalEnrollments}</span>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2 justify-center">
-                          <Progress value={stat.completionRate} className="w-16 h-2" />
-                          <span className="text-sm">{stat.completionRate}%</span>
+                          <Progress value={stat.completionRate} className="w-16 h-1.5" />
+                          <span className="text-xs font-medium w-8">{stat.completionRate}%</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="h-7 text-xs"
                             onClick={() => handleOpenAssign(stat.course)}
                           >
-                            <UserPlus className="h-4 w-4 mr-1" />
+                            <UserPlus className="h-3 w-3 mr-1" />
                             Assign
                           </Button>
                           <Button 
                             variant="ghost" 
-                            size="icon"
+                            size="sm"
+                            className="h-7 w-7 p-0"
                             onClick={() => handleOpenEditCourse(stat.course)}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                          >
+                            <MoreHorizontal className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </TableCell>
@@ -568,22 +581,24 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
 
         {/* Staff Progress Tab */}
         <TabsContent value="staff" className="mt-6">
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead>Staff Member</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead className="text-center">Enrolled</TableHead>
-                  <TableHead className="text-center">Completed</TableHead>
-                  <TableHead className="text-center">In Progress</TableHead>
-                  <TableHead className="text-center">Overdue</TableHead>
-                  <TableHead className="text-center">Avg Progress</TableHead>
+                  <TableHead className="w-40">Position</TableHead>
+                  <TableHead className="w-24 text-center">Enrolled</TableHead>
+                  <TableHead className="w-24 text-center">Completed</TableHead>
+                  <TableHead className="w-24 text-center">In Progress</TableHead>
+                  <TableHead className="w-24 text-center">Overdue</TableHead>
+                  <TableHead className="w-32 text-center">Avg Progress</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {staffLearningStats.map((stat) => (
-                  <TableRow key={stat.staff.id}>
+                  <TableRow key={stat.staff.id} className="hover:bg-muted/50"
+                    style={{ borderLeft: stat.overdue > 0 ? '3px solid #ef4444' : undefined }}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
@@ -597,31 +612,31 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-muted-foreground text-sm">
                       {stat.staff.position}
                     </TableCell>
-                    <TableCell className="text-center">{stat.totalEnrollments}</TableCell>
+                    <TableCell className="text-center font-medium">{stat.totalEnrollments}</TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20">
+                      <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 text-xs">
                         {stat.completed}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/20">
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 text-xs">
                         {stat.inProgress}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
                       {stat.overdue > 0 ? (
-                        <Badge className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">{stat.overdue}</Badge>
+                        <Badge className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-50 text-xs">{stat.overdue}</Badge>
                       ) : (
-                        <span className="text-muted-foreground">0</span>
+                        <span className="text-muted-foreground text-xs">0</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell>
                       <div className="flex items-center gap-2 justify-center">
-                        <Progress value={stat.avgProgress} className="w-16 h-2" />
-                        <span className="text-sm">{stat.avgProgress}%</span>
+                        <Progress value={stat.avgProgress} className="w-16 h-1.5" />
+                        <span className="text-xs font-medium w-8">{stat.avgProgress}%</span>
                       </div>
                     </TableCell>
                   </TableRow>

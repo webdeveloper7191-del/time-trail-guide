@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   BookOpen, 
   GraduationCap, 
@@ -522,67 +523,99 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
             </Select>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCourses.map((course) => {
-              const enrollment = getEnrollmentForCourse(course.id);
-              const isEnrolled = !!enrollment;
-              
-              return (
-                <Card key={course.id} className="hover:shadow-md transition-shadow group cursor-pointer" onClick={() => handleViewCourseDetail(course)}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="outline">{course.category}</Badge>
-                      <div className="flex items-center gap-1 text-amber-500">
-                        <Star className="h-3 w-3 fill-current" />
-                        <span className="text-xs">{course.rating}</span>
-                      </div>
-                    </div>
-                    <h4 className="font-semibold line-clamp-2 group-hover:text-primary transition-colors">{course.title}</h4>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {course.description}
-                    </p>
-                    <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-                      <Badge className={difficultyColors[course.difficulty]}>
-                        {difficultyLabels[course.difficulty]}
-                      </Badge>
-                      <span>{course.duration} min</span>
-                      <span>{course.modules.length} modules</span>
-                    </div>
-                    {isEnrolled && (
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="text-muted-foreground">{enrollment.progress}% complete</span>
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead>Course</TableHead>
+                  <TableHead className="w-28">Category</TableHead>
+                  <TableHead className="w-24">Difficulty</TableHead>
+                  <TableHead className="w-20 text-center">Rating</TableHead>
+                  <TableHead className="w-32">Progress</TableHead>
+                  <TableHead className="w-40"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCourses.map((course) => {
+                  const enrollment = getEnrollmentForCourse(course.id);
+                  const isEnrolled = !!enrollment;
+                  
+                  return (
+                    <TableRow 
+                      key={course.id} 
+                      className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleViewCourseDetail(course)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                            <GraduationCap className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium group-hover:text-primary transition-colors">{course.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {course.duration} min • {course.modules.length} modules
+                              {course.complianceRequired && (
+                                <Badge className="ml-2 text-[10px] h-4 bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">Required</Badge>
+                              )}
+                            </p>
+                          </div>
                         </div>
-                        <Progress value={enrollment.progress} className="h-1.5" />
-                      </div>
-                    )}
-                    <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
-                      <Button 
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => handleViewCourseDetail(course)}
-                      >
-                        <Eye className="h-3 w-3 mr-1" />
-                        Preview
-                      </Button>
-                      <Button 
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => isEnrolled ? handleContinueLearning(enrollment) : handleEnroll(course)}
-                      >
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{course.category}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={cn("text-xs", difficultyColors[course.difficulty])}>
+                          {difficultyLabels[course.difficulty]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-amber-500">
+                          <Star className="h-3 w-3 fill-current" />
+                          <span className="text-xs font-medium">{course.rating}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         {isEnrolled ? (
-                          <>
-                            <Play className="h-3 w-3 mr-1" />
-                            Continue
-                          </>
-                        ) : 'Enroll Now'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                          <div className="flex items-center gap-2">
+                            <Progress value={enrollment.progress} className="w-16 h-1.5" />
+                            <span className="text-xs font-medium">{enrollment.progress}%</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Not enrolled</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => handleViewCourseDetail(course)}
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            Preview
+                          </Button>
+                          <Button 
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => isEnrolled ? handleContinueLearning(enrollment) : handleEnroll(course)}
+                          >
+                            {isEnrolled ? (
+                              <>
+                                <Play className="h-3 w-3 mr-1" />
+                                Continue
+                              </>
+                            ) : 'Enroll Now'}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         </TabsContent>
 
