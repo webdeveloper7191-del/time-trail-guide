@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Survey, surveyStatusLabels } from '@/types/recognition';
 import { format, parseISO, differenceInDays } from 'date-fns';
-import { ClipboardList, Plus, Users, Clock, ChevronRight, Eye, Play, MoreHorizontal } from 'lucide-react';
+import { ClipboardList, Plus, Users, Clock, Eye, Play, MoreHorizontal, CheckCircle2 } from 'lucide-react';
 import { SemanticProgressBar } from '@/components/performance/shared/SemanticProgressBar';
 import { StatusBadge } from '@/components/performance/shared/StatusBadge';
 
@@ -28,12 +28,12 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
   const draftSurveys = surveys.filter(s => s.status === 'draft');
   const closedSurveys = surveys.filter(s => s.status === 'closed');
 
-  const getStatusVariant = (status: string) => {
+  const getStatusVariant = (status: string): 'active' | 'draft' | 'completed' => {
     switch (status) {
-      case 'active': return 'success';
-      case 'draft': return 'secondary';
-      case 'closed': return 'muted';
-      default: return 'secondary';
+      case 'active': return 'active';
+      case 'draft': return 'draft';
+      case 'closed': return 'completed';
+      default: return 'draft';
     }
   };
 
@@ -55,8 +55,8 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4 bg-green-50 dark:bg-green-900/20">
+        <Card className="bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-900/20">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/40">
                 <Play className="h-4 w-4 text-green-600" />
@@ -68,8 +68,8 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 bg-muted/30">
+        <Card className="bg-muted/30">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-muted">
                 <ClipboardList className="h-4 w-4 text-muted-foreground" />
@@ -81,11 +81,11 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 bg-muted/30">
+        <Card className="bg-primary/5 border-primary/10">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-muted">
-                <Users className="h-4 w-4 text-muted-foreground" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Users className="h-4 w-4 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
@@ -109,15 +109,15 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <div className="border rounded-lg overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead>Survey</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Questions</TableHead>
-                <TableHead>Responses</TableHead>
-                <TableHead>Timeline</TableHead>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="text-xs uppercase tracking-wider font-semibold">Survey</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider font-semibold w-24">Status</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider font-semibold w-24 text-center">Questions</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider font-semibold w-32">Responses</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider font-semibold w-36">Timeline</TableHead>
                 <TableHead className="w-32"></TableHead>
               </TableRow>
             </TableHeader>
@@ -127,13 +127,19 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
                 const targetResponses = 10;
                 const responseRate = Math.min(100, (survey.responseCount / targetResponses) * 100);
                 const isEnding = daysLeft <= 3 && daysLeft >= 0 && survey.status === 'active';
+                const isActive = survey.status === 'active';
 
                 return (
                   <TableRow 
                     key={survey.id} 
-                    className="group hover:bg-muted/50"
+                    className="group hover:bg-muted/50 cursor-pointer"
+                    onClick={() => onViewSurvey(survey)}
                     style={{
-                      borderLeft: isEnding ? '3px solid hsl(var(--warning))' : undefined,
+                      borderLeft: isEnding 
+                        ? '3px solid hsl(var(--chart-4))' 
+                        : isActive 
+                          ? '3px solid hsl(var(--chart-2))' 
+                          : undefined,
                     }}
                   >
                     <TableCell className="py-3">
@@ -141,7 +147,7 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{survey.title}</p>
                           {survey.anonymous && (
-                            <Badge variant="outline" className="text-xs py-0">Anonymous</Badge>
+                            <Badge variant="outline" className="text-[10px] py-0">Anonymous</Badge>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
@@ -151,13 +157,13 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
                     </TableCell>
                     <TableCell className="py-3">
                       <StatusBadge 
-                        status={getStatusVariant(survey.status) as any}
+                        status={getStatusVariant(survey.status)}
                         label={surveyStatusLabels[survey.status]}
                       />
                     </TableCell>
-                    <TableCell className="py-3">
+                    <TableCell className="py-3 text-center">
                       <Badge variant="secondary" className="font-normal">
-                        {survey.questions.length} questions
+                        {survey.questions.length}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-3">
@@ -174,11 +180,16 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
                         <p className="flex items-center gap-1">
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           {survey.status === 'active' ? (
-                            daysLeft > 0 ? `${daysLeft} days left` : 'Ending today'
+                            <span className={isEnding ? 'text-amber-600 font-medium' : ''}>
+                              {daysLeft > 0 ? `${daysLeft} days left` : 'Ending today'}
+                            </span>
                           ) : survey.status === 'draft' ? (
                             `Starts ${format(parseISO(survey.startDate), 'MMM d')}`
                           ) : (
-                            `Closed ${format(parseISO(survey.endDate), 'MMM d')}`
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Closed {format(parseISO(survey.endDate), 'MMM d')}
+                            </span>
                           )}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
@@ -187,7 +198,10 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
                       </div>
                     </TableCell>
                     <TableCell className="py-3">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div 
+                        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {survey.status === 'active' && (
                           <Button size="sm" variant="default" onClick={() => onTakeSurvey(survey)}>
                             Take
@@ -206,7 +220,7 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
               })}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
     </div>
   );
