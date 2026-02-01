@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Users, 
   Send,
@@ -18,6 +16,7 @@ import {
   Eye,
   ClipboardList,
   Shield,
+  MoreHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -26,30 +25,30 @@ import {
   mock360Competencies 
 } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
-import type { Feedback360Request, Feedback360Competency } from '@/types/advancedPerformance';
+import type { Feedback360Request } from '@/types/advancedPerformance';
 import { toast } from 'sonner';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Box, Typography, Paper, Avatar, Stack, IconButton, Tooltip, Chip } from '@mui/material';
+import { SemanticProgressBar } from './shared/SemanticProgressBar';
+import { StatusBadge } from './shared/StatusBadge';
 
 interface Employee360PanelProps {
   currentUserId: string;
 }
 
-// Pastel color palette
-const pastelColors = {
-  blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
-  green: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
-  amber: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-  rose: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700' },
-  purple: { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-700' },
-  teal: { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700' },
-  indigo: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700' },
-};
-
-const getStatusPastel = (status: string) => {
+const getStatusType = (status: string) => {
   switch (status) {
-    case 'completed': return pastelColors.green;
-    case 'in_progress': return pastelColors.blue;
-    case 'pending': return pastelColors.amber;
-    default: return pastelColors.purple;
+    case 'completed': return 'completed' as const;
+    case 'in_progress': return 'in_progress' as const;
+    case 'pending': return 'pending' as const;
+    default: return 'draft' as const;
   }
 };
 
@@ -61,6 +60,7 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
   const [comments, setComments] = useState<Record<string, string>>({});
   const [strengths, setStrengths] = useState('');
   const [improvements, setImprovements] = useState('');
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
   // Requests where I need to give feedback (as a responder)
   const feedbackRequests = mock360Requests.filter(req => {
@@ -139,79 +139,6 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
     );
   };
 
-  const renderRequestCard = (request: Feedback360Request, type: 'give' | 'receive') => {
-    const statusPastel = getStatusPastel(request.status);
-    const subject = mockStaff.find(s => s.id === request.subjectStaffId);
-    const responses = mock360Responses.filter(r => r.requestId === request.id);
-    const completedResponses = responses.filter(r => r.status === 'completed').length;
-    
-    return (
-      <Card 
-        key={request.id}
-        className={cn(
-          "transition-all hover:shadow-md cursor-pointer border",
-          statusPastel.border
-        )}
-        onClick={() => type === 'give' ? handleOpenFeedback(request) : handleOpenResults(request)}
-      >
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <Avatar className={cn("h-10 w-10", pastelColors.purple.bg)}>
-                <AvatarFallback className={pastelColors.purple.text}>
-                  {getStaffInitials(request.subjectStaffId)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge className={cn("text-xs", statusPastel.bg, statusPastel.text, statusPastel.border, "border")}>
-                    {request.status === 'in_progress' ? 'In Progress' : 
-                     request.status === 'completed' ? 'Completed' : 'Pending'}
-                  </Badge>
-                  {request.anonymousResponses && (
-                    <Badge variant="outline" className="text-xs gap-1">
-                      <Shield className="h-3 w-3" /> Anonymous
-                    </Badge>
-                  )}
-                </div>
-                <h4 className="font-semibold">{request.title}</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {type === 'give' 
-                    ? `Provide feedback for ${subject?.firstName} ${subject?.lastName}`
-                    : `${completedResponses}/${responses.length} responses received`
-                  }
-                </p>
-              </div>
-            </div>
-            <div className="flex-shrink-0">
-              {type === 'give' ? (
-                <Button size="sm" className="gap-1">
-                  <MessageSquare className="h-4 w-4" />
-                  Give Feedback
-                </Button>
-              ) : (
-                <Button size="sm" variant="outline" className="gap-1">
-                  <Eye className="h-4 w-4" />
-                  View Results
-                </Button>
-              )}
-            </div>
-          </div>
-          
-          {type === 'receive' && (
-            <div className="mt-3">
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-muted-foreground">Response Progress</span>
-                <span className="font-medium">{Math.round((completedResponses / responses.length) * 100)}%</span>
-              </div>
-              <Progress value={(completedResponses / responses.length) * 100} className="h-2" />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
-
   // Calculate aggregated results for my reviews
   const getAggregatedResults = (requestId: string) => {
     const responses = mock360Responses.filter(r => 
@@ -219,61 +146,190 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
     );
     
     const competencyAverages = mock360Competencies.map(comp => {
-      const ratings = responses
+      const ratingsArr = responses
         .flatMap(r => r.ratings)
         .filter(r => r.competencyId === comp.id)
         .map(r => r.rating);
       
-      const avg = ratings.length > 0 
-        ? ratings.reduce((a, b) => a + b, 0) / ratings.length 
+      const avg = ratingsArr.length > 0 
+        ? ratingsArr.reduce((a, b) => a + b, 0) / ratingsArr.length 
         : 0;
       
-      return { ...comp, averageRating: avg, responseCount: ratings.length };
+      return { ...comp, averageRating: avg, responseCount: ratingsArr.length };
     });
 
     return competencyAverages;
   };
 
+  const renderRequestRow = (request: Feedback360Request, type: 'give' | 'receive') => {
+    const subject = mockStaff.find(s => s.id === request.subjectStaffId);
+    const responses = mock360Responses.filter(r => r.requestId === request.id);
+    const completedResponses = responses.filter(r => r.status === 'completed').length;
+    const progressPercent = Math.round((completedResponses / responses.length) * 100);
+    const isHovered = hoveredRow === request.id;
+
+    return (
+      <TableRow 
+        key={request.id}
+        className="group cursor-pointer hover:bg-muted/50 transition-colors"
+        onMouseEnter={() => setHoveredRow(request.id)}
+        onMouseLeave={() => setHoveredRow(null)}
+        onClick={() => type === 'give' ? handleOpenFeedback(request) : handleOpenResults(request)}
+      >
+        <TableCell>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar sx={{ width: 36, height: 36, fontSize: '0.85rem', bgcolor: '#f3e8ff', color: '#7c3aed' }}>
+              {getStaffInitials(request.subjectStaffId)}
+            </Avatar>
+            <Box>
+              <Typography variant="body2" fontWeight={500}>
+                {subject?.firstName} {subject?.lastName}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                {request.title}
+              </Typography>
+            </Box>
+          </Box>
+        </TableCell>
+        <TableCell>
+          <StatusBadge status={getStatusType(request.status)} size="small" />
+        </TableCell>
+        <TableCell>
+          {request.anonymousResponses && (
+            <Chip
+              icon={<Shield className="h-3 w-3" />}
+              label="Anonymous"
+              size="small"
+              variant="outlined"
+              sx={{ height: 22, fontSize: '0.7rem' }}
+            />
+          )}
+        </TableCell>
+        <TableCell>
+          {type === 'receive' ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 120 }}>
+              <Box sx={{ flex: 1 }}>
+                <SemanticProgressBar 
+                  value={progressPercent} 
+                  status={progressPercent >= 100 ? 'completed' : progressPercent >= 50 ? 'on_track' : 'at_risk'}
+                  size="sm"
+                  showPercentage={false}
+                />
+              </Box>
+              <Typography variant="caption" fontWeight={500}>
+                {completedResponses}/{responses.length}
+              </Typography>
+            </Box>
+          ) : (
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>—</Typography>
+          )}
+        </TableCell>
+        <TableCell>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              gap: 0.5, 
+              opacity: isHovered ? 1 : 0,
+              transition: 'opacity 0.15s'
+            }}
+          >
+            {type === 'give' ? (
+              <Button size="sm" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); handleOpenFeedback(request); }}>
+                <MessageSquare className="h-3 w-3" /> Give Feedback
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); handleOpenResults(request); }}>
+                <Eye className="h-3 w-3" /> View Results
+              </Button>
+            )}
+            <Tooltip title="More">
+              <IconButton size="small" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+  const renderEmptyState = (icon: React.ReactNode, title: string, description: string) => (
+    <Paper variant="outlined" sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed' }}>
+      {icon}
+      <Typography variant="body1" fontWeight={500} sx={{ mt: 2 }}>{title}</Typography>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>{description}</Typography>
+    </Paper>
+  );
+
+  const renderRequestsTable = (requests: Feedback360Request[], type: 'give' | 'receive') => {
+    if (requests.length === 0) {
+      return type === 'give' 
+        ? renderEmptyState(
+            <CheckCircle2 className="h-12 w-12 mx-auto" style={{ color: '#22c55e', opacity: 0.5 }} />,
+            "No pending feedback requests",
+            "You're all caught up! Check back later for new requests."
+          )
+        : renderEmptyState(
+            <Users className="h-12 w-12 mx-auto text-muted-foreground/50" />,
+            "No 360° reviews for you yet",
+            "Your manager will initiate reviews when scheduled"
+          );
+    }
+
+    return (
+      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead>{type === 'give' ? 'Subject' : 'Review'}</TableHead>
+              <TableHead className="w-28">Status</TableHead>
+              <TableHead className="w-28">Privacy</TableHead>
+              <TableHead className="w-36">{type === 'receive' ? 'Responses' : ''}</TableHead>
+              <TableHead className="w-40"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {requests.map(req => renderRequestRow(req, type))}
+          </TableBody>
+        </Table>
+      </Paper>
+    );
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className={cn("border", pastelColors.amber.bg, pastelColors.amber.border)}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Pending Feedback</p>
-                <p className={cn("text-2xl font-bold", pastelColors.amber.text)}>{feedbackRequests.length}</p>
-              </div>
-              <Clock className={cn("h-8 w-8 opacity-50", pastelColors.amber.text)} />
-            </div>
-          </CardContent>
-        </Card>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Stats Row */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3, 1fr)' }, gap: 2 }}>
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fef3c7', borderColor: '#fcd34d' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>Pending Feedback</Typography>
+              <Typography variant="h5" fontWeight={700} sx={{ color: '#d97706' }}>{feedbackRequests.length}</Typography>
+            </Box>
+            <Clock className="h-8 w-8 opacity-50" style={{ color: '#d97706' }} />
+          </Box>
+        </Paper>
 
-        <Card className={cn("border", pastelColors.purple.bg, pastelColors.purple.border)}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">My Reviews</p>
-                <p className={cn("text-2xl font-bold", pastelColors.purple.text)}>{myReviews.length}</p>
-              </div>
-              <User className={cn("h-8 w-8 opacity-50", pastelColors.purple.text)} />
-            </div>
-          </CardContent>
-        </Card>
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f3e8ff', borderColor: '#c4b5fd' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>My Reviews</Typography>
+              <Typography variant="h5" fontWeight={700} sx={{ color: '#7c3aed' }}>{myReviews.length}</Typography>
+            </Box>
+            <User className="h-8 w-8 opacity-50" style={{ color: '#7c3aed' }} />
+          </Box>
+        </Paper>
 
-        <Card className={cn("border", pastelColors.green.bg, pastelColors.green.border)}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Feedback Given</p>
-                <p className={cn("text-2xl font-bold", pastelColors.green.text)}>{completedFeedback.length}</p>
-              </div>
-              <CheckCircle2 className={cn("h-8 w-8 opacity-50", pastelColors.green.text)} />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#dcfce7', borderColor: '#86efac' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>Feedback Given</Typography>
+              <Typography variant="h5" fontWeight={700} sx={{ color: '#16a34a' }}>{completedFeedback.length}</Typography>
+            </Box>
+            <CheckCircle2 className="h-8 w-8 opacity-50" style={{ color: '#16a34a' }} />
+          </Box>
+        </Paper>
+      </Box>
 
       {/* Tabs */}
       <Tabs defaultValue="pending">
@@ -286,36 +342,12 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending" className="mt-6 space-y-4">
-          {feedbackRequests.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <CheckCircle2 className="h-12 w-12 text-emerald-500/50 mx-auto mb-4" />
-                <p className="font-medium text-emerald-700">No pending feedback requests</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  You're all caught up! Check back later for new requests.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            feedbackRequests.map(req => renderRequestCard(req, 'give'))
-          )}
+        <TabsContent value="pending" className="mt-4">
+          {renderRequestsTable(feedbackRequests, 'give')}
         </TabsContent>
 
-        <TabsContent value="my-reviews" className="mt-6 space-y-4">
-          {myReviews.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="font-medium">No 360° reviews for you yet</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Your manager will initiate reviews when scheduled
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            myReviews.map(req => renderRequestCard(req, 'receive'))
-          )}
+        <TabsContent value="my-reviews" className="mt-4">
+          {renderRequestsTable(myReviews, 'receive')}
         </TabsContent>
       </Tabs>
 
@@ -332,26 +364,28 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
           {selectedRequest && (
             <div className="mt-6 space-y-6">
               {/* Subject Info */}
-              <div className={cn("p-4 rounded-lg flex items-center gap-3", pastelColors.purple.bg)}>
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback>{getStaffInitials(selectedRequest.subjectStaffId)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-semibold">{getStaffName(selectedRequest.subjectStaffId)}</p>
-                  <p className={cn("text-sm", pastelColors.purple.text)}>
-                    {selectedRequest.anonymousResponses 
-                      ? 'Your feedback will be anonymous' 
-                      : 'Your name will be visible'}
-                  </p>
-                </div>
-              </div>
+              <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f3e8ff', borderColor: '#c4b5fd' }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Avatar sx={{ width: 48, height: 48 }}>
+                    {getStaffInitials(selectedRequest.subjectStaffId)}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body1" fontWeight={600}>{getStaffName(selectedRequest.subjectStaffId)}</Typography>
+                    <Typography variant="body2" sx={{ color: '#7c3aed' }}>
+                      {selectedRequest.anonymousResponses 
+                        ? 'Your feedback will be anonymous' 
+                        : 'Your name will be visible'}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Paper>
 
               {/* Competency Ratings */}
               <div>
                 <h3 className="font-semibold mb-4">Rate Competencies</h3>
                 <div className="space-y-4">
                   {mock360Competencies.map((comp) => (
-                    <Card key={comp.id} className="p-4">
+                    <Paper key={comp.id} variant="outlined" sx={{ p: 2 }}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <p className="font-medium">{comp.name}</p>
@@ -369,7 +403,7 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
                         className="mt-3 resize-none"
                         rows={2}
                       />
-                    </Card>
+                    </Paper>
                   ))}
                 </div>
               </div>
@@ -422,22 +456,22 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
 
           {selectedRequest && (
             <div className="mt-6 space-y-6">
-              <Card className={cn("p-4", pastelColors.blue.bg, pastelColors.blue.border, "border")}>
-                <h4 className="font-semibold mb-1">{selectedRequest.title}</h4>
-                <p className={cn("text-sm", pastelColors.blue.text)}>
+              <Paper variant="outlined" sx={{ p: 2, bgcolor: '#dbeafe', borderColor: '#93c5fd' }}>
+                <Typography variant="body1" fontWeight={600}>{selectedRequest.title}</Typography>
+                <Typography variant="body2" sx={{ color: '#2563eb' }}>
                   {mock360Responses.filter(r => r.requestId === selectedRequest.id && r.status === 'completed').length} responses collected
-                </p>
-              </Card>
+                </Typography>
+              </Paper>
 
               <div>
                 <h3 className="font-semibold mb-4">Competency Scores</h3>
                 <div className="space-y-3">
                   {getAggregatedResults(selectedRequest.id).map((comp) => (
-                    <div key={comp.id} className="p-4 rounded-lg border bg-background">
+                    <Paper key={comp.id} variant="outlined" sx={{ p: 2 }}>
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <p className="font-medium">{comp.name}</p>
-                          <Badge variant="outline" className="text-xs">{comp.category}</Badge>
+                          <p className="text-xs text-muted-foreground">{comp.category}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="flex">
@@ -446,10 +480,10 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
                                 key={star}
                                 className={cn(
                                   "h-4 w-4",
-                                  star <= Math.round(comp.averageRating) 
-                                    ? "text-amber-400 fill-amber-400" 
+                                  star <= Math.round(comp.averageRating)
+                                    ? "text-amber-400 fill-amber-400"
                                     : "text-muted-foreground/30"
-                                )} 
+                                )}
                               />
                             ))}
                           </div>
@@ -457,7 +491,7 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
                         </div>
                       </div>
                       <Progress value={(comp.averageRating / 5) * 100} className="h-2" />
-                    </div>
+                    </Paper>
                   ))}
                 </div>
               </div>
@@ -465,12 +499,14 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
           )}
 
           <SheetFooter className="mt-8">
-            <Button onClick={() => setShowResultsSheet(false)}>
+            <Button variant="outline" onClick={() => setShowResultsSheet(false)}>
               Close
             </Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
-    </div>
+    </Box>
   );
 }
+
+export default Employee360Panel;

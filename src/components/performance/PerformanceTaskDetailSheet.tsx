@@ -105,10 +105,10 @@ export function PerformanceTaskDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-[500px] sm:max-w-[500px] p-0 overflow-hidden">
-        <div className="h-full flex flex-col">
-          <SheetHeader className="p-4 border-b">
-            <div className="flex items-start justify-between">
+      <SheetContent className="w-[500px] sm:max-w-[500px] !p-0 overflow-hidden flex flex-col">
+        <div className="h-full flex flex-col overflow-hidden">
+          <SheetHeader className="p-4 pb-3 border-b shrink-0">
+            <div className="flex items-start justify-between pr-8">
               <div className="flex-1 pr-4">
                 <SheetTitle className="text-lg font-semibold leading-tight">
                   {task.title}
