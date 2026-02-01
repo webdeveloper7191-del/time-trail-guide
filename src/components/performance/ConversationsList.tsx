@@ -49,11 +49,11 @@ interface ConversationsListProps {
 }
 
 const typeColors: Record<ConversationType, { bg: string; text: string; border: string }> = {
-  one_on_one: { bg: '#dbeafe', text: '#2563eb', border: '#93c5fd' },
-  check_in: { bg: '#dcfce7', text: '#16a34a', border: '#86efac' },
-  coaching: { bg: '#f3e8ff', text: '#7c3aed', border: '#c4b5fd' },
-  feedback: { bg: '#fef3c7', text: '#d97706', border: '#fcd34d' },
-  career: { bg: '#fce7f3', text: '#db2777', border: '#f9a8d4' },
+  one_on_one: { bg: 'hsl(var(--chart-1) / 0.15)', text: 'hsl(var(--chart-1))', border: 'hsl(var(--chart-1) / 0.3)' },
+  check_in: { bg: 'hsl(var(--chart-2) / 0.15)', text: 'hsl(var(--chart-2))', border: 'hsl(var(--chart-2) / 0.3)' },
+  coaching: { bg: 'hsl(var(--chart-5) / 0.15)', text: 'hsl(var(--chart-5))', border: 'hsl(var(--chart-5) / 0.3)' },
+  feedback: { bg: 'hsl(var(--chart-4) / 0.15)', text: 'hsl(var(--chart-4))', border: 'hsl(var(--chart-4) / 0.3)' },
+  career: { bg: 'hsl(var(--chart-3) / 0.15)', text: 'hsl(var(--chart-3))', border: 'hsl(var(--chart-3) / 0.3)' },
 };
 
 const typeIcons: Record<ConversationType, React.ReactNode> = {
@@ -98,6 +98,7 @@ export function ConversationsList({
     const isHovered = hoveredRow === conv.id;
     const colors = typeColors[conv.type];
     const isTodayMeeting = isToday(meetingDate);
+    const isMissed = !conv.completed && isPast(meetingDate);
 
     return (
       <TableRow 
@@ -107,71 +108,80 @@ export function ConversationsList({
         onMouseLeave={() => setHoveredRow(null)}
         onClick={() => onViewConversation(conv)}
         style={{
-          borderLeft: isTodayMeeting && isUpcoming ? '3px solid #2563eb' : undefined,
-          backgroundColor: isTodayMeeting && isUpcoming ? 'rgba(37, 99, 235, 0.05)' : undefined,
+          borderLeft: isTodayMeeting && isUpcoming 
+            ? '3px solid hsl(var(--chart-1))' 
+            : isMissed 
+              ? '3px solid hsl(var(--destructive))' 
+              : undefined,
+          backgroundColor: isTodayMeeting && isUpcoming ? 'hsl(var(--chart-1) / 0.05)' : undefined,
         }}
       >
-        <TableCell>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <TableCell className="py-3">
+          <div className="flex items-center gap-3">
             <Avatar 
               src={otherPerson?.avatar} 
-              sx={{ width: 36, height: 36, fontSize: '0.85rem' }}
+              sx={{ width: 36, height: 36, fontSize: '0.85rem', bgcolor: 'hsl(var(--muted))' }}
             >
               {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
             </Avatar>
-            <Box>
-              <Typography variant="body2" fontWeight={500}>
-                {conv.title}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            <div>
+              <p className="text-sm font-medium">{conv.title}</p>
+              <p className="text-xs text-muted-foreground">
                 with {otherPerson?.firstName} {otherPerson?.lastName}
-              </Typography>
-            </Box>
-          </Box>
+              </p>
+            </div>
+          </div>
         </TableCell>
-        <TableCell>
+        <TableCell className="py-3">
           <Chip
             icon={typeIcons[conv.type] as React.ReactElement}
             label={conversationTypeLabels[conv.type]}
             size="small"
             sx={{
-              height: 22,
+              height: 24,
               fontSize: '0.7rem',
+              fontWeight: 500,
               bgcolor: colors.bg,
               color: colors.text,
               border: `1px solid ${colors.border}`,
-              '& .MuiChip-icon': { color: colors.text },
+              '& .MuiChip-icon': { color: colors.text, fontSize: 14 },
             }}
           />
         </TableCell>
-        <TableCell>
-          <Box>
-            <Typography variant="body2" fontWeight={isTodayMeeting ? 600 : 400} color={isTodayMeeting ? 'primary.main' : 'text.primary'}>
+        <TableCell className="py-3">
+          <div>
+            <p className={`text-sm ${isTodayMeeting ? 'font-semibold text-primary' : ''}`}>
               {getDateLabel(conv.scheduledDate)}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            </p>
+            <p className="text-xs text-muted-foreground">
               {format(meetingDate, 'h:mm a')} • {conv.duration} min
-            </Typography>
-          </Box>
+            </p>
+          </div>
         </TableCell>
-        <TableCell>
+        <TableCell className="py-3">
           {conv.completed ? (
             <StatusBadge status="completed" size="small" />
-          ) : isPast(meetingDate) ? (
+          ) : isMissed ? (
             <StatusBadge status="overdue" size="small" label="Missed" />
           ) : (
             <StatusBadge status="pending" size="small" label="Scheduled" />
           )}
         </TableCell>
-        <TableCell>
-          <Stack direction="row" spacing={1} alignItems="center">
+        <TableCell className="py-3">
+          <div className="flex gap-1.5">
             {conv.notes.length > 0 && (
               <Chip
                 icon={<StickyNote size={12} />}
                 label={conv.notes.length}
                 size="small"
-                variant="outlined"
-                sx={{ height: 20, fontSize: '0.7rem' }}
+                sx={{ 
+                  height: 22, 
+                  fontSize: '0.7rem',
+                  bgcolor: 'hsl(var(--muted))',
+                  color: 'hsl(var(--muted-foreground))',
+                  border: '1px solid hsl(var(--border))',
+                  '& .MuiChip-icon': { color: 'hsl(var(--muted-foreground))' },
+                }}
               />
             )}
             {conv.actionItems.length > 0 && (
@@ -179,30 +189,32 @@ export function ConversationsList({
                 icon={<ListChecks size={12} />}
                 label={conv.actionItems.length}
                 size="small"
-                variant="outlined"
-                sx={{ height: 20, fontSize: '0.7rem' }}
+                sx={{ 
+                  height: 22, 
+                  fontSize: '0.7rem',
+                  bgcolor: 'hsl(var(--muted))',
+                  color: 'hsl(var(--muted-foreground))',
+                  border: '1px solid hsl(var(--border))',
+                  '& .MuiChip-icon': { color: 'hsl(var(--muted-foreground))' },
+                }}
               />
             )}
-          </Stack>
+          </div>
         </TableCell>
-        <TableCell>
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              gap: 0.5, 
-              opacity: isHovered ? 1 : 0,
-              transition: 'opacity 0.15s'
-            }}
+        <TableCell className="py-3">
+          <div 
+            className="flex gap-1 transition-opacity duration-150"
+            style={{ opacity: isHovered ? 1 : 0 }}
           >
             <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); onViewConversation(conv); }}>
               <Eye className="h-3 w-3" /> View
             </Button>
             <Tooltip title="More">
-              <IconButton size="small" onClick={(e) => e.stopPropagation()}>
+              <IconButton size="small" onClick={(e) => e.stopPropagation()} sx={{ color: 'hsl(var(--muted-foreground))' }}>
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </IconButton>
             </Tooltip>
-          </Box>
+          </div>
         </TableCell>
       </TableRow>
     );
@@ -267,15 +279,15 @@ export function ConversationsList({
         {upcoming.length === 0 ? (
           renderEmptyState()
         ) : (
-          <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+          <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead>Meeting</TableHead>
-                  <TableHead className="w-32">Type</TableHead>
-                  <TableHead className="w-36">Schedule</TableHead>
-                  <TableHead className="w-28">Status</TableHead>
-                  <TableHead className="w-24">Items</TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+                  <TableHead className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Meeting</TableHead>
+                  <TableHead className="w-32 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Type</TableHead>
+                  <TableHead className="w-36 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Schedule</TableHead>
+                  <TableHead className="w-28 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Status</TableHead>
+                  <TableHead className="w-24 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Items</TableHead>
                   <TableHead className="w-28"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -294,15 +306,15 @@ export function ConversationsList({
             Past Meetings ({past.length})
           </Typography>
           
-          <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+          <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead>Meeting</TableHead>
-                  <TableHead className="w-32">Type</TableHead>
-                  <TableHead className="w-36">Date</TableHead>
-                  <TableHead className="w-28">Status</TableHead>
-                  <TableHead className="w-24">Items</TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+                  <TableHead className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Meeting</TableHead>
+                  <TableHead className="w-32 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Type</TableHead>
+                  <TableHead className="w-36 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Date</TableHead>
+                  <TableHead className="w-28 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Status</TableHead>
+                  <TableHead className="w-24 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Items</TableHead>
                   <TableHead className="w-28"></TableHead>
                 </TableRow>
               </TableHeader>
