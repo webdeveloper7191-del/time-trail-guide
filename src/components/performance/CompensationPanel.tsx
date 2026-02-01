@@ -5,31 +5,28 @@ import {
   Typography,
   Avatar,
   Chip,
-  Slider,
-  TextField,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Divider,
-  LinearProgress,
   IconButton,
-  Tooltip,
+  LinearProgress,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { StatusBadge } from './shared/StatusBadge';
+import {
   DollarSign,
   TrendingUp,
   Target,
-  Award,
-  Users,
-  ChevronRight,
   Check,
   X,
-  Edit,
-  Calculator,
-  BarChart3,
+  Eye,
+  MoreHorizontal,
 } from 'lucide-react';
 import { StaffMember } from '@/types/staff';
 import {
@@ -37,8 +34,6 @@ import {
   EmployeeCompensation,
   MeritRecommendation,
   BonusCalculation,
-  performanceToMeritMultiplier,
-  performanceToBonusMultiplier,
   salaryBandLevelLabels,
   bonusTypeLabels,
 } from '@/types/compensation';
@@ -49,7 +44,6 @@ import {
   mockBonusCalculations,
   mockMeritMatrix,
 } from '@/data/mockCompensationData';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 interface CompensationPanelProps {
@@ -59,7 +53,6 @@ interface CompensationPanelProps {
 
 export function CompensationPanel({ staff, currentUserId }: CompensationPanelProps) {
   const [activeView, setActiveView] = useState<'overview' | 'merit' | 'bonus'>('overview');
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
   const getCompensation = (staffId: string) => mockEmployeeCompensation.find(c => c.staffId === staffId);
@@ -84,16 +77,34 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
   const formatCurrency = (amount: number) => 
     new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(amount);
 
-  const getCompaRatioColor = (ratio: number) => {
-    if (ratio < 0.9) return 'warning.main';
-    if (ratio > 1.1) return 'error.main';
-    return 'success.main';
+  const getCompaRatioVariant = (ratio: number) => {
+    if (ratio < 0.9) return 'warning';
+    if (ratio > 1.1) return 'destructive';
+    return 'success';
   };
 
   const getCompaRatioLabel = (ratio: number) => {
     if (ratio < 0.9) return 'Below Range';
     if (ratio > 1.1) return 'Above Range';
     return 'At Market';
+  };
+
+  const getMeritStatusVariant = (status: string) => {
+    switch (status) {
+      case 'approved': return 'success';
+      case 'pending': return 'warning';
+      case 'rejected': return 'destructive';
+      default: return 'secondary';
+    }
+  };
+
+  const getBonusStatusVariant = (status: string) => {
+    switch (status) {
+      case 'paid': 
+      case 'approved': return 'success';
+      case 'pending_approval': return 'warning';
+      default: return 'secondary';
+    }
   };
 
   return (
@@ -130,25 +141,25 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
       {/* Stats */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
         <Card>
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2, bgcolor: 'warning.50' }}>
             <Typography variant="body2" color="text.secondary" mb={0.5}>Pending Reviews</Typography>
             <Typography variant="h4" fontWeight={700}>{stats.pending}</Typography>
           </Box>
         </Card>
         <Card>
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2, bgcolor: 'success.50' }}>
             <Typography variant="body2" color="text.secondary" mb={0.5}>Approved</Typography>
             <Typography variant="h4" fontWeight={700} color="success.main">{stats.approved}</Typography>
           </Box>
         </Card>
         <Card>
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2, bgcolor: 'primary.50' }}>
             <Typography variant="body2" color="text.secondary" mb={0.5}>Total Budget Impact</Typography>
             <Typography variant="h4" fontWeight={700}>{formatCurrency(stats.totalBudget)}</Typography>
           </Box>
         </Card>
         <Card>
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2, bgcolor: 'info.50' }}>
             <Typography variant="body2" color="text.secondary" mb={0.5}>Avg Increase</Typography>
             <Typography variant="h4" fontWeight={700}>{stats.avgIncrease.toFixed(1)}%</Typography>
           </Box>
@@ -158,77 +169,113 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
       {activeView === 'overview' && (
         <Box>
           <Typography variant="subtitle2" color="text.secondary" mb={2}>Employee Compensation Overview</Typography>
-          <Stack spacing={1.5}>
-            {mockEmployeeCompensation.map((comp) => {
-              const staffMember = getStaffMember(comp.staffId);
-              const band = getSalaryBand(comp.salaryBandId);
-              if (!staffMember || !band) return null;
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Band / Level</TableHead>
+                  <TableHead className="text-right">Current Salary</TableHead>
+                  <TableHead>Position in Band</TableHead>
+                  <TableHead>Compa-Ratio</TableHead>
+                  <TableHead className="w-16"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockEmployeeCompensation.map((comp) => {
+                  const staffMember = getStaffMember(comp.staffId);
+                  const band = getSalaryBand(comp.salaryBandId);
+                  if (!staffMember || !band) return null;
 
-              const positionInBand = ((comp.currentSalary - band.minSalary) / (band.maxSalary - band.minSalary)) * 100;
+                  const positionInBand = ((comp.currentSalary - band.minSalary) / (band.maxSalary - band.minSalary)) * 100;
+                  const isBelowMid = comp.compaRatio < 1;
 
-              return (
-                <Card key={comp.id} sx={{ cursor: 'pointer', '&:hover': { boxShadow: 3 } }}>
-                  <Box sx={{ p: 2 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar src={staffMember.avatar} sx={{ width: 48, height: 48 }}>
-                        {staffMember.firstName?.[0]}{staffMember.lastName?.[0]}
-                      </Avatar>
-                      <Box flex={1}>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {staffMember.firstName} {staffMember.lastName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {staffMember.position} • {salaryBandLevelLabels[band.level]}
-                        </Typography>
-                      </Box>
-                      <Box textAlign="right" sx={{ minWidth: 120 }}>
-                        <Typography variant="subtitle1" fontWeight={700}>
+                  return (
+                    <TableRow 
+                      key={comp.id} 
+                      className="group hover:bg-muted/50"
+                      style={{
+                        borderLeft: comp.compaRatio < 0.9 ? '3px solid hsl(var(--warning))' : undefined,
+                      }}
+                    >
+                      <TableCell className="py-3">
+                        <Stack direction="row" alignItems="center" spacing={1.5}>
+                          <Avatar src={staffMember.avatar} sx={{ width: 36, height: 36 }}>
+                            {staffMember.firstName?.[0]}{staffMember.lastName?.[0]}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>
+                              {staffMember.firstName} {staffMember.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {staffMember.position}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Box>
+                          <Typography variant="body2" fontWeight={500}>{band.title}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {salaryBandLevelLabels[band.level]}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell className="py-3 text-right">
+                        <Typography variant="body2" fontWeight={700}>
                           {formatCurrency(comp.currentSalary)}
                         </Typography>
-                        <Chip
-                          size="small"
-                          label={`${(comp.compaRatio * 100).toFixed(0)}% Compa-Ratio`}
-                          sx={{ bgcolor: getCompaRatioColor(comp.compaRatio), color: 'white', fontSize: '0.7rem' }}
+                        <Typography variant="caption" color="text.secondary">
+                          Range: {formatCurrency(band.minSalary)} - {formatCurrency(band.maxSalary)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell className="py-3 w-40">
+                        <Box>
+                          <Box sx={{ position: 'relative', height: 8, bgcolor: 'grey.200', borderRadius: 1, mb: 0.5 }}>
+                            <Box sx={{ 
+                              position: 'absolute', 
+                              left: '50%', 
+                              top: 0, 
+                              bottom: 0, 
+                              width: 2, 
+                              bgcolor: 'grey.400',
+                              transform: 'translateX(-50%)',
+                            }} />
+                            <Box sx={{ 
+                              position: 'absolute', 
+                              left: `${Math.min(Math.max(positionInBand, 0), 100)}%`, 
+                              top: -2, 
+                              width: 12, 
+                              height: 12, 
+                              bgcolor: 'primary.main',
+                              borderRadius: '50%',
+                              transform: 'translateX(-50%)',
+                              border: 2,
+                              borderColor: 'background.paper',
+                            }} />
+                          </Box>
+                          <Typography variant="caption" color="text.secondary" textAlign="center" display="block">
+                            Mid: {formatCurrency(band.midSalary)}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <StatusBadge 
+                          status={getCompaRatioVariant(comp.compaRatio) as any}
+                          label={`${(comp.compaRatio * 100).toFixed(0)}%`}
                         />
-                      </Box>
-                    </Stack>
-                    <Box sx={{ mt: 2 }}>
-                      <Stack direction="row" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="caption" color="text.secondary">{formatCurrency(band.minSalary)}</Typography>
-                        <Typography variant="caption" color="text.secondary">{formatCurrency(band.maxSalary)}</Typography>
-                      </Stack>
-                      <Box sx={{ position: 'relative', height: 8, bgcolor: 'grey.200', borderRadius: 1 }}>
-                        <Box sx={{ 
-                          position: 'absolute', 
-                          left: '50%', 
-                          top: 0, 
-                          bottom: 0, 
-                          width: 2, 
-                          bgcolor: 'grey.400',
-                          transform: 'translateX(-50%)',
-                        }} />
-                        <Box sx={{ 
-                          position: 'absolute', 
-                          left: `${Math.min(Math.max(positionInBand, 0), 100)}%`, 
-                          top: -4, 
-                          width: 16, 
-                          height: 16, 
-                          bgcolor: 'primary.main',
-                          borderRadius: '50%',
-                          transform: 'translateX(-50%)',
-                          border: 2,
-                          borderColor: 'background.paper',
-                        }} />
-                      </Box>
-                      <Typography variant="caption" color="text.secondary" mt={0.5} display="block" textAlign="center">
-                        Mid: {formatCurrency(band.midSalary)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Card>
-              );
-            })}
-          </Stack>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <IconButton size="small" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Eye size={14} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
         </Box>
       )}
 
@@ -238,125 +285,212 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
             <Typography variant="subtitle2" color="text.secondary">Merit Increase Recommendations</Typography>
             <Chip label={`Budget: ${mockMeritMatrix.budget}%`} size="small" color="primary" variant="outlined" />
           </Stack>
-          <Stack spacing={1.5}>
-            {mockMeritRecommendations.map((rec) => {
-              const staffMember = getStaffMember(rec.staffId);
-              if (!staffMember) return null;
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Performance</TableHead>
+                  <TableHead className="text-right">Current</TableHead>
+                  <TableHead className="text-right">Recommended</TableHead>
+                  <TableHead className="text-center">Increase</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-24"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockMeritRecommendations.map((rec) => {
+                  const staffMember = getStaffMember(rec.staffId);
+                  if (!staffMember) return null;
+                  const isPending = rec.status === 'pending';
 
-              return (
-                <Card key={rec.id}>
-                  <Box sx={{ p: 2 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar src={staffMember.avatar} sx={{ width: 48, height: 48 }}>
-                        {staffMember.firstName?.[0]}{staffMember.lastName?.[0]}
-                      </Avatar>
-                      <Box flex={1}>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {staffMember.firstName} {staffMember.lastName}
-                        </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Chip label={`Rating: ${rec.performanceRating}/5`} size="small" />
-                          <Chip label={`Compa: ${(rec.currentCompaRatio * 100).toFixed(0)}%`} size="small" variant="outlined" />
+                  return (
+                    <TableRow key={rec.id} className="group hover:bg-muted/50">
+                      <TableCell className="py-3">
+                        <Stack direction="row" alignItems="center" spacing={1.5}>
+                          <Avatar src={staffMember.avatar} sx={{ width: 36, height: 36 }}>
+                            {staffMember.firstName?.[0]}{staffMember.lastName?.[0]}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>
+                              {staffMember.firstName} {staffMember.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {staffMember.position}
+                            </Typography>
+                          </Box>
                         </Stack>
-                      </Box>
-                      <Box textAlign="right">
-                        <Typography variant="body2" color="text.secondary">Current</Typography>
-                        <Typography variant="subtitle2">{formatCurrency(rec.currentSalary)}</Typography>
-                      </Box>
-                      <Box sx={{ px: 2 }}>
-                        <TrendingUp size={20} style={{ color: 'var(--success)' }} />
-                      </Box>
-                      <Box textAlign="right">
-                        <Typography variant="body2" color="text.secondary">Recommended</Typography>
-                        <Typography variant="subtitle2" color="success.main" fontWeight={700}>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Chip 
+                            label={`${rec.performanceRating}/5`} 
+                            size="small" 
+                            color={rec.performanceRating >= 4 ? 'success' : rec.performanceRating >= 3 ? 'warning' : 'default'}
+                          />
+                          <Typography variant="caption" color="text.secondary">
+                            Compa: {(rec.currentCompaRatio * 100).toFixed(0)}%
+                          </Typography>
+                        </Stack>
+                      </TableCell>
+                      <TableCell className="py-3 text-right">
+                        <Typography variant="body2">{formatCurrency(rec.currentSalary)}</Typography>
+                      </TableCell>
+                      <TableCell className="py-3 text-right">
+                        <Typography variant="body2" fontWeight={700} color="success.main">
                           {formatCurrency(rec.managerAdjustedSalary || rec.recommendedNewSalary)}
                         </Typography>
-                        <Typography variant="caption" color="success.main">
-                          +{rec.managerAdjustedPercent || rec.recommendedIncreasePercent}%
-                        </Typography>
-                      </Box>
-                      <Chip
-                        label={rec.status}
-                        size="small"
-                        color={rec.status === 'approved' ? 'success' : rec.status === 'pending' ? 'warning' : 'default'}
-                      />
-                      {rec.status === 'pending' && (
-                        <Stack direction="row" spacing={0.5}>
-                          <IconButton size="small" color="success" onClick={() => toast.success('Merit increase approved')}>
-                            <Check size={16} />
-                          </IconButton>
-                          <IconButton size="small" color="error" onClick={() => toast.error('Merit increase rejected')}>
-                            <X size={16} />
-                          </IconButton>
+                      </TableCell>
+                      <TableCell className="py-3 text-center">
+                        <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5}>
+                          <TrendingUp size={14} className="text-green-600" />
+                          <Typography variant="body2" fontWeight={600} color="success.main">
+                            +{rec.managerAdjustedPercent || rec.recommendedIncreasePercent}%
+                          </Typography>
                         </Stack>
-                      )}
-                    </Stack>
-                    {rec.justification && (
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', fontStyle: 'italic' }}>
-                        "{rec.justification}"
-                      </Typography>
-                    )}
-                  </Box>
-                </Card>
-              );
-            })}
-          </Stack>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <StatusBadge 
+                          status={getMeritStatusVariant(rec.status) as any}
+                          label={rec.status}
+                        />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        {isPending ? (
+                          <Stack direction="row" spacing={0.5}>
+                            <IconButton 
+                              size="small" 
+                              sx={{ color: 'success.main' }}
+                              onClick={() => toast.success('Merit increase approved')}
+                            >
+                              <Check size={16} />
+                            </IconButton>
+                            <IconButton 
+                              size="small" 
+                              sx={{ color: 'error.main' }}
+                              onClick={() => toast.error('Merit increase rejected')}
+                            >
+                              <X size={16} />
+                            </IconButton>
+                          </Stack>
+                        ) : (
+                          <IconButton size="small" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <MoreHorizontal size={14} />
+                          </IconButton>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+          
+          {/* Justification notes */}
+          {mockMeritRecommendations.filter(r => r.justification).length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>Notes</Typography>
+              <Stack spacing={1} sx={{ mt: 1 }}>
+                {mockMeritRecommendations.filter(r => r.justification).map(rec => {
+                  const staffMember = getStaffMember(rec.staffId);
+                  return (
+                    <Typography key={rec.id} variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                      <strong>{staffMember?.firstName}:</strong> "{rec.justification}"
+                    </Typography>
+                  );
+                })}
+              </Stack>
+            </Box>
+          )}
         </Box>
       )}
 
       {activeView === 'bonus' && (
         <Box>
           <Typography variant="subtitle2" color="text.secondary" mb={2}>Bonus Calculations</Typography>
-          <Stack spacing={1.5}>
-            {mockBonusCalculations.map((bonus) => {
-              const staffMember = getStaffMember(bonus.staffId);
-              if (!staffMember) return null;
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Bonus Type</TableHead>
+                  <TableHead className="text-center">Target %</TableHead>
+                  <TableHead className="text-center">Multipliers</TableHead>
+                  <TableHead className="text-right">Final Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-16"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockBonusCalculations.map((bonus) => {
+                  const staffMember = getStaffMember(bonus.staffId);
+                  if (!staffMember) return null;
 
-              const comp = getCompensation(bonus.staffId);
-              const baseSalary = comp?.currentSalary || 0;
-              const targetAmount = baseSalary * (bonus.targetPercent / 100);
+                  const comp = getCompensation(bonus.staffId);
+                  const baseSalary = comp?.currentSalary || 0;
+                  const targetAmount = baseSalary * (bonus.targetPercent / 100);
 
-              return (
-                <Card key={bonus.id}>
-                  <Box sx={{ p: 2 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar src={staffMember.avatar} sx={{ width: 48, height: 48 }}>
-                        {staffMember.firstName?.[0]}{staffMember.lastName?.[0]}
-                      </Avatar>
-                      <Box flex={1}>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {staffMember.firstName} {staffMember.lastName}
+                  return (
+                    <TableRow key={bonus.id} className="group hover:bg-muted/50">
+                      <TableCell className="py-3">
+                        <Stack direction="row" alignItems="center" spacing={1.5}>
+                          <Avatar src={staffMember.avatar} sx={{ width: 36, height: 36 }}>
+                            {staffMember.firstName?.[0]}{staffMember.lastName?.[0]}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>
+                              {staffMember.firstName} {staffMember.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {staffMember.position}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Chip 
+                          label={bonusTypeLabels[bonus.bonusType]} 
+                          size="small" 
+                          variant="outlined" 
+                        />
+                      </TableCell>
+                      <TableCell className="py-3 text-center">
+                        <Box>
+                          <Typography variant="body2" fontWeight={600}>{bonus.targetPercent}%</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {formatCurrency(targetAmount)}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell className="py-3 text-center">
+                        <Typography variant="caption">
+                          <span className="font-medium">{bonus.performanceMultiplier}</span> × 
+                          <span className="font-medium"> {bonus.companyMultiplier}</span> × 
+                          <span className="font-medium"> {bonus.individualMultiplier}</span>
                         </Typography>
-                        <Chip label={bonusTypeLabels[bonus.bonusType]} size="small" variant="outlined" />
-                      </Box>
-                      <Box textAlign="center" sx={{ px: 2 }}>
-                        <Typography variant="caption" color="text.secondary">Target</Typography>
-                        <Typography variant="body2">{bonus.targetPercent}%</Typography>
-                        <Typography variant="caption">{formatCurrency(targetAmount)}</Typography>
-                      </Box>
-                      <Box textAlign="center" sx={{ px: 2 }}>
-                        <Typography variant="caption" color="text.secondary">Perf × Co × Ind</Typography>
-                        <Typography variant="body2">
-                          {bonus.performanceMultiplier} × {bonus.companyMultiplier} × {bonus.individualMultiplier}
-                        </Typography>
-                      </Box>
-                      <Box textAlign="right">
-                        <Typography variant="body2" color="text.secondary">Final</Typography>
+                      </TableCell>
+                      <TableCell className="py-3 text-right">
                         <Typography variant="h6" fontWeight={700} color="success.main">
                           {formatCurrency(bonus.finalAmount || bonus.calculatedAmount)}
                         </Typography>
-                      </Box>
-                      <Chip
-                        label={bonus.status.replace('_', ' ')}
-                        size="small"
-                        color={bonus.status === 'paid' || bonus.status === 'approved' ? 'success' : bonus.status === 'pending_approval' ? 'warning' : 'default'}
-                      />
-                    </Stack>
-                  </Box>
-                </Card>
-              );
-            })}
-          </Stack>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <StatusBadge 
+                          status={getBonusStatusVariant(bonus.status) as any}
+                          label={bonus.status.replace('_', ' ')}
+                        />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <IconButton size="small" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreHorizontal size={14} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
         </Box>
       )}
     </Box>
