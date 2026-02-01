@@ -648,16 +648,17 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
 
         {/* Assignments Tab */}
         <TabsContent value="assignments" className="mt-6">
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Staff</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Progress</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Assigned By</TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold">Staff</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold">Course</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Status</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-36 text-center">Progress</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Due Date</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-32">Assigned By</TableHead>
+                  <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -672,8 +673,18 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                     enrollment.status !== 'completed';
                   
                   return (
-                    <TableRow key={enrollment.id}>
-                      <TableCell>
+                    <TableRow 
+                      key={enrollment.id}
+                      className="group hover:bg-muted/50"
+                      style={{
+                        borderLeft: isOverdue 
+                          ? '3px solid hsl(var(--destructive))' 
+                          : enrollment.status === 'completed' 
+                            ? '3px solid hsl(var(--chart-2))' 
+                            : undefined,
+                      }}
+                    >
+                      <TableCell className="py-3">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-7 w-7">
                             <AvatarImage src={staffMember?.avatar} />
@@ -681,38 +692,51 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                               {staffMember?.firstName[0]}{staffMember?.lastName[0]}
                             </AvatarFallback>
                           </Avatar>
-                          <span>{staffMember?.firstName} {staffMember?.lastName}</span>
+                          <span className="font-medium">{staffMember?.firstName} {staffMember?.lastName}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{course?.title}</TableCell>
-                      <TableCell>
+                      <TableCell className="py-3">
+                        <p className="font-medium">{course?.title}</p>
+                        <p className="text-xs text-muted-foreground">{course?.duration} min</p>
+                      </TableCell>
+                      <TableCell className="py-3">
                         <Badge className={cn(
                           enrollmentStatusColors[enrollment.status],
-                          isOverdue && "bg-red-100 text-red-700"
+                          isOverdue && "bg-red-100 text-red-700 dark:bg-red-900/30"
                         )}>
                           {isOverdue ? 'Overdue' : enrollmentStatusLabels[enrollment.status]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="py-3">
                         <div className="flex items-center gap-2 justify-center">
-                          <Progress value={enrollment.progress} className="w-16 h-2" />
-                          <span className="text-sm">{enrollment.progress}%</span>
+                          <Progress value={enrollment.progress} className="w-16 h-1.5" />
+                          <span className="text-xs font-medium w-8">{enrollment.progress}%</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-3">
                         {enrollment.dueDate ? (
-                          <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+                          <span className={cn("text-sm", isOverdue && 'text-red-600 font-medium')}>
                             {format(parseISO(enrollment.dueDate), 'MMM d, yyyy')}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground text-sm">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="py-3 text-muted-foreground text-sm">
                         {assignedBy 
                           ? `${assignedBy.firstName} ${assignedBy.lastName}`
                           : 'Self-enrolled'
                         }
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                            <MoreHorizontal className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
