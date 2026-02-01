@@ -3,13 +3,15 @@ import {
   Box, 
   Stack, 
   Typography, 
-  Chip,
-  Button as MuiButton,
   Avatar,
   ToggleButtonGroup,
   ToggleButton,
+  IconButton,
+  Tooltip,
+  Chip,
+  Paper,
 } from '@mui/material';
-import { Card } from '@/components/mui/Card';
+import { Button } from '@/components/ui/button';
 import { 
   Feedback, 
   FeedbackType,
@@ -24,9 +26,18 @@ import {
   MessageCircle,
   Heart,
   Lock,
-  Plus
+  Plus,
+  MoreHorizontal,
 } from 'lucide-react';
 import { GiveFeedbackDrawer } from './GiveFeedbackDrawer';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface FeedbackPanelProps {
   feedback: Feedback[];
@@ -37,11 +48,11 @@ interface FeedbackPanelProps {
   onViewChange: (view: 'received' | 'given' | 'all') => void;
 }
 
-const typeColors: Record<FeedbackType, { bg: string; text: string }> = {
-  praise: { bg: 'success.light', text: 'success.dark' },
-  constructive: { bg: 'warning.light', text: 'warning.dark' },
-  coaching: { bg: 'info.light', text: 'info.dark' },
-  general: { bg: 'grey.100', text: 'grey.600' },
+const typeColors: Record<FeedbackType, { bg: string; text: string; border: string }> = {
+  praise: { bg: '#dcfce7', text: '#16a34a', border: '#86efac' },
+  constructive: { bg: '#fef3c7', text: '#d97706', border: '#fcd34d' },
+  coaching: { bg: '#dbeafe', text: '#2563eb', border: '#93c5fd' },
+  general: { bg: '#f1f5f9', text: '#64748b', border: '#cbd5e1' },
 };
 
 const typeIcons: Record<FeedbackType, React.ReactNode> = {
@@ -60,6 +71,7 @@ export function FeedbackPanel({
   onViewChange
 }: FeedbackPanelProps) {
   const [showFeedbackDrawer, setShowFeedbackDrawer] = useState(false);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
@@ -69,8 +81,98 @@ export function FeedbackPanel({
     return true;
   });
 
+  const renderFeedbackRow = (item: Feedback) => {
+    const fromStaff = getStaffMember(item.fromStaffId);
+    const toStaff = getStaffMember(item.toStaffId);
+    const isReceived = item.toStaffId === currentUserId;
+    const displayStaff = isReceived ? fromStaff : toStaff;
+    const isHovered = hoveredRow === item.id;
+    const colors = typeColors[item.type];
+
+    return (
+      <TableRow 
+        key={item.id}
+        className="group hover:bg-muted/50 transition-colors"
+        onMouseEnter={() => setHoveredRow(item.id)}
+        onMouseLeave={() => setHoveredRow(null)}
+      >
+        <TableCell>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar 
+              src={displayStaff?.avatar} 
+              sx={{ width: 36, height: 36, fontSize: '0.85rem' }}
+            >
+              {displayStaff?.firstName?.[0]}{displayStaff?.lastName?.[0]}
+            </Avatar>
+            <Box>
+              <Typography variant="body2" fontWeight={500}>
+                {isReceived ? 'From: ' : 'To: '}
+                {displayStaff?.firstName} {displayStaff?.lastName}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                {formatDistanceToNow(parseISO(item.createdAt), { addSuffix: true })}
+              </Typography>
+            </Box>
+          </Box>
+        </TableCell>
+        <TableCell>
+          <Typography variant="body2" sx={{ 
+            maxWidth: 300, 
+            overflow: 'hidden', 
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {item.message}
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Chip
+            icon={typeIcons[item.type] as React.ReactElement}
+            label={feedbackTypeLabels[item.type]}
+            size="small"
+            sx={{
+              height: 22,
+              fontSize: '0.7rem',
+              bgcolor: colors.bg,
+              color: colors.text,
+              border: `1px solid ${colors.border}`,
+              '& .MuiChip-icon': { color: colors.text },
+            }}
+          />
+        </TableCell>
+        <TableCell>
+          {item.isPrivate && (
+            <Chip
+              icon={<Lock size={12} />}
+              label="Private"
+              size="small"
+              variant="outlined"
+              sx={{ height: 22, fontSize: '0.7rem' }}
+            />
+          )}
+        </TableCell>
+        <TableCell>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              gap: 0.5, 
+              opacity: isHovered ? 1 : 0,
+              transition: 'opacity 0.15s'
+            }}
+          >
+            <Tooltip title="More">
+              <IconButton size="small">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, md: 4 } }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Header */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }}
@@ -95,15 +197,10 @@ export function FeedbackPanel({
             Give and receive feedback from your team
           </Typography>
         </Box>
-        <MuiButton 
-          variant="contained" 
-          startIcon={<Plus size={16} />} 
-          onClick={() => setShowFeedbackDrawer(true)}
-          fullWidth
-          sx={{ width: { sm: 'auto' } }}
-        >
+        <Button onClick={() => setShowFeedbackDrawer(true)} className="gap-2">
+          <Plus size={16} />
           Give Feedback
-        </MuiButton>
+        </Button>
       </Stack>
 
       {/* View Toggle */}
@@ -135,80 +232,41 @@ export function FeedbackPanel({
         <ToggleButton value="all">All</ToggleButton>
       </ToggleButtonGroup>
 
-      {/* Feedback List */}
+      {/* Feedback Table */}
       {filteredFeedback.length === 0 ? (
-        <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
-          <Box sx={{ py: 4, textAlign: 'center' }}>
-            <Heart size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px' }} />
-            <Typography color="text.secondary">
-              {view === 'received' ? 'No feedback received yet' : 
-               view === 'given' ? "You haven't given any feedback yet" : 
-               'No feedback yet'}
-            </Typography>
-            {view !== 'given' && (
-              <MuiButton variant="outlined" sx={{ mt: 2 }} onClick={() => setShowFeedbackDrawer(true)}>
-                Give your first feedback
-              </MuiButton>
-            )}
-          </Box>
-        </Card>
+        <Paper variant="outlined" sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed' }}>
+          <Heart size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px', opacity: 0.5 }} />
+          <Typography variant="body1" fontWeight={500}>
+            {view === 'received' ? 'No feedback received yet' : 
+             view === 'given' ? "You haven't given any feedback yet" : 
+             'No feedback yet'}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+            Start sharing recognition and constructive feedback with your team
+          </Typography>
+          {view !== 'given' && (
+            <Button variant="outline" className="mt-4" onClick={() => setShowFeedbackDrawer(true)}>
+              Give your first feedback
+            </Button>
+          )}
+        </Paper>
       ) : (
-        <Stack spacing={2}>
-          {filteredFeedback.map((item) => {
-            const fromStaff = getStaffMember(item.fromStaffId);
-            const toStaff = getStaffMember(item.toStaffId);
-            const isReceived = item.toStaffId === currentUserId;
-
-            return (
-              <Card key={item.id} sx={{ '&:hover': { boxShadow: 2 } }}>
-                <Box sx={{ p: 2 }}>
-                  <Stack direction="row" alignItems="flex-start" spacing={2}>
-                    <Avatar src={isReceived ? fromStaff?.avatar : toStaff?.avatar} sx={{ width: 40, height: 40 }}>
-                      {isReceived 
-                        ? `${fromStaff?.firstName?.[0]}${fromStaff?.lastName?.[0]}`
-                        : `${toStaff?.firstName?.[0]}${toStaff?.lastName?.[0]}`
-                      }
-                    </Avatar>
-
-                    <Box flex={1} minWidth={0}>
-                      <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" mb={0.5}>
-                        <Typography variant="body2" fontWeight={500}>
-                          {isReceived 
-                            ? `${fromStaff?.firstName} ${fromStaff?.lastName}` 
-                            : `To: ${toStaff?.firstName} ${toStaff?.lastName}`
-                          }
-                        </Typography>
-                        <Chip
-                          size="small"
-                          icon={typeIcons[item.type] as any}
-                          label={feedbackTypeLabels[item.type]}
-                          sx={{ 
-                            bgcolor: typeColors[item.type]?.bg,
-                            color: typeColors[item.type]?.text,
-                          }}
-                        />
-                        {item.isPrivate && (
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            icon={<Lock size={12} />}
-                            label="Private"
-                          />
-                        )}
-                      </Stack>
-
-                      <Typography variant="body2" mt={1}>{item.message}</Typography>
-
-                      <Typography variant="caption" color="text.secondary" mt={1.5} display="block">
-                        {formatDistanceToNow(parseISO(item.createdAt), { addSuffix: true })}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-              </Card>
-            );
-          })}
-        </Stack>
+        <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="w-48">{view === 'received' ? 'From' : view === 'given' ? 'To' : 'Person'}</TableHead>
+                <TableHead>Message</TableHead>
+                <TableHead className="w-28">Type</TableHead>
+                <TableHead className="w-24">Privacy</TableHead>
+                <TableHead className="w-16"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredFeedback.map(renderFeedbackRow)}
+            </TableBody>
+          </Table>
+        </Paper>
       )}
 
       {/* Give Feedback Drawer */}
