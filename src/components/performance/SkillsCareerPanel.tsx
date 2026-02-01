@@ -15,6 +15,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { 
   Briefcase, 
@@ -36,6 +45,8 @@ import {
   History,
   Save,
   X,
+  Eye,
+  MoreHorizontal,
 } from 'lucide-react';
 import { 
   Skill, 
@@ -450,56 +461,51 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
         </Stack>
       </Stack>
 
-      <Card>
-        <table className="w-full">
-          <thead>
-            <tr className="bg-muted/30 border-b">
-              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Skill</th>
-              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Category</th>
-              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Current Level</th>
-              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Target</th>
-              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-40">Progress</th>
-              <th className="h-12 px-4 w-16"></th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="text-xs uppercase tracking-wider font-semibold">Skill</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider font-semibold w-32">Category</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Current Level</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Target</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider font-semibold w-36">Progress</TableHead>
+              <TableHead className="w-20"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {skillsList.map(skill => {
               const level = getStaffSkillLevel(skill.id);
               const levelStyle = getSkillLevelColor(level);
               const progress = getSkillProgress(skill.id);
               const staffSkill = staffSkills.find(s => s.skillId === skill.id);
+              const isExpert = level === 'expert';
 
               return (
-                <tr 
+                <TableRow 
                   key={skill.id}
-                  className="group border-b hover:bg-muted/50 cursor-pointer transition-colors"
+                  className="group hover:bg-muted/50 cursor-pointer"
                   onClick={() => handleAssessSkill(skill)}
+                  style={{
+                    borderLeft: isExpert ? '3px solid hsl(var(--chart-2))' : undefined,
+                  }}
                 >
-                  <td className="p-4 align-middle">
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <Typography variant="body2" fontWeight={500}>
-                        {skill.name}
-                      </Typography>
+                  <TableCell className="py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{skill.name}</span>
                       {skill.isCore && (
-                        <Chip 
-                          label="Core" 
-                          size="small" 
-                          sx={{ 
-                            fontSize: 10, 
-                            height: 18,
-                            bgcolor: 'rgba(59, 130, 246, 0.12)',
-                            color: 'rgb(37, 99, 235)',
-                          }} 
-                        />
+                        <Badge className="text-[10px] py-0 bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-50">
+                          Core
+                        </Badge>
                       )}
-                    </Stack>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <Typography variant="caption" color="text.secondary">
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Badge variant="outline" className="text-xs font-normal">
                       {skill.category}
-                    </Typography>
-                  </td>
-                  <td className="p-4 align-middle">
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-3">
                     <Chip 
                       label={skillLevelLabels[level as keyof typeof skillLevelLabels]}
                       size="small"
@@ -509,25 +515,22 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                         color: levelStyle.color,
                       }}
                     />
-                  </td>
-                  <td className="p-4 align-middle">
+                  </TableCell>
+                  <TableCell className="py-3">
                     {staffSkill && staffSkill.currentLevel !== staffSkill.targetLevel ? (
-                      <Stack direction="row" alignItems="center" spacing={1}>
+                      <div className="flex items-center gap-1">
                         <ArrowRight size={14} className="text-muted-foreground" />
-                        <Chip 
-                          label={skillLevelLabels[staffSkill.targetLevel]}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontSize: 11 }}
-                        />
-                      </Stack>
+                        <Badge variant="outline" className="text-xs">
+                          {skillLevelLabels[staffSkill.targetLevel]}
+                        </Badge>
+                      </div>
                     ) : (
-                      <Typography variant="caption" color="text.secondary">—</Typography>
+                      <span className="text-muted-foreground text-sm">—</span>
                     )}
-                  </td>
-                  <td className="p-4 align-middle">
+                  </TableCell>
+                  <TableCell className="py-3">
                     {staffSkill ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <div className="flex items-center gap-2">
                         <LinearProgress 
                           variant="determinate" 
                           value={progress}
@@ -538,28 +541,33 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                             bgcolor: 'rgba(0,0,0,0.08)',
                           }}
                         />
-                        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 32 }}>
+                        <span className="text-xs text-muted-foreground w-8">
                           {Math.round(progress)}%
-                        </Typography>
-                      </Box>
+                        </span>
+                      </div>
                     ) : (
-                      <Typography variant="caption" color="text.secondary">Not assessed</Typography>
+                      <span className="text-muted-foreground text-xs">Not assessed</span>
                     )}
-                  </td>
-                  <td className="p-4 align-middle">
-                    <button 
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded"
-                      onClick={(e) => { e.stopPropagation(); handleAssessSkill(skill); }}
-                    >
-                      <Pencil className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        className="p-1 hover:bg-muted rounded"
+                        onClick={(e) => { e.stopPropagation(); handleAssessSkill(skill); }}
+                      >
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                      <button className="p-1 hover:bg-muted rounded">
+                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
-      </Card>
+          </TableBody>
+        </Table>
+      </div>
     </Box>
   );
 
@@ -594,18 +602,19 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
             </Typography>
           </Card>
         ) : (
-          <Card>
-            <table className="w-full">
-              <thead>
-                <tr className="bg-muted/30 border-b">
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Skill</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Current Level</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Required Level</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Gap Size</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Priority</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold">Skill</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Current Level</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-32">Required Level</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-24">Gap Size</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-24">Priority</TableHead>
+                  <TableHead className="w-16"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {gapsToShow.map(gap => {
                   const priorityStyle = getGapPriorityColor(gap.priority);
                   const currentStyle = getSkillLevelColor(gap.currentLevel);
@@ -613,19 +622,17 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                   const isHighPriority = gap.priority === 'high' || gap.priority === 'critical';
 
                   return (
-                    <tr 
+                    <TableRow 
                       key={gap.skillId}
-                      className="group border-b hover:bg-muted/50 transition-colors"
+                      className="group hover:bg-muted/50"
                       style={{
                         borderLeft: isHighPriority ? '3px solid hsl(var(--destructive))' : undefined,
                       }}
                     >
-                      <td className="p-4 align-middle">
-                        <Typography variant="body2" fontWeight={500}>
-                          {gap.skillName}
-                        </Typography>
-                      </td>
-                      <td className="p-4 align-middle">
+                      <TableCell className="py-3">
+                        <span className="font-medium">{gap.skillName}</span>
+                      </TableCell>
+                      <TableCell className="py-3">
                         <Chip 
                           label={skillLevelLabels[gap.currentLevel]}
                           size="small"
@@ -636,9 +643,9 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                             color: currentStyle.color,
                           }}
                         />
-                      </td>
-                      <td className="p-4 align-middle">
-                        <Stack direction="row" alignItems="center" spacing={1}>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <div className="flex items-center gap-1">
                           <ArrowRight size={14} className="text-muted-foreground" />
                           <Chip 
                             label={skillLevelLabels[gap.requiredLevel]}
@@ -650,14 +657,14 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                               color: requiredStyle.color,
                             }}
                           />
-                        </Stack>
-                      </td>
-                      <td className="p-4 align-middle">
-                        <Typography variant="body2" fontWeight={600} color={gap.gapSize >= 2 ? 'error.main' : 'text.primary'}>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <span className={cn("font-semibold", gap.gapSize >= 2 ? "text-red-600" : "")}>
                           {gap.gapSize} {gap.gapSize === 1 ? 'level' : 'levels'}
-                        </Typography>
-                      </td>
-                      <td className="p-4 align-middle">
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3">
                         <Chip 
                           label={gap.priority}
                           size="small"
@@ -667,13 +674,20 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                             color: priorityStyle.color,
                           }}
                         />
-                      </td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="p-1 hover:bg-muted rounded">
+                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
-          </Card>
+              </TableBody>
+            </Table>
+          </div>
         )}
       </Box>
     );
@@ -713,50 +727,50 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
               </Typography>
             </Card>
           ) : (
-            <Card>
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-muted/30 border-b">
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Path Name</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Description</th>
-                    <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">Levels</th>
-                    <th className="h-12 px-4 w-24"></th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                    <TableHead className="text-xs uppercase tracking-wider font-semibold">Path Name</TableHead>
+                    <TableHead className="text-xs uppercase tracking-wider font-semibold">Description</TableHead>
+                    <TableHead className="text-xs uppercase tracking-wider font-semibold w-24 text-center">Levels</TableHead>
+                    <TableHead className="w-20"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {careerPathsList.map(p => (
-                    <tr key={p.id} className="group border-b hover:bg-muted/50 cursor-pointer transition-colors">
-                      <td className="p-4 align-middle">
-                        <Stack direction="row" alignItems="center" spacing={1.5}>
-                          <Box sx={{ 
-                            p: 0.75, 
-                            borderRadius: 1, 
-                            bgcolor: 'primary.50',
-                            display: 'flex',
-                          }}>
-                            <Briefcase size={16} style={{ color: 'var(--primary)' }} />
-                          </Box>
-                          <Typography variant="body2" fontWeight={600}>{p.name}</Typography>
-                        </Stack>
-                      </td>
-                      <td className="p-4 align-middle">
-                        <Typography variant="body2" color="text.secondary" className="line-clamp-1">
+                    <TableRow key={p.id} className="group hover:bg-muted/50 cursor-pointer">
+                      <TableCell className="py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-primary/10">
+                            <Briefcase size={16} className="text-primary" />
+                          </div>
+                          <span className="font-medium">{p.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <span className="text-muted-foreground text-sm line-clamp-1">
                           {p.description || '—'}
-                        </Typography>
-                      </td>
-                      <td className="p-4 align-middle text-center">
-                        <Chip label={`${p.levels.length} levels`} size="small" />
-                      </td>
-                      <td className="p-4 align-middle">
-                        <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      </td>
-                    </tr>
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3 text-center">
+                        <Badge variant="secondary">{p.levels.length} levels</Badge>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="p-1 hover:bg-muted rounded">
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                          <button className="p-1 hover:bg-muted rounded">
+                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </Card>
+                </TableBody>
+              </Table>
+            </div>
           )}
         </Box>
       );
@@ -956,38 +970,48 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
         </Card>
 
         {/* Competency Ratings - Table format */}
-        <Card>
-          <table className="w-full">
-            <thead>
-              <tr className="bg-muted/30 border-b">
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Competency</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Comment</th>
-                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">Rating</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-32">Progress</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Updated</th>
-                <th className="h-12 px-4 w-16"></th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="text-xs uppercase tracking-wider font-semibold">Competency</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider font-semibold">Comment</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider font-semibold w-32 text-center">Rating</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Progress</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider font-semibold w-24">Updated</TableHead>
+                <TableHead className="w-16"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {managerRatings.map((item, index) => {
                 const ratingColor = item.rating >= 4 ? pastelColors.green : 
                                    item.rating >= 3 ? pastelColors.amber : pastelColors.rose;
+                const isHighRating = item.rating >= 4.5;
+                const isLowRating = item.rating < 3;
                 
                 return (
-                  <tr key={item.id} className="group border-b hover:bg-muted/50 transition-colors">
-                    <td className="p-4 align-middle">
-                      <Typography variant="body2" fontWeight={600}>
-                        {item.competency}
-                      </Typography>
-                    </td>
-                    <td className="p-4 align-middle max-w-xs">
-                      <Typography variant="body2" color="text.secondary" className="line-clamp-2">
+                  <TableRow 
+                    key={item.id} 
+                    className="group hover:bg-muted/50"
+                    style={{
+                      borderLeft: isHighRating 
+                        ? '3px solid hsl(var(--chart-2))' 
+                        : isLowRating 
+                          ? '3px solid hsl(var(--destructive))' 
+                          : undefined,
+                    }}
+                  >
+                    <TableCell className="py-3">
+                      <span className="font-semibold">{item.competency}</span>
+                    </TableCell>
+                    <TableCell className="py-3 max-w-xs">
+                      <span className="text-muted-foreground text-sm line-clamp-2">
                         {item.comment}
-                      </Typography>
-                    </td>
-                    <td className="p-4 align-middle text-center">
-                      <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
-                        <Stack direction="row" spacing={0.25}>
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="flex gap-0.5">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star 
                               key={star} 
@@ -999,17 +1023,14 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                               )} 
                             />
                           ))}
-                        </Stack>
-                        <Chip 
-                          label={item.rating.toFixed(1)}
-                          size="small"
-                          sx={{ fontSize: 11, minWidth: 36 }}
-                          className={cn(ratingColor.bg, ratingColor.text)}
-                        />
-                      </Stack>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        </div>
+                        <Badge className={cn("text-xs", ratingColor.bg, ratingColor.text, ratingColor.border, "border")}>
+                          {item.rating.toFixed(1)}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1">
                         <LinearProgress 
                           variant="determinate" 
                           value={(item.rating / 5) * 100}
@@ -1020,27 +1041,30 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                             bgcolor: 'rgba(0,0,0,0.08)',
                           }}
                         />
-                      </Box>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <Typography variant="caption" color="text.secondary">
-                        {item.lastUpdated}
-                      </Typography>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <button 
-                        onClick={() => handleEditRating(index)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded"
-                      >
-                        <Pencil className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    </td>
-                  </tr>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <span className="text-xs text-muted-foreground">{item.lastUpdated}</span>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleEditRating(index)}
+                          className="p-1 hover:bg-muted rounded"
+                        >
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                        <button className="p-1 hover:bg-muted rounded">
+                          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
-        </Card>
+            </TableBody>
+          </Table>
+        </div>
 
         {/* Rating Trend Chart */}
         <Card sx={{ p: 3, mt: 3 }}>
