@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Stack, 
   Typography, 
   Chip,
-  Button as MuiButton,
   Avatar,
-  Divider,
+  IconButton,
+  Tooltip,
+  Paper,
 } from '@mui/material';
-import { Card } from '@/components/mui/Card';
+import { Button } from '@/components/ui/button';
 import { 
   Conversation, 
   ConversationType,
@@ -22,12 +23,22 @@ import {
   Clock,
   CheckCircle2,
   Plus,
-  ChevronRight,
   Video,
   Users,
   StickyNote,
-  ListChecks
+  ListChecks,
+  MoreHorizontal,
+  Eye,
 } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { StatusBadge } from './shared/StatusBadge';
 
 interface ConversationsListProps {
   conversations: Conversation[];
@@ -37,12 +48,12 @@ interface ConversationsListProps {
   onViewConversation: (conversation: Conversation) => void;
 }
 
-const typeColors: Record<ConversationType, { bg: string; text: string }> = {
-  one_on_one: { bg: 'info.light', text: 'info.dark' },
-  check_in: { bg: 'success.light', text: 'success.dark' },
-  coaching: { bg: 'secondary.light', text: 'secondary.dark' },
-  feedback: { bg: 'warning.light', text: 'warning.dark' },
-  career: { bg: 'primary.light', text: 'primary.dark' },
+const typeColors: Record<ConversationType, { bg: string; text: string; border: string }> = {
+  one_on_one: { bg: '#dbeafe', text: '#2563eb', border: '#93c5fd' },
+  check_in: { bg: '#dcfce7', text: '#16a34a', border: '#86efac' },
+  coaching: { bg: '#f3e8ff', text: '#7c3aed', border: '#c4b5fd' },
+  feedback: { bg: '#fef3c7', text: '#d97706', border: '#fcd34d' },
+  career: { bg: '#fce7f3', text: '#db2777', border: '#f9a8d4' },
 };
 
 const typeIcons: Record<ConversationType, React.ReactNode> = {
@@ -60,9 +71,10 @@ export function ConversationsList({
   onScheduleConversation, 
   onViewConversation 
 }: ConversationsListProps) {
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
-  const now = new Date();
   const upcoming = conversations
     .filter(c => !c.completed && !isPast(parseISO(c.scheduledDate)))
     .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
@@ -78,8 +90,139 @@ export function ConversationsList({
     return format(date, 'EEE, MMM d');
   };
 
+  const renderConversationRow = (conv: Conversation, isUpcoming: boolean) => {
+    const isManager = conv.managerId === currentUserId;
+    const staffMember = getStaffMember(conv.staffId);
+    const otherPerson = isManager ? staffMember : getStaffMember(conv.managerId);
+    const meetingDate = parseISO(conv.scheduledDate);
+    const isHovered = hoveredRow === conv.id;
+    const colors = typeColors[conv.type];
+    const isTodayMeeting = isToday(meetingDate);
+
+    return (
+      <TableRow 
+        key={conv.id}
+        className="group cursor-pointer hover:bg-muted/50 transition-colors"
+        onMouseEnter={() => setHoveredRow(conv.id)}
+        onMouseLeave={() => setHoveredRow(null)}
+        onClick={() => onViewConversation(conv)}
+        style={{
+          borderLeft: isTodayMeeting && isUpcoming ? '3px solid #2563eb' : undefined,
+          backgroundColor: isTodayMeeting && isUpcoming ? 'rgba(37, 99, 235, 0.05)' : undefined,
+        }}
+      >
+        <TableCell>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar 
+              src={otherPerson?.avatar} 
+              sx={{ width: 36, height: 36, fontSize: '0.85rem' }}
+            >
+              {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
+            </Avatar>
+            <Box>
+              <Typography variant="body2" fontWeight={500}>
+                {conv.title}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                with {otherPerson?.firstName} {otherPerson?.lastName}
+              </Typography>
+            </Box>
+          </Box>
+        </TableCell>
+        <TableCell>
+          <Chip
+            icon={typeIcons[conv.type] as React.ReactElement}
+            label={conversationTypeLabels[conv.type]}
+            size="small"
+            sx={{
+              height: 22,
+              fontSize: '0.7rem',
+              bgcolor: colors.bg,
+              color: colors.text,
+              border: `1px solid ${colors.border}`,
+              '& .MuiChip-icon': { color: colors.text },
+            }}
+          />
+        </TableCell>
+        <TableCell>
+          <Box>
+            <Typography variant="body2" fontWeight={isTodayMeeting ? 600 : 400} color={isTodayMeeting ? 'primary.main' : 'text.primary'}>
+              {getDateLabel(conv.scheduledDate)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              {format(meetingDate, 'h:mm a')} • {conv.duration} min
+            </Typography>
+          </Box>
+        </TableCell>
+        <TableCell>
+          {conv.completed ? (
+            <StatusBadge status="completed" size="small" />
+          ) : isPast(meetingDate) ? (
+            <StatusBadge status="overdue" size="small" label="Missed" />
+          ) : (
+            <StatusBadge status="pending" size="small" label="Scheduled" />
+          )}
+        </TableCell>
+        <TableCell>
+          <Stack direction="row" spacing={1} alignItems="center">
+            {conv.notes.length > 0 && (
+              <Chip
+                icon={<StickyNote size={12} />}
+                label={conv.notes.length}
+                size="small"
+                variant="outlined"
+                sx={{ height: 20, fontSize: '0.7rem' }}
+              />
+            )}
+            {conv.actionItems.length > 0 && (
+              <Chip
+                icon={<ListChecks size={12} />}
+                label={conv.actionItems.length}
+                size="small"
+                variant="outlined"
+                sx={{ height: 20, fontSize: '0.7rem' }}
+              />
+            )}
+          </Stack>
+        </TableCell>
+        <TableCell>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              gap: 0.5, 
+              opacity: isHovered ? 1 : 0,
+              transition: 'opacity 0.15s'
+            }}
+          >
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); onViewConversation(conv); }}>
+              <Eye className="h-3 w-3" /> View
+            </Button>
+            <Tooltip title="More">
+              <IconButton size="small" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+  const renderEmptyState = () => (
+    <Paper variant="outlined" sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed' }}>
+      <Calendar size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px', opacity: 0.5 }} />
+      <Typography variant="body1" fontWeight={500}>No upcoming meetings</Typography>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+        Schedule 1:1s, check-ins, and coaching sessions
+      </Typography>
+      <Button className="mt-4" onClick={onScheduleConversation}>
+        <Plus className="h-4 w-4 mr-2" /> Schedule Meeting
+      </Button>
+    </Paper>
+  );
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, md: 4 } }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Header */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }}
@@ -104,18 +247,13 @@ export function ConversationsList({
             Schedule and track 1:1s, check-ins, and coaching sessions
           </Typography>
         </Box>
-        <MuiButton 
-          variant="contained" 
-          startIcon={<Plus size={16} />} 
-          onClick={onScheduleConversation}
-          fullWidth
-          sx={{ width: { sm: 'auto' } }}
-        >
+        <Button onClick={onScheduleConversation} className="gap-2">
+          <Plus size={16} />
           Schedule Meeting
-        </MuiButton>
+        </Button>
       </Stack>
 
-      {/* Upcoming Meetings */}
+      {/* Upcoming Meetings Table */}
       <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="overline" color="text.secondary" fontWeight={600}>
@@ -127,161 +265,52 @@ export function ConversationsList({
         </Stack>
         
         {upcoming.length === 0 ? (
-          <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
-            <Box sx={{ py: 4, textAlign: 'center' }}>
-              <Calendar size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px' }} />
-              <Typography color="text.secondary">No upcoming meetings</Typography>
-              <MuiButton variant="outlined" sx={{ mt: 2 }} onClick={onScheduleConversation}>
-                Schedule a meeting
-              </MuiButton>
-            </Box>
-          </Card>
+          renderEmptyState()
         ) : (
-          <Stack spacing={1.5}>
-            {upcoming.map((conv) => {
-              const staffMember = getStaffMember(conv.staffId);
-              const isManager = conv.managerId === currentUserId;
-              const otherPerson = isManager ? staffMember : getStaffMember(conv.managerId);
-              const meetingDate = parseISO(conv.scheduledDate);
-
-              return (
-                <Card 
-                  key={conv.id}
-                  sx={{ 
-                    cursor: 'pointer',
-                    '&:hover': { boxShadow: 3 },
-                    ...(isToday(meetingDate) && { 
-                      borderColor: 'primary.main', 
-                      bgcolor: 'primary.50' 
-                    })
-                  }}
-                  onClick={() => onViewConversation(conv)}
-                >
-                  <Box sx={{ p: 2 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Box sx={{ textAlign: 'center', minWidth: 60 }}>
-                        <Typography variant="overline" color="text.secondary">
-                          {getDateLabel(conv.scheduledDate)}
-                        </Typography>
-                        <Typography variant="h6" fontWeight={700}>
-                          {format(meetingDate, 'h:mm a')}
-                        </Typography>
-                      </Box>
-
-                      <Divider orientation="vertical" flexItem />
-
-                      <Avatar src={otherPerson?.avatar} sx={{ width: 40, height: 40 }}>
-                        {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
-                      </Avatar>
-
-                      <Box flex={1} minWidth={0}>
-                        <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
-                          <Typography variant="subtitle2" fontWeight={600} noWrap>
-                            {conv.title}
-                          </Typography>
-                          <Chip
-                            size="small"
-                            icon={typeIcons[conv.type] as any}
-                            label={conversationTypeLabels[conv.type]}
-                            sx={{ 
-                              bgcolor: typeColors[conv.type]?.bg,
-                              color: typeColors[conv.type]?.text,
-                            }}
-                          />
-                        </Stack>
-                        <Typography variant="body2" color="text.secondary">
-                          with {otherPerson?.firstName} {otherPerson?.lastName} • {conv.duration} min
-                        </Typography>
-                      </Box>
-
-                      <ChevronRight size={20} style={{ color: 'var(--muted-foreground)' }} />
-                    </Stack>
-                  </Box>
-                </Card>
-              );
-            })}
-          </Stack>
+          <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead>Meeting</TableHead>
+                  <TableHead className="w-32">Type</TableHead>
+                  <TableHead className="w-36">Schedule</TableHead>
+                  <TableHead className="w-28">Status</TableHead>
+                  <TableHead className="w-24">Items</TableHead>
+                  <TableHead className="w-28"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {upcoming.map(conv => renderConversationRow(conv, true))}
+              </TableBody>
+            </Table>
+          </Paper>
         )}
       </Box>
 
-      {/* Past Meetings */}
+      {/* Past Meetings Table */}
       {past.length > 0 && (
         <Box>
           <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
             Past Meetings ({past.length})
           </Typography>
           
-          <Stack spacing={1.5}>
-            {past.slice(0, 5).map((conv) => {
-              const staffMember = getStaffMember(conv.staffId);
-              const isManager = conv.managerId === currentUserId;
-              const otherPerson = isManager ? staffMember : getStaffMember(conv.managerId);
-
-              return (
-                <Card 
-                  key={conv.id}
-                  sx={{ 
-                    cursor: 'pointer',
-                    opacity: 0.85,
-                    '&:hover': { boxShadow: 2 }
-                  }}
-                  onClick={() => onViewConversation(conv)}
-                >
-                  <Box sx={{ p: 2 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar src={otherPerson?.avatar} sx={{ width: 40, height: 40 }}>
-                        {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
-                      </Avatar>
-
-                      <Box flex={1} minWidth={0}>
-                        <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
-                          <Typography variant="body2" fontWeight={500} noWrap>
-                            {conv.title}
-                          </Typography>
-                          {conv.completed && (
-                            <Chip
-                              size="small"
-                              variant="outlined"
-                              icon={<CheckCircle2 size={12} />}
-                              label="Completed"
-                              sx={{ 
-                                bgcolor: 'rgba(34, 197, 94, 0.1)', 
-                                color: 'rgb(21, 128, 61)', 
-                                borderColor: 'rgba(34, 197, 94, 0.3)' 
-                              }}
-                            />
-                          )}
-                        </Stack>
-                        <Stack direction="row" alignItems="center" spacing={2}>
-                          <Typography variant="caption" color="text.secondary">
-                            {format(parseISO(conv.scheduledDate), 'MMM d, yyyy')}
-                          </Typography>
-                          {conv.notes.length > 0 && (
-                            <Stack direction="row" alignItems="center" spacing={0.5}>
-                              <StickyNote size={14} style={{ color: 'var(--muted-foreground)' }} />
-                              <Typography variant="caption" color="text.secondary">
-                                {conv.notes.length} notes
-                              </Typography>
-                            </Stack>
-                          )}
-                          {conv.actionItems.length > 0 && (
-                            <Stack direction="row" alignItems="center" spacing={0.5}>
-                              <ListChecks size={14} style={{ color: 'var(--muted-foreground)' }} />
-                              <Typography variant="caption" color="text.secondary">
-                                {conv.actionItems.length} action items
-                              </Typography>
-                            </Stack>
-                          )}
-                        </Stack>
-                      </Box>
-
-                      <ChevronRight size={20} style={{ color: 'var(--muted-foreground)' }} />
-                    </Stack>
-                  </Box>
-                </Card>
-              );
-            })}
-          </Stack>
+          <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead>Meeting</TableHead>
+                  <TableHead className="w-32">Type</TableHead>
+                  <TableHead className="w-36">Date</TableHead>
+                  <TableHead className="w-28">Status</TableHead>
+                  <TableHead className="w-24">Items</TableHead>
+                  <TableHead className="w-28"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {past.slice(0, 5).map(conv => renderConversationRow(conv, false))}
+              </TableBody>
+            </Table>
+          </Paper>
         </Box>
       )}
     </Box>
