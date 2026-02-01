@@ -10,8 +10,16 @@ import {
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { 
   Scale, 
   Plus, 
@@ -24,6 +32,8 @@ import {
   Minus,
   BarChart3,
   AlertCircle,
+  Eye,
+  Edit,
 } from 'lucide-react';
 import { 
   CalibrationSession, 
@@ -32,6 +42,7 @@ import {
 } from '@/types/advancedPerformance';
 import { mockCalibrationSessions, mockCalibrationRatings } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
+import { StatusBadge } from './shared/StatusBadge';
 import { 
   BarChart, 
   Bar, 
@@ -40,8 +51,6 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Cell,
-  ReferenceLine,
 } from 'recharts';
 import { format } from 'date-fns';
 
@@ -49,14 +58,14 @@ interface CalibrationPanelProps {
   currentUserId: string;
 }
 
-const getSessionStatusStyle = (status: string) => {
-  const styles: Record<string, { bg: string; color: string }> = {
-    scheduled: { bg: 'rgba(59, 130, 246, 0.12)', color: 'rgb(37, 99, 235)' },
-    in_progress: { bg: 'rgba(251, 191, 36, 0.12)', color: 'rgb(161, 98, 7)' },
-    completed: { bg: 'rgba(34, 197, 94, 0.12)', color: 'rgb(22, 163, 74)' },
-    cancelled: { bg: 'rgba(148, 163, 184, 0.12)', color: 'rgb(100, 116, 139)' },
+const getSessionStatusType = (status: string): 'pending' | 'in_progress' | 'completed' | 'cancelled' => {
+  const mapping: Record<string, 'pending' | 'in_progress' | 'completed' | 'cancelled'> = {
+    scheduled: 'pending',
+    in_progress: 'in_progress',
+    completed: 'completed',
+    cancelled: 'cancelled',
   };
-  return styles[status] || styles.scheduled;
+  return mapping[status] || 'pending';
 };
 
 const mockRatingDistribution: RatingDistribution[] = [
@@ -70,6 +79,7 @@ const mockRatingDistribution: RatingDistribution[] = [
 export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
   const [selectedSession, setSelectedSession] = useState<CalibrationSession | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
   const getStaffInfo = (id: string) => mockStaff.find(s => s.id === id);
 
@@ -128,77 +138,122 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
     );
   };
 
-  const renderSessionCard = (session: CalibrationSession) => {
-    const statusStyle = getSessionStatusStyle(session.status);
-    const facilitator = getStaffInfo(session.facilitatorId);
-    const facilitatorName = facilitator ? `${facilitator.firstName} ${facilitator.lastName}` : 'Unknown';
-    const ratings = getSessionRatings(session.id);
-    const adjustedCount = ratings.filter(r => r.calibratedRating !== undefined && r.calibratedRating !== r.originalRating).length;
+  const renderSessionsTable = (sessions: CalibrationSession[]) => {
+    if (sessions.length === 0) {
+      return (
+        <Card sx={{ p: 4, textAlign: 'center' }}>
+          <Scale size={40} className="mx-auto mb-2 text-muted-foreground" />
+          <Typography variant="subtitle1" fontWeight={600}>No sessions found</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Schedule a calibration session to align ratings
+          </Typography>
+        </Card>
+      );
+    }
 
     return (
-      <Card 
-        key={session.id}
-        sx={{ 
-          p: 3,
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          '&:hover': { boxShadow: 3, transform: 'translateY(-2px)' },
-        }}
-        onClick={() => handleViewSession(session)}
-      >
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
-          <Box>
-            <Typography variant="subtitle1" fontWeight={600}>
-              {session.title}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {session.reviewCycle}
-            </Typography>
-          </Box>
-          <Chip 
-            label={session.status.replace('_', ' ')}
-            size="small"
-            sx={{ 
-              textTransform: 'capitalize',
-              bgcolor: statusStyle.bg,
-              color: statusStyle.color,
-            }}
-          />
-        </Stack>
+      <Card sx={{ overflow: 'hidden' }}>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/30">
+              <TableHead className="font-semibold">Session</TableHead>
+              <TableHead className="font-semibold">Date</TableHead>
+              <TableHead className="font-semibold">Facilitator</TableHead>
+              <TableHead className="font-semibold text-center">Participants</TableHead>
+              <TableHead className="font-semibold">Status</TableHead>
+              <TableHead className="font-semibold text-center">Adjustments</TableHead>
+              <TableHead className="w-[100px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sessions.map((session) => {
+              const facilitator = getStaffInfo(session.facilitatorId);
+              const facilitatorName = facilitator ? `${facilitator.firstName} ${facilitator.lastName}` : 'Unknown';
+              const ratings = getSessionRatings(session.id);
+              const adjustedCount = ratings.filter(r => r.calibratedRating !== undefined && r.calibratedRating !== r.originalRating).length;
+              const isHovered = hoveredRow === session.id;
 
-        <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Calendar size={14} className="text-muted-foreground" />
-            <Typography variant="body2" color="text.secondary">
-              {format(new Date(session.scheduledDate), 'MMM d, yyyy')}
-            </Typography>
-          </Stack>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Users size={14} className="text-muted-foreground" />
-            <Typography variant="body2" color="text.secondary">
-              {session.participantIds.length} participants
-            </Typography>
-          </Stack>
-        </Stack>
-
-        <Divider sx={{ my: 2 }} />
-
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography variant="caption" color="text.secondary">
-            Facilitator: {facilitatorName}
-          </Typography>
-          {session.status === 'completed' && (
-            <Chip 
-              label={`${adjustedCount} adjustments`}
-              size="small"
-              sx={{ 
-                fontSize: 11,
-                bgcolor: adjustedCount > 0 ? 'rgba(251, 191, 36, 0.12)' : 'rgba(34, 197, 94, 0.12)',
-                color: adjustedCount > 0 ? 'rgb(161, 98, 7)' : 'rgb(22, 163, 74)',
-              }}
-            />
-          )}
-        </Stack>
+              return (
+                <TableRow 
+                  key={session.id}
+                  className="cursor-pointer transition-colors"
+                  onMouseEnter={() => setHoveredRow(session.id)}
+                  onMouseLeave={() => setHoveredRow(null)}
+                  onClick={() => handleViewSession(session)}
+                >
+                  <TableCell>
+                    <Box>
+                      <Typography variant="body2" fontWeight={600}>
+                        {session.title}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {session.reviewCycle}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Calendar size={14} className="text-muted-foreground" />
+                      <Typography variant="body2">
+                        {format(new Date(session.scheduledDate), 'MMM d, yyyy')}
+                      </Typography>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <Avatar sx={{ width: 28, height: 28, fontSize: 12 }}>
+                        {facilitator?.firstName.charAt(0) || '?'}
+                      </Avatar>
+                      <Typography variant="body2">{facilitatorName}</Typography>
+                    </Stack>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Chip 
+                      icon={<Users size={12} />}
+                      label={session.participantIds.length}
+                      size="small"
+                      variant="outlined"
+                      sx={{ '& .MuiChip-icon': { marginLeft: '8px' } }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={getSessionStatusType(session.status)} />
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {session.status === 'completed' ? (
+                      <Chip 
+                        label={adjustedCount}
+                        size="small"
+                        sx={{ 
+                          minWidth: 32,
+                          bgcolor: adjustedCount > 0 ? 'rgba(251, 191, 36, 0.12)' : 'rgba(34, 197, 94, 0.12)',
+                          color: adjustedCount > 0 ? 'rgb(161, 98, 7)' : 'rgb(22, 163, 74)',
+                        }}
+                      />
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">—</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Stack 
+                      direction="row" 
+                      spacing={0.5} 
+                      justifyContent="flex-end"
+                      sx={{ opacity: isHovered ? 1 : 0, transition: 'opacity 0.2s' }}
+                    >
+                      <Button variant="ghost" size="small" sx={{ minWidth: 32, p: 0.5 }}>
+                        <Eye size={16} />
+                      </Button>
+                      <Button variant="ghost" size="small" sx={{ minWidth: 32, p: 0.5 }}>
+                        <Edit size={16} />
+                      </Button>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </Card>
     );
   };
@@ -212,21 +267,14 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
 
     return (
       <Sheet open={showDetailSheet} onOpenChange={setShowDetailSheet}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>{selectedSession.title}</SheetTitle>
           </SheetHeader>
 
           <Box sx={{ mt: 3 }}>
             <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
-              <Chip 
-                label={selectedSession.status.replace('_', ' ')}
-                size="small"
-                sx={{ 
-                  textTransform: 'capitalize',
-                  ...getSessionStatusStyle(selectedSession.status),
-                }}
-              />
+              <StatusBadge status={getSessionStatusType(selectedSession.status)} />
               <Chip 
                 label={selectedSession.reviewCycle}
                 size="small"
@@ -249,104 +297,115 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
               </Stack>
             </Stack>
 
-            {/* Rating Adjustments */}
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            {/* Rating Adjustments Table */}
+            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
               Rating Calibrations ({ratings.length})
             </Typography>
-            <Stack spacing={2}>
-              {ratings.map(rating => {
-                const staff = getStaffInfo(rating.staffId);
-                const staffName = staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown';
-                const wasAdjusted = rating.calibratedRating !== undefined && rating.calibratedRating !== rating.originalRating;
-                const adjustmentDiff = rating.calibratedRating !== undefined 
-                  ? rating.calibratedRating - rating.originalRating 
-                  : 0;
+            
+            <Card sx={{ overflow: 'hidden', mb: 3 }}>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="font-semibold">Employee</TableHead>
+                    <TableHead className="font-semibold text-center">Original</TableHead>
+                    <TableHead className="font-semibold text-center">Calibrated</TableHead>
+                    <TableHead className="font-semibold text-center">Change</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ratings.map(rating => {
+                    const staff = getStaffInfo(rating.staffId);
+                    const staffName = staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown';
+                    const wasAdjusted = rating.calibratedRating !== undefined && rating.calibratedRating !== rating.originalRating;
+                    const adjustmentDiff = rating.calibratedRating !== undefined 
+                      ? rating.calibratedRating - rating.originalRating 
+                      : 0;
 
-                return (
-                  <Card key={rating.id} sx={{ p: 2 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar sx={{ width: 36, height: 36, fontSize: 14 }}>
-                          {staff?.firstName.charAt(0) || '?'}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {staffName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {staff?.position}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            textDecoration: wasAdjusted ? 'line-through' : 'none',
-                            color: wasAdjusted ? 'text.secondary' : 'text.primary',
-                          }}
-                        >
-                          {rating.originalRating.toFixed(1)}
-                        </Typography>
-                        {wasAdjusted && (
-                          <>
-                            <Box sx={{ mx: 0.5 }}>→</Box>
-                            <Stack direction="row" alignItems="center" spacing={0.5}>
-                              <Typography variant="body2" fontWeight={600} color="primary.main">
-                                {rating.calibratedRating?.toFixed(1)}
+                    return (
+                      <TableRow 
+                        key={rating.id}
+                        style={{
+                          borderLeft: wasAdjusted ? '3px solid rgb(59, 130, 246)' : undefined,
+                        }}
+                      >
+                        <TableCell>
+                          <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Avatar sx={{ width: 32, height: 32, fontSize: 13 }}>
+                              {staff?.firstName.charAt(0) || '?'}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2" fontWeight={500}>
+                                {staffName}
                               </Typography>
-                              {adjustmentDiff !== 0 && (
-                                <Chip 
-                                  size="small"
-                                  label={adjustmentDiff > 0 ? `+${adjustmentDiff.toFixed(1)}` : adjustmentDiff.toFixed(1)}
-                                  sx={{ 
-                                    fontSize: 10,
-                                    height: 18,
-                                    bgcolor: adjustmentDiff > 0 
-                                      ? 'rgba(34, 197, 94, 0.12)' 
-                                      : 'rgba(239, 68, 68, 0.12)',
-                                    color: adjustmentDiff > 0 
-                                      ? 'rgb(22, 163, 74)' 
-                                      : 'rgb(220, 38, 38)',
-                                  }}
-                                />
-                              )}
-                            </Stack>
-                          </>
-                        )}
-                      </Stack>
-                    </Stack>
-                    
-                    {rating.ratingJustification && (
-                      <Box sx={{ mt: 2, p: 1.5, bgcolor: 'rgba(0,0,0,0.04)', borderRadius: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Justification
-                        </Typography>
-                        <Typography variant="body2">{rating.ratingJustification}</Typography>
-                      </Box>
-                    )}
-                    
-                    {rating.discussionNotes && (
-                      <Box sx={{ mt: 1, p: 1.5, bgcolor: 'rgba(0,0,0,0.04)', borderRadius: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Notes
-                        </Typography>
-                        <Typography variant="body2">{rating.discussionNotes}</Typography>
-                      </Box>
-                    )}
-                  </Card>
-                );
-              })}
-            </Stack>
+                              <Typography variant="caption" color="text.secondary">
+                                {staff?.position}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              textDecoration: wasAdjusted ? 'line-through' : 'none',
+                              color: wasAdjusted ? 'text.secondary' : 'text.primary',
+                            }}
+                          >
+                            {rating.originalRating.toFixed(1)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {wasAdjusted ? (
+                            <Typography variant="body2" fontWeight={600} color="primary.main">
+                              {rating.calibratedRating?.toFixed(1)}
+                            </Typography>
+                          ) : (
+                            <Typography variant="body2">{rating.originalRating.toFixed(1)}</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {adjustmentDiff !== 0 ? (
+                            <Chip 
+                              size="small"
+                              label={adjustmentDiff > 0 ? `+${adjustmentDiff.toFixed(1)}` : adjustmentDiff.toFixed(1)}
+                              icon={adjustmentDiff > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                              sx={{ 
+                                fontSize: 11,
+                                height: 22,
+                                bgcolor: adjustmentDiff > 0 
+                                  ? 'rgba(34, 197, 94, 0.12)' 
+                                  : 'rgba(239, 68, 68, 0.12)',
+                                color: adjustmentDiff > 0 
+                                  ? 'rgb(22, 163, 74)' 
+                                  : 'rgb(220, 38, 38)',
+                                '& .MuiChip-icon': { color: 'inherit', marginLeft: '6px' },
+                              }}
+                            />
+                          ) : (
+                            <Chip 
+                              size="small"
+                              label="—"
+                              sx={{ fontSize: 11, height: 22, bgcolor: 'rgba(0,0,0,0.04)' }}
+                            />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Card>
 
             {selectedSession.notes && (
               <Box sx={{ mt: 3 }}>
                 <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                   Session Notes
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {selectedSession.notes}
-                </Typography>
+                <Card sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {selectedSession.notes}
+                  </Typography>
+                </Card>
               </Box>
             )}
           </Box>
@@ -384,24 +443,11 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
         </TabsList>
 
         <TabsContent value="upcoming">
-          <div className="grid gap-4 md:grid-cols-2">
-            {upcomingSessions.map(renderSessionCard)}
-            {upcomingSessions.length === 0 && (
-              <Card sx={{ p: 4, textAlign: 'center', gridColumn: '1/-1' }}>
-                <Scale size={40} className="mx-auto mb-2 text-muted-foreground" />
-                <Typography variant="subtitle1" fontWeight={600}>No upcoming sessions</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Schedule a calibration session to align ratings
-                </Typography>
-              </Card>
-            )}
-          </div>
+          {renderSessionsTable(upcomingSessions)}
         </TabsContent>
 
         <TabsContent value="completed">
-          <div className="grid gap-4 md:grid-cols-2">
-            {completedSessions.map(renderSessionCard)}
-          </div>
+          {renderSessionsTable(completedSessions)}
         </TabsContent>
       </Tabs>
 
