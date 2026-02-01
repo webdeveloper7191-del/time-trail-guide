@@ -5,11 +5,20 @@ import {
   Typography,
   Avatar,
   Chip,
-  Divider,
+  IconButton,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
-import { Progress } from '@/components/ui/progress';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { SemanticProgressBar } from './shared/SemanticProgressBar';
+import { StatusBadge } from './shared/StatusBadge';
 import {
   AlertTriangle,
   Clock,
@@ -18,6 +27,9 @@ import {
   Plus,
   Calendar,
   Target,
+  Edit,
+  MoreHorizontal,
+  Eye,
 } from 'lucide-react';
 import { StaffMember } from '@/types/staff';
 import {
@@ -43,13 +55,15 @@ interface PIPManagementPanelProps {
   currentUserId: string;
 }
 
-const statusColors: Record<PIPStatus, string> = {
-  draft: 'grey',
-  active: 'warning',
-  extended: 'info',
-  completed_success: 'success',
-  completed_failure: 'error',
-  cancelled: 'default',
+const getStatusBadgeVariant = (status: PIPStatus) => {
+  switch (status) {
+    case 'active': return 'warning';
+    case 'extended': return 'info';
+    case 'completed_success': return 'success';
+    case 'completed_failure': return 'destructive';
+    case 'cancelled': return 'muted';
+    default: return 'secondary';
+  }
 };
 
 export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelProps) {
@@ -152,98 +166,149 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
     setSelectedPIP(updatedPIP);
   };
 
-  const handleCardClick = (pip: PerformanceImprovementPlan) => {
+  const handleRowClick = (pip: PerformanceImprovementPlan) => {
     setSelectedPIP(pip);
     setShowDetailSheet(true);
   };
 
-  const renderPIPCard = (pip: PerformanceImprovementPlan) => {
-    const staffMember = getStaffMember(pip.staffId);
-    const manager = getStaffMember(pip.managerId);
-    const progress = calculateProgress(pip);
-    const daysRemaining = getDaysRemaining(pip);
-    const isOverdue = daysRemaining < 0;
+  const renderPIPTable = (pipList: PerformanceImprovementPlan[], title: string) => (
+    <Box>
+      <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
+        {title}
+      </Typography>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead>Employee</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Progress</TableHead>
+              <TableHead>Timeline</TableHead>
+              <TableHead className="text-center">Check-ins</TableHead>
+              <TableHead className="w-24"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pipList.map(pip => {
+              const staffMember = getStaffMember(pip.staffId);
+              const manager = getStaffMember(pip.managerId);
+              const progress = calculateProgress(pip);
+              const daysRemaining = getDaysRemaining(pip);
+              const isOverdue = daysRemaining < 0 && pip.status === 'active';
 
-    return (
-      <Card
-        key={pip.id}
-        sx={{ cursor: 'pointer', '&:hover': { boxShadow: 3 } }}
-        onClick={() => handleCardClick(pip)}
-      >
-        <Box sx={{ p: 2.5 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar src={staffMember?.avatar} sx={{ width: 48, height: 48 }}>
-                {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
-              </Avatar>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  {staffMember?.firstName} {staffMember?.lastName}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {staffMember?.position} • Manager: {manager?.firstName} {manager?.lastName}
-                </Typography>
-              </Box>
-            </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Chip
-                label={pipStatusLabels[pip.status]}
-                color={statusColors[pip.status] as any}
-                size="small"
-              />
-              {isOverdue && pip.status === 'active' && (
-                <Chip label="Overdue" color="error" size="small" icon={<AlertTriangle size={14} />} />
-              )}
-            </Stack>
-          </Stack>
-
-          <Typography variant="body2" color="text.secondary" mb={2} sx={{
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-          }}>
-            {pip.reason}
-          </Typography>
-
-          <Box mb={2}>
-            <Stack direction="row" justifyContent="space-between" mb={0.5}>
-              <Typography variant="caption" color="text.secondary">Milestone Progress</Typography>
-              <Typography variant="caption" fontWeight={600}>{Math.round(progress)}%</Typography>
-            </Stack>
-            <Progress value={progress} className="h-2" />
-          </Box>
-
-          <Divider sx={{ my: 1.5 }} />
-
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Stack direction="row" spacing={2}>
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                <Calendar size={14} style={{ color: 'var(--muted-foreground)' }} />
-                <Typography variant="caption" color="text.secondary">
-                  {format(parseISO(pip.startDate), 'MMM d')} - {format(parseISO(pip.currentEndDate), 'MMM d, yyyy')}
-                </Typography>
-              </Stack>
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                <Target size={14} style={{ color: 'var(--muted-foreground)' }} />
-                <Typography variant="caption" color="text.secondary">
-                  {pip.milestones.filter(m => m.status === 'completed').length}/{pip.milestones.length} milestones
-                </Typography>
-              </Stack>
-            </Stack>
-            <Typography
-              variant="caption"
-              fontWeight={600}
-              color={isOverdue ? 'error.main' : daysRemaining <= 14 ? 'warning.main' : 'text.secondary'}
-            >
-              {isOverdue ? `${Math.abs(daysRemaining)} days overdue` : `${daysRemaining} days remaining`}
-            </Typography>
-          </Stack>
-        </Box>
+              return (
+                <TableRow 
+                  key={pip.id} 
+                  className="group cursor-pointer hover:bg-muted/50"
+                  style={{
+                    borderLeft: isOverdue ? '3px solid hsl(var(--destructive))' : undefined,
+                  }}
+                  onClick={() => handleRowClick(pip)}
+                >
+                  <TableCell className="py-3">
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <Avatar src={staffMember?.avatar} sx={{ width: 36, height: 36 }}>
+                        {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" fontWeight={600}>
+                          {staffMember?.firstName} {staffMember?.lastName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Manager: {manager?.firstName} {manager?.lastName}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </TableCell>
+                  <TableCell className="py-3 max-w-xs">
+                    <Typography variant="body2" className="line-clamp-2">
+                      {pip.reason}
+                    </Typography>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <StatusBadge 
+                        status={getStatusBadgeVariant(pip.status) as any}
+                        label={pipStatusLabels[pip.status]}
+                      />
+                      {isOverdue && (
+                        <Chip 
+                          label="Overdue" 
+                          color="error" 
+                          size="small" 
+                          sx={{ fontSize: '0.65rem', height: 20 }}
+                        />
+                      )}
+                    </Stack>
+                  </TableCell>
+                  <TableCell className="py-3 w-36">
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between" mb={0.5}>
+                        <Typography variant="caption" color="text.secondary">
+                          {pip.milestones.filter(m => m.status === 'completed').length}/{pip.milestones.length}
+                        </Typography>
+                        <Typography variant="caption" fontWeight={600}>
+                          {Math.round(progress)}%
+                        </Typography>
+                      </Stack>
+                      <SemanticProgressBar 
+                        value={progress} 
+                        status={progress >= 100 ? 'completed' : progress >= 50 ? 'on_track' : 'at_risk'}
+                        size="sm"
+                      />
+                    </Box>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Box>
+                      <Stack direction="row" alignItems="center" spacing={0.5} mb={0.5}>
+                        <Calendar size={12} className="text-muted-foreground" />
+                        <Typography variant="caption">
+                          {format(parseISO(pip.startDate), 'MMM d')} - {format(parseISO(pip.currentEndDate), 'MMM d')}
+                        </Typography>
+                      </Stack>
+                      <Typography
+                        variant="caption"
+                        fontWeight={600}
+                        color={isOverdue ? 'error.main' : daysRemaining <= 14 ? 'warning.main' : 'text.secondary'}
+                      >
+                        {isOverdue ? `${Math.abs(daysRemaining)}d overdue` : `${daysRemaining}d left`}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell className="py-3 text-center">
+                    <Chip 
+                      label={pip.checkIns.length} 
+                      size="small" 
+                      sx={{ minWidth: 32 }}
+                    />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Stack 
+                      direction="row" 
+                      spacing={0.5} 
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <IconButton size="small" onClick={() => handleRowClick(pip)}>
+                        <Eye size={14} />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => { setSelectedPIP(pip); setShowEditDrawer(true); }}>
+                        <Edit size={14} />
+                      </IconButton>
+                      <IconButton size="small">
+                        <MoreHorizontal size={14} />
+                      </IconButton>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </Card>
-    );
-  };
+    </Box>
+  );
 
   return (
     <>
@@ -271,8 +336,8 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
         {/* Stats */}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
           <Card>
-            <Box sx={{ p: 2 }}>
-              <Stack direction="row" alignItems="center" spacing={1}>
+            <Box sx={{ p: 2, bgcolor: 'warning.50' }}>
+              <Stack direction="row" alignItems="center" spacing={1.5}>
                 <Clock size={20} style={{ color: 'var(--warning)' }} />
                 <Box>
                   <Typography variant="h5" fontWeight={700}>{activePIPs.length}</Typography>
@@ -282,11 +347,11 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
             </Box>
           </Card>
           <Card>
-            <Box sx={{ p: 2 }}>
-              <Stack direction="row" alignItems="center" spacing={1}>
+            <Box sx={{ p: 2, bgcolor: 'success.50' }}>
+              <Stack direction="row" alignItems="center" spacing={1.5}>
                 <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
                 <Box>
-                  <Typography variant="h5" fontWeight={700}>
+                  <Typography variant="h5" fontWeight={700} color="success.main">
                     {pips.filter(p => p.status === 'completed_success').length}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">Successful</Typography>
@@ -295,11 +360,11 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
             </Box>
           </Card>
           <Card>
-            <Box sx={{ p: 2 }}>
-              <Stack direction="row" alignItems="center" spacing={1}>
+            <Box sx={{ p: 2, bgcolor: 'error.50' }}>
+              <Stack direction="row" alignItems="center" spacing={1.5}>
                 <XCircle size={20} style={{ color: 'var(--destructive)' }} />
                 <Box>
-                  <Typography variant="h5" fontWeight={700}>
+                  <Typography variant="h5" fontWeight={700} color="error.main">
                     {pips.filter(p => p.status === 'completed_failure').length}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">Unsuccessful</Typography>
@@ -308,8 +373,8 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
             </Box>
           </Card>
           <Card>
-            <Box sx={{ p: 2 }}>
-              <Stack direction="row" alignItems="center" spacing={1}>
+            <Box sx={{ p: 2, bgcolor: 'primary.50' }}>
+              <Stack direction="row" alignItems="center" spacing={1.5}>
                 <Target size={20} style={{ color: 'var(--primary)' }} />
                 <Box>
                   <Typography variant="h5" fontWeight={700}>
@@ -324,29 +389,11 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
           </Card>
         </Box>
 
-        {/* Active PIPs */}
-        {activePIPs.length > 0 && (
-          <Box>
-            <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
-              Active Plans
-            </Typography>
-            <Stack spacing={2}>
-              {activePIPs.map(renderPIPCard)}
-            </Stack>
-          </Box>
-        )}
+        {/* Active PIPs Table */}
+        {activePIPs.length > 0 && renderPIPTable(activePIPs, 'Active Plans')}
 
-        {/* Completed PIPs */}
-        {completedPIPs.length > 0 && (
-          <Box>
-            <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
-              Completed Plans
-            </Typography>
-            <Stack spacing={2}>
-              {completedPIPs.map(renderPIPCard)}
-            </Stack>
-          </Box>
-        )}
+        {/* Completed PIPs Table */}
+        {completedPIPs.length > 0 && renderPIPTable(completedPIPs, 'Completed Plans')}
 
         {pips.length === 0 && (
           <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
