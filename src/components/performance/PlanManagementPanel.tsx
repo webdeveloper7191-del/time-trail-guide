@@ -379,140 +379,186 @@ export function PlanManagementPanel({
           </div>
         </TabsContent>
 
-        {/* Templates Tab */}
+        {/* Templates Tab - Table Layout */}
         <TabsContent value="templates" className="mt-4 md:mt-6">
-          <ScrollArea className="h-[calc(100vh-300px)] md:h-[calc(100vh-360px)]">
-            <div className="space-y-6 md:space-y-8 pr-2 md:pr-4">
-              {Object.entries(templatesByIndustry).map(([industry, templates]) => (
-                <div key={industry}>
-                  <div className="flex items-center gap-2 mb-3 md:mb-4">
-                    <Building2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
-                    <h3 className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider">{industry}</h3>
-                    <Badge variant="outline" className="ml-1.5 md:ml-2 text-xs">{templates.length}</Badge>
-                  </div>
-                  
-                  <div className="grid gap-3 md:gap-4 grid-cols-1 lg:grid-cols-2">
-                    {templates.map((template) => (
-                      <Card key={template.id} className="group border-0 shadow-sm hover:shadow-md transition-all duration-200">
-                        <CardContent className="p-3 md:p-5">
-                          <div className="flex items-start justify-between gap-2 mb-2 md:mb-3">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-foreground line-clamp-1 text-sm md:text-base">{template.name}</h4>
-                              <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 mt-1 md:mt-1.5">
-                                {template.description}
-                              </p>
-                            </div>
-                            <Badge className={`${planTypeColors[template.type]} text-xs shrink-0`} variant="secondary">
-                              {planTypeLabels[template.type].replace(' Plan', '').replace(' (PIP)', '')}
-                            </Badge>
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs text-muted-foreground mt-3 md:mt-4 py-2 md:py-3 border-t border-border/50">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                              {template.durationDays}d
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Target className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                              {template.goals.length}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <ClipboardCheck className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                              {template.reviews.length}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MessageSquare className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                              {template.conversations.length}
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mt-3 md:mt-4">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="h-8 px-2 md:px-3 text-xs md:text-sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onViewTemplate(template);
-                              }}
-                            >
-                              Preview
-                            </Button>
-                            <Button 
-                              size="sm"
-                              variant="outline"
-                              className="h-8 px-2 md:px-3 text-xs md:text-sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (template.isSystem) {
-                                  onDuplicateTemplate(template);
-                                } else {
-                                  onEditTemplate(template);
-                                }
-                              }}
-                            >
-                              <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                              <span className="hidden sm:inline">{template.isSystem ? 'Customize' : 'Edit'}</span>
-                            </Button>
-                            <Button 
-                              size="sm"
-                              className="h-8 px-2 md:px-3 text-xs md:text-sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onAssignPlan(template);
-                              }}
-                            >
-                              <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                              Assign
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button size="sm" variant="ghost" className="ml-auto">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => {
-                                  e.stopPropagation();
-                                  onBulkAssignPlan(template);
-                                }}>
-                                  <Users className="h-4 w-4 mr-2" />
-                                  Bulk Assign
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={(e) => {
-                                  e.stopPropagation();
-                                  onDuplicateTemplate(template);
-                                }}>
-                                  <Copy className="h-4 w-4 mr-2" />
-                                  Duplicate
-                                </DropdownMenuItem>
-                                {!template.isSystem && onDeleteTemplate && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDeleteTemplate(template.id);
-                                      }}
-                                      className="text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete Template
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+          <div className="space-y-6">
+            {Object.entries(templatesByIndustry).map(([industry, templates]) => (
+              <div key={industry} className="bg-card border border-border rounded-lg overflow-hidden">
+                {/* Industry Header */}
+                <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {industry}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {templates.length} templates
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
+                
+                {/* Template Rows */}
+                <div>
+                  {templates.map((template, index) => (
+                    <div 
+                      key={template.id}
+                      className={cn(
+                        "flex items-center gap-4 px-4 py-3 cursor-pointer transition-colors group",
+                        "hover:bg-muted/40",
+                        index < templates.length - 1 && "border-b border-border"
+                      )}
+                      onClick={() => onViewTemplate(template)}
+                    >
+                      {/* Template Icon */}
+                      <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </div>
+                      
+                      {/* Name & Description */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground truncate">
+                            {template.name}
+                          </span>
+                          {template.isSystem && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1.5 shrink-0">
+                              System
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground truncate block">
+                          {template.description}
+                        </span>
+                      </div>
+
+                      {/* Type Badge */}
+                      <Badge 
+                        className={cn(planTypeColors[template.type], "text-[10px] h-5 hidden md:flex shrink-0")} 
+                        variant="secondary"
+                      >
+                        {planTypeLabels[template.type].replace(' Plan', '').replace(' (PIP)', '')}
+                      </Badge>
+
+                      {/* Stats */}
+                      <div className="hidden lg:flex items-center gap-4 text-xs text-muted-foreground shrink-0">
+                        <div className="flex items-center gap-1 w-12">
+                          <Clock className="h-3 w-3" />
+                          {template.durationDays}d
+                        </div>
+                        <div className="flex items-center gap-1 w-8">
+                          <Target className="h-3 w-3" />
+                          {template.goals.length}
+                        </div>
+                        <div className="flex items-center gap-1 w-8">
+                          <ClipboardCheck className="h-3 w-3" />
+                          {template.reviews.length}
+                        </div>
+                        <div className="flex items-center gap-1 w-8">
+                          <MessageSquare className="h-3 w-3" />
+                          {template.conversations.length}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (template.isSystem) {
+                              onDuplicateTemplate(template);
+                            } else {
+                              onEditTemplate(template);
+                            }
+                          }}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAssignPlan(template);
+                          }}
+                        >
+                          <UserPlus className="h-3 w-3" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="ghost" className="h-7 px-1.5">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onViewTemplate(template);
+                            }}>
+                              <BookOpen className="h-4 w-4 mr-2" />
+                              Preview
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onBulkAssignPlan(template);
+                            }}>
+                              <Users className="h-4 w-4 mr-2" />
+                              Bulk Assign
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onDuplicateTemplate(template);
+                            }}>
+                              <Copy className="h-4 w-4 mr-2" />
+                              Duplicate
+                            </DropdownMenuItem>
+                            {!template.isSystem && onDeleteTemplate && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteTemplate(template.id);
+                                  }}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Template
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {/* Chevron */}
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            
+            {filteredTemplates.length === 0 && (
+              <div className="bg-card border border-border rounded-lg py-16 text-center">
+                <div className="p-3 rounded-full bg-muted/50 w-fit mx-auto mb-3">
+                  <Sparkles className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <h3 className="text-sm font-medium text-foreground mb-1">No Templates Found</h3>
+                <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto">
+                  Try adjusting your filters or create a new template
+                </p>
+                <Button onClick={onCreateTemplate} size="sm">
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  Create Template
+                </Button>
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>
