@@ -28,6 +28,7 @@ import {
   Lock,
   Plus,
   MoreHorizontal,
+  Eye,
 } from 'lucide-react';
 import { GiveFeedbackDrawer } from './GiveFeedbackDrawer';
 import {
@@ -49,10 +50,10 @@ interface FeedbackPanelProps {
 }
 
 const typeColors: Record<FeedbackType, { bg: string; text: string; border: string }> = {
-  praise: { bg: '#dcfce7', text: '#16a34a', border: '#86efac' },
-  constructive: { bg: '#fef3c7', text: '#d97706', border: '#fcd34d' },
-  coaching: { bg: '#dbeafe', text: '#2563eb', border: '#93c5fd' },
-  general: { bg: '#f1f5f9', text: '#64748b', border: '#cbd5e1' },
+  praise: { bg: 'hsl(var(--chart-2) / 0.15)', text: 'hsl(var(--chart-2))', border: 'hsl(var(--chart-2) / 0.3)' },
+  constructive: { bg: 'hsl(var(--chart-4) / 0.15)', text: 'hsl(var(--chart-4))', border: 'hsl(var(--chart-4) / 0.3)' },
+  coaching: { bg: 'hsl(var(--chart-1) / 0.15)', text: 'hsl(var(--chart-1))', border: 'hsl(var(--chart-1) / 0.3)' },
+  general: { bg: 'hsl(var(--muted))', text: 'hsl(var(--muted-foreground))', border: 'hsl(var(--border))' },
 };
 
 const typeIcons: Record<FeedbackType, React.ReactNode> = {
@@ -88,6 +89,7 @@ export function FeedbackPanel({
     const displayStaff = isReceived ? fromStaff : toStaff;
     const isHovered = hoveredRow === item.id;
     const colors = typeColors[item.type];
+    const isPraise = item.type === 'praise';
 
     return (
       <TableRow 
@@ -95,77 +97,83 @@ export function FeedbackPanel({
         className="group hover:bg-muted/50 transition-colors"
         onMouseEnter={() => setHoveredRow(item.id)}
         onMouseLeave={() => setHoveredRow(null)}
+        style={{
+          borderLeft: isPraise ? '3px solid hsl(var(--chart-2))' : undefined,
+        }}
       >
-        <TableCell>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <TableCell className="py-3">
+          <div className="flex items-center gap-3">
             <Avatar 
               src={displayStaff?.avatar} 
-              sx={{ width: 36, height: 36, fontSize: '0.85rem' }}
+              sx={{ width: 36, height: 36, fontSize: '0.85rem', bgcolor: 'hsl(var(--muted))' }}
             >
               {displayStaff?.firstName?.[0]}{displayStaff?.lastName?.[0]}
             </Avatar>
-            <Box>
-              <Typography variant="body2" fontWeight={500}>
-                {isReceived ? 'From: ' : 'To: '}
+            <div>
+              <p className="text-sm font-medium">
                 {displayStaff?.firstName} {displayStaff?.lastName}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              </p>
+              <p className="text-xs text-muted-foreground">
                 {formatDistanceToNow(parseISO(item.createdAt), { addSuffix: true })}
-              </Typography>
-            </Box>
-          </Box>
+              </p>
+            </div>
+          </div>
         </TableCell>
-        <TableCell>
-          <Typography variant="body2" sx={{ 
-            maxWidth: 300, 
-            overflow: 'hidden', 
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}>
+        <TableCell className="py-3">
+          <p className="text-sm max-w-[300px] truncate">
             {item.message}
-          </Typography>
+          </p>
         </TableCell>
-        <TableCell>
+        <TableCell className="py-3">
           <Chip
             icon={typeIcons[item.type] as React.ReactElement}
             label={feedbackTypeLabels[item.type]}
             size="small"
             sx={{
-              height: 22,
+              height: 24,
               fontSize: '0.7rem',
+              fontWeight: 500,
               bgcolor: colors.bg,
               color: colors.text,
               border: `1px solid ${colors.border}`,
-              '& .MuiChip-icon': { color: colors.text },
+              '& .MuiChip-icon': { color: colors.text, fontSize: 14 },
             }}
           />
         </TableCell>
-        <TableCell>
-          {item.isPrivate && (
+        <TableCell className="py-3">
+          {item.isPrivate ? (
             <Chip
               icon={<Lock size={12} />}
               label="Private"
               size="small"
-              variant="outlined"
-              sx={{ height: 22, fontSize: '0.7rem' }}
+              sx={{ 
+                height: 24, 
+                fontSize: '0.7rem',
+                bgcolor: 'hsl(var(--muted))',
+                color: 'hsl(var(--muted-foreground))',
+                border: '1px solid hsl(var(--border))',
+              }}
             />
+          ) : (
+            <span className="text-xs text-muted-foreground">Public</span>
           )}
         </TableCell>
-        <TableCell>
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              gap: 0.5, 
-              opacity: isHovered ? 1 : 0,
-              transition: 'opacity 0.15s'
-            }}
+        <TableCell className="py-3">
+          <div 
+            className="flex gap-1 transition-opacity duration-150"
+            style={{ opacity: isHovered ? 1 : 0 }}
           >
+            <Tooltip title="View Details">
+              <IconButton size="small" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+                <Eye className="h-3.5 w-3.5" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="More">
-              <IconButton size="small">
+              <IconButton size="small" sx={{ color: 'hsl(var(--muted-foreground))' }}>
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </IconButton>
             </Tooltip>
-          </Box>
+          </div>
         </TableCell>
       </TableRow>
     );
@@ -251,15 +259,17 @@ export function FeedbackPanel({
           )}
         </Paper>
       ) : (
-        <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+        <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead className="w-48">{view === 'received' ? 'From' : view === 'given' ? 'To' : 'Person'}</TableHead>
-                <TableHead>Message</TableHead>
-                <TableHead className="w-28">Type</TableHead>
-                <TableHead className="w-24">Privacy</TableHead>
-                <TableHead className="w-16"></TableHead>
+              <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+                <TableHead className="w-52 font-semibold text-xs uppercase tracking-wide text-muted-foreground">
+                  {view === 'received' ? 'From' : view === 'given' ? 'To' : 'Person'}
+                </TableHead>
+                <TableHead className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Message</TableHead>
+                <TableHead className="w-28 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Type</TableHead>
+                <TableHead className="w-24 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Visibility</TableHead>
+                <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
