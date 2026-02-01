@@ -5,10 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { PraisePost, PraiseCategory, praiseCategoryLabels, praiseCategoryEmojis } from '@/types/recognition';
 import { StaffMember } from '@/types/staff';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { Heart, MessageCircle, Send, ThumbsUp, Plus, Sparkles } from 'lucide-react';
+import { Heart, MessageCircle, Send, ThumbsUp, Plus, Sparkles, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { praiseWallBadges } from '@/data/mockRecognitionData';
 
@@ -128,76 +136,112 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
         </Card>
       )}
 
-      <div className="space-y-4">
-        {posts.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-8 text-center">
-              <Heart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No praise yet. Be the first to celebrate someone!</p>
-            </CardContent>
-          </Card>
-        ) : (
-          posts.map(post => {
-            const from = getStaff(post.fromStaffId);
-            const to = getStaff(post.toStaffId);
-            const hasLiked = post.likes.includes(currentUserId);
+      {posts.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="py-8 text-center">
+            <Heart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No praise yet. Be the first to celebrate someone!</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead>Recipient</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="w-[40%]">Message</TableHead>
+                <TableHead>From</TableHead>
+                <TableHead className="text-center">Engagement</TableHead>
+                <TableHead className="w-24"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {posts.map(post => {
+                const from = getStaff(post.fromStaffId);
+                const to = getStaff(post.toStaffId);
+                const hasLiked = post.likes.includes(currentUserId);
 
-            return (
-              <Card key={post.id}>
-                <CardContent className="p-4">
-                  <div className="flex gap-4">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={to?.avatar} />
-                      <AvatarFallback>{to?.firstName?.[0]}{to?.lastName?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-semibold">{to?.firstName} {to?.lastName}</span>
-                        <Badge variant="secondary">{praiseCategoryEmojis[post.category]} {praiseCategoryLabels[post.category]}</Badge>
-                      </div>
-                      <p className="text-sm mb-2">{post.message}</p>
-                      {post.badges.length > 0 && (
-                        <div className="flex gap-1 mb-2">
-                          {post.badges.map(b => {
-                            const badge = praiseWallBadges.find(pb => pb.id === b);
-                            return badge && <Badge key={b} variant="outline" className="text-xs">{badge.emoji} {badge.label}</Badge>;
-                          })}
+                return (
+                  <TableRow key={post.id} className="group hover:bg-muted/50">
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={to?.avatar} />
+                          <AvatarFallback className="text-xs">{to?.firstName?.[0]}{to?.lastName?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{to?.firstName} {to?.lastName}</p>
+                          <p className="text-xs text-muted-foreground">{to?.position}</p>
                         </div>
-                      )}
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>From {from?.firstName} {from?.lastName}</span>
-                        <span>{formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}</span>
                       </div>
-                      <div className="flex items-center gap-4 mt-3">
-                        <Button variant="ghost" size="sm" className={cn(hasLiked && 'text-rose-500')} onClick={() => onLike(post.id)}>
-                          <ThumbsUp className={cn('h-4 w-4 mr-1', hasLiked && 'fill-current')} />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Badge variant="secondary" className="font-normal">
+                        {praiseCategoryEmojis[post.category]} {praiseCategoryLabels[post.category]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <div>
+                        <p className="text-sm line-clamp-2">{post.message}</p>
+                        {post.badges.length > 0 && (
+                          <div className="flex gap-1 mt-1.5">
+                            {post.badges.map(b => {
+                              const badge = praiseWallBadges.find(pb => pb.id === b);
+                              return badge && (
+                                <Badge key={b} variant="outline" className="text-xs py-0">
+                                  {badge.emoji} {badge.label}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={from?.avatar} />
+                          <AvatarFallback className="text-xs">{from?.firstName?.[0]}{from?.lastName?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm">{from?.firstName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 text-center">
+                      <div className="flex items-center justify-center gap-3">
+                        <button 
+                          className={cn(
+                            "flex items-center gap-1 text-sm transition-colors",
+                            hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"
+                          )}
+                          onClick={() => onLike(post.id)}
+                        >
+                          <ThumbsUp className={cn("h-4 w-4", hasLiked && "fill-current")} />
                           {post.likes.length}
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <MessageCircle className="h-4 w-4 mr-1" />
+                        </button>
+                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MessageCircle className="h-4 w-4" />
                           {post.comments.length}
-                        </Button>
+                        </span>
                       </div>
-                      {post.comments.length > 0 && (
-                        <div className="mt-3 space-y-2 pl-4 border-l-2">
-                          {post.comments.map(c => {
-                            const commenter = getStaff(c.staffId);
-                            return (
-                              <div key={c.id} className="text-sm">
-                                <span className="font-medium">{commenter?.firstName}</span>: {c.content}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
-      </div>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded">
+                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
     </div>
   );
 }
