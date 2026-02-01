@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Box, Stack, Typography, Popper, Fade, Paper, ClickAwayListener, alpha } from '@mui/material';
+import { Box, Stack, Typography, Popper, Fade, Paper, ClickAwayListener } from '@mui/material';
 import { 
   Target, ClipboardCheck, MessageSquareHeart, MessageSquare, 
   BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, 
@@ -178,22 +178,14 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
   const activeTabInfo = getActiveTabInfo(activeTab);
 
   return (
-    <Box 
-      sx={{ 
-        mb: 4,
-        py: 1,
-      }}
-    >
+    <Box sx={{ mb: 3 }}>
       <Stack 
         direction="row" 
         sx={{ 
           flexWrap: 'wrap',
-          gap: 1,
-          p: 1,
-          bgcolor: 'grey.50',
-          borderRadius: 2.5,
-          border: '1px solid',
-          borderColor: 'grey.100',
+          gap: 0.5,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
         }}
       >
         {tabGroups.map((group) => {
@@ -213,27 +205,28 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1,
-                  px: 2,
-                  py: 1.25,
+                  px: 2.5,
+                  py: 1.5,
                   border: 'none',
-                  borderRadius: 2,
+                  borderBottom: '2px solid',
+                  borderBottomColor: isActiveGroup ? 'primary.main' : 'transparent',
+                  borderRadius: 0,
                   cursor: 'pointer',
                   fontFamily: 'inherit',
                   fontSize: '0.875rem',
-                  fontWeight: isActiveGroup ? 600 : 500,
-                  letterSpacing: '-0.01em',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  bgcolor: isActiveGroup ? 'white' : 'transparent',
-                  color: isActiveGroup ? 'grey.900' : 'grey.600',
-                  boxShadow: isActiveGroup ? '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                  fontWeight: 500,
+                  transition: 'all 0.15s ease',
+                  bgcolor: 'transparent',
+                  color: isActiveGroup ? 'primary.main' : 'text.secondary',
+                  mb: '-1px',
                   '&:hover': {
-                    bgcolor: isActiveGroup ? 'white' : 'grey.100',
-                    color: 'grey.900',
+                    color: isActiveGroup ? 'primary.main' : 'text.primary',
+                    bgcolor: 'action.hover',
                   },
                   '&:focus-visible': {
                     outline: '2px solid',
                     outlineColor: 'primary.main',
-                    outlineOffset: 2,
+                    outlineOffset: -2,
                   },
                 }}
               >
@@ -243,37 +236,37 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: 22,
-                      height: 22,
-                      borderRadius: 1,
-                      bgcolor: 'primary.50',
-                      color: 'primary.600',
+                      width: 20,
+                      height: 20,
+                      borderRadius: 0.75,
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
                     }}
                   >
-                    <activeTabInfo.icon size={13} />
+                    <activeTabInfo.icon size={12} />
                   </Box>
                 )}
                 <span>{group.label}</span>
-                {isActiveGroup && (
+                {isActiveGroup && activeTabInfo && (
                   <Typography 
                     component="span" 
                     sx={{ 
                       fontSize: '0.75rem', 
-                      color: 'grey.500',
+                      color: 'text.secondary',
                       fontWeight: 400,
                       display: { xs: 'none', sm: 'inline' },
                     }}
                   >
-                    · {activeTabInfo?.label}
+                    · {activeTabInfo.label}
                   </Typography>
                 )}
                 <ChevronDown 
                   size={14} 
                   className={cn(
-                    'transition-transform duration-200 ml-0.5',
+                    'transition-transform duration-200',
                     isOpen && 'rotate-180'
                   )} 
-                  style={{ color: 'inherit', opacity: 0.5 }}
+                  style={{ color: 'inherit', opacity: 0.6 }}
                 />
               </Box>
 
@@ -285,40 +278,25 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                 sx={{ zIndex: 1300 }}
               >
                 {({ TransitionProps }) => (
-                  <Fade {...TransitionProps} timeout={150}>
+                  <Fade {...TransitionProps} timeout={120}>
                     <Paper 
                       ref={menuRef}
                       elevation={0}
                       role="menu"
                       sx={{ 
-                        mt: 1, 
-                        minWidth: 220,
-                        py: 1,
-                        bgcolor: 'white',
+                        mt: 0.5, 
+                        minWidth: 200,
+                        py: 0.5,
+                        bgcolor: 'background.paper',
                         border: '1px solid',
-                        borderColor: 'grey.200',
-                        borderRadius: 2.5,
-                        boxShadow: '0 10px 40px -10px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.05)',
+                        borderColor: 'divider',
+                        borderRadius: 1.5,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                         overflow: 'hidden',
                       }}
                     >
                       <ClickAwayListener onClickAway={handleClose}>
                         <Box>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              display: 'block',
-                              px: 2,
-                              py: 1,
-                              color: 'grey.400',
-                              fontWeight: 600,
-                              letterSpacing: '0.05em',
-                              textTransform: 'uppercase',
-                              fontSize: '0.65rem',
-                            }}
-                          >
-                            {group.label}
-                          </Typography>
                           {group.items.map((item, itemIndex) => {
                             const isActive = activeTab === item.value;
                             const isFocused = focusedIndex === itemIndex && isOpen;
@@ -336,18 +314,16 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                                   gap: 1.5,
                                   px: 2,
                                   py: 1.25,
-                                  mx: 1,
-                                  borderRadius: 1.5,
                                   cursor: 'pointer',
-                                  transition: 'all 0.15s ease',
+                                  transition: 'all 0.1s ease',
                                   bgcolor: isActive 
                                     ? 'primary.50' 
                                     : isFocused 
-                                      ? 'grey.50' 
+                                      ? 'action.hover' 
                                       : 'transparent',
-                                  color: isActive ? 'primary.700' : 'grey.700',
+                                  color: isActive ? 'primary.main' : 'text.primary',
                                   '&:hover': {
-                                    bgcolor: isActive ? 'primary.100' : 'grey.50',
+                                    bgcolor: isActive ? 'primary.100' : 'action.hover',
                                   },
                                 }}
                               >
@@ -356,40 +332,26 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    width: 28,
-                                    height: 28,
-                                    borderRadius: 1.5,
-                                    bgcolor: isActive ? 'primary.100' : 'grey.100',
-                                    color: isActive ? 'primary.600' : 'grey.500',
-                                    transition: 'all 0.15s ease',
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: 0.75,
+                                    bgcolor: isActive ? 'primary.main' : 'grey.100',
+                                    color: isActive ? 'primary.contrastText' : 'text.secondary',
                                   }}
                                 >
-                                  <Icon size={14} />
+                                  <Icon size={13} />
                                 </Box>
                                 <Typography 
                                   sx={{ 
                                     flex: 1,
                                     fontSize: '0.875rem',
-                                    fontWeight: isActive ? 600 : 400,
+                                    fontWeight: isActive ? 500 : 400,
                                   }}
                                 >
                                   {item.label}
                                 </Typography>
                                 {isActive && (
-                                  <Box
-                                    sx={{
-                                      width: 18,
-                                      height: 18,
-                                      borderRadius: '50%',
-                                      bgcolor: 'primary.500',
-                                      color: 'white',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}
-                                  >
-                                    <Check size={11} strokeWidth={3} />
-                                  </Box>
+                                  <Check size={14} style={{ color: 'inherit' }} />
                                 )}
                               </Box>
                             );
