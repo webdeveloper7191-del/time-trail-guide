@@ -251,133 +251,132 @@ export function PlanManagementPanel({
           )}
         </div>
 
-        {/* Assigned Plans Tab */}
+        {/* Assigned Plans Tab - Table Layout */}
         <TabsContent value="assigned" className="mt-4 md:mt-6">
-          {filteredPlans.length === 0 ? (
-            <Card className="border-dashed border-2 bg-transparent">
-              <CardContent className="py-10 md:py-16 text-center">
-                <div className="p-3 md:p-4 rounded-full bg-muted/50 w-fit mx-auto mb-3 md:mb-4">
-                  <FileText className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            {/* Table Header */}
+            <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Assigned Plans
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {filteredPlans.length} items
+                </span>
+              </div>
+            </div>
+
+            {filteredPlans.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="p-3 rounded-full bg-muted/50 w-fit mx-auto mb-3">
+                  <FileText className="h-7 w-7 text-muted-foreground" />
                 </div>
-                <h3 className="text-base md:text-lg font-medium mb-2">No Plans Found</h3>
-                <p className="text-sm text-muted-foreground mb-4 md:mb-5 max-w-sm mx-auto">
+                <h3 className="text-sm font-medium text-foreground mb-1">No Plans Found</h3>
+                <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto">
                   {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
                     ? 'Try adjusting your filters'
                     : 'Start by assigning a plan template to a team member'}
                 </p>
-                <Button onClick={() => setActiveTab('templates')} className="shadow-sm">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button onClick={() => setActiveTab('templates')} size="sm">
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
                   Browse Templates
                 </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-3 md:gap-4">
-              {filteredPlans.map((plan) => {
-                const staffMember = getStaffById(plan.staffId);
-                const isOverdueStatus = differenceInDays(parseISO(plan.endDate), new Date()) < 0;
-                
-                return (
-                  <Card 
-                    key={plan.id} 
-                    className={cn(
-                      "group border shadow-sm cursor-pointer",
-                      "transition-all duration-200 ease-in-out",
-                      "hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5",
-                      isOverdueStatus && "border-l-4 border-l-red-500"
-                    )}
-                    onClick={() => onViewPlan(plan)}
-                  >
-                    <CardContent className="p-3 md:p-5">
-                      <div className="flex items-start gap-3 md:gap-4">
-                        <Avatar className="h-10 w-10 md:h-12 md:w-12 border-2 border-background shadow-sm shrink-0">
-                          <AvatarImage src={staffMember?.avatar} />
-                          <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm md:text-base">
-                            {staffMember?.firstName[0]}{staffMember?.lastName[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
-                            <div className="min-w-0">
-                              <h3 className="font-semibold text-foreground text-sm md:text-base truncate">
-                                {staffMember?.firstName} {staffMember?.lastName}
-                              </h3>
-                              <p className="text-xs md:text-sm text-muted-foreground mt-0.5 truncate">
-                                {plan.templateName}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1.5 mt-1 sm:mt-0 shrink-0">
-                              <Badge className={planTypeColors[plan.type]} variant="secondary">
-                                {planTypeLabels[plan.type].replace(' Plan', '')}
-                              </Badge>
-                              <Badge className={planStatusColors[plan.status]}>
-                                {planStatusLabels[plan.status]}
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-3 md:mt-4 flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                              <span className="hidden sm:inline">{format(parseISO(plan.startDate), 'MMM d')} - </span>
-                              {format(parseISO(plan.endDate), 'MMM d, yyyy')}
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                              {getDaysRemaining(plan.endDate)}
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <Target className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                              {plan.goalIds.length} goals
-                            </div>
-                          </div>
-                          
-                          <div className="mt-3 md:mt-4 flex items-center gap-3 md:gap-4">
-                            <div className="flex-1">
-                              {(() => {
-                                const lmsData: LMSData = {
-                                  enrollments: mockEnrollments,
-                                  learningPaths: mockLearningPaths,
-                                  courses: mockCourses,
-                                };
-                                const breakdown = calculatePlanProgress(plan, goals, reviews, conversations, lmsData);
-                                const hasLearning = breakdown.totalCourses > 0;
-                                const daysRemaining = differenceInDays(parseISO(plan.endDate), new Date());
-                                const isOverdue = daysRemaining < 0;
-                                const progressStatus = getProgressStatus(breakdown.totalProgress, daysRemaining, isOverdue);
-                                
-                                return (
-                                  <>
-                                    <SemanticProgressBar
-                                      value={breakdown.totalProgress}
-                                      status={progressStatus}
-                                      showLabel
-                                      showPercentage
-                                      label="Progress"
-                                      sublabel={`${breakdown.completedGoals}/${breakdown.totalGoals} goals${hasLearning ? `, ${breakdown.completedCourses}/${breakdown.totalCourses} courses` : ''}`}
-                                      size="sm"
-                                    />
-                                    {hasLearning && (
-                                      <div className="flex items-center gap-1.5 mt-1.5 md:mt-2 text-xs text-muted-foreground">
-                                        <GraduationCap className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary" />
-                                        <span>{plan.learningPathIds?.length || 0} learning paths</span>
-                                      </div>
-                                    )}
-                                  </>
-                                );
-                              })()}
-                            </div>
-                            <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
-                          </div>
+              </div>
+            ) : (
+              <div>
+                {filteredPlans.map((plan, index) => {
+                  const staffMember = getStaffById(plan.staffId);
+                  const isOverdueStatus = differenceInDays(parseISO(plan.endDate), new Date()) < 0;
+                  const lmsData: LMSData = {
+                    enrollments: mockEnrollments,
+                    learningPaths: mockLearningPaths,
+                    courses: mockCourses,
+                  };
+                  const breakdown = calculatePlanProgress(plan, goals, reviews, conversations, lmsData);
+                  const daysRemaining = differenceInDays(parseISO(plan.endDate), new Date());
+                  const progressStatus = getProgressStatus(breakdown.totalProgress, daysRemaining, isOverdueStatus);
+                  
+                  return (
+                    <div 
+                      key={plan.id} 
+                      className={cn(
+                        "flex items-center gap-4 px-4 py-3 cursor-pointer transition-colors",
+                        "hover:bg-muted/40",
+                        index < filteredPlans.length - 1 && "border-b border-border",
+                        isOverdueStatus && "border-l-[3px] border-l-destructive"
+                      )}
+                      onClick={() => onViewPlan(plan)}
+                    >
+                      {/* Avatar */}
+                      <Avatar className="h-9 w-9 border border-border shrink-0">
+                        <AvatarImage src={staffMember?.avatar} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                          {staffMember?.firstName[0]}{staffMember?.lastName[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      {/* Name & Plan */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground truncate">
+                            {staffMember?.firstName} {staffMember?.lastName}
+                          </span>
                         </div>
+                        <span className="text-xs text-muted-foreground truncate block">
+                          {plan.templateName}
+                        </span>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+
+                      {/* Type & Status Badges */}
+                      <div className="hidden md:flex items-center gap-1.5 shrink-0">
+                        <Badge className={cn(planTypeColors[plan.type], "text-[10px] h-5")} variant="secondary">
+                          {planTypeLabels[plan.type].replace(' Plan', '')}
+                        </Badge>
+                        <Badge className={cn(planStatusColors[plan.status], "text-[10px] h-5")}>
+                          {planStatusLabels[plan.status]}
+                        </Badge>
+                      </div>
+
+                      {/* Progress */}
+                      <div className="hidden sm:block w-28 shrink-0">
+                        <SemanticProgressBar
+                          value={breakdown.totalProgress}
+                          status={progressStatus}
+                          showPercentage
+                          size="xs"
+                        />
+                      </div>
+
+                      {/* Due Date */}
+                      <div className="hidden lg:flex items-center gap-1.5 w-24 shrink-0">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <span className={cn(
+                          "text-xs",
+                          isOverdueStatus ? "text-destructive" : "text-muted-foreground"
+                        )}>
+                          {format(parseISO(plan.endDate), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+
+                      {/* Time Remaining */}
+                      <div className="hidden xl:flex items-center gap-1.5 w-20 shrink-0">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span className={cn(
+                          "text-xs",
+                          isOverdueStatus ? "text-destructive font-medium" : "text-muted-foreground"
+                        )}>
+                          {getDaysRemaining(plan.endDate)}
+                        </span>
+                      </div>
+
+                      {/* Chevron */}
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* Templates Tab */}

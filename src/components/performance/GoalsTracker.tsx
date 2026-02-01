@@ -508,205 +508,295 @@ export function GoalsTracker({
         </Stack>
       )}
 
-      {/* Active Goals */}
-      <Box>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+      {/* Active Goals - Table Layout */}
+      <Box sx={{ 
+        bgcolor: 'background.paper', 
+        borderRadius: 2, 
+        border: 1, 
+        borderColor: 'divider',
+        overflow: 'hidden',
+      }}>
+        {/* Table Header */}
+        <Box sx={{ 
+          px: 2, 
+          py: 1.5, 
+          bgcolor: 'grey.50', 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
           <Stack direction="row" alignItems="center" spacing={2}>
-            <Typography variant="overline" color="text.secondary" fontWeight={600}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'grey.600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Active Goals
             </Typography>
-            {activeGoals.length > 0 && (
-              <MuiButton
-                size="small"
-                variant="text"
-                onClick={selectedGoalIds.size === activeGoals.length ? handleClearSelection : handleSelectAll}
-                sx={{ fontSize: '0.75rem' }}
-              >
-                {selectedGoalIds.size === activeGoals.length ? 'Deselect All' : 'Select All'}
-              </MuiButton>
-            )}
+            <Typography sx={{ fontSize: '0.75rem', color: 'grey.500' }}>
+              {activeGoals.length} items
+            </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
-            {activeGoals.length} items
-          </Typography>
-        </Stack>
+          {activeGoals.length > 0 && (
+            <MuiButton
+              size="small"
+              variant="text"
+              onClick={selectedGoalIds.size === activeGoals.length ? handleClearSelection : handleSelectAll}
+              sx={{ fontSize: '0.75rem', color: 'primary.main' }}
+            >
+              {selectedGoalIds.size === activeGoals.length ? 'Deselect All' : 'Select All'}
+            </MuiButton>
+          )}
+        </Box>
         
         {activeGoals.length === 0 ? (
-          <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
-            <Box sx={{ py: 6, textAlign: 'center' }}>
-              <Box sx={{ 
-                p: 2, 
-                borderRadius: '50%', 
-                bgcolor: 'action.hover', 
-                width: 'fit-content', 
-                mx: 'auto', 
-                mb: 2 
-              }}>
-                <Target size={32} style={{ color: 'var(--muted-foreground)' }} />
-              </Box>
-              <Typography fontWeight={500}>
-                {hasActiveFilters ? 'No goals match your filters' : 'No active goals'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mt={0.5} maxWidth={360} mx="auto">
-                {hasActiveFilters 
-                  ? 'Try adjusting your search or filters'
-                  : 'Create your first goal to start tracking'
-                }
-              </Typography>
-              {!hasActiveFilters && (
-                <MuiButton variant="contained" startIcon={<Plus size={16} />} onClick={onCreateGoal} sx={{ mt: 2 }}>
-                  Create Goal
-                </MuiButton>
-              )}
+          <Box sx={{ py: 8, textAlign: 'center' }}>
+            <Box sx={{ 
+              p: 2, 
+              borderRadius: '50%', 
+              bgcolor: 'grey.100', 
+              width: 'fit-content', 
+              mx: 'auto', 
+              mb: 2 
+            }}>
+              <Target size={28} style={{ color: 'var(--muted-foreground)' }} />
             </Box>
-          </Card>
+            <Typography sx={{ fontWeight: 500, color: 'grey.700' }}>
+              {hasActiveFilters ? 'No goals match your filters' : 'No active goals'}
+            </Typography>
+            <Typography sx={{ fontSize: '0.875rem', color: 'grey.500', mt: 0.5, maxWidth: 320, mx: 'auto' }}>
+              {hasActiveFilters 
+                ? 'Try adjusting your search or filters'
+                : 'Create your first goal to start tracking'
+              }
+            </Typography>
+            {!hasActiveFilters && (
+              <MuiButton variant="contained" startIcon={<Plus size={16} />} onClick={onCreateGoal} sx={{ mt: 2.5 }}>
+                Create Goal
+              </MuiButton>
+            )}
+          </Box>
         ) : (
-          <Box sx={{ display: 'grid', gap: { xs: 1.5, md: 2 }, gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' } }}>
-            {activeGoals.map((goal) => {
+          <Box>
+            {activeGoals.map((goal, index) => {
               const isSelected = selectedGoalIds.has(goal.id);
+              const daysRemaining = differenceInDays(parseISO(goal.targetDate), new Date());
+              const progressStatus = getProgressStatus(goal.progress, daysRemaining, goal.status === 'overdue');
+              const isOverdue = goal.status === 'overdue';
               
               return (
-                <Card
-                  key={goal.id} 
-                  sx={{ 
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    border: isSelected ? 2 : 1,
-                    borderColor: isSelected ? 'primary.main' : 'divider',
-                    '&:hover': { 
-                      boxShadow: 3,
-                      '& .chevron-icon': { opacity: 1 }
-                    }
-                  }}
+                <Box
+                  key={goal.id}
                   onClick={() => onViewGoal(goal)}
+                  sx={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    px: 2,
+                    py: 1.5,
+                    cursor: 'pointer',
+                    borderBottom: index < activeGoals.length - 1 ? 1 : 0,
+                    borderColor: 'divider',
+                    bgcolor: isSelected ? 'primary.50' : 'transparent',
+                    borderLeft: isOverdue ? 3 : 0,
+                    borderLeftColor: 'error.main',
+                    transition: 'all 0.15s ease',
+                    '&:hover': { 
+                      bgcolor: isSelected ? 'primary.100' : 'grey.50',
+                      '& .row-actions': { opacity: 1 },
+                    },
+                  }}
                 >
-                  <Box sx={{ p: { xs: 2, md: 2.5 } }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                      <Stack direction="row" alignItems="flex-start" spacing={1.5} flex={1} minWidth={0}>
-                        <Checkbox
-                          checked={isSelected}
-                          onClick={(e) => handleToggleSelect(goal.id, e)}
-                          size="small"
-                          sx={{ mt: -0.5, ml: -0.5 }}
-                        />
-                        <Box flex={1} minWidth={0}>
-                          <Stack direction="row" spacing={0.5} mb={1} flexWrap="wrap" gap={0.5}>
-                            <Chip label={goal.category} size="small" variant="outlined" sx={{ fontSize: { xs: '0.7rem', sm: '0.8125rem' } }} />
-                            <Chip 
-                              label={goalPriorityLabels[goal.priority]} 
-                              size="small" 
-                              sx={{ 
-                                bgcolor: priorityColors[goal.priority]?.bg,
-                                color: priorityColors[goal.priority]?.text,
-                                fontSize: { xs: '0.7rem', sm: '0.8125rem' },
-                              }}
-                            />
-                          </Stack>
-                          <Typography variant="subtitle1" fontWeight={600} noWrap sx={{ fontSize: { xs: '0.95rem', md: '1rem' } }}>
-                            {goal.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            fontSize: { xs: '0.8rem', md: '0.875rem' },
-                          }}>
-                            {goal.description}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                      <ChevronRight 
-                        className="chevron-icon" 
-                        size={20} 
-                        style={{ opacity: 0, transition: 'opacity 0.2s', marginLeft: 8, flexShrink: 0 }} 
-                      />
+                  {/* Checkbox */}
+                  <Checkbox
+                    checked={isSelected}
+                    onClick={(e) => handleToggleSelect(goal.id, e)}
+                    size="small"
+                    sx={{ p: 0.5 }}
+                  />
+
+                  {/* Goal Info */}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Stack direction="row" alignItems="center" spacing={1} mb={0.25}>
+                      <Typography sx={{ 
+                        fontSize: '0.875rem', 
+                        fontWeight: 500, 
+                        color: 'grey.900',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {goal.title}
+                      </Typography>
                     </Stack>
+                    <Typography sx={{ 
+                      fontSize: '0.8125rem', 
+                      color: 'grey.500',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {goal.description}
+                    </Typography>
+                  </Box>
 
-                    {/* Semantic Progress Bar */}
-                    {(() => {
-                      const daysRemaining = differenceInDays(parseISO(goal.targetDate), new Date());
-                      const progressStatus = getProgressStatus(goal.progress, daysRemaining, goal.status === 'overdue');
-                      
-                      return (
-                        <SemanticProgressBar
-                          value={goal.progress}
-                          status={progressStatus}
-                          showLabel
-                          showPercentage
-                          size="md"
-                          sublabel={`${goal.milestones?.filter(m => m.completed).length || 0}/${goal.milestones?.length || 0} milestones`}
-                        />
-                      );
-                    })()}
+                  {/* Category & Priority */}
+                  <Stack direction="row" spacing={0.75} sx={{ display: { xs: 'none', md: 'flex' } }}>
+                    <Chip 
+                      label={goal.category} 
+                      size="small" 
+                      variant="outlined" 
+                      sx={{ fontSize: '0.75rem', height: 24 }} 
+                    />
+                    <Chip 
+                      label={goalPriorityLabels[goal.priority]} 
+                      size="small" 
+                      sx={{ 
+                        bgcolor: priorityColors[goal.priority]?.bg,
+                        color: priorityColors[goal.priority]?.text,
+                        fontSize: '0.75rem',
+                        height: 24,
+                      }}
+                    />
+                  </Stack>
 
-                    <Stack 
-                      direction={{ xs: 'column', sm: 'row' }}
-                      justifyContent="space-between" 
-                      alignItems={{ xs: 'flex-start', sm: 'center' }}
-                      spacing={{ xs: 1, sm: 0 }}
-                      mt={2} 
-                      pt={2} 
-                      sx={{ borderTop: 1, borderColor: 'divider' }}
-                    >
-                      <Stack direction="row" alignItems="center" spacing={0.5}>
-                        <Calendar size={14} style={{ color: 'var(--muted-foreground)' }} />
-                        <Typography variant="caption" color="text.secondary">
-                          Due {format(parseISO(goal.targetDate), 'MMM d, yyyy')}
-                        </Typography>
-                      </Stack>
-                      <StatusBadge 
-                        status={getStatusBadgeType(goal.status)}
-                        label={goalStatusLabels[goal.status]}
-                        pulse={goal.status === 'overdue'}
-                      />
+                  {/* Progress */}
+                  <Box sx={{ width: 120, display: { xs: 'none', sm: 'block' } }}>
+                    <SemanticProgressBar
+                      value={goal.progress}
+                      status={progressStatus}
+                      showPercentage
+                      size="xs"
+                    />
+                  </Box>
+
+                  {/* Due Date */}
+                  <Box sx={{ width: 100, display: { xs: 'none', lg: 'block' } }}>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <Calendar size={12} style={{ color: isOverdue ? 'var(--destructive)' : 'var(--muted-foreground)' }} />
+                      <Typography sx={{ 
+                        fontSize: '0.75rem', 
+                        color: isOverdue ? 'error.main' : 'grey.500',
+                      }}>
+                        {format(parseISO(goal.targetDate), 'MMM d, yyyy')}
+                      </Typography>
                     </Stack>
                   </Box>
-                </Card>
+
+                  {/* Status */}
+                  <Box sx={{ width: 100 }}>
+                    <StatusBadge 
+                      status={getStatusBadgeType(goal.status)}
+                      label={goalStatusLabels[goal.status]}
+                      pulse={goal.status === 'overdue'}
+                    />
+                  </Box>
+
+                  {/* Chevron */}
+                  <ChevronRight 
+                    className="row-actions"
+                    size={16} 
+                    style={{ opacity: 0.4, transition: 'opacity 0.15s', color: 'var(--muted-foreground)' }} 
+                  />
+                </Box>
               );
             })}
           </Box>
         )}
       </Box>
 
-      {/* Completed Goals */}
+      {/* Completed Goals - Table Layout */}
       {completedGoals.length > 0 && (
-        <Box>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="overline" color="text.secondary" fontWeight={600}>
-              Completed Goals
-            </Typography>
-          <Typography variant="body2" color="text.secondary">
-              {completedGoals.length} items
-            </Typography>
-          </Stack>
-          <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' } }}>
-            {completedGoals.map((goal) => (
-              <Card 
-                key={goal.id} 
-                sx={{ 
-                  cursor: 'pointer',
-                  opacity: 0.85,
-                  '&:hover': { boxShadow: 2 }
-                }}
+        <Box sx={{ 
+          bgcolor: 'background.paper', 
+          borderRadius: 2, 
+          border: 1, 
+          borderColor: 'divider',
+          overflow: 'hidden',
+        }}>
+          {/* Table Header */}
+          <Box sx={{ 
+            px: 2, 
+            py: 1.5, 
+            bgcolor: 'grey.50', 
+            borderBottom: 1, 
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'grey.600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Completed Goals
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: 'grey.500' }}>
+                {completedGoals.length} items
+              </Typography>
+            </Stack>
+          </Box>
+          
+          <Box>
+            {completedGoals.map((goal, index) => (
+              <Box
+                key={goal.id}
                 onClick={() => onViewGoal(goal)}
+                sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  px: 2,
+                  py: 1.5,
+                  cursor: 'pointer',
+                  borderBottom: index < completedGoals.length - 1 ? 1 : 0,
+                  borderColor: 'divider',
+                  opacity: 0.75,
+                  transition: 'all 0.15s ease',
+                  '&:hover': { 
+                    bgcolor: 'grey.50',
+                    opacity: 1,
+                  },
+                }}
               >
-                <Box sx={{ p: 2 }}>
-                  <Stack direction="row" alignItems="center" spacing={1.5}>
-                    <Box sx={{ p: 1, borderRadius: '50%', bgcolor: 'success.light', display: 'flex' }}>
-                      <CheckCircle2 size={16} style={{ color: 'var(--success)' }} />
-                    </Box>
-                    <Box flex={1} minWidth={0}>
-                      <Typography variant="body2" fontWeight={500} noWrap>{goal.title}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Completed {goal.completedAt ? format(parseISO(goal.completedAt), 'MMM d, yyyy') : ''}
-                      </Typography>
-                    </Box>
-                    <Chip label={goal.category} size="small" variant="outlined" />
-                  </Stack>
+                {/* Success Icon */}
+                <Box sx={{ 
+                  p: 0.75, 
+                  borderRadius: '50%', 
+                  bgcolor: 'success.50', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <CheckCircle2 size={14} style={{ color: 'var(--success)' }} />
                 </Box>
-              </Card>
+
+                {/* Goal Info */}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ 
+                    fontSize: '0.875rem', 
+                    fontWeight: 500, 
+                    color: 'grey.700',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {goal.title}
+                  </Typography>
+                </Box>
+
+                {/* Category */}
+                <Chip 
+                  label={goal.category} 
+                  size="small" 
+                  variant="outlined" 
+                  sx={{ fontSize: '0.75rem', height: 24, display: { xs: 'none', sm: 'flex' } }} 
+                />
+
+                {/* Completed Date */}
+                <Typography sx={{ fontSize: '0.75rem', color: 'grey.500', display: { xs: 'none', md: 'block' } }}>
+                  Completed {goal.completedAt ? format(parseISO(goal.completedAt), 'MMM d, yyyy') : ''}
+                </Typography>
+
+                {/* Chevron */}
+                <ChevronRight size={16} style={{ opacity: 0.4, color: 'var(--muted-foreground)' }} />
+              </Box>
             ))}
           </Box>
         </Box>
