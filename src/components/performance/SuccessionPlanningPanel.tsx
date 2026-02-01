@@ -5,28 +5,33 @@ import {
   Typography,
   Avatar,
   Chip,
-  Divider,
   IconButton,
-  Tooltip,
-  AvatarGroup,
+  Collapse,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
-import { Progress } from '@/components/ui/progress';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { SemanticProgressBar } from './shared/SemanticProgressBar';
+import { StatusBadge } from './shared/StatusBadge';
 import {
   Users,
   Crown,
   TrendingUp,
   AlertTriangle,
   Target,
-  GraduationCap,
+  ChevronDown,
   ChevronRight,
   Plus,
   Edit,
-  Star,
   Zap,
-  Clock,
-  CheckCircle2,
+  MoreHorizontal,
 } from 'lucide-react';
 import { StaffMember } from '@/types/staff';
 import {
@@ -57,6 +62,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
   const [candidates, setCandidates] = useState<SuccessionCandidate[]>(initialMockCandidates);
   
   const [activeView, setActiveView] = useState<'pipeline' | 'candidates'>('pipeline');
+  const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
   
   // Drawer/Sheet states
   const [showAddRoleDrawer, setShowAddRoleDrawer] = useState(false);
@@ -89,6 +95,18 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
       : 0;
     return { totalRoles, rolesAtRisk, readyNowTotal, avgBenchStrength };
   }, [keyRoles, candidates, pipelines]);
+
+  const toggleRoleExpand = (roleId: string) => {
+    setExpandedRoles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(roleId)) {
+        newSet.delete(roleId);
+      } else {
+        newSet.add(roleId);
+      }
+      return newSet;
+    });
+  };
 
   // CRUD handlers
   const handleAddRole = (role: Omit<KeyRole, 'id'>) => {
@@ -161,296 +179,312 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
     setShowEditCandidateDrawer(true);
   };
 
-  const getRiskColor = (risk: string) => {
+  const getRiskBadgeVariant = (risk: string) => {
     switch (risk) {
-      case 'critical': return 'error';
+      case 'critical': return 'destructive';
       case 'high': return 'warning';
-      case 'medium': return 'info';
+      case 'medium': return 'secondary';
       default: return 'success';
     }
   };
 
-  const renderPipelineView = () => (
-    <Stack spacing={3}>
-      {pipelines.map((pipeline) => {
-        const currentHolder = pipeline.keyRole.currentHolderId 
-          ? getStaffMember(pipeline.keyRole.currentHolderId) 
-          : null;
+  const getReadinessColor = (readiness: string) => {
+    switch (readiness) {
+      case 'ready_now': return 'success';
+      case 'ready_1_2_years': return 'info';
+      case 'ready_3_5_years': return 'warning';
+      default: return 'secondary';
+    }
+  };
 
-        return (
-          <Card key={pipeline.keyRole.id}>
-            <Box sx={{ p: 3 }}>
-              {/* Role Header */}
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={3}>
-                <Box 
-                  sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
-                  onClick={() => openRoleDetail(pipeline.keyRole)}
+  const renderPipelineTable = () => (
+    <Card>
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/30 hover:bg-muted/30">
+            <TableHead className="w-12"></TableHead>
+            <TableHead>Key Role</TableHead>
+            <TableHead>Current Holder</TableHead>
+            <TableHead>Vacancy Risk</TableHead>
+            <TableHead className="text-center">Candidates</TableHead>
+            <TableHead>Bench Strength</TableHead>
+            <TableHead className="w-24"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {pipelines.map((pipeline) => {
+            const currentHolder = pipeline.keyRole.currentHolderId 
+              ? getStaffMember(pipeline.keyRole.currentHolderId) 
+              : null;
+            const isExpanded = expandedRoles.has(pipeline.keyRole.id);
+            const isAtRisk = pipeline.keyRole.vacancyRisk === 'high' || pipeline.keyRole.vacancyRisk === 'critical';
+
+            return (
+              <React.Fragment key={pipeline.keyRole.id}>
+                <TableRow 
+                  className="group cursor-pointer hover:bg-muted/50"
+                  style={{ 
+                    borderLeft: isAtRisk ? '3px solid hsl(var(--destructive))' : undefined,
+                  }}
+                  onClick={() => toggleRoleExpand(pipeline.keyRole.id)}
                 >
-                  <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-                    <Crown size={20} style={{ color: 'var(--primary)' }} />
-                    <Typography variant="h6" fontWeight={600}>{pipeline.keyRole.title}</Typography>
-                    <Chip 
-                      label={successionRiskLabels[pipeline.keyRole.vacancyRisk]} 
-                      size="small" 
-                      color={getRiskColor(pipeline.keyRole.vacancyRisk) as any}
-                    />
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary">
-                    {pipeline.keyRole.department} • {pipeline.keyRole.criticality} role
-                  </Typography>
-                </Box>
-                <Stack direction="row" spacing={1}>
-                  <Button variant="ghost" size="small" onClick={() => openEditRole(pipeline.keyRole)}>
-                    <Edit size={14} className="mr-1" /> Edit
-                  </Button>
-                  <Button variant="outline" size="small" onClick={() => openAddCandidateForRole(pipeline.keyRole.id)}>
-                    <Plus size={14} className="mr-1" /> Add Candidate
-                  </Button>
-                </Stack>
-              </Stack>
-
-              {/* Current Holder */}
-              {currentHolder && (
-                <Box sx={{ p: 2, bgcolor: 'primary.50', borderRadius: 1, mb: 3 }}>
-                  <Typography variant="caption" color="primary.main" fontWeight={600} mb={1} display="block">
-                    CURRENT HOLDER
-                  </Typography>
-                  <Stack direction="row" alignItems="center" spacing={2}>
-                    <Avatar src={currentHolder.avatar} sx={{ width: 48, height: 48 }}>
-                      {currentHolder.firstName?.[0]}{currentHolder.lastName?.[0]}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {currentHolder.firstName} {currentHolder.lastName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {currentHolder.position}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-              )}
-
-              {/* Succession Pipeline Visual */}
-              <Box mb={3}>
-                <Stack direction="row" justifyContent="space-between" mb={1}>
-                  <Typography variant="subtitle2" fontWeight={600}>Succession Pipeline</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Bench Strength: {Math.round(pipeline.benchStrength)}%
-                  </Typography>
-                </Stack>
-                
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
-                  {(['ready_now', 'ready_1_2_years', 'ready_3_5_years', 'not_ready'] as const).map((readiness) => {
-                    const candidatesInBucket = pipeline.candidates.filter(c => c.readiness === readiness);
-                    
-                    return (
-                      <Box 
-                        key={readiness}
-                        sx={{ 
-                          p: 2, 
-                          borderRadius: 1, 
-                          bgcolor: 'grey.50',
-                          border: 1,
-                          borderColor: candidatesInBucket.length > 0 ? readinessColors[readiness] : 'grey.200',
-                          borderStyle: candidatesInBucket.length > 0 ? 'solid' : 'dashed',
-                        }}
-                      >
-                        <Typography 
-                          variant="caption" 
-                          fontWeight={600} 
-                          sx={{ color: readinessColors[readiness] }}
-                          mb={1}
-                          display="block"
-                        >
-                          {readinessLabels[readiness]}
+                  <TableCell className="py-3">
+                    <IconButton size="small" sx={{ p: 0.5 }}>
+                      {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </IconButton>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <Box sx={{ 
+                        p: 0.75, 
+                        borderRadius: 1, 
+                        bgcolor: 'primary.50',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <Crown size={16} style={{ color: 'var(--primary)' }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" fontWeight={600}>{pipeline.keyRole.title}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {pipeline.keyRole.department} • {pipeline.keyRole.criticality}
                         </Typography>
-                        {candidatesInBucket.length > 0 ? (
-                          <Stack spacing={1}>
-                            {candidatesInBucket.map(candidate => {
-                              const staffMember = getStaffMember(candidate.staffId);
-                              return (
-                                <Stack key={candidate.id} direction="row" alignItems="center" spacing={1}>
-                                  <Avatar src={staffMember?.avatar} sx={{ width: 28, height: 28, fontSize: '0.7rem' }}>
-                                    {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
-                                  </Avatar>
-                                  <Box flex={1} minWidth={0}>
-                                    <Typography variant="caption" fontWeight={500} noWrap>
-                                      {staffMember?.firstName} {staffMember?.lastName}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary" display="block">
-                                      Score: {candidate.overallScore}%
-                                    </Typography>
-                                  </Box>
-                                </Stack>
-                              );
-                            })}
-                          </Stack>
+                      </Box>
+                    </Stack>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    {currentHolder ? (
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Avatar src={currentHolder.avatar} sx={{ width: 28, height: 28, fontSize: '0.75rem' }}>
+                          {currentHolder.firstName?.[0]}{currentHolder.lastName?.[0]}
+                        </Avatar>
+                        <Typography variant="body2">
+                          {currentHolder.firstName} {currentHolder.lastName}
+                        </Typography>
+                      </Stack>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" fontStyle="italic">Vacant</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <StatusBadge 
+                      status={getRiskBadgeVariant(pipeline.keyRole.vacancyRisk) as any}
+                      label={successionRiskLabels[pipeline.keyRole.vacancyRisk]}
+                    />
+                  </TableCell>
+                  <TableCell className="py-3 text-center">
+                    <Chip 
+                      label={`${pipeline.candidates.length} (${pipeline.readyNowCount} ready)`}
+                      size="small"
+                      sx={{ fontSize: '0.75rem' }}
+                    />
+                  </TableCell>
+                  <TableCell className="py-3 w-40">
+                    <SemanticProgressBar value={pipeline.benchStrength} showLabel size="sm" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Stack 
+                      direction="row" 
+                      spacing={0.5} 
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <IconButton size="small" onClick={() => openEditRole(pipeline.keyRole)}>
+                        <Edit size={14} />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => openAddCandidateForRole(pipeline.keyRole.id)}>
+                        <Plus size={14} />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => openRoleDetail(pipeline.keyRole)}>
+                        <MoreHorizontal size={14} />
+                      </IconButton>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+
+                {/* Expanded Candidates */}
+                <TableRow>
+                  <TableCell colSpan={7} className="p-0 border-0">
+                    <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                      <Box sx={{ bgcolor: 'grey.50', py: 2, px: 4 }}>
+                        {pipeline.candidates.length > 0 ? (
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="hover:bg-transparent">
+                                <TableHead className="text-xs">Candidate</TableHead>
+                                <TableHead className="text-xs">Readiness</TableHead>
+                                <TableHead className="text-xs">Performance</TableHead>
+                                <TableHead className="text-xs">Potential</TableHead>
+                                <TableHead className="text-xs">Experience</TableHead>
+                                <TableHead className="text-xs text-center">Overall</TableHead>
+                                <TableHead className="w-16"></TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {pipeline.candidates.map(candidate => {
+                                const staffMember = getStaffMember(candidate.staffId);
+                                return (
+                                  <TableRow 
+                                    key={candidate.id} 
+                                    className="group/candidate cursor-pointer hover:bg-white"
+                                    onClick={() => openEditCandidate(candidate)}
+                                  >
+                                    <TableCell className="py-2">
+                                      <Stack direction="row" alignItems="center" spacing={1}>
+                                        <Avatar src={staffMember?.avatar} sx={{ width: 24, height: 24, fontSize: '0.65rem' }}>
+                                          {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
+                                        </Avatar>
+                                        <Box>
+                                          <Typography variant="caption" fontWeight={500}>
+                                            {staffMember?.firstName} {staffMember?.lastName}
+                                          </Typography>
+                                          <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.65rem' }}>
+                                            {staffMember?.position}
+                                          </Typography>
+                                        </Box>
+                                      </Stack>
+                                    </TableCell>
+                                    <TableCell className="py-2">
+                                      <StatusBadge 
+                                        status={getReadinessColor(candidate.readiness) as any}
+                                        label={readinessLabels[candidate.readiness]}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="py-2 w-28">
+                                      <SemanticProgressBar value={candidate.performanceScore} size="xs" />
+                                    </TableCell>
+                                    <TableCell className="py-2 w-28">
+                                      <SemanticProgressBar value={candidate.potentialScore} size="xs" />
+                                    </TableCell>
+                                    <TableCell className="py-2 w-28">
+                                      <SemanticProgressBar value={candidate.experienceScore} size="xs" />
+                                    </TableCell>
+                                    <TableCell className="py-2 text-center">
+                                      <Typography variant="body2" fontWeight={700} color="primary.main">
+                                        {candidate.overallScore}%
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell className="py-2">
+                                      <IconButton 
+                                        size="small" 
+                                        className="opacity-0 group-hover/candidate:opacity-100 transition-opacity"
+                                        onClick={(e) => { e.stopPropagation(); openEditCandidate(candidate); }}
+                                      >
+                                        <Edit size={12} />
+                                      </IconButton>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
                         ) : (
-                          <Typography variant="caption" color="text.secondary">
-                            No candidates
-                          </Typography>
+                          <Box sx={{ textAlign: 'center', py: 3 }}>
+                            <Typography variant="body2" color="text.secondary" mb={2}>
+                              No succession candidates identified
+                            </Typography>
+                            <Button size="small" variant="outline" onClick={() => openAddCandidateForRole(pipeline.keyRole.id)}>
+                              <Plus size={14} className="mr-1" /> Add Candidate
+                            </Button>
+                          </Box>
                         )}
                       </Box>
-                    );
-                  })}
-                </Box>
-              </Box>
-
-              {/* Required Competencies */}
-              <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600} mb={1} display="block">
-                  REQUIRED COMPETENCIES
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" gap={0.5}>
-                  {pipeline.keyRole.requiredCompetencies.map((comp, i) => (
-                    <Chip key={i} label={comp} size="small" variant="outlined" />
-                  ))}
-                </Stack>
-              </Box>
-            </Box>
-          </Card>
-        );
-      })}
-    </Stack>
+                    </Collapse>
+                  </TableCell>
+                </TableRow>
+              </React.Fragment>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </Card>
   );
 
-  const renderCandidatesView = () => (
-    <Stack spacing={2}>
-      {candidates.map((candidate) => {
-        const staffMember = getStaffMember(candidate.staffId);
-        const keyRole = keyRoles.find(r => r.id === candidate.keyRoleId);
-        const mentor = candidate.mentorId ? getStaffMember(candidate.mentorId) : null;
+  const renderCandidatesTable = () => (
+    <Card>
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/30 hover:bg-muted/30">
+            <TableHead>Candidate</TableHead>
+            <TableHead>Target Role</TableHead>
+            <TableHead>Readiness</TableHead>
+            <TableHead>Performance</TableHead>
+            <TableHead>Potential</TableHead>
+            <TableHead className="text-center">Overall Score</TableHead>
+            <TableHead className="w-24"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {candidates.map((candidate) => {
+            const staffMember = getStaffMember(candidate.staffId);
+            const keyRole = keyRoles.find(r => r.id === candidate.keyRoleId);
 
-        return (
-          <Card key={candidate.id} sx={{ cursor: 'pointer', '&:hover': { boxShadow: 3 } }} onClick={() => openEditCandidate(candidate)}>
-            <Box sx={{ p: 2.5 }}>
-              <Stack direction="row" alignItems="flex-start" spacing={2}>
-                <Avatar src={staffMember?.avatar} sx={{ width: 56, height: 56 }}>
-                  {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
-                </Avatar>
-                
-                <Box flex={1}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            return (
+              <TableRow 
+                key={candidate.id} 
+                className="group cursor-pointer hover:bg-muted/50"
+                onClick={() => openEditCandidate(candidate)}
+              >
+                <TableCell className="py-3">
+                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Avatar src={staffMember?.avatar} sx={{ width: 36, height: 36 }}>
+                      {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
+                    </Avatar>
                     <Box>
-                      <Typography variant="subtitle1" fontWeight={600}>
+                      <Typography variant="body2" fontWeight={600}>
                         {staffMember?.firstName} {staffMember?.lastName}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary">
                         {staffMember?.position}
                       </Typography>
-                      <Stack direction="row" spacing={1} mt={1}>
-                        <Chip 
-                          label={`Successor for: ${keyRole?.title}`} 
-                          size="small" 
-                          variant="outlined"
-                          icon={<Crown size={12} />}
-                        />
-                        <Chip 
-                          label={readinessLabels[candidate.readiness]}
-                          size="small"
-                          sx={{ 
-                            bgcolor: readinessColors[candidate.readiness],
-                            color: 'white',
-                          }}
-                        />
-                      </Stack>
-                    </Box>
-                    
-                    <Box textAlign="center" sx={{ minWidth: 80 }}>
-                      <Typography variant="h4" fontWeight={700} color="primary.main">
-                        {candidate.overallScore}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">Overall Score</Typography>
                     </Box>
                   </Stack>
-
-                  {/* Score Breakdown */}
-                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mt: 2 }}>
-                    <Box>
-                      <Stack direction="row" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="caption" color="text.secondary">Performance</Typography>
-                        <Typography variant="caption" fontWeight={600}>{candidate.performanceScore}%</Typography>
-                      </Stack>
-                      <Progress value={candidate.performanceScore} className="h-1.5" />
-                    </Box>
-                    <Box>
-                      <Stack direction="row" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="caption" color="text.secondary">Potential</Typography>
-                        <Typography variant="caption" fontWeight={600}>{candidate.potentialScore}%</Typography>
-                      </Stack>
-                      <Progress value={candidate.potentialScore} className="h-1.5" />
-                    </Box>
-                    <Box>
-                      <Stack direction="row" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="caption" color="text.secondary">Experience</Typography>
-                        <Typography variant="caption" fontWeight={600}>{candidate.experienceScore}%</Typography>
-                      </Stack>
-                      <Progress value={candidate.experienceScore} className="h-1.5" />
-                    </Box>
-                  </Box>
-
-                  {/* Competency Gaps */}
-                  {candidate.competencyGaps.length > 0 && (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="caption" color="text.secondary" fontWeight={600} mb={1} display="block">
-                        DEVELOPMENT GAPS
-                      </Typography>
-                      <Stack direction="row" spacing={1} flexWrap="wrap" gap={0.5}>
-                        {candidate.competencyGaps.map((gap) => (
-                          <Chip
-                            key={gap.id}
-                            label={`${gap.competency} (${gap.currentLevel}→${gap.requiredLevel})`}
-                            size="small"
-                            color={gap.developmentPriority === 'high' ? 'error' : gap.developmentPriority === 'medium' ? 'warning' : 'default'}
-                            variant="outlined"
-                          />
-                        ))}
-                      </Stack>
-                    </Box>
-                  )}
-
-                  {/* Development Actions */}
-                  {candidate.developmentActions.length > 0 && (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="caption" color="text.secondary" fontWeight={600} mb={1} display="block">
-                        DEVELOPMENT ACTIONS
-                      </Typography>
-                      <Stack spacing={0.5}>
-                        {candidate.developmentActions.slice(0, 2).map((action) => (
-                          <Stack key={action.id} direction="row" alignItems="center" spacing={1}>
-                            {action.status === 'completed' ? (
-                              <CheckCircle2 size={14} style={{ color: 'var(--success)' }} />
-                            ) : action.status === 'in_progress' ? (
-                              <Clock size={14} style={{ color: 'var(--warning)' }} />
-                            ) : (
-                              <Target size={14} style={{ color: 'var(--muted-foreground)' }} />
-                            )}
-                            <Typography variant="caption">{action.title}</Typography>
-                            <Chip label={action.type.replace('_', ' ')} size="small" sx={{ fontSize: '0.65rem', height: 18 }} />
-                          </Stack>
-                        ))}
-                      </Stack>
-                    </Box>
-                  )}
-
-                  {/* Mentor */}
-                  {mentor && (
-                    <Stack direction="row" alignItems="center" spacing={1} mt={2}>
-                      <Typography variant="caption" color="text.secondary">Mentor:</Typography>
-                      <Avatar src={mentor.avatar} sx={{ width: 20, height: 20, fontSize: '0.6rem' }}>
-                        {mentor.firstName?.[0]}
-                      </Avatar>
-                      <Typography variant="caption">{mentor.firstName} {mentor.lastName}</Typography>
-                    </Stack>
-                  )}
-                </Box>
-              </Stack>
-            </Box>
-          </Card>
-        );
-      })}
-    </Stack>
+                </TableCell>
+                <TableCell className="py-3">
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Crown size={14} style={{ color: 'var(--primary)' }} />
+                    <Typography variant="body2">{keyRole?.title || 'Unknown Role'}</Typography>
+                  </Stack>
+                </TableCell>
+                <TableCell className="py-3">
+                  <StatusBadge 
+                    status={getReadinessColor(candidate.readiness) as any}
+                    label={readinessLabels[candidate.readiness]}
+                  />
+                </TableCell>
+                <TableCell className="py-3 w-32">
+                  <SemanticProgressBar value={candidate.performanceScore} showLabel size="sm" />
+                </TableCell>
+                <TableCell className="py-3 w-32">
+                  <SemanticProgressBar value={candidate.potentialScore} showLabel size="sm" />
+                </TableCell>
+                <TableCell className="py-3 text-center">
+                  <Typography variant="h6" fontWeight={700} color="primary.main">
+                    {candidate.overallScore}%
+                  </Typography>
+                </TableCell>
+                <TableCell className="py-3">
+                  <Stack 
+                    direction="row" 
+                    spacing={0.5} 
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <IconButton size="small" onClick={() => openEditCandidate(candidate)}>
+                      <Edit size={14} />
+                    </IconButton>
+                    <IconButton size="small">
+                      <MoreHorizontal size={14} />
+                    </IconButton>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </Card>
   );
 
   return (
@@ -494,8 +528,8 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
       {/* Stats */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
         <Card>
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row" alignItems="center" spacing={1}>
+          <Box sx={{ p: 2, bgcolor: 'primary.50' }}>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
               <Crown size={20} style={{ color: 'var(--primary)' }} />
               <Box>
                 <Typography variant="h5" fontWeight={700}>{stats.totalRoles}</Typography>
@@ -505,8 +539,8 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
           </Box>
         </Card>
         <Card>
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row" alignItems="center" spacing={1}>
+          <Box sx={{ p: 2, bgcolor: 'error.50' }}>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
               <AlertTriangle size={20} style={{ color: 'var(--destructive)' }} />
               <Box>
                 <Typography variant="h5" fontWeight={700} color="error.main">{stats.rolesAtRisk}</Typography>
@@ -516,8 +550,8 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
           </Box>
         </Card>
         <Card>
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row" alignItems="center" spacing={1}>
+          <Box sx={{ p: 2, bgcolor: 'success.50' }}>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
               <Zap size={20} style={{ color: 'var(--success)' }} />
               <Box>
                 <Typography variant="h5" fontWeight={700} color="success.main">{stats.readyNowTotal}</Typography>
@@ -527,8 +561,8 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
           </Box>
         </Card>
         <Card>
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row" alignItems="center" spacing={1}>
+          <Box sx={{ p: 2, bgcolor: 'info.50' }}>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
               <TrendingUp size={20} style={{ color: 'var(--info)' }} />
               <Box>
                 <Typography variant="h5" fontWeight={700}>{Math.round(stats.avgBenchStrength)}%</Typography>
@@ -540,7 +574,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
       </Box>
 
       {/* Content */}
-      {activeView === 'pipeline' ? renderPipelineView() : renderCandidatesView()}
+      {activeView === 'pipeline' ? renderPipelineTable() : renderCandidatesTable()}
 
       {/* Drawers and Sheets */}
       <AddKeyRoleDrawer
