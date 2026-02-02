@@ -173,19 +173,29 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
 
   const renderPIPTable = (pipList: PerformanceImprovementPlan[], title: string) => (
     <Box>
-      <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
+      <Typography 
+        variant="overline" 
+        sx={{ 
+          fontSize: '0.65rem', 
+          fontWeight: 600, 
+          letterSpacing: '0.1em',
+          color: 'text.secondary',
+          mb: 2, 
+          display: 'block' 
+        }}
+      >
         {title}
       </Typography>
       <Card>
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead>Employee</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Progress</TableHead>
-              <TableHead>Timeline</TableHead>
-              <TableHead className="text-center">Check-ins</TableHead>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="text-[0.65rem] uppercase tracking-wider font-semibold text-muted-foreground">Employee</TableHead>
+              <TableHead className="text-[0.65rem] uppercase tracking-wider font-semibold text-muted-foreground">Reason</TableHead>
+              <TableHead className="text-[0.65rem] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+              <TableHead className="text-[0.65rem] uppercase tracking-wider font-semibold text-muted-foreground">Progress</TableHead>
+              <TableHead className="text-[0.65rem] uppercase tracking-wider font-semibold text-muted-foreground">Timeline</TableHead>
+              <TableHead className="text-[0.65rem] uppercase tracking-wider font-semibold text-muted-foreground text-center">Check-ins</TableHead>
               <TableHead className="w-24"></TableHead>
             </TableRow>
           </TableHeader>
@@ -196,14 +206,23 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
               const progress = calculateProgress(pip);
               const daysRemaining = getDaysRemaining(pip);
               const isOverdue = daysRemaining < 0 && pip.status === 'active';
+              const isAtRisk = daysRemaining <= 14 && daysRemaining >= 0 && pip.status === 'active';
+              const isSuccess = pip.status === 'completed_success';
+
+              // Determine border color: red for overdue, amber for at-risk, green for success
+              const borderColor = isOverdue 
+                ? 'hsl(var(--destructive))' 
+                : isAtRisk 
+                  ? 'hsl(var(--chart-4))' 
+                  : isSuccess 
+                    ? 'hsl(var(--chart-2))' 
+                    : 'transparent';
 
               return (
                 <TableRow 
                   key={pip.id} 
-                  className="group cursor-pointer hover:bg-muted/50"
-                  style={{
-                    borderLeft: isOverdue ? '3px solid hsl(var(--destructive))' : undefined,
-                  }}
+                  className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                  style={{ borderLeft: `3px solid ${borderColor}` }}
                   onClick={() => handleRowClick(pip)}
                 >
                   <TableCell className="py-3">
@@ -212,17 +231,17 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
                         {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
                       </Avatar>
                       <Box>
-                        <Typography variant="body2" fontWeight={600}>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.875rem' }}>
                           {staffMember?.firstName} {staffMember?.lastName}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                           Manager: {manager?.firstName} {manager?.lastName}
                         </Typography>
                       </Box>
                     </Stack>
                   </TableCell>
                   <TableCell className="py-3 max-w-xs">
-                    <Typography variant="body2" className="line-clamp-2">
+                    <Typography variant="body2" sx={{ fontSize: '0.875rem' }} className="line-clamp-2">
                       {pip.reason}
                     </Typography>
                   </TableCell>
@@ -237,7 +256,7 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
                           label="Overdue" 
                           color="error" 
                           size="small" 
-                          sx={{ fontSize: '0.65rem', height: 20 }}
+                          sx={{ fontSize: '0.65rem', height: 20, fontWeight: 600 }}
                         />
                       )}
                     </Stack>
@@ -245,10 +264,10 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
                   <TableCell className="py-3 w-36">
                     <Box>
                       <Stack direction="row" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                           {pip.milestones.filter(m => m.status === 'completed').length}/{pip.milestones.length}
                         </Typography>
-                        <Typography variant="caption" fontWeight={600}>
+                        <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
                           {Math.round(progress)}%
                         </Typography>
                       </Stack>
@@ -263,14 +282,17 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
                     <Box>
                       <Stack direction="row" alignItems="center" spacing={0.5} mb={0.5}>
                         <Calendar size={12} className="text-muted-foreground" />
-                        <Typography variant="caption">
+                        <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
                           {format(parseISO(pip.startDate), 'MMM d')} - {format(parseISO(pip.currentEndDate), 'MMM d')}
                         </Typography>
                       </Stack>
                       <Typography
                         variant="caption"
                         fontWeight={600}
-                        color={isOverdue ? 'error.main' : daysRemaining <= 14 ? 'warning.main' : 'text.secondary'}
+                        sx={{ 
+                          fontSize: '0.7rem',
+                          color: isOverdue ? 'error.main' : daysRemaining <= 14 ? 'warning.main' : 'text.secondary'
+                        }}
                       >
                         {isOverdue ? `${Math.abs(daysRemaining)}d overdue` : `${daysRemaining}d left`}
                       </Typography>
@@ -280,7 +302,7 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
                     <Chip 
                       label={pip.checkIns.length} 
                       size="small" 
-                      sx={{ minWidth: 32 }}
+                      sx={{ minWidth: 32, fontSize: '0.75rem', fontWeight: 600 }}
                     />
                   </TableCell>
                   <TableCell className="py-3">
