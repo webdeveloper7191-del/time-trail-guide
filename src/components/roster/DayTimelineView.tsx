@@ -954,6 +954,7 @@ function ShiftBar({
             : undefined,
         }}
         onClick={(e) => {
+          e.stopPropagation(); // Prevent creating new shift when clicking existing one
           if (!isResizing) onEdit();
         }}
       >
