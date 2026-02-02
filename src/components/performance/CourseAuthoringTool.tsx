@@ -307,9 +307,6 @@ export function CourseAuthoringTool({
                 <Send className="h-4 w-4 mr-2" />
                 Publish
               </Button>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-5 w-5" />
-              </Button>
             </div>
           </div>
         </div>

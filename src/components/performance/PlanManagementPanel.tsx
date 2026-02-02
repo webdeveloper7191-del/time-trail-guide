@@ -30,6 +30,7 @@ import {
   UserPlus,
   Trash2,
   AlertTriangle,
+  Eye,
 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { 
@@ -59,12 +60,14 @@ interface PlanManagementPanelProps {
   onAssignPlan: (template: PerformancePlanTemplate) => void;
   onBulkAssignPlan: (template: PerformancePlanTemplate) => void;
   onViewPlan: (plan: AssignedPlan) => void;
+  onEditPlan?: (plan: AssignedPlan) => void;
   onViewTemplate: (template: PerformancePlanTemplate) => void;
   onCreateTemplate: () => void;
   onEditTemplate: (template: PerformancePlanTemplate) => void;
   onDuplicateTemplate: (template: PerformancePlanTemplate) => void;
   onQuickAssignPlan: () => void;
   onDeleteTemplate?: (templateId: string) => void;
+  onDeletePlan?: (planId: string) => void;
 }
 
 export function PlanManagementPanel({
@@ -75,12 +78,14 @@ export function PlanManagementPanel({
   onAssignPlan,
   onBulkAssignPlan,
   onViewPlan,
+  onEditPlan,
   onViewTemplate,
   onCreateTemplate,
   onEditTemplate,
   onDuplicateTemplate,
   onQuickAssignPlan,
   onDeleteTemplate,
+  onDeletePlan,
 }: PlanManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<'assigned' | 'templates'>('assigned');
   const [searchTerm, setSearchTerm] = useState('');
@@ -300,7 +305,7 @@ export function PlanManagementPanel({
                     <div 
                       key={plan.id} 
                       className={cn(
-                        "flex items-center gap-4 px-4 py-3 cursor-pointer transition-colors",
+                        "flex items-center gap-4 px-4 py-3 cursor-pointer transition-colors group",
                         "hover:bg-muted/40",
                         index < filteredPlans.length - 1 && "border-b border-border",
                         isOverdueStatus && "border-l-[3px] border-l-destructive"
@@ -369,8 +374,50 @@ export function PlanManagementPanel({
                         </span>
                       </div>
 
-                      {/* Chevron */}
-                      <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                      {/* Actions Menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            onViewPlan(plan);
+                          }}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          {onEditPlan && (
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onEditPlan(plan);
+                            }}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Plan
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          {onDeletePlan && (
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeletePlan(plan.id);
+                              }}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Plan
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   );
                 })}

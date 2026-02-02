@@ -15,3 +15,9 @@ export type { StatusType } from './StatusBadge';
 export { SemanticProgressBar, getProgressStatus } from './SemanticProgressBar';
 export type { ProgressStatus } from './SemanticProgressBar';
 export { EnhancedCard } from './EnhancedCard';
+
+// Layout Components
+export { CollapsibleStatsGrid } from './CollapsibleStatsGrid';
+export { ScrollableTable } from './ScrollableTable';
+export { RowActionsMenu } from './RowActionsMenu';
+export type { RowAction } from './RowActionsMenu';

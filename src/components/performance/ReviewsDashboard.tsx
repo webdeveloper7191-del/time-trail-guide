@@ -26,7 +26,14 @@ import {
   AlertCircle,
   Search,
   X,
+  MoreVertical,
+  Eye,
+  Edit,
+  Trash2,
+  Send,
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import { createReviewBulkActions } from './shared/BulkActionsBar';
 import { InlineBulkActions } from './shared/InlineBulkActions';
 import { toast } from 'sonner';
@@ -39,6 +46,9 @@ interface ReviewsDashboardProps {
   currentUserId: string;
   onCreateReview: () => void;
   onViewReview: (review: PerformanceReview) => void;
+  onEditReview?: (review: PerformanceReview) => void;
+  onDeleteReview?: (reviewId: string) => void;
+  onSendReminder?: (reviewId: string) => void;
   onBulkSendReminders?: (reviewIds: string[]) => void;
   onBulkReassign?: (reviewIds: string[]) => void;
   onBulkCancel?: (reviewIds: string[]) => void;
@@ -66,6 +76,9 @@ export function ReviewsDashboard({
   currentUserId,
   onCreateReview, 
   onViewReview,
+  onEditReview,
+  onDeleteReview,
+  onSendReminder,
   onBulkSendReminders,
   onBulkReassign,
   onBulkCancel,
@@ -525,7 +538,59 @@ export function ReviewsDashboard({
                         </Box>
                       )}
 
-                      <ChevronRight size={18} style={{ color: 'var(--muted-foreground)' }} />
+                      {/* Actions Menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            onViewReview(review);
+                          }}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          {onEditReview && review.status !== 'completed' && (
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onEditReview(review);
+                            }}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Review
+                            </DropdownMenuItem>
+                          )}
+                          {onSendReminder && review.status !== 'completed' && (
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onSendReminder(review.id);
+                            }}>
+                              <Send className="h-4 w-4 mr-2" />
+                              Send Reminder
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          {onDeleteReview && (
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteReview(review.id);
+                              }}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Review
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </Stack>
                   </Box>
                 </Card>

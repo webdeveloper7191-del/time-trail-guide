@@ -622,11 +622,11 @@ export function GoalRecommendationsPanel({
                     </Stack>
                   </Box>
                   
-                  {/* Relevance & Action */}
+                  {/* Relevance & Actions */}
                   <Stack 
                     alignItems={{ xs: 'stretch', md: 'flex-end' }} 
                     spacing={1.5}
-                    sx={{ minWidth: { md: 140 } }}
+                    sx={{ minWidth: { md: 160 } }}
                   >
                     <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
                       <Typography variant="caption" color="text.secondary">
@@ -641,16 +641,43 @@ export function GoalRecommendationsPanel({
                       </Typography>
                     </Box>
                     
-                    <MuiButton
-                      variant={isAdopted ? 'outlined' : 'contained'}
-                      size="small"
-                      startIcon={isAdopted ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                      onClick={() => handleAdoptGoal(rec)}
-                      disabled={isAdopted}
-                      fullWidth
-                    >
-                      {isAdopted ? 'Added' : 'Add Goal'}
-                    </MuiButton>
+                    <Stack direction={{ xs: 'row', md: 'column' }} spacing={1} width="100%">
+                      <MuiButton
+                        variant="outlined"
+                        size="small"
+                        onClick={() => {
+                          // Show details in a toast or expand the card
+                          toast.info(
+                            <Box>
+                              <Typography variant="subtitle2" fontWeight={600} mb={1}>{rec.title}</Typography>
+                              <Typography variant="body2" color="text.secondary" mb={1.5}>{rec.description}</Typography>
+                              <Typography variant="caption" fontWeight={600}>Suggested Duration:</Typography>
+                              <Typography variant="body2" mb={1}>{rec.suggestedDuration}</Typography>
+                              <Typography variant="caption" fontWeight={600}>All Milestones:</Typography>
+                              <Box component="ul" sx={{ pl: 2, mt: 0.5, mb: 0 }}>
+                                {rec.suggestedMilestones.map((ms, i) => (
+                                  <Typography key={i} component="li" variant="body2">{ms}</Typography>
+                                ))}
+                              </Box>
+                            </Box>,
+                            { duration: 10000 }
+                          );
+                        }}
+                        sx={{ flex: { xs: 1, md: 'none' } }}
+                      >
+                        View Details
+                      </MuiButton>
+                      <MuiButton
+                        variant={isAdopted ? 'outlined' : 'contained'}
+                        size="small"
+                        startIcon={isAdopted ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                        onClick={() => handleAdoptGoal(rec)}
+                        disabled={isAdopted}
+                        sx={{ flex: { xs: 1, md: 'none' } }}
+                      >
+                        {isAdopted ? 'Added' : 'Add Goal'}
+                      </MuiButton>
+                    </Stack>
                   </Stack>
                 </Stack>
               </Box>
