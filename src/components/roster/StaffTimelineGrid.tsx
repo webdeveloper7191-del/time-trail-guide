@@ -177,9 +177,11 @@ export function StaffTimelineGrid({
   const isMonthView = viewMode === 'month';
   
   // Column width classes - consistent fixed widths on mobile/tablet for ALL views (like fortnight/month)
-  // Desktop: fluid for day/workweek/week, fixed for fortnight/month
+  // Desktop (large screens 1440px+): fluid for day/workweek/week, fixed for fortnight/month
+  // Desktop (smaller screens <1440px): fixed widths for workweek/week to prevent border misalignment
   // Mobile/Tablet: fixed widths for ALL views to enable scrollable grid with blue scrollbar
   const getColumnWidthClass = () => {
+    // Month and fortnight always use fixed widths
     if (isMonthView || viewMode === 'fortnight') {
       return "w-[125px] min-w-[125px] shrink-0";
     }
@@ -187,7 +189,12 @@ export function StaffTimelineGrid({
     if (isMobileOrTablet) {
       return "w-[125px] min-w-[125px] shrink-0";
     }
-    // Desktop: fluid columns for day, workweek, week - stretch to fill available space
+    // For workweek and week views: use fixed widths on smaller laptops (<1440px), fluid on larger screens
+    // This prevents border alignment issues on 1366px and similar screens
+    if (viewMode === 'workweek' || viewMode === 'week') {
+      return "w-[125px] min-w-[125px] shrink-0 2xl:w-auto 2xl:min-w-[100px] 2xl:flex-1";
+    }
+    // Day view: fluid columns - stretch to fill available space
     return "flex-1 min-w-[80px]";
   };
   const columnWidthClass = getColumnWidthClass();
@@ -199,12 +206,12 @@ export function StaffTimelineGrid({
   const isSyncingScroll = useRef(false);
   
   // Scroll position tracking for scroll indicator
-  // Desktop: show for day, fortnight, month views
+  // Desktop: show for all views that use fixed-width columns (workweek, week, fortnight, month)
   // Mobile/Tablet: show for ALL views
   const [scrollInfo, setScrollInfo] = useState({ scrollLeft: 0, scrollWidth: 0, clientWidth: 0 });
   const showScrollIndicator = isMobileOrTablet 
     ? true  // Show for all views on mobile/tablet
-    : (viewMode === 'day' || viewMode === 'fortnight' || viewMode === 'month'); // Desktop: day, fortnight, month
+    : (viewMode === 'day' || viewMode === 'workweek' || viewMode === 'week' || viewMode === 'fortnight' || viewMode === 'month'); // Desktop: all views now
 
   // Draggable scroll thumb state
   const [isScrollDragging, setIsScrollDragging] = useState(false);
@@ -962,7 +969,7 @@ export function StaffTimelineGrid({
             )}
             style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
           >
-            <div className={cn("flex min-w-full", (isMonthView || viewMode === 'fortnight' || isMobileOrTablet) && "min-w-max")}>
+            <div className={cn("flex min-w-full", (isMonthView || viewMode === 'fortnight' || viewMode === 'workweek' || viewMode === 'week' || isMobileOrTablet) && "min-w-max")}>
               {dates.map((date) => {
                 const dateStr = format(date, 'yyyy-MM-dd');
                 const holidays = getHolidaysForDate(dateStr);
@@ -1163,7 +1170,7 @@ export function StaffTimelineGrid({
             )}
             style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
           >
-            <div className={cn("min-w-full", (isMonthView || viewMode === 'fortnight' || isMobileOrTablet) && "min-w-max")}>
+            <div className={cn("min-w-full", (isMonthView || viewMode === 'fortnight' || viewMode === 'workweek' || viewMode === 'week' || isMobileOrTablet) && "min-w-max")}>
               {centre.rooms.map((room, roomIndex) => {
                 const roomStaffIds = staffByRoom[room.id] || new Set();
                 const roomStaff = filteredStaff.filter(s => roomStaffIds.has(s.id));
