@@ -6,6 +6,7 @@ export { PerformanceSettingsDrawer } from '../PerformanceSettingsDrawer';
 export type { PerformanceSettings } from '../PerformanceSettingsDrawer';
 export { RichTextEditor } from '../RichTextEditor';
 export { BulkActionsBar, createGoalBulkActions, createReviewBulkActions } from './BulkActionsBar';
+export { InlineBulkActions } from './InlineBulkActions';
 export { GlobalSearch } from './GlobalSearch';
 
 // UI Enhancement Components

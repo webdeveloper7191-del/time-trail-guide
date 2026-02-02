@@ -41,7 +41,8 @@ import {
   Users,
   Filter,
 } from 'lucide-react';
-import { BulkActionsBar, createGoalBulkActions } from './shared/BulkActionsBar';
+import { createGoalBulkActions } from './shared/BulkActionsBar';
+import { InlineBulkActions } from './shared/InlineBulkActions';
 import { toast } from 'sonner';
 
 interface GoalsTrackerProps {
@@ -440,71 +441,89 @@ export function GoalsTracker({
           spacing={{ xs: 1.5, md: 2 }} 
           flexWrap="wrap" 
           alignItems={{ xs: 'stretch', md: 'center' }}
+          justifyContent="space-between"
         >
-          <TextField
-            placeholder="Search goals..."
-            size="small"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            sx={{ minWidth: { xs: '100%', md: 220 }, maxWidth: { md: 360 }, flex: { md: 1 } }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={18} />
-                </InputAdornment>
-              ),
-            }}
-          />
-          
-          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-            <FormControl size="small" sx={{ minWidth: { xs: 'calc(50% - 4px)', sm: 140 }, flex: { xs: 1, sm: 'none' } }}>
-              <MuiSelect
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as GoalStatus | 'all')}
-              >
-                <MenuItem value="all">All Statuses</MenuItem>
-                {Object.entries(goalStatusLabels).map(([value, label]) => (
-                  <MenuItem key={value} value={value}>{label}</MenuItem>
-                ))}
-              </MuiSelect>
-            </FormControl>
+          <Stack 
+            direction={{ xs: 'column', sm: 'row' }} 
+            spacing={{ xs: 1.5, sm: 2 }} 
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            sx={{ flex: 1 }}
+          >
+            <TextField
+              placeholder="Search goals..."
+              size="small"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              sx={{ minWidth: { xs: '100%', sm: 220 }, maxWidth: { sm: 320 } }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={18} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+              <FormControl size="small" sx={{ minWidth: { xs: 'calc(50% - 4px)', sm: 120 } }}>
+                <MuiSelect
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as GoalStatus | 'all')}
+                >
+                  <MenuItem value="all">All Statuses</MenuItem>
+                  {Object.entries(goalStatusLabels).map(([value, label]) => (
+                    <MenuItem key={value} value={value}>{label}</MenuItem>
+                  ))}
+                </MuiSelect>
+              </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: { xs: 'calc(50% - 4px)', sm: 140 }, flex: { xs: 1, sm: 'none' } }}>
-              <MuiSelect
-                value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value as GoalPriority | 'all')}
-            >
-              <MenuItem value="all">All Priorities</MenuItem>
-              {Object.entries(goalPriorityLabels).map(([value, label]) => (
-                <MenuItem key={value} value={value}>{label}</MenuItem>
-              ))}
-            </MuiSelect>
-          </FormControl>
+              <FormControl size="small" sx={{ minWidth: { xs: 'calc(50% - 4px)', sm: 120 } }}>
+                <MuiSelect
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value as GoalPriority | 'all')}
+                >
+                  <MenuItem value="all">All Priorities</MenuItem>
+                  {Object.entries(goalPriorityLabels).map(([value, label]) => (
+                    <MenuItem key={value} value={value}>{label}</MenuItem>
+                  ))}
+                </MuiSelect>
+              </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: 1, sm: 'none' } }}>
-              <MuiSelect
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value as string)}
-              >
-                <MenuItem value="all">All Categories</MenuItem>
-                {availableCategories.map(cat => (
-                  <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-                ))}
-              </MuiSelect>
-            </FormControl>
+              <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 130 } }}>
+                <MuiSelect
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value as string)}
+                >
+                  <MenuItem value="all">All Categories</MenuItem>
+                  {availableCategories.map(cat => (
+                    <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                  ))}
+                </MuiSelect>
+              </FormControl>
+
+              {hasActiveFilters && (
+                <MuiButton 
+                  variant="text"
+                  size="small" 
+                  startIcon={<X size={16} />}
+                  onClick={clearFilters}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  Clear
+                </MuiButton>
+              )}
+            </Stack>
           </Stack>
 
-          {hasActiveFilters && (
-            <MuiButton 
-              variant="text"
-              size="small" 
-              startIcon={<X size={16} />}
-              onClick={clearFilters}
-              sx={{ color: 'text.secondary', alignSelf: { xs: 'flex-start', md: 'center' } }}
-            >
-              Clear filters
-            </MuiButton>
-          )}
+          {/* Inline Bulk Actions */}
+          <InlineBulkActions
+            selectedCount={selectedGoalIds.size}
+            totalCount={activeGoals.length}
+            onClearSelection={handleClearSelection}
+            onSelectAll={handleSelectAll}
+            actions={bulkActions}
+            entityName="goals"
+          />
         </Stack>
       )}
 
@@ -801,16 +820,6 @@ export function GoalsTracker({
           </Box>
         </Box>
       )}
-
-      {/* Bulk Actions Bar */}
-      <BulkActionsBar
-        selectedCount={selectedGoalIds.size}
-        totalCount={activeGoals.length}
-        onClearSelection={handleClearSelection}
-        onSelectAll={handleSelectAll}
-        actions={bulkActions}
-        entityName="goals"
-      />
     </Box>
   );
 }
