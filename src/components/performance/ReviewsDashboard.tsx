@@ -23,10 +23,15 @@ import {
   Plus,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Search,
+  X,
 } from 'lucide-react';
-import { BulkActionsBar, createReviewBulkActions } from './shared/BulkActionsBar';
+import { createReviewBulkActions } from './shared/BulkActionsBar';
+import { InlineBulkActions } from './shared/InlineBulkActions';
 import { toast } from 'sonner';
+
+import { TextField, InputAdornment, FormControl, Select as MuiSelect, MenuItem } from '@mui/material';
 
 interface ReviewsDashboardProps {
   reviews: PerformanceReview[];
@@ -66,22 +71,43 @@ export function ReviewsDashboard({
   onBulkCancel,
 }: ReviewsDashboardProps) {
   const [selectedReviewIds, setSelectedReviewIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [cycleFilter, setCycleFilter] = useState<string>('all');
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
-  const pendingSelfReviews = reviews.filter(r => 
+  // Filter reviews based on search and filters
+  const filteredReviews = reviews.filter(r => {
+    const staffMember = getStaffMember(r.staffId);
+    const matchesSearch = !searchQuery || 
+      `${staffMember?.firstName} ${staffMember?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+    const matchesCycle = cycleFilter === 'all' || r.reviewCycle === cycleFilter;
+    return matchesSearch && matchesStatus && matchesCycle;
+  });
+
+  const pendingSelfReviews = filteredReviews.filter(r => 
     r.status === 'pending_self' && r.staffId === currentUserId
   );
-  const pendingManagerReviews = reviews.filter(r => 
+  const pendingManagerReviews = filteredReviews.filter(r => 
     r.status === 'pending_manager' && r.reviewerId === currentUserId
   );
-  const upcomingReviews = reviews.filter(r => 
+  const upcomingReviews = filteredReviews.filter(r => 
     r.status === 'draft' || r.status === 'pending_self'
   );
-  const completedReviews = reviews.filter(r => r.status === 'completed');
-  const selectableReviews = reviews.filter(r => r.status !== 'completed' && r.status !== 'cancelled');
+  const completedReviews = filteredReviews.filter(r => r.status === 'completed');
+  const selectableReviews = filteredReviews.filter(r => r.status !== 'completed' && r.status !== 'cancelled');
 
   const actionRequired = [...pendingSelfReviews, ...pendingManagerReviews];
+  
+  const hasActiveFilters = searchQuery || statusFilter !== 'all' || cycleFilter !== 'all';
+  
+  const clearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setCycleFilter('all');
+  };
 
   // Bulk selection handlers
   const handleToggleSelect = (reviewId: string, e: React.MouseEvent) => {
@@ -309,6 +335,84 @@ export function ReviewsDashboard({
         </Card>
       </Box>
 
+      {/* Filters & Search Row */}
+      <Stack 
+        direction={{ xs: 'column', md: 'row' }} 
+        spacing={{ xs: 1.5, md: 2 }} 
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        justifyContent="space-between"
+      >
+        <Stack 
+          direction={{ xs: 'column', sm: 'row' }} 
+          spacing={{ xs: 1.5, sm: 2 }} 
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          sx={{ flex: 1 }}
+        >
+          <TextField
+            placeholder="Search reviews..."
+            size="small"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            sx={{ minWidth: { xs: '100%', sm: 200 }, maxWidth: { sm: 280 } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={18} />
+                </InputAdornment>
+              ),
+            }}
+          />
+          
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+            <FormControl size="small" sx={{ minWidth: 130 }}>
+              <MuiSelect
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">All Statuses</MenuItem>
+                {Object.entries(reviewStatusLabels).map(([value, label]) => (
+                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                ))}
+              </MuiSelect>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 130 }}>
+              <MuiSelect
+                value={cycleFilter}
+                onChange={(e) => setCycleFilter(e.target.value)}
+              >
+                <MenuItem value="all">All Cycles</MenuItem>
+                {Object.entries(reviewCycleLabels).map(([value, label]) => (
+                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                ))}
+              </MuiSelect>
+            </FormControl>
+
+            {hasActiveFilters && (
+              <MuiButton 
+                variant="text"
+                size="small" 
+                startIcon={<X size={16} />}
+                onClick={clearFilters}
+                sx={{ color: 'text.secondary' }}
+              >
+                Clear
+              </MuiButton>
+            )}
+          </Stack>
+        </Stack>
+
+        {/* Inline Bulk Actions */}
+        <InlineBulkActions
+          selectedCount={selectedReviewIds.size}
+          totalCount={selectableReviews.length}
+          onClearSelection={handleClearSelection}
+          onSelectAll={handleSelectAll}
+          actions={bulkActions}
+          entityName="reviews"
+        />
+      </Stack>
+
       {/* All Reviews List */}
       <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -316,35 +420,39 @@ export function ReviewsDashboard({
             <Typography variant="overline" color="text.secondary" fontWeight={600}>
               All Reviews
             </Typography>
-            {selectableReviews.length > 0 && (
-              <MuiButton
-                size="small"
-                variant="text"
-                onClick={selectedReviewIds.size === selectableReviews.length ? handleClearSelection : handleSelectAll}
-                sx={{ fontSize: '0.75rem' }}
-              >
-                {selectedReviewIds.size === selectableReviews.length ? 'Deselect All' : 'Select All'}
-              </MuiButton>
-            )}
+            <Typography variant="body2" color="text.secondary">
+              {filteredReviews.length} reviews
+            </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
-            {reviews.length} reviews
-          </Typography>
+          {selectableReviews.length > 0 && (
+            <MuiButton
+              size="small"
+              variant="text"
+              onClick={selectedReviewIds.size === selectableReviews.length ? handleClearSelection : handleSelectAll}
+              sx={{ fontSize: '0.75rem' }}
+            >
+              {selectedReviewIds.size === selectableReviews.length ? 'Deselect All' : 'Select All'}
+            </MuiButton>
+          )}
         </Stack>
         
-        {reviews.length === 0 ? (
+        {filteredReviews.length === 0 ? (
           <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
             <Box sx={{ py: 4, textAlign: 'center' }}>
               <ClipboardCheck size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px' }} />
-              <Typography color="text.secondary">No reviews yet</Typography>
-              <MuiButton variant="outlined" sx={{ mt: 2 }} onClick={onCreateReview}>
-                Start first review cycle
-              </MuiButton>
+              <Typography color="text.secondary">
+                {hasActiveFilters ? 'No reviews match your filters' : 'No reviews yet'}
+              </Typography>
+              {!hasActiveFilters && (
+                <MuiButton variant="outlined" sx={{ mt: 2 }} onClick={onCreateReview}>
+                  Start first review cycle
+                </MuiButton>
+              )}
             </Box>
           </Card>
         ) : (
           <Stack spacing={1.5}>
-            {reviews.map((review) => {
+            {filteredReviews.map((review) => {
               const staffMember = getStaffMember(review.staffId);
               const reviewer = getStaffMember(review.reviewerId);
               const isSelected = selectedReviewIds.has(review.id);
@@ -417,16 +525,6 @@ export function ReviewsDashboard({
           </Stack>
         )}
       </Box>
-
-      {/* Bulk Actions Bar */}
-      <BulkActionsBar
-        selectedCount={selectedReviewIds.size}
-        totalCount={selectableReviews.length}
-        onClearSelection={handleClearSelection}
-        onSelectAll={handleSelectAll}
-        actions={bulkActions}
-        entityName="reviews"
-      />
     </Box>
   );
 }
