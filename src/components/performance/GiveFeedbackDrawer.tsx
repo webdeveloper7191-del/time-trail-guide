@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Select,
   SelectContent,
@@ -25,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { RichTextEditor } from './RichTextEditor';
 
 interface GiveFeedbackDrawerProps {
   open: boolean;
@@ -151,11 +151,12 @@ export function GiveFeedbackDrawer({
 
         <div className="space-y-2">
           <Label>Message *</Label>
-          <Textarea
-            placeholder="Write your feedback here..."
+          <RichTextEditor
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={5}
+            onChange={setMessage}
+            placeholder="Write your feedback here..."
+            minHeight="150px"
+            showPreviewToggle={false}
           />
         </div>
 

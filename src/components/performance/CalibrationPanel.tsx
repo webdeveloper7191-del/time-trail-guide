@@ -9,6 +9,8 @@ import {
   Divider,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
+import { Button as MuiButton } from '@/components/mui/Button';
+import { RowActionsMenu } from './shared/RowActionsMenu';
 import { Button } from '@/components/mui/Button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,7 +36,9 @@ import {
   AlertCircle,
   Eye,
   Edit,
+  Trash2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { 
   CalibrationSession, 
   CalibrationRating,
@@ -241,12 +245,27 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
                       justifyContent="flex-end"
                       sx={{ opacity: isHovered ? 1 : 0, transition: 'opacity 0.2s' }}
                     >
-                      <Button variant="ghost" size="small" sx={{ minWidth: 32, p: 0.5 }}>
-                        <Eye size={16} />
-                      </Button>
-                      <Button variant="ghost" size="small" sx={{ minWidth: 32, p: 0.5 }}>
-                        <Edit size={16} />
-                      </Button>
+                      <RowActionsMenu
+                        actions={[
+                          {
+                            label: 'View Details',
+                            icon: <Eye size={16} />,
+                            onClick: () => handleViewSession(session),
+                          },
+                          {
+                            label: 'Edit Session',
+                            icon: <Edit size={16} />,
+                            onClick: () => toast.info('Opening edit session drawer'),
+                          },
+                          {
+                            label: 'Delete',
+                            icon: <Trash2 size={16} />,
+                            onClick: () => toast.success('Session deleted'),
+                            variant: 'destructive',
+                            separator: true,
+                          },
+                        ]}
+                      />
                     </Stack>
                   </TableCell>
                 </TableRow>

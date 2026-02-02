@@ -647,6 +647,11 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                           <RowActionsMenu
                             actions={[
                               {
+                                label: 'View Details',
+                                icon: <Eye className="h-4 w-4" />,
+                                onClick: () => toast.info(`Viewing course: ${stat.course.title}`),
+                              },
+                              {
                                 label: 'Edit Course',
                                 icon: <Edit className="h-4 w-4" />,
                                 onClick: () => handleOpenEditCourse(stat.course),

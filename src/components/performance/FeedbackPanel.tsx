@@ -11,6 +11,7 @@ import {
   Chip,
   Paper,
 } from '@mui/material';
+import { RowActionsMenu } from './shared/RowActionsMenu';
 import { Button } from '@/components/ui/button';
 import { 
   Feedback, 
@@ -27,8 +28,9 @@ import {
   Heart,
   Lock,
   Plus,
-  MoreHorizontal,
+  Edit,
   Eye,
+  Trash2,
 } from 'lucide-react';
 import { GiveFeedbackDrawer } from './GiveFeedbackDrawer';
 import {
@@ -163,16 +165,29 @@ export function FeedbackPanel({
             className="flex gap-1 transition-opacity duration-150"
             style={{ opacity: isHovered ? 1 : 0 }}
           >
-            <Tooltip title="View Details">
-              <IconButton size="small" sx={{ color: 'hsl(var(--muted-foreground))' }}>
-                <Eye className="h-3.5 w-3.5" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="More">
-              <IconButton size="small" sx={{ color: 'hsl(var(--muted-foreground))' }}>
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </IconButton>
-            </Tooltip>
+            <RowActionsMenu
+              actions={[
+                {
+                  label: 'View Details',
+                  icon: <Eye className="h-4 w-4" />,
+                  onClick: () => console.log('View feedback:', item.id),
+                },
+                {
+                  label: 'Edit',
+                  icon: <Edit className="h-4 w-4" />,
+                  onClick: () => console.log('Edit feedback:', item.id),
+                  disabled: item.fromStaffId !== currentUserId,
+                },
+                {
+                  label: 'Delete',
+                  icon: <Trash2 className="h-4 w-4" />,
+                  onClick: () => console.log('Delete feedback:', item.id),
+                  variant: 'destructive',
+                  separator: true,
+                  disabled: item.fromStaffId !== currentUserId,
+                },
+              ]}
+            />
           </div>
         </TableCell>
       </TableRow>
