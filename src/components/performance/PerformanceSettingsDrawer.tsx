@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 export interface PerformanceSettings {
   recognition: {
     visibleInEmployeePortal: boolean;
+    hideIndependentPraise: boolean;
     employeesCanAwardPoints: boolean;
     maxPointsPerPraise: number;
     requireApprovalForRewards: boolean;
@@ -27,6 +28,7 @@ export interface PerformanceSettings {
 const defaultSettings: PerformanceSettings = {
   recognition: {
     visibleInEmployeePortal: true,
+    hideIndependentPraise: false,
     employeesCanAwardPoints: true,
     maxPointsPerPraise: 50,
     requireApprovalForRewards: false,
@@ -131,6 +133,25 @@ export function PerformanceSettingsDrawer({
                 <Switch
                   checked={localSettings.recognition.visibleInEmployeePortal}
                   onCheckedChange={(checked) => updateRecognition('visibleInEmployeePortal', checked)}
+                />
+              </div>
+
+              <Divider />
+
+              {/* Hide Independent Praise Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <EyeOff className="h-4 w-4 text-orange-600" />
+                    Hide Independent Praise in Employee Portal
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Hide individual praise posts from showing in the Employee Portal feed
+                  </p>
+                </div>
+                <Switch
+                  checked={localSettings.recognition.hideIndependentPraise}
+                  onCheckedChange={(checked) => updateRecognition('hideIndependentPraise', checked)}
                 />
               </div>
 

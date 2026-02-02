@@ -126,9 +126,10 @@ export default function PerformanceManagement() {
   const [showEditReviewDrawer, setShowEditReviewDrawer] = useState(false);
   const [editingReview, setEditingReview] = useState<PerformanceReview | null>(null);
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
-  const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettings>({
+const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettings>({
     recognition: {
       visibleInEmployeePortal: true,
+      hideIndependentPraise: false,
       employeesCanAwardPoints: true,
       maxPointsPerPraise: 50,
       requireApprovalForRewards: false,
