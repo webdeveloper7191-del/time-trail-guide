@@ -178,16 +178,27 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
   const activeTabInfo = getActiveTabInfo(activeTab);
 
   return (
-    <Box sx={{ mb: 3 }}>
-      <Stack 
-        direction="row" 
-        sx={{ 
-          flexWrap: 'wrap',
-          gap: 0.5,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
+    <Box sx={{ mb: 3, position: 'relative' }}>
+      {/* Horizontal scrollable container for tablet/mobile */}
+      <Box
+        sx={{
+          width: '100%',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          '&::-webkit-scrollbar': { display: 'none' },
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
         }}
       >
+        <Stack 
+          direction="row" 
+          sx={{ 
+            minWidth: 'max-content',
+            gap: 0.5,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
         {tabGroups.map((group) => {
           const isActiveGroup = activeGroup === group.label;
           const isOpen = openGroup === group.label;
@@ -366,6 +377,7 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
           );
         })}
       </Stack>
+      </Box>
     </Box>
   );
 }

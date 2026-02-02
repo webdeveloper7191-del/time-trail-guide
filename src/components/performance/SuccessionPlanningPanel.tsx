@@ -545,6 +545,11 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
                   <RowActionsMenu
                     actions={[
                       {
+                        label: 'View Details',
+                        icon: <Eye size={14} />,
+                        onClick: (e) => { e.stopPropagation(); openEditCandidate(candidate); },
+                      },
+                      {
                         label: 'Edit Candidate',
                         icon: <Edit size={14} />,
                         onClick: (e) => { e.stopPropagation(); openEditCandidate(candidate); },
