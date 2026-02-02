@@ -355,7 +355,7 @@ export function DayTimelineView({
             </div>
 
             {/* Time slots header */}
-            <div className="flex-1 relative" style={{ width: totalWidth }}>
+            <div className="relative shrink-0" style={{ width: totalWidth }}>
               {/* Current time indicator in header */}
               {currentTimePosition !== null && (
                 <div 
@@ -419,8 +419,8 @@ export function DayTimelineView({
               </div>
             </div>
 
-            {/* Cost column header */}
-            <div className="w-24 shrink-0 bg-muted/50 border-r border-border flex items-center justify-center">
+            {/* Cost column header - sticky right to align with data cells */}
+            <div className="w-24 shrink-0 bg-muted/50 border-l border-border flex items-center justify-center sticky right-0 z-30">
               <span className="text-xs font-medium text-muted-foreground">Hours</span>
             </div>
           </div>
@@ -591,8 +591,8 @@ export function DayTimelineView({
                         )}
                       </div>
 
-                      {/* Hours summary */}
-                      <div className="w-24 shrink-0 p-2 border-r border-border bg-card flex items-center justify-center">
+                      {/* Hours summary - sticky right */}
+                      <div className="w-24 shrink-0 p-2 border-l border-border bg-card flex items-center justify-center sticky right-0 z-20">
                         <div className="text-center">
                           <div className="text-sm font-medium text-foreground">
                             {memberShifts.reduce((acc, shift) => {
@@ -653,7 +653,7 @@ export function DayTimelineView({
                       ))}
                     </div>
 
-                    <div className="w-24 shrink-0 border-r border-border" />
+                    <div className="w-24 shrink-0 border-l border-border bg-card sticky right-0 z-20" />
                   </div>
                 )}
 
@@ -663,7 +663,7 @@ export function DayTimelineView({
                       No staff assigned
                     </div>
                     <div style={{ width: totalWidth }} />
-                    <div className="w-24 shrink-0 border-r border-border" />
+                    <div className="w-24 shrink-0 border-l border-border bg-card sticky right-0 z-20" />
                   </div>
                 )}
               </div>
