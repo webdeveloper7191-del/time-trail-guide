@@ -40,9 +40,15 @@ import {
   X,
   Users,
   Filter,
+  MoreVertical,
+  Eye,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import { createGoalBulkActions } from './shared/BulkActionsBar';
 import { InlineBulkActions } from './shared/InlineBulkActions';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 interface GoalsTrackerProps {
@@ -51,6 +57,7 @@ interface GoalsTrackerProps {
   onAssignGoal?: () => void;
   onViewGoal: (goal: Goal) => void;
   onEditGoal?: (goal: Goal) => void;
+  onDeleteGoal?: (goalId: string) => void;
   onUpdateProgress: (goalId: string, progress: number) => void;
   onBulkUpdateStatus?: (goalIds: string[], status: GoalStatus) => void;
   onBulkUpdatePriority?: (goalIds: string[], priority: GoalPriority) => void;
@@ -84,6 +91,7 @@ export function GoalsTracker({
   onAssignGoal,
   onViewGoal, 
   onEditGoal,
+  onDeleteGoal,
   onUpdateProgress,
   onBulkUpdateStatus,
   onBulkUpdatePriority,
@@ -605,6 +613,7 @@ export function GoalsTracker({
                 <Box
                   key={goal.id}
                   onClick={() => onViewGoal(goal)}
+                  className="group"
                   sx={{ 
                     display: 'flex',
                     alignItems: 'center',
@@ -709,12 +718,50 @@ export function GoalsTracker({
                     />
                   </Box>
 
-                  {/* Chevron */}
-                  <ChevronRight 
-                    className="row-actions"
-                    size={16} 
-                    style={{ opacity: 0.4, transition: 'opacity 0.15s', color: 'var(--muted-foreground)' }} 
-                  />
+                  {/* Actions Menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity row-actions"
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        onViewGoal(goal);
+                      }}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
+                      {onEditGoal && (
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onEditGoal(goal);
+                        }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Goal
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      {onDeleteGoal && (
+                        <DropdownMenuItem 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteGoal(goal.id);
+                          }}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Goal
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </Box>
               );
             })}

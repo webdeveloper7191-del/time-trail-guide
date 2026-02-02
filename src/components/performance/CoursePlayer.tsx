@@ -201,11 +201,8 @@ export function CoursePlayer({
                   {overallProgress}% complete
                 </span>
               </div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </Button>
           </div>
+        </div>
           <Progress value={overallProgress} className="h-2 mt-3" />
         </div>
 

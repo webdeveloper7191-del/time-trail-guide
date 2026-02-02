@@ -9,3 +9,4 @@ export { QuickAssignPlanDrawer } from '../QuickAssignPlanDrawer';
 export { ExtendPlanDrawer } from '../ExtendPlanDrawer';
 export { CancelPlanDrawer } from '../CancelPlanDrawer';
 export { DeletePlanDrawer } from '../DeletePlanDrawer';
+export { EditPlanDrawer } from './EditPlanDrawer';
