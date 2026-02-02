@@ -62,6 +62,7 @@ import { AssignGoalDrawer } from '@/components/performance/AssignGoalDrawer';
 import { EditGoalDrawer } from '@/components/performance/EditGoalDrawer';
 import { ScheduleConversationDrawer } from '@/components/performance/ScheduleConversationDrawer';
 import { StartReviewDrawer } from '@/components/performance/StartReviewDrawer';
+import { EditReviewDrawer } from '@/components/performance/reviews/EditReviewDrawer';
 import { EditPlanDrawer } from '@/components/performance/plans/EditPlanDrawer';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
@@ -122,6 +123,8 @@ export default function PerformanceManagement() {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [showScheduleConversationModal, setShowScheduleConversationModal] = useState(false);
   const [showStartReviewDrawer, setShowStartReviewDrawer] = useState(false);
+  const [showEditReviewDrawer, setShowEditReviewDrawer] = useState(false);
+  const [editingReview, setEditingReview] = useState<PerformanceReview | null>(null);
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettings>({
     recognition: {
@@ -200,6 +203,15 @@ export default function PerformanceManagement() {
   ) => {
     await completeManagerReview(id, ratings, summary, strengths, areasForImprovement, developmentPlan);
     toast.success('Review completed successfully');
+  };
+
+  const handleEditReview = (review: PerformanceReview) => {
+    setEditingReview(review);
+    setShowEditReviewDrawer(true);
+  };
+
+  const handleDeleteReview = (reviewId: string) => {
+    toast.success('Review deleted');
   };
 
   // Conversation handlers
@@ -423,6 +435,8 @@ export default function PerformanceManagement() {
             currentUserId={CURRENT_USER_ID}
             onCreateReview={() => setShowStartReviewDrawer(true)}
             onViewReview={handleViewReview}
+            onEditReview={handleEditReview}
+            onDeleteReview={handleDeleteReview}
           />
         )}
 
@@ -986,7 +1000,23 @@ export default function PerformanceManagement() {
         }}
       />
 
-      {/* Performance Settings Drawer */}
+      {/* Edit Review Drawer */}
+      <EditReviewDrawer
+        open={showEditReviewDrawer}
+        onClose={() => {
+          setShowEditReviewDrawer(false);
+          setEditingReview(null);
+        }}
+        review={editingReview}
+        staff={mockStaff}
+        onSave={(reviewId, updates) => {
+          // In a real app, this would update the review
+          toast.success('Review updated successfully');
+          setShowEditReviewDrawer(false);
+          setEditingReview(null);
+        }}
+      />
+
       <PerformanceSettingsDrawer
         open={showSettingsDrawer}
         onOpenChange={setShowSettingsDrawer}

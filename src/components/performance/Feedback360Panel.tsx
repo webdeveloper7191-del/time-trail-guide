@@ -13,6 +13,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { Button } from '@/components/ui/button';
+import { RowActionsMenu } from './shared/RowActionsMenu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -261,14 +262,35 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
             className="flex gap-1 transition-opacity duration-150"
             style={{ opacity: isHovered ? 1 : 0 }}
           >
-            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); handleViewRequest(request); }}>
-              <Eye className="h-3 w-3" /> View
-            </Button>
-            <Tooltip title="More">
-              <IconButton size="small" onClick={(e) => e.stopPropagation()} sx={{ color: 'hsl(var(--muted-foreground))' }}>
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </IconButton>
-            </Tooltip>
+            <RowActionsMenu
+              actions={[
+                {
+                  label: 'View Details',
+                  icon: <Eye className="h-4 w-4" />,
+                  onClick: (e) => { e.stopPropagation(); handleViewRequest(request); },
+                },
+                {
+                  label: 'Send Reminder',
+                  icon: <Send className="h-4 w-4" />,
+                  onClick: (e) => { e.stopPropagation(); toast.success('Reminder sent'); },
+                  disabled: request.status === 'completed',
+                },
+                {
+                  label: 'Archive',
+                  icon: <Archive className="h-4 w-4" />,
+                  onClick: (e) => { e.stopPropagation(); toast.success('Request archived'); },
+                  variant: 'warning',
+                  separator: true,
+                },
+                {
+                  label: 'Cancel',
+                  icon: <Trash2 className="h-4 w-4" />,
+                  onClick: (e) => { e.stopPropagation(); toast.success('Request cancelled'); },
+                  variant: 'destructive',
+                  disabled: request.status === 'completed',
+                },
+              ]}
+            />
           </div>
         </TableCell>
       </TableRow>
@@ -313,7 +335,7 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
     return (
       <Sheet open={showDetailSheet} onOpenChange={setShowDetailSheet}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-          <SheetHeader>
+          <SheetHeader className="flex flex-row items-center justify-between">
             <SheetTitle>{selectedRequest.title}</SheetTitle>
           </SheetHeader>
 
