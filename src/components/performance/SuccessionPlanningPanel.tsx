@@ -201,14 +201,14 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
     <Card>
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/30 hover:bg-muted/30">
-            <TableHead className="w-12"></TableHead>
-            <TableHead>Key Role</TableHead>
-            <TableHead>Current Holder</TableHead>
-            <TableHead>Vacancy Risk</TableHead>
-            <TableHead className="text-center">Candidates</TableHead>
-            <TableHead>Bench Strength</TableHead>
-            <TableHead className="w-24"></TableHead>
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableHead className="w-12 h-10"></TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Key Role</TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Current Holder</TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Vacancy Risk</TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10 text-center">Candidates</TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Bench Strength</TableHead>
+            <TableHead className="w-24 h-10"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -218,13 +218,18 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
               : null;
             const isExpanded = expandedRoles.has(pipeline.keyRole.id);
             const isAtRisk = pipeline.keyRole.vacancyRisk === 'high' || pipeline.keyRole.vacancyRisk === 'critical';
+            const isReadyNow = pipeline.readyNowCount > 0;
 
             return (
               <React.Fragment key={pipeline.keyRole.id}>
                 <TableRow 
-                  className="group cursor-pointer hover:bg-muted/50"
+                  className="group cursor-pointer hover:bg-muted/50 transition-colors"
                   style={{ 
-                    borderLeft: isAtRisk ? '3px solid hsl(var(--destructive))' : undefined,
+                    borderLeft: isAtRisk 
+                      ? '3px solid hsl(var(--destructive))' 
+                      : isReadyNow 
+                        ? '3px solid hsl(var(--chart-2))' 
+                        : undefined,
                   }}
                   onClick={() => toggleRoleExpand(pipeline.keyRole.id)}
                 >
@@ -243,7 +248,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}>
-                        <Crown size={16} style={{ color: 'var(--primary)' }} />
+                        <Crown size={16} style={{ color: 'hsl(var(--primary))' }} />
                       </Box>
                       <Box>
                         <Typography variant="body2" fontWeight={600}>{pipeline.keyRole.title}</Typography>
@@ -277,7 +282,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
                     <Chip 
                       label={`${pipeline.candidates.length} (${pipeline.readyNowCount} ready)`}
                       size="small"
-                      sx={{ fontSize: '0.75rem' }}
+                      sx={{ fontSize: '0.7rem', fontWeight: 500 }}
                     />
                   </TableCell>
                   <TableCell className="py-3 w-40">
@@ -311,23 +316,27 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
                         {pipeline.candidates.length > 0 ? (
                           <Table>
                             <TableHeader>
-                              <TableRow className="hover:bg-transparent">
-                                <TableHead className="text-xs">Candidate</TableHead>
-                                <TableHead className="text-xs">Readiness</TableHead>
-                                <TableHead className="text-xs">Performance</TableHead>
-                                <TableHead className="text-xs">Potential</TableHead>
-                                <TableHead className="text-xs">Experience</TableHead>
-                                <TableHead className="text-xs text-center">Overall</TableHead>
-                                <TableHead className="w-16"></TableHead>
+                              <TableRow className="hover:bg-transparent bg-muted/30">
+                                <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground h-8">Candidate</TableHead>
+                                <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground h-8">Readiness</TableHead>
+                                <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground h-8">Performance</TableHead>
+                                <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground h-8">Potential</TableHead>
+                                <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground h-8">Experience</TableHead>
+                                <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground h-8 text-center">Overall</TableHead>
+                                <TableHead className="w-16 h-8"></TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {pipeline.candidates.map(candidate => {
                                 const staffMember = getStaffMember(candidate.staffId);
+                                const isReadyNowCandidate = candidate.readiness === 'ready_now';
                                 return (
                                   <TableRow 
                                     key={candidate.id} 
-                                    className="group/candidate cursor-pointer hover:bg-white"
+                                    className="group/candidate cursor-pointer hover:bg-white transition-colors"
+                                    style={{
+                                      borderLeft: isReadyNowCandidate ? '3px solid hsl(var(--chart-2))' : undefined,
+                                    }}
                                     onClick={() => openEditCandidate(candidate)}
                                   >
                                     <TableCell className="py-2">
@@ -361,7 +370,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
                                       <SemanticProgressBar value={candidate.experienceScore} size="xs" />
                                     </TableCell>
                                     <TableCell className="py-2 text-center">
-                                      <Typography variant="body2" fontWeight={700} color="primary.main">
+                                      <Typography variant="body2" fontWeight={700} sx={{ color: 'hsl(var(--primary))' }}>
                                         {candidate.overallScore}%
                                       </Typography>
                                     </TableCell>
@@ -405,25 +414,34 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
     <Card>
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/30 hover:bg-muted/30">
-            <TableHead>Candidate</TableHead>
-            <TableHead>Target Role</TableHead>
-            <TableHead>Readiness</TableHead>
-            <TableHead>Performance</TableHead>
-            <TableHead>Potential</TableHead>
-            <TableHead className="text-center">Overall Score</TableHead>
-            <TableHead className="w-24"></TableHead>
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Candidate</TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Target Role</TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Readiness</TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Performance</TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Potential</TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10 text-center">Overall Score</TableHead>
+            <TableHead className="w-24 h-10"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {candidates.map((candidate) => {
             const staffMember = getStaffMember(candidate.staffId);
             const keyRole = keyRoles.find(r => r.id === candidate.keyRoleId);
+            const isReadyNow = candidate.readiness === 'ready_now';
+            const isHighPerformer = candidate.overallScore >= 80;
 
             return (
               <TableRow 
                 key={candidate.id} 
-                className="group cursor-pointer hover:bg-muted/50"
+                className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                style={{
+                  borderLeft: isReadyNow 
+                    ? '3px solid hsl(var(--chart-2))' 
+                    : isHighPerformer 
+                      ? '3px solid hsl(var(--primary))' 
+                      : undefined,
+                }}
                 onClick={() => openEditCandidate(candidate)}
               >
                 <TableCell className="py-3">
@@ -443,7 +461,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
                 </TableCell>
                 <TableCell className="py-3">
                   <Stack direction="row" alignItems="center" spacing={1}>
-                    <Crown size={14} style={{ color: 'var(--primary)' }} />
+                    <Crown size={14} style={{ color: 'hsl(var(--primary))' }} />
                     <Typography variant="body2">{keyRole?.title || 'Unknown Role'}</Typography>
                   </Stack>
                 </TableCell>
@@ -460,7 +478,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
                   <SemanticProgressBar value={candidate.potentialScore} showLabel size="sm" />
                 </TableCell>
                 <TableCell className="py-3 text-center">
-                  <Typography variant="h6" fontWeight={700} color="primary.main">
+                  <Typography variant="h6" fontWeight={700} sx={{ color: 'hsl(var(--primary))' }}>
                     {candidate.overallScore}%
                   </Typography>
                 </TableCell>
