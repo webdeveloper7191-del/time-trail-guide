@@ -910,7 +910,6 @@ function EditBudgetDrawer({ open, onClose, budget, staff, onSave }: EditBudgetDr
       fiscalYear: yearNum,
     });
   };
-  };
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
