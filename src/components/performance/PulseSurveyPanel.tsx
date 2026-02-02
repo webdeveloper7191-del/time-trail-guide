@@ -605,67 +605,73 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
   };
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }} 
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'center' }} 
+        spacing={2}
+      >
         <Box>
-          <Typography variant="h6" fontWeight={600} color="text.primary">
+          <Typography variant="h6" fontWeight={600} color="text.primary" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
             Pulse Surveys & eNPS
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
             Quick engagement checks and employee satisfaction tracking
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)}>
-          Create Survey
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)} className="w-full sm:w-auto">
+          <span className="hidden sm:inline">Create Survey</span>
+          <span className="sm:hidden">New Survey</span>
         </Button>
       </Stack>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <Card sx={{ p: 2, bgcolor: 'hsl(var(--chart-2) / 0.08)' }}>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/40">
-              <Play className="h-4 w-4 text-green-600" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-4">
+        <Card sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'hsl(var(--chart-2) / 0.08)' }}>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 rounded-lg bg-green-100 dark:bg-green-900/40">
+              <Play className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{activeSurveys.length}</p>
-              <p className="text-xs text-muted-foreground">Active Surveys</p>
+              <p className="text-lg md:text-2xl font-bold">{activeSurveys.length}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Active</p>
             </div>
           </div>
         </Card>
-        <Card sx={{ p: 2, bgcolor: 'hsl(var(--muted) / 0.5)' }}>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-muted">
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+        <Card sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'hsl(var(--muted) / 0.5)' }}>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 rounded-lg bg-muted">
+              <CheckCircle2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{completedSurveys.length}</p>
-              <p className="text-xs text-muted-foreground">Completed</p>
+              <p className="text-lg md:text-2xl font-bold">{completedSurveys.length}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Completed</p>
             </div>
           </div>
         </Card>
-        <Card sx={{ p: 2, bgcolor: 'hsl(var(--primary) / 0.08)' }}>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/20">
-              <Users className="h-4 w-4 text-primary" />
+        <Card sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'hsl(var(--primary) / 0.08)', display: { xs: 'none', sm: 'block' } }}>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 rounded-lg bg-primary/20">
+              <Users className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold">
-                {mockPulseResponses.length}
-              </p>
-              <p className="text-xs text-muted-foreground">Total Responses</p>
+              <p className="text-lg md:text-2xl font-bold">{mockPulseResponses.length}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Responses</p>
             </div>
           </div>
         </Card>
       </div>
 
       <Tabs defaultValue="enps" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="enps">eNPS Dashboard</TabsTrigger>
-          <TabsTrigger value="surveys">Active Surveys ({activeSurveys.length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({completedSurveys.length})</TabsTrigger>
-          <TabsTrigger value="all">All Surveys</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="mb-4 whitespace-nowrap">
+            <TabsTrigger value="enps" className="text-xs sm:text-sm">eNPS</TabsTrigger>
+            <TabsTrigger value="surveys" className="text-xs sm:text-sm">Active ({activeSurveys.length})</TabsTrigger>
+            <TabsTrigger value="completed" className="text-xs sm:text-sm">Completed ({completedSurveys.length})</TabsTrigger>
+            <TabsTrigger value="all" className="text-xs sm:text-sm">All</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="enps">
           {renderENPSCard()}

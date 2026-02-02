@@ -555,83 +555,90 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }} 
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'flex-start' }}
+        spacing={2}
+      >
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
-              <Crown size={20} style={{ color: 'var(--primary)' }} />
+            <Box sx={{ p: { xs: 0.75, md: 1 }, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
+              <Crown size={18} style={{ color: 'var(--primary)' }} />
             </Box>
-            <Typography variant="h6" fontWeight={600}>
+            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
               Succession Planning
             </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
             Build leadership pipeline and manage talent readiness
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ width: { xs: '100%', sm: 'auto' }, flexWrap: 'wrap' }}>
           <Button
             variant={activeView === 'pipeline' ? 'default' : 'outline'}
             size="small"
             onClick={() => setActiveView('pipeline')}
+            className="flex-1 sm:flex-none text-xs sm:text-sm"
           >
-            Pipeline View
+            Pipeline
           </Button>
           <Button
             variant={activeView === 'candidates' ? 'default' : 'outline'}
             size="small"
             onClick={() => setActiveView('candidates')}
+            className="flex-1 sm:flex-none text-xs sm:text-sm"
           >
             Candidates
           </Button>
-          <Button variant="default" size="small" onClick={() => setShowAddRoleDrawer(true)}>
-            <Plus size={16} className="mr-1" /> Add Role
+          <Button variant="default" size="small" onClick={() => setShowAddRoleDrawer(true)} className="text-xs sm:text-sm">
+            <Plus size={14} className="mr-1" /> <span className="hidden sm:inline">Add Role</span><span className="sm:hidden">Add</span>
           </Button>
         </Stack>
       </Stack>
 
       {/* Stats */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
         <Card>
-          <Box sx={{ p: 2, bgcolor: 'primary.50' }}>
-            <Stack direction="row" alignItems="center" spacing={1.5}>
-              <Crown size={20} style={{ color: 'var(--primary)' }} />
+          <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'primary.50' }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Crown size={16} style={{ color: 'var(--primary)' }} />
               <Box>
-                <Typography variant="h5" fontWeight={700}>{stats.totalRoles}</Typography>
-                <Typography variant="caption" color="text.secondary">Key Roles</Typography>
+                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>{stats.totalRoles}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>Key Roles</Typography>
               </Box>
             </Stack>
           </Box>
         </Card>
         <Card>
-          <Box sx={{ p: 2, bgcolor: 'error.50' }}>
-            <Stack direction="row" alignItems="center" spacing={1.5}>
-              <AlertTriangle size={20} style={{ color: 'var(--destructive)' }} />
+          <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'error.50' }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <AlertTriangle size={16} style={{ color: 'var(--destructive)' }} />
               <Box>
-                <Typography variant="h5" fontWeight={700} color="error.main">{stats.rolesAtRisk}</Typography>
-                <Typography variant="caption" color="text.secondary">Roles at Risk</Typography>
+                <Typography variant="h5" fontWeight={700} color="error.main" sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>{stats.rolesAtRisk}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>At Risk</Typography>
               </Box>
             </Stack>
           </Box>
         </Card>
-        <Card>
-          <Box sx={{ p: 2, bgcolor: 'success.50' }}>
-            <Stack direction="row" alignItems="center" spacing={1.5}>
-              <Zap size={20} style={{ color: 'var(--success)' }} />
+        <Card sx={{ display: { xs: 'none', sm: 'block' } }}>
+          <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'success.50' }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Zap size={16} style={{ color: 'var(--success)' }} />
               <Box>
-                <Typography variant="h5" fontWeight={700} color="success.main">{stats.readyNowTotal}</Typography>
-                <Typography variant="caption" color="text.secondary">Ready Now</Typography>
+                <Typography variant="h5" fontWeight={700} color="success.main" sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>{stats.readyNowTotal}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>Ready Now</Typography>
               </Box>
             </Stack>
           </Box>
         </Card>
-        <Card>
-          <Box sx={{ p: 2, bgcolor: 'info.50' }}>
-            <Stack direction="row" alignItems="center" spacing={1.5}>
-              <TrendingUp size={20} style={{ color: 'var(--info)' }} />
+        <Card sx={{ display: { xs: 'none', sm: 'block' } }}>
+          <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'info.50' }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <TrendingUp size={16} style={{ color: 'var(--info)' }} />
               <Box>
-                <Typography variant="h5" fontWeight={700}>{Math.round(stats.avgBenchStrength)}%</Typography>
-                <Typography variant="caption" color="text.secondary">Avg Bench Strength</Typography>
+                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>{Math.round(stats.avgBenchStrength)}%</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>Bench Strength</Typography>
               </Box>
             </Stack>
           </Box>
@@ -641,16 +648,16 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
       {/* Search & Bulk Actions */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }} 
-        spacing={2} 
+        spacing={{ xs: 1.5, sm: 2 }} 
         alignItems={{ xs: 'stretch', sm: 'center' }}
         sx={{ flexWrap: 'wrap' }}
       >
         <TextField
-          placeholder="Search roles or candidates..."
+          placeholder="Search..."
           size="small"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ minWidth: 200, flex: { xs: 1, sm: 'initial' } }}
+          sx={{ minWidth: { xs: '100%', sm: 200 }, maxWidth: { sm: 280 } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -659,7 +666,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
             ),
           }}
         />
-        <Box sx={{ flex: 1 }} />
+        <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} />
         {activeView === 'pipeline' ? (
           <InlineBulkActions
             selectedCount={selectedRoleIds.size}

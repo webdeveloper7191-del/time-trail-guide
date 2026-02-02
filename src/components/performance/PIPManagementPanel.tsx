@@ -431,77 +431,77 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
 
   return (
     <>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
         {/* Header */}
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
           <Box>
             <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-              <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'warning.light', display: 'flex' }}>
-                <AlertTriangle size={20} style={{ color: 'var(--warning)' }} />
+              <Box sx={{ p: { xs: 0.75, md: 1 }, borderRadius: 1.5, bgcolor: 'warning.light', display: 'flex' }}>
+                <AlertTriangle size={18} style={{ color: 'var(--warning)' }} />
               </Box>
-              <Typography variant="h6" fontWeight={600}>
+              <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                 Performance Improvement Plans
               </Typography>
             </Stack>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
               Manage formal improvement plans with milestones and documentation
             </Typography>
           </Box>
-          <Button variant="default" onClick={() => setShowCreateDrawer(true)}>
-            <Plus size={16} className="mr-1" /> Create PIP
+          <Button variant="default" onClick={() => setShowCreateDrawer(true)} className="w-full sm:w-auto">
+            <Plus size={16} className="mr-1" /> <span className="hidden sm:inline">Create PIP</span><span className="sm:hidden">New PIP</span>
           </Button>
         </Stack>
 
         {/* Stats */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
           <Card>
-            <Box sx={{ p: 2, bgcolor: 'warning.50' }}>
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Clock size={20} style={{ color: 'var(--warning)' }} />
+            <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'warning.50' }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Clock size={18} style={{ color: 'var(--warning)' }} />
                 <Box>
-                  <Typography variant="h5" fontWeight={700}>{activePIPs.length}</Typography>
-                  <Typography variant="caption" color="text.secondary">Active PIPs</Typography>
+                  <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>{activePIPs.length}</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>Active PIPs</Typography>
                 </Box>
               </Stack>
             </Box>
           </Card>
           <Card>
-            <Box sx={{ p: 2, bgcolor: 'success.50' }}>
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
+            <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'success.50' }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <CheckCircle2 size={18} style={{ color: 'var(--success)' }} />
                 <Box>
-                  <Typography variant="h5" fontWeight={700} color="success.main">
+                  <Typography variant="h5" fontWeight={700} color="success.main" sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
                     {pips.filter(p => p.status === 'completed_success').length}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">Successful</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>Successful</Typography>
                 </Box>
               </Stack>
             </Box>
           </Card>
-          <Card>
-            <Box sx={{ p: 2, bgcolor: 'error.50' }}>
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <XCircle size={20} style={{ color: 'var(--destructive)' }} />
+          <Card sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'error.50' }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <XCircle size={18} style={{ color: 'var(--destructive)' }} />
                 <Box>
-                  <Typography variant="h5" fontWeight={700} color="error.main">
+                  <Typography variant="h5" fontWeight={700} color="error.main" sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
                     {pips.filter(p => p.status === 'completed_failure').length}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">Unsuccessful</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>Unsuccessful</Typography>
                 </Box>
               </Stack>
             </Box>
           </Card>
-          <Card>
-            <Box sx={{ p: 2, bgcolor: 'primary.50' }}>
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Target size={20} style={{ color: 'var(--primary)' }} />
+          <Card sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'primary.50' }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Target size={18} style={{ color: 'var(--primary)' }} />
                 <Box>
-                  <Typography variant="h5" fontWeight={700}>
+                  <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
                     {activePIPs.length > 0 
                       ? Math.round(activePIPs.reduce((sum, p) => sum + calculateProgress(p), 0) / activePIPs.length) 
                       : 0}%
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">Avg Progress</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>Avg Progress</Typography>
                 </Box>
               </Stack>
             </Box>

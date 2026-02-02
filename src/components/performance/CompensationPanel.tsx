@@ -108,60 +108,66 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }} 
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'flex-start' }} 
+        spacing={2}
+      >
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'success.light', display: 'flex' }}>
-              <DollarSign size={20} style={{ color: 'var(--success)' }} />
+            <Box sx={{ p: { xs: 0.75, md: 1 }, borderRadius: 1.5, bgcolor: 'success.light', display: 'flex' }}>
+              <DollarSign size={18} style={{ color: 'var(--success)' }} />
             </Box>
-            <Typography variant="h6" fontWeight={600}>
+            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
               Compensation & Merit
             </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
             Manage salary bands, merit increases, and bonus calculations
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ width: { xs: '100%', sm: 'auto' }, flexWrap: 'wrap' }}>
           {(['overview', 'merit', 'bonus'] as const).map((view) => (
             <Button
               key={view}
               variant={activeView === view ? 'default' : 'outline'}
               size="small"
               onClick={() => setActiveView(view)}
+              className="flex-1 sm:flex-none text-xs sm:text-sm"
             >
-              {view === 'overview' ? 'Overview' : view === 'merit' ? 'Merit Increases' : 'Bonuses'}
+              {view === 'overview' ? 'Overview' : view === 'merit' ? 'Merit' : 'Bonus'}
             </Button>
           ))}
         </Stack>
       </Stack>
 
       {/* Stats */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
         <Card>
-          <Box sx={{ p: 2, bgcolor: 'warning.50' }}>
-            <Typography variant="body2" color="text.secondary" mb={0.5}>Pending Reviews</Typography>
-            <Typography variant="h4" fontWeight={700}>{stats.pending}</Typography>
+          <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'warning.50' }}>
+            <Typography variant="body2" color="text.secondary" mb={0.5} sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>Pending</Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '2rem' } }}>{stats.pending}</Typography>
           </Box>
         </Card>
         <Card>
-          <Box sx={{ p: 2, bgcolor: 'success.50' }}>
-            <Typography variant="body2" color="text.secondary" mb={0.5}>Approved</Typography>
-            <Typography variant="h4" fontWeight={700} color="success.main">{stats.approved}</Typography>
+          <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'success.50' }}>
+            <Typography variant="body2" color="text.secondary" mb={0.5} sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>Approved</Typography>
+            <Typography variant="h4" fontWeight={700} color="success.main" sx={{ fontSize: { xs: '1.25rem', md: '2rem' } }}>{stats.approved}</Typography>
           </Box>
         </Card>
-        <Card>
-          <Box sx={{ p: 2, bgcolor: 'primary.50' }}>
-            <Typography variant="body2" color="text.secondary" mb={0.5}>Total Budget Impact</Typography>
-            <Typography variant="h4" fontWeight={700}>{formatCurrency(stats.totalBudget)}</Typography>
+        <Card sx={{ display: { xs: 'none', sm: 'block' } }}>
+          <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'primary.50' }}>
+            <Typography variant="body2" color="text.secondary" mb={0.5} sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>Budget Impact</Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1rem', md: '1.5rem' } }}>{formatCurrency(stats.totalBudget)}</Typography>
           </Box>
         </Card>
-        <Card>
-          <Box sx={{ p: 2, bgcolor: 'info.50' }}>
-            <Typography variant="body2" color="text.secondary" mb={0.5}>Avg Increase</Typography>
-            <Typography variant="h4" fontWeight={700}>{stats.avgIncrease.toFixed(1)}%</Typography>
+        <Card sx={{ display: { xs: 'none', sm: 'block' } }}>
+          <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'info.50' }}>
+            <Typography variant="body2" color="text.secondary" mb={0.5} sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>Avg Increase</Typography>
+            <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '2rem' } }}>{stats.avgIncrease.toFixed(1)}%</Typography>
           </Box>
         </Card>
       </Box>

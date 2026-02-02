@@ -261,20 +261,20 @@ export function ReviewsDashboard({
       )}
 
       {/* Stats Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
         <Card>
           <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
             <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 2 }}>
               <Box sx={{ 
-                p: { xs: 1, md: 1.5 }, 
+                p: { xs: 0.75, md: 1.5 }, 
                 borderRadius: '50%', 
                 bgcolor: 'warning.light', 
-                display: { xs: 'none', sm: 'flex' } 
+                display: 'flex' 
               }}>
-                <Clock size={24} style={{ color: 'var(--warning)' }} />
+                <Clock size={20} style={{ color: 'var(--warning)' }} />
               </Box>
               <Box>
-                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' } }}>
+                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '1.75rem' } }}>
                   {upcomingReviews.length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>
@@ -289,15 +289,15 @@ export function ReviewsDashboard({
           <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
             <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 2 }}>
               <Box sx={{ 
-                p: { xs: 1, md: 1.5 }, 
+                p: { xs: 0.75, md: 1.5 }, 
                 borderRadius: '50%', 
                 bgcolor: 'success.light', 
-                display: { xs: 'none', sm: 'flex' } 
+                display: 'flex' 
               }}>
-                <CheckCircle2 size={24} style={{ color: 'var(--success)' }} />
+                <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
               </Box>
               <Box>
-                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' } }}>
+                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '1.75rem' } }}>
                   {completedReviews.length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>
@@ -308,19 +308,19 @@ export function ReviewsDashboard({
           </Box>
         </Card>
         
-        <Card>
+        <Card sx={{ display: { xs: 'none', sm: 'block' } }}>
           <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
             <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 2 }}>
               <Box sx={{ 
-                p: { xs: 1, md: 1.5 }, 
+                p: { xs: 0.75, md: 1.5 }, 
                 borderRadius: '50%', 
                 bgcolor: 'primary.light', 
-                display: { xs: 'none', sm: 'flex' } 
+                display: 'flex' 
               }}>
-                <Star size={24} style={{ color: 'var(--primary)' }} />
+                <Star size={20} style={{ color: 'var(--primary)' }} />
               </Box>
               <Box>
-                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' } }}>
+                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '1.75rem' } }}>
                   {completedReviews.length > 0 
                     ? (completedReviews.reduce((sum, r) => sum + (r.overallManagerRating || 0), 0) / completedReviews.length).toFixed(1)
                     : '-'
@@ -415,12 +415,18 @@ export function ReviewsDashboard({
 
       {/* All Reviews List */}
       <Box>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Typography variant="overline" color="text.secondary" fontWeight={600}>
+        <Stack 
+          direction={{ xs: 'column', sm: 'row' }} 
+          justifyContent="space-between" 
+          alignItems={{ xs: 'flex-start', sm: 'center' }} 
+          spacing={1}
+          mb={2}
+        >
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Typography variant="overline" color="text.secondary" fontWeight={600} sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
               All Reviews
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>
               {filteredReviews.length} reviews
             </Typography>
           </Stack>
@@ -429,7 +435,7 @@ export function ReviewsDashboard({
               size="small"
               variant="text"
               onClick={selectedReviewIds.size === selectableReviews.length ? handleClearSelection : handleSelectAll}
-              sx={{ fontSize: '0.75rem' }}
+              sx={{ fontSize: '0.75rem', display: { xs: 'none', sm: 'inline-flex' } }}
             >
               {selectedReviewIds.size === selectableReviews.length ? 'Deselect All' : 'Select All'}
             </MuiButton>
@@ -469,22 +475,23 @@ export function ReviewsDashboard({
                   }}
                   onClick={() => onViewReview(review)}
                 >
-                  <Box sx={{ p: 2 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
+                  <Box sx={{ p: { xs: 1.5, md: 2 } }}>
+                    <Stack direction="row" alignItems="center" spacing={{ xs: 1.5, md: 2 }}>
                       {isSelectable && (
                         <Checkbox
                           checked={isSelected}
                           onClick={(e) => handleToggleSelect(review.id, e)}
                           size="small"
+                          sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                         />
                       )}
-                      <Avatar src={staffMember?.avatar} sx={{ width: 48, height: 48 }}>
+                      <Avatar src={staffMember?.avatar} sx={{ width: { xs: 36, md: 48 }, height: { xs: 36, md: 48 } }}>
                         {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
                       </Avatar>
                       
                       <Box flex={1} minWidth={0}>
-                        <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
-                          <Typography variant="subtitle2" fontWeight={600}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={{ xs: 0.5, sm: 1 }} mb={0.5}>
+                          <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.8rem', md: '0.875rem' } }} noWrap>
                             {staffMember?.firstName} {staffMember?.lastName}
                           </Typography>
                           <Chip
@@ -494,29 +501,31 @@ export function ReviewsDashboard({
                             sx={{ 
                               bgcolor: statusColors[review.status]?.bg,
                               color: statusColors[review.status]?.text,
+                              fontSize: { xs: '0.6rem', md: '0.75rem' },
+                              height: { xs: 20, md: 24 },
                             }}
                           />
                         </Stack>
-                        <Typography variant="body2" color="text.secondary">
-                          {reviewCycleLabels[review.reviewCycle]} Review • 
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }} noWrap>
+                          {reviewCycleLabels[review.reviewCycle]} • 
                           {format(parseISO(review.periodStart), 'MMM d')} - {format(parseISO(review.periodEnd), 'MMM d, yyyy')}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' }, fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
                           Reviewer: {reviewer?.firstName} {reviewer?.lastName}
                         </Typography>
                       </Box>
 
                       {review.status === 'completed' && review.overallManagerRating && (
-                        <Box textAlign="center">
+                        <Box textAlign="center" sx={{ display: { xs: 'none', md: 'block' } }}>
                           <Stack direction="row" alignItems="center" spacing={0.5} color="warning.main">
-                            <Star size={20} fill="currentColor" />
-                            <Typography variant="h6" fontWeight={700}>{review.overallManagerRating}</Typography>
+                            <Star size={18} fill="currentColor" />
+                            <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem' }}>{review.overallManagerRating}</Typography>
                           </Stack>
-                          <Typography variant="caption" color="text.secondary">Final Rating</Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Rating</Typography>
                         </Box>
                       )}
 
-                      <ChevronRight size={20} style={{ color: 'var(--muted-foreground)' }} />
+                      <ChevronRight size={18} style={{ color: 'var(--muted-foreground)' }} />
                     </Stack>
                   </Box>
                 </Card>

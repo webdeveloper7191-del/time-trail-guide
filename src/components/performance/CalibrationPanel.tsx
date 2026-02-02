@@ -415,18 +415,24 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
   };
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }} 
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'center' }} 
+        spacing={2}
+      >
         <Box>
-          <Typography variant="h6" fontWeight={600} color="text.primary">
+          <Typography variant="h6" fontWeight={600} color="text.primary" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
             Calibration Sessions
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
             Ensure fair and consistent performance ratings across teams
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />}>
-          Schedule Session
+        <Button variant="contained" startIcon={<Plus size={16} />} className="w-full sm:w-auto">
+          <span className="hidden sm:inline">Schedule Session</span>
+          <span className="sm:hidden">New Session</span>
         </Button>
       </Stack>
 

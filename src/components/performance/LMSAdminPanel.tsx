@@ -325,87 +325,88 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-primary" />
+          <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 md:h-6 md:w-6 text-primary" />
             LMS Administration
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
             Manage courses, assignments, and track team learning progress
           </p>
         </div>
-        <Button onClick={handleOpenCreateCourse}>
+        <Button onClick={handleOpenCreateCourse} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
-          Create Course
+          <span className="hidden sm:inline">Create Course</span>
+          <span className="sm:hidden">New Course</span>
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-4">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BookOpen className="h-5 w-5 text-primary" />
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{mockCourses.length}</p>
-                <p className="text-xs text-muted-foreground">Total Courses</p>
+                <p className="text-lg md:text-2xl font-bold">{mockCourses.length}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Courses</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <Users className="h-5 w-5 text-blue-600" />
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <Users className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{totalEnrollments}</p>
-                <p className="text-xs text-muted-foreground">Enrollments</p>
+                <p className="text-lg md:text-2xl font-bold">{totalEnrollments}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Enrollments</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+        <Card className="hidden sm:block">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{completionRate}%</p>
-                <p className="text-xs text-muted-foreground">Completion Rate</p>
+                <p className="text-lg md:text-2xl font-bold">{completionRate}%</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Completion</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                <Clock className="h-5 w-5 text-amber-600" />
+        <Card className="hidden md:block">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                <Clock className="h-4 w-4 md:h-5 md:w-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{inProgressEnrollments}</p>
-                <p className="text-xs text-muted-foreground">In Progress</p>
+                <p className="text-lg md:text-2xl font-bold">{inProgressEnrollments}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">In Progress</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                <AlertCircle className="h-5 w-5 text-red-600" />
+        <Card className="hidden md:block">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
+                <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{overdueEnrollments}</p>
-                <p className="text-xs text-muted-foreground">Overdue</p>
+                <p className="text-lg md:text-2xl font-bold">{overdueEnrollments}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Overdue</p>
               </div>
             </div>
           </CardContent>
@@ -413,16 +414,18 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="courses">Courses</TabsTrigger>
-          <TabsTrigger value="staff">Staff Progress</TabsTrigger>
-          <TabsTrigger value="assignments">Assignments</TabsTrigger>
-          <TabsTrigger value="reviews" className="gap-1">
-            <MessageSquare className="h-3.5 w-3.5" />
-            Reviews
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="whitespace-nowrap">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+            <TabsTrigger value="courses" className="text-xs sm:text-sm">Courses</TabsTrigger>
+            <TabsTrigger value="staff" className="text-xs sm:text-sm">Staff</TabsTrigger>
+            <TabsTrigger value="assignments" className="text-xs sm:text-sm">Assignments</TabsTrigger>
+            <TabsTrigger value="reviews" className="gap-1 text-xs sm:text-sm">
+              <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline">Reviews</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="mt-6 space-y-6">
