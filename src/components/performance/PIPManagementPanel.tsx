@@ -5,7 +5,6 @@ import {
   Typography,
   Avatar,
   Chip,
-  IconButton,
   TextField,
   InputAdornment,
 } from '@mui/material';
@@ -24,6 +23,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SemanticProgressBar } from './shared/SemanticProgressBar';
 import { StatusBadge } from './shared/StatusBadge';
 import { InlineBulkActions } from './shared/InlineBulkActions';
+import { RowActionsMenu, RowAction } from './shared/RowActionsMenu';
+import { CollapsibleStatsGrid, ScrollableTable } from './shared';
 import {
   AlertTriangle,
   Clock,
@@ -33,7 +34,6 @@ import {
   Calendar,
   Target,
   Edit,
-  MoreHorizontal,
   Eye,
   Search,
   Trash2,
@@ -402,23 +402,32 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
                       sx={{ minWidth: 32, fontSize: '0.75rem', fontWeight: 600 }}
                     />
                   </TableCell>
-                  <TableCell className="py-3">
-                    <Stack 
-                      direction="row" 
-                      spacing={0.5} 
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <IconButton size="small" onClick={() => handleRowClick(pip)}>
-                        <Eye size={14} />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => { setSelectedPIP(pip); setShowEditDrawer(true); }}>
-                        <Edit size={14} />
-                      </IconButton>
-                      <IconButton size="small">
-                        <MoreHorizontal size={14} />
-                      </IconButton>
-                    </Stack>
+                  <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
+                    <RowActionsMenu
+                      actions={[
+                        {
+                          label: 'View Details',
+                          icon: <Eye size={14} />,
+                          onClick: (e) => { e.stopPropagation(); handleRowClick(pip); },
+                        },
+                        {
+                          label: 'Edit PIP',
+                          icon: <Edit size={14} />,
+                          onClick: (e) => { e.stopPropagation(); setSelectedPIP(pip); setShowEditDrawer(true); },
+                        },
+                        {
+                          label: 'Cancel',
+                          icon: <Trash2 size={14} />,
+                          variant: 'destructive',
+                          separator: true,
+                          onClick: (e) => { 
+                            e.stopPropagation(); 
+                            setPips(prev => prev.map(p => p.id === pip.id ? { ...p, status: 'cancelled' as const } : p));
+                            toast.success('PIP cancelled');
+                          },
+                        },
+                      ]}
+                    />
                   </TableCell>
                 </TableRow>
               );

@@ -7,3 +7,4 @@ export { AssignGoalDrawer } from '../AssignGoalDrawer';
 export { EditGoalDrawer } from '../EditGoalDrawer';
 export { GoalReviewTemplatesLibrary } from '../GoalReviewTemplatesLibrary';
 export { GoalRecommendationsPanel } from './GoalRecommendationsPanel';
+export { GoalSuggestionDetailDrawer } from './GoalSuggestionDetailDrawer';

@@ -36,6 +36,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from '@/components/ui/button';
 import { createReviewBulkActions } from './shared/BulkActionsBar';
 import { InlineBulkActions } from './shared/InlineBulkActions';
+import { CollapsibleStatsGrid, ScrollableTable, RowActionsMenu } from './shared';
 import { toast } from 'sonner';
 
 import { TextField, InputAdornment, FormControl, Select as MuiSelect, MenuItem } from '@mui/material';
@@ -273,80 +274,33 @@ export function ReviewsDashboard({
         </Card>
       )}
 
-      {/* Stats Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
-        <Card>
-          <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
-            <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 2 }}>
-              <Box sx={{ 
-                p: { xs: 0.75, md: 1.5 }, 
-                borderRadius: '50%', 
-                bgcolor: 'warning.light', 
-                display: 'flex' 
-              }}>
-                <Clock size={20} style={{ color: 'var(--warning)' }} />
-              </Box>
-              <Box>
-                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '1.75rem' } }}>
-                  {upcomingReviews.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>
-                  Pending
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-        </Card>
-        
-        <Card>
-          <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
-            <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 2 }}>
-              <Box sx={{ 
-                p: { xs: 0.75, md: 1.5 }, 
-                borderRadius: '50%', 
-                bgcolor: 'success.light', 
-                display: 'flex' 
-              }}>
-                <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
-              </Box>
-              <Box>
-                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '1.75rem' } }}>
-                  {completedReviews.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>
-                  Completed
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-        </Card>
-        
-        <Card sx={{ display: { xs: 'none', sm: 'block' } }}>
-          <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
-            <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 2 }}>
-              <Box sx={{ 
-                p: { xs: 0.75, md: 1.5 }, 
-                borderRadius: '50%', 
-                bgcolor: 'primary.light', 
-                display: 'flex' 
-              }}>
-                <Star size={20} style={{ color: 'var(--primary)' }} />
-              </Box>
-              <Box>
-                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', md: '1.75rem' } }}>
-                  {completedReviews.length > 0 
-                    ? (completedReviews.reduce((sum, r) => sum + (r.overallManagerRating || 0), 0) / completedReviews.length).toFixed(1)
-                    : '-'
-                  }
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>
-                  Avg Rating
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-        </Card>
-      </Box>
+      {/* Stats Cards - Using CollapsibleStatsGrid for mobile */}
+      <CollapsibleStatsGrid
+        title="Review Statistics"
+        stats={[
+          { 
+            label: 'Pending', 
+            value: upcomingReviews.length, 
+            icon: <Clock size={18} />, 
+            gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
+          },
+          { 
+            label: 'Completed', 
+            value: completedReviews.length, 
+            icon: <CheckCircle2 size={18} />, 
+            gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+          },
+          { 
+            label: 'Avg Rating', 
+            value: completedReviews.length > 0 
+              ? (completedReviews.reduce((sum, r) => sum + (r.overallManagerRating || 0), 0) / completedReviews.length).toFixed(1)
+              : '-', 
+            icon: <Star size={18} />, 
+            gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' 
+          },
+        ]}
+        columns={{ xs: 2, sm: 3, md: 3 }}
+      />
 
       {/* Filters & Search Row */}
       <Stack 

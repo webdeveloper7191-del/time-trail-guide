@@ -19,6 +19,8 @@ import {
   getProgressStatus, 
   StatusBadge,
   EnhancedCard,
+  CollapsibleStatsGrid,
+  ScrollableTable,
 } from './shared';
 import { 
   Goal, 
@@ -364,83 +366,36 @@ export function GoalsTracker({
         </Stack>
       </Stack>
 
-      {/* Premium Stats Grid */}
-      <Box 
-        sx={{ 
-          display: 'grid', 
-          gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, 
-          gap: 2,
-        }}
-      >
-        {[
-          { label: 'Total', value: stats.total, icon: Target, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-          { label: 'In Progress', value: stats.active, icon: Clock, gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' },
-          { label: 'Completed', value: stats.completed, icon: CheckCircle2, gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' },
-          { label: 'Overdue', value: stats.overdue, icon: AlertTriangle, gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' },
-        ].map((stat) => (
-          <Box
-            key={stat.label}
-            sx={{
-              position: 'relative',
-              p: 2.5,
-              borderRadius: 2.5,
-              bgcolor: 'white',
-              border: '1px solid',
-              borderColor: 'grey.100',
-              overflow: 'hidden',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                borderColor: 'grey.200',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                transform: 'translateY(-2px)',
-              },
-            }}
-          >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box>
-                <Typography 
-                  sx={{ 
-                    fontSize: '0.75rem',
-                    fontWeight: 500,
-                    color: 'grey.500',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    mb: 0.5,
-                  }}
-                >
-                  {stat.label}
-                </Typography>
-                <Typography 
-                  sx={{ 
-                    fontSize: { xs: '1.75rem', md: '2rem' },
-                    fontWeight: 700,
-                    color: 'grey.900',
-                    lineHeight: 1,
-                    letterSpacing: '-0.02em',
-                  }}
-                >
-                  {stat.value}
-                </Typography>
-              </Box>
-              <Box 
-                sx={{ 
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  background: stat.gradient,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                }}
-              >
-                <stat.icon size={18} />
-              </Box>
-            </Stack>
-          </Box>
-        ))}
-      </Box>
+      {/* Premium Stats Grid - Using CollapsibleStatsGrid for mobile */}
+      <CollapsibleStatsGrid
+        title="Goal Statistics"
+        stats={[
+          { 
+            label: 'Total', 
+            value: stats.total, 
+            icon: <Target size={18} />, 
+            gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+          },
+          { 
+            label: 'In Progress', 
+            value: stats.active, 
+            icon: <Clock size={18} />, 
+            gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' 
+          },
+          { 
+            label: 'Completed', 
+            value: stats.completed, 
+            icon: <CheckCircle2 size={18} />, 
+            gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+          },
+          { 
+            label: 'Overdue', 
+            value: stats.overdue, 
+            icon: <AlertTriangle size={18} />, 
+            gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
+          },
+        ]}
+      />
 
       {/* Filters */}
       {showFilters && (

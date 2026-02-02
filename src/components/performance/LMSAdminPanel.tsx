@@ -8,9 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RowActionsMenu, RowAction } from './shared/RowActionsMenu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -633,31 +634,46 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-1">
                           <Button 
                             variant="outline" 
                             size="sm"
-                            className="h-7 text-xs"
+                            className="h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => handleOpenAssign(stat.course)}
                           >
                             <UserPlus className="h-3 w-3 mr-1" />
                             Assign
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={() => handleOpenEditCourse(stat.course)}
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                          >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                          </Button>
+                          <RowActionsMenu
+                            actions={[
+                              {
+                                label: 'Edit Course',
+                                icon: <Edit className="h-4 w-4" />,
+                                onClick: () => handleOpenEditCourse(stat.course),
+                              },
+                              {
+                                label: 'Duplicate',
+                                icon: <GraduationCap className="h-4 w-4" />,
+                                onClick: () => toast.info('Course duplicated'),
+                              },
+                              {
+                                label: 'Archive',
+                                icon: <Archive className="h-4 w-4" />,
+                                variant: 'warning',
+                                separator: true,
+                                onClick: () => toast.success('Course archived'),
+                              },
+                              {
+                                label: 'Delete',
+                                icon: <Trash2 className="h-4 w-4" />,
+                                variant: 'destructive',
+                                onClick: () => {
+                                  setCourses(prev => prev.filter(c => c.id !== stat.course.id));
+                                  toast.success('Course deleted');
+                                },
+                              },
+                            ]}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
