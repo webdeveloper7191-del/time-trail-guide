@@ -469,24 +469,30 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
   };
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }} 
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'center' }} 
+        spacing={2}
+      >
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'hsl(var(--primary) / 0.1)', display: 'flex' }}>
-              <Users size={20} style={{ color: 'hsl(var(--primary))' }} />
+            <Box sx={{ p: { xs: 0.75, md: 1 }, borderRadius: 1.5, bgcolor: 'hsl(var(--primary) / 0.1)', display: 'flex' }}>
+              <Users size={18} style={{ color: 'hsl(var(--primary))' }} />
             </Box>
-            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
+            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
               360° Feedback
             </Typography>
           </Stack>
-          <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+          <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))', display: { xs: 'none', sm: 'block' } }}>
             Multi-source feedback collection for comprehensive evaluations
           </Typography>
         </Box>
-        <Button onClick={() => setShowRequest360Drawer(true)} className="gap-2">
+        <Button onClick={() => setShowRequest360Drawer(true)} className="gap-2 w-full sm:w-auto">
           <Plus size={16} />
-          Request 360° Feedback
+          <span className="hidden sm:inline">Request 360° Feedback</span>
+          <span className="sm:hidden">Request</span>
         </Button>
       </Stack>
 
@@ -501,16 +507,16 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
       {/* Search & Bulk Actions */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }} 
-        spacing={2} 
+        spacing={{ xs: 1.5, sm: 2 }} 
         alignItems={{ xs: 'stretch', sm: 'center' }}
-        sx={{ mb: 3, flexWrap: 'wrap' }}
+        sx={{ flexWrap: 'wrap' }}
       >
         <TextField
-          placeholder="Search feedback requests..."
+          placeholder="Search..."
           size="small"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ minWidth: 200, flex: { xs: 1, sm: 'initial' } }}
+          sx={{ minWidth: { xs: '100%', sm: 200 }, maxWidth: { sm: 280 } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -519,7 +525,7 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
             ),
           }}
         />
-        <Box sx={{ flex: 1 }} />
+        <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} />
         <InlineBulkActions
           selectedCount={selectedRequestIds.size}
           totalCount={mock360Requests.length}
@@ -531,17 +537,19 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
       </Stack>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="active">
-            Active ({activeRequests.length})
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed ({completedRequests.length})
-          </TabsTrigger>
-          <TabsTrigger value="pending">
-            My Pending Requests
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="whitespace-nowrap">
+            <TabsTrigger value="active" className="text-xs sm:text-sm">
+              Active ({activeRequests.length})
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="text-xs sm:text-sm">
+              Completed ({completedRequests.length})
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">My </span>Pending
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="active" className="mt-4">
           {activeRequests.length > 0 ? (
