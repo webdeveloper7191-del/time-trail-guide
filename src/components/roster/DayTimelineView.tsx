@@ -894,6 +894,30 @@ function ShiftBar({
       placement="top"
       arrow
       enterDelay={200}
+      followCursor
+      PopperProps={{
+        disablePortal: false,
+        modifiers: [
+          {
+            name: 'preventOverflow',
+            enabled: true,
+            options: {
+              altAxis: true,
+              altBoundary: true,
+              tether: true,
+              rootBoundary: 'viewport',
+              padding: 8,
+            },
+          },
+          {
+            name: 'flip',
+            enabled: true,
+            options: {
+              fallbackPlacements: ['bottom', 'left', 'right'],
+            },
+          },
+        ],
+      }}
       slotProps={{
         tooltip: {
           sx: {
