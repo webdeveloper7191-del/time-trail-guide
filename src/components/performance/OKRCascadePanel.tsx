@@ -15,6 +15,8 @@ import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RowActionsMenu } from './shared/RowActionsMenu';
+import { CollapsibleStatsGrid, ScrollableTable } from './shared';
 import { 
   Target, 
   Plus, 
@@ -30,6 +32,9 @@ import {
   Check,
   Edit3,
   Clock,
+  Eye,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import { 
   Objective, 
@@ -337,18 +342,50 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
                     </Stack>
                   </Box>
 
-                  <Box sx={{ textAlign: 'right', minWidth: 100 }}>
-                    <Typography 
-                      variant="h5" 
-                      fontWeight={700} 
-                      sx={{ color: getProgressColor(objective.progress) }}
-                    >
-                      {objective.progress}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {objective.keyResults.length} Key Results
-                    </Typography>
-                  </Box>
+                  <Stack direction="row" alignItems="flex-start" spacing={1}>
+                    <Box sx={{ textAlign: 'right', minWidth: 80 }}>
+                      <Typography 
+                        variant="h5" 
+                        fontWeight={700} 
+                        sx={{ color: getProgressColor(objective.progress) }}
+                      >
+                        {objective.progress}%
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {objective.keyResults.length} Key Results
+                      </Typography>
+                    </Box>
+                    <RowActionsMenu
+                      actions={[
+                        {
+                          label: 'View Details',
+                          icon: <Eye size={14} />,
+                          onClick: (e) => { e.stopPropagation(); handleViewObjective(objective); },
+                        },
+                        {
+                          label: 'Edit Objective',
+                          icon: <Edit size={14} />,
+                          onClick: (e) => { e.stopPropagation(); toast.info('Edit OKR drawer would open'); },
+                        },
+                        {
+                          label: 'Add Key Result',
+                          icon: <Plus size={14} />,
+                          onClick: (e) => { e.stopPropagation(); toast.info('Add Key Result drawer would open'); },
+                        },
+                        {
+                          label: 'Delete',
+                          icon: <Trash2 size={14} />,
+                          variant: 'destructive',
+                          separator: true,
+                          onClick: (e) => { 
+                            e.stopPropagation(); 
+                            setObjectives(prev => prev.filter(o => o.id !== objective.id));
+                            toast.success('Objective deleted');
+                          },
+                        },
+                      ]}
+                    />
+                  </Stack>
                 </Stack>
 
                 {/* Progress Bar */}

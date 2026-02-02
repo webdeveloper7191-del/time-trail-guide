@@ -30,8 +30,10 @@ import {
   Filter,
   RefreshCw,
   Check,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { GoalSuggestionDetailDrawer } from './GoalSuggestionDetailDrawer';
 
 interface GoalRecommendation {
   id: string;
@@ -425,6 +427,8 @@ export function GoalRecommendationsPanel({
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [adoptedIds, setAdoptedIds] = useState<Set<string>>(new Set());
+  const [selectedRecommendation, setSelectedRecommendation] = useState<GoalRecommendation | null>(null);
+  const [showDetailDrawer, setShowDetailDrawer] = useState(false);
 
   const recommendations = useMemo(() => {
     return generateRecommendations(currentStaff, existingGoals);
@@ -645,23 +649,10 @@ export function GoalRecommendationsPanel({
                       <MuiButton
                         variant="outlined"
                         size="small"
+                        startIcon={<Eye className="h-4 w-4" />}
                         onClick={() => {
-                          // Show details in a toast or expand the card
-                          toast.info(
-                            <Box>
-                              <Typography variant="subtitle2" fontWeight={600} mb={1}>{rec.title}</Typography>
-                              <Typography variant="body2" color="text.secondary" mb={1.5}>{rec.description}</Typography>
-                              <Typography variant="caption" fontWeight={600}>Suggested Duration:</Typography>
-                              <Typography variant="body2" mb={1}>{rec.suggestedDuration}</Typography>
-                              <Typography variant="caption" fontWeight={600}>All Milestones:</Typography>
-                              <Box component="ul" sx={{ pl: 2, mt: 0.5, mb: 0 }}>
-                                {rec.suggestedMilestones.map((ms, i) => (
-                                  <Typography key={i} component="li" variant="body2">{ms}</Typography>
-                                ))}
-                              </Box>
-                            </Box>,
-                            { duration: 10000 }
-                          );
+                          setSelectedRecommendation(rec);
+                          setShowDetailDrawer(true);
                         }}
                         sx={{ flex: { xs: 1, md: 'none' } }}
                       >
@@ -697,6 +688,15 @@ export function GoalRecommendationsPanel({
           </Card>
         )}
       </Stack>
+
+      {/* Detail Drawer */}
+      <GoalSuggestionDetailDrawer
+        open={showDetailDrawer}
+        onOpenChange={setShowDetailDrawer}
+        recommendation={selectedRecommendation}
+        onAdopt={handleAdoptGoal}
+        isAdopted={selectedRecommendation ? adoptedIds.has(selectedRecommendation.id) : false}
+      />
     </Box>
   );
 }

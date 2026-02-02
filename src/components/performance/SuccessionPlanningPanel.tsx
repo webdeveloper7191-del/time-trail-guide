@@ -25,6 +25,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SemanticProgressBar } from './shared/SemanticProgressBar';
 import { StatusBadge } from './shared/StatusBadge';
 import { InlineBulkActions } from './shared/InlineBulkActions';
+import { RowActionsMenu, RowAction } from './shared/RowActionsMenu';
+import { CollapsibleStatsGrid, ScrollableTable } from './shared';
 import {
   Users,
   Crown,
@@ -36,7 +38,7 @@ import {
   Plus,
   Edit,
   Zap,
-  MoreHorizontal,
+  Eye,
   Search,
   Trash2,
   Archive,
@@ -335,23 +337,33 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
                   <TableCell className="py-3 w-40">
                     <SemanticProgressBar value={pipeline.benchStrength} showLabel size="sm" />
                   </TableCell>
-                  <TableCell className="py-3">
-                    <Stack 
-                      direction="row" 
-                      spacing={0.5} 
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <IconButton size="small" onClick={() => openEditRole(pipeline.keyRole)}>
-                        <Edit size={14} />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => openAddCandidateForRole(pipeline.keyRole.id)}>
-                        <Plus size={14} />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => openRoleDetail(pipeline.keyRole)}>
-                        <MoreHorizontal size={14} />
-                      </IconButton>
-                    </Stack>
+                  <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
+                    <RowActionsMenu
+                      actions={[
+                        {
+                          label: 'View Details',
+                          icon: <Eye size={14} />,
+                          onClick: (e) => { e.stopPropagation(); openRoleDetail(pipeline.keyRole); },
+                        },
+                        {
+                          label: 'Edit Role',
+                          icon: <Edit size={14} />,
+                          onClick: (e) => { e.stopPropagation(); openEditRole(pipeline.keyRole); },
+                        },
+                        {
+                          label: 'Add Candidate',
+                          icon: <Plus size={14} />,
+                          onClick: (e) => { e.stopPropagation(); openAddCandidateForRole(pipeline.keyRole.id); },
+                        },
+                        {
+                          label: 'Delete Role',
+                          icon: <Trash2 size={14} />,
+                          variant: 'destructive',
+                          separator: true,
+                          onClick: (e) => { e.stopPropagation(); handleDeleteRole(pipeline.keyRole.id); },
+                        },
+                      ]}
+                    />
                   </TableCell>
                 </TableRow>
 
@@ -529,20 +541,23 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
                     {candidate.overallScore}%
                   </Typography>
                 </TableCell>
-                <TableCell className="py-3">
-                  <Stack 
-                    direction="row" 
-                    spacing={0.5} 
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <IconButton size="small" onClick={() => openEditCandidate(candidate)}>
-                      <Edit size={14} />
-                    </IconButton>
-                    <IconButton size="small">
-                      <MoreHorizontal size={14} />
-                    </IconButton>
-                  </Stack>
+                <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
+                  <RowActionsMenu
+                    actions={[
+                      {
+                        label: 'Edit Candidate',
+                        icon: <Edit size={14} />,
+                        onClick: (e) => { e.stopPropagation(); openEditCandidate(candidate); },
+                      },
+                      {
+                        label: 'Remove',
+                        icon: <Trash2 size={14} />,
+                        variant: 'destructive',
+                        separator: true,
+                        onClick: (e) => { e.stopPropagation(); handleDeleteCandidate(candidate.id); },
+                      },
+                    ]}
+                  />
                 </TableCell>
               </TableRow>
             );
