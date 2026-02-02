@@ -172,13 +172,13 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
           <Card>
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Band / Level</TableHead>
-                  <TableHead className="text-right">Current Salary</TableHead>
-                  <TableHead>Position in Band</TableHead>
-                  <TableHead>Compa-Ratio</TableHead>
-                  <TableHead className="w-16"></TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Employee</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Band / Level</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10 text-right">Current Salary</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Position in Band</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Compa-Ratio</TableHead>
+                  <TableHead className="w-16 h-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -188,14 +188,19 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
                   if (!staffMember || !band) return null;
 
                   const positionInBand = ((comp.currentSalary - band.minSalary) / (band.maxSalary - band.minSalary)) * 100;
-                  const isBelowMid = comp.compaRatio < 1;
+                  const isBelowRange = comp.compaRatio < 0.9;
+                  const isAboveRange = comp.compaRatio > 1.1;
 
                   return (
                     <TableRow 
                       key={comp.id} 
-                      className="group hover:bg-muted/50"
+                      className="group hover:bg-muted/50 transition-colors"
                       style={{
-                        borderLeft: comp.compaRatio < 0.9 ? '3px solid hsl(var(--warning))' : undefined,
+                        borderLeft: isBelowRange 
+                          ? '3px solid hsl(var(--warning))' 
+                          : isAboveRange 
+                            ? '3px solid hsl(var(--destructive))' 
+                            : undefined,
                       }}
                     >
                       <TableCell className="py-3">
@@ -288,14 +293,14 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
           <Card>
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Performance</TableHead>
-                  <TableHead className="text-right">Current</TableHead>
-                  <TableHead className="text-right">Recommended</TableHead>
-                  <TableHead className="text-center">Increase</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-24"></TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Employee</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Performance</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10 text-right">Current</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10 text-right">Recommended</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10 text-center">Increase</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Status</TableHead>
+                  <TableHead className="w-24 h-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -303,9 +308,21 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
                   const staffMember = getStaffMember(rec.staffId);
                   if (!staffMember) return null;
                   const isPending = rec.status === 'pending';
+                  const isApproved = rec.status === 'approved';
+                  const isHighPerformer = rec.performanceRating >= 4;
 
                   return (
-                    <TableRow key={rec.id} className="group hover:bg-muted/50">
+                    <TableRow 
+                      key={rec.id} 
+                      className="group hover:bg-muted/50 transition-colors"
+                      style={{
+                        borderLeft: isApproved 
+                          ? '3px solid hsl(var(--chart-2))' 
+                          : isPending && isHighPerformer 
+                            ? '3px solid hsl(var(--primary))' 
+                            : undefined,
+                      }}
+                    >
                       <TableCell className="py-3">
                         <Stack direction="row" alignItems="center" spacing={1.5}>
                           <Avatar src={staffMember.avatar} sx={{ width: 36, height: 36 }}>
@@ -327,6 +344,7 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
                             label={`${rec.performanceRating}/5`} 
                             size="small" 
                             color={rec.performanceRating >= 4 ? 'success' : rec.performanceRating >= 3 ? 'warning' : 'default'}
+                            sx={{ fontSize: '0.7rem', fontWeight: 600 }}
                           />
                           <Typography variant="caption" color="text.secondary">
                             Compa: {(rec.currentCompaRatio * 100).toFixed(0)}%
@@ -337,14 +355,14 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
                         <Typography variant="body2">{formatCurrency(rec.currentSalary)}</Typography>
                       </TableCell>
                       <TableCell className="py-3 text-right">
-                        <Typography variant="body2" fontWeight={700} color="success.main">
+                        <Typography variant="body2" fontWeight={700} sx={{ color: 'hsl(var(--chart-2))' }}>
                           {formatCurrency(rec.managerAdjustedSalary || rec.recommendedNewSalary)}
                         </Typography>
                       </TableCell>
                       <TableCell className="py-3 text-center">
                         <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5}>
-                          <TrendingUp size={14} className="text-green-600" />
-                          <Typography variant="body2" fontWeight={600} color="success.main">
+                          <TrendingUp size={14} style={{ color: 'hsl(var(--chart-2))' }} />
+                          <Typography variant="body2" fontWeight={600} sx={{ color: 'hsl(var(--chart-2))' }}>
                             +{rec.managerAdjustedPercent || rec.recommendedIncreasePercent}%
                           </Typography>
                         </Stack>
@@ -411,14 +429,14 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
           <Card>
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Bonus Type</TableHead>
-                  <TableHead className="text-center">Target %</TableHead>
-                  <TableHead className="text-center">Multipliers</TableHead>
-                  <TableHead className="text-right">Final Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-16"></TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Employee</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Bonus Type</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10 text-center">Target %</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10 text-center">Multipliers</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10 text-right">Final Amount</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground h-10">Status</TableHead>
+                  <TableHead className="w-16 h-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -429,9 +447,19 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
                   const comp = getCompensation(bonus.staffId);
                   const baseSalary = comp?.currentSalary || 0;
                   const targetAmount = baseSalary * (bonus.targetPercent / 100);
+                  const isPaid = bonus.status === 'paid';
+                  const isApproved = bonus.status === 'approved';
 
                   return (
-                    <TableRow key={bonus.id} className="group hover:bg-muted/50">
+                    <TableRow 
+                      key={bonus.id} 
+                      className="group hover:bg-muted/50 transition-colors"
+                      style={{
+                        borderLeft: isPaid || isApproved 
+                          ? '3px solid hsl(var(--chart-2))' 
+                          : undefined,
+                      }}
+                    >
                       <TableCell className="py-3">
                         <Stack direction="row" alignItems="center" spacing={1.5}>
                           <Avatar src={staffMember.avatar} sx={{ width: 36, height: 36 }}>
@@ -451,7 +479,8 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
                         <Chip 
                           label={bonusTypeLabels[bonus.bonusType]} 
                           size="small" 
-                          variant="outlined" 
+                          variant="outlined"
+                          sx={{ fontSize: '0.7rem', fontWeight: 500 }}
                         />
                       </TableCell>
                       <TableCell className="py-3 text-center">
@@ -470,7 +499,7 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
                         </Typography>
                       </TableCell>
                       <TableCell className="py-3 text-right">
-                        <Typography variant="h6" fontWeight={700} color="success.main">
+                        <Typography variant="h6" fontWeight={700} sx={{ color: 'hsl(var(--chart-2))' }}>
                           {formatCurrency(bonus.finalAmount || bonus.calculatedAmount)}
                         </Typography>
                       </TableCell>
