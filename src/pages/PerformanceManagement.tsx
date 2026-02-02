@@ -62,6 +62,7 @@ import { AssignGoalDrawer } from '@/components/performance/AssignGoalDrawer';
 import { EditGoalDrawer } from '@/components/performance/EditGoalDrawer';
 import { ScheduleConversationDrawer } from '@/components/performance/ScheduleConversationDrawer';
 import { StartReviewDrawer } from '@/components/performance/StartReviewDrawer';
+import { EditPlanDrawer } from '@/components/performance/plans/EditPlanDrawer';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 
@@ -114,6 +115,7 @@ export default function PerformanceManagement() {
   const [selectedPlan, setSelectedPlan] = useState<AssignedPlan | null>(null);
   const [showPlanDetail, setShowPlanDetail] = useState(false);
   const [showQuickAssignDrawer, setShowQuickAssignDrawer] = useState(false);
+  const [showEditPlanDrawer, setShowEditPlanDrawer] = useState(false);
   const [showCreateGoalDrawer, setShowCreateGoalDrawer] = useState(false);
   const [showAssignGoalDrawer, setShowAssignGoalDrawer] = useState(false);
   const [showEditGoalDrawer, setShowEditGoalDrawer] = useState(false);
@@ -364,12 +366,19 @@ export default function PerformanceManagement() {
             onAssignPlan={handleAssignPlan}
             onBulkAssignPlan={handleBulkAssignPlan}
             onViewPlan={handleViewPlan}
+            onEditPlan={(plan) => {
+              setSelectedPlan(plan);
+              setShowEditPlanDrawer(true);
+            }}
             onViewTemplate={handleViewTemplate}
             onCreateTemplate={handleCreateTemplate}
             onEditTemplate={handleEditTemplate}
             onDuplicateTemplate={handleDuplicateTemplate}
             onQuickAssignPlan={() => setShowQuickAssignDrawer(true)}
             onDeleteTemplate={handleDeleteTemplate}
+            onDeletePlan={(planId) => {
+              toast.success('Plan deleted successfully');
+            }}
           />
         )}
 
@@ -901,6 +910,22 @@ export default function PerformanceManagement() {
         currentUserId={CURRENT_USER_ID}
         onClose={() => setShowQuickAssignDrawer(false)}
         onAssign={handleAssignPlanSubmit}
+      />
+
+      {/* Edit Plan Drawer */}
+      <EditPlanDrawer
+        open={showEditPlanDrawer}
+        plan={selectedPlan}
+        staff={mockStaff}
+        onClose={() => {
+          setShowEditPlanDrawer(false);
+          setSelectedPlan(null);
+        }}
+        onSave={async (planId, updates) => {
+          toast.success('Plan updated successfully');
+          setShowEditPlanDrawer(false);
+          setSelectedPlan(null);
+        }}
       />
 
       {/* Create Goal Drawer */}
