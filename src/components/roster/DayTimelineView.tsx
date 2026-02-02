@@ -419,8 +419,10 @@ export function DayTimelineView({
               </div>
             </div>
 
-            {/* Spacer for scroll alignment */}
-            <div className="w-24 shrink-0 bg-muted/50 border-r border-border" />
+            {/* Cost column header */}
+            <div className="w-24 shrink-0 bg-muted/50 border-r border-border flex items-center justify-center">
+              <span className="text-xs font-medium text-muted-foreground">Hours</span>
+            </div>
           </div>
 
           {/* Room sections */}
