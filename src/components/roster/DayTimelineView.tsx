@@ -434,14 +434,16 @@ export function DayTimelineView({
             return (
               <div key={room.id}>
                 {/* Room header with analytics */}
-                <div className="flex flex-col bg-primary/10 border-b border-primary/20 sticky top-[52px] z-10">
-                  <div className="px-4 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary" className="font-semibold">{room.name}</Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {format(date, 'EEEE, MMMM d, yyyy')}
-                      </span>
-                    </div>
+                <div className="flex border-b border-primary/20 sticky top-[52px] z-10">
+                  {/* Sticky left room name section */}
+                  <div className="w-32 md:w-48 lg:w-64 shrink-0 px-2 md:px-4 py-2 bg-primary/10 border-r border-primary/20 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] flex items-center gap-3">
+                    <Badge variant="secondary" className="font-semibold">{room.name}</Badge>
+                    <span className="text-xs text-muted-foreground hidden lg:block">
+                      {format(date, 'EEEE, MMMM d, yyyy')}
+                    </span>
+                  </div>
+                  {/* Scrollable section for analytics */}
+                  <div className="flex-1 bg-primary/10 px-4 py-2 flex items-center justify-end">
                     {/* Inline staffing insights */}
                     {showAnalyticsCharts && demandAnalytics.length > 0 && (
                       <StaffingInsightsBar
@@ -454,20 +456,21 @@ export function DayTimelineView({
                       />
                     )}
                   </div>
-                  {/* Expanded analytics panel when enabled */}
-                  {showAnalyticsCharts && demandAnalytics.length > 0 && (
-                    <div className="px-4 pb-2">
-                      <StaffingInsightsBar
-                        analyticsData={demandAnalytics}
-                        absences={staffAbsences}
-                        date={dateStr}
-                        roomId={room.id}
-                        centreId={centre.id}
-                        isCompact={false}
-                      />
-                    </div>
-                  )}
                 </div>
+                
+                {/* Expanded analytics panel when enabled */}
+                {showAnalyticsCharts && demandAnalytics.length > 0 && (
+                  <div className="px-4 pb-2 bg-primary/5 border-b border-primary/10">
+                    <StaffingInsightsBar
+                      analyticsData={demandAnalytics}
+                      absences={staffAbsences}
+                      date={dateStr}
+                      roomId={room.id}
+                      centreId={centre.id}
+                      isCompact={false}
+                    />
+                  </div>
+                )}
 
                 {/* Staff rows */}
                 {roomStaff.map((member) => {
@@ -475,10 +478,10 @@ export function DayTimelineView({
 
                   return (
                     <div key={`${room.id}-${member.id}`} className="flex border-b border-border hover:bg-muted/20 transition-colors">
-                      {/* Staff info */}
+                      {/* Staff info - sticky left with solid background to prevent overlap */}
                       <div 
                         className={cn(
-                          "w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 border-r border-border bg-card flex items-center gap-1 md:gap-2 cursor-grab sticky left-0 z-20",
+                          "w-32 md:w-48 lg:w-64 shrink-0 p-1 md:p-2 border-r border-border bg-card flex items-center gap-1 md:gap-2 cursor-grab sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]",
                           isDragging && "opacity-60"
                         )}
                         draggable
