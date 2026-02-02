@@ -9,10 +9,14 @@ import {
   LinearProgress,
   Tooltip,
   Paper,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { InlineBulkActions } from './shared/InlineBulkActions';
 import { 
   Users, 
   Plus, 
@@ -21,6 +25,10 @@ import {
   Eye,
   MoreHorizontal,
   MessageSquare,
+  Search,
+  Send,
+  Trash2,
+  Archive,
 } from 'lucide-react';
 import { 
   Feedback360Request, 
@@ -81,6 +89,26 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
   const [showRequest360Drawer, setShowRequest360Drawer] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(new Set());
+
+  // Bulk action handlers
+  const handleSelectAll = () => setSelectedRequestIds(new Set(mock360Requests.map(r => r.id)));
+  const handleClearSelection = () => setSelectedRequestIds(new Set());
+  const toggleSelection = (id: string) => {
+    setSelectedRequestIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkActions = [
+    { id: 'remind', label: 'Send Reminder', icon: <Send size={14} />, onClick: () => { toast.success(`Reminder sent for ${selectedRequestIds.size} request(s)`); handleClearSelection(); } },
+    { id: 'archive', label: 'Archive', icon: <Archive size={14} />, onClick: () => { toast.success(`${selectedRequestIds.size} request(s) archived`); handleClearSelection(); } },
+    { id: 'cancel', label: 'Cancel', icon: <Trash2 size={14} />, onClick: () => { toast.success(`${selectedRequestIds.size} request(s) cancelled`); handleClearSelection(); }, variant: 'destructive' as const },
+  ];
 
   const getStaffName = (id: string) => {
     const staff = mockStaff.find(s => s.id === id);
@@ -469,6 +497,38 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
         staff={mockStaff}
         currentUserId={currentUserId}
       />
+
+      {/* Search & Bulk Actions */}
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }} 
+        spacing={2} 
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        sx={{ mb: 3, flexWrap: 'wrap' }}
+      >
+        <TextField
+          placeholder="Search feedback requests..."
+          size="small"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ minWidth: 200, flex: { xs: 1, sm: 'initial' } }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={16} className="text-muted-foreground" />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Box sx={{ flex: 1 }} />
+        <InlineBulkActions
+          selectedCount={selectedRequestIds.size}
+          totalCount={mock360Requests.length}
+          onClearSelection={handleClearSelection}
+          onSelectAll={handleSelectAll}
+          actions={bulkActions}
+          entityName="requests"
+        />
+      </Stack>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>

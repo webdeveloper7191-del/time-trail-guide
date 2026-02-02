@@ -7,6 +7,8 @@ import {
   Chip,
   IconButton,
   Collapse,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
@@ -18,8 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SemanticProgressBar } from './shared/SemanticProgressBar';
 import { StatusBadge } from './shared/StatusBadge';
+import { InlineBulkActions } from './shared/InlineBulkActions';
 import {
   Users,
   Crown,
@@ -32,6 +37,10 @@ import {
   Edit,
   Zap,
   MoreHorizontal,
+  Search,
+  Trash2,
+  Archive,
+  Send,
 } from 'lucide-react';
 import { StaffMember } from '@/types/staff';
 import {
@@ -63,6 +72,9 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
   
   const [activeView, setActiveView] = useState<'pipeline' | 'candidates'>('pipeline');
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set());
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
   
   // Drawer/Sheet states
   const [showAddRoleDrawer, setShowAddRoleDrawer] = useState(false);
@@ -76,6 +88,41 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
   const [addCandidateForRoleId, setAddCandidateForRoleId] = useState<string | undefined>();
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
+
+  // Bulk action handlers for roles
+  const handleRoleSelectAll = () => setSelectedRoleIds(new Set(keyRoles.map(r => r.id)));
+  const handleRoleClearSelection = () => setSelectedRoleIds(new Set());
+  const toggleRoleSelection = (id: string) => {
+    setSelectedRoleIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const roleBulkActions = [
+    { id: 'export', label: 'Export', icon: <Send size={14} />, onClick: () => { toast.success(`Exporting ${selectedRoleIds.size} role(s)...`); handleRoleClearSelection(); } },
+    { id: 'archive', label: 'Archive', icon: <Archive size={14} />, onClick: () => { toast.success(`${selectedRoleIds.size} role(s) archived`); handleRoleClearSelection(); } },
+    { id: 'delete', label: 'Delete', icon: <Trash2 size={14} />, onClick: () => { setKeyRoles(prev => prev.filter(r => !selectedRoleIds.has(r.id))); toast.success(`${selectedRoleIds.size} role(s) deleted`); handleRoleClearSelection(); }, variant: 'destructive' as const },
+  ];
+
+  // Bulk action handlers for candidates
+  const handleCandidateSelectAll = () => setSelectedCandidateIds(new Set(candidates.map(c => c.id)));
+  const handleCandidateClearSelection = () => setSelectedCandidateIds(new Set());
+  const toggleCandidateSelection = (id: string) => {
+    setSelectedCandidateIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const candidateBulkActions = [
+    { id: 'export', label: 'Export', icon: <Send size={14} />, onClick: () => { toast.success(`Exporting ${selectedCandidateIds.size} candidate(s)...`); handleCandidateClearSelection(); } },
+    { id: 'remove', label: 'Remove', icon: <Trash2 size={14} />, onClick: () => { setCandidates(prev => prev.filter(c => !selectedCandidateIds.has(c.id))); toast.success(`${selectedCandidateIds.size} candidate(s) removed`); handleCandidateClearSelection(); }, variant: 'destructive' as const },
+  ];
 
   const pipelines = useMemo<SuccessionPipeline[]>(() => {
     return keyRoles.map(role => {
@@ -590,6 +637,49 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
           </Box>
         </Card>
       </Box>
+
+      {/* Search & Bulk Actions */}
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }} 
+        spacing={2} 
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        sx={{ flexWrap: 'wrap' }}
+      >
+        <TextField
+          placeholder="Search roles or candidates..."
+          size="small"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ minWidth: 200, flex: { xs: 1, sm: 'initial' } }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={16} className="text-muted-foreground" />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Box sx={{ flex: 1 }} />
+        {activeView === 'pipeline' ? (
+          <InlineBulkActions
+            selectedCount={selectedRoleIds.size}
+            totalCount={keyRoles.length}
+            onClearSelection={handleRoleClearSelection}
+            onSelectAll={handleRoleSelectAll}
+            actions={roleBulkActions}
+            entityName="roles"
+          />
+        ) : (
+          <InlineBulkActions
+            selectedCount={selectedCandidateIds.size}
+            totalCount={candidates.length}
+            onClearSelection={handleCandidateClearSelection}
+            onSelectAll={handleCandidateSelectAll}
+            actions={candidateBulkActions}
+            entityName="candidates"
+          />
+        )}
+      </Stack>
 
       {/* Content */}
       {activeView === 'pipeline' ? renderPipelineTable() : renderCandidatesTable()}

@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { InlineBulkActions } from './shared/InlineBulkActions';
 import { 
   BookOpen, 
   GraduationCap, 
@@ -38,6 +39,8 @@ import {
   ChevronRight,
   MoreHorizontal,
   MessageSquare,
+  Send,
+  Archive,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -73,6 +76,8 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
   const [showCourseAuthoring, setShowCourseAuthoring] = useState(false);
   const [editingCourse, setEditingCourse] = useState<CourseAuthoringState | undefined>();
   const [courses, setCourses] = useState(mockCourses);
+  const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set());
+  const [selectedStaffRowIds, setSelectedStaffRowIds] = useState<Set<string>>(new Set());
 
   // Analytics
   const totalEnrollments = mockEnrollments.length;
@@ -265,6 +270,59 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
       setSelectedStaffIds(staff.filter(s => s.status === 'active').map(s => s.id));
     }
   };
+
+  // Course selection handlers
+  const toggleCourseSelection = (id: string) => {
+    setSelectedCourseIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleCourseSelectAll = () => {
+    const filteredIds = courseStats
+      .filter(s => s.course.title.toLowerCase().includes(searchQuery.toLowerCase()))
+      .map(s => s.course.id);
+    setSelectedCourseIds(new Set(filteredIds));
+  };
+
+  const handleCourseClearSelection = () => setSelectedCourseIds(new Set());
+
+  const courseBulkActions = [
+    { id: 'archive', label: 'Archive', icon: <Archive size={14} />, onClick: () => { toast.success(`${selectedCourseIds.size} course(s) archived`); handleCourseClearSelection(); } },
+    { id: 'export', label: 'Export', icon: <Send size={14} />, onClick: () => { toast.success(`Exporting ${selectedCourseIds.size} course(s)...`); handleCourseClearSelection(); } },
+    { id: 'delete', label: 'Delete', icon: <Trash2 size={14} />, onClick: () => { toast.success(`${selectedCourseIds.size} course(s) deleted`); handleCourseClearSelection(); }, variant: 'destructive' as const },
+  ];
+
+  // Staff row selection handlers
+  const toggleStaffRowSelection = (id: string) => {
+    setSelectedStaffRowIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleStaffRowSelectAll = () => {
+    setSelectedStaffRowIds(new Set(staffLearningStats.map(s => s.staff.id)));
+  };
+
+  const handleStaffRowClearSelection = () => setSelectedStaffRowIds(new Set());
+
+  const staffBulkActions = [
+    { id: 'assign', label: 'Assign Course', icon: <UserPlus size={14} />, onClick: () => { toast.info('Select a course to assign'); handleStaffRowClearSelection(); } },
+    { id: 'remind', label: 'Send Reminder', icon: <Send size={14} />, onClick: () => { toast.success(`Reminder sent to ${selectedStaffRowIds.size} staff`); handleStaffRowClearSelection(); } },
+    { id: 'export', label: 'Export', icon: <Archive size={14} />, onClick: () => { toast.success(`Exporting ${selectedStaffRowIds.size} staff...`); handleStaffRowClearSelection(); } },
+  ];
 
   return (
     <div className="space-y-6">
@@ -479,8 +537,8 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
 
         {/* Courses Tab */}
         <TabsContent value="courses" className="mt-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1">
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search courses..."
@@ -489,12 +547,33 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                 className="pl-9"
               />
             </div>
+            <div className="flex-1" />
+            <InlineBulkActions
+              selectedCount={selectedCourseIds.size}
+              totalCount={courseStats.filter(s => s.course.title.toLowerCase().includes(searchQuery.toLowerCase())).length}
+              onClearSelection={handleCourseClearSelection}
+              onSelectAll={handleCourseSelectAll}
+              actions={courseBulkActions}
+              entityName="courses"
+            />
           </div>
 
           <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="w-10">
+                    <Checkbox 
+                      checked={courseStats.filter(s => s.course.title.toLowerCase().includes(searchQuery.toLowerCase())).every(s => selectedCourseIds.has(s.course.id)) && courseStats.length > 0}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          handleCourseSelectAll();
+                        } else {
+                          handleCourseClearSelection();
+                        }
+                      }}
+                    />
+                  </TableHead>
                   <TableHead>Course</TableHead>
                   <TableHead className="w-28">Category</TableHead>
                   <TableHead className="w-24">Difficulty</TableHead>
@@ -511,6 +590,12 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                   )
                   .map((stat) => (
                     <TableRow key={stat.course.id} className="group hover:bg-muted/50">
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox 
+                          checked={selectedCourseIds.has(stat.course.id)}
+                          onCheckedChange={() => toggleCourseSelection(stat.course.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
@@ -581,10 +666,35 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
 
         {/* Staff Progress Tab */}
         <TabsContent value="staff" className="mt-6">
+          {/* Inline Bulk Actions */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <div className="flex-1" />
+            <InlineBulkActions
+              selectedCount={selectedStaffRowIds.size}
+              totalCount={staffLearningStats.length}
+              onClearSelection={handleStaffRowClearSelection}
+              onSelectAll={handleStaffRowSelectAll}
+              actions={staffBulkActions}
+              entityName="staff"
+            />
+          </div>
+          
           <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="w-10">
+                    <Checkbox 
+                      checked={staffLearningStats.every(s => selectedStaffRowIds.has(s.staff.id)) && staffLearningStats.length > 0}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          handleStaffRowSelectAll();
+                        } else {
+                          handleStaffRowClearSelection();
+                        }
+                      }}
+                    />
+                  </TableHead>
                   <TableHead>Staff Member</TableHead>
                   <TableHead className="w-40">Position</TableHead>
                   <TableHead className="w-24 text-center">Enrolled</TableHead>
@@ -599,6 +709,12 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
                   <TableRow key={stat.staff.id} className="hover:bg-muted/50"
                     style={{ borderLeft: stat.overdue > 0 ? '3px solid #ef4444' : undefined }}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox 
+                        checked={selectedStaffRowIds.has(stat.staff.id)}
+                        onCheckedChange={() => toggleStaffRowSelection(stat.staff.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
