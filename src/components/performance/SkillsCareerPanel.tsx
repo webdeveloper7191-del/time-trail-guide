@@ -47,7 +47,10 @@ import {
   X,
   Eye,
   MoreHorizontal,
+  Trash2,
+  Archive,
 } from 'lucide-react';
+import { RowActionsMenu, RowAction } from './shared/RowActionsMenu';
 import { 
   Skill, 
   StaffSkill, 
@@ -549,17 +552,13 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                       <span className="text-muted-foreground text-xs">Not assessed</span>
                     )}
                   </TableCell>
-                  <TableCell className="py-3">
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="p-1 hover:bg-muted rounded"
-                        onClick={(e) => { e.stopPropagation(); handleAssessSkill(skill); }}
-                      >
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                      <button className="p-1 hover:bg-muted rounded">
-                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                      </button>
+                <TableCell className="py-3">
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <RowActionsMenu
+                        actions={getSkillActions(skill)}
+                        size="sm"
+                        align="end"
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -570,6 +569,47 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
       </div>
     </Box>
   );
+
+  const getSkillActions = (skill: Skill): RowAction[] => {
+    const staffSkill = staffSkills.find(s => s.skillId === skill.id);
+    return [
+      {
+        label: 'View Assessment',
+        icon: <Eye className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          handleAssessSkill(skill);
+        },
+      },
+      {
+        label: 'Edit Skill',
+        icon: <Pencil className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          toast.info('Edit skill functionality coming soon');
+        },
+      },
+      {
+        label: staffSkill ? 'Update Assessment' : 'Assess Now',
+        icon: <Target className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          handleAssessSkill(skill);
+        },
+      },
+      {
+        label: 'Delete Skill',
+        icon: <Trash2 className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          setSkillsList(prev => prev.filter(s => s.id !== skill.id));
+          toast.success('Skill removed');
+        },
+        variant: 'destructive',
+        separator: true,
+      },
+    ];
+  };
 
   const renderSkillGaps = () => {
     const gapsToShow = skillGapsList.length > 0 ? skillGapsList : (careerProgress?.skillGaps || []);

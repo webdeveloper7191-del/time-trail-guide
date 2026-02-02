@@ -5,8 +5,6 @@ import {
   Typography, 
   Chip,
   Avatar,
-  IconButton,
-  Tooltip,
   Paper,
 } from '@mui/material';
 import { Button } from '@/components/ui/button';
@@ -29,6 +27,11 @@ import {
   ListChecks,
   MoreHorizontal,
   Eye,
+  Pencil,
+  Trash2,
+  Archive,
+  Copy,
+  Send,
 } from 'lucide-react';
 import {
   Table,
@@ -39,6 +42,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { StatusBadge } from './shared/StatusBadge';
+import { RowActionsMenu, RowAction } from './shared/RowActionsMenu';
+import { toast } from 'sonner';
 
 interface ConversationsListProps {
   conversations: Conversation[];
@@ -202,22 +207,78 @@ export function ConversationsList({
           </div>
         </TableCell>
         <TableCell className="py-3">
-          <div 
-            className="flex gap-1 transition-opacity duration-150"
-            style={{ opacity: isHovered ? 1 : 0 }}
-          >
-            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); onViewConversation(conv); }}>
-              <Eye className="h-3 w-3" /> View
-            </Button>
-            <Tooltip title="More">
-              <IconButton size="small" onClick={(e) => e.stopPropagation()} sx={{ color: 'hsl(var(--muted-foreground))' }}>
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </IconButton>
-            </Tooltip>
+          <div onClick={(e) => e.stopPropagation()}>
+            <RowActionsMenu
+              actions={getConversationActions(conv)}
+              size="sm"
+              align="end"
+            />
           </div>
         </TableCell>
       </TableRow>
     );
+  };
+
+  const getConversationActions = (conv: Conversation): RowAction[] => {
+    const actions: RowAction[] = [
+      {
+        label: 'View Details',
+        icon: <Eye className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          onViewConversation(conv);
+        },
+      },
+      {
+        label: 'Edit',
+        icon: <Pencil className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          toast.info('Edit conversation functionality coming soon');
+        },
+      },
+    ];
+
+    if (!conv.completed) {
+      actions.push({
+        label: 'Send Reminder',
+        icon: <Send className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          toast.success('Reminder sent');
+        },
+      });
+      actions.push({
+        label: 'Mark Complete',
+        icon: <CheckCircle2 className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          toast.success('Conversation marked as complete');
+        },
+      });
+    }
+
+    actions.push({
+      label: 'Reschedule',
+      icon: <Calendar className="h-4 w-4" />,
+      onClick: (e) => {
+        e.stopPropagation();
+        toast.info('Reschedule functionality coming soon');
+      },
+      separator: true,
+    });
+
+    actions.push({
+      label: 'Cancel Meeting',
+      icon: <Trash2 className="h-4 w-4" />,
+      onClick: (e) => {
+        e.stopPropagation();
+        toast.success('Meeting cancelled');
+      },
+      variant: 'destructive',
+    });
+
+    return actions;
   };
 
   const renderEmptyState = () => (

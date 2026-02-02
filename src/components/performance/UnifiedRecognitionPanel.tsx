@@ -29,6 +29,7 @@ import {
   TrendingUp,
   Eye,
   MoreHorizontal,
+  X,
 } from 'lucide-react';
 import { PraisePost, PraiseCategory, praiseCategoryLabels, praiseCategoryEmojis } from '@/types/recognition';
 import { StaffMember } from '@/types/staff';
@@ -110,6 +111,24 @@ const mockRewardPoints: RewardPoints[] = [
   },
 ];
 
+// Reward catalog item type
+interface RewardCatalogItem {
+  id: number;
+  name: string;
+  points: number;
+  emoji: string;
+  description: string;
+}
+
+const defaultRewards: RewardCatalogItem[] = [
+  { id: 1, name: 'Coffee Voucher', points: 50, emoji: '☕', description: 'Free coffee at the local café' },
+  { id: 2, name: 'Extra Break', points: 100, emoji: '⏰', description: 'Extra 15-min break' },
+  { id: 3, name: 'Lunch on Us', points: 200, emoji: '🍽️', description: 'Free lunch at any restaurant' },
+  { id: 4, name: 'Half Day Off', points: 500, emoji: '🏖️', description: 'Leave 4 hours early' },
+  { id: 5, name: 'Gift Card', points: 300, emoji: '🎁', description: '$25 gift card of your choice' },
+  { id: 6, name: 'Team Shoutout', points: 25, emoji: '📣', description: 'Featured in team newsletter' },
+];
+
 export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecognitionPanelProps) {
   const [posts, setPosts] = useState<PraisePost[]>(initialPosts);
   const [showCompose, setShowCompose] = useState(false);
@@ -123,6 +142,14 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
   const [awardRecipient, setAwardRecipient] = useState('');
   const [awardReason, setAwardReason] = useState('');
   const [awardAmount, setAwardAmount] = useState('50');
+  
+  // Rewards catalog state
+  const [rewardsCatalog, setRewardsCatalog] = useState<RewardCatalogItem[]>(defaultRewards);
+  const [showAddRewardModal, setShowAddRewardModal] = useState(false);
+  const [newRewardName, setNewRewardName] = useState('');
+  const [newRewardPoints, setNewRewardPoints] = useState('100');
+  const [newRewardEmoji, setNewRewardEmoji] = useState('🎁');
+  const [newRewardDescription, setNewRewardDescription] = useState('');
 
   const getStaff = (id: string) => staff.find(s => s.id === id);
   const currentUserPoints = mockRewardPoints.find(p => p.staffId === currentUserId);
@@ -177,6 +204,34 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
     setAwardRecipient('');
     setAwardReason('');
     setAwardAmount('50');
+  };
+
+  const handleAddReward = () => {
+    if (!newRewardName.trim() || !newRewardPoints || !newRewardDescription.trim()) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    
+    const newReward: RewardCatalogItem = {
+      id: Date.now(),
+      name: newRewardName.trim(),
+      points: parseInt(newRewardPoints),
+      emoji: newRewardEmoji,
+      description: newRewardDescription.trim(),
+    };
+    
+    setRewardsCatalog(prev => [...prev, newReward]);
+    toast.success('Reward added to catalog');
+    setShowAddRewardModal(false);
+    setNewRewardName('');
+    setNewRewardPoints('100');
+    setNewRewardEmoji('🎁');
+    setNewRewardDescription('');
+  };
+
+  const handleDeleteReward = (rewardId: number) => {
+    setRewardsCatalog(prev => prev.filter(r => r.id !== rewardId));
+    toast.success('Reward removed from catalog');
   };
 
   const toggleBadge = (badgeId: string) => {
@@ -577,19 +632,31 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
         </TabsContent>
 
         <TabsContent value="rewards" className="mt-4">
-          <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))', mb: 3 }}>
-            Redeem your points for these rewards. Contact HR to claim your reward.
-          </Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+            <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+              Redeem your points for these rewards. Contact HR to claim your reward.
+            </Typography>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowAddRewardModal(true)}>
+              <Plus size={14} />
+              Add Reward
+            </Button>
+          </Stack>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { id: 1, name: 'Coffee Voucher', points: 50, emoji: '☕', description: 'Free coffee at the local café' },
-              { id: 2, name: 'Extra Break', points: 100, emoji: '⏰', description: 'Extra 15-min break' },
-              { id: 3, name: 'Lunch on Us', points: 200, emoji: '🍽️', description: 'Free lunch at any restaurant' },
-              { id: 4, name: 'Half Day Off', points: 500, emoji: '🏖️', description: 'Leave 4 hours early' },
-              { id: 5, name: 'Gift Card', points: 300, emoji: '🎁', description: '$25 gift card of your choice' },
-              { id: 6, name: 'Team Shoutout', points: 25, emoji: '📣', description: 'Featured in team newsletter' },
-            ].map(reward => (
-              <Paper key={reward.id} variant="outlined" sx={{ p: 3, borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
+            {rewardsCatalog.map(reward => (
+              <Paper key={reward.id} variant="outlined" sx={{ p: 3, borderRadius: 2, borderColor: 'hsl(var(--border))', position: 'relative' }}>
+                <IconButton 
+                  size="small" 
+                  onClick={() => handleDeleteReward(reward.id)}
+                  sx={{ 
+                    position: 'absolute', 
+                    top: 8, 
+                    right: 8, 
+                    opacity: 0.5,
+                    '&:hover': { opacity: 1, color: 'error.main' }
+                  }}
+                >
+                  <X size={14} />
+                </IconButton>
                 <Stack direction="row" alignItems="flex-start" spacing={2}>
                   <Typography variant="h4">{reward.emoji}</Typography>
                   <Box sx={{ flex: 1 }}>
@@ -704,6 +771,113 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                   disabled={!awardRecipient || !awardReason.trim()}
                 >
                   Award Points
+                </Button>
+              </Stack>
+            </Stack>
+          </Paper>
+        </Box>
+      )}
+
+      {/* Add Reward Modal */}
+      {showAddRewardModal && (
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'rgba(0,0,0,0.5)',
+          }}
+          onClick={() => setShowAddRewardModal(false)}
+        >
+          <Paper 
+            variant="outlined"
+            sx={{ p: 4, maxWidth: 400, width: '90%', borderRadius: 2 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <Typography variant="h6" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Gift className="h-5 w-5" />
+              Add Reward to Catalog
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))', mb: 3 }}>
+              Create a new reward that employees can redeem with their points
+            </Typography>
+            <Stack spacing={3}>
+              <Box>
+                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
+                  Emoji
+                </Typography>
+                <Select value={newRewardEmoji} onValueChange={setNewRewardEmoji}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="🎁">🎁</SelectItem>
+                    <SelectItem value="☕">☕</SelectItem>
+                    <SelectItem value="🍽️">🍽️</SelectItem>
+                    <SelectItem value="🏖️">🏖️</SelectItem>
+                    <SelectItem value="📣">📣</SelectItem>
+                    <SelectItem value="⏰">⏰</SelectItem>
+                    <SelectItem value="🎉">🎉</SelectItem>
+                    <SelectItem value="💳">💳</SelectItem>
+                    <SelectItem value="🎧">🎧</SelectItem>
+                    <SelectItem value="🎮">🎮</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Box>
+              <Box>
+                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
+                  Reward Name
+                </Typography>
+                <Textarea
+                  value={newRewardName}
+                  onChange={e => setNewRewardName(e.target.value)}
+                  placeholder="e.g., Extra Break Time"
+                  rows={1}
+                />
+              </Box>
+              <Box>
+                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
+                  Points Required
+                </Typography>
+                <Select value={newRewardPoints} onValueChange={setNewRewardPoints}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25 points</SelectItem>
+                    <SelectItem value="50">50 points</SelectItem>
+                    <SelectItem value="100">100 points</SelectItem>
+                    <SelectItem value="200">200 points</SelectItem>
+                    <SelectItem value="300">300 points</SelectItem>
+                    <SelectItem value="500">500 points</SelectItem>
+                    <SelectItem value="1000">1000 points</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Box>
+              <Box>
+                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
+                  Description
+                </Typography>
+                <Textarea
+                  value={newRewardDescription}
+                  onChange={e => setNewRewardDescription(e.target.value)}
+                  placeholder="Brief description of the reward..."
+                  rows={2}
+                />
+              </Box>
+              <Stack direction="row" spacing={2}>
+                <Button variant="outline" className="flex-1" onClick={() => setShowAddRewardModal(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  className="flex-1"
+                  onClick={handleAddReward}
+                  disabled={!newRewardName.trim() || !newRewardDescription.trim()}
+                >
+                  Add Reward
                 </Button>
               </Stack>
             </Stack>

@@ -32,6 +32,7 @@ import {
   FileText,
   ThumbsUp,
   ThumbsDown,
+  Pencil,
 } from 'lucide-react';
 import { StaffMember } from '@/types/staff';
 import {
@@ -61,6 +62,8 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
   const [viewMode, setViewMode] = useState<'my_budget' | 'team_overview' | 'pending_approvals'>('my_budget');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [showEditBudgetDrawer, setShowEditBudgetDrawer] = useState(false);
+  const [editingBudget, setEditingBudget] = useState<DevelopmentBudget | null>(null);
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
@@ -178,13 +181,23 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
             </Typography>
           </Stack>
           <Typography variant="body2" color="text.secondary">
-            Track training and development budgets with approval workflow
-          </Typography>
-        </Box>
+          Track training and development budgets with approval workflow
+        </Typography>
+      </Box>
+      <Stack direction="row" spacing={1}>
+        <Button variant="outline" size="small" onClick={() => {
+          if (myBudget) {
+            setEditingBudget(myBudget);
+            setShowEditBudgetDrawer(true);
+          }
+        }}>
+          <Pencil size={16} className="mr-1" /> Edit Budget
+        </Button>
         <Button variant="default" size="small" onClick={() => setShowRequestDrawer(true)}>
           <Plus size={16} className="mr-1" /> New Request
         </Button>
       </Stack>
+    </Stack>
 
       {/* My Budget Card */}
       {myBudget && viewMode === 'my_budget' && (
@@ -443,6 +456,25 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
         onReject={handleReject}
         canApprove={viewMode === 'pending_approvals'}
       />
+
+      {/* Edit Budget Drawer */}
+      {editingBudget && (
+        <EditBudgetDrawer
+          open={showEditBudgetDrawer}
+          onClose={() => {
+            setShowEditBudgetDrawer(false);
+            setEditingBudget(null);
+          }}
+          budget={editingBudget}
+          staff={staff}
+          onSave={(updatedBudget) => {
+            setBudgets(prev => prev.map(b => b.id === updatedBudget.id ? updatedBudget : b));
+            toast.success('Budget updated successfully');
+            setShowEditBudgetDrawer(false);
+            setEditingBudget(null);
+          }}
+        />
+      )}
     </Box>
   );
 }
@@ -839,6 +871,124 @@ function BudgetRequestDetailDrawer({ open, onClose, request, staff, currentUserI
           ) : (
             <Button variant="outline" onClick={onClose}>Close</Button>
           )}
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// Edit Budget Drawer
+interface EditBudgetDrawerProps {
+  open: boolean;
+  onClose: () => void;
+  budget: DevelopmentBudget;
+  staff: StaffMember[];
+  onSave: (budget: DevelopmentBudget) => void;
+}
+
+function EditBudgetDrawer({ open, onClose, budget, staff, onSave }: EditBudgetDrawerProps) {
+  const [totalBudget, setTotalBudget] = useState(budget.totalBudget.toString());
+  const [fiscalYear, setFiscalYear] = useState(budget.fiscalYear.toString());
+
+  const staffMember = staff.find(s => s.id === budget.staffId);
+
+  const handleSave = () => {
+    const totalNum = parseFloat(totalBudget);
+    const yearNum = parseInt(fiscalYear);
+    if (isNaN(totalNum) || totalNum <= 0) {
+      toast.error('Please enter a valid budget amount');
+      return;
+    }
+    if (isNaN(yearNum)) {
+      toast.error('Please enter a valid fiscal year');
+      return;
+    }
+
+    onSave({
+      ...budget,
+      totalBudget: totalNum,
+      fiscalYear: yearNum,
+    });
+  };
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <Pencil size={20} className="text-primary" />
+            Edit Development Budget
+          </SheetTitle>
+          <SheetDescription>
+            Modify budget allocation for this employee
+          </SheetDescription>
+        </SheetHeader>
+
+        <Box sx={{ py: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Staff Info */}
+          <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Avatar src={staffMember?.avatar} sx={{ width: 40, height: 40 }}>
+                {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {staffMember?.firstName} {staffMember?.lastName}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">{staffMember?.position}</Typography>
+              </Box>
+            </Stack>
+          </Box>
+
+          <TextField
+            label="Fiscal Year"
+            value={fiscalYear}
+            onChange={(e) => setFiscalYear(e.target.value)}
+            fullWidth
+            placeholder="2024-2025"
+          />
+
+          <TextField
+            label="Total Budget (AUD)"
+            type="number"
+            value={totalBudget}
+            onChange={(e) => setTotalBudget(e.target.value)}
+            fullWidth
+            inputProps={{ min: 0 }}
+          />
+
+          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+              Current Allocation
+            </Typography>
+            <Stack spacing={1}>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="body2">Used:</Typography>
+                <Typography variant="body2" fontWeight={600} color="success.main">
+                  ${budget.usedBudget.toLocaleString()}
+                </Typography>
+              </Stack>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="body2">Pending:</Typography>
+                <Typography variant="body2" fontWeight={600} color="warning.main">
+                  ${budget.pendingBudget.toLocaleString()}
+                </Typography>
+              </Stack>
+              <Divider />
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="body2">Remaining:</Typography>
+                <Typography variant="body2" fontWeight={600} color="info.main">
+                  ${(parseFloat(totalBudget || '0') - budget.usedBudget - budget.pendingBudget).toLocaleString()}
+                </Typography>
+              </Stack>
+            </Stack>
+          </Box>
+        </Box>
+
+        <SheetFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="default" onClick={handleSave}>Save Changes</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>

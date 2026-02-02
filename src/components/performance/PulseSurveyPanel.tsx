@@ -21,6 +21,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { SemanticProgressBar } from '@/components/performance/shared/SemanticProgressBar';
 import { StatusBadge } from '@/components/performance/shared/StatusBadge';
+import { RowActionsMenu, RowAction } from '@/components/performance/shared/RowActionsMenu';
 import { 
   BarChart3, 
   Plus, 
@@ -39,6 +40,10 @@ import {
   Star,
   MoreHorizontal,
   Play,
+  Pencil,
+  Archive,
+  Trash2,
+  Copy,
 } from 'lucide-react';
 import { 
   PulseSurvey, 
@@ -333,34 +338,13 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
                       {survey.frequency}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-3">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                      {survey.status === 'active' && (
-                        <Button 
-                          size="small" 
-                          variant="contained"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewSurvey(survey);
-                          }}
-                        >
-                          Results
-                        </Button>
-                      )}
-                      <Button 
-                        size="small" 
-                        variant="text"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewSurvey(survey);
-                        }}
-                        sx={{ minWidth: 32, p: 0.5 }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button size="small" variant="text" sx={{ minWidth: 32, p: 0.5 }}>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                <TableCell className="py-3">
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <RowActionsMenu
+                        actions={getSurveyActions(survey)}
+                        size="sm"
+                        align="end"
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -370,6 +354,92 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
         </Table>
       </div>
     );
+  };
+
+  const getSurveyActions = (survey: PulseSurvey): RowAction[] => {
+    const actions: RowAction[] = [
+      {
+        label: 'View Details',
+        icon: <Eye className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          handleViewSurvey(survey);
+        },
+      },
+    ];
+
+    if (survey.status === 'draft') {
+      actions.push({
+        label: 'Edit',
+        icon: <Pencil className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          toast.info('Edit survey functionality coming soon');
+        },
+      });
+      actions.push({
+        label: 'Send Now',
+        icon: <Send className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          handleSendSurvey(survey);
+        },
+      });
+    }
+
+    if (survey.status === 'active') {
+      actions.push({
+        label: 'View Results',
+        icon: <BarChart3 className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          setSelectedSurvey(survey);
+          setShowResultsSheet(true);
+        },
+      });
+      actions.push({
+        label: 'Close Survey',
+        icon: <CheckCircle2 className="h-4 w-4" />,
+        onClick: (e) => {
+          e.stopPropagation();
+          setSurveys(prev => prev.map(s => 
+            s.id === survey.id ? { ...s, status: 'completed' as const } : s
+          ));
+          toast.success('Survey closed');
+        },
+      });
+    }
+
+    actions.push({
+      label: 'Duplicate',
+      icon: <Copy className="h-4 w-4" />,
+      onClick: (e) => {
+        e.stopPropagation();
+        const newSurvey = {
+          ...survey,
+          id: `survey-${Date.now()}`,
+          title: `${survey.title} (Copy)`,
+          status: 'draft' as const,
+          createdAt: new Date().toISOString(),
+        };
+        setSurveys(prev => [...prev, newSurvey]);
+        toast.success('Survey duplicated');
+      },
+      separator: true,
+    });
+
+    actions.push({
+      label: 'Archive',
+      icon: <Archive className="h-4 w-4" />,
+      onClick: (e) => {
+        e.stopPropagation();
+        setSurveys(prev => prev.filter(s => s.id !== survey.id));
+        toast.success('Survey archived');
+      },
+      variant: 'warning',
+    });
+
+    return actions;
   };
 
   const renderSurveyDetailSheet = () => {
