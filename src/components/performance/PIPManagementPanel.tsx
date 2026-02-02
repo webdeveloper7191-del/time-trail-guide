@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Stack,
@@ -6,6 +6,8 @@ import {
   Avatar,
   Chip,
   IconButton,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
@@ -17,8 +19,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SemanticProgressBar } from './shared/SemanticProgressBar';
 import { StatusBadge } from './shared/StatusBadge';
+import { InlineBulkActions } from './shared/InlineBulkActions';
 import {
   AlertTriangle,
   Clock,
@@ -30,6 +35,10 @@ import {
   Edit,
   MoreHorizontal,
   Eye,
+  Search,
+  Trash2,
+  Archive,
+  Send,
 } from 'lucide-react';
 import { StaffMember } from '@/types/staff';
 import {
@@ -69,6 +78,9 @@ const getStatusBadgeVariant = (status: PIPStatus) => {
 export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelProps) {
   const [pips, setPips] = useState<PerformanceImprovementPlan[]>(mockPIPs);
   const [selectedPIP, setSelectedPIP] = useState<PerformanceImprovementPlan | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   // Drawer states
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
@@ -79,8 +91,21 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
-  const activePIPs = pips.filter(p => p.status === 'active' || p.status === 'extended');
-  const completedPIPs = pips.filter(p => p.status.startsWith('completed'));
+  // Filtered PIPs based on search and status
+  const filteredPIPs = useMemo(() => {
+    return pips.filter(pip => {
+      const staffMember = getStaffMember(pip.staffId);
+      const staffName = staffMember ? `${staffMember.firstName} ${staffMember.lastName}` : '';
+      const matchesSearch = 
+        staffName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pip.reason.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || pip.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [pips, searchQuery, statusFilter, staff]);
+
+  const activePIPs = filteredPIPs.filter(p => p.status === 'active' || p.status === 'extended');
+  const completedPIPs = filteredPIPs.filter(p => p.status.startsWith('completed'));
 
   const calculateProgress = (pip: PerformanceImprovementPlan) => {
     const completedMilestones = pip.milestones.filter(m => m.status === 'completed').length;
@@ -92,6 +117,52 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
     const today = new Date();
     return differenceInDays(endDate, today);
   };
+
+  // Selection handlers
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedIds(new Set(filteredPIPs.map(p => p.id)));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  // Bulk action handlers
+  const handleBulkCancel = () => {
+    setPips(prev => prev.map(p => 
+      selectedIds.has(p.id) ? { ...p, status: 'cancelled' as const } : p
+    ));
+    toast.success(`${selectedIds.size} PIP(s) cancelled`);
+    handleClearSelection();
+  };
+
+  const handleBulkArchive = () => {
+    toast.success(`${selectedIds.size} PIP(s) archived`);
+    handleClearSelection();
+  };
+
+  const handleBulkExport = () => {
+    toast.success(`Exporting ${selectedIds.size} PIP(s)...`);
+    handleClearSelection();
+  };
+
+  const bulkActions = [
+    { id: 'archive', label: 'Archive', icon: <Archive size={14} />, onClick: handleBulkArchive },
+    { id: 'export', label: 'Export', icon: <Send size={14} />, onClick: handleBulkExport },
+    { id: 'cancel', label: 'Cancel', icon: <Trash2 size={14} />, onClick: handleBulkCancel, variant: 'destructive' as const },
+  ];
 
   // Handlers
   const handleCreatePIP = (data: any) => {
@@ -190,6 +261,26 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-10">
+                <Checkbox 
+                  checked={pipList.every(p => selectedIds.has(p.id)) && pipList.length > 0}
+                  onCheckedChange={() => {
+                    if (pipList.every(p => selectedIds.has(p.id))) {
+                      setSelectedIds(prev => {
+                        const next = new Set(prev);
+                        pipList.forEach(p => next.delete(p.id));
+                        return next;
+                      });
+                    } else {
+                      setSelectedIds(prev => {
+                        const next = new Set(prev);
+                        pipList.forEach(p => next.add(p.id));
+                        return next;
+                      });
+                    }
+                  }}
+                />
+              </TableHead>
               <TableHead className="text-[0.65rem] uppercase tracking-wider font-semibold text-muted-foreground">Employee</TableHead>
               <TableHead className="text-[0.65rem] uppercase tracking-wider font-semibold text-muted-foreground">Reason</TableHead>
               <TableHead className="text-[0.65rem] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
@@ -225,6 +316,12 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
                   style={{ borderLeft: `3px solid ${borderColor}` }}
                   onClick={() => handleRowClick(pip)}
                 >
+                  <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox 
+                      checked={selectedIds.has(pip.id)}
+                      onCheckedChange={() => toggleSelection(pip.id)}
+                    />
+                  </TableCell>
                   <TableCell className="py-3">
                     <Stack direction="row" alignItems="center" spacing={1.5}>
                       <Avatar src={staffMember?.avatar} sx={{ width: 36, height: 36 }}>
@@ -410,6 +507,53 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
             </Box>
           </Card>
         </Box>
+
+        {/* Search, Filters & Bulk Actions */}
+        <Stack 
+          direction={{ xs: 'column', sm: 'row' }} 
+          spacing={2} 
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          sx={{ flexWrap: 'wrap' }}
+        >
+          <TextField
+            placeholder="Search PIPs..."
+            size="small"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ minWidth: 200, flex: { xs: 1, sm: 'initial' } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={16} className="text-muted-foreground" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="extended">Extended</SelectItem>
+              <SelectItem value="completed_success">Successful</SelectItem>
+              <SelectItem value="completed_failure">Unsuccessful</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Box sx={{ flex: 1 }} />
+
+          <InlineBulkActions
+            selectedCount={selectedIds.size}
+            totalCount={filteredPIPs.length}
+            onClearSelection={handleClearSelection}
+            onSelectAll={handleSelectAll}
+            actions={bulkActions}
+            entityName="PIPs"
+          />
+        </Stack>
 
         {/* Active PIPs Table */}
         {activePIPs.length > 0 && renderPIPTable(activePIPs, 'Active Plans')}
