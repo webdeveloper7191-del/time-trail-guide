@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, ChevronDown, ChevronRight, Calendar, DollarSign, Target, Users, FileText, Database, Workflow, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, Calendar, DollarSign, Target, Users, FileText, Database, Workflow, BookOpen, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { rosterSRS } from '@/data/srs/rosterSRS';
 import { awardsSRS } from '@/data/srs/awardsSRS';
 import { performanceSRS } from '@/data/srs/performanceSRS';
+import { demandSRS } from '@/data/srs/demandSRS';
 
 const SRSDocumentation = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const SRSDocumentation = () => {
 
   const modules = [
     { id: 'roster', name: 'Roster', icon: <Calendar className="h-4 w-4" />, data: rosterSRS },
+    { id: 'demand', name: 'Demand', icon: <TrendingUp className="h-4 w-4" />, data: demandSRS },
     { id: 'awards', name: 'Awards', icon: <DollarSign className="h-4 w-4" />, data: awardsSRS },
     { id: 'performance', name: 'Performance', icon: <Target className="h-4 w-4" />, data: performanceSRS },
   ];
@@ -166,7 +168,7 @@ const SRSDocumentation = () => {
               <div className="p-2 bg-primary/10 rounded-lg"><FileText className="h-6 w-6 text-primary" /></div>
               <div>
                 <h1 className="text-xl font-bold">Software Requirements Specification</h1>
-                <p className="text-sm text-muted-foreground">Roster • Awards • Performance Modules</p>
+                <p className="text-sm text-muted-foreground">Roster • Demand • Awards • Performance Modules</p>
               </div>
             </div>
           </div>
@@ -175,7 +177,7 @@ const SRSDocumentation = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="roster" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-lg grid-cols-4">
             {modules.map(m => (
               <TabsTrigger key={m.id} value={m.id} className="flex items-center gap-2">{m.icon}{m.name}</TabsTrigger>
             ))}
