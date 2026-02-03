@@ -55,6 +55,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { AwardDetailModal } from './AwardDetailModal';
+import { AwardPreviewSheet } from './AwardPreviewSheet';
 import { exportAwardToPDF, exportAwardToExcel, exportMultipleAwardsToPDF, exportMultipleAwardsToExcel } from '@/lib/awardExport';
 
 interface EnabledAward {
@@ -86,6 +87,7 @@ export function AwardsMasterTable() {
   const [expandedAwardIds, setExpandedAwardIds] = useState<Set<string>>(new Set());
   const [selectedAward, setSelectedAward] = useState<AustralianAward | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [previewSheetOpen, setPreviewSheetOpen] = useState(false);
   const [customRates, setCustomRates] = useState<Record<string, Record<string, number>>>({});
   
   // Inline editing state
@@ -321,7 +323,18 @@ export function AwardsMasterTable() {
 
   const handleViewDetails = (award: AustralianAward) => {
     setSelectedAward(award);
-    setDetailModalOpen(true);
+    // Open preview sheet for uninstalled awards, detail modal for installed ones
+    const isEnabled = isAwardEnabled(award.id);
+    if (isEnabled) {
+      setDetailModalOpen(true);
+    } else {
+      setPreviewSheetOpen(true);
+    }
+  };
+
+  const handleOpenPreview = (award: AustralianAward) => {
+    setSelectedAward(award);
+    setPreviewSheetOpen(true);
   };
 
   const handleExportSinglePdf = (award: AustralianAward) => {
@@ -1057,6 +1070,21 @@ export function AwardsMasterTable() {
           onAwardChange={(award) => {
             setSelectedAward(award);
           }}
+        />
+      )}
+
+      {/* Award Preview Sheet for viewing uninstalled awards */}
+      {selectedAward && (
+        <AwardPreviewSheet
+          award={selectedAward}
+          open={previewSheetOpen}
+          onOpenChange={setPreviewSheetOpen}
+          isEnabled={isAwardEnabled(selectedAward.id)}
+          isFavorite={isAwardFavorite(selectedAward.id)}
+          onToggleEnable={toggleAward}
+          onToggleFavorite={toggleFavorite}
+          onExportPDF={handleExportSinglePdf}
+          onExportExcel={handleExportSingleExcel}
         />
       )}
     </div>
