@@ -30,6 +30,7 @@ import {
   History,
   Package,
   Zap,
+  Eye,
 } from 'lucide-react';
 import { format, parseISO, isFuture, isPast } from 'date-fns';
 import { 
@@ -38,6 +39,7 @@ import {
   MOCK_AVAILABLE_UPDATES, 
   MOCK_TENANT_VERSIONS 
 } from '@/types/awardUpdates';
+import { AwardUpdateDetailSheet } from './AwardUpdateDetailSheet';
 
 export function AwardUpdatesPanel() {
   const [isChecking, setIsChecking] = useState(false);
@@ -46,6 +48,7 @@ export function AwardUpdatesPanel() {
   const [tenantVersions, setTenantVersions] = useState<TenantAwardVersion[]>(MOCK_TENANT_VERSIONS);
   const [selectedUpdate, setSelectedUpdate] = useState<AwardUpdate | null>(null);
   const [showInstallDialog, setShowInstallDialog] = useState(false);
+  const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date>(new Date(2025, 0, 10));
   const [expandedUpdates, setExpandedUpdates] = useState<Set<string>>(new Set());
 
@@ -193,6 +196,19 @@ export function AwardUpdatesPanel() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedUpdate(update);
+                    setShowDetailSheet(true);
+                  }}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  View Details
+                </Button>
                 {update.status === 'available' && (
                   <Button 
                     onClick={(e) => {
@@ -669,6 +685,26 @@ export function AwardUpdatesPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Award Update Detail Sheet */}
+      <AwardUpdateDetailSheet
+        update={selectedUpdate}
+        open={showDetailSheet}
+        onOpenChange={setShowDetailSheet}
+        onInstall={(update) => {
+          setShowDetailSheet(false);
+          handleInstallUpdate(update);
+        }}
+        onSchedule={(update, date) => {
+          setShowDetailSheet(false);
+          handleScheduleUpdate(update, date);
+        }}
+        onSkip={(update) => {
+          setShowDetailSheet(false);
+          handleSkipUpdate(update);
+        }}
+        isInstalling={isInstalling === selectedUpdate?.id}
+      />
     </div>
   );
 }
