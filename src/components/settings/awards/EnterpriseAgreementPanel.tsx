@@ -74,6 +74,7 @@ import {
 } from '@/types/enterpriseAgreement';
 import { AustralianState, stateLabels } from '@/types/leaveAccrual';
 import { EBAWizard } from './EBAWizard';
+import { AddEmployeeDrawer, EditEmployeeDrawer, MultiAwardEmployeeDisplay } from './MultiAwardEmployeeDrawer';
 
 // Comprehensive mock EBA data
 const mockEBAs: EnterpriseAgreement[] = [
@@ -216,8 +217,8 @@ const mockEBAs: EnterpriseAgreement[] = [
   },
 ];
 
-// Mock multi-award employees
-const mockMultiAwardEmployees: (MultiAwardEmployee & { name: string; role: string; email: string; location: string })[] = [
+// Initial mock multi-award employees
+const initialMultiAwardEmployees: MultiAwardEmployeeDisplay[] = [
   {
     staffId: 'staff-1',
     name: 'Sarah Johnson',
@@ -284,11 +285,17 @@ export function EnterpriseAgreementPanel() {
   const [showCreatePanel, setShowCreatePanel] = useState(false);
   const [showComparePanel, setShowComparePanel] = useState(false);
   const [showMultiAwardPanel, setShowMultiAwardPanel] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<(typeof mockMultiAwardEmployees)[0] | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<MultiAwardEmployeeDisplay | null>(null);
   const [statusFilter, setStatusFilter] = useState<AgreementStatus | 'all'>('all');
   const [selectedClassification, setSelectedClassification] = useState<EBAClassification | null>(null);
   const [showEditWizard, setShowEditWizard] = useState(false);
   const [ebas, setEbas] = useState<EnterpriseAgreement[]>(mockEBAs);
+  
+  // Multi-award employees state
+  const [multiAwardEmployees, setMultiAwardEmployees] = useState<MultiAwardEmployeeDisplay[]>(initialMultiAwardEmployees);
+  const [showAddEmployeeDrawer, setShowAddEmployeeDrawer] = useState(false);
+  const [showEditEmployeeDrawer, setShowEditEmployeeDrawer] = useState(false);
+  const [employeeToEdit, setEmployeeToEdit] = useState<MultiAwardEmployeeDisplay | null>(null);
 
   // Form state for new agreement
   const [newAgreement, setNewAgreement] = useState({
@@ -306,6 +313,23 @@ export function EnterpriseAgreementPanel() {
 
   // Comparison state
   const [compareAgreements, setCompareAgreements] = useState<string[]>([]);
+  
+  // Handlers for multi-award employees
+  const handleAddEmployee = (employee: MultiAwardEmployeeDisplay) => {
+    setMultiAwardEmployees(prev => [...prev, employee]);
+  };
+  
+  const handleUpdateEmployee = (updatedEmployee: MultiAwardEmployeeDisplay) => {
+    setMultiAwardEmployees(prev => 
+      prev.map(emp => emp.staffId === updatedEmployee.staffId ? updatedEmployee : emp)
+    );
+  };
+  
+  const handleEditEmployeeClick = (employee: MultiAwardEmployeeDisplay) => {
+    setEmployeeToEdit(employee);
+    setShowEditEmployeeDrawer(true);
+    setSelectedEmployee(null); // Close the view panel
+  };
 
   const getExpiryStatus = (expiryDate: string) => {
     const days = differenceInDays(new Date(expiryDate), new Date());
@@ -414,7 +438,7 @@ export function EnterpriseAgreementPanel() {
                 <Users className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{mockMultiAwardEmployees.length}</p>
+                <p className="text-2xl font-bold">{multiAwardEmployees.length}</p>
                 <p className="text-sm text-muted-foreground">Multi-Award Staff</p>
               </div>
             </div>
@@ -1332,7 +1356,7 @@ export function EnterpriseAgreementPanel() {
                 placeholder="Search employees..." 
                 className="max-w-xs" 
               />
-              <Button size="sm">
+              <Button size="sm" onClick={() => setShowAddEmployeeDrawer(true)}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Add Employee
               </Button>
@@ -1340,7 +1364,7 @@ export function EnterpriseAgreementPanel() {
 
             <ScrollArea className="h-[500px]">
               <div className="space-y-3">
-                {mockMultiAwardEmployees.map(emp => (
+                {multiAwardEmployees.map(emp => (
                   <Card 
                     key={emp.staffId} 
                     className="cursor-pointer hover:shadow-sm transition-shadow"
@@ -1381,6 +1405,13 @@ export function EnterpriseAgreementPanel() {
                     </CardContent>
                   </Card>
                 ))}
+                {multiAwardEmployees.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No multi-award employees configured</p>
+                    <p className="text-sm">Click "Add Employee" to get started</p>
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </div>
@@ -1480,7 +1511,7 @@ export function EnterpriseAgreementPanel() {
                 <Button variant="outline" onClick={() => setSelectedEmployee(null)}>
                   Close
                 </Button>
-                <Button>
+                <Button onClick={() => handleEditEmployeeClick(selectedEmployee)}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Configuration
                 </Button>
@@ -1489,6 +1520,25 @@ export function EnterpriseAgreementPanel() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Add Employee Drawer */}
+      <AddEmployeeDrawer
+        open={showAddEmployeeDrawer}
+        onClose={() => setShowAddEmployeeDrawer(false)}
+        onAdd={handleAddEmployee}
+        existingEmployeeIds={multiAwardEmployees.map(e => e.staffId)}
+      />
+
+      {/* Edit Employee Drawer */}
+      <EditEmployeeDrawer
+        open={showEditEmployeeDrawer}
+        onClose={() => {
+          setShowEditEmployeeDrawer(false);
+          setEmployeeToEdit(null);
+        }}
+        employee={employeeToEdit}
+        onSave={handleUpdateEmployee}
+      />
 
       {/* EBA Creation/Edit Wizard */}
       <EBAWizard
