@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,12 +6,22 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { 
   Upload, FileSpreadsheet, Wand2, 
   Check, AlertTriangle, X, RefreshCw, 
   ChevronLeft, ChevronRight, Download,
-  Calendar, Clock, Users, MapPin
+  Calendar, Clock, Users, MapPin, HeartPulse,
+  Building2, Store, ShoppingCart, Activity,
+  Timer, ClipboardList, UserCheck, TrendingUp,
+  BarChart3, History, Footprints, Receipt, CreditCard, CalendarCheck, ShoppingBag
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { DemandColumnMapper } from './DemandColumnMapper';
@@ -19,61 +29,75 @@ import {
   demandCSVImport, 
   ColumnMappingConfig, 
   DemandImportResult,
-  DemandImportType,
 } from '@/lib/etl/demandCSVImport';
-import { CSV_TEMPLATES } from '@/types/demandIntegration';
+import {
+  IndustryImportType,
+  getIndustryImportConfig,
+  getIndustryImportTypes,
+  getIndustryTemplateExample,
+  listImplementedIndustries,
+} from '@/lib/etl/industryImportConfig';
+import type { IndustryType } from '@/lib/timefold/industryConstraints';
 import { cn } from '@/lib/utils';
 
 interface DemandImportModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImportComplete?: (result: DemandImportResult) => void;
-  defaultImportType?: DemandImportType;
+  defaultImportType?: IndustryImportType;
+  defaultIndustry?: IndustryType;
 }
 
-type ImportStep = 'type' | 'upload' | 'mapping' | 'preview' | 'result';
+type ImportStep = 'industry' | 'type' | 'upload' | 'mapping' | 'preview' | 'result';
 
-const IMPORT_TYPE_OPTIONS: { value: DemandImportType; label: string; description: string; icon: React.ReactNode }[] = [
-  { 
-    value: 'bookings', 
-    label: 'Child Bookings', 
-    description: 'Individual booking records with child details',
-    icon: <Calendar className="h-5 w-5" />
-  },
-  { 
-    value: 'bookingSummary', 
-    label: 'Booking Summary', 
-    description: 'Aggregated booking counts by time slot',
-    icon: <Users className="h-5 w-5" />
-  },
-  { 
-    value: 'historicalAttendance', 
-    label: 'Historical Attendance', 
-    description: 'Past attendance records for forecasting',
-    icon: <Clock className="h-5 w-5" />
-  },
-  { 
-    value: 'todayAttendance', 
-    label: "Today's Attendance", 
-    description: 'Real-time sign-in/sign-out events',
-    icon: <Users className="h-5 w-5" />
-  },
-  { 
-    value: 'rooms', 
-    label: 'Room Configuration', 
-    description: 'Room capacity and age group settings',
-    icon: <MapPin className="h-5 w-5" />
-  },
-];
+// Icon mapping for dynamic icon rendering
+const ICON_MAP: Record<string, React.ReactNode> = {
+  Calendar: <Calendar className="h-5 w-5" />,
+  Users: <Users className="h-5 w-5" />,
+  Clock: <Clock className="h-5 w-5" />,
+  MapPin: <MapPin className="h-5 w-5" />,
+  HeartPulse: <HeartPulse className="h-5 w-5" />,
+  Building2: <Building2 className="h-5 w-5" />,
+  Store: <Store className="h-5 w-5" />,
+  ShoppingCart: <ShoppingCart className="h-5 w-5" />,
+  Activity: <Activity className="h-5 w-5" />,
+  Timer: <Timer className="h-5 w-5" />,
+  ClipboardList: <ClipboardList className="h-5 w-5" />,
+  UserCheck: <UserCheck className="h-5 w-5" />,
+  TrendingUp: <TrendingUp className="h-5 w-5" />,
+  BarChart3: <BarChart3 className="h-5 w-5" />,
+  History: <History className="h-5 w-5" />,
+  Footprints: <Footprints className="h-5 w-5" />,
+  Receipt: <Receipt className="h-5 w-5" />,
+  CreditCard: <CreditCard className="h-5 w-5" />,
+  CalendarCheck: <CalendarCheck className="h-5 w-5" />,
+  ShoppingBag: <ShoppingBag className="h-5 w-5" />,
+};
+
+const INDUSTRY_ICONS: Record<IndustryType, React.ReactNode> = {
+  childcare: <Users className="h-5 w-5" />,
+  aged_care: <HeartPulse className="h-5 w-5" />,
+  hospitality: <Store className="h-5 w-5" />,
+  retail: <ShoppingCart className="h-5 w-5" />,
+  disability_services: <HeartPulse className="h-5 w-5" />,
+  healthcare: <HeartPulse className="h-5 w-5" />,
+  education: <Building2 className="h-5 w-5" />,
+  general: <Building2 className="h-5 w-5" />,
+};
 
 export function DemandImportModal({ 
   open, 
   onOpenChange, 
   onImportComplete,
-  defaultImportType 
+  defaultImportType,
+  defaultIndustry
 }: DemandImportModalProps) {
-  const [step, setStep] = useState<ImportStep>(defaultImportType ? 'upload' : 'type');
-  const [importType, setImportType] = useState<DemandImportType>(defaultImportType || 'bookings');
+  const [step, setStep] = useState<ImportStep>(
+    defaultIndustry && defaultImportType ? 'upload' : 
+    defaultIndustry ? 'type' : 'industry'
+  );
+  const [industry, setIndustry] = useState<IndustryType>(defaultIndustry || 'childcare');
+  const [importType, setImportType] = useState<IndustryImportType>(defaultImportType || 'demand');
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [rawData, setRawData] = useState<Record<string, any>[]>([]);
@@ -83,9 +107,18 @@ export function DemandImportModal({
   const [previewPage, setPreviewPage] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Get industry-specific configuration
+  const industryConfig = useMemo(() => getIndustryImportConfig(industry), [industry]);
+  const importTypeOptions = useMemo(() => getIndustryImportTypes(industry), [industry]);
+  const implementedIndustries = useMemo(() => listImplementedIndustries(), []);
+
   const reset = useCallback(() => {
-    setStep(defaultImportType ? 'upload' : 'type');
-    setImportType(defaultImportType || 'bookings');
+    setStep(
+      defaultIndustry && defaultImportType ? 'upload' : 
+      defaultIndustry ? 'type' : 'industry'
+    );
+    setIndustry(defaultIndustry || 'childcare');
+    setImportType(defaultImportType || 'demand');
     setSelectedFile(null);
     setRawData([]);
     setHeaders([]);
@@ -96,7 +129,7 @@ export function DemandImportModal({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, [defaultImportType]);
+  }, [defaultImportType, defaultIndustry]);
 
   const handleClose = () => {
     reset();
@@ -183,8 +216,8 @@ export function DemandImportModal({
       setHeaders(fileHeaders);
       setRawData(data);
       
-      // Auto-detect mappings
-      demandCSVImport.setImportType(importType);
+      // Auto-detect mappings using industry-specific config
+      demandCSVImport.setIndustryConfig(industry, importType);
       const detectedMappings = demandCSVImport.autoDetectMappings(fileHeaders);
       setMappings(detectedMappings);
       
@@ -220,8 +253,8 @@ export function DemandImportModal({
   const handlePreview = () => {
     setIsProcessing(true);
     
-    // Apply mappings and transform
-    demandCSVImport.setImportType(importType);
+    // Apply mappings and transform using industry-specific config
+    demandCSVImport.setIndustryConfig(industry, importType);
     demandCSVImport.setMappings(mappings);
     const result = demandCSVImport.transform(rawData);
     setImportResult(result);
@@ -248,8 +281,7 @@ export function DemandImportModal({
   };
 
   const downloadTemplate = () => {
-    const templateKey = importType as keyof typeof CSV_TEMPLATES;
-    const template = CSV_TEMPLATES[templateKey];
+    const template = getIndustryTemplateExample(industry, importType);
     
     if (!template) {
       toast.error('Template not available for this import type');
@@ -258,16 +290,20 @@ export function DemandImportModal({
     
     const ws = XLSX.utils.aoa_to_sheet([template.headers, template.example.split(',')]);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `${importType}_template`);
-    XLSX.writeFile(wb, `demand_${importType}_template.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, `${industry}_${importType}_template`);
+    XLSX.writeFile(wb, `${industry}_${importType}_template.xlsx`);
     
     toast.success('Template downloaded');
   };
 
   const getSteps = (): ImportStep[] => {
-    return defaultImportType 
-      ? ['upload', 'mapping', 'preview', 'result']
-      : ['type', 'upload', 'mapping', 'preview', 'result'];
+    if (defaultIndustry && defaultImportType) {
+      return ['upload', 'mapping', 'preview', 'result'];
+    }
+    if (defaultIndustry) {
+      return ['type', 'upload', 'mapping', 'preview', 'result'];
+    }
+    return ['industry', 'type', 'upload', 'mapping', 'preview', 'result'];
   };
 
   const steps = getSteps();
@@ -276,17 +312,26 @@ export function DemandImportModal({
   const previewRecords = importResult?.records.slice(previewPage * 5, (previewPage + 1) * 5) || [];
   const totalPreviewPages = Math.ceil((importResult?.records.length || 0) / 5);
 
-  const selectedTypeOption = IMPORT_TYPE_OPTIONS.find(o => o.value === importType);
+  const selectedTypeOption = importTypeOptions.find(o => o.id === importType);
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent className="w-full sm:max-w-4xl lg:max-w-5xl overflow-hidden flex flex-col">
         <SheetHeader>
-          <SheetTitle>Import Demand Data</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle>Import Demand Data</SheetTitle>
+            {step !== 'industry' && (
+              <Badge variant="outline" className="text-xs">
+                {industryConfig.name}
+              </Badge>
+            )}
+          </div>
           <SheetDescription>
             {selectedTypeOption 
               ? `Import ${selectedTypeOption.label} - ${selectedTypeOption.description}`
-              : 'Upload CSV or Excel files to import demand data'
+              : step === 'industry' 
+                ? 'Select your industry to configure import fields'
+                : 'Upload CSV or Excel files to import demand data'
             }
           </SheetDescription>
         </SheetHeader>
@@ -325,34 +370,78 @@ export function DemandImportModal({
 
         {/* Content */}
         <div className="flex-1 overflow-hidden py-4">
-          {/* Step 1: Select Import Type */}
-          {step === 'type' && (
+          {/* Step 0: Select Industry */}
+          {step === 'industry' && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Select the type of demand data you want to import:
+                Select your industry to configure import fields and validation:
               </p>
               <RadioGroup 
-                value={importType} 
-                onValueChange={(v) => setImportType(v as DemandImportType)}
+                value={industry} 
+                onValueChange={(v) => {
+                  setIndustry(v as IndustryType);
+                  // Reset import type when industry changes
+                  const newConfig = getIndustryImportConfig(v as IndustryType);
+                  setImportType(newConfig.importTypes[0]?.id || 'demand');
+                }}
                 className="grid grid-cols-1 gap-3"
               >
-                {IMPORT_TYPE_OPTIONS.map((option) => (
+                {implementedIndustries.map((ind) => (
                   <Label
-                    key={option.value}
-                    htmlFor={option.value}
+                    key={ind.id}
+                    htmlFor={`industry-${ind.id}`}
                     className={cn(
                       "flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors",
-                      importType === option.value 
+                      industry === ind.id 
                         ? "border-primary bg-primary/5" 
                         : "hover:bg-muted/50"
                     )}
                   >
-                    <RadioGroupItem value={option.value} id={option.value} />
+                    <RadioGroupItem value={ind.id} id={`industry-${ind.id}`} />
                     <div className={cn(
                       "p-2 rounded-lg",
-                      importType === option.value ? "bg-primary/10 text-primary" : "bg-muted"
+                      industry === ind.id ? "bg-primary/10 text-primary" : "bg-muted"
                     )}>
-                      {option.icon}
+                      {INDUSTRY_ICONS[ind.id]}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">{ind.name}</p>
+                      <p className="text-sm text-muted-foreground">{ind.description}</p>
+                    </div>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </div>
+          )}
+
+          {/* Step 1: Select Import Type */}
+          {step === 'type' && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Select the type of {industryConfig.name.toLowerCase()} data you want to import:
+              </p>
+              <RadioGroup 
+                value={importType} 
+                onValueChange={(v) => setImportType(v as IndustryImportType)}
+                className="grid grid-cols-1 gap-3"
+              >
+                {importTypeOptions.map((option) => (
+                  <Label
+                    key={option.id}
+                    htmlFor={option.id}
+                    className={cn(
+                      "flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors",
+                      importType === option.id 
+                        ? "border-primary bg-primary/5" 
+                        : "hover:bg-muted/50"
+                    )}
+                  >
+                    <RadioGroupItem value={option.id} id={option.id} />
+                    <div className={cn(
+                      "p-2 rounded-lg",
+                      importType === option.id ? "bg-primary/10 text-primary" : "bg-muted"
+                    )}>
+                      {ICON_MAP[option.icon] || <FileSpreadsheet className="h-5 w-5" />}
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">{option.label}</p>
@@ -406,8 +495,14 @@ export function DemandImportModal({
 
               <Card className="bg-muted/50">
                 <CardContent className="p-4 space-y-2">
-                  <p className="text-sm font-medium">Import Guidelines</p>
+                  <p className="text-sm font-medium">Import Guidelines - {industryConfig.name}</p>
                   <ul className="text-xs text-muted-foreground space-y-1">
+                    {industryConfig.validationNotes.map((note, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <Check className="h-3 w-3 text-green-500" />
+                        {note}
+                      </li>
+                    ))}
                     <li className="flex items-center gap-2">
                       <Check className="h-3 w-3 text-green-500" />
                       First row should contain column headers
@@ -440,7 +535,7 @@ export function DemandImportModal({
                     <div className="flex-1">
                       <p className="font-medium text-sm">{selectedFile.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {rawData.length} records • {headers.length} columns
+                        {rawData.length} records • {headers.length} columns • {industryConfig.name}
                       </p>
                     </div>
                     <Badge variant="secondary">{mappings.length} mapped</Badge>
@@ -455,6 +550,7 @@ export function DemandImportModal({
                 </div>
 
                 <DemandColumnMapper
+                  industry={industry}
                   importType={importType}
                   sourceColumns={headers}
                   mappings={mappings}
@@ -609,7 +705,7 @@ export function DemandImportModal({
             <Button 
               variant="outline" 
               onClick={() => {
-                if (step === 'type' || (step === 'upload' && defaultImportType)) {
+                if (step === 'industry' || (step === 'upload' && defaultImportType && defaultIndustry)) {
                   handleClose();
                 } else {
                   const prevStep = steps[currentStepIndex - 1];
@@ -617,10 +713,16 @@ export function DemandImportModal({
                 }
               }}
             >
-              {step === 'type' || (step === 'upload' && defaultImportType) ? 'Cancel' : 'Back'}
+              {step === 'industry' || (step === 'upload' && defaultImportType && defaultIndustry) ? 'Cancel' : 'Back'}
             </Button>
             
             <div className="flex gap-2">
+              {step === 'industry' && (
+                <Button onClick={() => setStep('type')}>
+                  Continue
+                </Button>
+              )}
+              
               {step === 'type' && (
                 <Button onClick={() => setStep('upload')}>
                   Continue
