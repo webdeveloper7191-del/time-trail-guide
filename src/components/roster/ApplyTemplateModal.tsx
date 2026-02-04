@@ -215,9 +215,9 @@ export function ApplyTemplateModal({
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'hsl(var(--primary))' }}>
                   <Plus size={16} />
-                  <Typography variant="body2">{shiftsToAdd.length} to add</Typography>
+                  <Typography variant="body2" fontWeight={500}>{shiftsToAdd.length} to add</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
                   <Check size={16} />
@@ -225,7 +225,34 @@ export function ApplyTemplateModal({
                 </Box>
               </Box>
 
-              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+              {/* Table header */}
+              <Box sx={{ 
+                display: 'grid', 
+                gridTemplateColumns: '32px 1fr 24px 120px 100px 80px', 
+                alignItems: 'center', 
+                gap: 1.5,
+                p: 1.5,
+                bgcolor: 'grey.100',
+                borderRadius: '8px 8px 0 0',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              }}>
+                <Box />
+                <Typography variant="caption" fontWeight={600} color="text.primary">Room</Typography>
+                <Box />
+                <Typography variant="caption" fontWeight={600} color="text.primary">Date</Typography>
+                <Typography variant="caption" fontWeight={600} color="text.primary">Time</Typography>
+                <Typography variant="caption" fontWeight={600} color="text.primary" textAlign="right">Status</Typography>
+              </Box>
+
+              <Box sx={{ 
+                border: 1, 
+                borderColor: 'divider',
+                borderTop: 0,
+                borderRadius: '0 0 8px 8px',
+                bgcolor: 'background.paper',
+                overflow: 'hidden',
+              }}>
                 {matchResults.map((result, idx) => {
                   const room = rooms.find(r => r.id === result.templateShift.roomId);
                   const isSelected = selectedShifts.size === 0 || selectedShifts.has(result.templateShift.id);
@@ -234,55 +261,74 @@ export function ApplyTemplateModal({
                     <Box
                       key={idx}
                       sx={{
-                        display: 'flex',
+                        display: 'grid',
+                        gridTemplateColumns: '32px 1fr 24px 120px 100px 80px',
                         alignItems: 'center',
                         gap: 1.5,
                         p: 1.5,
-                        borderBottom: idx < matchResults.length - 1 ? 1 : 0,
-                        borderColor: 'divider',
-                        bgcolor: result.action === 'add' 
-                          ? (isSelected ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.06)') 
-                          : 'action.hover',
+                        bgcolor: result.action === 'skip' 
+                          ? 'grey.50' 
+                          : (isSelected ? 'rgba(3, 169, 244, 0.06)' : 'background.paper'),
                         opacity: result.action === 'skip' ? 0.6 : 1,
+                        borderBottom: idx < matchResults.length - 1 ? '1px solid' : 'none',
+                        borderColor: 'divider',
                         transition: 'all 0.15s ease-in-out',
                         cursor: result.action === 'add' ? 'pointer' : 'default',
                         '&:hover': result.action === 'add' ? {
-                          bgcolor: 'rgba(34, 197, 94, 0.16)',
+                          bgcolor: 'rgba(3, 169, 244, 0.08)',
                         } : {},
                       }}
                       onClick={() => result.action === 'add' && toggleShift(result.templateShift.id)}
                     >
-                      {result.action === 'add' && (
-                        <Checkbox
-                          checked={isSelected}
-                          onChange={() => toggleShift(result.templateShift.id)}
-                          size="small"
-                          color="success"
-                        />
-                      )}
-                      {result.action === 'skip' && (
-                        <Check size={16} style={{ opacity: 0.5 }} />
-                      )}
-                      
-                      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" fontWeight={isSelected ? 600 : 500} color={isSelected ? 'success.main' : 'text.primary'}>
-                          {room?.name || 'Unknown'}
-                        </Typography>
-                        <ArrowRight size={12} style={{ opacity: 0.5 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {result.date ? format(new Date(result.date), 'EEE, MMM d') : 'N/A'}
-                        </Typography>
-                        <Typography variant="body2">
-                          {result.templateShift.startTime} - {result.templateShift.endTime}
-                        </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {result.action === 'add' ? (
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={() => toggleShift(result.templateShift.id)}
+                            size="small"
+                            sx={{ 
+                              p: 0,
+                              '&.Mui-checked': { color: 'hsl(var(--primary))' }
+                            }}
+                          />
+                        ) : (
+                          <Check size={16} style={{ opacity: 0.4, color: 'var(--muted-foreground)' }} />
+                        )}
                       </Box>
-
-                      <Chip 
-                        size="small" 
-                        label={result.action === 'add' ? 'Add' : 'Skip'}
-                        color={result.action === 'add' ? 'success' : 'default'}
-                        variant={result.action === 'add' && isSelected ? 'filled' : 'outlined'}
-                      />
+                      
+                      <Typography 
+                        variant="body2" 
+                        fontWeight={500} 
+                        color={isSelected && result.action === 'add' ? 'primary.main' : 'text.primary'}
+                      >
+                        {room?.name || 'Unknown'}
+                      </Typography>
+                      <ArrowRight size={12} style={{ opacity: 0.4, color: 'var(--muted-foreground)' }} />
+                      <Typography variant="body2" color="text.primary">
+                        {result.date ? format(new Date(result.date), 'EEE, MMM d') : 'N/A'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {result.templateShift.startTime} - {result.templateShift.endTime}
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Chip 
+                          size="small" 
+                          label={result.action === 'add' ? 'Add' : 'Skip'}
+                          sx={{ 
+                            height: 24,
+                            borderRadius: '6px',
+                            fontWeight: 500,
+                            fontSize: '0.7rem',
+                            bgcolor: result.action === 'add' && isSelected 
+                              ? 'hsl(var(--primary))' 
+                              : (result.action === 'add' ? 'rgba(3, 169, 244, 0.12)' : 'grey.200'),
+                            color: result.action === 'add' && isSelected 
+                              ? 'white' 
+                              : (result.action === 'add' ? 'hsl(var(--primary))' : 'text.secondary'),
+                            border: result.action === 'add' && !isSelected ? '1px solid rgba(3, 169, 244, 0.3)' : 'none',
+                          }}
+                        />
+                      </Box>
                     </Box>
                   );
                 })}

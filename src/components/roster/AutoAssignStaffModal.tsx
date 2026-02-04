@@ -8,8 +8,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Switch,
-  FormControlLabel,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -20,6 +18,7 @@ import {
   Tooltip as MuiTooltip,
   Divider,
 } from '@mui/material';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import {
   Sheet,
   SheetContent,
@@ -706,25 +705,15 @@ export function AutoAssignStaffModal({
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={includeCasual}
-                          onChange={(e) => setIncludeCasual(e.target.checked)}
-                          size="small"
-                        />
-                      }
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <StyledSwitch
+                      checked={includeCasual}
+                      onChange={setIncludeCasual}
                       label="Include casual staff"
                     />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={includeAgency}
-                          onChange={(e) => setIncludeAgency(e.target.checked)}
-                          size="small"
-                        />
-                      }
+                    <StyledSwitch
+                      checked={includeAgency}
+                      onChange={setIncludeAgency}
                       label="Include agency staff"
                     />
                   </Box>
@@ -740,24 +729,14 @@ export function AutoAssignStaffModal({
                 </AccordionSummary>
                 <AccordionDetails>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={enforceQualifications}
-                          onChange={(e) => setEnforceQualifications(e.target.checked)}
-                          size="small"
-                        />
-                      }
+                    <StyledSwitch
+                      checked={enforceQualifications}
+                      onChange={setEnforceQualifications}
                       label="Strictly enforce qualification requirements"
                     />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={respectPreferences}
-                          onChange={(e) => setRespectPreferences(e.target.checked)}
-                          size="small"
-                        />
-                      }
+                    <StyledSwitch
+                      checked={respectPreferences}
+                      onChange={setRespectPreferences}
                       label="Respect staff scheduling preferences"
                     />
                     <Box>

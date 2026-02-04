@@ -369,14 +369,14 @@ export function AddEmptyShiftModal({
           p: 2, 
           borderRadius: 2, 
           border: '1px solid',
-          borderColor: isRecurring ? 'success.main' : 'divider',
-          bgcolor: isRecurring ? 'success.50' : 'background.paper',
+          borderColor: isRecurring ? 'hsl(var(--primary))' : 'divider',
+          bgcolor: isRecurring ? 'rgba(3, 169, 244, 0.06)' : 'background.paper',
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isRecurring ? 2 : 0 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <RefreshCw className={`h-5 w-5 ${isRecurring ? 'text-emerald-600' : 'text-muted-foreground'}`} />
+              <RefreshCw className={`h-5 w-5 ${isRecurring ? 'text-primary' : 'text-muted-foreground'}`} />
               <Box>
-                <Typography variant="subtitle2" fontWeight={600}>
+                <Typography variant="subtitle2" fontWeight={600} color="text.primary">
                   Recurring Shift
                 </Typography>
                 <Typography variant="caption" color="text.secondary">

@@ -110,7 +110,7 @@ export function BulkSeriesEditModal({
       <SheetContent className="sm:max-w-lg overflow-y-auto">
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5 text-emerald-600" />
+            <RefreshCw className="h-5 w-5 text-primary" />
             Edit Recurring Series
           </SheetTitle>
           <SheetDescription>
