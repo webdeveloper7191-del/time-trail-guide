@@ -44,6 +44,7 @@ import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
 import { DemandMasterSettings } from '@/types/industryConfig';
 import { useDemand } from '@/contexts/DemandContext';
 import { IntegrationManagerModal } from '@/components/settings/IntegrationManagerModal';
+import { DemandImportModal } from '@/components/demand';
 import { HolidayEventCalendarView } from '@/components/roster/HolidayEventCalendarView';
 import { MobileRosterToolbar } from '@/components/roster/MobileRosterToolbar';
 import { MobileStaffPanel } from '@/components/roster/MobileStaffPanel';
@@ -247,6 +248,7 @@ export default function RosterScheduler() {
   const [showDemandSettings, setShowDemandSettings] = useState(false);
   const [showDemandDataEntry, setShowDemandDataEntry] = useState(false);
   const [showIntegrationManager, setShowIntegrationManager] = useState(false);
+  const [showDemandImportModal, setShowDemandImportModal] = useState(false);
   const [showHolidayCalendar, setShowHolidayCalendar] = useState(false);
   const [showAddEmptyShiftModal, setShowAddEmptyShiftModal] = useState(false);
   
@@ -1846,6 +1848,9 @@ export default function RosterScheduler() {
                       <DropdownMenuItem onClick={() => setShowDemandDataEntry(true)} icon={<FileSpreadsheet size={16} />}>
                         Enter Demand Data
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowDemandImportModal(true)} icon={<Download size={16} />}>
+                        Import Demand Data
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setShowIntegrationManager(true)} icon={<Plug size={16} />}>
                         Integration Manager
@@ -2523,6 +2528,15 @@ export default function RosterScheduler() {
       <IntegrationManagerModal
         open={showIntegrationManager}
         onClose={() => setShowIntegrationManager(false)}
+      />
+
+      {/* Demand Import Modal */}
+      <DemandImportModal
+        open={showDemandImportModal}
+        onOpenChange={setShowDemandImportModal}
+        onImportComplete={(result) => {
+          toast.success(`Imported ${result.success} ${result.type} records`);
+        }}
       />
 
       {/* Holiday & Events Calendar Sheet */}
