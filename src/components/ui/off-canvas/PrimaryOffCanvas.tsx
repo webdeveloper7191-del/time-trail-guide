@@ -150,11 +150,11 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
           </div>
         </SheetHeader>
 
-        {/* Content - Light background to match reference design */}
-        <div className="flex-1 min-h-0 overflow-hidden w-full bg-muted/30">
+        {/* Content - Light cyan/teal background to match reference design */}
+        <div className="flex-1 min-h-0 overflow-hidden w-full bg-[hsl(var(--panel-bg))] dark:bg-[hsl(var(--panel-bg-dark))]">
           <ScrollArea className="h-full w-full">
             <div className={cn("px-4 sm:px-6 py-4 sm:py-5 w-full", contentClassName)}>
-              <div className="w-full space-y-4">
+              <div className="w-full space-y-5">
                 {children}
               </div>
             </div>
