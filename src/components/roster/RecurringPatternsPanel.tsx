@@ -589,6 +589,197 @@ export function RecurringPatternsPanel({
           </div>
         </div>
       </PrimaryOffCanvas>
+
+      {/* Edit Pattern Sheet - Using PrimaryOffCanvas */}
+      <PrimaryOffCanvas
+        open={!!selectedPattern}
+        onClose={() => setSelectedPattern(null)}
+        title="Edit Recurring Pattern"
+        description={selectedPattern?.name || 'Modify pattern settings'}
+        icon={Edit}
+        size="md"
+        actions={[
+          {
+            label: 'Cancel',
+            variant: 'outlined',
+            onClick: () => setSelectedPattern(null),
+          },
+          {
+            label: 'Save Changes',
+            variant: 'primary',
+            onClick: () => {
+              if (selectedPattern) {
+                updatePattern(selectedPattern.id, selectedPattern);
+                toast.success('Pattern updated successfully');
+                setSelectedPattern(null);
+              }
+            },
+          },
+        ]}
+      >
+        {selectedPattern && (
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-primary font-semibold">Pattern Name *</Label>
+              <Input
+                placeholder="e.g., Morning Educator Shift"
+                value={selectedPattern.name}
+                onChange={e => setSelectedPattern({ ...selectedPattern, name: e.target.value })}
+                className="bg-background"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-primary font-semibold">Description</Label>
+              <Input
+                placeholder="Optional description"
+                value={selectedPattern.description || ''}
+                onChange={e => setSelectedPattern({ ...selectedPattern, description: e.target.value })}
+                className="bg-background"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-primary font-semibold">Recurrence Type *</Label>
+              <Select
+                value={selectedPattern.pattern}
+                onValueChange={v => setSelectedPattern({ ...selectedPattern, pattern: v as RecurrencePattern })}
+              >
+                <SelectTrigger className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-primary font-semibold">Days of Week *</Label>
+              <div className="flex gap-2 flex-wrap">
+                {DAYS_OF_WEEK.map(day => (
+                  <div
+                    key={day.value}
+                    className={`px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                      selectedPattern.daysOfWeek?.includes(day.value)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background hover:bg-muted'
+                    }`}
+                    onClick={() => {
+                      const current = selectedPattern.daysOfWeek || [];
+                      const updated = current.includes(day.value)
+                        ? current.filter(d => d !== day.value)
+                        : [...current, day.value].sort((a, b) => a - b);
+                      setSelectedPattern({ ...selectedPattern, daysOfWeek: updated });
+                    }}
+                  >
+                    {day.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-primary font-semibold">Start Time *</Label>
+                <Input
+                  type="time"
+                  value={selectedPattern.shiftTemplate?.startTime}
+                  onChange={e =>
+                    setSelectedPattern({
+                      ...selectedPattern,
+                      shiftTemplate: { ...selectedPattern.shiftTemplate, startTime: e.target.value },
+                    })
+                  }
+                  className="bg-background"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-primary font-semibold">End Time *</Label>
+                <Input
+                  type="time"
+                  value={selectedPattern.shiftTemplate?.endTime}
+                  onChange={e =>
+                    setSelectedPattern({
+                      ...selectedPattern,
+                      shiftTemplate: { ...selectedPattern.shiftTemplate, endTime: e.target.value },
+                    })
+                  }
+                  className="bg-background"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-primary font-semibold">Role *</Label>
+              <Select
+                value={selectedPattern.shiftTemplate?.roleId}
+                onValueChange={v => {
+                  const role = mockRoles.find(r => r.id === v);
+                  setSelectedPattern({
+                    ...selectedPattern,
+                    shiftTemplate: {
+                      ...selectedPattern.shiftTemplate,
+                      roleId: v,
+                      roleName: role?.name || '',
+                    },
+                  });
+                }}
+              >
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockRoles.map(role => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-primary font-semibold">Start Date</Label>
+                <Input
+                  type="date"
+                  value={selectedPattern.startDate}
+                  onChange={e => setSelectedPattern({ ...selectedPattern, startDate: e.target.value })}
+                  className="bg-background"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-primary font-semibold">End Date (optional)</Label>
+                <Input
+                  type="date"
+                  value={selectedPattern.endDate || ''}
+                  onChange={e => setSelectedPattern({ ...selectedPattern, endDate: e.target.value })}
+                  className="bg-background"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-primary font-semibold">Status</Label>
+              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border">
+                <StyledSwitch
+                  checked={selectedPattern.isActive}
+                  onChange={(checked) => setSelectedPattern({ ...selectedPattern, isActive: checked })}
+                />
+                <span className={selectedPattern.isActive ? 'text-primary font-medium' : 'text-muted-foreground'}>
+                  {selectedPattern.isActive ? 'Active' : 'Paused'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </PrimaryOffCanvas>
     </div>
   );
 }
