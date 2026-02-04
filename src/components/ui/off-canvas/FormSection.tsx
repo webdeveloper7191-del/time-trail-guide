@@ -17,19 +17,19 @@ interface FormSectionProps {
 
 /**
  * FormSection - A styled section container for forms in off-canvas drawers.
- * Features a colored left border and light background header matching the design system.
+ * Features bold section headers with optional info tooltip, matching the reference design.
  */
 export function FormSection({ title, tooltip, children, className }: FormSectionProps) {
   return (
-    <div className={cn("space-y-3", className)}>
-      {/* Section Header - Clean style matching reference */}
+    <div className={cn("space-y-4", className)}>
+      {/* Section Header - Bold black text with cyan info icon */}
       <div className="flex items-center gap-2">
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
         {tooltip && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <HelpCircle className="h-4 w-4 text-primary/70 cursor-help" />
+                <HelpCircle className="h-4 w-4 text-primary cursor-help" />
               </TooltipTrigger>
               <TooltipContent>
                 <p className="max-w-xs text-sm">{tooltip}</p>
@@ -57,21 +57,22 @@ interface FormFieldProps {
 
 /**
  * FormField - A styled form field wrapper with label, tooltip, and error display.
- * Labels are styled in primary color to match the design reference.
+ * Labels are styled in PRIMARY/cyan color matching the reference design.
  */
 export function FormField({ label, required, tooltip, error, children, className }: FormFieldProps) {
   return (
-    <div className={cn("space-y-2", className)}>
-      <div className="flex items-center gap-1.5">
-        <label className="text-sm font-medium text-foreground">
+    <div className={cn("space-y-1.5", className)}>
+      {/* Label row - Primary/cyan colored label with red asterisk and info icon */}
+      <div className="flex items-center gap-1">
+        <label className="text-sm font-medium text-primary">
           {label}
-          {required && <span className="text-[hsl(var(--destructive))] ml-0.5">*</span>}
+          {required && <span className="text-destructive ml-0.5">*</span>}
         </label>
         {tooltip && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                <HelpCircle className="h-3.5 w-3.5 text-primary cursor-help" />
               </TooltipTrigger>
               <TooltipContent>
                 <p className="max-w-xs text-sm">{tooltip}</p>
@@ -80,10 +81,8 @@ export function FormField({ label, required, tooltip, error, children, className
           </TooltipProvider>
         )}
       </div>
-      {/* Input wrapper with white background */}
-      <div className="[&_input]:bg-background [&_input]:border-border [&_textarea]:bg-background [&_textarea]:border-border [&_button[role=combobox]]:bg-background [&_button[role=combobox]]:border-border">
-        {children}
-      </div>
+      {/* Input - white background with subtle border */}
+      {children}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
@@ -125,6 +124,40 @@ export function FormActionsRow({ children, className }: FormActionsRowProps) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {children}
+    </div>
+  );
+}
+
+/**
+ * FormQuestionLabel - A question-style header for form sections
+ * Used for questions like "Who is this unavailability for?"
+ */
+interface FormQuestionLabelProps {
+  question: string;
+  required?: boolean;
+  tooltip?: string;
+  className?: string;
+}
+
+export function FormQuestionLabel({ question, required, tooltip, className }: FormQuestionLabelProps) {
+  return (
+    <div className={cn("flex items-center gap-1.5", className)}>
+      <span className="text-base font-semibold text-foreground">
+        {question}
+        {required && <span className="text-destructive ml-0.5">*</span>}
+      </span>
+      {tooltip && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="h-4 w-4 text-primary cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs text-sm">{tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </div>
   );
 }
