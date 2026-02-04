@@ -1,34 +1,22 @@
 import { OpenShift, StaffMember, Centre, qualificationLabels, shiftTypeLabels } from '@/types/roster';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { 
-  Clock, 
   AlertCircle, 
-  Calendar, 
-  MapPin, 
-  Users, 
   Building2, 
-  Trash2,
   UserPlus,
   AlertTriangle,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { openShiftColors } from '@/lib/rosterColors';
-
-// Urgency styling using semantic tokens
-const urgencyStyles = {
-  low: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300',
-  medium: 'text-amber-600 bg-amber-100 dark:bg-amber-900/50 dark:text-amber-300',
-  high: 'text-[hsl(var(--open-shift))] bg-[hsl(var(--open-shift-bg))] dark:text-[hsl(var(--open-shift))]',
-  critical: 'text-rose-600 bg-rose-100 dark:bg-rose-900/50 dark:text-rose-300',
-};
 
 interface OpenShiftDetailPanelProps {
   openShift: OpenShift;
@@ -133,10 +121,18 @@ export function OpenShiftDetailPanel({
         )
       }
     >
-      <div className="space-y-6">
-        {/* Urgency Badge */}
-        <div className="flex items-center gap-2">
-          <Badge className={cn("capitalize text-sm px-3 py-1", urgencyStyles[editedShift.urgency])}>
+      <div className="space-y-5">
+        {/* Urgency & Type Badge Row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge 
+            className={cn(
+              "capitalize text-sm px-3 py-1",
+              editedShift.urgency === 'critical' && "bg-destructive/10 text-destructive border-destructive/20",
+              editedShift.urgency === 'high' && "bg-[hsl(var(--open-shift-bg))] text-[hsl(var(--open-shift))] border-[hsl(var(--open-shift))]/20",
+              editedShift.urgency === 'medium' && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+              editedShift.urgency === 'low' && "bg-muted text-muted-foreground"
+            )}
+          >
             {editedShift.urgency === 'critical' && <AlertTriangle className="h-3.5 w-3.5 mr-1" />}
             {editedShift.urgency} Priority
           </Badge>
@@ -147,105 +143,104 @@ export function OpenShiftDetailPanel({
           )}
         </div>
 
-        {/* Assign Staff Section */}
-        <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <UserPlus className="h-4 w-4 text-primary" />
-            Fill This Shift
-          </div>
-          
-          <div className="flex gap-2">
-            <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Select staff member..." />
-              </SelectTrigger>
-              <SelectContent>
-                {eligibleStaff.length === 0 ? (
-                  <div className="px-2 py-3 text-sm text-muted-foreground text-center">
-                    No eligible staff found
-                  </div>
-                ) : (
-                  eligibleStaff.map(s => (
-                    <SelectItem key={s.id} value={s.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="h-2 w-2 rounded-full" 
-                          style={{ backgroundColor: s.color }}
-                        />
-                        {s.name}
-                        <span className="text-muted-foreground text-xs">
-                          ({s.role.replace('_', ' ')})
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            <Button 
-              onClick={handleFill} 
-              disabled={!selectedStaffId}
-            >
-              Assign
-            </Button>
-          </div>
-          
+        {/* Fill Shift Section */}
+        <FormSection 
+          title="Fill This Shift" 
+          tooltip="Assign an eligible staff member to this open shift"
+        >
+          <FormField label="Select Staff Member" required>
+            <div className="flex gap-2">
+              <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select staff member..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {eligibleStaff.length === 0 ? (
+                    <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                      No eligible staff found
+                    </div>
+                  ) : (
+                    eligibleStaff.map(s => (
+                      <SelectItem key={s.id} value={s.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="h-2 w-2 rounded-full" 
+                            style={{ backgroundColor: s.color }}
+                          />
+                          {s.name}
+                          <span className="text-muted-foreground text-xs">
+                            ({s.role.replace('_', ' ')})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={handleFill} 
+                disabled={!selectedStaffId}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Assign
+              </Button>
+            </div>
+          </FormField>
           {eligibleStaff.length > 0 && (
             <p className="text-xs text-muted-foreground">
               {eligibleStaff.length} staff member{eligibleStaff.length !== 1 ? 's' : ''} meet the qualifications
             </p>
           )}
-        </div>
+        </FormSection>
 
-        {/* Time Details */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Shift Time
-          </h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Start Time</Label>
+        {/* Shift Time Section */}
+        <FormSection 
+          title="Shift Time" 
+          tooltip="Configure the start and end times for this shift"
+        >
+          <FormRow columns={2}>
+            <FormField label="Start Time" required>
               <Input
                 type="time"
                 value={editedShift.startTime}
                 onChange={(e) => setEditedShift(prev => ({ ...prev, startTime: e.target.value }))}
               />
-            </div>
-            <div>
-              <Label className="text-xs">End Time</Label>
+            </FormField>
+            <FormField label="End Time" required>
               <Input
                 type="time"
                 value={editedShift.endTime}
                 onChange={(e) => setEditedShift(prev => ({ ...prev, endTime: e.target.value }))}
               />
-            </div>
+            </FormField>
+          </FormRow>
+          
+          <div className="bg-muted/50 rounded-lg px-3 py-2 text-sm">
+            <span className="font-medium text-foreground">Duration:</span>{' '}
+            <span className="text-muted-foreground">
+              {duration.toFixed(1)} hours
+              {editedShift.breakMinutes && editedShift.breakMinutes > 0 && (
+                <> • {editedShift.breakMinutes}min break</>
+              )}
+            </span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Duration: {duration.toFixed(1)} hours</span>
-            {editedShift.breakMinutes && editedShift.breakMinutes > 0 && (
-              <span>• {editedShift.breakMinutes}min break</span>
-            )}
-          </div>
-        </div>
+        </FormSection>
 
-        {/* Location */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            Location
-          </h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Date</Label>
+        {/* Location Section */}
+        <FormSection 
+          title="Location" 
+          tooltip="Set the date and room for this shift"
+        >
+          <FormRow columns={2}>
+            <FormField label="Date" required>
               <Input
                 type="date"
                 value={editedShift.date}
                 onChange={(e) => setEditedShift(prev => ({ ...prev, date: e.target.value }))}
               />
-            </div>
-            <div>
-              <Label className="text-xs">Room</Label>
+            </FormField>
+            <FormField label="Room" required>
               <Select 
                 value={editedShift.roomId} 
                 onValueChange={(value) => setEditedShift(prev => ({ ...prev, roomId: value }))}
@@ -259,42 +254,52 @@ export function OpenShiftDetailPanel({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-        </div>
+            </FormField>
+          </FormRow>
+        </FormSection>
 
-        {/* Urgency */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            Urgency Level
-          </h4>
-          <Select 
-            value={editedShift.urgency} 
-            onValueChange={(value: OpenShift['urgency']) => setEditedShift(prev => ({ ...prev, urgency: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Low - Plenty of time</SelectItem>
-              <SelectItem value="medium">Medium - Should be filled soon</SelectItem>
-              <SelectItem value="high">High - Needs attention</SelectItem>
-              <SelectItem value="critical">Critical - Immediate action</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Urgency Level Section */}
+        <FormSection 
+          title="Urgency Level" 
+          tooltip="Set the priority level for filling this shift"
+        >
+          <FormField label="Priority">
+            <RadioGroup
+              value={editedShift.urgency}
+              onValueChange={(value: OpenShift['urgency']) => 
+                setEditedShift(prev => ({ ...prev, urgency: value }))
+              }
+              className="space-y-2"
+            >
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="low" id="urgency-low" />
+                <Label htmlFor="urgency-low" className="cursor-pointer">Low - Plenty of time</Label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="medium" id="urgency-medium" />
+                <Label htmlFor="urgency-medium" className="cursor-pointer">Medium - Should be filled soon</Label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="high" id="urgency-high" />
+                <Label htmlFor="urgency-high" className="cursor-pointer">High - Needs attention</Label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="critical" id="urgency-critical" />
+                <Label htmlFor="urgency-critical" className="cursor-pointer text-destructive">Critical - Immediate action</Label>
+              </div>
+            </RadioGroup>
+          </FormField>
+        </FormSection>
 
-        {/* Required Qualifications */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Required Qualifications
-          </h4>
+        {/* Required Qualifications Section */}
+        <FormSection 
+          title="Required Qualifications" 
+          tooltip="Qualifications needed to fill this shift"
+        >
           <div className="flex flex-wrap gap-2">
             {editedShift.requiredQualifications.length > 0 ? (
               editedShift.requiredQualifications.map(qual => (
-                <Badge key={qual} variant="secondary">
+                <Badge key={qual} variant="secondary" className="text-sm">
                   {qualificationLabels[qual]}
                 </Badge>
               ))
@@ -302,27 +307,33 @@ export function OpenShiftDetailPanel({
               <span className="text-sm text-muted-foreground">No specific qualifications required</span>
             )}
           </div>
-        </div>
+        </FormSection>
 
-        {/* Applicants */}
+        {/* Applicants Section */}
         {editedShift.applicants && editedShift.applicants.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium">
-              Applicants ({editedShift.applicants.length})
-            </h4>
+          <FormSection 
+            title={`Applicants (${editedShift.applicants.length})`}
+            tooltip="Staff who have expressed interest in this shift"
+          >
             <div className="space-y-2">
               {editedShift.applicants.map(applicantId => {
                 const applicant = staff.find(s => s.id === applicantId);
                 return applicant ? (
-                  <div key={applicantId} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
-                    <div className="flex items-center gap-2">
+                  <div 
+                    key={applicantId} 
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border/50"
+                  >
+                    <div className="flex items-center gap-3">
                       <div 
-                        className="h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium text-white"
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium text-white"
                         style={{ backgroundColor: applicant.color }}
                       >
                         {applicant.name.split(' ').map(n => n[0]).join('')}
                       </div>
-                      <span className="text-sm">{applicant.name}</span>
+                      <div>
+                        <span className="text-sm font-medium">{applicant.name}</span>
+                        <p className="text-xs text-muted-foreground">{applicant.role.replace('_', ' ')}</p>
+                      </div>
                     </div>
                     <Button
                       size="sm"
@@ -331,6 +342,7 @@ export function OpenShiftDetailPanel({
                         onFill(editedShift, applicantId);
                         onClose();
                       }}
+                      className="text-primary border-primary/50 hover:bg-primary/10"
                     >
                       Accept
                     </Button>
@@ -338,19 +350,24 @@ export function OpenShiftDetailPanel({
                 ) : null;
               })}
             </div>
-          </div>
+          </FormSection>
         )}
 
-        {/* Notes */}
-        <div className="space-y-3">
-          <Label>Notes</Label>
-          <Textarea
-            placeholder="Add notes about this open shift..."
-            value={editedShift.notes || ''}
-            onChange={(e) => setEditedShift(prev => ({ ...prev, notes: e.target.value }))}
-            rows={3}
-          />
-        </div>
+        {/* Notes Section */}
+        <FormSection 
+          title="Notes" 
+          tooltip="Additional information about this open shift"
+        >
+          <FormField label="Shift Notes">
+            <Textarea
+              placeholder="Add notes about this open shift..."
+              value={editedShift.notes || ''}
+              onChange={(e) => setEditedShift(prev => ({ ...prev, notes: e.target.value }))}
+              rows={3}
+              className="resize-none"
+            />
+          </FormField>
+        </FormSection>
       </div>
     </PrimaryOffCanvas>
   );
