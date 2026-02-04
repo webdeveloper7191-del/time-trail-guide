@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 
 interface DeletePlanDrawerProps {
   open: boolean;
@@ -34,7 +35,7 @@ export function DeletePlanDrawer({
         {
           label: 'Cancel',
           onClick: onCancel,
-          variant: 'outlined',
+          variant: 'secondary',
           disabled: loading,
         },
         {
@@ -45,7 +46,7 @@ export function DeletePlanDrawer({
         },
       ]}
     >
-      <div className="space-y-6">
+      <FormSection title="Confirm Deletion" tooltip="This action cannot be undone">
         <p className="text-sm text-muted-foreground">
           {description}
         </p>
@@ -53,7 +54,7 @@ export function DeletePlanDrawer({
         <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
           <p className="font-medium">{itemName}</p>
         </div>
-      </div>
+      </FormSection>
     </PrimaryOffCanvas>
   );
 }

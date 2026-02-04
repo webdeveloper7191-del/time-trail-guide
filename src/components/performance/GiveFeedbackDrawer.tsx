@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Label } from '@/components/ui/label';
 import { 
   Select,
   SelectContent,
@@ -23,7 +22,9 @@ import {
   Globe,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { RichTextEditor } from './RichTextEditor';
 
 interface GiveFeedbackDrawerProps {
@@ -89,13 +90,12 @@ export function GiveFeedbackDrawer({
   return (
     <PrimaryOffCanvas
       title="Give Feedback"
-      description="Send recognition or constructive feedback to a team member"
       icon={MessageSquareHeart}
       size="md"
       open={open}
       onClose={handleClose}
       actions={[
-        { label: 'Cancel', onClick: handleClose, variant: 'outlined' },
+        { label: 'Cancel', onClick: handleClose, variant: 'secondary' },
         { 
           label: sending ? 'Sending...' : 'Send Feedback', 
           onClick: handleSend, 
@@ -105,9 +105,9 @@ export function GiveFeedbackDrawer({
         },
       ]}
     >
-      <div className="space-y-5">
-        <div className="space-y-2">
-          <Label>Recipient *</Label>
+      {/* Recipient & Type Section */}
+      <FormSection title="Feedback Details" tooltip="Select the recipient and type of feedback">
+        <FormField label="Recipient" required tooltip="Select the team member to give feedback to">
           <Select value={selectedRecipient} onValueChange={setSelectedRecipient}>
             <SelectTrigger>
               <SelectValue placeholder="Select team member" />
@@ -128,10 +128,9 @@ export function GiveFeedbackDrawer({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <Label>Feedback Type *</Label>
+        <FormField label="Feedback Type" required tooltip="Choose the nature of your feedback">
           <Select value={feedbackType} onValueChange={(v) => setFeedbackType(v as FeedbackType)}>
             <SelectTrigger>
               <SelectValue />
@@ -147,10 +146,12 @@ export function GiveFeedbackDrawer({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </FormField>
+      </FormSection>
 
-        <div className="space-y-2">
-          <Label>Message *</Label>
+      {/* Message Section */}
+      <FormSection title="Your Message" tooltip="Write your feedback message">
+        <FormField label="Message" required>
           <RichTextEditor
             value={message}
             onChange={setMessage}
@@ -158,8 +159,11 @@ export function GiveFeedbackDrawer({
             minHeight="150px"
             showPreviewToggle={false}
           />
-        </div>
+        </FormField>
+      </FormSection>
 
+      {/* Visibility Section */}
+      <FormSection title="Visibility Settings" tooltip="Control who can see this feedback">
         <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
           <Switch
             id="private"
@@ -176,7 +180,7 @@ export function GiveFeedbackDrawer({
             </div>
           </Label>
         </div>
-      </div>
+      </FormSection>
     </PrimaryOffCanvas>
   );
 }

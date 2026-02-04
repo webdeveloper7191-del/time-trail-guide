@@ -2,22 +2,20 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SelectWithCreate } from '@/components/ui/select-with-create';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Goal, GoalPriority, goalPriorityLabels, goalCategories } from '@/types/performance';
 import { format } from 'date-fns';
 import { CalendarIcon, Plus, Trash2, Target, FileText, GraduationCap, BookOpen, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { mockCourses, mockLearningPaths } from '@/data/mockLmsData';
 import { toast } from 'sonner';
@@ -168,45 +166,38 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
   return (
     <PrimaryOffCanvas
       title="Create New Goal"
-      description="Define a goal with milestones and target dates"
       icon={Target}
       size="lg"
       open={open}
       onClose={handleClose}
       actions={[
-        { label: 'Cancel', onClick: handleClose, variant: 'outlined' },
+        { label: 'Cancel', onClick: handleClose, variant: 'secondary' },
         { label: loading ? 'Creating...' : 'Create Goal', onClick: handleSubmit, variant: 'primary', disabled: loading, loading },
       ]}
     >
-      <div className="space-y-4 sm:space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="title">Goal Title *</Label>
+      {/* Goal Information Section */}
+      <FormSection title="Goal Information" tooltip="Define the core details of this goal">
+        <FormField label="Goal Title" required error={errors.title}>
           <Input
-            id="title"
             placeholder="e.g., Complete Leadership Certification"
             value={title}
             onChange={e => setTitle(e.target.value)}
             className={errors.title ? 'border-destructive' : ''}
           />
-          {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <Label htmlFor="description">Description *</Label>
+        <FormField label="Description" required error={errors.description}>
           <Textarea
-            id="description"
             placeholder="Describe what you want to achieve..."
             value={description}
             onChange={e => setDescription(e.target.value)}
             rows={3}
             className={errors.description ? 'border-destructive' : ''}
           />
-          {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
-        </div>
+        </FormField>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          <div className="space-y-2">
-            <Label>Category *</Label>
+        <FormRow>
+          <FormField label="Category" required error={errors.category}>
             <SelectWithCreate
               value={category}
               onValueChange={setCategory}
@@ -219,11 +210,9 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
               createLabel="Create new category"
               error={!!errors.category}
             />
-            {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <Label>Priority *</Label>
+          <FormField label="Priority" required>
             <Select value={priority} onValueChange={v => setPriority(v as GoalPriority)}>
               <SelectTrigger>
                 <SelectValue />
@@ -234,11 +223,10 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </div>
+          </FormField>
+        </FormRow>
 
-        <div className="space-y-2">
-          <Label>Target Date *</Label>
+        <FormField label="Target Date" required error={errors.targetDate}>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -253,16 +241,12 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
               <Calendar mode="single" selected={targetDate} onSelect={setTargetDate} initialFocus disabled={(date) => date < new Date()} />
             </PopoverContent>
           </Popover>
-          {errors.targetDate && <p className="text-xs text-destructive">{errors.targetDate}</p>}
-        </div>
+        </FormField>
+      </FormSection>
 
+      {/* Milestones Section */}
+      <FormSection title="Milestones" tooltip="Break down the goal into trackable milestones">
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label>Milestones (Optional)</Label>
-            <Button type="button" variant="outline" size="sm" onClick={handleAddMilestone}>
-              <Plus className="h-4 w-4 mr-1" /> Add
-            </Button>
-          </div>
           {milestones.map((ms, i) => (
             <div key={i} className="flex flex-col sm:flex-row gap-2 items-start">
               <Input
@@ -303,26 +287,24 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
               </div>
             </div>
           ))}
+          <Button type="button" variant="outline" size="sm" onClick={handleAddMilestone} className="text-primary">
+            <Plus className="h-4 w-4 mr-1" /> Add Milestone
+          </Button>
         </div>
+      </FormSection>
 
-        <Separator />
-
-        {/* Linked Resources Section */}
+      {/* Linked Resources Section */}
+      <FormSection title="Linked Resources" tooltip="Attach forms, courses, or learning paths to this goal">
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Linked Resources
-            </Label>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowLinkSelector(!showLinkSelector)}
-            >
-              <Plus className="h-4 w-4 mr-1" /> Link
-            </Button>
-          </div>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowLinkSelector(!showLinkSelector)}
+            className="text-primary"
+          >
+            <Plus className="h-4 w-4 mr-1" /> Link Resource
+          </Button>
 
           {showLinkSelector && (
             <Card>
@@ -409,7 +391,7 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
             </div>
           )}
         </div>
-      </div>
+      </FormSection>
     </PrimaryOffCanvas>
   );
 }

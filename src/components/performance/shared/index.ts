@@ -21,3 +21,6 @@ export { CollapsibleStatsGrid } from './CollapsibleStatsGrid';
 export { ScrollableTable } from './ScrollableTable';
 export { RowActionsMenu } from './RowActionsMenu';
 export type { RowAction } from './RowActionsMenu';
+
+// Form Section Components (for drawer/panel layouts)
+export { FormSection, FormField, FormRow, FormActionsRow } from '@/components/ui/off-canvas/FormSection';

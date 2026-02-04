@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Label } from '@/components/ui/label';
 import { CalendarIcon, Clock } from 'lucide-react';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { AssignedPlan } from '@/types/performancePlan';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 
 interface ExtendPlanDrawerProps {
   open: boolean;
@@ -50,13 +50,12 @@ export function ExtendPlanDrawer({
       open={open}
       onClose={onCancel}
       title="Extend Plan Duration"
-      description={`Extend the end date for "${plan.templateName}"`}
       size="md"
       actions={[
         {
           label: 'Cancel',
           onClick: onCancel,
-          variant: 'outlined',
+          variant: 'secondary',
           disabled: loading,
         },
         {
@@ -67,26 +66,34 @@ export function ExtendPlanDrawer({
         },
       ]}
     >
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-muted-foreground">Current End Date</Label>
+      {/* Plan Information Section */}
+      <FormSection title="Plan Information" tooltip="Current plan details">
+        <div className="p-3 rounded-lg bg-muted/50 border border-border">
+          <p className="font-medium">{plan.templateName}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Current end date: {format(currentEndDate, 'MMMM d, yyyy')}
+          </p>
+        </div>
+      </FormSection>
+
+      {/* Extension Details Section */}
+      <FormSection title="Extension Details" tooltip="Configure the new end date">
+        <FormRow>
+          <FormField label="Current End Date" tooltip="The existing end date">
             <div className="flex items-center gap-2 text-sm font-medium p-3 bg-muted rounded-lg">
               <CalendarIcon className="h-4 w-4 text-muted-foreground" />
               {format(currentEndDate, 'MMM d, yyyy')}
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-muted-foreground">Extension</Label>
+          </FormField>
+          <FormField label="Extension" tooltip="Number of days being added">
             <div className="flex items-center gap-2 text-sm font-medium text-primary p-3 bg-primary/10 rounded-lg">
               <Clock className="h-4 w-4" />
               +{extensionDays} days
             </div>
-          </div>
-        </div>
+          </FormField>
+        </FormRow>
 
-        <div className="space-y-2">
-          <Label>New End Date</Label>
+        <FormField label="New End Date" required tooltip="Select the new end date for the plan">
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -110,8 +117,8 @@ export function ExtendPlanDrawer({
               />
             </PopoverContent>
           </Popover>
-        </div>
-      </div>
+        </FormField>
+      </FormSection>
     </PrimaryOffCanvas>
   );
 }

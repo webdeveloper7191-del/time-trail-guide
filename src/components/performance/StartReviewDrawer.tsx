@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SelectWithCreate } from '@/components/ui/select-with-create';
 import { Calendar } from '@/components/ui/calendar';
@@ -10,7 +8,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { PerformanceReview, ReviewCycle, reviewCycleLabels, ReviewCriteria, defaultReviewCriteria } from '@/types/performance';
@@ -20,6 +17,7 @@ import { CalendarIcon, ClipboardCheck, Plus, Trash2, GripVertical } from 'lucide
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { toast } from 'sonner';
 
 const reviewSchema = z.object({
@@ -172,19 +170,18 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
   return (
     <PrimaryOffCanvas
       title="Start Performance Review"
-      description="Initiate a review cycle for a team member"
       icon={ClipboardCheck}
       size="lg"
       open={open}
       onClose={handleClose}
       actions={[
-        { label: 'Cancel', onClick: handleClose, variant: 'outlined' },
+        { label: 'Cancel', onClick: handleClose, variant: 'secondary' },
         { label: loading ? 'Starting...' : 'Start Review', onClick: handleSubmit, variant: 'primary', disabled: loading, loading },
       ]}
     >
-      <div className="space-y-4 sm:space-y-5">
-        <div className="space-y-2">
-          <Label>Team Member *</Label>
+      {/* Review Setup Section */}
+      <FormSection title="Review Setup" tooltip="Configure the review cycle and team member">
+        <FormField label="Team Member" required error={errors.staffId}>
           <Select value={staffId} onValueChange={setStaffId}>
             <SelectTrigger className={errors.staffId ? 'border-destructive' : ''}>
               <SelectValue placeholder="Select team member" />
@@ -203,11 +200,9 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
               ))}
             </SelectContent>
           </Select>
-          {errors.staffId && <p className="text-xs text-destructive">{errors.staffId}</p>}
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <Label>Review Cycle *</Label>
+        <FormField label="Review Cycle" required tooltip="Select the review frequency">
           <SelectWithCreate
             value={reviewCycle}
             onValueChange={v => handleCycleChange(v as ReviewCycle)}
@@ -219,11 +214,13 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
             placeholder="Select cycle"
             createLabel="Create new cycle"
           />
-        </div>
+        </FormField>
+      </FormSection>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          <div className="space-y-2">
-            <Label>Period Start *</Label>
+      {/* Review Period Section */}
+      <FormSection title="Review Period" tooltip="Define the evaluation period dates">
+        <FormRow>
+          <FormField label="Period Start" required>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -238,10 +235,9 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
                 <Calendar mode="single" selected={periodStart} onSelect={setPeriodStart} initialFocus />
               </PopoverContent>
             </Popover>
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <Label>Period End *</Label>
+          <FormField label="Period End" required>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -256,137 +252,134 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
                 <Calendar mode="single" selected={periodEnd} onSelect={setPeriodEnd} initialFocus />
               </PopoverContent>
             </Popover>
-          </div>
+          </FormField>
+        </FormRow>
+      </FormSection>
+
+      {/* Rating Criteria Section */}
+      <FormSection title="Rating Criteria" tooltip="Customize the evaluation criteria and weights">
+        <div className="flex items-center justify-between mb-3">
+          <Badge variant={useCustomCriteria ? 'default' : 'secondary'} className="text-xs">
+            {useCustomCriteria ? 'Custom Criteria' : 'Default Criteria'}
+          </Badge>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            onClick={() => setUseCustomCriteria(!useCustomCriteria)}
+            className="text-primary"
+          >
+            {useCustomCriteria ? 'Use Default' : 'Customize'}
+          </Button>
         </div>
 
-        <Separator />
-
-        {/* Custom Rating Criteria Section */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2">
-              Rating Criteria
-              <Badge variant={useCustomCriteria ? 'default' : 'secondary'} className="text-xs">
-                {useCustomCriteria ? 'Custom' : 'Default'}
+        {useCustomCriteria && (
+          <>
+            <div className="flex items-center justify-between text-sm mb-3">
+              <span className="text-muted-foreground">Total Weight:</span>
+              <Badge variant={totalWeight === 100 ? 'default' : 'destructive'}>
+                {totalWeight}%
               </Badge>
-            </Label>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm"
-              onClick={() => setUseCustomCriteria(!useCustomCriteria)}
-            >
-              {useCustomCriteria ? 'Use Default' : 'Customize'}
-            </Button>
-          </div>
+            </div>
+            {errors.criteria && <p className="text-xs text-destructive mb-2">{errors.criteria}</p>}
 
-          {useCustomCriteria && (
-            <>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Total Weight:</span>
-                <Badge variant={totalWeight === 100 ? 'default' : 'destructive'}>
-                  {totalWeight}%
-                </Badge>
-              </div>
-              {errors.criteria && <p className="text-xs text-destructive">{errors.criteria}</p>}
-
-              <ScrollArea className="h-64">
-                <div className="space-y-3 pr-2">
-                  {criteria.map((c) => (
-                    <Card key={c.id}>
-                      <CardContent className="p-3">
-                        <div className="flex items-start gap-2">
-                          <GripVertical className="h-4 w-4 mt-1 text-muted-foreground cursor-grab" />
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm">{c.name}</span>
-                              <Button 
-                                type="button" 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6"
-                                onClick={() => handleRemoveCriteria(c.id)}
-                              >
-                                <Trash2 className="h-3 w-3 text-destructive" />
-                              </Button>
-                            </div>
-                            <p className="text-xs text-muted-foreground">{c.description}</p>
-                            <div className="flex items-center gap-3">
-                              <Slider
-                                value={[c.weight]}
-                                onValueChange={([val]) => handleUpdateWeight(c.id, val)}
-                                max={50}
-                                step={5}
-                                className="flex-1"
-                              />
-                              <span className="text-sm font-medium w-10 text-right">{c.weight}%</span>
-                            </div>
+            <ScrollArea className="h-64">
+              <div className="space-y-3 pr-2">
+                {criteria.map((c) => (
+                  <Card key={c.id}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-2">
+                        <GripVertical className="h-4 w-4 mt-1 text-muted-foreground cursor-grab" />
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm">{c.name}</span>
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6"
+                              onClick={() => handleRemoveCriteria(c.id)}
+                            >
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{c.description}</p>
+                          <div className="flex items-center gap-3">
+                            <Slider
+                              value={[c.weight]}
+                              onValueChange={([val]) => handleUpdateWeight(c.id, val)}
+                              max={50}
+                              step={5}
+                              className="flex-1"
+                            />
+                            <span className="text-sm font-medium w-10 text-right">{c.weight}%</span>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </ScrollArea>
-
-              {showAddCriteria ? (
-                <Card>
-                  <CardContent className="p-3 space-y-2">
-                    <Input
-                      placeholder="Criteria name (e.g., Innovation)"
-                      value={newCriteriaName}
-                      onChange={e => setNewCriteriaName(e.target.value)}
-                    />
-                    <Input
-                      placeholder="Description (optional)"
-                      value={newCriteriaDesc}
-                      onChange={e => setNewCriteriaDesc(e.target.value)}
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleAddCriteria} disabled={!newCriteriaName.trim()}>
-                        Add
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setShowAddCriteria(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => setShowAddCriteria(true)}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Add Custom Criteria
-                </Button>
-              )}
-            </>
-          )}
-
-          {!useCustomCriteria && (
-            <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg">
-              <p className="font-medium mb-2">Default criteria includes:</p>
-              <ul className="space-y-1">
-                {defaultReviewCriteria.slice(0, 4).map(c => (
-                  <li key={c.id} className="flex justify-between">
-                    <span>{c.name}</span>
-                    <span className="text-xs">{c.weight}%</span>
-                  </li>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
-                <li className="text-xs text-muted-foreground">+ 2 more criteria</li>
-              </ul>
-            </div>
-          )}
-        </div>
+              </div>
+            </ScrollArea>
 
-        <div className="p-3 rounded-lg bg-muted/50 border">
-          <p className="text-sm text-muted-foreground">
-            The team member will receive a notification to complete their self-review first.
-          </p>
-        </div>
+            {showAddCriteria ? (
+              <Card className="mt-3">
+                <CardContent className="p-3 space-y-2">
+                  <Input
+                    placeholder="Criteria name (e.g., Innovation)"
+                    value={newCriteriaName}
+                    onChange={e => setNewCriteriaName(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Description (optional)"
+                    value={newCriteriaDesc}
+                    onChange={e => setNewCriteriaDesc(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleAddCriteria} disabled={!newCriteriaName.trim()}>
+                      Add
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowAddCriteria(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-3 text-primary"
+                onClick={() => setShowAddCriteria(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add Custom Criteria
+              </Button>
+            )}
+          </>
+        )}
+
+        {!useCustomCriteria && (
+          <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg">
+            <p className="font-medium mb-2">Default criteria includes:</p>
+            <ul className="space-y-1">
+              {defaultReviewCriteria.slice(0, 4).map(c => (
+                <li key={c.id} className="flex justify-between">
+                  <span>{c.name}</span>
+                  <span className="text-xs">{c.weight}%</span>
+                </li>
+              ))}
+              <li className="text-xs text-muted-foreground">+ 2 more criteria</li>
+            </ul>
+          </div>
+        )}
+      </FormSection>
+
+      {/* Info Section */}
+      <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+        <p className="text-sm text-muted-foreground">
+          The team member will receive a notification to complete their self-review first.
+        </p>
       </div>
     </PrimaryOffCanvas>
   );
