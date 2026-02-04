@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -370,11 +370,12 @@ export function RecurringPatternsPanel({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Switch
+                      <StyledSwitch
                         checked={pattern.isActive}
-                        onCheckedChange={() => handleToggleActive(pattern.id)}
+                        onChange={() => handleToggleActive(pattern.id)}
+                        size="small"
                       />
-                      <span className={pattern.isActive ? 'text-emerald-600' : 'text-muted-foreground'}>
+                      <span className={pattern.isActive ? 'text-primary font-medium' : 'text-muted-foreground'}>
                         {pattern.isActive ? 'Active' : 'Paused'}
                       </span>
                     </div>
