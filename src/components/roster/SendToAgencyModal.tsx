@@ -10,7 +10,6 @@ import {
   Stack,
   Box,
   Typography,
-  Switch,
   FormControlLabel,
   Divider,
   Alert,
@@ -27,6 +26,7 @@ import {
   Collapse,
   Avatar,
 } from '@mui/material';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { 
   Building2, 
   Clock, 
@@ -633,16 +633,14 @@ export function SendToAgencyModal({
                     )}
                   </Stack>
                   
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={rule?.autoAccept || false}
-                        onChange={(e) => updateAgencyRule(agency.id, { autoAccept: e.target.checked })}
-                        size="small"
-                      />
-                    }
-                    label={<Typography variant="caption">Auto-accept candidates from this agency</Typography>}
-                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <StyledSwitch
+                      checked={rule?.autoAccept || false}
+                      onChange={(checked) => updateAgencyRule(agency.id, { autoAccept: checked })}
+                      size="small"
+                    />
+                    <Typography variant="caption">Auto-accept candidates from this agency</Typography>
+                  </Box>
                   
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
@@ -935,15 +933,11 @@ export function SendToAgencyModal({
                   fullWidth
                 />
               </Stack>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={allowNegotiation}
-                    onChange={(e) => setAllowNegotiation(e.target.checked)}
-                    size="small"
-                  />
-                }
+              <StyledSwitch
+                checked={allowNegotiation}
+                onChange={setAllowNegotiation}
                 label="Allow rate negotiation"
+                size="small"
               />
             </Stack>
           </Box>
@@ -993,15 +987,11 @@ export function SendToAgencyModal({
                   size="small"
                 />
               </Box>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={preferPreviousWorkers}
-                    onChange={(e) => setPreferPreviousWorkers(e.target.checked)}
-                    size="small"
-                  />
-                }
+              <StyledSwitch
+                checked={preferPreviousWorkers}
+                onChange={setPreferPreviousWorkers}
                 label="Prefer workers who've worked at this centre before"
+                size="small"
               />
             </Stack>
           </Box>

@@ -6,8 +6,6 @@ import {
   Chip,
   Alert,
   Divider,
-  FormControlLabel,
-  Switch,
   ToggleButton,
   ToggleButtonGroup,
   Checkbox,
@@ -16,7 +14,9 @@ import {
   AccordionDetails,
   LinearProgress,
   Badge,
+  FormControlLabel,
 } from '@mui/material';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { 
   Copy, 
   Calendar, 
@@ -543,21 +543,17 @@ export function CopyWeekModal({
 
                   {/* Staff Filter */}
                   <Box>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          size="small"
-                          checked={filterByStaff}
-                          onChange={(e) => setFilterByStaff(e.target.checked)}
-                        />
-                      }
-                      label={
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Users className="h-3 w-3" />
-                          Filter by specific staff
-                        </Typography>
-                      }
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: filterByStaff ? 1 : 0 }}>
+                      <StyledSwitch
+                        checked={filterByStaff}
+                        onChange={setFilterByStaff}
+                        size="small"
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Users className="h-3 w-3" />
+                        Filter by specific staff
+                      </Typography>
+                    </Box>
                     {filterByStaff && (
                       <ScrollArea className="h-32 mt-1 border rounded-lg p-2">
                         <Stack spacing={0.5}>
@@ -579,16 +575,14 @@ export function CopyWeekModal({
                     )}
                   </Box>
 
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        size="small"
-                        checked={copyDraftsOnly}
-                        onChange={(e) => setCopyDraftsOnly(e.target.checked)}
-                      />
-                    }
-                    label={<Typography variant="body2">Copy draft shifts only</Typography>}
-                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <StyledSwitch
+                      checked={copyDraftsOnly}
+                      onChange={setCopyDraftsOnly}
+                      size="small"
+                    />
+                    <Typography variant="body2">Copy draft shifts only</Typography>
+                  </Box>
                 </Stack>
               </AccordionDetails>
             </Accordion>

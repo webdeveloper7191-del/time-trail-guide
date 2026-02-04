@@ -13,8 +13,6 @@ import {
   Box,
   Typography,
   FormHelperText,
-  Switch,
-  FormControlLabel,
   Divider,
   Accordion,
   AccordionSummary,
@@ -43,6 +41,7 @@ import {
 } from '@/types/roster';
 import { Plus, X, AlertCircle, Clock, Moon, Phone, Split, ChevronDown, FileText, Car, Award, Layers, Calendar } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { openShiftSchema, OpenShiftFormValues } from '@/lib/validationSchemas';
 import { toast } from 'sonner';
 import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
@@ -651,34 +650,12 @@ export function AddOpenShiftModal({
                 </ToggleButtonGroup>
               </Box>
 
-              {/* Template Selection - Improved switch styling */}
+              {/* Template Selection - Using StyledSwitch */}
               <Box>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={useTemplate}
-                      onChange={(e) => setUseTemplate(e.target.checked)}
-                      sx={{
-                        mr: 1.5, // Add space between switch and label
-                        '& .MuiSwitch-switchBase.Mui-checked': {
-                          color: 'hsl(var(--primary))',
-                          '& + .MuiSwitch-track': {
-                            backgroundColor: 'hsl(var(--primary))',
-                            opacity: 0.7,
-                          },
-                        },
-                        '& .MuiSwitch-track': {
-                          borderRadius: 12,
-                        },
-                      }}
-                    />
-                  }
-                  label={
-                    <Typography variant="body1" fontWeight={500} color="text.primary">
-                      Use Shift Template
-                    </Typography>
-                  }
-                  sx={{ ml: 0 }}
+                <StyledSwitch
+                  checked={useTemplate}
+                  onChange={setUseTemplate}
+                  label="Use Shift Template"
                 />
                 {useTemplate && (
                   <FormControl fullWidth size="small" sx={{ mt: 1.5 }}>
@@ -1150,14 +1127,11 @@ export function AddOpenShiftModal({
                       name="isRemoteLocation"
                       control={control}
                       render={({ field }) => (
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={field.value || false}
-                              onChange={(e) => field.onChange(e.target.checked)}
-                            />
-                          }
+                        <StyledSwitch
+                          checked={field.value || false}
+                          onChange={field.onChange}
                           label="Remote Location"
+                          size="small"
                         />
                       )}
                     />

@@ -5,7 +5,6 @@ import {
   Stack,
   Chip,
   IconButton,
-  Switch,
   TextField,
   Divider,
   Paper,
@@ -16,6 +15,7 @@ import {
   FormControlLabel,
   InputAdornment,
 } from '@mui/material';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -1230,22 +1230,18 @@ export function TimefoldIntegrationPanel({ open, onClose }: TimefoldIntegrationP
 
       {/* Enable Webhooks Toggle */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={settings.enableWebhooks}
-              onChange={(e) => updateGlobalSettings({ enableWebhooks: e.target.checked })}
-            />
-          }
-          label={
-            <Stack>
-              <Typography variant="subtitle2">Enable Webhooks</Typography>
-              <Typography variant="caption" color="text.secondary">
-                Allow outbound webhook calls when events occur
-              </Typography>
-            </Stack>
-          }
-        />
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+          <StyledSwitch
+            checked={settings.enableWebhooks}
+            onChange={(checked) => updateGlobalSettings({ enableWebhooks: checked })}
+          />
+          <Stack sx={{ mt: 0.5 }}>
+            <Typography variant="subtitle2">Enable Webhooks</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Allow outbound webhook calls when events occur
+            </Typography>
+          </Stack>
+        </Box>
       </Paper>
 
       {/* Webhook Endpoints */}
