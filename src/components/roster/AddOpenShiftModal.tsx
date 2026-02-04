@@ -659,6 +659,7 @@ export function AddOpenShiftModal({
                       checked={useTemplate}
                       onChange={(e) => setUseTemplate(e.target.checked)}
                       sx={{
+                        mr: 1.5, // Add space between switch and label
                         '& .MuiSwitch-switchBase.Mui-checked': {
                           color: 'hsl(var(--primary))',
                           '& + .MuiSwitch-track': {
@@ -673,7 +674,7 @@ export function AddOpenShiftModal({
                     />
                   }
                   label={
-                    <Typography variant="body1" fontWeight={500}>
+                    <Typography variant="body1" fontWeight={500} color="text.primary">
                       Use Shift Template
                     </Typography>
                   }
