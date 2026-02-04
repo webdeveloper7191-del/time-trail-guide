@@ -45,7 +45,7 @@ import { DemandMasterSettings } from '@/types/industryConfig';
 import { useDemand } from '@/contexts/DemandContext';
 import { IntegrationManagerModal } from '@/components/settings/IntegrationManagerModal';
 import { DemandImportModal } from '@/components/demand';
-import { HolidayEventCalendarView } from '@/components/roster/HolidayEventCalendarView';
+import { HolidayEventCalendarPanel } from '@/components/roster/HolidayEventCalendarPanel';
 import { MobileRosterToolbar } from '@/components/roster/MobileRosterToolbar';
 import { MobileStaffPanel } from '@/components/roster/MobileStaffPanel';
 import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
@@ -2539,21 +2539,16 @@ export default function RosterScheduler() {
         }}
       />
 
-      {/* Holiday & Events Calendar Sheet */}
-      {showHolidayCalendar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="max-w-lg w-full mx-4 max-h-[90vh] overflow-auto">
-            <HolidayEventCalendarView
-              currentDate={currentDate}
-              onDateClick={(date) => {
-                setCurrentDate(date);
-                setShowHolidayCalendar(false);
-              }}
-              onClose={() => setShowHolidayCalendar(false)}
-            />
-          </div>
-        </div>
-      )}
+      {/* Holiday & Events Calendar Panel */}
+      <HolidayEventCalendarPanel
+        open={showHolidayCalendar}
+        onClose={() => setShowHolidayCalendar(false)}
+        currentDate={currentDate}
+        onDateClick={(date) => {
+          setCurrentDate(date);
+          setShowHolidayCalendar(false);
+        }}
+      />
 
       {/* Add Empty Shift Modal */}
       <AddEmptyShiftModal
@@ -2765,7 +2760,7 @@ export default function RosterScheduler() {
           setShifts(prev => prev.filter(s => s.recurring?.recurrenceGroupId !== groupId), 'Deleted recurring series', 'bulk');
         }}
         onEditSeries={(groupId) => {
-          toast.info('Edit series functionality - open recurring patterns panel');
+          setShowRecurringManagement(false);
           setShowRecurringPatterns(true);
         }}
         onExtendSeries={(groupId, newEndDate) => {
