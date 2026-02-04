@@ -59,6 +59,7 @@ interface RecurringShiftManagementPanelProps {
   onDeleteSeries: (groupId: string) => void;
   onEditSeries: (groupId: string) => void;
   onExtendSeries: (groupId: string, newEndDate: string) => void;
+  onUpdateSeries?: (groupId: string, updates: { startTime?: string; endTime?: string; daysOfWeek?: number[] }) => void;
   onPauseSeries?: (groupId: string) => void;
 }
 
@@ -71,12 +72,61 @@ export function RecurringShiftManagementPanel({
   onDeleteSeries,
   onEditSeries,
   onExtendSeries,
+  onUpdateSeries,
   onPauseSeries,
 }: RecurringShiftManagementPanelProps) {
   const [selectedSeries, setSelectedSeries] = useState<RecurringSeries | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showExtendModal, setShowExtendModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [extendWeeks, setExtendWeeks] = useState(4);
+  
+  // Edit form state
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
+  const [editDaysOfWeek, setEditDaysOfWeek] = useState<number[]>([]);
+  
+  const DAYS_OF_WEEK = [
+    { value: 0, label: 'Sun' },
+    { value: 1, label: 'Mon' },
+    { value: 2, label: 'Tue' },
+    { value: 3, label: 'Wed' },
+    { value: 4, label: 'Thu' },
+    { value: 5, label: 'Fri' },
+    { value: 6, label: 'Sat' },
+  ];
+  
+  const handleOpenEditModal = () => {
+    if (selectedSeries) {
+      setEditStartTime(selectedSeries.startTime);
+      setEditEndTime(selectedSeries.endTime);
+      setEditDaysOfWeek(selectedSeries.daysOfWeek);
+      setShowEditModal(true);
+    }
+  };
+  
+  const handleSaveEdit = () => {
+    if (selectedSeries && onUpdateSeries) {
+      onUpdateSeries(selectedSeries.groupId, {
+        startTime: editStartTime,
+        endTime: editEndTime,
+        daysOfWeek: editDaysOfWeek,
+      });
+      toast.success('Series updated successfully');
+      setShowEditModal(false);
+    } else if (!onUpdateSeries) {
+      toast.info('Edit functionality coming soon');
+      setShowEditModal(false);
+    }
+  };
+  
+  const toggleEditDay = (day: number) => {
+    setEditDaysOfWeek(prev =>
+      prev.includes(day)
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort((a, b) => a - b)
+    );
+  };
 
   const recurringSeries = useMemo(() => {
     const seriesMap = new Map<string, Shift[]>();
@@ -342,13 +392,10 @@ export function RecurringShiftManagementPanel({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    onEditSeries(selectedSeries.groupId);
-                    onClose();
-                  }}
+                  onClick={handleOpenEditModal}
                 >
                   <Edit className="h-4 w-4 mr-1" />
-                  Edit Pattern
+                  Edit Series
                 </Button>
                 <Button
                   variant="outline"
@@ -468,6 +515,110 @@ export function RecurringShiftManagementPanel({
               </p>
             </div>
           )}
+        </div>
+      </PrimaryOffCanvas>
+
+      {/* Edit Series Side Panel */}
+      <PrimaryOffCanvas
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Recurring Series"
+        description={`Modify ${selectedSeries?.staffName}'s shift schedule`}
+        icon={Edit}
+        size="md"
+        actions={[
+          { label: 'Cancel', onClick: () => setShowEditModal(false), variant: 'outlined' },
+          { 
+            label: 'Save Changes', 
+            onClick: handleSaveEdit, 
+            variant: 'primary',
+            icon: <CheckCircle2 className="h-4 w-4" />
+          },
+        ]}
+      >
+        <div className="space-y-6">
+          {/* Series Summary */}
+          <div className="bg-background rounded-lg border p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">{selectedSeries?.staffName}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedSeries?.remainingShifts} upcoming shifts
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Shift Times */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-primary">Shift Times</label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">Start Time</label>
+                <input
+                  type="time"
+                  value={editStartTime}
+                  onChange={(e) => setEditStartTime(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">End Time</label>
+                <input
+                  type="time"
+                  value={editEndTime}
+                  onChange={(e) => setEditEndTime(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Days of Week */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-primary">Days of Week</label>
+            <div className="flex flex-wrap gap-2">
+              {DAYS_OF_WEEK.map(day => (
+                <button
+                  key={day.value}
+                  type="button"
+                  onClick={() => toggleEditDay(day.value)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg border text-sm font-medium transition-colors",
+                    editDaysOfWeek.includes(day.value)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border hover:bg-muted"
+                  )}
+                >
+                  {day.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Room/Location */}
+          <div className="bg-muted/30 rounded-lg border p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">Location</span>
+            </div>
+            <p className="text-sm text-foreground">
+              {selectedSeries ? getRoomName(selectedSeries.centreId, selectedSeries.roomId) : 'Unknown'}
+            </p>
+          </div>
+
+          {/* Info Note */}
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
+              <p className="text-xs text-amber-800 dark:text-amber-200">
+                Changes will apply to all <strong>{selectedSeries?.remainingShifts}</strong> upcoming shifts in this series. Past shifts will not be modified.
+              </p>
+            </div>
+          </div>
         </div>
       </PrimaryOffCanvas>
     </>
