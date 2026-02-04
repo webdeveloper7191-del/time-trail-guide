@@ -75,10 +75,12 @@ export function ShiftConflictPanel({
       headerActions={
         <div className="flex items-center gap-2">
           {errorConflicts.length > 0 && (
-            <Badge variant="destructive">{errorConflicts.length} errors</Badge>
+            <Badge className="bg-destructive/10 text-destructive border border-destructive/30 rounded-full px-3">
+              {errorConflicts.length} errors
+            </Badge>
           )}
           {warningConflicts.length > 0 && (
-            <Badge variant="outline" className="border-amber-500 text-amber-600">
+            <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 border border-amber-300 dark:border-amber-700 rounded-full px-3">
               {warningConflicts.length} warnings
             </Badge>
           )}
@@ -87,14 +89,14 @@ export function ShiftConflictPanel({
       showFooter={false}
     >
       <Tabs defaultValue="all">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">
+        <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-lg">
+          <TabsTrigger value="all" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
             All ({allConflicts.length})
           </TabsTrigger>
-          <TabsTrigger value="errors">
+          <TabsTrigger value="errors" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
             Errors ({errorConflicts.length})
           </TabsTrigger>
-          <TabsTrigger value="warnings">
+          <TabsTrigger value="warnings" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
             Warnings ({warningConflicts.length})
           </TabsTrigger>
         </TabsList>
@@ -177,44 +179,56 @@ interface ConflictItemProps {
 function ConflictItem({ conflict, staffName, getIcon, onNavigate }: ConflictItemProps) {
   const Icon = getIcon(conflict.type);
 
+  const getSeverityStyles = () => {
+    if (conflict.severity === 'error') {
+      return {
+        container: 'bg-red-50 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-800',
+        icon: 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400',
+        text: 'text-red-700 dark:text-red-300',
+        subtext: 'text-red-600 dark:text-red-400',
+      };
+    }
+    return {
+      container: 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700',
+      icon: 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400',
+      text: 'text-amber-700 dark:text-amber-300',
+      subtext: 'text-amber-600 dark:text-amber-400',
+    };
+  };
+
+  const styles = getSeverityStyles();
+
   return (
-    <div
-      className={cn(
-        "p-3 rounded-lg border transition-all",
-        getConflictSeverityColor(conflict.severity)
-      )}
-    >
+    <div className={cn("p-4 rounded-xl transition-all", styles.container)}>
       <div className="flex items-start gap-3">
-        <div className={cn(
-          "p-2 rounded-lg shrink-0",
-          conflict.severity === 'error' ? 'bg-destructive/20' : 'bg-amber-500/20'
-        )}>
-          <Icon className="h-4 w-4" />
+        <div className={cn("p-2.5 rounded-lg shrink-0", styles.icon)}>
+          <Icon className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="font-medium text-sm">{conflict.message}</p>
-              <p className="text-xs opacity-70 mt-0.5">{staffName}</p>
+              <p className={cn("font-semibold text-sm", styles.text)}>{conflict.message}</p>
+              <p className={cn("text-xs mt-0.5", styles.subtext)}>{staffName}</p>
             </div>
             <Badge 
-              variant="outline" 
               className={cn(
-                "shrink-0 text-xs",
-                conflict.canOverride ? "border-amber-500 text-amber-600" : "border-destructive text-destructive"
+                "shrink-0 text-xs rounded-full px-3",
+                conflict.canOverride 
+                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 border border-amber-300 dark:border-amber-700" 
+                  : "bg-red-100 dark:bg-red-900/30 text-red-600 border border-red-300 dark:border-red-700"
               )}
             >
               {conflict.canOverride ? 'Can override' : 'Must fix'}
             </Badge>
           </div>
           {conflict.details && (
-            <p className="text-xs mt-2 opacity-80">{conflict.details}</p>
+            <p className={cn("text-xs mt-2", styles.subtext)}>{conflict.details}</p>
           )}
-          <div className="flex items-center justify-end mt-2">
+          <div className="flex items-center justify-end mt-3">
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-7 text-xs"
+              className={cn("h-7 text-xs", styles.text, "hover:bg-white/50 dark:hover:bg-black/20")}
               onClick={onNavigate}
             >
               View Shift

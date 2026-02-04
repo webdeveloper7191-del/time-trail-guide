@@ -1,26 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useForm, FormProvider, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { z } from 'zod';
-import {
-  Button,
-  TextField,
-  Slider,
-  Switch,
-  Card,
-  CardContent,
-  CardHeader,
-  Stack,
-  Box,
-  Typography,
-  Divider,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-} from '@mui/material';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -45,8 +24,16 @@ import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/Pr
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
-// Zod validation schema for budget settings
 const budgetSettingsValidationSchema = z.object({
   weeklyBudget: z.number().min(0, 'Budget must be positive').max(1000000, 'Budget too high'),
   overtimeThreshold: z.number().min(30).max(50),
@@ -54,39 +41,28 @@ const budgetSettingsValidationSchema = z.object({
 });
 
 export interface BudgetSettings {
-  // Core Budget
   weeklyBudget: number;
   overtimeThreshold: number;
   maxAgencyPercent: number;
-  
-  // Cost Controls
   minStaffingCostFloor: number;
   alertOnLowCost: boolean;
   weekendPenaltyRate: number;
   publicHolidayPenaltyRate: number;
   mealAllowanceBudget: number;
   travelAllowanceBudget: number;
-  
-  // Staffing Thresholds
   minCasualPercent: number;
   maxCasualPercent: number;
   maxTraineePercent: number;
   minLeadEducatorsPerRoom: number;
-  
-  // Time-Based Budgets
   enableDailyBudgetCaps: boolean;
   dailyBudgetCaps: { [key: string]: number };
   earlyShiftPremium: number;
   lateShiftPremium: number;
   splitShiftAllowance: number;
-  
-  // Forecasting & Targets
   budgetVarianceTolerance: number;
   enableSeasonalAdjustments: boolean;
   schoolHolidayBudgetMultiplier: number;
   yearOverYearTarget: number;
-  
-  // Alerts
   alertOnOverBudget: boolean;
   alertOnNearBudget: boolean;
   nearBudgetThreshold: number;
@@ -105,26 +81,19 @@ const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSave }: BudgetSettingsModalProps) {
   const [settings, setSettings] = useState<BudgetSettings>({
-    // Core Budget
     weeklyBudget: currentBudget,
     overtimeThreshold: 38,
     maxAgencyPercent: 25,
-    
-    // Cost Controls
     minStaffingCostFloor: 500,
     alertOnLowCost: true,
     weekendPenaltyRate: 1.5,
     publicHolidayPenaltyRate: 2.5,
     mealAllowanceBudget: 200,
     travelAllowanceBudget: 150,
-    
-    // Staffing Thresholds
     minCasualPercent: 10,
     maxCasualPercent: 40,
     maxTraineePercent: 15,
     minLeadEducatorsPerRoom: 1,
-    
-    // Time-Based Budgets
     enableDailyBudgetCaps: false,
     dailyBudgetCaps: {
       Monday: Math.round(currentBudget / 5),
@@ -136,14 +105,10 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
     earlyShiftPremium: 5,
     lateShiftPremium: 8,
     splitShiftAllowance: 25,
-    
-    // Forecasting & Targets
     budgetVarianceTolerance: 10,
     enableSeasonalAdjustments: false,
     schoolHolidayBudgetMultiplier: 1.2,
     yearOverYearTarget: -3,
-    
-    // Alerts
     alertOnOverBudget: true,
     alertOnNearBudget: true,
     nearBudgetThreshold: 90,
@@ -151,7 +116,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
   });
 
   const handleSave = () => {
-    // Validate core settings
     const result = budgetSettingsValidationSchema.safeParse({
       weeklyBudget: settings.weeklyBudget,
       overtimeThreshold: settings.overtimeThreshold,
@@ -190,570 +154,534 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
       actions={actions}
       showFooter
     >
+      <Tabs defaultValue="costs" className="mt-4">
+        <TabsList className="grid w-full grid-cols-4 bg-muted/50 p-1 rounded-lg">
+          <TabsTrigger value="costs" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Costs</TabsTrigger>
+          <TabsTrigger value="staffing" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Staffing</TabsTrigger>
+          <TabsTrigger value="time" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Time-Based</TabsTrigger>
+          <TabsTrigger value="forecast" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Forecast</TabsTrigger>
+        </TabsList>
 
-        <Tabs defaultValue="costs" className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="costs">Costs</TabsTrigger>
-            <TabsTrigger value="staffing">Staffing</TabsTrigger>
-            <TabsTrigger value="time">Time-Based</TabsTrigger>
-            <TabsTrigger value="forecast">Forecast</TabsTrigger>
-          </TabsList>
+        <ScrollArea className="h-[calc(100vh-280px)] pr-4 mt-4">
+          {/* COSTS TAB */}
+          <TabsContent value="costs" className="mt-0 space-y-6">
+            {/* Weekly Budget */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-primary flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Weekly Budget
+              </Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  value={settings.weeklyBudget}
+                  onChange={(e) => setSettings({ ...settings, weeklyBudget: Number(e.target.value) })}
+                  className="pl-9 bg-background"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Total labor budget for this centre per week</p>
+            </div>
 
-          <ScrollArea className="h-[calc(100vh-280px)] pr-4 mt-4">
-            {/* COSTS TAB */}
-            <TabsContent value="costs" className="mt-0">
-              <Stack spacing={3}>
-                {/* Weekly Budget */}
-                <Box>
-                  <Typography variant="body2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <DollarSign size={16} className="text-primary" />
-                    Weekly Budget
-                  </Typography>
-                  <TextField
-                    type="number"
-                    value={settings.weeklyBudget}
-                    onChange={(e) => setSettings({ ...settings, weeklyBudget: Number(e.target.value) })}
+            {/* Minimum Staffing Cost Floor */}
+            <Card className="border border-border bg-muted/30">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <TrendingDown className="h-4 w-4 text-amber-500" />
+                    Minimum Staffing Cost Floor
+                  </Label>
+                  <StyledSwitch
+                    checked={settings.alertOnLowCost}
+                    onChange={(checked) => setSettings({ ...settings, alertOnLowCost: checked })}
                     size="small"
-                    fullWidth
-                    InputProps={{
-                      startAdornment: <DollarSign size={16} style={{ marginRight: 8, opacity: 0.5 }} />,
-                    }}
                   />
-                  <Typography variant="caption" color="text.secondary">
-                    Total labor budget for this centre per week
-                  </Typography>
-                </Box>
+                </div>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    value={settings.minStaffingCostFloor}
+                    onChange={(e) => setSettings({ ...settings, minStaffingCostFloor: Number(e.target.value) })}
+                    disabled={!settings.alertOnLowCost}
+                    className="pl-9 bg-background"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Alert if daily costs drop below this (quality concern)</p>
+              </CardContent>
+            </Card>
 
-                {/* Minimum Staffing Cost Floor */}
-                <Card variant="outlined" sx={{ bgcolor: 'action.hover' }}>
-                  <CardContent sx={{ py: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <TrendingDown size={16} className="text-orange-500" />
-                        Minimum Staffing Cost Floor
-                      </Typography>
-                      <Switch
-                        checked={settings.alertOnLowCost}
-                        onChange={(e) => setSettings({ ...settings, alertOnLowCost: e.target.checked })}
-                        size="small"
-                      />
-                    </Box>
-                    <TextField
-                      type="number"
-                      value={settings.minStaffingCostFloor}
-                      onChange={(e) => setSettings({ ...settings, minStaffingCostFloor: Number(e.target.value) })}
-                      size="small"
-                      fullWidth
-                      disabled={!settings.alertOnLowCost}
-                      InputProps={{
-                        startAdornment: <DollarSign size={16} style={{ marginRight: 8, opacity: 0.5 }} />,
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      Alert if daily costs drop below this (quality concern)
-                    </Typography>
-                  </CardContent>
-                </Card>
+            <Separator />
 
-                <Divider />
+            {/* Penalty Rate Multipliers */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Percent className="h-4 w-4" />
+                Penalty Rate Multipliers
+              </Label>
 
-                {/* Penalty Rate Multipliers */}
-                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Percent size={16} />
-                  Penalty Rate Multipliers
-                </Typography>
-
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Box>
-                    <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
-                      Weekend Rate
-                    </Typography>
-                    <TextField
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Weekend Rate</Label>
+                  <div className="relative">
+                    <Input
                       type="number"
                       value={settings.weekendPenaltyRate}
                       onChange={(e) => setSettings({ ...settings, weekendPenaltyRate: Number(e.target.value) })}
-                      size="small"
-                      fullWidth
-                      inputProps={{ step: 0.1, min: 1, max: 3 }}
-                      InputProps={{
-                        endAdornment: <Typography variant="caption" sx={{ ml: 1 }}>×</Typography>,
-                      }}
+                      step={0.1}
+                      min={1}
+                      max={3}
+                      className="bg-background pr-8"
                     />
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
-                      Public Holiday Rate
-                    </Typography>
-                    <TextField
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">×</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Public Holiday Rate</Label>
+                  <div className="relative">
+                    <Input
                       type="number"
                       value={settings.publicHolidayPenaltyRate}
                       onChange={(e) => setSettings({ ...settings, publicHolidayPenaltyRate: Number(e.target.value) })}
-                      size="small"
-                      fullWidth
-                      inputProps={{ step: 0.1, min: 1, max: 4 }}
-                      InputProps={{
-                        endAdornment: <Typography variant="caption" sx={{ ml: 1 }}>×</Typography>,
-                      }}
+                      step={0.1}
+                      min={1}
+                      max={4}
+                      className="bg-background pr-8"
                     />
-                  </Box>
-                </Box>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">×</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                <Divider />
+            <Separator />
 
-                {/* Allowance Budgets */}
-                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Coffee size={16} />
-                  Allowance Budgets (Weekly)
-                </Typography>
+            {/* Allowance Budgets */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Coffee className="h-4 w-4" />
+                Allowance Budgets (Weekly)
+              </Label>
 
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Box>
-                    <Typography variant="body2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Coffee size={14} />
-                      Meal Allowance
-                    </Typography>
-                    <TextField
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-1">
+                    <Coffee className="h-3 w-3" />
+                    Meal Allowance
+                  </Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
                       type="number"
                       value={settings.mealAllowanceBudget}
                       onChange={(e) => setSettings({ ...settings, mealAllowanceBudget: Number(e.target.value) })}
-                      size="small"
-                      fullWidth
-                      InputProps={{
-                        startAdornment: <DollarSign size={16} style={{ marginRight: 8, opacity: 0.5 }} />,
-                      }}
+                      className="pl-9 bg-background"
                     />
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Car size={14} />
-                      Travel Allowance
-                    </Typography>
-                    <TextField
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-1">
+                    <Car className="h-3 w-3" />
+                    Travel Allowance
+                  </Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
                       type="number"
                       value={settings.travelAllowanceBudget}
                       onChange={(e) => setSettings({ ...settings, travelAllowanceBudget: Number(e.target.value) })}
-                      size="small"
-                      fullWidth
-                      InputProps={{
-                        startAdornment: <DollarSign size={16} style={{ marginRight: 8, opacity: 0.5 }} />,
-                      }}
+                      className="pl-9 bg-background"
                     />
-                  </Box>
-                </Box>
-              </Stack>
-            </TabsContent>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
 
-            {/* STAFFING TAB */}
-            <TabsContent value="staffing" className="mt-0">
-              <Stack spacing={3}>
-                {/* Overtime Threshold */}
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <TrendingUp size={16} className="text-orange-500" />
-                      Overtime Threshold
-                    </Typography>
-                    <Chip label={`${settings.overtimeThreshold}h/week`} size="small" />
-                  </Box>
-                  <Slider
-                    value={settings.overtimeThreshold}
-                    onChange={(_, v) => setSettings({ ...settings, overtimeThreshold: v as number })}
-                    min={30}
-                    max={50}
-                    step={1}
-                    size="small"
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    Hours after which overtime rates apply
-                  </Typography>
-                </Box>
+          {/* STAFFING TAB */}
+          <TabsContent value="staffing" className="mt-0 space-y-6">
+            {/* Overtime Threshold */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-primary flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Overtime Threshold
+                </Label>
+                <Badge variant="secondary">{settings.overtimeThreshold}h/week</Badge>
+              </div>
+              <Slider
+                value={[settings.overtimeThreshold]}
+                onValueChange={(v) => setSettings({ ...settings, overtimeThreshold: v[0] })}
+                min={30}
+                max={50}
+                step={1}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">Hours after which overtime rates apply</p>
+            </div>
 
-                {/* Agency Staff */}
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Users size={16} className="text-primary" />
-                      Max Agency Staff
-                    </Typography>
-                    <Chip label={`${settings.maxAgencyPercent}%`} size="small" />
-                  </Box>
+            {/* Agency Staff */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-primary flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Max Agency Staff
+                </Label>
+                <Badge variant="secondary">{settings.maxAgencyPercent}%</Badge>
+              </div>
+              <Slider
+                value={[settings.maxAgencyPercent]}
+                onValueChange={(v) => setSettings({ ...settings, maxAgencyPercent: v[0] })}
+                min={0}
+                max={50}
+                step={5}
+                className="w-full"
+              />
+            </div>
+
+            <Separator />
+
+            {/* Casual Staff Mix */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Casual vs Permanent Mix
+              </Label>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Min Casual %</Label>
+                    <Badge variant="outline">{settings.minCasualPercent}%</Badge>
+                  </div>
                   <Slider
-                    value={settings.maxAgencyPercent}
-                    onChange={(_, v) => setSettings({ ...settings, maxAgencyPercent: v as number })}
+                    value={[settings.minCasualPercent]}
+                    onValueChange={(v) => setSettings({ ...settings, minCasualPercent: v[0] })}
                     min={0}
                     max={50}
                     step={5}
-                    size="small"
+                    className="w-full"
                   />
-                </Box>
-
-                <Divider />
-
-                {/* Casual Staff Mix */}
-                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Users size={16} />
-                  Casual vs Permanent Mix
-                </Typography>
-
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Min Casual %</Typography>
-                      <Chip label={`${settings.minCasualPercent}%`} size="small" variant="outlined" />
-                    </Box>
-                    <Slider
-                      value={settings.minCasualPercent}
-                      onChange={(_, v) => setSettings({ ...settings, minCasualPercent: v as number })}
-                      min={0}
-                      max={50}
-                      step={5}
-                      size="small"
-                    />
-                  </Box>
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Max Casual %</Typography>
-                      <Chip label={`${settings.maxCasualPercent}%`} size="small" variant="outlined" />
-                    </Box>
-                    <Slider
-                      value={settings.maxCasualPercent}
-                      onChange={(_, v) => setSettings({ ...settings, maxCasualPercent: v as number })}
-                      min={10}
-                      max={80}
-                      step={5}
-                      size="small"
-                    />
-                  </Box>
-                </Box>
-
-                <Divider />
-
-                {/* Trainee/Student Limits */}
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <GraduationCap size={16} className="text-blue-500" />
-                      Max Trainee/Student Staff
-                    </Typography>
-                    <Chip label={`${settings.maxTraineePercent}%`} size="small" />
-                  </Box>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Max Casual %</Label>
+                    <Badge variant="outline">{settings.maxCasualPercent}%</Badge>
+                  </div>
                   <Slider
-                    value={settings.maxTraineePercent}
-                    onChange={(_, v) => setSettings({ ...settings, maxTraineePercent: v as number })}
-                    min={0}
-                    max={30}
+                    value={[settings.maxCasualPercent]}
+                    onValueChange={(v) => setSettings({ ...settings, maxCasualPercent: v[0] })}
+                    min={10}
+                    max={80}
                     step={5}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Trainee Limits */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <GraduationCap className="h-4 w-4 text-primary" />
+                  Max Trainee/Student Staff
+                </Label>
+                <Badge variant="secondary">{settings.maxTraineePercent}%</Badge>
+              </div>
+              <Slider
+                value={[settings.maxTraineePercent]}
+                onValueChange={(v) => setSettings({ ...settings, maxTraineePercent: v[0] })}
+                min={0}
+                max={30}
+                step={5}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">Cap on unqualified/trainee staff per shift</p>
+            </div>
+
+            {/* Lead Educator Requirements */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                Min Lead Educators Per Room
+              </Label>
+              <Select
+                value={String(settings.minLeadEducatorsPerRoom)}
+                onValueChange={(v) => setSettings({ ...settings, minLeadEducatorsPerRoom: Number(v) })}
+              >
+                <SelectTrigger className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 Lead Educator</SelectItem>
+                  <SelectItem value="2">2 Lead Educators</SelectItem>
+                  <SelectItem value="3">3 Lead Educators</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Minimum qualified lead educators required per room at all times</p>
+            </div>
+          </TabsContent>
+
+          {/* TIME-BASED TAB */}
+          <TabsContent value="time" className="mt-0 space-y-6">
+            {/* Daily Budget Caps */}
+            <Card className="border border-border bg-muted/30">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Daily Budget Caps
+                  </Label>
+                  <StyledSwitch
+                    checked={settings.enableDailyBudgetCaps}
+                    onChange={(checked) => setSettings({ ...settings, enableDailyBudgetCaps: checked })}
                     size="small"
                   />
-                  <Typography variant="caption" color="text.secondary">
-                    Cap on unqualified/trainee staff per shift
-                  </Typography>
-                </Box>
+                </div>
 
-                {/* Lead Educator Requirements */}
-                <Box>
-                  <Typography variant="body2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Shield size={16} className="text-green-500" />
-                    Min Lead Educators Per Room
-                  </Typography>
-                  <FormControl size="small" fullWidth>
-                    <Select
-                      value={settings.minLeadEducatorsPerRoom}
-                      onChange={(e) => setSettings({ ...settings, minLeadEducatorsPerRoom: Number(e.target.value) })}
-                    >
-                      <MenuItem value={1}>1 Lead Educator</MenuItem>
-                      <MenuItem value={2}>2 Lead Educators</MenuItem>
-                      <MenuItem value={3}>3 Lead Educators</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <Typography variant="caption" color="text.secondary">
-                    Minimum qualified lead educators required per room at all times
-                  </Typography>
-                </Box>
-              </Stack>
-            </TabsContent>
+                {settings.enableDailyBudgetCaps && (
+                  <div className="space-y-2 pt-2">
+                    {dayLabels.map((day) => (
+                      <div key={day} className="flex items-center gap-3">
+                        <span className="text-sm w-24">{day}</span>
+                        <div className="relative flex-1">
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="number"
+                            value={settings.dailyBudgetCaps[day]}
+                            onChange={(e) => updateDailyBudget(day, Number(e.target.value))}
+                            className="pl-9 bg-background"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-            {/* TIME-BASED TAB */}
-            <TabsContent value="time" className="mt-0">
-              <Stack spacing={3}>
-                {/* Daily Budget Caps */}
-                <Card variant="outlined" sx={{ bgcolor: 'action.hover' }}>
-                  <CardContent sx={{ py: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Typography variant="body2" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Calendar size={16} className="text-primary" />
-                        Daily Budget Caps
-                      </Typography>
-                      <Switch
-                        checked={settings.enableDailyBudgetCaps}
-                        onChange={(e) => setSettings({ ...settings, enableDailyBudgetCaps: e.target.checked })}
-                        size="small"
-                      />
-                    </Box>
-                    
-                    {settings.enableDailyBudgetCaps && (
-                      <Stack spacing={1.5}>
-                        {dayLabels.map((day) => (
-                          <Box key={day} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Typography variant="body2" sx={{ width: 100 }}>{day}</Typography>
-                            <TextField
-                              type="number"
-                              value={settings.dailyBudgetCaps[day]}
-                              onChange={(e) => updateDailyBudget(day, Number(e.target.value))}
-                              size="small"
-                              fullWidth
-                              InputProps={{
-                                startAdornment: <DollarSign size={14} style={{ marginRight: 4, opacity: 0.5 }} />,
-                              }}
-                            />
-                          </Box>
-                        ))}
-                      </Stack>
-                    )}
-                  </CardContent>
-                </Card>
+            <Separator />
 
-                <Divider />
+            {/* Shift Time Premiums */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Shift Time Premiums
+              </Label>
 
-                {/* Peak Hours Premiums */}
-                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Clock size={16} />
-                  Shift Time Premiums
-                </Typography>
-
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Box>
-                    <Typography variant="body2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Sun size={14} className="text-yellow-500" />
-                      Early Shift Premium
-                    </Typography>
-                    <TextField
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-1">
+                    <Sun className="h-3 w-3 text-amber-500" />
+                    Early Shift Premium
+                  </Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
                       type="number"
                       value={settings.earlyShiftPremium}
                       onChange={(e) => setSettings({ ...settings, earlyShiftPremium: Number(e.target.value) })}
-                      size="small"
-                      fullWidth
-                      InputProps={{
-                        startAdornment: <DollarSign size={14} style={{ marginRight: 4, opacity: 0.5 }} />,
-                        endAdornment: <Typography variant="caption">/hr</Typography>,
-                      }}
+                      className="pl-9 bg-background pr-10"
                     />
-                    <Typography variant="caption" color="text.secondary">
-                      Extra pay for shifts starting before 7am
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Moon size={14} className="text-indigo-500" />
-                      Late Shift Premium
-                    </Typography>
-                    <TextField
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/hr</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Extra pay for shifts starting before 7am</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-1">
+                    <Moon className="h-3 w-3 text-primary" />
+                    Late Shift Premium
+                  </Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
                       type="number"
                       value={settings.lateShiftPremium}
                       onChange={(e) => setSettings({ ...settings, lateShiftPremium: Number(e.target.value) })}
+                      className="pl-9 bg-background pr-10"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/hr</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Extra pay for shifts ending after 6pm</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Split Shift Allowance */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                Split Shift Allowance
+              </Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  value={settings.splitShiftAllowance}
+                  onChange={(e) => setSettings({ ...settings, splitShiftAllowance: Number(e.target.value) })}
+                  className="pl-9 bg-background pr-12"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/shift</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Fixed payment for staff working split shifts</p>
+            </div>
+          </TabsContent>
+
+          {/* FORECAST TAB */}
+          <TabsContent value="forecast" className="mt-0 space-y-6">
+            {/* Budget Variance Tolerance */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-primary flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Budget Variance Tolerance
+                </Label>
+                <Badge variant="secondary">±{settings.budgetVarianceTolerance}%</Badge>
+              </div>
+              <Slider
+                value={[settings.budgetVarianceTolerance]}
+                onValueChange={(v) => setSettings({ ...settings, budgetVarianceTolerance: v[0] })}
+                min={5}
+                max={25}
+                step={1}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">Acceptable deviation from budget before triggering alerts</p>
+            </div>
+
+            <Separator />
+
+            {/* Seasonal Adjustments */}
+            <Card className="border border-border bg-muted/30">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-amber-500" />
+                    Seasonal Budget Adjustments
+                  </Label>
+                  <StyledSwitch
+                    checked={settings.enableSeasonalAdjustments}
+                    onChange={(checked) => setSettings({ ...settings, enableSeasonalAdjustments: checked })}
+                    size="small"
+                  />
+                </div>
+
+                {settings.enableSeasonalAdjustments && (
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">School Holiday Multiplier</Label>
+                      <Badge variant="outline">{settings.schoolHolidayBudgetMultiplier}×</Badge>
+                    </div>
+                    <Slider
+                      value={[settings.schoolHolidayBudgetMultiplier]}
+                      onValueChange={(v) => setSettings({ ...settings, schoolHolidayBudgetMultiplier: v[0] })}
+                      min={1}
+                      max={2}
+                      step={0.1}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">Multiply budget during school holiday periods</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Year-over-Year Target */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  Year-over-Year Target
+                </Label>
+                <Badge 
+                  variant={settings.yearOverYearTarget < 0 ? 'default' : 'secondary'}
+                  className={settings.yearOverYearTarget < 0 ? 'bg-primary' : ''}
+                >
+                  {settings.yearOverYearTarget > 0 ? '+' : ''}{settings.yearOverYearTarget}%
+                </Badge>
+              </div>
+              <Slider
+                value={[settings.yearOverYearTarget]}
+                onValueChange={(v) => setSettings({ ...settings, yearOverYearTarget: v[0] })}
+                min={-20}
+                max={20}
+                step={1}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">Target change vs. same period last year (negative = cost reduction goal)</p>
+            </div>
+
+            <Separator />
+
+            {/* Alert Settings */}
+            <Card className="border border-border bg-muted/30">
+              <CardHeader className="pb-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Bell className="h-4 w-4" />
+                  Alert Notifications
+                </Label>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    Alert when over budget
+                  </Label>
+                  <StyledSwitch
+                    checked={settings.alertOnOverBudget}
+                    onChange={(checked) => setSettings({ ...settings, alertOnOverBudget: checked })}
+                    size="small"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        Alert when near budget
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Threshold: {settings.nearBudgetThreshold}%</p>
+                    </div>
+                    <StyledSwitch
+                      checked={settings.alertOnNearBudget}
+                      onChange={(checked) => setSettings({ ...settings, alertOnNearBudget: checked })}
                       size="small"
-                      fullWidth
-                      InputProps={{
-                        startAdornment: <DollarSign size={14} style={{ marginRight: 4, opacity: 0.5 }} />,
-                        endAdornment: <Typography variant="caption">/hr</Typography>,
-                      }}
                     />
-                    <Typography variant="caption" color="text.secondary">
-                      Extra pay for shifts ending after 6pm
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {/* Split Shift Allowance */}
-                <Box>
-                  <Typography variant="body2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Clock size={16} className="text-purple-500" />
-                    Split Shift Allowance
-                  </Typography>
-                  <TextField
-                    type="number"
-                    value={settings.splitShiftAllowance}
-                    onChange={(e) => setSettings({ ...settings, splitShiftAllowance: Number(e.target.value) })}
-                    size="small"
-                    fullWidth
-                    InputProps={{
-                      startAdornment: <DollarSign size={14} style={{ marginRight: 4, opacity: 0.5 }} />,
-                      endAdornment: <Typography variant="caption">/shift</Typography>,
-                    }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    Fixed payment for staff working split shifts
-                  </Typography>
-                </Box>
-              </Stack>
-            </TabsContent>
-
-            {/* FORECAST TAB */}
-            <TabsContent value="forecast" className="mt-0">
-              <Stack spacing={3}>
-                {/* Budget Variance Tolerance */}
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Target size={16} className="text-primary" />
-                      Budget Variance Tolerance
-                    </Typography>
-                    <Chip label={`±${settings.budgetVarianceTolerance}%`} size="small" />
-                  </Box>
-                  <Slider
-                    value={settings.budgetVarianceTolerance}
-                    onChange={(_, v) => setSettings({ ...settings, budgetVarianceTolerance: v as number })}
-                    min={5}
-                    max={25}
-                    step={1}
-                    size="small"
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    Acceptable deviation from budget before triggering alerts
-                  </Typography>
-                </Box>
-
-                <Divider />
-
-                {/* Seasonal Adjustments */}
-                <Card variant="outlined" sx={{ bgcolor: 'action.hover' }}>
-                  <CardContent sx={{ py: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Typography variant="body2" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Calendar size={16} className="text-orange-500" />
-                        Seasonal Budget Adjustments
-                      </Typography>
-                      <Switch
-                        checked={settings.enableSeasonalAdjustments}
-                        onChange={(e) => setSettings({ ...settings, enableSeasonalAdjustments: e.target.checked })}
-                        size="small"
+                  </div>
+                  {settings.alertOnNearBudget && (
+                    <div className="pl-6">
+                      <Slider
+                        value={[settings.nearBudgetThreshold]}
+                        onValueChange={(v) => setSettings({ ...settings, nearBudgetThreshold: v[0] })}
+                        min={70}
+                        max={99}
+                        step={5}
+                        className="w-full"
                       />
-                    </Box>
-                    
-                    {settings.enableSeasonalAdjustments && (
-                      <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography variant="body2">School Holiday Multiplier</Typography>
-                          <Chip label={`${settings.schoolHolidayBudgetMultiplier}×`} size="small" variant="outlined" />
-                        </Box>
-                        <Slider
-                          value={settings.schoolHolidayBudgetMultiplier}
-                          onChange={(_, v) => setSettings({ ...settings, schoolHolidayBudgetMultiplier: v as number })}
-                          min={1}
-                          max={2}
-                          step={0.1}
-                          size="small"
-                        />
-                        <Typography variant="caption" color="text.secondary">
-                          Multiply budget during school holiday periods
-                        </Typography>
-                      </Box>
-                    )}
-                  </CardContent>
-                </Card>
+                    </div>
+                  )}
+                </div>
 
-                {/* Year-over-Year Target */}
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <BarChart3 size={16} className="text-green-500" />
-                      Year-over-Year Target
-                    </Typography>
-                    <Chip 
-                      label={`${settings.yearOverYearTarget > 0 ? '+' : ''}${settings.yearOverYearTarget}%`} 
-                      size="small" 
-                      color={settings.yearOverYearTarget < 0 ? 'success' : 'warning'}
-                    />
-                  </Box>
-                  <Slider
-                    value={settings.yearOverYearTarget}
-                    onChange={(_, v) => setSettings({ ...settings, yearOverYearTarget: v as number })}
-                    min={-20}
-                    max={20}
-                    step={1}
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-amber-500" />
+                    Alert on excessive overtime
+                  </Label>
+                  <StyledSwitch
+                    checked={settings.alertOnOvertimeExcess}
+                    onChange={(checked) => setSettings({ ...settings, alertOnOvertimeExcess: checked })}
                     size="small"
                   />
-                  <Typography variant="caption" color="text.secondary">
-                    Target change vs. same period last year (negative = cost reduction goal)
-                  </Typography>
-                </Box>
-
-                <Divider />
-
-                {/* Alert Settings */}
-                <Card variant="outlined" sx={{ bgcolor: 'action.hover' }}>
-                  <CardHeader
-                    title={
-                      <Typography variant="body2" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Bell size={16} />
-                        Alert Notifications
-                      </Typography>
-                    }
-                    sx={{ pb: 0 }}
-                  />
-                  <CardContent>
-                    <Stack spacing={2}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <AlertTriangle size={16} className="text-red-500" />
-                          Alert when over budget
-                        </Typography>
-                        <Switch
-                          checked={settings.alertOnOverBudget}
-                          onChange={(e) => setSettings({ ...settings, alertOnOverBudget: e.target.checked })}
-                          size="small"
-                        />
-                      </Box>
-
-                      <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <Box>
-                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <AlertTriangle size={16} className="text-orange-500" />
-                              Alert when near budget
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              Threshold: {settings.nearBudgetThreshold}%
-                            </Typography>
-                          </Box>
-                          <Switch
-                            checked={settings.alertOnNearBudget}
-                            onChange={(e) => setSettings({ ...settings, alertOnNearBudget: e.target.checked })}
-                            size="small"
-                          />
-                        </Box>
-                        {settings.alertOnNearBudget && (
-                          <Box sx={{ pl: 3, mt: 1 }}>
-                            <Slider
-                              value={settings.nearBudgetThreshold}
-                              onChange={(_, v) => setSettings({ ...settings, nearBudgetThreshold: v as number })}
-                              min={70}
-                              max={99}
-                              step={5}
-                              size="small"
-                            />
-                          </Box>
-                        )}
-                      </Box>
-
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <TrendingUp size={16} className="text-orange-500" />
-                          Alert on excessive overtime
-                        </Typography>
-                        <Switch
-                          checked={settings.alertOnOvertimeExcess}
-                          onChange={(e) => setSettings({ ...settings, alertOnOvertimeExcess: e.target.checked })}
-                          size="small"
-                        />
-                      </Box>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Stack>
-            </TabsContent>
-          </ScrollArea>
-        </Tabs>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </ScrollArea>
+      </Tabs>
     </PrimaryOffCanvas>
   );
 }
