@@ -222,16 +222,16 @@ export function RecurringPatternsPanel({
   return (
     <div className="space-y-6 w-full">
       {/* Header */}
-      <Card className="card-material-elevated border-l-4 border-l-primary">
-        <CardHeader>
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Repeat className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-xl">Recurring Shift Patterns</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl text-foreground">Recurring Shift Patterns</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Define repeating schedules that auto-generate shifts
                 </CardDescription>
               </div>
@@ -241,6 +241,7 @@ export function RecurringPatternsPanel({
                 variant="outline"
                 onClick={handleBulkGenerate}
                 disabled={isGenerating}
+                className="border-border"
               >
                 {isGenerating ? (
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -249,7 +250,7 @@ export function RecurringPatternsPanel({
                 )}
                 Generate All (4 weeks)
               </Button>
-              <Button onClick={() => setShowCreatePanel(true)}>
+              <Button onClick={() => setShowCreatePanel(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Plus className="h-4 w-4 mr-2" />
                 New Pattern
               </Button>
@@ -260,56 +261,56 @@ export function RecurringPatternsPanel({
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="card-material">
+        <Card className="bg-card border border-border rounded-xl shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Repeat className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{patterns.length}</p>
+                <p className="text-2xl font-bold text-foreground">{patterns.length}</p>
                 <p className="text-sm text-muted-foreground">Total Patterns</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="card-material">
+        <Card className="bg-card border border-border rounded-xl shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <Play className="h-5 w-5 text-emerald-600" />
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Play className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{patterns.filter(p => p.isActive).length}</p>
+                <p className="text-2xl font-bold text-foreground">{patterns.filter(p => p.isActive).length}</p>
                 <p className="text-sm text-muted-foreground">Active</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="card-material">
+        <Card className="bg-card border border-border rounded-xl shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-blue-600" />
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">~120</p>
+                <p className="text-2xl font-bold text-foreground">~120</p>
                 <p className="text-sm text-muted-foreground">Shifts/Month</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="card-material">
+        <Card className="bg-card border border-border rounded-xl shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-amber-600" />
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{patterns.filter(p => p.assignedStaffId).length}</p>
+                <p className="text-2xl font-bold text-foreground">{patterns.filter(p => p.assignedStaffId).length}</p>
                 <p className="text-sm text-muted-foreground">With Staff Assigned</p>
               </div>
             </div>
@@ -318,53 +319,55 @@ export function RecurringPatternsPanel({
       </div>
 
       {/* Patterns List */}
-      <Card className="card-material">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-base">Active Patterns</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Active Patterns</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Pattern Name</TableHead>
-                <TableHead>Recurrence</TableHead>
-                <TableHead>Shift Time</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead>Status</TableHead>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="font-medium text-muted-foreground">Pattern Name</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Recurrence</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Shift Time</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Role</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Assigned To</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Status</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {patterns.map(pattern => (
-                <TableRow key={pattern.id}>
+                <TableRow key={pattern.id} className="border-b border-border hover:bg-muted/30">
                   <TableCell>
                     <div>
-                      <p className="font-medium">{pattern.name}</p>
+                      <p className="font-medium text-foreground">{pattern.name}</p>
                       <p className="text-xs text-muted-foreground">{pattern.description}</p>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <Badge variant="outline">{recurrencePatternLabels[pattern.pattern]}</Badge>
+                      <Badge variant="outline" className="border-border text-foreground">{recurrencePatternLabels[pattern.pattern]}</Badge>
                       <p className="text-xs text-muted-foreground mt-1">
                         {getDaysLabel(pattern.daysOfWeek)}
                       </p>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-sm">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span className="text-sm text-foreground">
                         {pattern.shiftTemplate.startTime} - {pattern.shiftTemplate.endTime}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{pattern.shiftTemplate.roleName}</Badge>
+                    <Badge className="bg-secondary text-secondary-foreground border-0">{pattern.shiftTemplate.roleName}</Badge>
                   </TableCell>
                   <TableCell>
-                    {pattern.assignedStaffName || (
+                    {pattern.assignedStaffName ? (
+                      <span className="text-foreground">{pattern.assignedStaffName}</span>
+                    ) : (
                       <span className="text-muted-foreground">Unassigned</span>
                     )}
                   </TableCell>
@@ -387,6 +390,7 @@ export function RecurringPatternsPanel({
                         size="icon"
                         onClick={() => handleGenerateShifts(pattern.id)}
                         disabled={isGenerating}
+                        className="text-muted-foreground hover:text-foreground"
                       >
                         <Zap className="h-4 w-4" />
                       </Button>
@@ -394,6 +398,7 @@ export function RecurringPatternsPanel({
                         variant="ghost"
                         size="icon"
                         onClick={() => setSelectedPattern(pattern)}
+                        className="text-muted-foreground hover:text-foreground"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -401,6 +406,7 @@ export function RecurringPatternsPanel({
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDeletePattern(pattern.id)}
+                        className="text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

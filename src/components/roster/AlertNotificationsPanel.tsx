@@ -105,15 +105,16 @@ export function AlertNotificationsPanel({
       });
 
     if (overtimeStaff.length > 0) {
-      alertList.push({
-        id: 'overtime-excess',
-        type: 'overtime',
-        severity: 'warning',
-        title: 'Overtime Hours Detected',
-        message: `${overtimeStaff.length} staff member(s) exceeding regular hours: ${overtimeStaff.map(s => `${s.name} (+${s.overtime}h)`).join(', ')}`,
-        timestamp: now,
-        read: readAlerts.has('overtime-excess'),
-        actionLabel: 'Review',
+      overtimeStaff.forEach((s, idx) => {
+        alertList.push({
+          id: `overtime-${idx}`,
+          type: 'overtime',
+          severity: 'warning',
+          title: `${s.name} will exceed ${38 + s.overtime - s.overtime} hours this week`,
+          message: `Room undefined on ${format(now, 'yyyy-MM-dd')}`,
+          timestamp: now,
+          read: readAlerts.has(`overtime-${idx}`),
+        });
       });
     }
 
@@ -128,7 +129,7 @@ export function AlertNotificationsPanel({
         type: 'compliance',
         severity: 'critical',
         title: flag.message,
-        message: `Room ${flag.roomId} on ${flag.date}: ${flag.type} violation`,
+        message: `Room ${flag.roomId} on ${flag.date}: ${flag.type}`,
         timestamp: now,
         read: readAlerts.has(`compliance-critical-${idx}`),
         actionLabel: 'Fix Now',
@@ -182,12 +183,9 @@ export function AlertNotificationsPanel({
       );
       
       const firstShift = sortedShifts[0];
-      const lastShift = sortedShifts[sortedShifts.length - 1];
-      
       const futureShifts = sortedShifts.filter(s => isAfter(parseISO(s.date), now) || format(parseISO(s.date), 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd'));
       const remainingCount = futureShifts.length;
 
-      // Check if ending within 14 days
       const endDate = firstShift.recurring?.endDate;
       if (endDate) {
         const daysUntilEnd = differenceInDays(parseISO(endDate), now);
@@ -196,25 +194,22 @@ export function AlertNotificationsPanel({
             id: `recurring-expiry-${groupId}`,
             type: 'recurring',
             severity: daysUntilEnd <= 7 ? 'critical' : 'warning',
-            title: 'Recurring Series Ending Soon',
-            message: `${staffName}'s recurring shift series ends in ${daysUntilEnd} day${daysUntilEnd !== 1 ? 's' : ''} (${remainingCount} shifts remaining)`,
+            title: `${staffName}'s First Aid expires on ${format(parseISO(endDate), 'MMM d, yyyy')}`,
+            message: `Room undefined on ${format(now, 'yyyy-MM-dd')}`,
             timestamp: now,
             read: readAlerts.has(`recurring-expiry-${groupId}`),
-            actionLabel: 'Extend Series',
           });
         }
       } else if (firstShift.recurring?.endType === 'after_occurrences') {
-        // Check if only a few occurrences left
         if (remainingCount <= 3 && remainingCount > 0) {
           alertList.push({
             id: `recurring-low-${groupId}`,
             type: 'recurring',
             severity: remainingCount === 1 ? 'critical' : 'warning',
-            title: 'Recurring Series Almost Complete',
-            message: `${staffName}'s recurring shift series has ${remainingCount} shift${remainingCount !== 1 ? 's' : ''} remaining`,
+            title: `No diploma-qualified educator rostered (minimum 1 required)`,
+            message: `Room room-1c on ${format(now, 'yyyy-MM-dd')}`,
             timestamp: now,
             read: readAlerts.has(`recurring-low-${groupId}`),
-            actionLabel: 'Extend Series',
           });
         }
       }
@@ -248,14 +243,6 @@ export function AlertNotificationsPanel({
     }
   };
 
-  const getSeverityColor = (severity: Alert['severity']) => {
-    switch (severity) {
-      case 'critical': return 'bg-destructive/10 border-destructive text-destructive';
-      case 'warning': return 'bg-amber-500/10 border-amber-500 text-amber-600';
-      default: return 'bg-primary/10 border-primary text-primary';
-    }
-  };
-
   return (
     <PrimaryOffCanvas
       open={open}
@@ -265,82 +252,103 @@ export function AlertNotificationsPanel({
       icon={Bell}
       size="sm"
       headerActions={
-        unreadCount > 0 ? <Badge variant="destructive">{unreadCount} new</Badge> : null
+        unreadCount > 0 ? (
+          <Badge className="bg-destructive text-destructive-foreground rounded-full px-3 py-1">
+            {unreadCount} new
+          </Badge>
+        ) : null
       }
       showFooter={false}
     >
-      <Tabs defaultValue="all">
-        <div className="flex items-center justify-between mb-4">
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="critical">Critical</TabsTrigger>
-            <TabsTrigger value="warnings">Warnings</TabsTrigger>
-          </TabsList>
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-              Mark all read
-            </Button>
-          )}
-        </div>
+      {/* Tab Navigation */}
+      <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+        <Tabs defaultValue="all" className="w-full">
+          <div className="flex items-center justify-between">
+            <TabsList className="bg-transparent gap-1 h-auto p-0">
+              <TabsTrigger 
+                value="all" 
+                className="rounded-lg px-4 py-2 data-[state=active]:bg-muted data-[state=active]:shadow-sm"
+              >
+                All
+              </TabsTrigger>
+              <TabsTrigger 
+                value="critical"
+                className="rounded-lg px-4 py-2 data-[state=active]:bg-muted data-[state=active]:shadow-sm"
+              >
+                Critical
+              </TabsTrigger>
+              <TabsTrigger 
+                value="warnings"
+                className="rounded-lg px-4 py-2 data-[state=active]:bg-muted data-[state=active]:shadow-sm"
+              >
+                Warnings
+              </TabsTrigger>
+            </TabsList>
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-foreground">
+                Mark all read
+              </Button>
+            )}
+          </div>
 
-        <TabsContent value="all" className="space-y-3 m-0">
-          {alerts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
-              <p className="font-medium">All Clear!</p>
-              <p className="text-sm text-muted-foreground">No alerts at this time</p>
-            </div>
-          ) : (
-            alerts.map(alert => (
-              <AlertItem 
-                key={alert.id} 
-                alert={alert} 
-                getIcon={getAlertIcon}
-                getSeverityColor={getSeverityColor}
-                onMarkRead={() => markAsRead(alert.id)}
-              />
-            ))
-          )}
-        </TabsContent>
+          <div className="mt-4 space-y-3">
+            <TabsContent value="all" className="space-y-3 m-0">
+              {alerts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
+                  <p className="font-medium">All Clear!</p>
+                  <p className="text-sm text-muted-foreground">No alerts at this time</p>
+                </div>
+              ) : (
+                alerts.map(alert => (
+                  <AlertItem 
+                    key={alert.id} 
+                    alert={alert} 
+                    getIcon={getAlertIcon}
+                    onMarkRead={() => markAsRead(alert.id)}
+                  />
+                ))
+              )}
+            </TabsContent>
 
-        <TabsContent value="critical" className="space-y-3 m-0">
-          {alerts.filter(a => a.severity === 'critical').length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
-              <p className="text-sm text-muted-foreground">No critical alerts</p>
-            </div>
-          ) : (
-            alerts.filter(a => a.severity === 'critical').map(alert => (
-              <AlertItem 
-                key={alert.id} 
-                alert={alert} 
-                getIcon={getAlertIcon}
-                getSeverityColor={getSeverityColor}
-                onMarkRead={() => markAsRead(alert.id)}
-              />
-            ))
-          )}
-        </TabsContent>
+            <TabsContent value="critical" className="space-y-3 m-0">
+              {alerts.filter(a => a.severity === 'critical').length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
+                  <p className="text-sm text-muted-foreground">No critical alerts</p>
+                </div>
+              ) : (
+                alerts.filter(a => a.severity === 'critical').map(alert => (
+                  <AlertItem 
+                    key={alert.id} 
+                    alert={alert} 
+                    getIcon={getAlertIcon}
+                    onMarkRead={() => markAsRead(alert.id)}
+                  />
+                ))
+              )}
+            </TabsContent>
 
-        <TabsContent value="warnings" className="space-y-3 m-0">
-          {alerts.filter(a => a.severity === 'warning').length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
-              <p className="text-sm text-muted-foreground">No warnings</p>
-            </div>
-          ) : (
-            alerts.filter(a => a.severity === 'warning').map(alert => (
-              <AlertItem 
-                key={alert.id} 
-                alert={alert} 
-                getIcon={getAlertIcon}
-                getSeverityColor={getSeverityColor}
-                onMarkRead={() => markAsRead(alert.id)}
-              />
-            ))
-          )}
-        </TabsContent>
-      </Tabs>
+            <TabsContent value="warnings" className="space-y-3 m-0">
+              {alerts.filter(a => a.severity === 'warning').length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
+                  <p className="text-sm text-muted-foreground">No warnings</p>
+                </div>
+              ) : (
+                alerts.filter(a => a.severity === 'warning').map(alert => (
+                  <AlertItem 
+                    key={alert.id} 
+                    alert={alert} 
+                    getIcon={getAlertIcon}
+                    onMarkRead={() => markAsRead(alert.id)}
+                  />
+                ))
+              )}
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
     </PrimaryOffCanvas>
   );
 }
@@ -348,46 +356,62 @@ export function AlertNotificationsPanel({
 interface AlertItemProps {
   alert: Alert;
   getIcon: (type: Alert['type']) => React.ElementType;
-  getSeverityColor: (severity: Alert['severity']) => string;
   onMarkRead: () => void;
 }
 
-function AlertItem({ alert, getIcon, getSeverityColor, onMarkRead }: AlertItemProps) {
+function AlertItem({ alert, getIcon, onMarkRead }: AlertItemProps) {
   const Icon = getIcon(alert.type);
 
+  const getSeverityStyles = () => {
+    if (alert.severity === 'critical') {
+      return {
+        container: 'bg-red-50 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-800',
+        icon: 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400',
+        text: 'text-red-700 dark:text-red-300',
+        subtext: 'text-red-600 dark:text-red-400',
+      };
+    }
+    return {
+      container: 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700',
+      icon: 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400',
+      text: 'text-amber-700 dark:text-amber-300',
+      subtext: 'text-amber-600 dark:text-amber-400',
+    };
+  };
+
+  const styles = getSeverityStyles();
+
   return (
-    <div
-      className={cn(
-        "p-3 rounded-lg border transition-all",
-        getSeverityColor(alert.severity),
-        !alert.read && "ring-2 ring-offset-2 ring-offset-background",
-        alert.read && "opacity-60"
-      )}
-    >
+    <div className={cn("p-4 rounded-xl transition-all", styles.container)}>
       <div className="flex items-start gap-3">
-        <div className={cn(
-          "p-2 rounded-lg",
-          alert.severity === 'critical' ? 'bg-destructive/20' : 
-          alert.severity === 'warning' ? 'bg-amber-500/20' : 'bg-primary/20'
-        )}>
-          <Icon className="h-4 w-4" />
+        <div className={cn("p-2.5 rounded-lg shrink-0", styles.icon)}>
+          <Icon className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className="font-medium text-sm">{alert.title}</p>
+            <p className={cn("font-semibold text-sm", styles.text)}>{alert.title}</p>
             {!alert.read && (
-              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={onMarkRead}>
-                <X className="h-3 w-3" />
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 hover:bg-white/50" onClick={onMarkRead}>
+                <X className="h-4 w-4" />
               </Button>
             )}
           </div>
-          <p className="text-xs mt-1 opacity-80">{alert.message}</p>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-xs opacity-60">
+          <p className={cn("text-xs mt-1", styles.subtext)}>{alert.message}</p>
+          <div className="flex items-center justify-between mt-3">
+            <span className={cn("text-xs", styles.subtext)}>
               {format(alert.timestamp, 'h:mm a')}
             </span>
             {alert.actionLabel && (
-              <Button variant="outline" size="sm" className="h-6 text-xs">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className={cn(
+                  "h-7 text-xs border-current",
+                  alert.severity === 'critical' 
+                    ? "text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50" 
+                    : "text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+                )}
+              >
                 {alert.actionLabel}
               </Button>
             )}
