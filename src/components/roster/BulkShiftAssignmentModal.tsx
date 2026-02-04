@@ -376,43 +376,89 @@ export function BulkShiftAssignmentModal({
           ) : (
             <>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'hsl(var(--primary))' }}>
                   <Plus size={16} />
-                  <Typography variant="body2">{shiftsWithoutConflicts.length} shifts to create</Typography>
+                  <Typography variant="body2" fontWeight={500}>{shiftsWithoutConflicts.length} shifts to create</Typography>
                 </Box>
                 {previewShifts.some(s => s.hasConflict) && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'warning.main' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#f59e0b' }}>
                     <AlertTriangle size={16} />
                     <Typography variant="body2">{previewShifts.filter(s => s.hasConflict).length} conflicts</Typography>
                   </Box>
                 )}
               </Box>
-              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+              
+              {/* Table header */}
+              <Box sx={{ 
+                display: 'grid', 
+                gridTemplateColumns: '32px 1fr 24px 1fr 100px', 
+                alignItems: 'center', 
+                gap: 1.5,
+                p: 1.5,
+                bgcolor: 'grey.100',
+                borderRadius: '8px 8px 0 0',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              }}>
+                <Box />
+                <Typography variant="caption" fontWeight={600} color="text.primary">Staff Member</Typography>
+                <Box />
+                <Typography variant="caption" fontWeight={600} color="text.primary">Date</Typography>
+                <Typography variant="caption" fontWeight={600} color="text.primary" textAlign="right">Status</Typography>
+              </Box>
+              
+              <Box sx={{ 
+                border: 1, 
+                borderColor: 'divider', 
+                borderTop: 0,
+                borderRadius: '0 0 8px 8px',
+                bgcolor: 'background.paper',
+                overflow: 'hidden',
+              }}>
                 {previewShifts.map((preview, idx) => (
                   <Box
                     key={idx}
                     sx={{
-                      display: 'flex',
+                      display: 'grid',
+                      gridTemplateColumns: '32px 1fr 24px 1fr 100px',
                       alignItems: 'center',
                       gap: 1.5,
-                      p: 1,
-                      bgcolor: preview.hasConflict ? 'warning.light' : 'success.light',
-                      opacity: preview.hasConflict ? 0.6 : 1,
-                      borderBottom: idx < previewShifts.length - 1 ? 1 : 0,
+                      p: 1.5,
+                      bgcolor: preview.hasConflict ? 'rgba(245, 158, 11, 0.08)' : 'background.paper',
+                      borderBottom: idx < previewShifts.length - 1 ? '1px solid' : 'none',
                       borderColor: 'divider',
+                      transition: 'background-color 0.15s ease-in-out',
+                      '&:hover': {
+                        bgcolor: preview.hasConflict ? 'rgba(245, 158, 11, 0.12)' : 'action.hover',
+                      },
                     }}
                   >
-                    {preview.hasConflict ? <AlertTriangle size={16} /> : <Check size={16} />}
-                    <Typography variant="body2" fontWeight={500}>{getStaffName(preview.staffId)}</Typography>
-                    <Typography variant="body2" color="text.secondary">→</Typography>
-                    <Typography variant="body2">{format(new Date(preview.date), 'EEE d MMM')}</Typography>
-                    <Chip 
-                      size="small" 
-                      label={preview.hasConflict ? 'Conflict' : 'Will Add'}
-                      color={preview.hasConflict ? 'warning' : 'success'}
-                      variant={preview.hasConflict ? 'outlined' : 'filled'}
-                      sx={{ ml: 'auto' }}
-                    />
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      color: preview.hasConflict ? '#f59e0b' : 'hsl(var(--primary))',
+                    }}>
+                      {preview.hasConflict ? <AlertTriangle size={18} /> : <Check size={18} />}
+                    </Box>
+                    <Typography variant="body2" fontWeight={500} color="text.primary">{getStaffName(preview.staffId)}</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>→</Typography>
+                    <Typography variant="body2" color="text.primary">{format(new Date(preview.date), 'EEE d MMM')}</Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <Chip 
+                        size="small" 
+                        label={preview.hasConflict ? 'Conflict' : 'Will Add'}
+                        sx={{ 
+                          height: 26,
+                          borderRadius: '6px',
+                          fontWeight: 500,
+                          fontSize: '0.75rem',
+                          bgcolor: preview.hasConflict ? 'rgba(245, 158, 11, 0.12)' : 'hsl(var(--primary))',
+                          color: preview.hasConflict ? '#b45309' : 'white',
+                          border: preview.hasConflict ? '1px solid rgba(245, 158, 11, 0.3)' : 'none',
+                        }}
+                      />
+                    </Box>
                   </Box>
                 ))}
               </Box>
