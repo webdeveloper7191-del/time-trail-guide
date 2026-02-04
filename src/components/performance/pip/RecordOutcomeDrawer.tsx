@@ -1,38 +1,15 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Stack,
-  Typography,
-  Avatar,
-  Chip,
-  Alert,
-  Divider,
-} from '@mui/material';
-import { Button } from '@/components/mui/Button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Avatar, Chip, Divider, Alert as MuiAlert } from '@mui/material';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
-import {
-  CheckCircle2,
-  XCircle,
-  Clock,
-  UserMinus,
-  FileCheck,
-  AlertTriangle,
-} from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, UserMinus, FileCheck, AlertTriangle } from 'lucide-react';
 import { StaffMember } from '@/types/staff';
-import { PerformanceImprovementPlan, PIPOutcome, pipOutcomeLabels } from '@/types/compensation';
-import { format, differenceInDays, parseISO } from 'date-fns';
+import { PerformanceImprovementPlan, PIPOutcome } from '@/types/compensation';
+import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
+import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
 
 interface RecordOutcomeDrawerProps {
   open: boolean;
@@ -48,14 +25,14 @@ const outcomeOptions: { value: PIPOutcome; label: string; description: string; i
     label: 'Performance Improved',
     description: 'Employee has successfully met the improvement goals',
     icon: <CheckCircle2 className="h-5 w-5" />,
-    color: 'text-success',
+    color: 'text-green-600',
   },
   {
     value: 'extended',
     label: 'Plan Extended',
     description: 'Additional time needed to demonstrate improvement',
     icon: <Clock className="h-5 w-5" />,
-    color: 'text-info',
+    color: 'text-blue-600',
   },
   {
     value: 'terminated',
@@ -69,7 +46,7 @@ const outcomeOptions: { value: PIPOutcome; label: string; description: string; i
     label: 'Employee Resigned',
     description: 'Employee chose to leave during the PIP period',
     icon: <UserMinus className="h-5 w-5" />,
-    color: 'text-warning',
+    color: 'text-amber-600',
   },
 ];
 
@@ -112,153 +89,126 @@ export function RecordOutcomeDrawer({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-        <SheetHeader className="pb-4">
-          <SheetTitle className="flex items-center gap-2">
-            <FileCheck className="h-5 w-5 text-primary" />
-            Record PIP Outcome
-          </SheetTitle>
-          <SheetDescription>
-            Document the final outcome of the Performance Improvement Plan
-          </SheetDescription>
-        </SheetHeader>
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Record PIP Outcome"
+      description="Document the final outcome of the Performance Improvement Plan"
+      icon={FileCheck}
+      size="md"
+      actions={[
+        { label: 'Cancel', onClick: onClose, variant: 'secondary' },
+        { 
+          label: 'Record Outcome', 
+          onClick: handleSubmit, 
+          variant: outcome === 'terminated' ? 'destructive' : 'primary',
+        },
+      ]}
+    >
+      <div className="space-y-6">
+        {/* Employee Summary */}
+        <FormSection title="PIP Summary">
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <Avatar src={employee?.avatar} sx={{ width: 48, height: 48 }}>
+              {employee?.firstName?.[0]}
+              {employee?.lastName?.[0]}
+            </Avatar>
+            <div className="flex-1">
+              <p className="font-semibold">
+                {employee?.firstName} {employee?.lastName}
+              </p>
+              <p className="text-sm text-muted-foreground">{employee?.position}</p>
+            </div>
+          </div>
 
-        <div className="space-y-6 py-4">
-          {/* Employee Summary */}
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-            <Stack direction="row" spacing={2} alignItems="center" mb={2}>
-              <Avatar src={employee?.avatar} sx={{ width: 48, height: 48 }}>
-                {employee?.firstName?.[0]}
-                {employee?.lastName?.[0]}
-              </Avatar>
-              <Box flex={1}>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  {employee?.firstName} {employee?.lastName}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {employee?.position}
-                </Typography>
-              </Box>
-            </Stack>
+          <Divider className="my-3" />
 
-            <Divider sx={{ my: 1.5 }} />
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">PIP Duration</span>
+              <span className="font-medium">
+                {format(parseISO(pip.startDate), 'MMM d')} - {format(parseISO(pip.currentEndDate), 'MMM d, yyyy')}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Milestones Completed</span>
+              <span className="font-medium">
+                {completedMilestones}/{totalMilestones} ({Math.round(progressPercent)}%)
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Check-ins Held</span>
+              <span className="font-medium">{pip.checkIns.length}</span>
+            </div>
+            {pip.extensionCount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Extensions</span>
+                <Chip label={`${pip.extensionCount} extension(s)`} size="small" color="info" />
+              </div>
+            )}
+          </div>
+        </FormSection>
 
-            <Stack spacing={1}>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography variant="caption" color="text.secondary">
-                  PIP Duration
-                </Typography>
-                <Typography variant="caption" fontWeight={500}>
-                  {format(parseISO(pip.startDate), 'MMM d')} -{' '}
-                  {format(parseISO(pip.currentEndDate), 'MMM d, yyyy')}
-                </Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography variant="caption" color="text.secondary">
-                  Milestones Completed
-                </Typography>
-                <Typography variant="caption" fontWeight={500}>
-                  {completedMilestones}/{totalMilestones} ({Math.round(progressPercent)}%)
-                </Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography variant="caption" color="text.secondary">
-                  Check-ins Held
-                </Typography>
-                <Typography variant="caption" fontWeight={500}>
-                  {pip.checkIns.length}
-                </Typography>
-              </Stack>
-              {pip.extensionCount > 0 && (
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="caption" color="text.secondary">
-                    Extensions
-                  </Typography>
-                  <Chip label={`${pip.extensionCount} extension(s)`} size="small" color="info" />
-                </Stack>
-              )}
-            </Stack>
-          </Box>
+        {/* Warning */}
+        <MuiAlert severity="warning" icon={<AlertTriangle size={18} />}>
+          Recording an outcome will close this PIP. Ensure you have consulted with HR before proceeding.
+        </MuiAlert>
 
-          <Alert severity="warning" icon={<AlertTriangle size={18} />}>
-            <Typography variant="body2">
-              Recording an outcome will close this PIP. Ensure you have consulted with HR before proceeding.
-            </Typography>
-          </Alert>
+        {/* Outcome Selection */}
+        <FormSection title="Select Outcome" tooltip="Choose the final outcome of this PIP">
+          <RadioGroup value={outcome} onValueChange={(value) => setOutcome(value as PIPOutcome)}>
+            <div className="space-y-2">
+              {outcomeOptions.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    outcome === option.value
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:bg-muted/50'
+                  }`}
+                >
+                  <RadioGroupItem value={option.value} className="mt-0.5" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={option.color}>{option.icon}</span>
+                      <span className="font-medium text-sm">{option.label}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{option.description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </RadioGroup>
+        </FormSection>
 
-          {/* Outcome Selection */}
-          <Box>
-            <Label className="text-sm font-medium mb-3 block">Select Outcome *</Label>
-            <RadioGroup value={outcome} onValueChange={(value) => setOutcome(value as PIPOutcome)}>
-              <Stack spacing={1.5}>
-                {outcomeOptions.map((option) => (
-                  <label
-                    key={option.value}
-                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      outcome === option.value
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:bg-muted/50'
-                    }`}
-                  >
-                    <RadioGroupItem value={option.value} className="mt-0.5" />
-                    <Box flex={1}>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <span className={option.color}>{option.icon}</span>
-                        <Typography variant="body2" fontWeight={500}>
-                          {option.label}
-                        </Typography>
-                      </Stack>
-                      <Typography variant="caption" color="text.secondary">
-                        {option.description}
-                      </Typography>
-                    </Box>
-                  </label>
-                ))}
-              </Stack>
-            </RadioGroup>
-          </Box>
-
-          {/* Conditional Date Fields */}
-          {outcome === 'extended' && (
-            <div className="space-y-1.5">
-              <Label>New End Date *</Label>
+        {/* Conditional Date Fields */}
+        {outcome === 'extended' && (
+          <FormSection title="Extension Details">
+            <FormField label="New End Date" required tooltip="The plan will be extended to this date">
               <Input
                 type="date"
                 value={extensionEndDate}
                 onChange={(e) => setExtensionEndDate(e.target.value)}
               />
-              <Typography variant="caption" color="text.secondary">
-                The plan will be extended to this date
-              </Typography>
-            </div>
-          )}
+            </FormField>
+          </FormSection>
+        )}
 
-          {(outcome === 'terminated' || outcome === 'resigned') && (
-            <div className="space-y-1.5">
-              <Label>Effective Date *</Label>
+        {(outcome === 'terminated' || outcome === 'resigned' || outcome === 'improved') && (
+          <FormSection title="Effective Date">
+            <FormField label={outcome === 'improved' ? 'Outcome Date' : 'Effective Date'}>
               <Input
                 type="date"
                 value={effectiveDate}
                 onChange={(e) => setEffectiveDate(e.target.value)}
               />
-            </div>
-          )}
+            </FormField>
+          </FormSection>
+        )}
 
-          {outcome === 'improved' && (
-            <div className="space-y-1.5">
-              <Label>Outcome Date</Label>
-              <Input
-                type="date"
-                value={effectiveDate}
-                onChange={(e) => setEffectiveDate(e.target.value)}
-              />
-            </div>
-          )}
-
-          {/* Outcome Notes */}
-          <div className="space-y-1.5">
-            <Label>Outcome Notes *</Label>
+        {/* Outcome Notes */}
+        <FormSection title="Documentation" tooltip="Provide detailed notes about this outcome">
+          <FormField label="Outcome Notes" required>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -275,29 +225,10 @@ export function RecordOutcomeDrawer({
               }
               className="min-h-[150px]"
             />
-          </div>
-        </div>
-
-        <SheetFooter className="pt-4 border-t">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="default"
-            onClick={handleSubmit}
-            className={
-              outcome === 'terminated'
-                ? 'bg-destructive hover:bg-destructive/90'
-                : outcome === 'improved'
-                ? 'bg-success hover:bg-success/90'
-                : ''
-            }
-          >
-            <FileCheck size={16} className="mr-1" /> Record Outcome
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          </FormField>
+        </FormSection>
+      </div>
+    </PrimaryOffCanvas>
   );
 }
 
