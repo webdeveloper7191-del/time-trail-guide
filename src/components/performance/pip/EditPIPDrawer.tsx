@@ -1,44 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Stack,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-  Divider,
-  Chip,
-  Avatar,
-  Alert,
-} from '@mui/material';
-import { Button } from '@/components/mui/Button';
+import { IconButton, Avatar, Chip } from '@mui/material';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
-import {
-  Plus,
-  X,
-  Edit,
-  Calendar,
-  Target,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-} from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, X, Edit, Calendar, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { StaffMember } from '@/types/staff';
 import { PerformanceImprovementPlan, PIPMilestone, pipStatusLabels } from '@/types/compensation';
 import { format, parseISO, addDays } from 'date-fns';
 import { toast } from 'sonner';
+import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 
 interface EditPIPDrawerProps {
   open: boolean;
@@ -143,7 +115,6 @@ export function EditPIPDrawer({ open, onClose, pip, staff, onSubmit }: EditPIPDr
   };
 
   const removeMilestone = (milestoneId: string) => {
-    // Only allow removing new (pending) milestones
     const milestone = formData.milestones.find((m) => m.id === milestoneId);
     if (milestone?.status !== 'pending') {
       toast.error('Cannot remove milestones that are in progress or completed');
@@ -182,241 +153,224 @@ export function EditPIPDrawer({ open, onClose, pip, staff, onSubmit }: EditPIPDr
     field: 'performanceGaps' | 'expectedOutcomes' | 'supportProvided',
     placeholder: string
   ) => (
-    <Box>
-      <Label className="text-sm font-medium mb-2 block">{label}</Label>
-      <Stack spacing={1.5}>
-        {formData[field].map((value, index) => (
-          <Stack key={index} direction="row" spacing={1} alignItems="center">
-            <Input
-              value={value}
-              onChange={(e) => handleArrayFieldChange(field, index, e.target.value)}
-              placeholder={placeholder}
-              className="flex-1"
-            />
-            {formData[field].length > 1 && (
-              <IconButton size="small" onClick={() => removeArrayField(field, index)}>
-                <X size={16} />
-              </IconButton>
-            )}
-          </Stack>
-        ))}
-        <Button variant="ghost" size="small" onClick={() => addArrayField(field)} className="w-fit">
-          <Plus size={14} className="mr-1" /> Add Another
-        </Button>
-      </Stack>
-    </Box>
+    <div className="space-y-2">
+      {formData[field].map((value, index) => (
+        <div key={index} className="flex items-center gap-2">
+          <Input
+            value={value}
+            onChange={(e) => handleArrayFieldChange(field, index, e.target.value)}
+            placeholder={placeholder}
+            className="flex-1"
+          />
+          {formData[field].length > 1 && (
+            <IconButton size="small" onClick={() => removeArrayField(field, index)}>
+              <X size={16} />
+            </IconButton>
+          )}
+        </div>
+      ))}
+      <Button variant="ghost" size="sm" onClick={() => addArrayField(field)} className="w-fit">
+        <Plus size={14} className="mr-1" /> Add Another
+      </Button>
+    </div>
   );
 
   const statusIcons: Record<PIPMilestone['status'], React.ReactNode> = {
     pending: <Clock size={14} className="text-muted-foreground" />,
-    in_progress: <AlertCircle size={14} className="text-info" />,
-    completed: <CheckCircle2 size={14} className="text-success" />,
+    in_progress: <AlertCircle size={14} className="text-blue-500" />,
+    completed: <CheckCircle2 size={14} className="text-green-500" />,
     missed: <X size={14} className="text-destructive" />,
   };
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader className="pb-4">
-          <SheetTitle className="flex items-center gap-2">
-            <Edit className="h-5 w-5 text-primary" />
-            Edit Performance Improvement Plan
-          </SheetTitle>
-          <SheetDescription>
-            Update details and milestones for {employee?.firstName} {employee?.lastName}'s PIP
-          </SheetDescription>
-        </SheetHeader>
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Edit Performance Improvement Plan"
+      icon={Edit}
+      size="lg"
+      actions={[
+        { label: 'Cancel', onClick: onClose, variant: 'secondary' },
+        { label: 'Save Changes', onClick: handleSubmit, variant: 'primary' },
+      ]}
+    >
+      <div className="space-y-6">
+        {/* Employee Info */}
+        <FormSection title="Employee Information">
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <Avatar src={employee?.avatar} sx={{ width: 48, height: 48 }}>
+              {employee?.firstName?.[0]}
+              {employee?.lastName?.[0]}
+            </Avatar>
+            <div className="flex-1">
+              <p className="font-semibold">
+                {employee?.firstName} {employee?.lastName}
+              </p>
+              <p className="text-sm text-muted-foreground">{employee?.position}</p>
+            </div>
+            <Chip label={pipStatusLabels[pip.status]} color="warning" size="small" />
+          </div>
+        </FormSection>
 
-        <div className="space-y-6 py-4">
-          {/* Employee Info (read-only) */}
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar src={employee?.avatar} sx={{ width: 48, height: 48 }}>
-                {employee?.firstName?.[0]}
-                {employee?.lastName?.[0]}
-              </Avatar>
-              <Box flex={1}>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  {employee?.firstName} {employee?.lastName}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {employee?.position}
-                </Typography>
-              </Box>
-              <Chip label={pipStatusLabels[pip.status]} color="warning" size="small" />
-            </Stack>
-          </Box>
-
-          {/* HR Partner & End Date */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>HR Partner</InputLabel>
+        {/* HR Partner & End Date */}
+        <FormSection title="Plan Settings" tooltip="Configure the HR partner and plan end date">
+          <FormRow>
+            <FormField label="HR Partner">
               <Select
                 value={formData.hrPartnerId}
-                onChange={(e) => setFormData({ ...formData, hrPartnerId: e.target.value })}
-                label="HR Partner"
+                onValueChange={(value) => setFormData({ ...formData, hrPartnerId: value })}
               >
-                <MenuItem value="">None</MenuItem>
-                {staff.map((s) => (
-                  <MenuItem key={s.id} value={s.id}>
-                    {s.firstName} {s.lastName}
-                  </MenuItem>
-                ))}
+                <SelectTrigger>
+                  <SelectValue placeholder="Select HR Partner" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {staff.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.firstName} {s.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-            </FormControl>
+            </FormField>
 
-            <div className="space-y-1.5">
-              <Label>End Date</Label>
+            <FormField label="End Date">
               <Input
                 type="date"
                 value={formData.currentEndDate}
                 onChange={(e) => setFormData({ ...formData, currentEndDate: e.target.value })}
               />
-            </div>
-          </Box>
+            </FormField>
+          </FormRow>
+        </FormSection>
 
-          <Divider />
-
-          {/* Reason */}
-          <div className="space-y-1.5">
-            <Label>Reason for PIP *</Label>
+        {/* Reason */}
+        <FormSection title="PIP Details" tooltip="Document the reason and gaps for this PIP">
+          <FormField label="Reason for PIP" required>
             <Textarea
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
               placeholder="Describe the overall reason for this PIP..."
               className="min-h-[80px]"
             />
-          </div>
+          </FormField>
 
-          {renderArrayField('Performance Gaps', 'performanceGaps', 'Performance gap...')}
-          {renderArrayField('Expected Outcomes', 'expectedOutcomes', 'Expected outcome...')}
-          {renderArrayField('Support Provided', 'supportProvided', 'Support to be provided...')}
+          <FormField label="Performance Gaps" tooltip="List the specific performance gaps identified">
+            {renderArrayField('Performance Gaps', 'performanceGaps', 'Performance gap...')}
+          </FormField>
 
-          <Divider />
+          <FormField label="Expected Outcomes" tooltip="What outcomes are expected from this PIP">
+            {renderArrayField('Expected Outcomes', 'expectedOutcomes', 'Expected outcome...')}
+          </FormField>
 
-          {/* Milestones */}
-          <Box>
-            <Typography variant="subtitle2" fontWeight={600} mb={2}>
-              Milestones
-            </Typography>
+          <FormField label="Support Provided" tooltip="Support that will be provided to the employee">
+            {renderArrayField('Support Provided', 'supportProvided', 'Support to be provided...')}
+          </FormField>
+        </FormSection>
 
-            <Stack spacing={1.5} mb={2}>
-              {formData.milestones.map((milestone) => (
-                <Box
-                  key={milestone.id}
-                  sx={{
-                    p: 2,
-                    borderRadius: 1,
-                    bgcolor: milestone.status === 'completed' ? 'success.50' : 'grey.50',
-                    border: '1px solid',
-                    borderColor: milestone.status === 'completed' ? 'success.200' : 'divider',
-                  }}
-                >
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                    <Box flex={1}>
-                      <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
-                        {statusIcons[milestone.status]}
-                        <Typography variant="body2" fontWeight={500}>
-                          {milestone.title}
-                        </Typography>
-                      </Stack>
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        {milestone.description}
-                      </Typography>
-                      <Stack direction="row" spacing={1} mt={1} alignItems="center">
+        {/* Milestones */}
+        <FormSection title="Milestones" tooltip="Track progress through milestones">
+          <div className="space-y-2">
+            {formData.milestones.map((milestone) => (
+              <div
+                key={milestone.id}
+                className={`p-3 rounded-lg border ${
+                  milestone.status === 'completed'
+                    ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900'
+                    : 'bg-muted/50 border-border'
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      {statusIcons[milestone.status]}
+                      <span className="font-medium text-sm">{milestone.title}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{milestone.description}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Chip
+                        label={format(parseISO(milestone.targetDate), 'MMM d, yyyy')}
+                        size="small"
+                        icon={<Calendar size={12} />}
+                      />
+                      {milestone.completedDate && (
                         <Chip
-                          label={format(parseISO(milestone.targetDate), 'MMM d, yyyy')}
+                          label={`Completed ${format(parseISO(milestone.completedDate), 'MMM d')}`}
                           size="small"
-                          icon={<Calendar size={12} />}
+                          color="success"
                         />
-                        {milestone.completedDate && (
-                          <Chip
-                            label={`Completed ${format(parseISO(milestone.completedDate), 'MMM d')}`}
-                            size="small"
-                            color="success"
-                          />
-                        )}
-                      </Stack>
-                    </Box>
-                    <Stack direction="row" spacing={0.5}>
-                      {milestone.status !== 'completed' && (
-                        <Button
-                          variant="ghost"
-                          size="small"
-                          onClick={() => updateMilestoneStatus(milestone.id, 'completed')}
-                        >
-                          <CheckCircle2 size={14} />
-                        </Button>
                       )}
-                      {milestone.status === 'pending' && (
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {milestone.status !== 'completed' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => updateMilestoneStatus(milestone.id, 'completed')}
+                      >
+                        <CheckCircle2 size={14} />
+                      </Button>
+                    )}
+                    {milestone.status === 'pending' && (
+                      <>
                         <Button
                           variant="ghost"
-                          size="small"
+                          size="icon"
+                          className="h-8 w-8"
                           onClick={() => updateMilestoneStatus(milestone.id, 'in_progress')}
                         >
                           <Clock size={14} />
                         </Button>
-                      )}
-                      {milestone.status === 'pending' && (
-                        <IconButton size="small" onClick={() => removeMilestone(milestone.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => removeMilestone(milestone.id)}
+                        >
                           <X size={14} />
-                        </IconButton>
-                      )}
-                    </Stack>
-                  </Stack>
-                </Box>
-              ))}
-            </Stack>
-
-            {/* Add New Milestone */}
-            <Box sx={{ p: 2, border: '2px dashed', borderColor: 'divider', borderRadius: 1 }}>
-              <Typography variant="caption" color="text.secondary" mb={1.5} display="block">
-                Add a new milestone
-              </Typography>
-              <Stack spacing={1.5}>
-                <Input
-                  value={newMilestone.title}
-                  onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
-                  placeholder="Milestone title"
-                />
-                <Textarea
-                  value={newMilestone.description}
-                  onChange={(e) =>
-                    setNewMilestone({ ...newMilestone, description: e.target.value })
-                  }
-                  placeholder="Description"
-                  className="min-h-[60px]"
-                />
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-xs">Target Date</Label>
-                    <Input
-                      type="date"
-                      value={newMilestone.targetDate}
-                      onChange={(e) =>
-                        setNewMilestone({ ...newMilestone, targetDate: e.target.value })
-                      }
-                    />
+                        </Button>
+                      </>
+                    )}
                   </div>
-                  <Button variant="outline" size="small" onClick={addMilestone} className="mt-5">
-                    <Plus size={14} className="mr-1" /> Add
-                  </Button>
-                </Stack>
-              </Stack>
-            </Box>
-          </Box>
-        </div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-        <SheetFooter className="pt-4 border-t">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="default" onClick={handleSubmit}>
-            <Edit size={16} className="mr-1" /> Save Changes
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          {/* Add New Milestone */}
+          <div className="p-3 border-2 border-dashed border-border rounded-lg mt-3">
+            <p className="text-xs text-muted-foreground mb-2">Add a new milestone</p>
+            <div className="space-y-2">
+              <Input
+                value={newMilestone.title}
+                onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
+                placeholder="Milestone title"
+              />
+              <Textarea
+                value={newMilestone.description}
+                onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
+                placeholder="Description"
+                className="min-h-[60px]"
+              />
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Input
+                    type="date"
+                    value={newMilestone.targetDate}
+                    onChange={(e) => setNewMilestone({ ...newMilestone, targetDate: e.target.value })}
+                  />
+                </div>
+                <Button variant="outline" size="sm" onClick={addMilestone}>
+                  <Plus size={14} className="mr-1" /> Add
+                </Button>
+              </div>
+            </div>
+          </div>
+        </FormSection>
+      </div>
+    </PrimaryOffCanvas>
   );
 }
 

@@ -2,23 +2,21 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Goal, GoalPriority, goalPriorityLabels, goalCategories } from '@/types/performance';
 import { StaffMember } from '@/types/staff';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, Trash2, Target, FileText, GraduationCap, BookOpen, X, Users, Search } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, FileText, GraduationCap, BookOpen, X, Users, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { mockCourses, mockLearningPaths } from '@/data/mockLmsData';
 import { toast } from 'sonner';
@@ -143,7 +141,6 @@ export function AssignGoalDrawer({ open, onOpenChange, onSubmit, staff, createdB
 
     setLoading(true);
     try {
-      // Create a goal for each assignee
       for (const assigneeId of assignees) {
         await onSubmit({
           staffId: assigneeId,
@@ -210,26 +207,21 @@ export function AssignGoalDrawer({ open, onOpenChange, onSubmit, staff, createdB
         { label: loading ? 'Assigning...' : `Assign to ${assignees.length} Employee${assignees.length !== 1 ? 's' : ''}`, onClick: handleSubmit, variant: 'primary', disabled: loading || assignees.length === 0, loading },
       ]}
     >
-      <div className="space-y-5">
+      <div className="space-y-6">
         {/* Assignees Section */}
-        <div className="space-y-3">
-          <Label className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Assign To ({assignees.length}) *
-          </Label>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search employees..."
-              value={assigneeSearch}
-              onChange={e => setAssigneeSearch(e.target.value)}
-              className={cn('pl-9', errors.assignees && 'border-destructive')}
-            />
-          </div>
-          {errors.assignees && <p className="text-xs text-destructive">{errors.assignees}</p>}
+        <FormSection title="Assign To" tooltip="Select one or more employees to assign this goal">
+          <FormField label={`Selected (${assignees.length})`} required error={errors.assignees}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search employees..."
+                value={assigneeSearch}
+                onChange={e => setAssigneeSearch(e.target.value)}
+                className={cn('pl-9', errors.assignees && 'border-destructive')}
+              />
+            </div>
+          </FormField>
 
-          {/* Search Results */}
           {assigneeSearch && filteredStaff.length > 0 && (
             <Card>
               <ScrollArea className="h-32">
@@ -256,7 +248,6 @@ export function AssignGoalDrawer({ open, onOpenChange, onSubmit, staff, createdB
             </Card>
           )}
 
-          {/* Selected Assignees */}
           {assignees.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {assignees.map(id => {
@@ -282,153 +273,158 @@ export function AssignGoalDrawer({ open, onOpenChange, onSubmit, staff, createdB
               })}
             </div>
           )}
-        </div>
-
-        <Separator />
+        </FormSection>
 
         {/* Goal Details */}
-        <div className="space-y-2">
-          <Label htmlFor="title">Goal Title *</Label>
-          <Input
-            id="title"
-            placeholder="e.g., Complete Leadership Certification"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            className={errors.title ? 'border-destructive' : ''}
-          />
-          {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
-        </div>
+        <FormSection title="Goal Details" tooltip="Define the goal you want to assign">
+          <FormField label="Goal Title" required error={errors.title}>
+            <Input
+              placeholder="e.g., Complete Leadership Certification"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              className={errors.title ? 'border-destructive' : ''}
+            />
+          </FormField>
 
-        <div className="space-y-2">
-          <Label htmlFor="description">Description *</Label>
-          <Textarea
-            id="description"
-            placeholder="Describe what you want them to achieve..."
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            rows={3}
-            className={errors.description ? 'border-destructive' : ''}
-          />
-          {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
-        </div>
+          <FormField label="Description" required error={errors.description}>
+            <Textarea
+              placeholder="Describe what you want them to achieve..."
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              rows={3}
+              className={errors.description ? 'border-destructive' : ''}
+            />
+          </FormField>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Category *</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className={errors.category ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {goalCategories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
-          </div>
+          <FormRow>
+            <FormField label="Category" required error={errors.category}>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className={errors.category ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {goalCategories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
 
-          <div className="space-y-2">
-            <Label>Priority *</Label>
-            <Select value={priority} onValueChange={v => setPriority(v as GoalPriority)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(goalPriorityLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+            <FormField label="Priority" required>
+              <Select value={priority} onValueChange={v => setPriority(v as GoalPriority)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(goalPriorityLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          </FormRow>
 
-        <div className="space-y-2">
-          <Label>Target Date *</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn('w-full justify-start text-left font-normal', !targetDate && 'text-muted-foreground', errors.targetDate && 'border-destructive')}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {targetDate ? format(targetDate, 'PPP') : 'Pick a date'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar mode="single" selected={targetDate} onSelect={setTargetDate} initialFocus disabled={(date) => date < new Date()} />
-            </PopoverContent>
-          </Popover>
-          {errors.targetDate && <p className="text-xs text-destructive">{errors.targetDate}</p>}
-        </div>
+          <FormField label="Target Date" required error={errors.targetDate}>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn('w-full justify-start text-left font-normal', !targetDate && 'text-muted-foreground', errors.targetDate && 'border-destructive')}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {targetDate ? format(targetDate, 'PPP') : 'Pick a date'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar mode="single" selected={targetDate} onSelect={setTargetDate} initialFocus disabled={(date) => date < new Date()} />
+              </PopoverContent>
+            </Popover>
+          </FormField>
+        </FormSection>
 
         {/* Milestones */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label>Milestones (Optional)</Label>
-            <Button type="button" variant="outline" size="sm" onClick={handleAddMilestone}>
-              <Plus className="h-4 w-4 mr-1" /> Add
+        <FormSection title="Milestones" tooltip="Optional milestones to break down the goal">
+          <div className="space-y-2">
+            {milestones.map((ms, i) => (
+              <div key={i} className="flex gap-2 items-start">
+                <Input
+                  placeholder="Milestone title"
+                  value={ms.title}
+                  onChange={e => {
+                    const updated = [...milestones];
+                    updated[i].title = e.target.value;
+                    setMilestones(updated);
+                  }}
+                  className="flex-1"
+                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className="shrink-0">
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={ms.targetDate}
+                      onSelect={date => {
+                        const updated = [...milestones];
+                        updated[i].targetDate = date;
+                        setMilestones(updated);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveMilestone(i)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={handleAddMilestone} className="w-full">
+              <Plus className="h-4 w-4 mr-1" /> Add Milestone
             </Button>
           </div>
-          {milestones.map((ms, i) => (
-            <div key={i} className="flex gap-2 items-start">
-              <Input
-                placeholder="Milestone title"
-                value={ms.title}
-                onChange={e => {
-                  const updated = [...milestones];
-                  updated[i].title = e.target.value;
-                  setMilestones(updated);
-                }}
-                className="flex-1"
-              />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="icon" className="shrink-0">
-                    <CalendarIcon className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={ms.targetDate}
-                    onSelect={date => {
-                      const updated = [...milestones];
-                      updated[i].targetDate = date;
-                      setMilestones(updated);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-              <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveMilestone(i)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        <Separator />
+        </FormSection>
 
         {/* Linked Resources */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Linked Resources
-            </Label>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowLinkSelector(!showLinkSelector)}
-            >
-              <Plus className="h-4 w-4 mr-1" /> Link
-            </Button>
-          </div>
+        <FormSection title="Linked Resources" tooltip="Connect forms, courses, or learning paths">
+          {linkedItems.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {linkedItems.map((item, index) => (
+                <Badge
+                  key={`${item.type}-${item.id}`}
+                  variant="secondary"
+                  className={cn('gap-1 pr-1', getLinkTypeColor(item.type))}
+                >
+                  {getLinkTypeIcon(item.type)}
+                  <span className="truncate max-w-32">{item.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 ml-1 hover:bg-transparent"
+                    onClick={() => handleRemoveLinkedItem(index)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowLinkSelector(!showLinkSelector)}
+            className="w-full"
+          >
+            <Plus className="h-4 w-4 mr-1" /> Link Resource
+          </Button>
 
           {showLinkSelector && (
-            <Card>
-              <CardContent className="p-3 space-y-3">
+            <Card className="mt-3">
+              <div className="p-3 space-y-3">
                 <div className="flex gap-2">
                   {(['form', 'learning_path', 'course'] as const).map(type => (
                     <Badge
@@ -482,34 +478,10 @@ export function AssignGoalDrawer({ open, onOpenChange, onSubmit, staff, createdB
                     ))}
                   </div>
                 </ScrollArea>
-              </CardContent>
+              </div>
             </Card>
           )}
-
-          {linkedItems.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {linkedItems.map((item, i) => (
-                <Badge 
-                  key={`${item.type}-${item.id}`} 
-                  variant="outline"
-                  className={cn('flex items-center gap-1 pr-1', getLinkTypeColor(item.type))}
-                >
-                  {getLinkTypeIcon(item.type)}
-                  <span className="max-w-[150px] truncate">{item.name}</span>
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-4 w-4 ml-1 hover:bg-transparent"
-                    onClick={() => handleRemoveLinkedItem(i)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
+        </FormSection>
       </div>
     </PrimaryOffCanvas>
   );
