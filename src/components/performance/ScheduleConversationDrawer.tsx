@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -10,10 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Conversation, ConversationType, conversationTypeLabels } from '@/types/performance';
 import { StaffMember } from '@/types/staff';
 import { format, setHours, setMinutes } from 'date-fns';
-import { CalendarIcon, Clock, Video, Link2 } from 'lucide-react';
+import { CalendarIcon, Clock, Video, Link2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 
 const conversationSchema = z.object({
   staffId: z.string().min(1, 'Team member is required'),
@@ -116,13 +116,13 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
       open={open}
       onClose={() => onOpenChange(false)}
       title="Schedule Conversation"
-      description="Schedule a 1:1, check-in, or coaching session"
+      icon={MessageSquare}
       size="md"
       actions={[
         {
           label: 'Cancel',
           onClick: () => onOpenChange(false),
-          variant: 'outlined',
+          variant: 'secondary',
         },
         {
           label: loading ? 'Scheduling...' : 'Schedule',
@@ -132,9 +132,9 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
         },
       ]}
     >
-      <div className="space-y-4 sm:space-y-5">
-        <div className="space-y-2">
-          <Label>Team Member *</Label>
+      {/* Conversation Setup Section */}
+      <FormSection title="Conversation Setup" tooltip="Configure the meeting details">
+        <FormField label="Team Member" required error={errors.staffId}>
           <Select value={staffId} onValueChange={setStaffId}>
             <SelectTrigger className={errors.staffId ? 'border-destructive' : ''}>
               <SelectValue placeholder="Select team member" />
@@ -153,37 +153,50 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
               ))}
             </SelectContent>
           </Select>
-          {errors.staffId && <p className="text-xs text-destructive">{errors.staffId}</p>}
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <Label>Type *</Label>
-          <Select value={type} onValueChange={v => setType(v as ConversationType)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(conversationTypeLabels).map(([value, label]) => (
-                <SelectItem key={value} value={value}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <FormRow>
+          <FormField label="Type" required>
+            <Select value={type} onValueChange={v => setType(v as ConversationType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(conversationTypeLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
 
-        <div className="space-y-2">
-          <Label>Title *</Label>
+          <FormField label="Duration" tooltip="Meeting duration in minutes">
+            <Select value={duration.toString()} onValueChange={v => setDuration(parseInt(v))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {durations.map(d => (
+                  <SelectItem key={d} value={d.toString()}>{d} minutes</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+        </FormRow>
+
+        <FormField label="Title" required error={errors.title}>
           <Input
             placeholder="e.g., Weekly Check-in"
             value={title}
             onChange={e => setTitle(e.target.value)}
             className={errors.title ? 'border-destructive' : ''}
           />
-          {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
-        </div>
+        </FormField>
+      </FormSection>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          <div className="space-y-2">
-            <Label>Date *</Label>
+      {/* Schedule Section */}
+      <FormSection title="Schedule" tooltip="Set the date and time for this meeting">
+        <FormRow>
+          <FormField label="Date" required error={errors.scheduledDate}>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -191,17 +204,16 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
                   className={cn('w-full justify-start text-left font-normal', !date && 'text-muted-foreground', errors.scheduledDate && 'border-destructive')}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, 'MMM d') : 'Pick date'}
+                  {date ? format(date, 'MMM d, yyyy') : 'Pick date'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar mode="single" selected={date} onSelect={setDate} initialFocus disabled={d => d < new Date()} />
               </PopoverContent>
             </Popover>
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <Label>Time *</Label>
+          <FormField label="Time" required>
             <Select value={time} onValueChange={setTime}>
               <SelectTrigger>
                 <Clock className="mr-2 h-4 w-4" />
@@ -213,30 +225,13 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </div>
+          </FormField>
+        </FormRow>
+      </FormSection>
 
-        <div className="space-y-2">
-          <Label>Duration</Label>
-          <Select value={duration.toString()} onValueChange={v => setDuration(parseInt(v))}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {durations.map(d => (
-                <SelectItem key={d} value={d.toString()}>{d} minutes</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Meeting Link Section */}
-        <div className="space-y-3 pt-2">
-          <Label className="flex items-center gap-2">
-            <Video className="h-4 w-4" />
-            Video Meeting (Optional)
-          </Label>
-          
+      {/* Video Meeting Section */}
+      <FormSection title="Video Meeting" tooltip="Add a video conferencing link (optional)">
+        <FormField label="Platform" tooltip="Select the meeting platform">
           <div className="flex flex-wrap gap-2">
             {meetingPlatforms.map(platform => (
               <Badge
@@ -252,8 +247,10 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
               </Badge>
             ))}
           </div>
+        </FormField>
 
-          {meetingPlatform && (
+        {meetingPlatform && (
+          <FormField label="Meeting Link" error={errors.meetingLink}>
             <div className="relative">
               <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -262,11 +259,10 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
                 onChange={e => setMeetingLink(e.target.value)}
                 className={cn('pl-9', errors.meetingLink && 'border-destructive')}
               />
-              {errors.meetingLink && <p className="text-xs text-destructive mt-1">{errors.meetingLink}</p>}
             </div>
-          )}
-        </div>
-      </div>
+          </FormField>
+        )}
+      </FormSection>
     </PrimaryOffCanvas>
   );
 }

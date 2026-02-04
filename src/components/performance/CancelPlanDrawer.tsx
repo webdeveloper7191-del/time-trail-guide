@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { AlertTriangle } from 'lucide-react';
 import { AssignedPlan, planTypeLabels } from '@/types/performancePlan';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
 
 interface CancelPlanDrawerProps {
   open: boolean;
@@ -46,7 +45,7 @@ export function CancelPlanDrawer({
         {
           label: 'Keep Plan',
           onClick: onCancel,
-          variant: 'outlined',
+          variant: 'secondary',
           disabled: loading,
         },
         {
@@ -57,7 +56,8 @@ export function CancelPlanDrawer({
         },
       ]}
     >
-      <div className="space-y-6">
+      {/* Warning Section */}
+      <FormSection title="Confirmation Required" tooltip="This action cannot be undone">
         <p className="text-sm text-muted-foreground">
           Are you sure you want to cancel this plan? This action will stop all progress tracking.
         </p>
@@ -68,9 +68,11 @@ export function CancelPlanDrawer({
             {planTypeLabels[plan.type]}
           </p>
         </div>
+      </FormSection>
 
-        <div className="space-y-2">
-          <Label htmlFor="cancel-reason">Reason for Cancellation (Optional)</Label>
+      {/* Reason Section */}
+      <FormSection title="Cancellation Details">
+        <FormField label="Reason for Cancellation" tooltip="Optional but recommended for record keeping">
           <Textarea
             id="cancel-reason"
             placeholder="Enter reason for cancelling this plan..."
@@ -78,8 +80,8 @@ export function CancelPlanDrawer({
             onChange={(e) => setReason(e.target.value)}
             rows={3}
           />
-        </div>
-      </div>
+        </FormField>
+      </FormSection>
     </PrimaryOffCanvas>
   );
 }

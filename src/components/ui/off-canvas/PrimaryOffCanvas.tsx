@@ -124,8 +124,8 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
           maxWidth: isHorizontal ? '100vw' : undefined,
         }}
       >
-        {/* Header */}
-        <SheetHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border flex-shrink-0 !mb-0 !pb-3 sm:!pb-4">
+        {/* Header - Clean minimal style matching reference */}
+        <SheetHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border flex-shrink-0 !mb-0 !pb-3 sm:!pb-4 bg-background">
           <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2 sm:gap-3">
               {Icon && (
@@ -150,22 +150,22 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
           </div>
         </SheetHeader>
 
-        {/* Content - flex-1 to fill remaining space, w-full ensures children stretch */}
-        <div className="flex-1 min-h-0 overflow-hidden w-full">
+        {/* Content - Light background to match reference design */}
+        <div className="flex-1 min-h-0 overflow-hidden w-full bg-muted/30">
           <ScrollArea className="h-full w-full">
-            <div className={cn("px-4 sm:px-6 py-3 sm:py-4 w-full", contentClassName)}>
-              <div className="w-full">
+            <div className={cn("px-4 sm:px-6 py-4 sm:py-5 w-full", contentClassName)}>
+              <div className="w-full space-y-4">
                 {children}
               </div>
             </div>
           </ScrollArea>
         </div>
 
-        {/* Footer with actions */}
+        {/* Footer with actions - Matching reference button styling */}
         {showFooter && actions.length > 0 && (
-          <SheetFooter className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border flex-shrink-0 !mt-0 !pt-3 sm:!pt-4">
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 w-full">
-              {actions.map((action, index) => (
+          <SheetFooter className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border flex-shrink-0 !mt-0 !pt-3 sm:!pt-4 bg-background">
+            <div className="flex flex-col-reverse sm:flex-row justify-start gap-2 sm:gap-3 w-full">
+              {actions.slice().reverse().map((action, index) => (
                 <Button
                   key={index}
                   variant={getButtonVariant(action.variant)}
@@ -175,8 +175,23 @@ const PrimaryOffCanvas: React.FC<PrimaryOffCanvasProps> = ({
                   disabled={action.disabled || action.loading}
                   size="medium"
                   startIcon={action.icon}
-                  fullWidth
                   sx={{ 
+                    minWidth: 'auto',
+                    px: 3,
+                    ...(action.variant === 'primary' && {
+                      backgroundColor: 'hsl(var(--primary))',
+                      color: 'hsl(var(--primary-foreground))',
+                      '&:hover': {
+                        backgroundColor: 'hsl(var(--primary) / 0.9)',
+                      },
+                    }),
+                    ...(action.variant === 'secondary' && {
+                      backgroundColor: 'hsl(var(--secondary))',
+                      color: 'hsl(var(--secondary-foreground))',
+                      '&:hover': {
+                        backgroundColor: 'hsl(var(--secondary) / 0.8)',
+                      },
+                    }),
                     '@media (min-width: 640px)': { 
                       width: 'auto' 
                     } 

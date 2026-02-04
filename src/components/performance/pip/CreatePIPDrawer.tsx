@@ -3,42 +3,29 @@ import {
   Box,
   Stack,
   Typography,
-  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   IconButton,
-  Divider,
   Chip,
   Alert,
 } from '@mui/material';
-import { Dialog, DialogContent, DialogActions } from '@/components/mui/Dialog';
 import { Button } from '@/components/mui/Button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
 import {
   Plus,
   X,
   AlertTriangle,
   Calendar,
-  Target,
-  User,
-  FileText,
 } from 'lucide-react';
 import { StaffMember } from '@/types/staff';
 import { PIPMilestone } from '@/types/compensation';
 import { format, addDays, addMonths } from 'date-fns';
 import { toast } from 'sonner';
+import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 
 interface CreatePIPDrawerProps {
   open: boolean;
@@ -157,64 +144,60 @@ export function CreatePIPDrawer({ open, onClose, staff, currentUserId, onSubmit 
   };
 
   const renderArrayField = (
-    label: string,
     field: 'performanceGaps' | 'expectedOutcomes' | 'supportProvided',
     placeholder: string
   ) => (
-    <Box>
-      <Label className="text-sm font-medium mb-2 block">{label}</Label>
-      <Stack spacing={1.5}>
-        {formData[field].map((value, index) => (
-          <Stack key={index} direction="row" spacing={1} alignItems="center">
-            <Input
-              value={value}
-              onChange={(e) => handleArrayFieldChange(field, index, e.target.value)}
-              placeholder={placeholder}
-              className="flex-1"
-            />
-            {formData[field].length > 1 && (
-              <IconButton size="small" onClick={() => removeArrayField(field, index)}>
-                <X size={16} />
-              </IconButton>
-            )}
-          </Stack>
-        ))}
-        <Button variant="ghost" size="small" onClick={() => addArrayField(field)} className="w-fit">
-          <Plus size={14} className="mr-1" /> Add Another
-        </Button>
-      </Stack>
-    </Box>
+    <div className="space-y-2">
+      {formData[field].map((value, index) => (
+        <Stack key={index} direction="row" spacing={1} alignItems="center">
+          <Input
+            value={value}
+            onChange={(e) => handleArrayFieldChange(field, index, e.target.value)}
+            placeholder={placeholder}
+            className="flex-1"
+          />
+          {formData[field].length > 1 && (
+            <IconButton size="small" onClick={() => removeArrayField(field, index)}>
+              <X size={16} />
+            </IconButton>
+          )}
+        </Stack>
+      ))}
+      <Button variant="ghost" size="small" onClick={() => addArrayField(field)} className="w-fit text-primary">
+        <Plus size={14} className="mr-1" /> Add Another
+      </Button>
+    </div>
   );
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader className="pb-4">
-          <SheetTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-warning" />
-            Create Performance Improvement Plan
-          </SheetTitle>
-          <SheetDescription>
-            Document performance concerns and create a structured improvement plan
-          </SheetDescription>
-        </SheetHeader>
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Create Performance Improvement Plan"
+      icon={AlertTriangle}
+      size="xl"
+      actions={[
+        { label: 'Cancel', onClick: onClose, variant: 'secondary' },
+        { label: 'Create PIP', onClick: handleSubmit, variant: 'primary' },
+      ]}
+    >
+      <Alert severity="info" sx={{ mb: 3 }}>
+        <Typography variant="body2">
+          A PIP is a formal document. Ensure all information is accurate and has been reviewed with HR before proceeding.
+        </Typography>
+      </Alert>
 
-        <div className="space-y-6 py-4">
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <Typography variant="body2">
-              A PIP is a formal document. Ensure all information is accurate and has been reviewed with HR before proceeding.
-            </Typography>
-          </Alert>
-
-          {/* Employee Selection */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}>
+      {/* Employee & Assignment Section */}
+      <FormSection title="Employee & Assignment" tooltip="Select the employee and assign relevant parties">
+        <FormRow>
+          <FormField label="Employee" required tooltip="Select the employee for this PIP">
             <FormControl fullWidth size="small">
-              <InputLabel>Employee *</InputLabel>
               <Select
                 value={formData.staffId}
                 onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
-                label="Employee *"
+                displayEmpty
               >
+                <MenuItem value="" disabled>Select Employee</MenuItem>
                 {staff.map((s) => (
                   <MenuItem key={s.id} value={s.id}>
                     {s.firstName} {s.lastName} - {s.position}
@@ -222,13 +205,14 @@ export function CreatePIPDrawer({ open, onClose, staff, currentUserId, onSubmit 
                 ))}
               </Select>
             </FormControl>
+          </FormField>
 
+          <FormField label="HR Partner" tooltip="Optionally assign an HR partner">
             <FormControl fullWidth size="small">
-              <InputLabel>HR Partner</InputLabel>
               <Select
                 value={formData.hrPartnerId}
                 onChange={(e) => setFormData({ ...formData, hrPartnerId: e.target.value })}
-                label="HR Partner"
+                displayEmpty
               >
                 <MenuItem value="">None</MenuItem>
                 {staff.map((s) => (
@@ -238,71 +222,77 @@ export function CreatePIPDrawer({ open, onClose, staff, currentUserId, onSubmit 
                 ))}
               </Select>
             </FormControl>
-          </Box>
+          </FormField>
+        </FormRow>
+      </FormSection>
 
-          {/* Dates */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-            <div className="space-y-1.5">
-              <Label>Start Date *</Label>
-              <Input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>End Date *</Label>
-              <Input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-              />
-            </div>
-          </Box>
-
-          <Divider />
-
-          {/* Reason */}
-          <div className="space-y-1.5">
-            <Label>Reason for PIP *</Label>
-            <Textarea
-              value={formData.reason}
-              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-              placeholder="Describe the overall reason for initiating this performance improvement plan..."
-              className="min-h-[100px]"
+      {/* PIP Duration Section */}
+      <FormSection title="PIP Duration" tooltip="Set the start and end dates for this improvement plan">
+        <FormRow>
+          <FormField label="Start Date" required>
+            <Input
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
             />
-          </div>
+          </FormField>
+          <FormField label="End Date" required>
+            <Input
+              type="date"
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+            />
+          </FormField>
+        </FormRow>
+      </FormSection>
 
-          <Divider />
+      {/* Reason & Context Section */}
+      <FormSection title="Reason & Context" tooltip="Document the reason for initiating this PIP">
+        <FormField label="Reason for PIP" required>
+          <Textarea
+            value={formData.reason}
+            onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+            placeholder="Describe the overall reason for initiating this performance improvement plan..."
+            className="min-h-[100px]"
+          />
+        </FormField>
+      </FormSection>
 
-          {/* Performance Gaps */}
-          {renderArrayField('Performance Gaps *', 'performanceGaps', 'e.g., Missed 5 project deadlines in Q3')}
+      {/* Performance Gaps Section */}
+      <FormSection title="Performance Gaps" tooltip="List specific areas where performance is not meeting expectations">
+        <FormField label="Identified Gaps" required>
+          {renderArrayField('performanceGaps', 'e.g., Missed 5 project deadlines in Q3')}
+        </FormField>
+      </FormSection>
 
-          {/* Expected Outcomes */}
-          {renderArrayField('Expected Outcomes *', 'expectedOutcomes', 'e.g., Meet 90% of deadlines within agreed timeframes')}
+      {/* Expected Outcomes Section */}
+      <FormSection title="Expected Outcomes" tooltip="Define the measurable outcomes expected from this PIP">
+        <FormField label="Success Criteria" required>
+          {renderArrayField('expectedOutcomes', 'e.g., Meet 90% of deadlines within agreed timeframes')}
+        </FormField>
+      </FormSection>
 
-          {/* Support Provided */}
-          {renderArrayField('Support to be Provided', 'supportProvided', 'e.g., Weekly coaching sessions with manager')}
+      {/* Support Provided Section */}
+      <FormSection title="Support Provided" tooltip="Document the support that will be provided to help the employee succeed">
+        <FormField label="Support Resources">
+          {renderArrayField('supportProvided', 'e.g., Weekly coaching sessions with manager')}
+        </FormField>
+      </FormSection>
 
-          <Divider />
-
-          {/* Milestones */}
-          <Box>
-            <Typography variant="subtitle2" fontWeight={600} mb={2}>
-              Milestones *
-            </Typography>
-
+      {/* Milestones Section */}
+      <FormSection title="Milestones" tooltip="Define key checkpoints to track progress">
+        <FormField label="Progress Checkpoints" required>
+          <div className="space-y-3">
             {formData.milestones.length > 0 && (
-              <Stack spacing={1.5} mb={2}>
+              <Stack spacing={1.5}>
                 {formData.milestones.map((milestone, index) => (
                   <Box
                     key={index}
                     sx={{
                       p: 2,
                       borderRadius: 1,
-                      bgcolor: 'grey.50',
-                      border: '1px solid',
-                      borderColor: 'divider',
+                      bgcolor: 'hsl(var(--muted) / 0.5)',
+                      border: '1px solid hsl(var(--border))',
                     }}
                   >
                     <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -329,7 +319,7 @@ export function CreatePIPDrawer({ open, onClose, staff, currentUserId, onSubmit 
               </Stack>
             )}
 
-            <Box sx={{ p: 2, border: '2px dashed', borderColor: 'divider', borderRadius: 1 }}>
+            <Box sx={{ p: 2, border: '2px dashed hsl(var(--border))', borderRadius: 1 }}>
               <Typography variant="caption" color="text.secondary" mb={1.5} display="block">
                 Add a new milestone
               </Typography>
@@ -347,32 +337,23 @@ export function CreatePIPDrawer({ open, onClose, staff, currentUserId, onSubmit 
                 />
                 <Stack direction="row" spacing={2} alignItems="center">
                   <div className="flex-1 space-y-1">
-                    <Label className="text-xs">Target Date</Label>
+                    <label className="text-xs text-primary font-medium">Target Date</label>
                     <Input
                       type="date"
                       value={newMilestone.targetDate}
                       onChange={(e) => setNewMilestone({ ...newMilestone, targetDate: e.target.value })}
                     />
                   </div>
-                  <Button variant="outline" size="small" onClick={addMilestone} className="mt-5">
+                  <Button variant="outline" size="small" onClick={addMilestone} className="mt-5 text-primary">
                     <Plus size={14} className="mr-1" /> Add Milestone
                   </Button>
                 </Stack>
               </Stack>
             </Box>
-          </Box>
-        </div>
-
-        <SheetFooter className="pt-4 border-t">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="default" onClick={handleSubmit}>
-            <FileText size={16} className="mr-1" /> Create PIP
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          </div>
+        </FormField>
+      </FormSection>
+    </PrimaryOffCanvas>
   );
 }
 
