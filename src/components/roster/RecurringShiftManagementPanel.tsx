@@ -59,7 +59,7 @@ interface RecurringShiftManagementPanelProps {
   onDeleteSeries: (groupId: string) => void;
   onEditSeries: (groupId: string) => void;
   onExtendSeries: (groupId: string, newEndDate: string) => void;
-  onUpdateSeries?: (groupId: string, updates: { startTime?: string; endTime?: string; daysOfWeek?: number[] }) => void;
+  onUpdateSeries?: (groupId: string, updates: { startTime?: string; endTime?: string; daysOfWeek?: number[]; effectiveDate?: string }) => void;
   onPauseSeries?: (groupId: string) => void;
 }
 
@@ -85,6 +85,7 @@ export function RecurringShiftManagementPanel({
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
   const [editDaysOfWeek, setEditDaysOfWeek] = useState<number[]>([]);
+  const [editEffectiveDate, setEditEffectiveDate] = useState('');
   
   const DAYS_OF_WEEK = [
     { value: 0, label: 'Sun' },
@@ -96,11 +97,15 @@ export function RecurringShiftManagementPanel({
     { value: 6, label: 'Sat' },
   ];
   
+  // Get today's date in YYYY-MM-DD format
+  const today = format(new Date(), 'yyyy-MM-dd');
+  
   const handleOpenEditModal = () => {
     if (selectedSeries) {
       setEditStartTime(selectedSeries.startTime);
       setEditEndTime(selectedSeries.endTime);
       setEditDaysOfWeek(selectedSeries.daysOfWeek);
+      setEditEffectiveDate(today); // Default to today
       setShowEditModal(true);
     }
   };
@@ -111,8 +116,12 @@ export function RecurringShiftManagementPanel({
         startTime: editStartTime,
         endTime: editEndTime,
         daysOfWeek: editDaysOfWeek,
+        effectiveDate: editEffectiveDate,
       });
-      toast.success('Series updated successfully');
+      const effectiveDateLabel = editEffectiveDate === today 
+        ? 'today' 
+        : format(parseISO(editEffectiveDate), 'MMM d, yyyy');
+      toast.success(`Series updated - changes effective from ${effectiveDateLabel}`);
       setShowEditModal(false);
     } else if (!onUpdateSeries) {
       toast.info('Edit functionality coming soon');
@@ -577,6 +586,64 @@ export function RecurringShiftManagementPanel({
             </div>
           </div>
 
+          {/* Effective From Date */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-primary">Changes Effective From</label>
+            <div className="space-y-2">
+              <input
+                type="date"
+                value={editEffectiveDate}
+                min={today}
+                onChange={(e) => setEditEffectiveDate(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditEffectiveDate(today)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors border",
+                    editEffectiveDate === today
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border hover:bg-muted"
+                  )}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditEffectiveDate(format(addDays(new Date(), 7), 'yyyy-MM-dd'))}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors border",
+                    editEffectiveDate === format(addDays(new Date(), 7), 'yyyy-MM-dd')
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border hover:bg-muted"
+                  )}
+                >
+                  Next Week
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Next month
+                    const nextMonth = new Date();
+                    nextMonth.setMonth(nextMonth.getMonth() + 1);
+                    nextMonth.setDate(1);
+                    setEditEffectiveDate(format(nextMonth, 'yyyy-MM-dd'));
+                  }}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors border bg-background border-border hover:bg-muted"
+                >
+                  Next Month
+                </button>
+              </div>
+            </div>
+            {editEffectiveDate && editEffectiveDate !== today && (
+              <p className="text-xs text-muted-foreground">
+                Changes will apply to shifts on or after {format(parseISO(editEffectiveDate), 'EEEE, MMMM d, yyyy')}
+              </p>
+            )}
+          </div>
+
           {/* Days of Week */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-primary">Days of Week</label>
@@ -613,10 +680,17 @@ export function RecurringShiftManagementPanel({
           {/* Info Note */}
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-              <p className="text-xs text-amber-800 dark:text-amber-200">
-                Changes will apply to all <strong>{selectedSeries?.remainingShifts}</strong> upcoming shifts in this series. Past shifts will not be modified.
-              </p>
+              <Calendar className="h-4 w-4 text-amber-600 mt-0.5" />
+              <div className="text-xs text-amber-800 dark:text-amber-200">
+                <p>
+                  <strong>Effective from:</strong> {!editEffectiveDate || editEffectiveDate === today 
+                    ? 'Today' 
+                    : format(parseISO(editEffectiveDate), 'EEEE, MMMM d, yyyy')}
+                </p>
+                <p className="mt-1">
+                  Changes will apply to shifts on or after this date. Earlier shifts will remain unchanged.
+                </p>
+              </div>
             </div>
           </div>
         </div>
