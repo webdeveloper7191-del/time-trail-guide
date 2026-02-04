@@ -601,44 +601,86 @@ export function AddOpenShiftModal({
           showFooter
         >
           <Stack spacing={3}>
-              {/* Create Mode Toggle */}
+              {/* Create Mode Toggle - Improved segmented control style */}
               <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                   Creation Mode
                 </Typography>
                 <ToggleButtonGroup
                   value={createMode}
                   exclusive
                   onChange={(_, value) => value && setCreateMode(value)}
-                  size="small"
+                  size="medium"
                   fullWidth
+                  sx={{
+                    bgcolor: 'grey.100',
+                    borderRadius: 2,
+                    p: 0.5,
+                    '& .MuiToggleButton-root': {
+                      border: 'none',
+                      borderRadius: 1.5,
+                      py: 1.25,
+                      px: 2,
+                      fontWeight: 500,
+                      textTransform: 'none',
+                      color: 'text.secondary',
+                      '&:hover': {
+                        bgcolor: 'transparent',
+                      },
+                      '&.Mui-selected': {
+                        bgcolor: 'background.paper',
+                        color: 'text.primary',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        '&:hover': {
+                          bgcolor: 'background.paper',
+                        },
+                      },
+                    },
+                  }}
                 >
-                  <ToggleButton value="single" sx={{ flex: 1 }}>
-                    <Clock size={16} style={{ marginRight: 8 }} />
+                  <ToggleButton value="single" sx={{ flex: 1, gap: 1 }}>
+                    <Clock size={18} />
                     Single Shift
                   </ToggleButton>
-                  <ToggleButton value="bulk" sx={{ flex: 1 }}>
+                  <ToggleButton value="bulk" sx={{ flex: 1, gap: 1 }}>
                     <Badge badgeContent={bulkCount > 0 ? bulkCount : undefined} color="primary">
-                      <Layers size={16} style={{ marginRight: 8 }} />
+                      <Layers size={18} />
                     </Badge>
                     Bulk Create
                   </ToggleButton>
                 </ToggleButtonGroup>
               </Box>
 
-              {/* Template Selection */}
+              {/* Template Selection - Improved switch styling */}
               <Box>
                 <FormControlLabel
                   control={
                     <Switch
                       checked={useTemplate}
                       onChange={(e) => setUseTemplate(e.target.checked)}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: 'hsl(var(--primary))',
+                          '& + .MuiSwitch-track': {
+                            backgroundColor: 'hsl(var(--primary))',
+                            opacity: 0.7,
+                          },
+                        },
+                        '& .MuiSwitch-track': {
+                          borderRadius: 12,
+                        },
+                      }}
                     />
                   }
-                  label="Use Shift Template"
+                  label={
+                    <Typography variant="body1" fontWeight={500}>
+                      Use Shift Template
+                    </Typography>
+                  }
+                  sx={{ ml: 0 }}
                 />
                 {useTemplate && (
-                  <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                  <FormControl fullWidth size="small" sx={{ mt: 1.5 }}>
                     <InputLabel>Select Template</InputLabel>
                     <Select
                       value={selectedTemplateId}
@@ -921,31 +963,53 @@ export function AddOpenShiftModal({
               {/* Shift Type Specific Settings */}
               {renderShiftTypeSettings()}
 
-              {/* Urgency */}
+              {/* Urgency - Improved color-coded pill buttons */}
               <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                   Urgency Level *
                 </Typography>
                 <Controller
                   name="urgency"
                   control={control}
                   render={({ field }) => (
-                    <Stack direction="row" spacing={1}>
-                      {(['low', 'medium', 'high', 'critical'] as const).map((level) => (
-                        <Button
-                          key={level}
-                          variant={field.value === level ? 'contained' : 'outlined'}
-                          size="small"
-                          onClick={() => field.onChange(level)}
-                          sx={{
-                            flex: 1,
-                            textTransform: 'capitalize',
-                            ...(field.value === level && urgencyColors[level]),
-                          }}
-                        >
-                          {level}
-                        </Button>
-                      ))}
+                    <Stack direction="row" spacing={1.5}>
+                      {([
+                        { level: 'low', color: '#10b981', lightBg: '#d1fae5', text: '#065f46' },
+                        { level: 'medium', color: '#f59e0b', lightBg: '#fef3c7', text: '#92400e' },
+                        { level: 'high', color: '#f97316', lightBg: '#ffedd5', text: '#9a3412' },
+                        { level: 'critical', color: '#ef4444', lightBg: '#fee2e2', text: '#991b1b' },
+                      ] as const).map(({ level, color, lightBg, text }) => {
+                        const isSelected = field.value === level;
+                        return (
+                          <Button
+                            key={level}
+                            variant="outlined"
+                            size="medium"
+                            onClick={() => field.onChange(level)}
+                            sx={{
+                              flex: 1,
+                              py: 1.25,
+                              borderRadius: 2,
+                              textTransform: 'capitalize',
+                              fontWeight: 600,
+                              fontSize: '0.875rem',
+                              transition: 'all 0.2s ease',
+                              borderWidth: 2,
+                              borderColor: isSelected ? color : 'grey.300',
+                              bgcolor: isSelected ? lightBg : 'transparent',
+                              color: isSelected ? text : 'text.secondary',
+                              '&:hover': {
+                                borderColor: color,
+                                bgcolor: lightBg,
+                                color: text,
+                                borderWidth: 2,
+                              },
+                            }}
+                          >
+                            {level}
+                          </Button>
+                        );
+                      })}
                     </Stack>
                   )}
                 />
