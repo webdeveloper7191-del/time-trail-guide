@@ -15,17 +15,21 @@ import {
 } from 'lucide-react';
 import { 
   ColumnMappingConfig, 
-  DemandImportType,
-  DEMAND_TARGET_FIELDS,
   TransformType,
   TargetFieldDefinition,
   demandCSVImport,
   TRANSFORM_OPTIONS,
 } from '@/lib/etl/demandCSVImport';
+import {
+  IndustryImportType,
+  getIndustryFields,
+} from '@/lib/etl/industryImportConfig';
+import type { IndustryType } from '@/lib/timefold/industryConstraints';
 import { cn } from '@/lib/utils';
 
 interface DemandColumnMapperProps {
-  importType: DemandImportType;
+  industry: IndustryType;
+  importType: IndustryImportType;
   sourceColumns: string[];
   mappings: ColumnMappingConfig[];
   onMappingsChange: (mappings: ColumnMappingConfig[]) => void;
@@ -45,9 +49,19 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Metadata: <FileText className="h-4 w-4" />,
   Event: <Clock className="h-4 w-4" />,
   Other: <FileText className="h-4 w-4" />,
+  // Additional categories for other industries
+  'Care Plan': <FileText className="h-4 w-4" />,
+  Resident: <Users className="h-4 w-4" />,
+  Delivery: <Clock className="h-4 w-4" />,
+  Guest: <Users className="h-4 w-4" />,
+  Reservation: <Calendar className="h-4 w-4" />,
+  Performance: <Clock className="h-4 w-4" />,
+  Forecast: <Calendar className="h-4 w-4" />,
+  Demand: <Calendar className="h-4 w-4" />,
 };
 
 export function DemandColumnMapper({ 
+  industry,
   importType,
   sourceColumns, 
   mappings, 
@@ -56,13 +70,14 @@ export function DemandColumnMapper({
 }: DemandColumnMapperProps) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
-  const targetFields = DEMAND_TARGET_FIELDS[importType];
+  // Get industry-specific target fields
+  const targetFields = useMemo(() => getIndustryFields(industry, importType), [industry, importType]);
 
   // Get suggested mappings with confidence scores
   const suggestedMappings = useMemo(() => {
-    demandCSVImport.setImportType(importType);
+    demandCSVImport.setIndustryConfig(industry, importType);
     return demandCSVImport.getSuggestedMappings(sourceColumns);
-  }, [sourceColumns, importType]);
+  }, [sourceColumns, importType, industry]);
 
   // Get confidence for a mapping
   const getConfidence = (sourceColumn: string, targetField: string): number | null => {

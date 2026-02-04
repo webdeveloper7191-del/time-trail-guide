@@ -1,6 +1,7 @@
 /**
  * ETL Pipeline for importing CSV/Excel demand data
  * Supports: Room data, Bookings, Historical attendance, Today's attendance
+ * Industry-agnostic with configurable field definitions
  */
 
 import { format, parseISO, isValid, parse } from 'date-fns';
@@ -9,13 +10,21 @@ import type {
   TodayAttendanceEvent,
   ChildcareAgeGroup,
 } from '@/types/demandIntegration';
+import {
+  IndustryImportType,
+  getIndustryFields,
+  getIndustryFieldAliases,
+  type IndustryFieldAlias,
+} from './industryImportConfig';
+import type { IndustryType } from '@/lib/timefold/industryConstraints';
 
 // ==================== TYPES ====================
 
 export type DemandImportType = 'bookings' | 'bookingSummary' | 'historicalAttendance' | 'todayAttendance' | 'rooms';
 
 export interface DemandImportResult {
-  type: DemandImportType;
+  type: IndustryImportType;
+  industry: IndustryType;
   success: number;
   failed: number;
   warnings: number;
@@ -369,16 +378,36 @@ export const TRANSFORM_OPTIONS: { value: TransformType; label: string }[] = [
 // ==================== CSV IMPORT ETL PIPELINE ====================
 
 export class DemandCSVImportPipeline {
-  private importType: DemandImportType = 'bookings';
+  private industry: IndustryType = 'childcare';
+  private importType: IndustryImportType = 'demand';
   private mappings: ColumnMappingConfig[] = [];
 
-  setImportType(type: DemandImportType): void {
-    this.importType = type;
+  setIndustryConfig(industry: IndustryType, importType: IndustryImportType): void {
+    this.industry = industry;
+    this.importType = importType;
     this.mappings = [];
   }
 
-  getImportType(): DemandImportType {
+  // Legacy method for backward compatibility
+  setImportType(type: DemandImportType): void {
+    // Map old types to new types
+    const typeMap: Record<DemandImportType, IndustryImportType> = {
+      bookings: 'demand',
+      bookingSummary: 'summary',
+      historicalAttendance: 'historical',
+      todayAttendance: 'realtime',
+      rooms: 'locations',
+    };
+    this.importType = typeMap[type] || 'demand';
+    this.mappings = [];
+  }
+
+  getImportType(): IndustryImportType {
     return this.importType;
+  }
+
+  getIndustry(): IndustryType {
+    return this.industry;
   }
 
   setMappings(mappings: ColumnMappingConfig[]): void {
@@ -390,7 +419,7 @@ export class DemandCSVImportPipeline {
   }
 
   getTargetFields(): TargetFieldDefinition[] {
-    return DEMAND_TARGET_FIELDS[this.importType];
+    return getIndustryFields(this.industry, this.importType);
   }
 
   // Calculate similarity score between two strings (0-1)
@@ -426,80 +455,44 @@ export class DemandCSVImportPipeline {
     return 1 - distance / maxLen;
   }
 
-  // Get all keywords/aliases for target fields
-  private getFieldAliases(): Record<string, { aliases: string[]; transform?: TransformType }> {
+  // Get field aliases from industry config
+  private getFieldAliases(): Record<string, IndustryFieldAlias> {
+    return getIndustryFieldAliases(this.industry);
+  }
+
+
+  // Get all keywords/aliases for target fields - now uses industry config
+  private getCommonAliases(): Record<string, { aliases: string[]; transform?: TransformType }> {
+    // Common aliases that apply across industries
     return {
-      // Common fields
+      // Date/time
       date: { aliases: ['date', 'booking date', 'record date', 'attendance date'], transform: 'date_dmy' },
-      centreId: { aliases: ['centre id', 'center id', 'centreid', 'centerid', 'centre', 'center', 'location id', 'site id'] },
-      roomId: { aliases: ['room id', 'roomid', 'room', 'classroom', 'class id'] },
-      roomName: { aliases: ['room name', 'roomname', 'room', 'classroom name'] },
-
-      // Age group
-      ageGroup: { aliases: ['age group', 'agegroup', 'age', 'group', 'age category'], transform: 'age_group' },
-      ageMonths: { aliases: ['age months', 'age in months', 'agemonths', 'months old', 'age'], transform: 'integer' },
-
-      // Capacity
-      capacity: { aliases: ['capacity', 'max capacity', 'room capacity', 'licensed capacity'], transform: 'integer' },
-      minQualifiedStaff: { aliases: ['min qualified staff', 'minimum staff', 'required staff', 'qualified staff'], transform: 'integer' },
-
-      // Child fields
-      childId: { aliases: ['child id', 'childid', 'child', 'student id', 'enrolment id'] },
-      childName: { aliases: ['child name', 'childname', 'name', 'student name', 'full name'] },
-      guardianContact: { aliases: ['guardian contact', 'parent contact', 'emergency contact', 'contact number'] },
-
-      // Booking fields
-      bookingType: { aliases: ['booking type', 'bookingtype', 'type', 'enrolment type'], transform: 'booking_type' },
-      status: { aliases: ['status', 'booking status', 'state'], transform: 'booking_status' },
       startTime: { aliases: ['start time', 'starttime', 'arrival time', 'booked start', 'from'], transform: 'time_hhmm' },
       endTime: { aliases: ['end time', 'endtime', 'departure time', 'booked end', 'to'], transform: 'time_hhmm' },
-
-      // Time slot fields
       timeSlot: { aliases: ['time slot', 'timeslot', 'slot', 'session', 'period'] },
-      timeSlotStart: { aliases: ['time slot start', 'slot start', 'session start'], transform: 'time_hhmm' },
-      timeSlotEnd: { aliases: ['time slot end', 'slot end', 'session end'], transform: 'time_hhmm' },
-
-      // Counts
-      bookedCount: { aliases: ['booked count', 'bookedcount', 'total booked', 'bookings'], transform: 'integer' },
-      confirmedCount: { aliases: ['confirmed count', 'confirmedcount', 'confirmed bookings', 'confirmed'], transform: 'integer' },
-      casualCount: { aliases: ['casual count', 'casualcount', 'casual bookings', 'casual'], transform: 'integer' },
-      bookedChildren: { aliases: ['booked children', 'bookedchildren', 'total booked', 'children booked'], transform: 'integer' },
-      attendedChildren: { aliases: ['attended children', 'attendedchildren', 'actual attendance', 'attended'], transform: 'integer' },
-      absentChildren: { aliases: ['absent children', 'absentchildren', 'absences', 'absent'], transform: 'integer' },
-      lateArrivals: { aliases: ['late arrivals', 'latearrivals', 'late'], transform: 'integer' },
-      earlyDepartures: { aliases: ['early departures', 'earlydepartures', 'early'], transform: 'integer' },
-
-      // Rates
-      attendanceRate: { aliases: ['attendance rate', 'attendancerate', 'rate', 'percentage'], transform: 'percentage' },
-      utilisationPercent: { aliases: ['utilisation percent', 'utilization', 'utilisation', 'occupancy'], transform: 'percentage' },
-
-      // Metadata
-      dayOfWeek: { aliases: ['day of week', 'dayofweek', 'weekday', 'day'], transform: 'integer' },
-      weekNumber: { aliases: ['week number', 'weeknumber', 'week'], transform: 'integer' },
-      isSchoolHoliday: { aliases: ['school holiday', 'schoolholiday', 'is school holiday'], transform: 'boolean' },
-      isPublicHoliday: { aliases: ['public holiday', 'publicholiday', 'is public holiday'], transform: 'boolean' },
-
-      // Today attendance
       timestamp: { aliases: ['timestamp', 'datetime', 'date time', 'event time'] },
-      eventType: { aliases: ['event type', 'eventtype', 'type', 'action'], transform: 'event_type' },
-      actualTime: { aliases: ['actual time', 'actualtime', 'actual', 'time'], transform: 'time_hhmm' },
-      bookedTime: { aliases: ['booked time', 'bookedtime', 'scheduled time', 'expected'], transform: 'time_hhmm' },
-      recordedBy: { aliases: ['recorded by', 'recordedby', 'staff', 'educator', 'signed by'] },
-      transferToRoomId: { aliases: ['transfer to room', 'transfertoroom', 'destination room', 'to room'] },
+      
+      // Common identifiers
       notes: { aliases: ['notes', 'comments', 'remarks', 'memo'] },
-
+      status: { aliases: ['status', 'booking status', 'state'], transform: 'booking_status' },
+      
       // Operating hours
       'operatingHours.start': { aliases: ['operating start', 'open time', 'start time', 'opens'], transform: 'time_hhmm' },
       'operatingHours.end': { aliases: ['operating end', 'close time', 'end time', 'closes'], transform: 'time_hhmm' },
     };
   }
 
+
   // Auto-detect column mappings based on header name similarity
   autoDetectMappings(headers: string[]): ColumnMappingConfig[] {
     const detected: ColumnMappingConfig[] = [];
     const usedTargets = new Set<string>();
-    const fieldAliases = this.getFieldAliases();
+    const industryAliases = this.getFieldAliases();
+    const commonAliases = this.getCommonAliases();
     const targetFields = this.getTargetFields();
+
+    // Merge industry and common aliases
+    const fieldAliases = { ...commonAliases, ...industryAliases };
 
     // Score each header against all target fields
     const scoredMappings: Array<{
@@ -567,7 +560,9 @@ export class DemandCSVImportPipeline {
     sourceColumn: string;
     suggestions: Array<{ targetField: string; confidence: number }>;
   }> {
-    const fieldAliases = this.getFieldAliases();
+    const industryAliases = this.getFieldAliases();
+    const commonAliases = this.getCommonAliases();
+    const fieldAliases = { ...commonAliases, ...industryAliases };
     const targetFields = this.getTargetFields();
     const result: Array<{
       sourceColumn: string;
@@ -607,6 +602,7 @@ export class DemandCSVImportPipeline {
 
     return result;
   }
+
 
   // Transform a single record
   private transformRecord(record: Record<string, any>, index: number): ImportedDemandRecord {
@@ -692,6 +688,7 @@ export class DemandCSVImportPipeline {
 
     return {
       type: this.importType,
+      industry: this.industry,
       success,
       failed,
       warnings,
