@@ -342,7 +342,10 @@ export function RecurringShiftManagementPanel({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onEditSeries(selectedSeries.groupId)}
+                  onClick={() => {
+                    onEditSeries(selectedSeries.groupId);
+                    onClose();
+                  }}
                 >
                   <Edit className="h-4 w-4 mr-1" />
                   Edit Pattern
@@ -409,59 +412,64 @@ export function RecurringShiftManagementPanel({
         </DialogContent>
       </Dialog>
 
-      {/* Extend Series Modal */}
-      <Dialog open={showExtendModal} onOpenChange={setShowExtendModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Extend Recurring Series
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Current series ends on{' '}
-              <strong>
-                {selectedSeries?.lastShiftDate 
-                  ? format(parseISO(selectedSeries.lastShiftDate), 'EEEE, MMMM d, yyyy')
-                  : 'N/A'}
-              </strong>
+      {/* Extend Series Side Panel */}
+      <PrimaryOffCanvas
+        open={showExtendModal}
+        onClose={() => setShowExtendModal(false)}
+        title="Extend Recurring Series"
+        description={`Extend ${selectedSeries?.staffName}'s shift series`}
+        icon={Calendar}
+        size="md"
+        actions={[
+          { label: 'Cancel', onClick: () => setShowExtendModal(false), variant: 'outlined' },
+          { 
+            label: 'Extend Series', 
+            onClick: handleExtendSeries, 
+            variant: 'primary',
+            icon: <Calendar className="h-4 w-4" />
+          },
+        ]}
+      >
+        <div className="space-y-5">
+          {/* Current End Date */}
+          <div className="bg-background rounded-lg border p-4">
+            <p className="text-sm text-muted-foreground mb-1">Current series ends on</p>
+            <p className="text-base font-semibold text-foreground">
+              {selectedSeries?.lastShiftDate 
+                ? format(parseISO(selectedSeries.lastShiftDate), 'EEEE, MMMM d, yyyy')
+                : 'N/A'}
             </p>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Extend by:</label>
-              <div className="flex gap-2">
-                {[2, 4, 8, 12].map(weeks => (
-                  <Button
-                    key={weeks}
-                    variant={extendWeeks === weeks ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setExtendWeeks(weeks)}
-                  >
-                    {weeks} weeks
-                  </Button>
-                ))}
-              </div>
-            </div>
-            {selectedSeries?.lastShiftDate && (
-              <p className="text-sm text-muted-foreground">
-                New end date:{' '}
-                <strong>
-                  {format(addDays(parseISO(selectedSeries.lastShiftDate), extendWeeks * 7), 'EEEE, MMMM d, yyyy')}
-                </strong>
-              </p>
-            )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowExtendModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleExtendSeries}>
-              <Calendar className="h-4 w-4 mr-1" />
-              Extend Series
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          {/* Extend By Selection */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-foreground">Extend by:</label>
+            <div className="grid grid-cols-4 gap-2">
+              {[2, 4, 8, 12].map(weeks => (
+                <Button
+                  key={weeks}
+                  variant={extendWeeks === weeks ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setExtendWeeks(weeks)}
+                  className={extendWeeks === weeks ? 'bg-primary text-primary-foreground' : ''}
+                >
+                  {weeks} weeks
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* New End Date Preview */}
+          {selectedSeries?.lastShiftDate && (
+            <div className="bg-primary/5 border border-primary rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-1">New end date</p>
+              <p className="text-base font-semibold text-primary">
+                {format(addDays(parseISO(selectedSeries.lastShiftDate), extendWeeks * 7), 'EEEE, MMMM d, yyyy')}
+              </p>
+            </div>
+          )}
+        </div>
+      </PrimaryOffCanvas>
     </>
   );
 }

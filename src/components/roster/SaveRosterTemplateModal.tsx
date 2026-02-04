@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  TextField,
   Checkbox,
   Box,
   Typography,
@@ -10,6 +9,10 @@ import { RosterTemplate, RosterTemplateShift } from '@/types/rosterTemplates';
 import { format } from 'date-fns';
 import { Save, FileText, Clock, Users } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
 
 interface SaveRosterTemplateModalProps {
   open: boolean;
@@ -103,30 +106,32 @@ export function SaveRosterTemplateModal({
       size="lg"
       actions={actions}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <TextField
-          label="Template Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Standard Week, Holiday Roster"
-          size="small"
-          fullWidth
-        />
+      <div className="space-y-5">
+        {/* Template Details Section */}
+        <FormSection title="Template Details">
+          <FormField label="Template Name" required>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Standard Week, Holiday Roster"
+              className="bg-background"
+            />
+          </FormField>
 
-        <TextField
-          label="Description (Optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe when to use this template..."
-          size="small"
-          fullWidth
-          multiline
-          rows={2}
-        />
+          <FormField label="Description">
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe when to use this template..."
+              rows={2}
+              className="bg-background resize-none"
+            />
+          </FormField>
+        </FormSection>
 
-        <Box>
-          <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Include Rooms</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+        {/* Rooms Selection */}
+        <FormSection title="Include Rooms" tooltip="Select which rooms to include in this template">
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
             {rooms.map(room => {
               const isSelected = selectedRooms.includes(room.id);
               return (
@@ -140,18 +145,25 @@ export function SaveRosterTemplateModal({
                     p: 1.5,
                     borderRadius: 1.5,
                     border: 1,
-                    borderColor: isSelected ? 'primary.main' : 'divider',
-                    bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'transparent',
+                    borderColor: isSelected ? 'hsl(var(--primary))' : 'divider',
+                    bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'background.paper',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease-in-out',
                     '&:hover': { 
                       bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
-                      borderColor: isSelected ? 'primary.main' : 'primary.light',
+                      borderColor: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.5)',
                     },
                   }}
                 >
-                  <Checkbox checked={isSelected} size="small" color="primary" />
-                  <Typography variant="body2" fontWeight={isSelected ? 600 : 400} color={isSelected ? 'primary.main' : 'text.primary'}>
+                  <Checkbox 
+                    checked={isSelected} 
+                    size="small" 
+                    sx={{
+                      color: 'hsl(var(--primary))',
+                      '&.Mui-checked': { color: 'hsl(var(--primary))' },
+                    }}
+                  />
+                  <Typography variant="body2" fontWeight={isSelected ? 600 : 400} color={isSelected ? 'hsl(var(--primary))' : 'text.primary'}>
                     {room.name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
@@ -161,39 +173,35 @@ export function SaveRosterTemplateModal({
               );
             })}
           </Box>
-        </Box>
+        </FormSection>
 
-        <Box
-          onClick={() => setIncludeStaffPreferences(!includeStaffPreferences)}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            p: 1.5,
-            bgcolor: 'action.hover',
-            borderRadius: 1,
-            cursor: 'pointer',
-          }}
-        >
-          <Checkbox checked={includeStaffPreferences} size="small" />
-          <Typography variant="body2">Include staff role preferences</Typography>
-        </Box>
+        {/* Options */}
+        <FormSection title="Options">
+          <div className="bg-background rounded-lg border p-3">
+            <StyledSwitch
+              checked={includeStaffPreferences}
+              onChange={setIncludeStaffPreferences}
+              label="Include staff role preferences"
+            />
+          </div>
+        </FormSection>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 1.5, bgcolor: 'rgba(3, 169, 244, 0.08)', borderRadius: 1.5, border: 1, borderColor: 'primary.main' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <FileText size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
-            <Typography variant="body2">{relevantShifts.length} shifts</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Clock size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
-            <Typography variant="body2">{dates.length} days</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Users size={16} style={{ color: 'var(--mui-palette-primary-main)' }} />
-            <Typography variant="body2">{selectedRooms.length} rooms</Typography>
-          </Box>
-        </Box>
-      </Box>
+        {/* Summary */}
+        <div className="flex items-center gap-4 p-3 bg-primary/5 border border-primary rounded-lg">
+          <div className="flex items-center gap-1.5">
+            <FileText size={16} className="text-primary" />
+            <span className="text-sm font-medium">{relevantShifts.length} shifts</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock size={16} className="text-primary" />
+            <span className="text-sm font-medium">{dates.length} days</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Users size={16} className="text-primary" />
+            <span className="text-sm font-medium">{selectedRooms.length} rooms</span>
+          </div>
+        </div>
+      </div>
     </PrimaryOffCanvas>
   );
 }
