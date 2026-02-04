@@ -9,12 +9,11 @@ import {
   Select,
   MenuItem,
   TextField,
-  FormControlLabel,
-  Switch,
   ToggleButtonGroup,
   ToggleButton,
 } from '@mui/material';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ShiftTemplate, 
@@ -385,10 +384,10 @@ export function AddEmptyShiftModal({
                 </Typography>
               </Box>
             </Box>
-            <Switch
+            <StyledSwitch
               checked={isRecurring}
-              onChange={(e) => setIsRecurring(e.target.checked)}
-              color="success"
+              onChange={setIsRecurring}
+              label=""
             />
           </Box>
 
