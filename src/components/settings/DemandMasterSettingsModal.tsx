@@ -11,11 +11,10 @@ import {
   Divider,
   IconButton,
   Alert,
-  Switch,
-  FormControlLabel,
   Slider,
   MenuItem,
 } from '@mui/material';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import {
   Database,
   History,
@@ -264,9 +263,9 @@ export function DemandMasterSettingsModal({
                         Track and forecast demand to optimize staffing
                       </Typography>
                     </Box>
-                    <Switch
+                    <StyledSwitch
                       checked={settings.enabled}
-                      onChange={(e) => setSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+                      onChange={(checked) => setSettings(prev => ({ ...prev, enabled: checked }))}
                     />
                   </Stack>
                 </CardContent>
@@ -325,23 +324,15 @@ export function DemandMasterSettingsModal({
                           opacity: hours.isOpen ? 1 : 0.6,
                         }}
                       >
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              size="small"
-                              checked={hours.isOpen}
-                              onChange={(e) => {
-                                const newHours = [...settings.operatingHours];
-                                newHours[index] = { ...hours, isOpen: e.target.checked };
-                                setSettings(prev => ({ ...prev, operatingHours: newHours }));
-                              }}
-                            />
-                          }
-                          label={
-                            <Typography variant="body2" fontWeight={500} sx={{ width: 80 }}>
-                              {dayNames[hours.dayOfWeek]}
-                            </Typography>
-                          }
+                        <StyledSwitch
+                          checked={hours.isOpen}
+                          onChange={(checked) => {
+                            const newHours = [...settings.operatingHours];
+                            newHours[index] = { ...hours, isOpen: checked };
+                            setSettings(prev => ({ ...prev, operatingHours: newHours }));
+                          }}
+                          label={dayNames[hours.dayOfWeek]}
+                          size="small"
                         />
                         <TextField
                           type="time"
@@ -397,13 +388,13 @@ export function DemandMasterSettingsModal({
                         Manually enter expected demand values for each time slot
                       </Typography>
                     </Box>
-                    <Switch
+                    <StyledSwitch
                       checked={settings.dataSources.manual.enabled}
-                      onChange={(e) => setSettings(prev => ({
+                      onChange={(checked) => setSettings(prev => ({
                         ...prev,
                         dataSources: {
                           ...prev.dataSources,
-                          manual: { ...prev.dataSources.manual, enabled: e.target.checked },
+                          manual: { ...prev.dataSources.manual, enabled: checked },
                         },
                       }))}
                     />
@@ -432,13 +423,13 @@ export function DemandMasterSettingsModal({
                         Use past data to predict future demand based on patterns
                       </Typography>
                     </Box>
-                    <Switch
+                    <StyledSwitch
                       checked={settings.dataSources.historical.enabled}
-                      onChange={(e) => setSettings(prev => ({
+                      onChange={(checked) => setSettings(prev => ({
                         ...prev,
                         dataSources: {
                           ...prev.dataSources,
-                          historical: { ...prev.dataSources.historical, enabled: e.target.checked },
+                          historical: { ...prev.dataSources.historical, enabled: checked },
                         },
                       }))}
                     />
@@ -487,13 +478,13 @@ export function DemandMasterSettingsModal({
                         Sync demand data from booking systems, POS, or other sources
                       </Typography>
                     </Box>
-                    <Switch
+                    <StyledSwitch
                       checked={settings.dataSources.integration.enabled}
-                      onChange={(e) => setSettings(prev => ({
+                      onChange={(checked) => setSettings(prev => ({
                         ...prev,
                         dataSources: {
                           ...prev.dataSources,
-                          integration: { ...prev.dataSources.integration, enabled: e.target.checked },
+                          integration: { ...prev.dataSources.integration, enabled: checked },
                         },
                       }))}
                     />
@@ -532,13 +523,13 @@ export function DemandMasterSettingsModal({
                         AI-powered demand predictions based on multiple factors
                       </Typography>
                     </Box>
-                    <Switch
+                    <StyledSwitch
                       checked={settings.dataSources.forecast.enabled}
-                      onChange={(e) => setSettings(prev => ({
+                      onChange={(checked) => setSettings(prev => ({
                         ...prev,
                         dataSources: {
                           ...prev.dataSources,
-                          forecast: { ...prev.dataSources.forecast, enabled: e.target.checked },
+                          forecast: { ...prev.dataSources.forecast, enabled: checked },
                         },
                       }))}
                     />
@@ -560,11 +551,11 @@ export function DemandMasterSettingsModal({
                         Automatically predict future demand based on historical data
                       </Typography>
                     </Box>
-                    <Switch
+                    <StyledSwitch
                       checked={settings.forecasting.enabled}
-                      onChange={(e) => setSettings(prev => ({
+                      onChange={(checked) => setSettings(prev => ({
                         ...prev,
-                        forecasting: { ...prev.forecasting, enabled: e.target.checked },
+                        forecasting: { ...prev.forecasting, enabled: checked },
                       }))}
                     />
                   </Stack>
@@ -651,28 +642,20 @@ export function DemandMasterSettingsModal({
                       <Divider />
 
                       <Stack spacing={1}>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={settings.forecasting.autoAdjust}
-                              onChange={(e) => setSettings(prev => ({
-                                ...prev,
-                                forecasting: { ...prev.forecasting, autoAdjust: e.target.checked },
-                              }))}
-                            />
-                          }
+                        <StyledSwitch
+                          checked={settings.forecasting.autoAdjust}
+                          onChange={(checked) => setSettings(prev => ({
+                            ...prev,
+                            forecasting: { ...prev.forecasting, autoAdjust: checked },
+                          }))}
                           label="Auto-adjust based on accuracy"
                         />
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={settings.forecasting.seasonalAdjustments}
-                              onChange={(e) => setSettings(prev => ({
-                                ...prev,
-                                forecasting: { ...prev.forecasting, seasonalAdjustments: e.target.checked },
-                              }))}
-                            />
-                          }
+                        <StyledSwitch
+                          checked={settings.forecasting.seasonalAdjustments}
+                          onChange={(checked) => setSettings(prev => ({
+                            ...prev,
+                            forecasting: { ...prev.forecasting, seasonalAdjustments: checked },
+                          }))}
                           label="Apply seasonal adjustments (holidays, school terms)"
                         />
                       </Stack>
@@ -895,52 +878,36 @@ export function DemandMasterSettingsModal({
                 <CardContent>
                   <Typography variant="subtitle1" fontWeight={600} mb={2}>Alert Settings</Typography>
                   <Stack spacing={1}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={settings.alerts.understaffing}
-                          onChange={(e) => setSettings(prev => ({
-                            ...prev,
-                            alerts: { ...prev.alerts, understaffing: e.target.checked },
-                          }))}
-                        />
-                      }
+                    <StyledSwitch
+                      checked={settings.alerts.understaffing}
+                      onChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        alerts: { ...prev.alerts, understaffing: checked },
+                      }))}
                       label="Alert when understaffed"
                     />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={settings.alerts.overstaffing}
-                          onChange={(e) => setSettings(prev => ({
-                            ...prev,
-                            alerts: { ...prev.alerts, overstaffing: e.target.checked },
-                          }))}
-                        />
-                      }
+                    <StyledSwitch
+                      checked={settings.alerts.overstaffing}
+                      onChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        alerts: { ...prev.alerts, overstaffing: checked },
+                      }))}
                       label="Alert when overstaffed"
                     />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={settings.alerts.demandSpike}
-                          onChange={(e) => setSettings(prev => ({
-                            ...prev,
-                            alerts: { ...prev.alerts, demandSpike: e.target.checked },
-                          }))}
-                        />
-                      }
+                    <StyledSwitch
+                      checked={settings.alerts.demandSpike}
+                      onChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        alerts: { ...prev.alerts, demandSpike: checked },
+                      }))}
                       label="Alert on unexpected demand spikes"
                     />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={settings.alerts.forecastAccuracy}
-                          onChange={(e) => setSettings(prev => ({
-                            ...prev,
-                            alerts: { ...prev.alerts, forecastAccuracy: e.target.checked },
-                          }))}
-                        />
-                      }
+                    <StyledSwitch
+                      checked={settings.alerts.forecastAccuracy}
+                      onChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        alerts: { ...prev.alerts, forecastAccuracy: checked },
+                      }))}
                       label="Alert on low forecast accuracy"
                     />
                   </Stack>
@@ -972,40 +939,28 @@ export function DemandMasterSettingsModal({
                 <CardContent>
                   <Typography variant="subtitle1" fontWeight={600} mb={2}>Chart Display</Typography>
                   <Stack spacing={2}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={settings.display.showForecast}
-                          onChange={(e) => setSettings(prev => ({
-                            ...prev,
-                            display: { ...prev.display, showForecast: e.target.checked },
-                          }))}
-                        />
-                      }
+                    <StyledSwitch
+                      checked={settings.display.showForecast}
+                      onChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        display: { ...prev.display, showForecast: checked },
+                      }))}
                       label="Show forecast line"
                     />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={settings.display.showHistorical}
-                          onChange={(e) => setSettings(prev => ({
-                            ...prev,
-                            display: { ...prev.display, showHistorical: e.target.checked },
-                          }))}
-                        />
-                      }
+                    <StyledSwitch
+                      checked={settings.display.showHistorical}
+                      onChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        display: { ...prev.display, showHistorical: checked },
+                      }))}
                       label="Show historical comparison"
                     />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={settings.display.showVariance}
-                          onChange={(e) => setSettings(prev => ({
-                            ...prev,
-                            display: { ...prev.display, showVariance: e.target.checked },
-                          }))}
-                        />
-                      }
+                    <StyledSwitch
+                      checked={settings.display.showVariance}
+                      onChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        display: { ...prev.display, showVariance: checked },
+                      }))}
                       label="Show variance indicators"
                     />
                   </Stack>

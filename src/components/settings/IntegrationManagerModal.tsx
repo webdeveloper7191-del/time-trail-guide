@@ -13,10 +13,9 @@ import {
   Alert,
   LinearProgress,
   InputAdornment,
-  FormControlLabel,
-  Switch,
   CircularProgress,
 } from '@mui/material';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import {
   Plug,
   Plus,
@@ -843,14 +842,9 @@ export function IntegrationManagerModal({
                               </Typography>
                             </Box>
                           </Stack>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={integration.enabled}
-                                onChange={() => handleToggleIntegration(integration.id)}
-                                color="primary"
-                              />
-                            }
+                          <StyledSwitch
+                            checked={integration.enabled}
+                            onChange={() => handleToggleIntegration(integration.id)}
                             label={integration.enabled ? 'Enabled' : 'Disabled'}
                           />
                         </Stack>
@@ -908,15 +902,11 @@ export function IntegrationManagerModal({
                                 Sync Settings
                               </Typography>
                               <Stack direction="row" spacing={2} alignItems="center">
-                                <FormControlLabel
-                                  control={
-                                    <Switch
-                                      checked={integration.autoSync}
-                                      onChange={() => handleToggleAutoSync(integration.id)}
-                                      size="small"
-                                    />
-                                  }
+                                <StyledSwitch
+                                  checked={integration.autoSync}
+                                  onChange={() => handleToggleAutoSync(integration.id)}
                                   label="Auto-sync"
+                                  size="small"
                                 />
                                 {integration.autoSync && (
                                   <TextField
@@ -1002,15 +992,11 @@ export function IntegrationManagerModal({
                                             size="small"
                                             sx={{ flex: 1 }}
                                           />
-                                          <FormControlLabel
-                                            control={
-                                              <Switch
-                                                checked={endpoint.enabled}
-                                                onChange={(e) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'enabled', e.target.checked)}
-                                                size="small"
-                                              />
-                                            }
+                                          <StyledSwitch
+                                            checked={endpoint.enabled}
+                                            onChange={(checked) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'enabled', checked)}
                                             label="Enabled"
+                                            size="small"
                                           />
                                           <IconButton 
                                             size="small" 
@@ -1162,9 +1148,9 @@ export function IntegrationManagerModal({
                                                   <option value="boolean">Boolean</option>
                                                 </TextField>
                                                 <Box sx={{ width: 50, display: 'flex', justifyContent: 'center' }}>
-                                                  <Switch
+                                                  <StyledSwitch
                                                     checked={mapping.required}
-                                                    onChange={(e) => handleUpdateFieldMapping(integration.id, endpoint.id, mapIdx, 'required', e.target.checked)}
+                                                    onChange={(checked) => handleUpdateFieldMapping(integration.id, endpoint.id, mapIdx, 'required', checked)}
                                                     size="small"
                                                   />
                                                 </Box>
@@ -1225,23 +1211,18 @@ export function IntegrationManagerModal({
                                                   { key: 'arrivals', label: 'Arrivals' },
                                                   { key: 'departures', label: 'Departures' },
                                                 ].map((field) => (
-                                                  <FormControlLabel
+                                                  <StyledSwitch
                                                     key={field.key}
-                                                    control={
-                                                      <Switch
-                                                        checked={endpoint.transformSettings?.aggregateFields?.[field.key as keyof AttendanceTransformSettings['aggregateFields']] ?? true}
-                                                        onChange={(e) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'transformSettings', {
-                                                          ...endpoint.transformSettings,
-                                                          aggregateFields: {
-                                                            ...endpoint.transformSettings?.aggregateFields,
-                                                            [field.key]: e.target.checked,
-                                                          },
-                                                        })}
-                                                        size="small"
-                                                      />
-                                                    }
-                                                    label={<Typography variant="caption">{field.label}</Typography>}
-                                                    sx={{ mr: 2 }}
+                                                    checked={endpoint.transformSettings?.aggregateFields?.[field.key as keyof AttendanceTransformSettings['aggregateFields']] ?? true}
+                                                    onChange={(checked) => handleUpdateApiEndpoint(integration.id, endpoint.id, 'transformSettings', {
+                                                      ...endpoint.transformSettings,
+                                                      aggregateFields: {
+                                                        ...endpoint.transformSettings?.aggregateFields,
+                                                        [field.key]: checked,
+                                                      },
+                                                    })}
+                                                    label={field.label}
+                                                    size="small"
                                                   />
                                                 ))}
                                               </Stack>
