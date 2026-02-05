@@ -1,5 +1,5 @@
  import React, { useState, useEffect } from 'react';
-import { Layers, Users, Shield, Clock, Plus, Trash2, Save, Edit2 } from 'lucide-react';
+import { Layers, Users, Shield, Clock, Plus, Trash2, Save, Edit2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,9 @@ import { toast } from 'sonner';
  import { cn } from '@/lib/utils';
  import { areaSchema, validateForm, getFieldError, ValidationError } from '@/lib/validation/locationValidation';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { Area, Location, AREA_STATUS_LABELS, StaffingRatio, QualificationRequirement } from '@/types/location';
+import { Area, Location, AREA_STATUS_LABELS, StaffingRatio, QualificationRequirement, ComplianceRule } from '@/types/location';
+import StaffingRatioEditor from './StaffingRatioEditor';
+import QualificationRequirementEditor from './QualificationRequirementEditor';
 
 interface AreaDetailPanelProps {
   open: boolean;
@@ -48,6 +50,9 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
     minimumStaff: area?.minimumStaff || 1,
     maximumStaff: area?.maximumStaff || 10,
   });
+  const [staffingRatios, setStaffingRatios] = useState<StaffingRatio[]>(area?.staffingRatios || []);
+  const [qualificationRequirements, setQualificationRequirements] = useState<QualificationRequirement[]>(area?.qualificationRequirements || []);
+  const [complianceRules, setComplianceRules] = useState<ComplianceRule[]>(area?.complianceRules || []);
 
    // Reset form when area changes or panel opens
    useEffect(() => {
@@ -64,6 +69,9 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
          maximumStaff: area?.maximumStaff || 10,
        });
        setSelectedLocationId(area?.locationId || location?.id || '');
+       setStaffingRatios(area?.staffingRatios || []);
+       setQualificationRequirements(area?.qualificationRequirements || []);
+       setComplianceRules(area?.complianceRules || []);
        setErrors([]);
        setIsEditing(isNew);
      }
@@ -87,7 +95,12 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
      
      setTimeout(() => {
        if (onSave) {
-         onSave(result.data);
+          onSave({
+            ...result.data,
+            staffingRatios,
+            qualificationRequirements,
+            complianceRules,
+          });
        }
        toast.success(isNew ? 'Area created successfully' : 'Area updated successfully');
        setErrors([]);
@@ -289,107 +302,20 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
         </TabsContent>
 
         <TabsContent value="ratios" className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Staffing Ratios</h3>
-              <p className="text-xs text-muted-foreground">Configure staff-to-demand ratios for compliance</p>
-            </div>
-            <Button size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Ratio
-            </Button>
-          </div>
-
-          {area?.staffingRatios && area.staffingRatios.length > 0 ? (
-            <div className="space-y-3">
-              {area.staffingRatios.map((ratio: StaffingRatio) => (
-                <div key={ratio.id} className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{ratio.name}</h4>
-                      {ratio.isDefault && (
-                        <Badge variant="secondary" className="text-xs">Default</Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-lg font-bold">
-                        {ratio.ratioNumerator}:{ratio.ratioDenominator}
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {ratio.ratioNumerator} staff per {ratio.ratioDenominator} {ratio.demandUnit.toLowerCase()}
-                  </p>
-                  {ratio.notes && (
-                    <p className="text-xs text-muted-foreground mt-2 italic">{ratio.notes}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed border-border">
-              <Users className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No staffing ratios configured</p>
-              <Button size="sm" variant="outline" className="mt-3">
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Ratio
-              </Button>
-            </div>
-          )}
+          <StaffingRatioEditor
+            ratios={staffingRatios}
+            onUpdate={setStaffingRatios}
+            isEditing={isEditing}
+            demandUnit={formData.serviceType || 'Units'}
+          />
         </TabsContent>
 
         <TabsContent value="qualifications" className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Qualification Requirements</h3>
-              <p className="text-xs text-muted-foreground">Define required qualifications for this area</p>
-            </div>
-            <Button size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Requirement
-            </Button>
-          </div>
-
-          {area?.qualificationRequirements && area.qualificationRequirements.length > 0 ? (
-            <div className="space-y-3">
-              {area.qualificationRequirements.map((req: QualificationRequirement) => (
-                <div key={req.id} className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium">{req.qualificationName}</h4>
-                        <Badge 
-                          variant={req.requirementType === 'mandatory' ? 'default' : 'outline'}
-                          className={cn(
-                            'text-xs',
-                            req.requirementType === 'mandatory' && 'bg-red-500 text-white',
-                            req.requirementType === 'percentage' && 'bg-amber-100 text-amber-700',
-                          )}
-                        >
-                          {req.requirementType === 'mandatory' ? 'Mandatory' : 
-                           req.requirementType === 'percentage' ? `${req.percentageRequired}% Required` : 
-                           'Preferred'}
-                        </Badge>
-                      </div>
-                      {req.notes && (
-                        <p className="text-xs text-muted-foreground">{req.notes}</p>
-                      )}
-                    </div>
-                    <Badge variant="secondary">{req.qualificationShortName}</Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed border-border">
-              <Shield className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No qualification requirements</p>
-              <Button size="sm" variant="outline" className="mt-3">
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Requirement
-              </Button>
-            </div>
-          )}
+          <QualificationRequirementEditor
+            requirements={qualificationRequirements}
+            onUpdate={setQualificationRequirements}
+            isEditing={isEditing}
+          />
         </TabsContent>
 
         <TabsContent value="compliance" className="space-y-4">
@@ -404,9 +330,9 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
             </Button>
           </div>
 
-          {area?.complianceRules && area.complianceRules.length > 0 ? (
+          {complianceRules.length > 0 ? (
             <div className="space-y-3">
-              {area.complianceRules.map(rule => (
+              {complianceRules.map(rule => (
                 <div key={rule.id} className="bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium">{rule.name}</h4>

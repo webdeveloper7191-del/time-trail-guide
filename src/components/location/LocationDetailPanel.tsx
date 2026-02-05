@@ -1,5 +1,5 @@
  import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Users, Layers, Building2, Phone, Mail, Globe, Edit2, Trash2, Save } from 'lucide-react';
+import { MapPin, Clock, Users, Layers, Building2, Phone, Mail, Globe, Edit2, Trash2, Save, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Location, Area, Department, LOCATION_STATUS_LABELS, AUSTRALIAN_STATES, AUSTRALIAN_TIMEZONES } from '@/types/location';
 import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
+import IndustryConfigSection from './IndustryConfigSection';
 
 interface LocationDetailPanelProps {
   open: boolean;
@@ -133,6 +134,7 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start mb-4">
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="industry">Industry Config</TabsTrigger>
           <TabsTrigger value="hours">Operating Hours</TabsTrigger>
           <TabsTrigger value="areas">Areas ({areas.length})</TabsTrigger>
           <TabsTrigger value="departments">Departments ({departments.length})</TabsTrigger>
@@ -392,6 +394,16 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               )}
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="industry" className="space-y-6">
+          <IndustryConfigSection
+            industryType={formData.industryType as any}
+            onIndustryChange={(type) => setFormData({ ...formData, industryType: type })}
+            isEditing={isEditing}
+            showRatios={true}
+            showQualifications={true}
+          />
         </TabsContent>
 
         <TabsContent value="hours" className="space-y-4">
