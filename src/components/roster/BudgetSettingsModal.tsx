@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Centre } from '@/types/roster';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+ import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -148,29 +149,28 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
     <PrimaryOffCanvas
       title="Budget Settings"
       description={`Configure comprehensive budget limits and staffing controls for ${centre.name}`}
-      width="900px"
+       size="3xl"
       open={open}
       onClose={onClose}
       actions={actions}
       showFooter
     >
-      <Tabs defaultValue="costs" className="mt-4">
-        <TabsList className="grid w-full grid-cols-4 bg-muted/50 p-1 rounded-lg">
-          <TabsTrigger value="costs" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Costs</TabsTrigger>
-          <TabsTrigger value="staffing" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Staffing</TabsTrigger>
-          <TabsTrigger value="time" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Time-Based</TabsTrigger>
-          <TabsTrigger value="forecast" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Forecast</TabsTrigger>
-        </TabsList>
+       <Tabs defaultValue="costs" className="w-full">
+         {/* Tab Navigation with Card Style */}
+         <FormSection title="Configuration Category" variant="card">
+           <TabsList className="grid w-full grid-cols-4 bg-muted/50 p-1 rounded-lg">
+             <TabsTrigger value="costs" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm">Costs</TabsTrigger>
+             <TabsTrigger value="staffing" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm">Staffing</TabsTrigger>
+             <TabsTrigger value="time" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm">Time-Based</TabsTrigger>
+             <TabsTrigger value="forecast" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm">Forecast</TabsTrigger>
+           </TabsList>
+         </FormSection>
 
-        <ScrollArea className="h-[calc(100vh-280px)] pr-4 mt-4">
+         <ScrollArea className="h-[calc(100vh-320px)] pr-4 mt-4">
           {/* COSTS TAB */}
-          <TabsContent value="costs" className="mt-0 space-y-6">
+           <TabsContent value="costs" className="mt-0 space-y-4">
             {/* Weekly Budget */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-primary flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Weekly Budget
-              </Label>
+             <FormSection title="Weekly Budget" variant="card">
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -181,16 +181,12 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 />
               </div>
               <p className="text-xs text-muted-foreground">Total labor budget for this centre per week</p>
-            </div>
+             </FormSection>
 
             {/* Minimum Staffing Cost Floor */}
-            <Card className="border border-border bg-muted/30">
-              <CardContent className="p-4 space-y-3">
+             <FormSection title="Minimum Staffing Cost Floor" variant="card">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-amber-500" />
-                    Minimum Staffing Cost Floor
-                  </Label>
+                   <Label className="text-sm font-medium">Enable Alert on Low Cost</Label>
                   <StyledSwitch
                     checked={settings.alertOnLowCost}
                     onChange={(checked) => setSettings({ ...settings, alertOnLowCost: checked })}
@@ -208,21 +204,12 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">Alert if daily costs drop below this (quality concern)</p>
-              </CardContent>
-            </Card>
-
-            <Separator />
+             </FormSection>
 
             {/* Penalty Rate Multipliers */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Percent className="h-4 w-4" />
-                Penalty Rate Multipliers
-              </Label>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Weekend Rate</Label>
+             <FormSection title="Penalty Rate Multipliers" variant="card">
+               <FormRow columns={2}>
+                 <FormField label="Weekend Rate" labelVariant="subtle">
                   <div className="relative">
                     <Input
                       type="number"
@@ -235,9 +222,8 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">×</span>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Public Holiday Rate</Label>
+                 </FormField>
+                 <FormField label="Public Holiday Rate" labelVariant="subtle">
                   <div className="relative">
                     <Input
                       type="number"
@@ -250,25 +236,14 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">×</span>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
+                 </FormField>
+               </FormRow>
+             </FormSection>
 
             {/* Allowance Budgets */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Coffee className="h-4 w-4" />
-                Allowance Budgets (Weekly)
-              </Label>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-1">
-                    <Coffee className="h-3 w-3" />
-                    Meal Allowance
-                  </Label>
+             <FormSection title="Allowance Budgets (Weekly)" variant="card">
+               <FormRow columns={2}>
+                 <FormField label="Meal Allowance" labelVariant="subtle">
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -278,12 +253,8 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                       className="pl-9 bg-background"
                     />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-1">
-                    <Car className="h-3 w-3" />
-                    Travel Allowance
-                  </Label>
+                 </FormField>
+                 <FormField label="Travel Allowance" labelVariant="subtle">
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -293,20 +264,17 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                       className="pl-9 bg-background"
                     />
                   </div>
-                </div>
-              </div>
-            </div>
+                 </FormField>
+               </FormRow>
+             </FormSection>
           </TabsContent>
 
           {/* STAFFING TAB */}
-          <TabsContent value="staffing" className="mt-0 space-y-6">
+           <TabsContent value="staffing" className="mt-0 space-y-4">
             {/* Overtime Threshold */}
-            <div className="space-y-3">
+             <FormSection title="Overtime Threshold" variant="card">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium text-primary flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Overtime Threshold
-                </Label>
+                 <Label className="text-sm font-medium">Hours per week</Label>
                 <Badge variant="secondary">{settings.overtimeThreshold}h/week</Badge>
               </div>
               <Slider
@@ -318,15 +286,12 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">Hours after which overtime rates apply</p>
-            </div>
+             </FormSection>
 
             {/* Agency Staff */}
-            <div className="space-y-3">
+             <FormSection title="Max Agency Staff" variant="card">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium text-primary flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Max Agency Staff
-                </Label>
+                 <Label className="text-sm font-medium">Percentage limit</Label>
                 <Badge variant="secondary">{settings.maxAgencyPercent}%</Badge>
               </div>
               <Slider
@@ -337,19 +302,12 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 step={5}
                 className="w-full"
               />
-            </div>
-
-            <Separator />
+             </FormSection>
 
             {/* Casual Staff Mix */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Casual vs Permanent Mix
-              </Label>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+             <FormSection title="Casual vs Permanent Mix" variant="card">
+               <FormRow columns={2}>
+                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm">Min Casual %</Label>
                     <Badge variant="outline">{settings.minCasualPercent}%</Badge>
@@ -363,7 +321,7 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                     className="w-full"
                   />
                 </div>
-                <div className="space-y-2">
+                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm">Max Casual %</Label>
                     <Badge variant="outline">{settings.maxCasualPercent}%</Badge>
@@ -377,18 +335,13 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                     className="w-full"
                   />
                 </div>
-              </div>
-            </div>
-
-            <Separator />
+               </FormRow>
+             </FormSection>
 
             {/* Trainee Limits */}
-            <div className="space-y-3">
+             <FormSection title="Max Trainee/Student Staff" variant="card">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4 text-primary" />
-                  Max Trainee/Student Staff
-                </Label>
+                 <Label className="text-sm font-medium">Percentage limit</Label>
                 <Badge variant="secondary">{settings.maxTraineePercent}%</Badge>
               </div>
               <Slider
@@ -400,14 +353,10 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">Cap on unqualified/trainee staff per shift</p>
-            </div>
+             </FormSection>
 
             {/* Lead Educator Requirements */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
-                Min Lead Educators Per Room
-              </Label>
+             <FormSection title="Min Lead Educators Per Room" variant="card">
               <Select
                 value={String(settings.minLeadEducatorsPerRoom)}
                 onValueChange={(v) => setSettings({ ...settings, minLeadEducatorsPerRoom: Number(v) })}
@@ -422,19 +371,15 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">Minimum qualified lead educators required per room at all times</p>
-            </div>
+             </FormSection>
           </TabsContent>
 
           {/* TIME-BASED TAB */}
-          <TabsContent value="time" className="mt-0 space-y-6">
+           <TabsContent value="time" className="mt-0 space-y-4">
             {/* Daily Budget Caps */}
-            <Card className="border border-border bg-muted/30">
-              <CardContent className="p-4 space-y-3">
+             <FormSection title="Daily Budget Caps" variant="card">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    Daily Budget Caps
-                  </Label>
+                   <Label className="text-sm font-medium">Enable Daily Caps</Label>
                   <StyledSwitch
                     checked={settings.enableDailyBudgetCaps}
                     onChange={(checked) => setSettings({ ...settings, enableDailyBudgetCaps: checked })}
@@ -460,24 +405,12 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            <Separator />
+             </FormSection>
 
             {/* Shift Time Premiums */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Shift Time Premiums
-              </Label>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-1">
-                    <Sun className="h-3 w-3 text-amber-500" />
-                    Early Shift Premium
-                  </Label>
+             <FormSection title="Shift Time Premiums" variant="card">
+               <FormRow columns={2}>
+                 <FormField label="Early Shift Premium" labelVariant="subtle">
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -489,12 +422,8 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/hr</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Extra pay for shifts starting before 7am</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-1">
-                    <Moon className="h-3 w-3 text-primary" />
-                    Late Shift Premium
-                  </Label>
+                 </FormField>
+                 <FormField label="Late Shift Premium" labelVariant="subtle">
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -506,16 +435,12 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/hr</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Extra pay for shifts ending after 6pm</p>
-                </div>
-              </div>
-            </div>
+                 </FormField>
+               </FormRow>
+             </FormSection>
 
             {/* Split Shift Allowance */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
-                Split Shift Allowance
-              </Label>
+             <FormSection title="Split Shift Allowance" variant="card">
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -527,18 +452,15 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/shift</span>
               </div>
               <p className="text-xs text-muted-foreground">Fixed payment for staff working split shifts</p>
-            </div>
+             </FormSection>
           </TabsContent>
 
           {/* FORECAST TAB */}
-          <TabsContent value="forecast" className="mt-0 space-y-6">
+           <TabsContent value="forecast" className="mt-0 space-y-4">
             {/* Budget Variance Tolerance */}
-            <div className="space-y-3">
+             <FormSection title="Budget Variance Tolerance" variant="card">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium text-primary flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  Budget Variance Tolerance
-                </Label>
+                 <Label className="text-sm font-medium">Tolerance</Label>
                 <Badge variant="secondary">±{settings.budgetVarianceTolerance}%</Badge>
               </div>
               <Slider
@@ -550,18 +472,12 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">Acceptable deviation from budget before triggering alerts</p>
-            </div>
-
-            <Separator />
+             </FormSection>
 
             {/* Seasonal Adjustments */}
-            <Card className="border border-border bg-muted/30">
-              <CardContent className="p-4 space-y-3">
+             <FormSection title="Seasonal Budget Adjustments" variant="card">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-amber-500" />
-                    Seasonal Budget Adjustments
-                  </Label>
+                   <Label className="text-sm font-medium">Enable Seasonal Adjustments</Label>
                   <StyledSwitch
                     checked={settings.enableSeasonalAdjustments}
                     onChange={(checked) => setSettings({ ...settings, enableSeasonalAdjustments: checked })}
@@ -586,16 +502,12 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                     <p className="text-xs text-muted-foreground">Multiply budget during school holiday periods</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+             </FormSection>
 
             {/* Year-over-Year Target */}
-            <div className="space-y-3">
+             <FormSection title="Year-over-Year Target" variant="card">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-primary" />
-                  Year-over-Year Target
-                </Label>
+                 <Label className="text-sm font-medium">Target Change</Label>
                 <Badge 
                   variant={settings.yearOverYearTarget < 0 ? 'default' : 'secondary'}
                   className={settings.yearOverYearTarget < 0 ? 'bg-primary' : ''}
@@ -612,22 +524,12 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">Target change vs. same period last year (negative = cost reduction goal)</p>
-            </div>
-
-            <Separator />
+             </FormSection>
 
             {/* Alert Settings */}
-            <Card className="border border-border bg-muted/30">
-              <CardHeader className="pb-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Bell className="h-4 w-4" />
-                  Alert Notifications
-                </Label>
-              </CardHeader>
-              <CardContent className="space-y-4">
+             <FormSection title="Alert Notifications" variant="card">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
                     Alert when over budget
                   </Label>
                   <StyledSwitch
@@ -641,7 +543,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="text-sm flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
                         Alert when near budget
                       </Label>
                       <p className="text-xs text-muted-foreground">Threshold: {settings.nearBudgetThreshold}%</p>
@@ -668,7 +569,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
 
                 <div className="flex items-center justify-between">
                   <Label className="text-sm flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-amber-500" />
                     Alert on excessive overtime
                   </Label>
                   <StyledSwitch
@@ -677,8 +577,7 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                     size="small"
                   />
                 </div>
-              </CardContent>
-            </Card>
+             </FormSection>
           </TabsContent>
         </ScrollArea>
       </Tabs>

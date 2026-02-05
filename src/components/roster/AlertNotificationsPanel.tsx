@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+ import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -260,95 +261,96 @@ export function AlertNotificationsPanel({
       }
       showFooter={false}
     >
-      {/* Tab Navigation */}
-      <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
-        <Tabs defaultValue="all" className="w-full">
-          <div className="flex items-center justify-between">
-            <TabsList className="bg-transparent gap-1 h-auto p-0">
-              <TabsTrigger 
-                value="all" 
-                className="rounded-lg px-4 py-2 data-[state=active]:bg-muted data-[state=active]:shadow-sm"
-              >
-                All
-              </TabsTrigger>
-              <TabsTrigger 
-                value="critical"
-                className="rounded-lg px-4 py-2 data-[state=active]:bg-muted data-[state=active]:shadow-sm"
-              >
-                Critical
-              </TabsTrigger>
-              <TabsTrigger 
-                value="warnings"
-                className="rounded-lg px-4 py-2 data-[state=active]:bg-muted data-[state=active]:shadow-sm"
-              >
-                Warnings
-              </TabsTrigger>
-            </TabsList>
-            {unreadCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-foreground">
-                Mark all read
-              </Button>
-            )}
-          </div>
-
-          <div className="mt-4 space-y-3">
-            <TabsContent value="all" className="space-y-3 m-0">
-              {alerts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
-                  <p className="font-medium">All Clear!</p>
-                  <p className="text-sm text-muted-foreground">No alerts at this time</p>
-                </div>
-              ) : (
-                alerts.map(alert => (
-                  <AlertItem 
-                    key={alert.id} 
-                    alert={alert} 
-                    getIcon={getAlertIcon}
-                    onMarkRead={() => markAsRead(alert.id)}
-                  />
-                ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="critical" className="space-y-3 m-0">
-              {alerts.filter(a => a.severity === 'critical').length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
-                  <p className="text-sm text-muted-foreground">No critical alerts</p>
-                </div>
-              ) : (
-                alerts.filter(a => a.severity === 'critical').map(alert => (
-                  <AlertItem 
-                    key={alert.id} 
-                    alert={alert} 
-                    getIcon={getAlertIcon}
-                    onMarkRead={() => markAsRead(alert.id)}
-                  />
-                ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="warnings" className="space-y-3 m-0">
-              {alerts.filter(a => a.severity === 'warning').length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
-                  <p className="text-sm text-muted-foreground">No warnings</p>
-                </div>
-              ) : (
-                alerts.filter(a => a.severity === 'warning').map(alert => (
-                  <AlertItem 
-                    key={alert.id} 
-                    alert={alert} 
-                    getIcon={getAlertIcon}
-                    onMarkRead={() => markAsRead(alert.id)}
-                  />
-                ))
-              )}
-            </TabsContent>
-          </div>
-        </Tabs>
-      </div>
+       <Tabs defaultValue="all" className="w-full">
+         {/* Tab Navigation with Card Style */}
+         <FormSection title="Filter Alerts" variant="card">
+           <div className="flex items-center justify-between">
+             <TabsList className="bg-muted/50 p-1 rounded-lg">
+               <TabsTrigger 
+                 value="all" 
+                 className="rounded-md px-4 py-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+               >
+                 All
+               </TabsTrigger>
+               <TabsTrigger 
+                 value="critical"
+                 className="rounded-md px-4 py-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+               >
+                 Critical
+               </TabsTrigger>
+               <TabsTrigger 
+                 value="warnings"
+                 className="rounded-md px-4 py-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+               >
+                 Warnings
+               </TabsTrigger>
+             </TabsList>
+             {unreadCount > 0 && (
+               <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-foreground text-sm">
+                 Mark all read
+               </Button>
+             )}
+           </div>
+         </FormSection>
+ 
+         {/* Alerts List */}
+         <div className="mt-4 space-y-3">
+           <TabsContent value="all" className="space-y-3 m-0">
+             {alerts.length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-12 text-center bg-background rounded-lg border border-border">
+                 <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
+                 <p className="font-medium">All Clear!</p>
+                 <p className="text-sm text-muted-foreground">No alerts at this time</p>
+               </div>
+             ) : (
+               alerts.map(alert => (
+                 <AlertItem 
+                   key={alert.id} 
+                   alert={alert} 
+                   getIcon={getAlertIcon}
+                   onMarkRead={() => markAsRead(alert.id)}
+                 />
+               ))
+             )}
+           </TabsContent>
+ 
+           <TabsContent value="critical" className="space-y-3 m-0">
+             {alerts.filter(a => a.severity === 'critical').length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-12 text-center bg-background rounded-lg border border-border">
+                 <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
+                 <p className="text-sm text-muted-foreground">No critical alerts</p>
+               </div>
+             ) : (
+               alerts.filter(a => a.severity === 'critical').map(alert => (
+                 <AlertItem 
+                   key={alert.id} 
+                   alert={alert} 
+                   getIcon={getAlertIcon}
+                   onMarkRead={() => markAsRead(alert.id)}
+                 />
+               ))
+             )}
+           </TabsContent>
+ 
+           <TabsContent value="warnings" className="space-y-3 m-0">
+             {alerts.filter(a => a.severity === 'warning').length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-12 text-center bg-background rounded-lg border border-border">
+                 <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
+                 <p className="text-sm text-muted-foreground">No warnings</p>
+               </div>
+             ) : (
+               alerts.filter(a => a.severity === 'warning').map(alert => (
+                 <AlertItem 
+                   key={alert.id} 
+                   alert={alert} 
+                   getIcon={getAlertIcon}
+                   onMarkRead={() => markAsRead(alert.id)}
+                 />
+               ))
+             )}
+           </TabsContent>
+         </div>
+       </Tabs>
     </PrimaryOffCanvas>
   );
 }

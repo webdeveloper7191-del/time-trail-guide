@@ -26,6 +26,7 @@ import {
   getEventsForDate,
 } from '@/data/mockHolidaysEvents';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+ import { FormSection } from '@/components/ui/off-canvas/FormSection';
 
 interface HolidayEventCalendarPanelProps {
   open: boolean;
@@ -115,8 +116,9 @@ export function HolidayEventCalendarPanel({
       actions={actions}
     >
       <div className="space-y-4">
-        {/* Month Navigation */}
-        <div className="flex items-center justify-between bg-background rounded-lg border p-2">
+         {/* Month Navigation with Card Style */}
+         <FormSection title="Navigate" variant="card">
+           <div className="flex items-center justify-between -mt-2">
           <Button variant="ghost" size="sm" onClick={() => navigateMonth('prev')}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -125,9 +127,11 @@ export function HolidayEventCalendarPanel({
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+         </FormSection>
 
-        {/* Legend */}
-        <div className="flex flex-wrap gap-3 p-3 bg-background rounded-lg border">
+         {/* Legend with Card Style */}
+         <FormSection title="Legend" variant="card">
+           <div className="flex flex-wrap gap-3 -mt-2">
           {legendItems.map((item, idx) => (
             <div key={idx} className="flex items-center gap-1.5 text-xs text-muted-foreground">
               {item.icon}
@@ -135,9 +139,10 @@ export function HolidayEventCalendarPanel({
             </div>
           ))}
         </div>
+         </FormSection>
 
         {/* Calendar Grid */}
-        <div className="bg-background rounded-lg border p-3">
+         <FormSection title="Calendar" variant="card">
           <div className="grid grid-cols-7 gap-1">
             {/* Day headers */}
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -238,14 +243,11 @@ export function HolidayEventCalendarPanel({
               );
             })}
           </div>
-        </div>
+         </FormSection>
 
         {/* Selected Date Details */}
         {selectedDate && (selectedDateDetails.holidays.length > 0 || selectedDateDetails.events.length > 0) && (
-          <div className="p-3 bg-background rounded-lg border">
-            <h4 className="font-medium text-sm mb-2">
-              {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-            </h4>
+           <FormSection title={format(selectedDate, 'EEEE, MMMM d, yyyy')} variant="card">
             <div className="space-y-2">
               {selectedDateDetails.holidays.map(h => (
                 <div key={h.id} className="flex items-center gap-2">
@@ -282,17 +284,13 @@ export function HolidayEventCalendarPanel({
                 </div>
               ))}
             </div>
-          </div>
+           </FormSection>
         )}
 
         {/* Upcoming this month */}
-        <div className="bg-background rounded-lg border">
-          <h4 className="text-sm font-medium p-3 border-b flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" />
-            Upcoming This Month
-          </h4>
+         <FormSection title="Upcoming This Month" variant="card">
           <ScrollArea className="h-48">
-            <div className="p-3 space-y-2">
+             <div className="space-y-2">
               {monthHolidays.filter(h => h.type === 'public_holiday').map(h => (
                 <div 
                   key={h.id} 
@@ -334,7 +332,7 @@ export function HolidayEventCalendarPanel({
               )}
             </div>
           </ScrollArea>
-        </div>
+         </FormSection>
       </div>
     </PrimaryOffCanvas>
   );
