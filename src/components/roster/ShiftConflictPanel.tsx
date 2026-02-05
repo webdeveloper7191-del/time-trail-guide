@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+ import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -88,76 +89,80 @@ export function ShiftConflictPanel({
       }
       showFooter={false}
     >
-      <Tabs defaultValue="all">
-        <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-lg">
-          <TabsTrigger value="all" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            All ({allConflicts.length})
-          </TabsTrigger>
-          <TabsTrigger value="errors" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            Errors ({errorConflicts.length})
-          </TabsTrigger>
-          <TabsTrigger value="warnings" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            Warnings ({warningConflicts.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <div className="mt-4 space-y-3">
-          <TabsContent value="all" className="space-y-3 m-0">
-            {allConflicts.length === 0 ? (
-              <NoConflicts />
-            ) : (
-              allConflicts.map(conflict => (
-                <ConflictItem
-                  key={conflict.id}
-                  conflict={conflict}
-                  staffName={getStaffName(conflict.staffId)}
-                  getIcon={getConflictIcon}
-                  onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
-                />
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="errors" className="space-y-3 m-0">
-            {errorConflicts.length === 0 ? (
-              <NoConflicts type="error" />
-            ) : (
-              errorConflicts.map(conflict => (
-                <ConflictItem
-                  key={conflict.id}
-                  conflict={conflict}
-                  staffName={getStaffName(conflict.staffId)}
-                  getIcon={getConflictIcon}
-                  onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
-                />
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="warnings" className="space-y-3 m-0">
-            {warningConflicts.length === 0 ? (
-              <NoConflicts type="warning" />
-            ) : (
-              warningConflicts.map(conflict => (
-                <ConflictItem
-                  key={conflict.id}
-                  conflict={conflict}
-                  staffName={getStaffName(conflict.staffId)}
-                  getIcon={getConflictIcon}
-                  onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
-                />
-              ))
-            )}
-          </TabsContent>
-        </div>
-      </Tabs>
+       <Tabs defaultValue="all" className="w-full">
+         {/* Filter Section with Card Style */}
+         <FormSection title="Filter Conflicts" variant="card">
+           <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-lg">
+             <TabsTrigger value="all" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm">
+               All ({allConflicts.length})
+             </TabsTrigger>
+             <TabsTrigger value="errors" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm">
+               Errors ({errorConflicts.length})
+             </TabsTrigger>
+             <TabsTrigger value="warnings" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm">
+               Warnings ({warningConflicts.length})
+             </TabsTrigger>
+           </TabsList>
+         </FormSection>
+ 
+         {/* Conflicts List */}
+         <div className="mt-4 space-y-3">
+           <TabsContent value="all" className="space-y-3 m-0">
+             {allConflicts.length === 0 ? (
+               <NoConflicts />
+             ) : (
+               allConflicts.map(conflict => (
+                 <ConflictItem
+                   key={conflict.id}
+                   conflict={conflict}
+                   staffName={getStaffName(conflict.staffId)}
+                   getIcon={getConflictIcon}
+                   onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
+                 />
+               ))
+             )}
+           </TabsContent>
+ 
+           <TabsContent value="errors" className="space-y-3 m-0">
+             {errorConflicts.length === 0 ? (
+               <NoConflicts type="error" />
+             ) : (
+               errorConflicts.map(conflict => (
+                 <ConflictItem
+                   key={conflict.id}
+                   conflict={conflict}
+                   staffName={getStaffName(conflict.staffId)}
+                   getIcon={getConflictIcon}
+                   onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
+                 />
+               ))
+             )}
+           </TabsContent>
+ 
+           <TabsContent value="warnings" className="space-y-3 m-0">
+             {warningConflicts.length === 0 ? (
+               <NoConflicts type="warning" />
+             ) : (
+               warningConflicts.map(conflict => (
+                 <ConflictItem
+                   key={conflict.id}
+                   conflict={conflict}
+                   staffName={getStaffName(conflict.staffId)}
+                   getIcon={getConflictIcon}
+                   onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
+                 />
+               ))
+             )}
+           </TabsContent>
+         </div>
+       </Tabs>
     </PrimaryOffCanvas>
   );
 }
 
 function NoConflicts({ type }: { type?: 'error' | 'warning' }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
+     <div className="flex flex-col items-center justify-center py-12 text-center bg-background rounded-lg border border-border">
       <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
       <p className="font-medium">No {type ? `${type}s` : 'conflicts'} found</p>
       <p className="text-sm text-muted-foreground">
