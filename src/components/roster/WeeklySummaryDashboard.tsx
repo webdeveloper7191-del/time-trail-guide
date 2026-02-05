@@ -1,30 +1,16 @@
 import { StaffMember, Shift, Centre, roleLabels } from '@/types/roster';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  LinearProgress,
-  Chip,
-  Box,
-  Typography,
-} from '@mui/material';
+import { Progress } from '@/components/ui/progress';
 import { 
   Clock, 
   DollarSign, 
   Users, 
-  TrendingUp,
   Calendar,
   PieChart
 } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
+import { cn } from '@/lib/utils';
 
 interface WeeklySummaryDashboardProps {
   shifts: Shift[];
@@ -107,107 +93,90 @@ export function WeeklySummaryDashboard({
   const totalStaffCount = staff.length;
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" style={{ width: '1100px', maxWidth: '95vw' }}>
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <PieChart className="h-5 w-5 text-primary" />
-            Weekly Summary - {centre.name}
-          </SheetTitle>
-          <SheetDescription>
-            Overview of hours, costs, and staffing for the current period
-          </SheetDescription>
-        </SheetHeader>
-
-        <ScrollArea className="flex-1 pr-4 h-[calc(100vh-180px)]">
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Key Metrics */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+    <PrimaryOffCanvas
+      open={isOpen}
+      onClose={onClose}
+      title={`Weekly Summary - ${centre.name}`}
+      description="Overview of hours, costs, and staffing for the current period"
+      icon={PieChart}
+      size="2xl"
+      showFooter={false}
+    >
+      <div className="space-y-4">
+        {/* Key Metrics */}
+        <FormSection title="Key Metrics">
+          <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: Clock, label: 'Total Hours', value: `${totalHours.toFixed(1)}h`, color: 'primary' },
-                { icon: DollarSign, label: 'Total Cost', value: `$${totalCost.toFixed(0)}`, color: 'success' },
-                { icon: Users, label: 'Staff Rostered', value: `${activeStaffCount}/${totalStaffCount}`, color: 'secondary' },
-                { icon: Calendar, label: 'Total Shifts', value: centreShifts.length, color: 'warning' },
-              ].map((metric, idx) => (
-                <Card key={idx} variant="outlined">
-                  <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2, '&:last-child': { pb: 2 } }}>
-                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: `${metric.color}.light` }}>
-                      <metric.icon size={20} />
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">{metric.label}</Typography>
-                      <Typography variant="h6" fontWeight={700}>{metric.value}</Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
+              { icon: Clock, label: 'Total Hours', value: `${totalHours.toFixed(1)}h`, bgColor: 'bg-primary/10' },
+              { icon: DollarSign, label: 'Total Cost', value: `$${totalCost.toFixed(0)}`, bgColor: 'bg-success/10' },
+              { icon: Users, label: 'Staff Rostered', value: `${activeStaffCount}/${totalStaffCount}`, bgColor: 'bg-secondary/10' },
+              { icon: Calendar, label: 'Total Shifts', value: centreShifts.length.toString(), bgColor: 'bg-warning/10' },
+            ].map((metric, idx) => (
+              <div key={idx} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                <div className={cn("p-2 rounded-lg", metric.bgColor)}>
+                  <metric.icon size={18} className="text-foreground" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">{metric.label}</p>
+                  <p className="text-lg font-bold">{metric.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </FormSection>
 
-            {/* Budget Progress */}
-            <Card variant="outlined">
-              <CardHeader 
-                title={
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" fontWeight={500}>Budget Usage</Typography>
-                    <Typography variant="body2" fontWeight={600} color={budgetUsage > 100 ? 'error.main' : budgetUsage > 90 ? 'warning.main' : 'success.main'}>
-                      {budgetUsage.toFixed(1)}%
-                    </Typography>
-                  </Box>
-                }
-                sx={{ pb: 0 }}
-              />
-              <CardContent>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={Math.min(budgetUsage, 100)} 
-                  color={budgetUsage > 100 ? 'error' : budgetUsage > 90 ? 'warning' : 'primary'}
-                  sx={{ height: 8, borderRadius: 1, mb: 1 }}
-                />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" color="text.secondary">Spent: ${totalCost.toFixed(0)}</Typography>
-                  <Typography variant="caption" color="text.secondary">Budget: ${weeklyBudget.toLocaleString()}</Typography>
-                </Box>
-              </CardContent>
-            </Card>
+        {/* Budget Progress */}
+        <FormSection title="Budget Usage">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-muted-foreground">Progress</span>
+            <span className={cn(
+              "text-sm font-semibold",
+              budgetUsage > 100 ? "text-destructive" : budgetUsage > 90 ? "text-warning" : "text-success"
+            )}>
+              {budgetUsage.toFixed(1)}%
+            </span>
+          </div>
+          <Progress 
+            value={Math.min(budgetUsage, 100)} 
+            className={cn(
+              "h-2",
+              budgetUsage > 100 ? "[&>div]:bg-destructive" : budgetUsage > 90 ? "[&>div]:bg-warning" : "[&>div]:bg-primary"
+            )}
+          />
+          <div className="flex justify-between mt-2">
+            <span className="text-xs text-muted-foreground">Spent: ${totalCost.toFixed(0)}</span>
+            <span className="text-xs text-muted-foreground">Budget: ${weeklyBudget.toLocaleString()}</span>
+          </div>
+        </FormSection>
 
-            {/* Charts */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
-              <Card variant="outlined">
-                <CardHeader title={<Typography variant="body2" fontWeight={500}>Shift Status Distribution</Typography>} />
-                <CardContent>
-                  <Box sx={{ height: 180 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsPie>
-                        <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
-                          {statusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </RechartsPie>
-                    </ResponsiveContainer>
-                  </Box>
-                </CardContent>
-              </Card>
+        {/* Charts */}
+        <FormSection title="Shift Status Distribution">
+          <div className="h-[180px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPie>
+                <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
+                  {statusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </RechartsPie>
+            </ResponsiveContainer>
+          </div>
+        </FormSection>
 
-              <Card variant="outlined">
-                <CardHeader title={<Typography variant="body2" fontWeight={500}>Hours by Role</Typography>} />
-                <CardContent>
-                  <Box sx={{ height: 180 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={roleData} layout="vertical">
-                        <XAxis type="number" />
-                        <YAxis dataKey="role" type="category" width={100} tick={{ fontSize: 11 }} />
-                        <Tooltip />
-                        <Bar dataKey="hours" fill="hsl(199, 89%, 48%)" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-          </Box>
-        </ScrollArea>
-      </SheetContent>
-    </Sheet>
+        <FormSection title="Hours by Role">
+          <div className="h-[180px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={roleData} layout="vertical">
+                <XAxis type="number" />
+                <YAxis dataKey="role" type="category" width={100} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </FormSection>
+      </div>
+    </PrimaryOffCanvas>
   );
 }
