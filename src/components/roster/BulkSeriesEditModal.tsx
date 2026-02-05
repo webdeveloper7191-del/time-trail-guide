@@ -1,11 +1,6 @@
 import { useState, useMemo } from 'react';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -106,21 +101,21 @@ export function BulkSeriesEditModal({
   if (!seriesInfo) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-lg overflow-y-auto">
-        <SheetHeader className="pb-4">
-          <SheetTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5 text-primary" />
-            Edit Recurring Series
-          </SheetTitle>
-          <SheetDescription>
-            Apply changes to all {seriesInfo.shiftCount} shifts in this {seriesInfo.pattern} series.
-          </SheetDescription>
-        </SheetHeader>
-
+    <PrimaryOffCanvas
+      open={open}
+      onClose={() => onOpenChange(false)}
+      title="Edit Recurring Series"
+      description={`Apply changes to all ${seriesInfo.shiftCount} shifts in this ${seriesInfo.pattern} series.`}
+      icon={RefreshCw}
+      size="md"
+      actions={[
+        { label: 'Cancel', variant: 'secondary', onClick: () => onOpenChange(false) },
+        { label: `Update ${seriesInfo.shiftCount} Shifts`, variant: 'primary', onClick: handleSave, disabled: !hasChanges },
+      ]}
+    >
+      <div className="space-y-4">
         {/* Current Series Info */}
-        <div className="bg-muted/50 rounded-lg p-4 mb-6">
-          <h4 className="text-sm font-medium mb-2">Current Series Details</h4>
+        <FormSection title="Current Series Details">
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-2">
               <User className="h-3.5 w-3.5 text-muted-foreground" />
@@ -140,22 +135,20 @@ export function BulkSeriesEditModal({
               </Badge>
             </div>
           </div>
-        </div>
+        </FormSection>
 
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-6">
+        <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
+            <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-warning">
               <strong>Bulk Edit Warning:</strong> Changes will apply to all {seriesInfo.shiftCount} shifts 
               in this series. Toggle only the fields you want to update.
             </div>
           </div>
         </div>
 
-        <Separator className="mb-6" />
-
         {/* Edit Options */}
-        <div className="space-y-6">
+        <FormSection title="Update Options">
           {/* Time Update */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -197,7 +190,7 @@ export function BulkSeriesEditModal({
             )}
           </div>
 
-          <Separator />
+          <Separator className="my-4" />
 
           {/* Room Update */}
           <div className="space-y-3">
@@ -230,7 +223,7 @@ export function BulkSeriesEditModal({
             )}
           </div>
 
-          <Separator />
+          <Separator className="my-4" />
 
           {/* Staff Update */}
           <div className="space-y-3">
@@ -263,7 +256,7 @@ export function BulkSeriesEditModal({
             )}
           </div>
 
-          <Separator />
+          <Separator className="my-4" />
 
           {/* Break Update */}
           <div className="space-y-3">
@@ -298,18 +291,8 @@ export function BulkSeriesEditModal({
               </div>
             )}
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-3 mt-8 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={!hasChanges}>
-            Update {seriesInfo.shiftCount} Shifts
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+        </FormSection>
+      </div>
+    </PrimaryOffCanvas>
   );
 }

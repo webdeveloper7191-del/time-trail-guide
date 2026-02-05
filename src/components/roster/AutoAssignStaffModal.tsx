@@ -1,35 +1,18 @@
 import { useState, useMemo, useCallback } from 'react';
-import {
-  Button,
-  Box,
-  Typography,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  LinearProgress,
-  Slider,
-  Alert,
-  IconButton,
-  Tooltip as MuiTooltip,
-  Divider,
-} from '@mui/material';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Slider } from '@/components/ui/slider';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 import { 
   Shift, 
   StaffMember, 
@@ -61,7 +44,6 @@ import {
   UserX,
 } from 'lucide-react';
 import { format, parseISO, getDay, isWithinInterval } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 interface EmptyShift {
   id: string;
@@ -606,56 +588,75 @@ export function AutoAssignStaffModal({
     return sum + (alt?.estimatedCost || 0);
   }, 0);
 
-  return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-[700px] sm:max-w-[700px] p-0">
-        <SheetHeader className="p-6 pb-0">
-          <SheetTitle className="flex items-center gap-2">
-            <Wand2 className="w-5 h-5 text-primary" />
-            Auto-Assign Staff to Shifts
-          </SheetTitle>
-          <SheetDescription>
-            Intelligently assign staff to {emptyShifts.length} empty shift(s) based on availability, 
-            qualifications, cost optimization, and fairness.
-          </SheetDescription>
-        </SheetHeader>
+  const actions: OffCanvasAction[] = activeTab === 'config' 
+    ? [
+        { label: 'Cancel', variant: 'secondary', onClick: onClose },
+        { 
+          label: 'Run Auto-Assignment', 
+          variant: 'primary', 
+          onClick: runAutoAssignment, 
+          disabled: emptyShifts.length === 0,
+          icon: <Wand2 size={16} />
+        },
+      ]
+    : [
+        { label: 'Cancel', variant: 'secondary', onClick: onClose },
+        { label: 'Re-run', variant: 'outlined', onClick: runAutoAssignment, icon: <RefreshCw size={16} /> },
+        { 
+          label: `Confirm ${assignedCount} Assignment(s)`, 
+          variant: 'primary', 
+          onClick: handleConfirmAssignments, 
+          disabled: assignedCount === 0,
+          icon: <Check size={16} />
+        },
+      ];
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-          <TabsList className="w-full justify-start px-6 pt-4">
+  return (
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Auto-Assign Staff to Shifts"
+      description={`Intelligently assign staff to ${emptyShifts.length} empty shift(s) based on availability, qualifications, cost optimization, and fairness.`}
+      icon={Wand2}
+      size="xl"
+      actions={actions}
+    >
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="config">Configuration</TabsTrigger>
             <TabsTrigger value="results" disabled={assignments.length === 0}>
               Results {assignments.length > 0 && `(${assignedCount}/${assignments.length})`}
             </TabsTrigger>
-          </TabsList>
+        </TabsList>
 
-          <ScrollArea className="h-[calc(100vh-280px)]">
-            <TabsContent value="config" className="p-6 pt-4 space-y-4">
+        <TabsContent value="config" className="space-y-4 mt-4">
               {/* Optimization Preset */}
               <FormSection title="Optimization Strategy">
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <div className="flex gap-2 flex-wrap">
                   {Object.keys(OPTIMIZATION_PRESETS).map(preset => (
-                    <Chip
+                    <Badge
                       key={preset}
-                      label={preset === 'balanced' ? 'Balanced' : 
-                             preset === 'costOptimized' ? 'Cost Optimized' :
-                             preset === 'qualityFirst' ? 'Quality First' : 'Fair Distribution'}
-                      icon={
-                        preset === 'balanced' ? <Zap size={14} /> :
-                        preset === 'costOptimized' ? <DollarSign size={14} /> :
-                        preset === 'qualityFirst' ? <GraduationCap size={14} /> : <Users size={14} />
-                      }
+                      variant={optimizationPreset === preset ? 'default' : 'outline'}
+                      className={cn(
+                        "cursor-pointer px-3 py-2 gap-1",
+                        optimizationPreset === preset && "bg-primary text-primary-foreground"
+                      )}
                       onClick={() => handlePresetChange(preset as keyof typeof OPTIMIZATION_PRESETS)}
-                      color={optimizationPreset === preset ? 'primary' : 'default'}
-                      variant={optimizationPreset === preset ? 'filled' : 'outlined'}
-                      sx={{ cursor: 'pointer' }}
-                    />
+                    >
+                      {preset === 'balanced' ? <Zap size={14} /> :
+                       preset === 'costOptimized' ? <DollarSign size={14} /> :
+                       preset === 'qualityFirst' ? <GraduationCap size={14} /> : <Users size={14} />}
+                      {preset === 'balanced' ? 'Balanced' : 
+                       preset === 'costOptimized' ? 'Cost Optimized' :
+                       preset === 'qualityFirst' ? 'Quality First' : 'Fair Distribution'}
+                    </Badge>
                   ))}
-                </Box>
+                </div>
               </FormSection>
 
               {/* Weight Sliders */}
               <FormSection title="Scoring Weights">
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div className="space-y-4">
                     {[
                       { key: 'cost', label: 'Cost Optimization', icon: <DollarSign size={14} /> },
                       { key: 'availability', label: 'Availability Match', icon: <Clock size={14} /> },
@@ -663,32 +664,31 @@ export function AutoAssignStaffModal({
                       { key: 'fairness', label: 'Fair Distribution', icon: <Users size={14} /> },
                       { key: 'preference', label: 'Staff Preferences', icon: <Calendar size={14} /> },
                     ].map(({ key, label, icon }) => (
-                      <Box key={key}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <div key={key}>
+                        <div className="flex items-center gap-2 mb-1">
                           {icon}
-                          <Typography variant="body2">{label}</Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
+                          <span className="text-sm">{label}</span>
+                          <span className="text-sm text-muted-foreground ml-auto">
                             {Math.round(weights[key as keyof typeof weights] * 100)}%
-                          </Typography>
-                        </Box>
+                          </span>
+                        </div>
                         <Slider
-                          value={weights[key as keyof typeof weights] * 100}
-                          onChange={(_, value) => setWeights(prev => ({
+                          value={[weights[key as keyof typeof weights] * 100]}
+                          onValueChange={(value) => setWeights(prev => ({
                             ...prev,
-                            [key]: (value as number) / 100,
+                            [key]: value[0] / 100,
                           }))}
                           min={0}
                           max={100}
-                          size="small"
                         />
-                      </Box>
+                      </div>
                     ))}
-                  </Box>
+                </div>
               </FormSection>
 
               {/* Staff Filters */}
               <FormSection title="Staff Filters">
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <div className="space-y-3">
                     <StyledSwitch
                       checked={includeCasual}
                       onChange={setIncludeCasual}
@@ -699,12 +699,12 @@ export function AutoAssignStaffModal({
                       onChange={setIncludeAgency}
                       label="Include agency staff"
                     />
-                  </Box>
+                </div>
               </FormSection>
 
               {/* Rules */}
               <FormSection title="Assignment Rules">
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div className="space-y-4">
                     <StyledSwitch
                       checked={enforceQualifications}
                       onChange={setEnforceQualifications}
@@ -715,224 +715,173 @@ export function AutoAssignStaffModal({
                       onChange={setRespectPreferences}
                       label="Respect staff scheduling preferences"
                     />
-                    <Box>
-                      <Typography variant="body2" gutterBottom>
-                        Maximum overtime allowance
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <div>
+                      <p className="text-sm mb-2">Maximum overtime allowance</p>
+                      <div className="flex items-center gap-3">
                         <Slider
-                          value={maxOvertimePercent}
-                          onChange={(_, value) => setMaxOvertimePercent(value as number)}
+                          value={[maxOvertimePercent]}
+                          onValueChange={(value) => setMaxOvertimePercent(value[0])}
                           min={0}
                           max={50}
-                          size="small"
-                          sx={{ flex: 1 }}
+                          className="flex-1"
                         />
-                        <Typography variant="body2" color="text.secondary">
+                        <span className="text-sm text-muted-foreground w-12 text-right">
                           {maxOvertimePercent}%
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
+                        </span>
+                      </div>
+                    </div>
+                </div>
               </FormSection>
 
               {/* Summary of shifts to assign */}
-              <Alert severity="info" icon={<Info size={16} />}>
-                <Typography variant="body2">
+              <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 flex items-start gap-2">
+                <Info size={16} className="text-primary mt-0.5" />
+                <p className="text-sm">
                   <strong>{emptyShifts.length}</strong> shift(s) ready for assignment across{' '}
                   <strong>{new Set(emptyShifts.map(s => s.date)).size}</strong> day(s)
-                </Typography>
-              </Alert>
-            </TabsContent>
+                </p>
+              </div>
+        </TabsContent>
 
-            <TabsContent value="results" className="p-6 pt-4 space-y-4">
+        <TabsContent value="results" className="space-y-4 mt-4">
               {isProcessing ? (
-                <Box sx={{ textAlign: 'center', py: 8 }}>
+                <div className="text-center py-12">
                   <Wand2 className="w-12 h-12 mx-auto mb-4 text-primary animate-pulse" />
-                  <Typography variant="h6" gutterBottom>
-                    Optimizing Assignments...
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <h3 className="text-lg font-semibold mb-1">Optimizing Assignments...</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
                     Analyzing availability, qualifications, and costs
-                  </Typography>
-                  <LinearProgress sx={{ mt: 3, maxWidth: 300, mx: 'auto' }} />
-                </Box>
+                  </p>
+                  <Progress value={50} className="max-w-[300px] mx-auto" />
+                </div>
               ) : (
                 <>
                   {/* Summary Stats */}
                   <div className="grid grid-cols-3 gap-3">
-                    <Box sx={{ p: 2, bgcolor: 'success.main', color: 'success.contrastText', borderRadius: 2, textAlign: 'center' }}>
+                    <div className="p-3 bg-success text-success-foreground rounded-lg text-center">
                       <UserCheck className="w-6 h-6 mx-auto mb-1" />
-                      <Typography variant="h5" fontWeight={700}>{assignedCount}</Typography>
-                      <Typography variant="caption">Assigned</Typography>
-                    </Box>
-                    <Box sx={{ p: 2, bgcolor: 'warning.main', color: 'warning.contrastText', borderRadius: 2, textAlign: 'center' }}>
+                      <p className="text-2xl font-bold">{assignedCount}</p>
+                      <p className="text-xs">Assigned</p>
+                    </div>
+                    <div className="p-3 bg-warning text-warning-foreground rounded-lg text-center">
                       <UserX className="w-6 h-6 mx-auto mb-1" />
-                      <Typography variant="h5" fontWeight={700}>{unassignedCount}</Typography>
-                      <Typography variant="caption">Unassigned</Typography>
-                    </Box>
-                    <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'primary.contrastText', borderRadius: 2, textAlign: 'center' }}>
+                      <p className="text-2xl font-bold">{unassignedCount}</p>
+                      <p className="text-xs">Unassigned</p>
+                    </div>
+                    <div className="p-3 bg-primary text-primary-foreground rounded-lg text-center">
                       <DollarSign className="w-6 h-6 mx-auto mb-1" />
-                      <Typography variant="h5" fontWeight={700}>${totalEstimatedCost.toFixed(0)}</Typography>
-                      <Typography variant="caption">Est. Cost</Typography>
-                    </Box>
+                      <p className="text-2xl font-bold">${totalEstimatedCost.toFixed(0)}</p>
+                      <p className="text-xs">Est. Cost</p>
+                    </div>
                   </div>
 
                   {/* Assignment Results */}
                   <FormSection title="Assignment Results">
                     <div className="space-y-3">
                     {assignments.map(assignment => (
-                      <Box
+                      <div
                         key={assignment.shiftId}
-                        sx={{
-                          p: 2,
-                          borderRadius: 2,
-                          border: '1px solid',
-                          borderColor: assignment.staffId ? 'divider' : 'warning.main',
-                          bgcolor: assignment.staffId ? 'background.paper' : 'warning.50',
-                        }}
+                        className={cn(
+                          "p-3 rounded-lg border",
+                          assignment.staffId ? "border-border bg-background" : "border-warning bg-warning/10"
+                        )}
                       >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                          <Box>
-                            <Typography variant="subtitle2" fontWeight={600}>
-                              {assignment.room}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="text-sm font-semibold">{assignment.room}</p>
+                            <p className="text-xs text-muted-foreground">
                               {format(parseISO(assignment.date), 'EEE, MMM d')} • {assignment.time}
-                            </Typography>
-                          </Box>
+                            </p>
+                          </div>
                           {assignment.staffId && (
-                            <Chip
-                              size="small"
-                              label={`Score: ${assignment.score}`}
-                              color={assignment.score >= 70 ? 'success' : assignment.score >= 40 ? 'warning' : 'error'}
-                            />
+                            <Badge
+                              variant={assignment.score >= 70 ? 'default' : 'outline'}
+                              className={cn(
+                                assignment.score >= 70 ? "bg-success text-success-foreground" :
+                                assignment.score >= 40 ? "bg-warning text-warning-foreground" :
+                                "bg-destructive text-destructive-foreground"
+                              )}
+                            >
+                              Score: {assignment.score}
+                            </Badge>
                           )}
-                        </Box>
+                        </div>
 
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+                        <div className="flex items-center gap-2">
                           {assignment.staffId ? (
                             <>
                               <Check className="w-4 h-4 text-success" />
-                              <Typography variant="body2" fontWeight={500}>
-                                {assignment.staffName}
-                              </Typography>
+                              <span className="text-sm font-medium">{assignment.staffName}</span>
                             </>
                           ) : (
                             <>
                               <AlertTriangle className="w-4 h-4 text-warning" />
-                              <Typography variant="body2" color="warning.main" fontWeight={500}>
-                                No eligible staff found
-                              </Typography>
+                              <span className="text-sm font-medium text-warning">No eligible staff found</span>
                             </>
                           )}
-                        </Box>
+                        </div>
 
                         {assignment.issues.length > 0 && (
-                          <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          <div className="mt-2 flex flex-wrap gap-1">
                             {assignment.issues.map((issue, idx) => (
-                              <Chip key={idx} label={issue} size="small" variant="outlined" color="warning" />
+                              <Badge key={idx} variant="outline" className="text-xs border-warning text-warning">
+                                {issue}
+                              </Badge>
                             ))}
-                          </Box>
+                          </div>
                         )}
 
                         {/* Alternative options */}
                         {assignment.alternatives.length > 1 && (
-                          <Accordion sx={{ mt: 1, bgcolor: 'transparent', boxShadow: 'none' }}>
-                            <AccordionSummary expandIcon={<ChevronDown size={14} />} sx={{ minHeight: 32, p: 0 }}>
-                              <Typography variant="caption" color="text.secondary">
+                          <Collapsible className="mt-2">
+                            <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                              <ChevronDown size={14} />
                                 {assignment.alternatives.length} alternative(s) available
-                              </Typography>
-                            </AccordionSummary>
-                            <AccordionDetails sx={{ p: 0 }}>
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mt-2">
+                              <div className="space-y-1">
                                 {assignment.alternatives.slice(0, 5).map(alt => (
-                                  <Box
+                                  <div
                                     key={alt.staffId}
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'space-between',
-                                      p: 1,
-                                      borderRadius: 1,
-                                      bgcolor: assignment.staffId === alt.staffId ? 'action.selected' : 'action.hover',
-                                      cursor: 'pointer',
-                                      '&:hover': { bgcolor: 'action.selected' },
-                                    }}
+                                    className={cn(
+                                      "flex items-center justify-between p-2 rounded cursor-pointer hover:bg-muted",
+                                      assignment.staffId === alt.staffId && "bg-muted"
+                                    )}
                                     onClick={() => handleManualOverride(assignment.shiftId, alt.staffId)}
                                   >
-                                    <Box>
-                                      <Typography variant="body2">
+                                    <div>
+                                      <span className="text-sm">
                                         {alt.staffName}
-                                        <Chip 
-                                          label={alt.employmentType} 
-                                          size="small" 
-                                          sx={{ ml: 1, height: 18, fontSize: '0.65rem' }}
-                                        />
-                                      </Typography>
-                                      <Typography variant="caption" color="text.secondary">
+                                        <Badge variant="secondary" className="ml-1 text-[10px]">
+                                          {alt.employmentType}
+                                        </Badge>
+                                      </span>
+                                      <p className="text-xs text-muted-foreground">
                                         ${alt.estimatedCost.toFixed(2)} est.
-                                      </Typography>
-                                    </Box>
-                                    <Chip
-                                      label={alt.score}
-                                      size="small"
-                                      color={alt.score >= 70 ? 'success' : alt.score >= 40 ? 'warning' : 'default'}
-                                    />
-                                  </Box>
+                                      </p>
+                                    </div>
+                                    <Badge
+                                      variant={alt.score >= 70 ? 'default' : 'outline'}
+                                      className={cn(
+                                        alt.score >= 70 ? "bg-success text-success-foreground" :
+                                        alt.score >= 40 ? "bg-warning text-warning-foreground" : ""
+                                      )}
+                                    >
+                                      {alt.score}
+                                    </Badge>
+                                  </div>
                                 ))}
-                              </Box>
-                            </AccordionDetails>
-                          </Accordion>
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
                         )}
-                      </Box>
+                      </div>
                     ))}
                     </div>
                   </FormSection>
                 </>
               )}
-            </TabsContent>
-          </ScrollArea>
-        </Tabs>
-
-        <SheetFooter className="p-6 pt-4 border-t">
-          <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
-            <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>
-              Cancel
-            </Button>
-            {activeTab === 'config' ? (
-              <Button
-                variant="contained"
-                onClick={runAutoAssignment}
-                disabled={emptyShifts.length === 0}
-                startIcon={<Wand2 size={16} />}
-                sx={{ flex: 1 }}
-              >
-                Run Auto-Assignment
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="outlined"
-                  onClick={runAutoAssignment}
-                  startIcon={<RefreshCw size={16} />}
-                >
-                  Re-run
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={handleConfirmAssignments}
-                  disabled={assignedCount === 0}
-                  startIcon={<Check size={16} />}
-                  sx={{ flex: 1 }}
-                >
-                  Confirm {assignedCount} Assignment(s)
-                </Button>
-              </>
-            )}
-          </Box>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </TabsContent>
+      </Tabs>
+    </PrimaryOffCanvas>
   );
 }
