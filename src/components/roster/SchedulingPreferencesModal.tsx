@@ -1,15 +1,11 @@
 import { useState, useEffect } from 'react';
-import {
-  Tab,
-  Tabs,
-  Switch as MuiSwitch,
-  Slider as MuiSlider,
-  Checkbox as MuiCheckbox,
-} from '@mui/material';
+import { StyledSwitch } from '@/components/ui/StyledSwitch';
+import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   User, 
   Clock, 
@@ -23,14 +19,7 @@ import {
 } from 'lucide-react';
 import { StaffMember, SchedulingPreferences, Room } from '@/types/roster';
 import { cn } from '@/lib/utils';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
+import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
 
 interface SchedulingPreferencesModalProps {
@@ -104,29 +93,27 @@ export function SchedulingPreferencesModal({
   };
 
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <User className="h-5 w-5 text-primary" />
-            Scheduling Preferences
-          </SheetTitle>
-          <SheetDescription>
-            Configure scheduling preferences for {staff.name}
-          </SheetDescription>
-        </SheetHeader>
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Scheduling Preferences"
+      description={`Configure scheduling preferences for ${staff.name}`}
+      icon={User}
+      size="lg"
+      actions={[
+        { label: 'Cancel', variant: 'secondary', onClick: onClose },
+        { label: 'Save Preferences', variant: 'primary', onClick: handleSave },
+      ]}
+    >
+      <Tabs value={tabValue.toString()} onValueChange={(v) => setTabValue(parseInt(v))} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="0">Schedule</TabsTrigger>
+          <TabsTrigger value="1">Rooms</TabsTrigger>
+          <TabsTrigger value="2">Notifications</TabsTrigger>
+        </TabsList>
 
-        <div className="mt-6">
-          <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tab label="Schedule" />
-            <Tab label="Rooms" />
-            <Tab label="Notifications" />
-          </Tabs>
-
-          <ScrollArea className="h-[calc(100vh-320px)] mt-4">
-            {/* Schedule Tab */}
-            {tabValue === 0 && (
-              <div className="space-y-5 pr-4">
+        {/* Schedule Tab */}
+        <TabsContent value="0" className="space-y-4 mt-4">
                 {/* Max Consecutive Days */}
                 <FormSection title="Max Consecutive Work Days">
                   <Label className="flex items-center justify-between">
@@ -136,14 +123,13 @@ export function SchedulingPreferencesModal({
                     </span>
                     <Badge variant="secondary">{preferences.maxConsecutiveDays} days</Badge>
                   </Label>
-                  <MuiSlider
-                    value={preferences.maxConsecutiveDays}
-                    onChange={(_, v) => setPreferences({ ...preferences, maxConsecutiveDays: v as number })}
+                  <Slider
+                    value={[preferences.maxConsecutiveDays]}
+                    onValueChange={(v) => setPreferences({ ...preferences, maxConsecutiveDays: v[0] })}
                     min={3}
                     max={7}
                     step={1}
-                    marks
-                    valueLabelDisplay="auto"
+                    className="mt-2"
                   />
                   <p className="text-xs text-muted-foreground">
                     Maximum number of days in a row this staff can work
@@ -159,14 +145,13 @@ export function SchedulingPreferencesModal({
                     </span>
                     <Badge variant="secondary">{preferences.minRestHoursBetweenShifts}h</Badge>
                   </Label>
-                  <MuiSlider
-                    value={preferences.minRestHoursBetweenShifts}
-                    onChange={(_, v) => setPreferences({ ...preferences, minRestHoursBetweenShifts: v as number })}
+                  <Slider
+                    value={[preferences.minRestHoursBetweenShifts]}
+                    onValueChange={(v) => setPreferences({ ...preferences, minRestHoursBetweenShifts: v[0] })}
                     min={8}
                     max={14}
                     step={1}
-                    marks
-                    valueLabelDisplay="auto"
+                    className="mt-2"
                   />
                   <p className="text-xs text-muted-foreground">
                     Minimum hours of rest required between consecutive shifts
@@ -182,14 +167,13 @@ export function SchedulingPreferencesModal({
                     </span>
                     <Badge variant="secondary">{preferences.maxShiftsPerWeek} shifts</Badge>
                   </Label>
-                  <MuiSlider
-                    value={preferences.maxShiftsPerWeek}
-                    onChange={(_, v) => setPreferences({ ...preferences, maxShiftsPerWeek: v as number })}
+                  <Slider
+                    value={[preferences.maxShiftsPerWeek]}
+                    onValueChange={(v) => setPreferences({ ...preferences, maxShiftsPerWeek: v[0] })}
                     min={3}
                     max={7}
                     step={1}
-                    marks
-                    valueLabelDisplay="auto"
+                    className="mt-2"
                   />
                 </FormSection>
 
@@ -201,12 +185,12 @@ export function SchedulingPreferencesModal({
                         <Sun className="h-4 w-4 text-warning" />
                         Prefer Early Shifts (6:30 AM - 2:30 PM)
                       </Label>
-                      <MuiSwitch
+                      <StyledSwitch
                         checked={preferences.preferEarlyShifts}
-                        onChange={(e) => setPreferences({ 
+                        onChange={(checked) => setPreferences({ 
                           ...preferences, 
-                          preferEarlyShifts: e.target.checked,
-                          preferLateShifts: e.target.checked ? false : preferences.preferLateShifts
+                          preferEarlyShifts: checked,
+                          preferLateShifts: checked ? false : preferences.preferLateShifts
                         })}
                       />
                     </div>
@@ -215,23 +199,21 @@ export function SchedulingPreferencesModal({
                         <Moon className="h-4 w-4 text-primary" />
                         Prefer Late Shifts (10:30 AM - 6:30 PM)
                       </Label>
-                      <MuiSwitch
+                      <StyledSwitch
                         checked={preferences.preferLateShifts}
-                        onChange={(e) => setPreferences({ 
+                        onChange={(checked) => setPreferences({ 
                           ...preferences, 
-                          preferLateShifts: e.target.checked,
-                          preferEarlyShifts: e.target.checked ? false : preferences.preferEarlyShifts
+                          preferLateShifts: checked,
+                          preferEarlyShifts: checked ? false : preferences.preferEarlyShifts
                         })}
                       />
                     </div>
                   </div>
                 </FormSection>
-              </div>
-            )}
+        </TabsContent>
 
-            {/* Rooms Tab */}
-            {tabValue === 1 && (
-              <div className="space-y-5 pr-4">
+        {/* Rooms Tab */}
+        <TabsContent value="1" className="space-y-4 mt-4">
                 {/* Preferred Rooms */}
                 <FormSection title="Preferred Rooms">
                   <div className="grid grid-cols-2 gap-2">
@@ -246,10 +228,9 @@ export function SchedulingPreferencesModal({
                         )}
                         onClick={() => togglePreferredRoom(room.id)}
                       >
-                        <MuiCheckbox 
+                        <Checkbox 
                           checked={preferences.preferredRooms?.includes(room.id)}
-                          size="small"
-                          sx={{ '&.Mui-checked': { color: 'hsl(var(--primary))' } }}
+                          className="border-primary data-[state=checked]:bg-primary"
                         />
                         <div className="flex-1">
                           <p className="text-sm font-medium">{room.name}</p>
@@ -274,10 +255,9 @@ export function SchedulingPreferencesModal({
                         )}
                         onClick={() => toggleAvoidRoom(room.id)}
                       >
-                        <MuiCheckbox 
+                        <Checkbox 
                           checked={preferences.avoidRooms?.includes(room.id)}
-                          size="small"
-                          color="error"
+                          className="border-destructive data-[state=checked]:bg-destructive"
                         />
                         <div className="flex-1">
                           <p className="text-sm font-medium">{room.name}</p>
@@ -287,12 +267,10 @@ export function SchedulingPreferencesModal({
                     ))}
                   </div>
                 </FormSection>
-              </div>
-            )}
+        </TabsContent>
 
-            {/* Notifications Tab */}
-            {tabValue === 2 && (
-              <div className="space-y-5 pr-4">
+        {/* Notifications Tab */}
+        <TabsContent value="2" className="space-y-4 mt-4">
                 <FormSection title="Notification Preferences">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -302,9 +280,9 @@ export function SchedulingPreferencesModal({
                           Notify when new shifts are published
                         </p>
                       </div>
-                      <MuiSwitch
+                      <StyledSwitch
                         checked={preferences.notifyOnPublish}
-                        onChange={(e) => setPreferences({ ...preferences, notifyOnPublish: e.target.checked })}
+                        onChange={(checked) => setPreferences({ ...preferences, notifyOnPublish: checked })}
                       />
                     </div>
                     
@@ -315,9 +293,9 @@ export function SchedulingPreferencesModal({
                           Notify when shifts are swapped
                         </p>
                       </div>
-                      <MuiSwitch
+                      <StyledSwitch
                         checked={preferences.notifyOnSwap}
-                        onChange={(e) => setPreferences({ ...preferences, notifyOnSwap: e.target.checked })}
+                        onChange={(checked) => setPreferences({ ...preferences, notifyOnSwap: checked })}
                       />
                     </div>
                     
@@ -328,9 +306,9 @@ export function SchedulingPreferencesModal({
                           Notify about new open shifts
                         </p>
                       </div>
-                      <MuiSwitch
+                      <StyledSwitch
                         checked={preferences.notifyOnOpenShifts}
-                        onChange={(e) => setPreferences({ ...preferences, notifyOnOpenShifts: e.target.checked })}
+                        onChange={(checked) => setPreferences({ ...preferences, notifyOnOpenShifts: checked })}
                       />
                     </div>
                   </div>
@@ -341,16 +319,8 @@ export function SchedulingPreferencesModal({
                     Notifications will be sent via email to <span className="font-medium">{staff.email || 'Not configured'}</span>
                   </p>
                 </FormSection>
-              </div>
-            )}
-          </ScrollArea>
-        </div>
-
-        <SheetFooter className="mt-6">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save Preferences</Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </TabsContent>
+      </Tabs>
+    </PrimaryOffCanvas>
   );
 }
