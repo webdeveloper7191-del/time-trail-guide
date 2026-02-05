@@ -1,18 +1,6 @@
 import { useMemo } from 'react';
 import { StaffMember, Shift, Centre, Room, roleLabels, ageGroupLabels } from '@/types/roster';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  LinearProgress,
-  Chip,
-  Box,
-  Typography,
-  Divider,
-  Alert,
-  AlertTitle,
-} from '@mui/material';
 import { 
   TrendingUp,
   TrendingDown,
@@ -32,7 +20,7 @@ import {
   XCircle,
   Zap,
   PiggyBank,
-  Shield
+  Shield,
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -50,14 +38,10 @@ import {
   Area,
   AreaChart
 } from 'recharts';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface WeeklyOptimizationReportProps {
@@ -421,8 +405,8 @@ export function WeeklyOptimizationReport({
 
   const priorityColors = {
     high: 'text-destructive',
-    medium: 'text-amber-600',
-    low: 'text-blue-600',
+    medium: 'text-warning',
+    low: 'text-primary',
   };
 
   const typeIcons = {
@@ -433,30 +417,26 @@ export function WeeklyOptimizationReport({
   };
 
   const typeColors = {
-    savings: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-    compliance: 'bg-red-50 border-red-200 text-red-700',
-    coverage: 'bg-amber-50 border-amber-200 text-amber-700',
-    efficiency: 'bg-blue-50 border-blue-200 text-blue-700',
+    savings: 'bg-success/10 border-success/30 text-success',
+    compliance: 'bg-destructive/10 border-destructive/30 text-destructive',
+    coverage: 'bg-warning/10 border-warning/30 text-warning',
+    efficiency: 'bg-primary/10 border-primary/30 text-primary',
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" style={{ width: '1200px', maxWidth: '95vw' }}>
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Weekly Optimization Report
-          </SheetTitle>
-          <SheetDescription>
-            {centre.name} • {dates[0]?.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })} - {dates[dates.length - 1]?.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
-          </SheetDescription>
-        </SheetHeader>
-
-        <ScrollArea className="flex-1 pr-4 h-[calc(100vh-160px)]">
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 4 }}>
-            
-            {/* Key Metrics Overview */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
+    <PrimaryOffCanvas
+      open={isOpen}
+      onClose={onClose}
+      title="Weekly Optimization Report"
+      description={`${centre.name} • ${dates[0]?.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })} - ${dates[dates.length - 1]?.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}`}
+      icon={BarChart3}
+      size="4xl"
+      showFooter={false}
+    >
+      <div className="space-y-4">
+        {/* Key Metrics Overview */}
+        <FormSection title="Key Metrics">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <MetricCard
                 icon={<Clock className="h-5 w-5" />}
                 label="Hours Scheduled"
@@ -489,113 +469,90 @@ export function WeeklyOptimizationReport({
                 trend={weeklyTotals.avgAttendanceRate >= 85 ? 'up' : 'down'}
                 color={weeklyTotals.avgAttendanceRate >= 85 ? 'success' : 'warning'}
               />
-            </Box>
+          </div>
+        </FormSection>
 
-            {/* Budget Progress */}
-            <Card variant="outlined">
-              <CardContent sx={{ py: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" fontWeight={500}>Weekly Budget Usage</Typography>
-                  <Typography 
-                    variant="body2" 
-                    fontWeight={600} 
-                    color={budgetUsage > 100 ? 'error.main' : budgetUsage > 90 ? 'warning.main' : 'success.main'}
-                  >
-                    {budgetUsage.toFixed(1)}%
-                  </Typography>
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={Math.min(budgetUsage, 100)} 
-                  color={budgetUsage > 100 ? 'error' : budgetUsage > 90 ? 'warning' : 'primary'}
-                  sx={{ height: 10, borderRadius: 1 }}
-                />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Est. Cost: ${Math.round(weeklyTotals.totalHoursScheduled * avgHourlyRate).toLocaleString()}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Budget: ${weeklyBudget.toLocaleString()}
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
+        {/* Budget Progress */}
+        <FormSection title="Budget Usage">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium">Weekly Budget Usage</span>
+            <span className={cn(
+              "text-sm font-semibold",
+              budgetUsage > 100 ? "text-destructive" : budgetUsage > 90 ? "text-warning" : "text-success"
+            )}>
+              {budgetUsage.toFixed(1)}%
+            </span>
+          </div>
+          <Progress 
+            value={Math.min(budgetUsage, 100)} 
+            className={cn(
+              "h-3",
+              budgetUsage > 100 ? "[&>div]:bg-destructive" : budgetUsage > 90 ? "[&>div]:bg-warning" : "[&>div]:bg-primary"
+            )}
+          />
+          <div className="flex justify-between mt-2">
+            <span className="text-xs text-muted-foreground">
+              Est. Cost: ${Math.round(weeklyTotals.totalHoursScheduled * avgHourlyRate).toLocaleString()}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Budget: ${weeklyBudget.toLocaleString()}
+            </span>
+          </div>
+        </FormSection>
 
-            {/* Recommendations Section */}
-            {recommendations.length > 0 && (
-              <Card variant="outlined">
-                <CardHeader 
-                  title={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Lightbulb className="h-5 w-5 text-amber-500" />
-                      <Typography variant="subtitle1" fontWeight={600}>Optimization Recommendations</Typography>
-                      <Chip label={`${recommendations.length} actions`} size="small" color="primary" />
-                    </Box>
-                  }
-                  sx={{ pb: 0 }}
-                />
-                <CardContent>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        {/* Recommendations Section */}
+        {recommendations.length > 0 && (
+          <FormSection title="Optimization Recommendations">
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb className="h-4 w-4 text-warning" />
+              <Badge variant="secondary">{recommendations.length} actions</Badge>
+            </div>
+            <div className="space-y-2">
                     {recommendations.slice(0, 6).map(rec => {
                       const Icon = typeIcons[rec.type];
                       return (
-                        <Box 
+                        <div 
                           key={rec.id}
                           className={cn(
                             "rounded-lg border p-3",
                             typeColors[rec.type]
                           )}
                         >
-                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                            <Box sx={{ flexShrink: 0, mt: 0.5 }}>
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 mt-0.5">
                               <Icon className="h-4 w-4" />
-                            </Box>
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                <Typography variant="body2" fontWeight={600}>{rec.title}</Typography>
-                                <Chip 
-                                  label={rec.priority} 
-                                  size="small" 
-                                  sx={{ 
-                                    height: 18, 
-                                    fontSize: '0.65rem',
-                                    bgcolor: rec.priority === 'high' ? 'error.light' : rec.priority === 'medium' ? 'warning.light' : 'info.light',
-                                    color: rec.priority === 'high' ? 'error.dark' : rec.priority === 'medium' ? 'warning.dark' : 'info.dark',
-                                  }}
-                                />
-                              </Box>
-                              <Typography variant="caption" sx={{ display: 'block', mb: 1, opacity: 0.9 }}>
-                                {rec.description}
-                              </Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Typography variant="caption" fontWeight={600}>
-                                  {rec.impact}
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, opacity: 0.7 }}>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm font-semibold">{rec.title}</span>
+                                <Badge 
+                                  variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'outline' : 'secondary'}
+                                  className="text-[10px]"
+                                >
+                                  {rec.priority}
+                                </Badge>
+                              </div>
+                              <p className="text-xs opacity-90 mb-2">{rec.description}</p>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-semibold">{rec.impact}</span>
+                                <div className="flex items-center gap-1 opacity-70">
                                   <ArrowRight className="h-3 w-3" />
-                                  <Typography variant="caption">{rec.action}</Typography>
-                                </Box>
-                              </Box>
-                            </Box>
-                          </Box>
-                        </Box>
+                                  <span className="text-xs">{rec.action}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       );
                     })}
-                  </Box>
-                </CardContent>
-              </Card>
-            )}
+            </div>
+          </FormSection>
+        )}
 
-            {/* Charts Row */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-              {/* Daily Staffing Chart */}
-              <Card variant="outlined">
-                <CardHeader 
-                  title={<Typography variant="body2" fontWeight={500}>Daily Staffing Overview</Typography>} 
-                  sx={{ pb: 0 }}
-                />
-                <CardContent>
-                  <Box sx={{ height: 200 }}>
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <FormSection title="Daily Staffing Overview">
+            <div className="h-[200px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={dailySummary}>
                         <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -614,18 +571,11 @@ export function WeeklyOptimizationReport({
                         <Line type="monotone" dataKey="attendance" name="Attendance %" yAxisId={0} stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 3 }} />
                       </ComposedChart>
                     </ResponsiveContainer>
-                  </Box>
-                </CardContent>
-              </Card>
+            </div>
+          </FormSection>
 
-              {/* Room Efficiency Chart */}
-              <Card variant="outlined">
-                <CardHeader 
-                  title={<Typography variant="body2" fontWeight={500}>Room Efficiency Comparison</Typography>} 
-                  sx={{ pb: 0 }}
-                />
-                <CardContent>
-                  <Box sx={{ height: 200 }}>
+          <FormSection title="Room Efficiency Comparison">
+            <div className="h-[200px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={roomComparison} layout="vertical">
                         <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 150]} />
@@ -658,20 +608,14 @@ export function WeeklyOptimizationReport({
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
+            </div>
+          </FormSection>
+        </div>
 
-            {/* Room Detail Table */}
-            <Card variant="outlined">
-              <CardHeader 
-                title={<Typography variant="body2" fontWeight={500}>Room-by-Day Breakdown</Typography>} 
-                sx={{ pb: 0 }}
-              />
-              <CardContent sx={{ p: 0 }}>
-                <Box sx={{ overflowX: 'auto' }}>
-                  <table className="w-full text-xs">
+        {/* Room Detail Table */}
+        <FormSection title="Room-by-Day Breakdown">
+          <div className="overflow-x-auto -mx-4">
+            <table className="w-full text-xs min-w-[600px]">
                     <thead>
                       <tr className="border-b border-border bg-muted/30">
                         <th className="text-left p-2 font-medium">Room</th>
@@ -705,29 +649,29 @@ export function WeeklyOptimizationReport({
                                 <td key={idx} className="text-center p-2">
                                   <div className={cn(
                                     "inline-flex flex-col items-center rounded px-2 py-1 min-w-[50px]",
-                                    dayMetric.staffDiff > 0 && "bg-amber-50",
-                                    dayMetric.staffDiff < 0 && "bg-red-50",
-                                    dayMetric.staffDiff === 0 && "bg-emerald-50"
+                                    dayMetric.staffDiff > 0 && "bg-warning/10",
+                                    dayMetric.staffDiff < 0 && "bg-destructive/10",
+                                    dayMetric.staffDiff === 0 && "bg-success/10"
                                   )}>
                                     <span className={cn(
                                       "font-semibold text-sm",
-                                      dayMetric.staffDiff > 0 && "text-amber-700",
-                                      dayMetric.staffDiff < 0 && "text-red-700",
-                                      dayMetric.staffDiff === 0 && "text-emerald-700"
+                                      dayMetric.staffDiff > 0 && "text-warning",
+                                      dayMetric.staffDiff < 0 && "text-destructive",
+                                      dayMetric.staffDiff === 0 && "text-success"
                                     )}>
                                       {dayMetric.scheduledStaff}/{dayMetric.requiredStaff}
                                     </span>
                                     {dayMetric.staffDiff !== 0 && (
                                       <span className={cn(
                                         "text-[10px]",
-                                        dayMetric.staffDiff > 0 && "text-amber-600",
-                                        dayMetric.staffDiff < 0 && "text-red-600"
+                                        dayMetric.staffDiff > 0 && "text-warning",
+                                        dayMetric.staffDiff < 0 && "text-destructive"
                                       )}>
                                         {dayMetric.staffDiff > 0 ? `+${dayMetric.staffDiff}` : dayMetric.staffDiff}
                                       </span>
                                     )}
                                     {!dayMetric.ratioCompliant && (
-                                      <AlertTriangle className="h-3 w-3 text-red-500 mt-0.5" />
+                                      <AlertTriangle className="h-3 w-3 text-destructive mt-0.5" />
                                     )}
                                   </div>
                                 </td>
@@ -736,17 +680,17 @@ export function WeeklyOptimizationReport({
                             <td className="text-center p-2">
                               <div className="flex flex-col items-center gap-0.5">
                                 {weekSavings > 0 && (
-                                  <span className="text-[10px] text-emerald-600 font-medium">
+                                  <span className="text-[10px] text-success font-medium">
                                     Save ${weekSavings}
                                   </span>
                                 )}
                                 {weekGaps > 0 && (
-                                  <span className="text-[10px] text-red-600 font-medium">
+                                  <span className="text-[10px] text-destructive font-medium">
                                     Gap ${weekGaps}
                                   </span>
                                 )}
                                 {weekSavings === 0 && weekGaps === 0 && (
-                                  <span className="text-[10px] text-emerald-600">
+                                  <span className="text-[10px] text-success">
                                     <CheckCircle2 className="h-3 w-3" />
                                   </span>
                                 )}
@@ -757,85 +701,67 @@ export function WeeklyOptimizationReport({
                       })}
                     </tbody>
                   </table>
-                </Box>
-              </CardContent>
-            </Card>
+          </div>
+        </FormSection>
 
-            {/* Staff Leave Summary */}
-            {leaveSummary.total > 0 && (
-              <Card variant="outlined">
-                <CardHeader 
-                  title={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <UserMinus className="h-4 w-4 text-amber-500" />
-                      <Typography variant="body2" fontWeight={500}>Staff Leave This Week</Typography>
-                    </Box>
-                  }
-                  sx={{ pb: 0 }}
-                />
-                <CardContent>
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        {/* Staff Leave Summary */}
+        {leaveSummary.total > 0 && (
+          <FormSection title="Staff Leave This Week">
+            <div className="flex items-center gap-2 mb-3">
+              <UserMinus className="h-4 w-4 text-warning" />
+            </div>
+            <div className="flex gap-2 flex-wrap">
                     {leaveSummary.sick > 0 && (
-                      <Chip 
-                        icon={<UserMinus className="h-3 w-3" />}
-                        label={`${leaveSummary.sick} Sick Leave`} 
-                        size="small"
-                        sx={{ bgcolor: 'error.light', color: 'error.dark' }}
-                      />
+                      <Badge variant="destructive" className="gap-1">
+                        <UserMinus className="h-3 w-3" />
+                        {leaveSummary.sick} Sick Leave
+                      </Badge>
                     )}
                     {leaveSummary.annual > 0 && (
-                      <Chip 
-                        icon={<Calendar className="h-3 w-3" />}
-                        label={`${leaveSummary.annual} Annual Leave`} 
-                        size="small"
-                        sx={{ bgcolor: 'info.light', color: 'info.dark' }}
-                      />
+                      <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary">
+                        <Calendar className="h-3 w-3" />
+                        {leaveSummary.annual} Annual Leave
+                      </Badge>
                     )}
                     {leaveSummary.personal > 0 && (
-                      <Chip 
-                        label={`${leaveSummary.personal} Personal Leave`} 
-                        size="small"
-                        sx={{ bgcolor: 'secondary.light', color: 'secondary.dark' }}
-                      />
+                      <Badge variant="secondary">
+                        {leaveSummary.personal} Personal Leave
+                      </Badge>
                     )}
-                  </Box>
-                </CardContent>
-              </Card>
-            )}
+            </div>
+          </FormSection>
+        )}
 
-            {/* Summary Insights */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+        {/* Summary Insights */}
+        <div className="grid grid-cols-3 gap-3">
               <InsightCard
-                icon={<UserPlus className="h-5 w-5 text-amber-500" />}
+                icon={<UserPlus className="h-5 w-5 text-warning" />}
                 label="Overstaffed Days"
                 value={weeklyTotals.daysOverstaffed}
                 description="Days with excess staff"
                 color="amber"
               />
               <InsightCard
-                icon={<UserMinus className="h-5 w-5 text-red-500" />}
+                icon={<UserMinus className="h-5 w-5 text-destructive" />}
                 label="Understaffed Days"
                 value={weeklyTotals.daysUnderstaffed}
                 description="Days needing coverage"
                 color="red"
               />
               <InsightCard
-                icon={<Target className="h-5 w-5 text-emerald-500" />}
+                icon={<Target className="h-5 w-5 text-success" />}
                 label="Optimal Days"
                 value={weeklyTotals.daysOptimal}
                 description="Perfectly staffed"
                 color="green"
               />
-            </Box>
-
-          </Box>
-        </ScrollArea>
-      </SheetContent>
-    </Sheet>
+        </div>
+      </div>
+    </PrimaryOffCanvas>
   );
 }
 
-function MetricCard({ 
+function MetricCard({
   icon, 
   label, 
   value, 
@@ -851,46 +777,30 @@ function MetricCard({
   color: 'success' | 'warning' | 'error' | 'info';
 }) {
   const colorMap = {
-    success: { bg: 'success.light', text: 'success.dark' },
-    warning: { bg: 'warning.light', text: 'warning.dark' },
-    error: { bg: 'error.light', text: 'error.dark' },
-    info: { bg: 'info.light', text: 'info.dark' },
+    success: { bg: 'bg-success/10', text: 'text-success' },
+    warning: { bg: 'bg-warning/10', text: 'text-warning' },
+    error: { bg: 'bg-destructive/10', text: 'text-destructive' },
+    info: { bg: 'bg-primary/10', text: 'text-primary' },
   };
 
   return (
-    <Card variant="outlined">
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box sx={{ 
-            p: 1, 
-            borderRadius: 1, 
-            bgcolor: colorMap[color].bg,
-            color: colorMap[color].text,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            {icon}
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-              {label}
-            </Typography>
-            <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
-              {value}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-              {subValue}
-            </Typography>
-          </Box>
+    <div className="rounded-lg border border-border bg-background p-3">
+      <div className="flex items-center gap-3">
+        <div className={cn("p-2 rounded-lg flex items-center justify-center", colorMap[color].bg, colorMap[color].text)}>
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="text-lg font-bold leading-tight">{value}</p>
+          <p className="text-[10px] text-muted-foreground">{subValue}</p>
+        </div>
           {trend !== 'neutral' && (
-            <Box sx={{ color: trend === 'up' ? 'success.main' : 'error.main' }}>
+            <div className={trend === 'up' ? 'text-success' : 'text-destructive'}>
               {trend === 'up' ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-            </Box>
+            </div>
           )}
-        </Box>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -908,15 +818,15 @@ function InsightCard({
   color: 'amber' | 'red' | 'green';
 }) {
   const bgColors = {
-    amber: 'bg-amber-50 border-amber-200',
-    red: 'bg-red-50 border-red-200',
-    green: 'bg-emerald-50 border-emerald-200',
+    amber: 'bg-warning/10 border-warning/30',
+    red: 'bg-destructive/10 border-destructive/30',
+    green: 'bg-success/10 border-success/30',
   };
   
   const textColors = {
-    amber: 'text-amber-700',
-    red: 'text-red-700',
-    green: 'text-emerald-700',
+    amber: 'text-warning',
+    red: 'text-destructive',
+    green: 'text-success',
   };
 
   return (
