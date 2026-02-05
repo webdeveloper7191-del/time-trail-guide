@@ -7,12 +7,14 @@
  import { Switch } from '@/components/ui/switch';
  import { Textarea } from '@/components/ui/textarea';
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
  import { AreaCombiningThreshold } from '@/types/location';
  
  interface AreaCombiningEditorProps {
    thresholds: AreaCombiningThreshold[];
    onUpdate: (thresholds: AreaCombiningThreshold[]) => void;
    isEditing: boolean;
+  availableAgeGroups?: string[];
  }
  
  const TRIGGER_TYPES = [
@@ -21,10 +23,20 @@
    { value: 'staff_ratio', label: 'Staff Ratio Inefficiency', unit: '%', description: 'When staff utilization falls below this %' },
  ];
  
+const DEFAULT_AGE_GROUPS = [
+  'Nursery (0-2 years)',
+  'Toddlers (2-3 years)',
+  'Pre-Kindy (3-4 years)',
+  'Kindergarten (4-5 years)',
+  'School Age (5+ years)',
+  'Mixed Age',
+];
+
  const AreaCombiningEditor: React.FC<AreaCombiningEditorProps> = ({
    thresholds,
    onUpdate,
    isEditing,
+  availableAgeGroups = DEFAULT_AGE_GROUPS,
  }) => {
    const [editingId, setEditingId] = useState<string | null>(null);
    const [showAddForm, setShowAddForm] = useState(false);
@@ -35,6 +47,8 @@
      triggerValue: 50,
      isActive: true,
      promptMessage: '',
+    applicableAgeGroups: [],
+    combineOnlyWithSameAgeGroup: true,
    });
  
    const handleAdd = () => {
@@ -46,6 +60,8 @@
        triggerValue: formData.triggerValue || 50,
        isActive: formData.isActive ?? true,
        promptMessage: formData.promptMessage,
+      applicableAgeGroups: formData.applicableAgeGroups,
+      combineOnlyWithSameAgeGroup: formData.combineOnlyWithSameAgeGroup,
      };
      onUpdate([...thresholds, newThreshold]);
      setShowAddForm(false);
@@ -63,6 +79,8 @@
            triggerValue: formData.triggerValue ?? t.triggerValue,
            isActive: formData.isActive ?? t.isActive,
            promptMessage: formData.promptMessage,
+          applicableAgeGroups: formData.applicableAgeGroups,
+          combineOnlyWithSameAgeGroup: formData.combineOnlyWithSameAgeGroup,
          };
        }
        return t;
@@ -85,6 +103,8 @@
        triggerValue: threshold.triggerValue,
        isActive: threshold.isActive,
        promptMessage: threshold.promptMessage,
+      applicableAgeGroups: threshold.applicableAgeGroups || [],
+      combineOnlyWithSameAgeGroup: threshold.combineOnlyWithSameAgeGroup ?? true,
      });
    };
  
@@ -96,11 +116,22 @@
        triggerValue: 50,
        isActive: true,
        promptMessage: '',
+      applicableAgeGroups: [],
+      combineOnlyWithSameAgeGroup: true,
      });
    };
  
    const getTriggerTypeInfo = (type: string) => TRIGGER_TYPES.find(t => t.value === type);
  
+  const toggleAgeGroup = (ageGroup: string) => {
+    const current = formData.applicableAgeGroups || [];
+    if (current.includes(ageGroup)) {
+      setFormData({ ...formData, applicableAgeGroups: current.filter(g => g !== ageGroup) });
+    } else {
+      setFormData({ ...formData, applicableAgeGroups: [...current, ageGroup] });
+    }
+  };
+
    const ThresholdForm = ({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) => (
      <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-4">
        <div className="grid grid-cols-2 gap-4">
@@ -144,6 +175,48 @@
          </p>
        </div>
  
+      {/* Age Group Configuration */}
+      <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+        <h4 className="text-sm font-medium text-foreground">Age Group Settings</h4>
+        
+        <div className="space-y-2">
+          <Label>Applicable Age Groups</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Select which age groups this threshold applies to. Leave empty to apply to all.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {availableAgeGroups.map((ageGroup) => (
+              <div key={ageGroup} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`age-${ageGroup}`}
+                  checked={formData.applicableAgeGroups?.includes(ageGroup)}
+                  onCheckedChange={() => toggleAgeGroup(ageGroup)}
+                />
+                <label
+                  htmlFor={`age-${ageGroup}`}
+                  className="text-sm cursor-pointer"
+                >
+                  {ageGroup}
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2 pt-2 border-t border-border">
+          <Switch
+            checked={formData.combineOnlyWithSameAgeGroup}
+            onCheckedChange={(checked) => setFormData({ ...formData, combineOnlyWithSameAgeGroup: checked })}
+          />
+          <div>
+            <Label>Only combine with same age group</Label>
+            <p className="text-xs text-muted-foreground">
+              When enabled, only suggest combining areas with matching age groups
+            </p>
+          </div>
+        </div>
+      </div>
+
        <div className="space-y-2">
          <Label>Prompt Message (Optional)</Label>
          <Textarea
@@ -220,6 +293,9 @@
                        <Badge variant={threshold.isActive ? 'default' : 'secondary'} className="text-xs">
                          {threshold.isActive ? 'Active' : 'Inactive'}
                        </Badge>
+                      {threshold.combineOnlyWithSameAgeGroup && (
+                        <Badge variant="outline" className="text-xs">Same Age Group Only</Badge>
+                      )}
                      </div>
                      <div className="flex items-center gap-2">
                        <Badge variant="outline" className="text-sm">
@@ -237,6 +313,15 @@
                        )}
                      </div>
                    </div>
+                  {threshold.applicableAgeGroups && threshold.applicableAgeGroups.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {threshold.applicableAgeGroups.map((ag) => (
+                        <Badge key={ag} variant="secondary" className="text-xs">
+                          {ag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                    {threshold.description && (
                      <p className="text-xs text-muted-foreground">{threshold.description}</p>
                    )}

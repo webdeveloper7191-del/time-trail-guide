@@ -264,6 +264,8 @@ export interface AreaCombiningThreshold {
   triggerType: 'attendance_percentage' | 'absolute_count' | 'staff_ratio';
   triggerValue: number; // e.g., 50 for 50% or 5 for absolute count
   combineWithAreaIds?: string[]; // Specific areas to suggest combining with
+  applicableAgeGroups?: string[]; // Age groups this threshold applies to
+  combineOnlyWithSameAgeGroup?: boolean; // Only suggest combining with same age group
   isActive: boolean;
   promptMessage?: string; // Custom message to show roster manager
 }
