@@ -53,6 +53,9 @@ export interface Location {
   // Industry Configuration
   industryType: IndustryType;
   
+  // Custom service categories for this location
+  serviceCategories?: string[];
+  
   // Geofencing
   geofenceZones?: GeofenceZone[];
   

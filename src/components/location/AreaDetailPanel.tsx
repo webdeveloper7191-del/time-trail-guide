@@ -1,5 +1,5 @@
  import React, { useState, useEffect } from 'react';
-import { Layers, Users, Shield, Clock, Plus, Trash2, Save, Edit2, Settings } from 'lucide-react';
+import { Layers, Users, Shield, Clock, Plus, Trash2, Save, Edit2, Settings, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,8 @@ import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Area, Location, AREA_STATUS_LABELS, StaffingRatio, QualificationRequirement, ComplianceRule } from '@/types/location';
 import StaffingRatioEditor from './StaffingRatioEditor';
 import QualificationRequirementEditor from './QualificationRequirementEditor';
+import { industryComplianceConfigs } from '@/data/mockLocationData';
+import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
 
 interface AreaDetailPanelProps {
   open: boolean;
@@ -53,6 +55,50 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
   const [staffingRatios, setStaffingRatios] = useState<StaffingRatio[]>(area?.staffingRatios || []);
   const [qualificationRequirements, setQualificationRequirements] = useState<QualificationRequirement[]>(area?.qualificationRequirements || []);
   const [complianceRules, setComplianceRules] = useState<ComplianceRule[]>(area?.complianceRules || []);
+
+  // Get current location for industry context
+  const currentLocation = selectedLocationId 
+    ? locations.find(l => l.id === selectedLocationId) || location 
+    : location;
+
+  // Apply industry defaults
+  const handleApplyIndustryDefaults = () => {
+    if (!currentLocation?.industryType) {
+      toast.error('Please select an industry type for this location first');
+      return;
+    }
+    
+    const config = industryComplianceConfigs.find(c => c.industryType === currentLocation.industryType);
+    if (!config) {
+      toast.error('No industry defaults available');
+      return;
+    }
+    
+    // Apply default ratios (generate new IDs to avoid conflicts)
+    const newRatios = config.defaultRatios.map((r, idx) => ({
+      ...r,
+      id: `ratio-${Date.now()}-${idx}`,
+    }));
+    setStaffingRatios(newRatios);
+    
+    // Apply default qualifications
+    const newQuals = config.defaultQualifications.map((q, idx) => ({
+      ...q,
+      id: `qual-${Date.now()}-${idx}`,
+    }));
+    setQualificationRequirements(newQuals);
+    
+    // Apply first matching area preset category if available
+    if (config.areaPresets.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        serviceCategory: config.areaPresets[0].serviceCategory || '',
+        serviceType: config.areaPresets[0].serviceType || '',
+      }));
+    }
+    
+    toast.success(`Applied ${INDUSTRY_TEMPLATES.find(t => t.id === currentLocation.industryType)?.name || 'industry'} defaults`);
+  };
 
    // Reset form when area changes or panel opens
    useEffect(() => {
@@ -138,6 +184,27 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
+          {/* Apply Industry Defaults Button */}
+          {isEditing && currentLocation?.industryType && currentLocation.industryType !== 'custom' && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Wand2 className="h-4 w-4 text-primary" />
+                    Quick Setup
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Apply {INDUSTRY_TEMPLATES.find(t => t.id === currentLocation.industryType)?.name || 'industry'} default ratios, qualifications, and categories
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={handleApplyIndustryDefaults}>
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  Apply Industry Defaults
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="bg-card border border-border rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-semibold text-foreground">Basic Information</h3>
             
@@ -218,11 +285,27 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
               <div className="space-y-2">
                 <Label>Service Category</Label>
                 {isEditing ? (
-                  <Input
-                    value={formData.serviceCategory}
-                    onChange={(e) => setFormData({ ...formData, serviceCategory: e.target.value })}
-                    placeholder="e.g., Nursery, ICU, Kitchen"
-                  />
+                  currentLocation?.serviceCategories && currentLocation.serviceCategories.length > 0 ? (
+                    <Select 
+                      value={formData.serviceCategory} 
+                      onValueChange={(v) => setFormData({ ...formData, serviceCategory: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currentLocation.serviceCategories.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      value={formData.serviceCategory}
+                      onChange={(e) => setFormData({ ...formData, serviceCategory: e.target.value })}
+                      placeholder="e.g., Nursery, ICU, Kitchen"
+                    />
+                  )
                 ) : (
                   <p className="text-sm font-medium">{area?.serviceCategory || 'Not set'}</p>
                 )}
