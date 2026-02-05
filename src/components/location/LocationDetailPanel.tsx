@@ -1,5 +1,5 @@
  import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Users, Layers, Building2, Phone, Mail, Globe, Edit2, Trash2, Save, Settings } from 'lucide-react';
+import { MapPin, Clock, Users, Layers, Building2, Phone, Mail, Globe, Edit2, Trash2, Save, Settings, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,9 +10,12 @@ import { toast } from 'sonner';
  import { cn } from '@/lib/utils';
  import { locationSchema, validateForm, getFieldError, ValidationError } from '@/lib/validation/locationValidation';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { Location, Area, Department, LOCATION_STATUS_LABELS, AUSTRALIAN_STATES, AUSTRALIAN_TIMEZONES } from '@/types/location';
+import { Location, Area, Department, LOCATION_STATUS_LABELS, AUSTRALIAN_STATES, AUSTRALIAN_TIMEZONES, StaffingRatio, QualificationRequirement, AreaCombiningThreshold } from '@/types/location';
 import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
 import IndustryConfigSection from './IndustryConfigSection';
+import StaffingRatioEditor from './StaffingRatioEditor';
+import QualificationRequirementEditor from './QualificationRequirementEditor';
+import AreaCombiningEditor from './AreaCombiningEditor';
 
 interface LocationDetailPanelProps {
   open: boolean;
@@ -60,6 +63,11 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
       country: location?.address.country || 'Australia',
     },
   });
+
+  // Location-level compliance config state
+  const [underRoofRatios, setUnderRoofRatios] = useState<StaffingRatio[]>([]);
+  const [locationQualifications, setLocationQualifications] = useState<QualificationRequirement[]>([]);
+  const [areaCombiningThresholds, setAreaCombiningThresholds] = useState<AreaCombiningThreshold[]>([]);
 
    // Reset form when location changes or panel opens
    useEffect(() => {
@@ -134,6 +142,7 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start mb-4">
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="industry">Industry Config</TabsTrigger>
           <TabsTrigger value="hours">Operating Hours</TabsTrigger>
           <TabsTrigger value="areas">Areas ({areas.length})</TabsTrigger>
@@ -396,6 +405,44 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
           </div>
         </TabsContent>
 
+        <TabsContent value="compliance" className="space-y-6">
+          {/* Under the Roof Ratios */}
+          <div className="bg-card border border-border rounded-lg p-4">
+            <StaffingRatioEditor
+              ratios={underRoofRatios}
+              onUpdate={setUnderRoofRatios}
+              isEditing={isEditing}
+              demandUnit="Total Attendance"
+              isLocationLevel={true}
+            />
+          </div>
+
+          {/* Location-wide Qualifications */}
+          <div className="bg-card border border-border rounded-lg p-4">
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Location-Wide Qualifications
+              </h3>
+              <p className="text-xs text-muted-foreground">Qualification requirements that apply across all areas</p>
+            </div>
+            <QualificationRequirementEditor
+              requirements={locationQualifications}
+              onUpdate={setLocationQualifications}
+              isEditing={isEditing}
+            />
+          </div>
+
+          {/* Area Combining Thresholds */}
+          <div className="bg-card border border-border rounded-lg p-4">
+            <AreaCombiningEditor
+              thresholds={areaCombiningThresholds}
+              onUpdate={setAreaCombiningThresholds}
+              isEditing={isEditing}
+            />
+          </div>
+        </TabsContent>
+
         <TabsContent value="industry" className="space-y-6">
           <IndustryConfigSection
             industryType={formData.industryType as any}
@@ -417,7 +464,7 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                     <span className="text-sm font-medium w-24">{day}</span>
                     {hours?.isOpen ? (
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                           Open
                         </Badge>
                         <span className="text-sm text-muted-foreground">
@@ -455,7 +502,7 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                     <div className="text-right">
                       <p className="text-sm font-medium">
                         {area.staffingRatios[0] 
-                          ? `${area.staffingRatios[0].ratioNumerator}:${area.staffingRatios[0].ratioDenominator}`
+                          ? `${area.staffingRatios[0].minAttendance}-${area.staffingRatios[0].maxAttendance} → ${area.staffingRatios[0].staffRequired}`
                           : 'No ratio'
                         }
                       </p>

@@ -128,7 +128,7 @@ const AreaListPanel: React.FC<AreaListPanelProps> = ({
                 <p className="text-xs text-muted-foreground">Ratio</p>
                 <p className="text-sm font-medium">
                   {area.staffingRatios[0] 
-                    ? `${area.staffingRatios[0].ratioNumerator}:${area.staffingRatios[0].ratioDenominator}`
+                    ? `${area.staffingRatios[0].minAttendance}-${area.staffingRatios[0].maxAttendance} → ${area.staffingRatios[0].staffRequired}`
                     : 'N/A'
                   }
                 </p>

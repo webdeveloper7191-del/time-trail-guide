@@ -73,8 +73,9 @@ export interface StaffingRatio {
   id: string;
   name: string; // e.g., "Standard", "High Care", "Night"
   demandUnit: string; // e.g., "Children", "Patients", "Customers"
-  ratioNumerator: number; // Staff count
-  ratioDenominator: number; // Demand unit count
+  minAttendance: number; // Minimum attendance count
+  maxAttendance: number; // Maximum attendance count
+  staffRequired: number; // Staff required for this range
   isDefault: boolean;
   applicableTimeStart?: string; // Time-based ratio
   applicableTimeEnd?: string;
@@ -242,6 +243,35 @@ export interface AreaSummary {
   requiredStaff?: number;
   complianceStatus: 'compliant' | 'warning' | 'non_compliant';
   complianceIssues?: string[];
+}
+
+// ============= Location-Level Compliance Types =============
+
+export interface UnderRoofRatio {
+  id: string;
+  name: string;
+  description?: string;
+  minTotalAttendance: number;
+  maxTotalAttendance: number;
+  totalStaffRequired: number;
+  isActive: boolean;
+}
+
+export interface AreaCombiningThreshold {
+  id: string;
+  name: string;
+  description?: string;
+  triggerType: 'attendance_percentage' | 'absolute_count' | 'staff_ratio';
+  triggerValue: number; // e.g., 50 for 50% or 5 for absolute count
+  combineWithAreaIds?: string[]; // Specific areas to suggest combining with
+  isActive: boolean;
+  promptMessage?: string; // Custom message to show roster manager
+}
+
+export interface LocationComplianceConfig {
+  underRoofRatios: UnderRoofRatio[];
+  areaCombiningThresholds: AreaCombiningThreshold[];
+  locationQualifications: QualificationRequirement[];
 }
 
 // ============= Constants =============
