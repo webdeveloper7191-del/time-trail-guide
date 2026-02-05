@@ -139,6 +139,9 @@ export function DayTimelineView({
   const [currentTime, setCurrentTime] = useState(new Date());
   const [hoverTime, setHoverTime] = useState<{ staffId: string; roomId: string; time: string; x: number } | null>(null);
 
+  // Track if any shift is being resized - prevents accidental shift creation
+  const isResizingRef = useRef(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollTrackRef = useRef<HTMLDivElement>(null);
   const [scrollInfo, setScrollInfo] = useState({ scrollLeft: 0, scrollWidth: 0, clientWidth: 0 });
@@ -289,7 +292,8 @@ export function DayTimelineView({
   };
 
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>, staffId: string, roomId: string) => {
-    if (isDragging) return;
+    // Don't create shifts while dragging or resizing
+    if (isDragging || isResizingRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     // Snap to 15-minute grid
@@ -583,6 +587,7 @@ export function DayTimelineView({
                             staff={member}
                             onEdit={() => onShiftEdit(shift)}
                             onResize={onShiftResize}
+                                          isResizingRef={isResizingRef}
                           />
                         ))}
 
@@ -759,12 +764,14 @@ function ShiftBar({
   shift, 
   staff, 
   onEdit,
-  onResize 
+  onResize,
+  isResizingRef
 }: { 
   shift: Shift; 
   staff: StaffMember; 
   onEdit: () => void;
   onResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
+  isResizingRef?: React.MutableRefObject<boolean>;
 }) {
   const [isResizing, setIsResizing] = useState<'left' | 'right' | null>(null);
   const [resizeStartX, setResizeStartX] = useState(0);
@@ -785,6 +792,7 @@ function ShiftBar({
     e.stopPropagation();
     e.preventDefault();
     setIsResizing(side);
+    if (isResizingRef) isResizingRef.current = true;
     setResizeStartX(e.clientX);
     setOriginalLeft(timeToPixels(shift.startTime));
     setOriginalWidth(getShiftWidth(shift.startTime, shift.endTime));
@@ -832,6 +840,10 @@ function ShiftBar({
         }
       }
       setIsResizing(null);
+      // Delay clearing the ref to prevent click event from firing
+      setTimeout(() => {
+        if (isResizingRef) isResizingRef.current = false;
+      }, 50);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
