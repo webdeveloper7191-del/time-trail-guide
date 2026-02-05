@@ -41,6 +41,7 @@ import {
 } from '@/types/roster';
 import { Plus, X, AlertCircle, Clock, Moon, Phone, Split, ChevronDown, FileText, Car, Award, Layers, Calendar } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { openShiftSchema, OpenShiftFormValues } from '@/lib/validationSchemas';
 import { toast } from 'sonner';
@@ -600,11 +601,8 @@ export function AddOpenShiftModal({
           showFooter
         >
           <Stack spacing={3}>
-              {/* Create Mode Toggle - Improved segmented control style */}
-              <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  Creation Mode
-                </Typography>
+              {/* Creation Mode Section */}
+              <FormSection title="Creation Mode">
                 <ToggleButtonGroup
                   value={createMode}
                   exclusive
@@ -648,10 +646,10 @@ export function AddOpenShiftModal({
                     Bulk Create
                   </ToggleButton>
                 </ToggleButtonGroup>
-              </Box>
+              </FormSection>
 
-              {/* Template Selection - Using StyledSwitch */}
-              <Box>
+              {/* Shift Template Section */}
+              <FormSection title="Shift Template">
                 <StyledSwitch
                   checked={useTemplate}
                   onChange={setUseTemplate}
@@ -696,256 +694,163 @@ export function AddOpenShiftModal({
                     </Select>
                   </FormControl>
                 )}
-              </Box>
+              </FormSection>
 
-              <Divider />
-
-              {/* Room Selection - Different UI for single vs bulk */}
-              {createMode === 'single' ? (
-                <Controller
-                  name="roomId"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth size="small" error={!!errors.roomId}>
-                      <InputLabel>Room / Area *</InputLabel>
+              {/* Shift Details Section */}
+              <FormSection title="Shift Details">
+                {/* Room Selection - Different UI for single vs bulk */}
+                {createMode === 'single' ? (
+                  <FormField label="Room / Area" required>
+                    <Controller
+                      name="roomId"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth size="small" error={!!errors.roomId}>
+                          <Select {...field} displayEmpty>
+                            <MenuItem value="" disabled><em>Select room or area</em></MenuItem>
+                            {rooms.map((room) => (
+                              <MenuItem key={room.id} value={room.id}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <span>{room.name}</span>
+                                  <Typography variant="caption" color="text.secondary">{ageGroupLabels[room.ageGroup]}</Typography>
+                                </Box>
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {errors.roomId && <FormHelperText>{errors.roomId.message}</FormHelperText>}
+                        </FormControl>
+                      )}
+                    />
+                  </FormField>
+                ) : (
+                  <FormField label={`Select Rooms (${selectedRoomIds.length} selected)`} required>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                      <Button size="small" onClick={handleSelectAllRooms}>
+                        {selectedRoomIds.length === rooms.length ? 'Deselect All' : 'Select All'}
+                      </Button>
+                    </Box>
+                    <FormControl fullWidth size="small" error={selectedRoomIds.length === 0}>
                       <Select
-                        {...field}
-                        label="Room / Area *"
+                        multiple
+                        value={selectedRoomIds}
+                        onChange={(e) => setSelectedRoomIds(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                        input={<OutlinedInput />}
+                        displayEmpty
+                        renderValue={(selected) => selected.length === 0 ? <em>Select rooms</em> : (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {selected.map((roomId) => {
+                              const room = rooms.find(r => r.id === roomId);
+                              return room ? <Chip key={roomId} label={room.name} size="small" /> : null;
+                            })}
+                          </Box>
+                        )}
+                        MenuProps={{ PaperProps: { style: { maxHeight: 300 } } }}
                       >
                         {rooms.map((room) => (
                           <MenuItem key={room.id} value={room.id}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <span>{room.name}</span>
-                              <Typography variant="caption" color="text.secondary">
-                                {ageGroupLabels[room.ageGroup]}
-                              </Typography>
-                            </Box>
+                            <Checkbox checked={selectedRoomIds.includes(room.id)} />
+                            <ListItemText primary={room.name} secondary={ageGroupLabels[room.ageGroup]} />
                           </MenuItem>
                         ))}
                       </Select>
-                      {errors.roomId && (
-                        <FormHelperText>{errors.roomId.message}</FormHelperText>
-                      )}
+                      {selectedRoomIds.length === 0 && <FormHelperText>Please select at least one room</FormHelperText>}
                     </FormControl>
-                  )}
-                />
-              ) : (
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Select Rooms * ({selectedRoomIds.length} selected)
-                    </Typography>
-                    <Button size="small" onClick={handleSelectAllRooms}>
-                      {selectedRoomIds.length === rooms.length ? 'Deselect All' : 'Select All'}
-                    </Button>
-                  </Box>
-                  <FormControl fullWidth size="small" error={selectedRoomIds.length === 0}>
-                    <InputLabel>Rooms</InputLabel>
-                    <Select
-                      multiple
-                      value={selectedRoomIds}
-                      onChange={(e) => setSelectedRoomIds(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
-                      input={<OutlinedInput label="Rooms" />}
-                      renderValue={(selected) => (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {selected.map((roomId) => {
-                            const room = rooms.find(r => r.id === roomId);
-                            return room ? (
-                              <Chip key={roomId} label={room.name} size="small" />
-                            ) : null;
-                          })}
-                        </Box>
+                  </FormField>
+                )}
+
+                {/* Date Selection */}
+                {createMode === 'single' ? (
+                  <FormField label="Date" required>
+                    <Controller
+                      name="date"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField {...field} type="date" size="small" fullWidth InputLabelProps={{ shrink: true }} error={!!errors.date} helperText={errors.date?.message} />
                       )}
-                      MenuProps={{
-                        PaperProps: {
-                          style: {
-                            maxHeight: 300,
-                          },
-                        },
-                      }}
-                    >
-                      {rooms.map((room) => (
-                        <MenuItem key={room.id} value={room.id}>
-                          <Checkbox checked={selectedRoomIds.includes(room.id)} />
-                          <ListItemText 
-                            primary={room.name} 
-                            secondary={ageGroupLabels[room.ageGroup]}
+                    />
+                  </FormField>
+                ) : (
+                  <FormField label={`Select Dates (${selectedDates.length} selected)`} required>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                      <Button size="small" onClick={handleSelectAllDates}>
+                        {selectedDates.length === dateOptions.length ? 'Deselect All' : 'Select All'}
+                      </Button>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, p: 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 1, maxHeight: 150, overflow: 'auto' }}>
+                      {dateOptions.map((date) => {
+                        const dateStr = format(date, 'yyyy-MM-dd');
+                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                        return (
+                          <Chip
+                            key={dateStr}
+                            label={
+                              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 0.25 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600, lineHeight: 1.2 }}>{format(date, 'EEE')}</Typography>
+                                <Typography variant="caption" sx={{ lineHeight: 1.2 }}>{format(date, 'd MMM')}</Typography>
+                              </Box>
+                            }
+                            onClick={() => handleDateToggle(dateStr)}
+                            color={selectedDates.includes(dateStr) ? 'primary' : 'default'}
+                            variant={selectedDates.includes(dateStr) ? 'filled' : 'outlined'}
+                            size="small"
+                            sx={{ minWidth: 60, height: 'auto', py: 0.5, ...(isWeekend && !selectedDates.includes(dateStr) && { borderColor: 'warning.main', bgcolor: 'warning.50' }) }}
                           />
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {selectedRoomIds.length === 0 && (
-                      <FormHelperText>Please select at least one room</FormHelperText>
-                    )}
-                  </FormControl>
-                </Box>
-              )}
+                        );
+                      })}
+                    </Box>
+                    {selectedDates.length === 0 && <FormHelperText error>Please select at least one date</FormHelperText>}
+                  </FormField>
+                )}
 
-              {/* Date Selection - Different UI for single vs bulk */}
-              {createMode === 'single' ? (
-                <Controller
-                  name="date"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Date *"
-                      type="date"
-                      size="small"
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
-                      error={!!errors.date}
-                      helperText={errors.date?.message}
-                    />
-                  )}
-                />
-              ) : (
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Select Dates * ({selectedDates.length} selected)
-                    </Typography>
-                    <Button size="small" onClick={handleSelectAllDates}>
-                      {selectedDates.length === dateOptions.length ? 'Deselect All' : 'Select All'}
-                    </Button>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, maxHeight: 150, overflow: 'auto' }}>
-                    {dateOptions.map((date) => {
-                      const dateStr = format(date, 'yyyy-MM-dd');
-                      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                      return (
-                        <Chip
-                          key={dateStr}
-                          label={
-                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 0.25 }}>
-                              <Typography variant="caption" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                                {format(date, 'EEE')}
-                              </Typography>
-                              <Typography variant="caption" sx={{ lineHeight: 1.2 }}>
-                                {format(date, 'd MMM')}
-                              </Typography>
-                            </Box>
-                          }
-                          onClick={() => handleDateToggle(dateStr)}
-                          color={selectedDates.includes(dateStr) ? 'primary' : 'default'}
-                          variant={selectedDates.includes(dateStr) ? 'filled' : 'outlined'}
-                          size="small"
-                          sx={{ 
-                            minWidth: 60,
-                            height: 'auto',
-                            py: 0.5,
-                            ...(isWeekend && !selectedDates.includes(dateStr) && {
-                              borderColor: 'warning.main',
-                              bgcolor: 'warning.50',
-                            }),
-                          }}
-                        />
-                      );
-                    })}
-                  </Box>
-                  {selectedDates.length === 0 && (
-                    <FormHelperText error>Please select at least one date</FormHelperText>
-                  )}
-                </Box>
-              )}
+                {/* Bulk Summary */}
+                {createMode === 'bulk' && bulkCount > 0 && (
+                  <Alert severity="info" icon={<Layers size={18} />}>
+                    This will create <strong>{bulkCount}</strong> open shift{bulkCount > 1 ? 's' : ''} ({selectedRoomIds.length} room{selectedRoomIds.length > 1 ? 's' : ''} × {selectedDates.length} date{selectedDates.length > 1 ? 's' : ''})
+                  </Alert>
+                )}
 
-              {/* Bulk Summary */}
-              {createMode === 'bulk' && bulkCount > 0 && (
-                <Alert severity="info" icon={<Layers size={18} />}>
-                  This will create <strong>{bulkCount}</strong> open shift{bulkCount > 1 ? 's' : ''} 
-                  ({selectedRoomIds.length} room{selectedRoomIds.length > 1 ? 's' : ''} × {selectedDates.length} date{selectedDates.length > 1 ? 's' : ''})
-                </Alert>
-              )}
+                <FormRow>
+                  <FormField label="Start Time" required>
+                    <Controller name="startTime" control={control} render={({ field }) => (
+                      <TextField {...field} type="time" size="small" fullWidth InputLabelProps={{ shrink: true }} error={!!errors.startTime} helperText={errors.startTime?.message} />
+                    )} />
+                  </FormField>
+                  <FormField label="End Time" required>
+                    <Controller name="endTime" control={control} render={({ field }) => (
+                      <TextField {...field} type="time" size="small" fullWidth InputLabelProps={{ shrink: true }} error={!!errors.endTime} helperText={errors.endTime?.message} />
+                    )} />
+                  </FormField>
+                </FormRow>
 
-              {/* Time */}
-              <Stack direction="row" spacing={2}>
-                <Controller
-                  name="startTime"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Start Time *"
-                      type="time"
-                      size="small"
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
-                      error={!!errors.startTime}
-                      helperText={errors.startTime?.message}
-                    />
-                  )}
-                />
-                <Controller
-                  name="endTime"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="End Time *"
-                      type="time"
-                      size="small"
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
-                      error={!!errors.endTime}
-                      helperText={errors.endTime?.message}
-                    />
-                  )}
-                />
-              </Stack>
+                <FormRow>
+                  <FormField label="Break (mins)">
+                    <Controller name="breakMinutes" control={control} render={({ field }) => (
+                      <TextField {...field} type="number" size="small" fullWidth InputProps={{ inputProps: { min: 0, max: 120, step: 15 } }} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                    )} />
+                  </FormField>
+                  <FormField label="Shift Type">
+                    <Controller name="shiftType" control={control} render={({ field }) => (
+                      <FormControl fullWidth size="small">
+                        <Select {...field}>
+                          {(Object.keys(shiftTypeLabels) as ShiftSpecialType[]).map((type) => (
+                            <MenuItem key={type} value={type}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>{shiftTypeIcons[type]}<span>{shiftTypeLabels[type]}</span></Box>
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )} />
+                  </FormField>
+                </FormRow>
 
-              {/* Break and Shift Type */}
-              <Stack direction="row" spacing={2}>
-                <Controller
-                  name="breakMinutes"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Break (mins)"
-                      type="number"
-                      size="small"
-                      fullWidth
-                      InputProps={{ inputProps: { min: 0, max: 120, step: 15 } }}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                    />
-                  )}
-                />
-                <Controller
-                  name="shiftType"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Shift Type</InputLabel>
-                      <Select {...field} label="Shift Type">
-                        {(Object.keys(shiftTypeLabels) as ShiftSpecialType[]).map((type) => (
-                          <MenuItem key={type} value={type}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {shiftTypeIcons[type]}
-                              <span>{shiftTypeLabels[type]}</span>
-                            </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )}
-                />
-              </Stack>
+                {shiftType && shiftType !== 'regular' && (
+                  <Alert severity="info" sx={{ py: 0.5 }}>{shiftTypeDescriptions[shiftType]}</Alert>
+                )}
+                {renderShiftTypeSettings()}
+              </FormSection>
 
-              {/* Shift Type Description */}
-              {shiftType && shiftType !== 'regular' && (
-                <Alert severity="info" sx={{ py: 0.5 }}>
-                  {shiftTypeDescriptions[shiftType]}
-                </Alert>
-              )}
-
-              {/* Shift Type Specific Settings */}
-              {renderShiftTypeSettings()}
-
-              {/* Urgency - Improved color-coded pill buttons */}
-              <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  Urgency Level *
-                </Typography>
+              {/* Urgency Section */}
+              <FormSection title="Urgency Level">
                 <Controller
                   name="urgency"
                   control={control}
@@ -965,23 +870,12 @@ export function AddOpenShiftModal({
                             size="medium"
                             onClick={() => field.onChange(level)}
                             sx={{
-                              flex: 1,
-                              py: 1.25,
-                              borderRadius: 2,
-                              textTransform: 'capitalize',
-                              fontWeight: 600,
-                              fontSize: '0.875rem',
-                              transition: 'all 0.2s ease',
-                              borderWidth: 2,
+                              flex: 1, py: 1.25, borderRadius: 2, textTransform: 'capitalize', fontWeight: 600, fontSize: '0.875rem',
+                              transition: 'all 0.2s ease', borderWidth: 2,
                               borderColor: isSelected ? color : 'grey.300',
                               bgcolor: isSelected ? lightBg : 'transparent',
                               color: isSelected ? text : 'text.secondary',
-                              '&:hover': {
-                                borderColor: color,
-                                bgcolor: lightBg,
-                                color: text,
-                                borderWidth: 2,
-                              },
+                              '&:hover': { borderColor: color, bgcolor: lightBg, color: text, borderWidth: 2 },
                             }}
                           >
                             {level}
@@ -991,188 +885,99 @@ export function AddOpenShiftModal({
                     </Stack>
                   )}
                 />
-              </Box>
+              </FormSection>
 
-              <Divider />
-
-              {/* Requirements Accordion */}
-              <Accordion defaultExpanded sx={{ boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
-                <AccordionSummary expandIcon={<ChevronDown size={18} />}>
-                  <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Award size={16} /> Requirements & Classification
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Stack spacing={2}>
-                    {/* Preferred Role */}
-                    <Controller
-                      name="preferredRole"
-                      control={control}
-                      render={({ field }) => (
-                        <FormControl fullWidth size="small">
-                          <InputLabel>Preferred Role</InputLabel>
-                          <Select {...field} label="Preferred Role" value={field.value || ''}>
-                            <MenuItem value="">
-                              <em>Any</em>
-                            </MenuItem>
-                            {(Object.keys(roleLabels) as StaffMember['role'][]).map((role) => (
-                              <MenuItem key={role} value={role}>
-                                {roleLabels[role]}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      )}
-                    />
-
-                    {/* Minimum Classification */}
-                    <Controller
-                      name="minimumClassification"
-                      control={control}
-                      render={({ field }) => (
-                        <FormControl fullWidth size="small">
-                          <InputLabel>Minimum Classification</InputLabel>
-                          <Select {...field} value={field.value || ''} label="Minimum Classification">
-                            <MenuItem value="">
-                              <em>No minimum</em>
-                            </MenuItem>
-                            {classificationLevels.map((level) => (
-                              <MenuItem key={level} value={level}>
-                                {level}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      )}
-                    />
-
-                    {/* Higher Duties */}
-                    <Controller
-                      name="higherDutiesClassification"
-                      control={control}
-                      render={({ field }) => (
-                        <FormControl fullWidth size="small">
-                          <InputLabel>Higher Duties Classification</InputLabel>
-                          <Select {...field} value={field.value || ''} label="Higher Duties Classification">
-                            <MenuItem value="">
-                              <em>None</em>
-                            </MenuItem>
-                            {classificationLevels.map((level) => (
-                              <MenuItem key={level} value={level}>
-                                {level}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      )}
-                    />
-
-                    {/* Required Qualifications */}
-                    <Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Required Qualifications
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {availableQualifications.map((qual) => (
-                          <Chip
-                            key={qual}
-                            label={qualificationLabels[qual]}
-                            onClick={() => toggleQualification(qual)}
-                            color={selectedQualifications.includes(qual) ? 'primary' : 'default'}
-                            variant={selectedQualifications.includes(qual) ? 'filled' : 'outlined'}
-                            size="small"
-                            deleteIcon={selectedQualifications.includes(qual) ? <X size={14} /> : undefined}
-                            onDelete={selectedQualifications.includes(qual) ? () => toggleQualification(qual) : undefined}
-                          />
+              {/* Requirements Section */}
+              <FormSection title="Requirements & Classification">
+                <FormField label="Preferred Role">
+                  <Controller name="preferredRole" control={control} render={({ field }) => (
+                    <FormControl fullWidth size="small">
+                      <Select {...field} displayEmpty value={field.value || ''}>
+                        <MenuItem value=""><em>Any</em></MenuItem>
+                        {(Object.keys(roleLabels) as StaffMember['role'][]).map((role) => (
+                          <MenuItem key={role} value={role}>{roleLabels[role]}</MenuItem>
                         ))}
-                      </Box>
-                    </Box>
-                  </Stack>
-                </AccordionDetails>
-              </Accordion>
-
-              {/* Allowances Accordion */}
-              <Accordion sx={{ boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
-                <AccordionSummary expandIcon={<ChevronDown size={18} />}>
-                  <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FileText size={16} /> Allowances
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
+                      </Select>
+                    </FormControl>
+                  )} />
+                </FormField>
+                <FormField label="Minimum Classification">
+                  <Controller name="minimumClassification" control={control} render={({ field }) => (
+                    <FormControl fullWidth size="small">
+                      <Select {...field} displayEmpty value={field.value || ''}>
+                        <MenuItem value=""><em>No minimum</em></MenuItem>
+                        {classificationLevels.map((level) => <MenuItem key={level} value={level}>{level}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                  )} />
+                </FormField>
+                <FormField label="Higher Duties Classification">
+                  <Controller name="higherDutiesClassification" control={control} render={({ field }) => (
+                    <FormControl fullWidth size="small">
+                      <Select {...field} displayEmpty value={field.value || ''}>
+                        <MenuItem value=""><em>None</em></MenuItem>
+                        {classificationLevels.map((level) => <MenuItem key={level} value={level}>{level}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                  )} />
+                </FormField>
+                <FormField label="Required Qualifications">
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {availableAllowances.map((allowance) => (
+                    {availableQualifications.map((qual) => (
                       <Chip
-                        key={allowance.id}
-                        label={allowance.name}
-                        onClick={() => toggleAllowance(allowance.id)}
-                        color={selectedAllowances.includes(allowance.id) ? 'success' : 'default'}
-                        variant={selectedAllowances.includes(allowance.id) ? 'filled' : 'outlined'}
+                        key={qual}
+                        label={qualificationLabels[qual]}
+                        onClick={() => toggleQualification(qual)}
+                        color={selectedQualifications.includes(qual) ? 'primary' : 'default'}
+                        variant={selectedQualifications.includes(qual) ? 'filled' : 'outlined'}
                         size="small"
+                        deleteIcon={selectedQualifications.includes(qual) ? <X size={14} /> : undefined}
+                        onDelete={selectedQualifications.includes(qual) ? () => toggleQualification(qual) : undefined}
                       />
                     ))}
                   </Box>
-                </AccordionDetails>
-              </Accordion>
+                </FormField>
+              </FormSection>
 
-              {/* Travel/Remote Accordion */}
-              <Accordion sx={{ boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
-                <AccordionSummary expandIcon={<ChevronDown size={18} />}>
-                  <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Car size={16} /> Travel & Remote
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Stack spacing={2}>
-                    <Controller
-                      name="isRemoteLocation"
-                      control={control}
-                      render={({ field }) => (
-                        <StyledSwitch
-                          checked={field.value || false}
-                          onChange={field.onChange}
-                          label="Remote Location"
-                          size="small"
-                        />
-                      )}
+              {/* Allowances Section */}
+              <FormSection title="Allowances">
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {availableAllowances.map((allowance) => (
+                    <Chip
+                      key={allowance.id}
+                      label={allowance.name}
+                      onClick={() => toggleAllowance(allowance.id)}
+                      color={selectedAllowances.includes(allowance.id) ? 'success' : 'default'}
+                      variant={selectedAllowances.includes(allowance.id) ? 'filled' : 'outlined'}
+                      size="small"
                     />
-                    <Controller
-                      name="defaultTravelKilometres"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          label="Travel Distance (km)"
-                          type="number"
-                          size="small"
-                          fullWidth
-                          InputProps={{ inputProps: { min: 0, step: 1 } }}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      )}
-                    />
-                  </Stack>
-                </AccordionDetails>
-              </Accordion>
+                  ))}
+                </Box>
+              </FormSection>
 
-              {/* Notes */}
-              <Controller
-                name="notes"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Notes"
-                    multiline
-                    rows={3}
-                    size="small"
-                    fullWidth
-                    placeholder="Optional notes about this open shift..."
-                    error={!!errors.notes}
-                    helperText={errors.notes?.message}
-                  />
-                )}
-              />
-            </Stack>
+              {/* Travel Section */}
+              <FormSection title="Travel & Remote">
+                <FormField label="Remote Location">
+                  <Controller name="isRemoteLocation" control={control} render={({ field }) => (
+                    <StyledSwitch checked={field.value || false} onChange={field.onChange} label="This is a remote location" size="small" />
+                  )} />
+                </FormField>
+                <FormField label="Travel Distance (km)">
+                  <Controller name="defaultTravelKilometres" control={control} render={({ field }) => (
+                    <TextField {...field} type="number" size="small" fullWidth InputProps={{ inputProps: { min: 0, step: 1 } }} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} />
+                  )} />
+                </FormField>
+              </FormSection>
+
+              {/* Notes Section */}
+              <FormSection title="Additional Notes">
+                <FormField label="Notes">
+                  <Controller name="notes" control={control} render={({ field }) => (
+                    <TextField {...field} multiline rows={3} size="small" fullWidth placeholder="Optional notes about this open shift..." error={!!errors.notes} helperText={errors.notes?.message} />
+                  )} />
+                </FormField>
+              </FormSection>
+          </Stack>
         </PrimaryOffCanvas>
       </form>
     </FormProvider>
