@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+ import React, { useState, useEffect } from 'react';
 import { MapPin, Clock, Users, Layers, Building2, Phone, Mail, Globe, Edit2, Trash2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+ import { cn } from '@/lib/utils';
+ import { locationSchema, validateForm, getFieldError, ValidationError } from '@/lib/validation/locationValidation';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Location, Area, Department, LOCATION_STATUS_LABELS, AUSTRALIAN_STATES, AUSTRALIAN_TIMEZONES } from '@/types/location';
 import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
@@ -19,6 +20,7 @@ interface LocationDetailPanelProps {
   isNew: boolean;
   areas: Area[];
   departments: Department[];
+   onSave?: (data: any) => void;
 }
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -30,9 +32,12 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
   isNew,
   areas,
   departments,
+   onSave,
 }) => {
   const [activeTab, setActiveTab] = useState('details');
   const [isEditing, setIsEditing] = useState(isNew);
+   const [errors, setErrors] = useState<ValidationError[]>([]);
+   const [isSaving, setIsSaving] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -55,15 +60,62 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
     },
   });
 
+   // Reset form when location changes or panel opens
+   useEffect(() => {
+     if (open) {
+       setFormData({
+         name: location?.name || '',
+         code: location?.code || '',
+         status: location?.status || 'pending_setup',
+         phone: location?.phone || '',
+         email: location?.email || '',
+         timezone: location?.timezone || 'Australia/Melbourne',
+         industryType: location?.industryType || 'custom',
+         totalCapacity: location?.totalCapacity || 50,
+         maxStaff: location?.maxStaff || 10,
+         address: {
+           line1: location?.address?.line1 || '',
+           line2: location?.address?.line2 || '',
+           suburb: location?.address?.suburb || '',
+           state: location?.address?.state || 'VIC',
+           postcode: location?.address?.postcode || '',
+           country: location?.address?.country || 'Australia',
+         },
+       });
+       setErrors([]);
+       setIsEditing(isNew);
+     }
+   }, [open, location, isNew]);
+ 
   const handleSave = () => {
-    toast.success(isNew ? 'Location created successfully' : 'Location updated successfully');
-    setIsEditing(false);
-    onClose();
+     const result = validateForm(locationSchema, formData);
+     
+     if (result.success === false) {
+       setErrors(result.errors as ValidationError[]);
+       toast.error('Please fix the validation errors');
+       return;
+     }
+     
+     setIsSaving(true);
+     
+     // Simulate save - in real app this would call API
+     setTimeout(() => {
+       if (onSave) {
+         onSave(result.data);
+       }
+       toast.success(isNew ? 'Location created successfully' : 'Location updated successfully');
+       setErrors([]);
+       setIsSaving(false);
+       setIsEditing(false);
+       onClose();
+     }, 500);
   };
 
+   const getError = (field: string) => getFieldError(errors, field);
+ 
   const actions = isEditing ? [
     { label: 'Cancel', onClick: () => isNew ? onClose() : setIsEditing(false), variant: 'outlined' as const },
-    { label: 'Save Location', onClick: handleSave, variant: 'primary' as const, icon: <Save className="h-4 w-4" /> },
+     { label: isSaving ? 'Saving...' : 'Save Location', onClick: handleSave, variant: 'primary' as const, icon: <Save className="h-4 w-4" />, disabled: isSaving, loading: isSaving },
   ] : [
     { label: 'Edit', onClick: () => setIsEditing(true), variant: 'primary' as const, icon: <Edit2 className="h-4 w-4" /> },
   ];
@@ -95,11 +147,15 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               <div className="space-y-2">
                 <Label>Location Name</Label>
                 {isEditing ? (
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter location name"
-                  />
+                   <div>
+                     <Input
+                       value={formData.name}
+                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                       placeholder="Enter location name"
+                       className={getError('name') ? 'border-destructive' : ''}
+                     />
+                     {getError('name') && <p className="text-xs text-destructive mt-1">{getError('name')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{location?.name}</p>
                 )}
@@ -107,11 +163,15 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               <div className="space-y-2">
                 <Label>Location Code</Label>
                 {isEditing ? (
-                  <Input
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                    placeholder="e.g., MEL-CBD"
-                  />
+                   <div>
+                     <Input
+                       value={formData.code}
+                       onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                       placeholder="e.g., MEL-CBD"
+                       className={getError('code') ? 'border-destructive' : ''}
+                     />
+                     {getError('code') && <p className="text-xs text-destructive mt-1">{getError('code')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{location?.code}</p>
                 )}
@@ -165,11 +225,15 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               <div className="space-y-2">
                 <Label>Total Capacity</Label>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={formData.totalCapacity}
-                    onChange={(e) => setFormData({ ...formData, totalCapacity: parseInt(e.target.value) || 0 })}
-                  />
+                   <div>
+                     <Input
+                       type="number"
+                       value={formData.totalCapacity}
+                       onChange={(e) => setFormData({ ...formData, totalCapacity: parseInt(e.target.value) || 0 })}
+                       className={getError('totalCapacity') ? 'border-destructive' : ''}
+                     />
+                     {getError('totalCapacity') && <p className="text-xs text-destructive mt-1">{getError('totalCapacity')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{location?.totalCapacity}</p>
                 )}
@@ -177,11 +241,15 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               <div className="space-y-2">
                 <Label>Max Staff</Label>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={formData.maxStaff}
-                    onChange={(e) => setFormData({ ...formData, maxStaff: parseInt(e.target.value) || 0 })}
-                  />
+                   <div>
+                     <Input
+                       type="number"
+                       value={formData.maxStaff}
+                       onChange={(e) => setFormData({ ...formData, maxStaff: parseInt(e.target.value) || 0 })}
+                       className={getError('maxStaff') ? 'border-destructive' : ''}
+                     />
+                     {getError('maxStaff') && <p className="text-xs text-destructive mt-1">{getError('maxStaff')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{location?.maxStaff}</p>
                 )}
@@ -197,11 +265,15 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               <>
                 <div className="space-y-2">
                   <Label>Street Address</Label>
-                  <Input
-                    value={formData.address.line1}
-                    onChange={(e) => setFormData({ ...formData, address: { ...formData.address, line1: e.target.value } })}
-                    placeholder="Street address"
-                  />
+                   <div>
+                     <Input
+                       value={formData.address.line1}
+                       onChange={(e) => setFormData({ ...formData, address: { ...formData.address, line1: e.target.value } })}
+                       placeholder="Street address"
+                       className={getError('address.line1') ? 'border-destructive' : ''}
+                     />
+                     {getError('address.line1') && <p className="text-xs text-destructive mt-1">{getError('address.line1')}</p>}
+                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Address Line 2 (Optional)</Label>
@@ -214,10 +286,14 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Suburb</Label>
-                    <Input
-                      value={formData.address.suburb}
-                      onChange={(e) => setFormData({ ...formData, address: { ...formData.address, suburb: e.target.value } })}
-                    />
+                     <div>
+                       <Input
+                         value={formData.address.suburb}
+                         onChange={(e) => setFormData({ ...formData, address: { ...formData.address, suburb: e.target.value } })}
+                         className={getError('address.suburb') ? 'border-destructive' : ''}
+                       />
+                       {getError('address.suburb') && <p className="text-xs text-destructive mt-1">{getError('address.suburb')}</p>}
+                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>State</Label>
@@ -237,10 +313,14 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                   </div>
                   <div className="space-y-2">
                     <Label>Postcode</Label>
-                    <Input
-                      value={formData.address.postcode}
-                      onChange={(e) => setFormData({ ...formData, address: { ...formData.address, postcode: e.target.value } })}
-                    />
+                     <div>
+                       <Input
+                         value={formData.address.postcode}
+                         onChange={(e) => setFormData({ ...formData, address: { ...formData.address, postcode: e.target.value } })}
+                         className={getError('address.postcode') ? 'border-destructive' : ''}
+                       />
+                       {getError('address.postcode') && <p className="text-xs text-destructive mt-1">{getError('address.postcode')}</p>}
+                     </div>
                   </div>
                 </div>
               </>

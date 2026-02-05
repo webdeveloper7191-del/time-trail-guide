@@ -237,6 +237,7 @@ const LocationManagement: React.FC = () => {
         area={selectedArea}
         isNew={isCreatingNew}
         location={selectedArea ? mockLocations.find(l => l.id === selectedArea.locationId) : null}
+       locations={mockLocations}
       />
       
       <DepartmentDetailPanel
@@ -246,6 +247,7 @@ const LocationManagement: React.FC = () => {
         isNew={isCreatingNew}
         location={selectedDepartment ? mockLocations.find(l => l.id === selectedDepartment.locationId) : null}
         areas={selectedDepartment ? mockAreas.filter(a => selectedDepartment.areaIds.includes(a.id)) : []}
+       locations={mockLocations}
       />
     </div>
   );

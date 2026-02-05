@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+ import React, { useState, useEffect } from 'react';
 import { Layers, Users, Shield, Clock, Plus, Trash2, Save, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+ import { cn } from '@/lib/utils';
+ import { areaSchema, validateForm, getFieldError, ValidationError } from '@/lib/validation/locationValidation';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Area, Location, AREA_STATUS_LABELS, StaffingRatio, QualificationRequirement } from '@/types/location';
 
@@ -17,6 +18,8 @@ interface AreaDetailPanelProps {
   area: Area | null;
   isNew: boolean;
   location: Location | null;
+   locations?: Location[];
+   onSave?: (data: any) => void;
 }
 
 const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
@@ -25,9 +28,14 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
   area,
   isNew,
   location,
+   locations = [],
+   onSave,
 }) => {
   const [activeTab, setActiveTab] = useState('details');
   const [isEditing, setIsEditing] = useState(isNew);
+   const [errors, setErrors] = useState<ValidationError[]>([]);
+   const [isSaving, setIsSaving] = useState(false);
+   const [selectedLocationId, setSelectedLocationId] = useState(area?.locationId || location?.id || '');
   
   const [formData, setFormData] = useState({
     name: area?.name || '',
@@ -41,15 +49,59 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
     maximumStaff: area?.maximumStaff || 10,
   });
 
+   // Reset form when area changes or panel opens
+   useEffect(() => {
+     if (open) {
+       setFormData({
+         name: area?.name || '',
+         code: area?.code || '',
+         status: area?.status || 'active',
+         color: area?.color || 'hsl(200, 70%, 50%)',
+         capacity: area?.capacity || 20,
+         ageGroup: area?.ageGroup || '',
+         serviceType: area?.serviceType || '',
+         minimumStaff: area?.minimumStaff || 1,
+         maximumStaff: area?.maximumStaff || 10,
+       });
+       setSelectedLocationId(area?.locationId || location?.id || '');
+       setErrors([]);
+       setIsEditing(isNew);
+     }
+   }, [open, area, location, isNew]);
+ 
   const handleSave = () => {
-    toast.success(isNew ? 'Area created successfully' : 'Area updated successfully');
-    setIsEditing(false);
-    onClose();
+     const dataToValidate = {
+       ...formData,
+       locationId: selectedLocationId,
+     };
+     
+     const result = validateForm(areaSchema, dataToValidate);
+     
+     if (result.success === false) {
+       setErrors(result.errors as ValidationError[]);
+       toast.error('Please fix the validation errors');
+       return;
+     }
+     
+     setIsSaving(true);
+     
+     setTimeout(() => {
+       if (onSave) {
+         onSave(result.data);
+       }
+       toast.success(isNew ? 'Area created successfully' : 'Area updated successfully');
+       setErrors([]);
+       setIsSaving(false);
+       setIsEditing(false);
+       onClose();
+     }, 500);
   };
 
+   const getError = (field: string) => getFieldError(errors, field);
+ 
   const actions = isEditing ? [
     { label: 'Cancel', onClick: () => isNew ? onClose() : setIsEditing(false), variant: 'outlined' as const },
-    { label: 'Save Area', onClick: handleSave, variant: 'primary' as const, icon: <Save className="h-4 w-4" /> },
+     { label: isSaving ? 'Saving...' : 'Save Area', onClick: handleSave, variant: 'primary' as const, icon: <Save className="h-4 w-4" />, disabled: isSaving, loading: isSaving },
   ] : [
     { label: 'Edit', onClick: () => setIsEditing(true), variant: 'primary' as const, icon: <Edit2 className="h-4 w-4" /> },
   ];
@@ -76,27 +128,53 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
           <div className="bg-card border border-border rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-semibold text-foreground">Basic Information</h3>
             
+           {/* Location selector for new areas */}
+           {isNew && locations.length > 0 && (
+             <div className="space-y-2">
+               <Label>Location <span className="text-destructive">*</span></Label>
+               <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+                 <SelectTrigger className={getError('locationId') ? 'border-destructive' : ''}>
+                   <SelectValue placeholder="Select a location" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   {locations.map(loc => (
+                     <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+               {getError('locationId') && <p className="text-xs text-destructive mt-1">{getError('locationId')}</p>}
+             </div>
+           )}
+ 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Area Name</Label>
+               <Label>Area Name <span className="text-destructive">*</span></Label>
                 {isEditing ? (
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter area name"
-                  />
+                   <div>
+                     <Input
+                       value={formData.name}
+                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                       placeholder="Enter area name"
+                       className={getError('name') ? 'border-destructive' : ''}
+                     />
+                     {getError('name') && <p className="text-xs text-destructive mt-1">{getError('name')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{area?.name}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Area Code</Label>
+               <Label>Area Code <span className="text-destructive">*</span></Label>
                 {isEditing ? (
-                  <Input
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                    placeholder="e.g., NUR"
-                  />
+                   <div>
+                     <Input
+                       value={formData.code}
+                       onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                       placeholder="e.g., NUR"
+                       className={getError('code') ? 'border-destructive' : ''}
+                     />
+                     {getError('code') && <p className="text-xs text-destructive mt-1">{getError('code')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{area?.code}</p>
                 )}
@@ -152,13 +230,17 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Capacity</Label>
+               <Label>Capacity <span className="text-destructive">*</span></Label>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })}
-                  />
+                   <div>
+                     <Input
+                       type="number"
+                       value={formData.capacity}
+                       onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })}
+                       className={getError('capacity') ? 'border-destructive' : ''}
+                     />
+                     {getError('capacity') && <p className="text-xs text-destructive mt-1">{getError('capacity')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{area?.capacity}</p>
                 )}
@@ -171,13 +253,17 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Minimum Staff</Label>
+               <Label>Minimum Staff <span className="text-destructive">*</span></Label>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={formData.minimumStaff}
-                    onChange={(e) => setFormData({ ...formData, minimumStaff: parseInt(e.target.value) || 1 })}
-                  />
+                   <div>
+                     <Input
+                       type="number"
+                       value={formData.minimumStaff}
+                       onChange={(e) => setFormData({ ...formData, minimumStaff: parseInt(e.target.value) || 1 })}
+                       className={getError('minimumStaff') ? 'border-destructive' : ''}
+                     />
+                     {getError('minimumStaff') && <p className="text-xs text-destructive mt-1">{getError('minimumStaff')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{area?.minimumStaff}</p>
                 )}
@@ -185,11 +271,15 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
               <div className="space-y-2">
                 <Label>Maximum Staff</Label>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={formData.maximumStaff}
-                    onChange={(e) => setFormData({ ...formData, maximumStaff: parseInt(e.target.value) || 10 })}
-                  />
+                   <div>
+                     <Input
+                       type="number"
+                       value={formData.maximumStaff}
+                       onChange={(e) => setFormData({ ...formData, maximumStaff: parseInt(e.target.value) || 10 })}
+                       className={getError('maximumStaff') ? 'border-destructive' : ''}
+                     />
+                     {getError('maximumStaff') && <p className="text-xs text-destructive mt-1">{getError('maximumStaff')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{area?.maximumStaff || 'No limit'}</p>
                 )}
