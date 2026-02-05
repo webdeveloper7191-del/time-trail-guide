@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+ import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import {
   Repeat,
   Plus,
@@ -440,18 +441,16 @@ export function RecurringPatternsPanel({
           },
         ]}
       >
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label>Pattern Name *</Label>
+         <FormSection title="Pattern Details">
+           <FormField label="Pattern Name" required>
             <Input
               placeholder="e.g., Morning Educator Shift"
               value={newPattern.name}
               onChange={e => setNewPattern(prev => ({ ...prev, name: e.target.value }))}
             />
-          </div>
+           </FormField>
 
-          <div className="space-y-2">
-            <Label>Recurrence Type *</Label>
+           <FormField label="Recurrence Type" required>
             <Select
               value={newPattern.pattern}
               onValueChange={v => setNewPattern(prev => ({ ...prev, pattern: v as RecurrencePattern }))}
@@ -466,10 +465,9 @@ export function RecurringPatternsPanel({
                 <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+           </FormField>
 
-          <div className="space-y-2">
-            <Label>Days of Week *</Label>
+           <FormField label="Days of Week" required>
             <div className="flex gap-2 flex-wrap">
               {DAYS_OF_WEEK.map(day => (
                 <div
@@ -485,13 +483,12 @@ export function RecurringPatternsPanel({
                 </div>
               ))}
             </div>
-          </div>
+           </FormField>
+         </FormSection>
 
-          <Separator />
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Start Time *</Label>
+         <FormSection title="Shift Schedule">
+           <FormRow columns={2}>
+             <FormField label="Start Time" required>
               <Input
                 type="time"
                 value={newPattern.shiftTemplate?.startTime}
@@ -502,9 +499,8 @@ export function RecurringPatternsPanel({
                   }))
                 }
               />
-            </div>
-            <div className="space-y-2">
-              <Label>End Time *</Label>
+             </FormField>
+             <FormField label="End Time" required>
               <Input
                 type="time"
                 value={newPattern.shiftTemplate?.endTime}
@@ -515,11 +511,10 @@ export function RecurringPatternsPanel({
                   }))
                 }
               />
-            </div>
-          </div>
+             </FormField>
+           </FormRow>
 
-          <div className="space-y-2">
-            <Label>Role *</Label>
+           <FormField label="Role" required>
             <Select
               value={newPattern.shiftTemplate?.roleId}
               onValueChange={v => {
@@ -545,10 +540,9 @@ export function RecurringPatternsPanel({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+           </FormField>
 
-          <div className="space-y-2">
-            <Label>Centre *</Label>
+           <FormField label="Centre" required>
             <Select
               value={newPattern.shiftTemplate?.centreId}
               onValueChange={v =>
@@ -573,27 +567,27 @@ export function RecurringPatternsPanel({
                 )}
               </SelectContent>
             </Select>
-          </div>
+           </FormField>
+         </FormSection>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Start Date</Label>
+         <FormSection title="Pattern Duration">
+           <FormRow columns={2}>
+             <FormField label="Start Date">
               <Input
                 type="date"
                 value={newPattern.startDate}
                 onChange={e => setNewPattern(prev => ({ ...prev, startDate: e.target.value }))}
               />
-            </div>
-            <div className="space-y-2">
-              <Label>End Date (optional)</Label>
+             </FormField>
+             <FormField label="End Date (optional)">
               <Input
                 type="date"
                 value={newPattern.endDate}
                 onChange={e => setNewPattern(prev => ({ ...prev, endDate: e.target.value }))}
               />
-            </div>
-          </div>
-        </div>
+             </FormField>
+           </FormRow>
+         </FormSection>
       </PrimaryOffCanvas>
 
       {/* Edit Pattern Sheet - Using PrimaryOffCanvas */}
@@ -624,34 +618,30 @@ export function RecurringPatternsPanel({
         ]}
       >
         {selectedPattern && (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-primary font-semibold">Pattern Name *</Label>
+           <>
+           <FormSection title="Pattern Details">
+             <FormField label="Pattern Name" required>
               <Input
                 placeholder="e.g., Morning Educator Shift"
                 value={selectedPattern.name}
                 onChange={e => setSelectedPattern({ ...selectedPattern, name: e.target.value })}
-                className="bg-background"
               />
-            </div>
+             </FormField>
 
-            <div className="space-y-2">
-              <Label className="text-primary font-semibold">Description</Label>
+             <FormField label="Description">
               <Input
                 placeholder="Optional description"
                 value={selectedPattern.description || ''}
                 onChange={e => setSelectedPattern({ ...selectedPattern, description: e.target.value })}
-                className="bg-background"
               />
-            </div>
+             </FormField>
 
-            <div className="space-y-2">
-              <Label className="text-primary font-semibold">Recurrence Type *</Label>
+             <FormField label="Recurrence Type" required>
               <Select
                 value={selectedPattern.pattern}
                 onValueChange={v => setSelectedPattern({ ...selectedPattern, pattern: v as RecurrencePattern })}
               >
-                <SelectTrigger className="bg-background">
+                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -661,10 +651,9 @@ export function RecurringPatternsPanel({
                   <SelectItem value="monthly">Monthly</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+             </FormField>
 
-            <div className="space-y-2">
-              <Label className="text-primary font-semibold">Days of Week *</Label>
+             <FormField label="Days of Week" required>
               <div className="flex gap-2 flex-wrap">
                 {DAYS_OF_WEEK.map(day => (
                   <div
@@ -686,13 +675,12 @@ export function RecurringPatternsPanel({
                   </div>
                 ))}
               </div>
-            </div>
+             </FormField>
+           </FormSection>
 
-            <Separator />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-primary font-semibold">Start Time *</Label>
+           <FormSection title="Shift Schedule">
+             <FormRow columns={2}>
+               <FormField label="Start Time" required>
                 <Input
                   type="time"
                   value={selectedPattern.shiftTemplate?.startTime}
@@ -702,11 +690,9 @@ export function RecurringPatternsPanel({
                       shiftTemplate: { ...selectedPattern.shiftTemplate, startTime: e.target.value },
                     })
                   }
-                  className="bg-background"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-primary font-semibold">End Time *</Label>
+               </FormField>
+               <FormField label="End Time" required>
                 <Input
                   type="time"
                   value={selectedPattern.shiftTemplate?.endTime}
@@ -716,13 +702,11 @@ export function RecurringPatternsPanel({
                       shiftTemplate: { ...selectedPattern.shiftTemplate, endTime: e.target.value },
                     })
                   }
-                  className="bg-background"
                 />
-              </div>
-            </div>
+               </FormField>
+             </FormRow>
 
-            <div className="space-y-2">
-              <Label className="text-primary font-semibold">Role *</Label>
+             <FormField label="Role" required>
               <Select
                 value={selectedPattern.shiftTemplate?.roleId}
                 onValueChange={v => {
@@ -737,7 +721,7 @@ export function RecurringPatternsPanel({
                   });
                 }}
               >
-                <SelectTrigger className="bg-background">
+                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -748,32 +732,30 @@ export function RecurringPatternsPanel({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+             </FormField>
+           </FormSection>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-primary font-semibold">Start Date</Label>
+           <FormSection title="Pattern Duration">
+             <FormRow columns={2}>
+               <FormField label="Start Date">
                 <Input
                   type="date"
                   value={selectedPattern.startDate}
                   onChange={e => setSelectedPattern({ ...selectedPattern, startDate: e.target.value })}
-                  className="bg-background"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-primary font-semibold">End Date (optional)</Label>
+               </FormField>
+               <FormField label="End Date (optional)">
                 <Input
                   type="date"
                   value={selectedPattern.endDate || ''}
                   onChange={e => setSelectedPattern({ ...selectedPattern, endDate: e.target.value })}
-                  className="bg-background"
                 />
-              </div>
-            </div>
+               </FormField>
+             </FormRow>
+           </FormSection>
 
-            <div className="space-y-2">
-              <Label className="text-primary font-semibold">Status</Label>
-              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border">
+           <FormSection title="Status">
+             <div className="flex items-center gap-3">
                 <StyledSwitch
                   checked={selectedPattern.isActive}
                   onChange={(checked) => setSelectedPattern({ ...selectedPattern, isActive: checked })}
@@ -782,8 +764,8 @@ export function RecurringPatternsPanel({
                   {selectedPattern.isActive ? 'Active' : 'Paused'}
                 </span>
               </div>
-            </div>
-          </div>
+           </FormSection>
+           </>
         )}
       </PrimaryOffCanvas>
     </div>
