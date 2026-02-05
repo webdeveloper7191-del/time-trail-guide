@@ -1,15 +1,15 @@
  import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Users, Layers, Building2, Phone, Mail, Globe, Edit2, Trash2, Save, Settings, Shield } from 'lucide-react';
+import { MapPin, Layers, Building2, Phone, Mail, Globe, Edit2, Save, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
  import { cn } from '@/lib/utils';
  import { locationSchema, validateForm, getFieldError, ValidationError } from '@/lib/validation/locationValidation';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { Location, Area, Department, LOCATION_STATUS_LABELS, AUSTRALIAN_STATES, AUSTRALIAN_TIMEZONES, StaffingRatio, QualificationRequirement, AreaCombiningThreshold } from '@/types/location';
 import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
 import StaffingRatioEditor from './StaffingRatioEditor';
@@ -154,47 +154,36 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
 
         <TabsContent value="details" className="space-y-6">
           {/* Basic Info */}
-          <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Basic Information</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Location Name</Label>
+          <FormSection title="Basic Information" tooltip="Configure the location details">
+            <FormRow>
+              <FormField label="Location Name" required error={getError('name')}>
                 {isEditing ? (
-                   <div>
-                     <Input
-                       value={formData.name}
-                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                       placeholder="Enter location name"
-                       className={getError('name') ? 'border-destructive' : ''}
-                     />
-                     {getError('name') && <p className="text-xs text-destructive mt-1">{getError('name')}</p>}
-                   </div>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter location name"
+                    className={getError('name') ? 'border-destructive' : ''}
+                  />
                 ) : (
                   <p className="text-sm font-medium">{location?.name}</p>
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label>Location Code</Label>
+              </FormField>
+              <FormField label="Location Code" required error={getError('code')}>
                 {isEditing ? (
-                   <div>
-                     <Input
-                       value={formData.code}
-                       onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                       placeholder="e.g., MEL-CBD"
-                       className={getError('code') ? 'border-destructive' : ''}
-                     />
-                     {getError('code') && <p className="text-xs text-destructive mt-1">{getError('code')}</p>}
-                   </div>
+                  <Input
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                    placeholder="e.g., MEL-CBD"
+                    className={getError('code') ? 'border-destructive' : ''}
+                  />
                 ) : (
                   <p className="text-sm font-medium">{location?.code}</p>
                 )}
-              </div>
-            </div>
+              </FormField>
+            </FormRow>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Status</Label>
+            <FormRow>
+              <FormField label="Status">
                 {isEditing ? (
                   <Select
                     value={formData.status}
@@ -212,9 +201,8 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                 ) : (
                   <Badge variant="outline">{LOCATION_STATUS_LABELS[location?.status || 'pending_setup']}</Badge>
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label>Industry Type</Label>
+              </FormField>
+              <FormField label="Industry Type" tooltip="Select the industry for compliance defaults">
                 {isEditing ? (
                   <Select
                     value={formData.industryType}
@@ -232,85 +220,65 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                 ) : (
                   <p className="text-sm font-medium capitalize">{location?.industryType}</p>
                 )}
-              </div>
-            </div>
+              </FormField>
+            </FormRow>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Total Capacity</Label>
+            <FormRow>
+              <FormField label="Total Capacity" required error={getError('totalCapacity')}>
                 {isEditing ? (
-                   <div>
-                     <Input
-                       type="number"
-                       value={formData.totalCapacity}
-                       onChange={(e) => setFormData({ ...formData, totalCapacity: parseInt(e.target.value) || 0 })}
-                       className={getError('totalCapacity') ? 'border-destructive' : ''}
-                     />
-                     {getError('totalCapacity') && <p className="text-xs text-destructive mt-1">{getError('totalCapacity')}</p>}
-                   </div>
+                  <Input
+                    type="number"
+                    value={formData.totalCapacity}
+                    onChange={(e) => setFormData({ ...formData, totalCapacity: parseInt(e.target.value) || 0 })}
+                    className={getError('totalCapacity') ? 'border-destructive' : ''}
+                  />
                 ) : (
                   <p className="text-sm font-medium">{location?.totalCapacity}</p>
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label>Max Staff</Label>
+              </FormField>
+              <FormField label="Max Staff" required error={getError('maxStaff')}>
                 {isEditing ? (
-                   <div>
-                     <Input
-                       type="number"
-                       value={formData.maxStaff}
-                       onChange={(e) => setFormData({ ...formData, maxStaff: parseInt(e.target.value) || 0 })}
-                       className={getError('maxStaff') ? 'border-destructive' : ''}
-                     />
-                     {getError('maxStaff') && <p className="text-xs text-destructive mt-1">{getError('maxStaff')}</p>}
-                   </div>
+                  <Input
+                    type="number"
+                    value={formData.maxStaff}
+                    onChange={(e) => setFormData({ ...formData, maxStaff: parseInt(e.target.value) || 0 })}
+                    className={getError('maxStaff') ? 'border-destructive' : ''}
+                  />
                 ) : (
                   <p className="text-sm font-medium">{location?.maxStaff}</p>
                 )}
-              </div>
-            </div>
-          </div>
+              </FormField>
+            </FormRow>
+          </FormSection>
 
           {/* Address */}
-          <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Address</h3>
-            
+          <FormSection title="Address" tooltip="Physical location address">
             {isEditing ? (
               <>
-                <div className="space-y-2">
-                  <Label>Street Address</Label>
-                   <div>
-                     <Input
-                       value={formData.address.line1}
-                       onChange={(e) => setFormData({ ...formData, address: { ...formData.address, line1: e.target.value } })}
-                       placeholder="Street address"
-                       className={getError('address.line1') ? 'border-destructive' : ''}
-                     />
-                     {getError('address.line1') && <p className="text-xs text-destructive mt-1">{getError('address.line1')}</p>}
-                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Address Line 2 (Optional)</Label>
+                <FormField label="Street Address" required error={getError('address.line1')}>
+                  <Input
+                    value={formData.address.line1}
+                    onChange={(e) => setFormData({ ...formData, address: { ...formData.address, line1: e.target.value } })}
+                    placeholder="Street address"
+                    className={getError('address.line1') ? 'border-destructive' : ''}
+                  />
+                </FormField>
+                <FormField label="Address Line 2 (Optional)">
                   <Input
                     value={formData.address.line2}
                     onChange={(e) => setFormData({ ...formData, address: { ...formData.address, line2: e.target.value } })}
                     placeholder="Suite, unit, building, floor, etc."
                   />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Suburb</Label>
-                     <div>
-                       <Input
-                         value={formData.address.suburb}
-                         onChange={(e) => setFormData({ ...formData, address: { ...formData.address, suburb: e.target.value } })}
-                         className={getError('address.suburb') ? 'border-destructive' : ''}
-                       />
-                       {getError('address.suburb') && <p className="text-xs text-destructive mt-1">{getError('address.suburb')}</p>}
-                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>State</Label>
+                </FormField>
+                <FormRow columns={3}>
+                  <FormField label="Suburb" required error={getError('address.suburb')}>
+                    <Input
+                      value={formData.address.suburb}
+                      onChange={(e) => setFormData({ ...formData, address: { ...formData.address, suburb: e.target.value } })}
+                      className={getError('address.suburb') ? 'border-destructive' : ''}
+                    />
+                  </FormField>
+                  <FormField label="State">
                     <Select
                       value={formData.address.state}
                       onValueChange={(v) => setFormData({ ...formData, address: { ...formData.address, state: v } })}
@@ -324,19 +292,15 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Postcode</Label>
-                     <div>
-                       <Input
-                         value={formData.address.postcode}
-                         onChange={(e) => setFormData({ ...formData, address: { ...formData.address, postcode: e.target.value } })}
-                         className={getError('address.postcode') ? 'border-destructive' : ''}
-                       />
-                       {getError('address.postcode') && <p className="text-xs text-destructive mt-1">{getError('address.postcode')}</p>}
-                     </div>
-                  </div>
-                </div>
+                  </FormField>
+                  <FormField label="Postcode" required error={getError('address.postcode')}>
+                    <Input
+                      value={formData.address.postcode}
+                      onChange={(e) => setFormData({ ...formData, address: { ...formData.address, postcode: e.target.value } })}
+                      className={getError('address.postcode') ? 'border-destructive' : ''}
+                    />
+                  </FormField>
+                </FormRow>
               </>
             ) : (
               <div className="text-sm">
@@ -345,17 +309,12 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                 <p>{location?.address.suburb}, {location?.address.state} {location?.address.postcode}</p>
               </div>
             )}
-          </div>
+          </FormSection>
 
           {/* Contact */}
-          <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Contact Details</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Phone className="h-3 w-3" /> Phone
-                </Label>
+          <FormSection title="Contact Details" tooltip="Location contact information">
+            <FormRow>
+              <FormField label="Phone">
                 {isEditing ? (
                   <Input
                     value={formData.phone}
@@ -365,11 +324,8 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                 ) : (
                   <p className="text-sm">{location?.phone || 'Not set'}</p>
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Mail className="h-3 w-3" /> Email
-                </Label>
+              </FormField>
+              <FormField label="Email">
                 {isEditing ? (
                   <Input
                     type="email"
@@ -380,13 +336,10 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                 ) : (
                   <p className="text-sm">{location?.email || 'Not set'}</p>
                 )}
-              </div>
-            </div>
+              </FormField>
+            </FormRow>
 
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Globe className="h-3 w-3" /> Timezone
-              </Label>
+            <FormField label="Timezone" tooltip="Local timezone for operating hours">
               {isEditing ? (
                 <Select
                   value={formData.timezone}
@@ -404,13 +357,13 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               ) : (
                 <p className="text-sm">{location?.timezone}</p>
               )}
-            </div>
-          </div>
+            </FormField>
+          </FormSection>
         </TabsContent>
 
         <TabsContent value="compliance" className="space-y-6">
           {/* Under the Roof Ratios */}
-          <div className="bg-card border border-border rounded-lg p-4">
+          <FormSection title="Under the Roof Ratios" tooltip="Location-wide staffing requirements based on total attendance">
             <StaffingRatioEditor
               ratios={underRoofRatios}
               onUpdate={setUnderRoofRatios}
@@ -418,39 +371,31 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               demandUnit="Total Attendance"
               isLocationLevel={true}
             />
-          </div>
+          </FormSection>
 
           {/* Location-wide Qualifications */}
-          <div className="bg-card border border-border rounded-lg p-4">
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Location-Wide Qualifications
-              </h3>
-              <p className="text-xs text-muted-foreground">Qualification requirements that apply across all areas</p>
-            </div>
+          <FormSection title="Location-Wide Qualifications" tooltip="Qualification requirements that apply across all areas">
             <QualificationRequirementEditor
               requirements={locationQualifications}
               onUpdate={setLocationQualifications}
               isEditing={isEditing}
               industryType={formData.industryType as any}
             />
-          </div>
+          </FormSection>
 
           {/* Area Combining Thresholds */}
-          <div className="bg-card border border-border rounded-lg p-4">
+          <FormSection title="Combine Area or Reduce Staff" tooltip="Configure when to prompt roster managers to combine areas or reduce staffing">
             <AreaCombiningEditor
               thresholds={areaCombiningThresholds}
               onUpdate={setAreaCombiningThresholds}
               isEditing={isEditing}
               industryType={formData.industryType as any}
             />
-          </div>
+          </FormSection>
         </TabsContent>
 
         <TabsContent value="hours" className="space-y-4">
-          <div className="bg-card border border-border rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-foreground mb-4">Weekly Operating Hours</h3>
+          <FormSection title="Weekly Operating Hours" tooltip="Configure when the location is open">
             <div className="space-y-3">
               {DAYS_OF_WEEK.map((day, index) => {
                 const hours = location?.operatingHours.find(h => h.dayOfWeek === index);
@@ -473,7 +418,7 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
                 );
               })}
             </div>
-          </div>
+          </FormSection>
         </TabsContent>
 
         <TabsContent value="areas" className="space-y-4">

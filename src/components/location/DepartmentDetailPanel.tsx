@@ -1,15 +1,15 @@
  import React, { useState, useEffect } from 'react';
-import { Building2, Users, DollarSign, Layers, Save, Edit2 } from 'lucide-react';
+import { Building2, DollarSign, Layers, Save, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
  import { departmentSchema, validateForm, getFieldError, ValidationError } from '@/lib/validation/locationValidation';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { Department, Area, Location, DEPARTMENT_TYPE_LABELS } from '@/types/location';
 
 interface DepartmentDetailPanelProps {
@@ -130,13 +130,10 @@ const DepartmentDetailPanel: React.FC<DepartmentDetailPanelProps> = ({
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
-          <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Basic Information</h3>
-            
+          <FormSection title="Basic Information" tooltip="Configure the department details">
            {/* Location selector for new departments */}
            {isNew && locations.length > 0 && (
-             <div className="space-y-2">
-               <Label>Location <span className="text-destructive">*</span></Label>
+              <FormField label="Location" required error={getError('locationId')}>
                <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
                  <SelectTrigger className={getError('locationId') ? 'border-destructive' : ''}>
                    <SelectValue placeholder="Select a location" />
@@ -147,48 +144,38 @@ const DepartmentDetailPanel: React.FC<DepartmentDetailPanelProps> = ({
                    ))}
                  </SelectContent>
                </Select>
-               {getError('locationId') && <p className="text-xs text-destructive mt-1">{getError('locationId')}</p>}
-             </div>
+              </FormField>
            )}
  
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-               <Label>Department Name <span className="text-destructive">*</span></Label>
+            <FormRow>
+              <FormField label="Department Name" required error={getError('name')}>
                 {isEditing ? (
-                   <div>
-                     <Input
-                       value={formData.name}
-                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                       placeholder="Enter department name"
-                       className={getError('name') ? 'border-destructive' : ''}
-                     />
-                     {getError('name') && <p className="text-xs text-destructive mt-1">{getError('name')}</p>}
-                   </div>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter department name"
+                    className={getError('name') ? 'border-destructive' : ''}
+                  />
                 ) : (
                   <p className="text-sm font-medium">{department?.name}</p>
                 )}
-              </div>
-              <div className="space-y-2">
-               <Label>Department Code <span className="text-destructive">*</span></Label>
+              </FormField>
+              <FormField label="Department Code" required error={getError('code')}>
                 {isEditing ? (
-                   <div>
-                     <Input
-                       value={formData.code}
-                       onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                       placeholder="e.g., EDU"
-                       className={getError('code') ? 'border-destructive' : ''}
-                     />
-                     {getError('code') && <p className="text-xs text-destructive mt-1">{getError('code')}</p>}
-                   </div>
+                  <Input
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                    placeholder="e.g., EDU"
+                    className={getError('code') ? 'border-destructive' : ''}
+                  />
                 ) : (
                   <p className="text-sm font-medium">{department?.code}</p>
                 )}
-              </div>
-            </div>
+              </FormField>
+            </FormRow>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Department Type</Label>
+            <FormRow>
+              <FormField label="Department Type">
                 {isEditing ? (
                   <Select
                     value={formData.type}
@@ -206,52 +193,38 @@ const DepartmentDetailPanel: React.FC<DepartmentDetailPanelProps> = ({
                 ) : (
                   <Badge variant="outline" className="capitalize">{DEPARTMENT_TYPE_LABELS[department?.type || 'operational']}</Badge>
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label>Headcount</Label>
+              </FormField>
+              <FormField label="Headcount" error={getError('headcount')}>
                 {isEditing ? (
-                   <div>
-                     <Input
-                       type="number"
-                       value={formData.headcount}
-                       onChange={(e) => setFormData({ ...formData, headcount: parseInt(e.target.value) || 0 })}
-                       className={getError('headcount') ? 'border-destructive' : ''}
-                     />
-                     {getError('headcount') && <p className="text-xs text-destructive mt-1">{getError('headcount')}</p>}
-                   </div>
+                  <Input
+                    type="number"
+                    value={formData.headcount}
+                    onChange={(e) => setFormData({ ...formData, headcount: parseInt(e.target.value) || 0 })}
+                    className={getError('headcount') ? 'border-destructive' : ''}
+                  />
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{department?.headcount || 0}</span>
-                  </div>
+                  <p className="text-sm font-medium">{department?.headcount || 0} staff</p>
                 )}
-              </div>
-            </div>
+              </FormField>
+            </FormRow>
 
-            <div className="space-y-2">
-              <Label>Description</Label>
+            <FormField label="Description" error={getError('description')}>
               {isEditing ? (
-               <div>
-                 <Textarea
-                   value={formData.description}
-                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                   placeholder="Brief description of department responsibilities"
-                   rows={3}
-                   className={getError('description') ? 'border-destructive' : ''}
-                 />
-                 {getError('description') && <p className="text-xs text-destructive mt-1">{getError('description')}</p>}
-               </div>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of department responsibilities"
+                  rows={3}
+                  className={getError('description') ? 'border-destructive' : ''}
+                />
               ) : (
                 <p className="text-sm text-muted-foreground">{department?.description || 'No description'}</p>
               )}
-            </div>
-          </div>
+            </FormField>
+          </FormSection>
 
-          <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Management</h3>
-            
-            <div className="space-y-2">
-              <Label>Department Manager</Label>
+          <FormSection title="Management" tooltip="Department management information">
+            <FormField label="Department Manager">
               {isEditing ? (
                 <Input
                   value={formData.managerName}
@@ -261,8 +234,8 @@ const DepartmentDetailPanel: React.FC<DepartmentDetailPanelProps> = ({
               ) : (
                 <p className="text-sm font-medium">{department?.managerName || 'Not assigned'}</p>
               )}
-            </div>
-          </div>
+            </FormField>
+          </FormSection>
         </TabsContent>
 
         <TabsContent value="areas" className="space-y-4">
@@ -297,12 +270,9 @@ const DepartmentDetailPanel: React.FC<DepartmentDetailPanelProps> = ({
         </TabsContent>
 
         <TabsContent value="budget" className="space-y-6">
-          <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Budget Information</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Budget Allocation</Label>
+          <FormSection title="Budget Information" tooltip="Department budget and cost centre configuration">
+            <FormRow>
+              <FormField label="Budget Allocation">
                 {isEditing ? (
                   <Input
                     type="number"
@@ -315,9 +285,8 @@ const DepartmentDetailPanel: React.FC<DepartmentDetailPanelProps> = ({
                     <span className="text-lg font-semibold">{formatCurrency(department?.budgetAllocation || 0)}</span>
                   </div>
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label>Cost Centre Code</Label>
+              </FormField>
+              <FormField label="Cost Centre Code">
                 {isEditing ? (
                   <Input
                     value={formData.costCentreCode}
@@ -327,9 +296,9 @@ const DepartmentDetailPanel: React.FC<DepartmentDetailPanelProps> = ({
                 ) : (
                   <p className="text-sm font-medium">{department?.costCentreCode || 'Not set'}</p>
                 )}
-              </div>
-            </div>
-          </div>
+              </FormField>
+            </FormRow>
+          </FormSection>
         </TabsContent>
       </Tabs>
     </PrimaryOffCanvas>
