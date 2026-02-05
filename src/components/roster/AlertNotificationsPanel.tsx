@@ -17,6 +17,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Shift, StaffMember, RosterComplianceFlag } from '@/types/roster';
 import { format, parseISO, differenceInDays, isAfter, isBefore } from 'date-fns';
 
@@ -261,25 +262,24 @@ export function AlertNotificationsPanel({
       showFooter={false}
     >
       {/* Tab Navigation */}
-      <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
-        <Tabs defaultValue="all" className="w-full">
+      <Tabs defaultValue="all" className="w-full">
           <div className="flex items-center justify-between">
             <TabsList className="bg-transparent gap-1 h-auto p-0">
               <TabsTrigger 
                 value="all" 
-                className="rounded-lg px-4 py-2 data-[state=active]:bg-muted data-[state=active]:shadow-sm"
+                className="rounded-lg px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 All
               </TabsTrigger>
               <TabsTrigger 
                 value="critical"
-                className="rounded-lg px-4 py-2 data-[state=active]:bg-muted data-[state=active]:shadow-sm"
+                className="rounded-lg px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 Critical
               </TabsTrigger>
               <TabsTrigger 
                 value="warnings"
-                className="rounded-lg px-4 py-2 data-[state=active]:bg-muted data-[state=active]:shadow-sm"
+                className="rounded-lg px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 Warnings
               </TabsTrigger>
@@ -293,62 +293,73 @@ export function AlertNotificationsPanel({
 
           <div className="mt-4 space-y-3">
             <TabsContent value="all" className="space-y-3 m-0">
+              <FormSection title="All Alerts">
               {alerts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="flex flex-col items-center justify-center py-12 text-center bg-background rounded-lg border">
                   <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
                   <p className="font-medium">All Clear!</p>
                   <p className="text-sm text-muted-foreground">No alerts at this time</p>
                 </div>
               ) : (
-                alerts.map(alert => (
-                  <AlertItem 
-                    key={alert.id} 
-                    alert={alert} 
-                    getIcon={getAlertIcon}
-                    onMarkRead={() => markAsRead(alert.id)}
-                  />
-                ))
+                <div className="space-y-3">
+                  {alerts.map(alert => (
+                    <AlertItem 
+                      key={alert.id} 
+                      alert={alert} 
+                      getIcon={getAlertIcon}
+                      onMarkRead={() => markAsRead(alert.id)}
+                    />
+                  ))}
+                </div>
               )}
+              </FormSection>
             </TabsContent>
 
             <TabsContent value="critical" className="space-y-3 m-0">
+              <FormSection title="Critical Alerts">
               {alerts.filter(a => a.severity === 'critical').length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="flex flex-col items-center justify-center py-12 text-center bg-background rounded-lg border">
                   <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
                   <p className="text-sm text-muted-foreground">No critical alerts</p>
                 </div>
               ) : (
-                alerts.filter(a => a.severity === 'critical').map(alert => (
-                  <AlertItem 
-                    key={alert.id} 
-                    alert={alert} 
-                    getIcon={getAlertIcon}
-                    onMarkRead={() => markAsRead(alert.id)}
-                  />
-                ))
+                <div className="space-y-3">
+                  {alerts.filter(a => a.severity === 'critical').map(alert => (
+                    <AlertItem 
+                      key={alert.id} 
+                      alert={alert} 
+                      getIcon={getAlertIcon}
+                      onMarkRead={() => markAsRead(alert.id)}
+                    />
+                  ))}
+                </div>
               )}
+              </FormSection>
             </TabsContent>
 
             <TabsContent value="warnings" className="space-y-3 m-0">
+              <FormSection title="Warnings">
               {alerts.filter(a => a.severity === 'warning').length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="flex flex-col items-center justify-center py-12 text-center bg-background rounded-lg border">
                   <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
                   <p className="text-sm text-muted-foreground">No warnings</p>
                 </div>
               ) : (
-                alerts.filter(a => a.severity === 'warning').map(alert => (
-                  <AlertItem 
-                    key={alert.id} 
-                    alert={alert} 
-                    getIcon={getAlertIcon}
-                    onMarkRead={() => markAsRead(alert.id)}
-                  />
-                ))
+                <div className="space-y-3">
+                  {alerts.filter(a => a.severity === 'warning').map(alert => (
+                    <AlertItem 
+                      key={alert.id} 
+                      alert={alert} 
+                      getIcon={getAlertIcon}
+                      onMarkRead={() => markAsRead(alert.id)}
+                    />
+                  ))}
+                </div>
               )}
+              </FormSection>
             </TabsContent>
           </div>
-        </Tabs>
-      </div>
+      </Tabs>
     </PrimaryOffCanvas>
   );
 }
@@ -365,15 +376,15 @@ function AlertItem({ alert, getIcon, onMarkRead }: AlertItemProps) {
   const getSeverityStyles = () => {
     if (alert.severity === 'critical') {
       return {
-        container: 'bg-red-50 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-800',
-        icon: 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400',
-        text: 'text-red-700 dark:text-red-300',
-        subtext: 'text-red-600 dark:text-red-400',
+        container: 'bg-destructive/5 border border-destructive/30',
+        icon: 'bg-destructive/10 text-destructive',
+        text: 'text-destructive',
+        subtext: 'text-destructive/80',
       };
     }
     return {
-      container: 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700',
-      icon: 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400',
+      container: 'bg-amber-500/5 border border-amber-500/30',
+      icon: 'bg-amber-500/10 text-amber-600',
       text: 'text-amber-700 dark:text-amber-300',
       subtext: 'text-amber-600 dark:text-amber-400',
     };
@@ -382,23 +393,23 @@ function AlertItem({ alert, getIcon, onMarkRead }: AlertItemProps) {
   const styles = getSeverityStyles();
 
   return (
-    <div className={cn("p-4 rounded-xl transition-all", styles.container)}>
+    <div className={cn("p-4 rounded-lg transition-all bg-background", styles.container)}>
       <div className="flex items-start gap-3">
         <div className={cn("p-2.5 rounded-lg shrink-0", styles.icon)}>
           <Icon className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className={cn("font-semibold text-sm", styles.text)}>{alert.title}</p>
+            <p className={cn("font-semibold text-sm text-foreground")}>{alert.title}</p>
             {!alert.read && (
-              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 hover:bg-white/50" onClick={onMarkRead}>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 hover:bg-muted" onClick={onMarkRead}>
                 <X className="h-4 w-4" />
               </Button>
             )}
           </div>
-          <p className={cn("text-xs mt-1", styles.subtext)}>{alert.message}</p>
+          <p className="text-xs mt-1 text-muted-foreground">{alert.message}</p>
           <div className="flex items-center justify-between mt-3">
-            <span className={cn("text-xs", styles.subtext)}>
+            <span className="text-xs text-muted-foreground">
               {format(alert.timestamp, 'h:mm a')}
             </span>
             {alert.actionLabel && (
@@ -407,9 +418,9 @@ function AlertItem({ alert, getIcon, onMarkRead }: AlertItemProps) {
                 size="sm" 
                 className={cn(
                   "h-7 text-xs border-current",
-                  alert.severity === 'critical' 
-                    ? "text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50" 
-                    : "text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+                  alert.severity === 'critical'
+                    ? "text-destructive border-destructive hover:bg-destructive/10"
+                    : "text-amber-600 border-amber-500 hover:bg-amber-500/10"
                 )}
               >
                 {alert.actionLabel}

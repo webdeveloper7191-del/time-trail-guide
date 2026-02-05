@@ -14,6 +14,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Shift, StaffMember, ShiftConflict, Room } from '@/types/roster';
 import { detectShiftConflicts, getConflictSeverityColor } from '@/lib/shiftConflictDetection';
 
@@ -89,7 +90,7 @@ export function ShiftConflictPanel({
       showFooter={false}
     >
       <Tabs defaultValue="all">
-        <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-lg">
+        <TabsList className="grid w-full grid-cols-3 bg-background border p-1 rounded-lg">
           <TabsTrigger value="all" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
             All ({allConflicts.length})
           </TabsTrigger>
@@ -103,51 +104,63 @@ export function ShiftConflictPanel({
 
         <div className="mt-4 space-y-3">
           <TabsContent value="all" className="space-y-3 m-0">
+            <FormSection title="All Conflicts">
             {allConflicts.length === 0 ? (
               <NoConflicts />
             ) : (
-              allConflicts.map(conflict => (
-                <ConflictItem
-                  key={conflict.id}
-                  conflict={conflict}
-                  staffName={getStaffName(conflict.staffId)}
-                  getIcon={getConflictIcon}
-                  onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
-                />
-              ))
+              <div className="space-y-3">
+                {allConflicts.map(conflict => (
+                  <ConflictItem
+                    key={conflict.id}
+                    conflict={conflict}
+                    staffName={getStaffName(conflict.staffId)}
+                    getIcon={getConflictIcon}
+                    onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
+                  />
+                ))}
+              </div>
             )}
+            </FormSection>
           </TabsContent>
 
           <TabsContent value="errors" className="space-y-3 m-0">
+            <FormSection title="Critical Errors">
             {errorConflicts.length === 0 ? (
               <NoConflicts type="error" />
             ) : (
-              errorConflicts.map(conflict => (
-                <ConflictItem
-                  key={conflict.id}
-                  conflict={conflict}
-                  staffName={getStaffName(conflict.staffId)}
-                  getIcon={getConflictIcon}
-                  onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
-                />
-              ))
+              <div className="space-y-3">
+                {errorConflicts.map(conflict => (
+                  <ConflictItem
+                    key={conflict.id}
+                    conflict={conflict}
+                    staffName={getStaffName(conflict.staffId)}
+                    getIcon={getConflictIcon}
+                    onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
+                  />
+                ))}
+              </div>
             )}
+            </FormSection>
           </TabsContent>
 
           <TabsContent value="warnings" className="space-y-3 m-0">
+            <FormSection title="Warnings">
             {warningConflicts.length === 0 ? (
               <NoConflicts type="warning" />
             ) : (
-              warningConflicts.map(conflict => (
-                <ConflictItem
-                  key={conflict.id}
-                  conflict={conflict}
-                  staffName={getStaffName(conflict.staffId)}
-                  getIcon={getConflictIcon}
-                  onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
-                />
-              ))
+              <div className="space-y-3">
+                {warningConflicts.map(conflict => (
+                  <ConflictItem
+                    key={conflict.id}
+                    conflict={conflict}
+                    staffName={getStaffName(conflict.staffId)}
+                    getIcon={getConflictIcon}
+                    onNavigate={() => onNavigateToShift?.(conflict.shiftId)}
+                  />
+                ))}
+              </div>
             )}
+            </FormSection>
           </TabsContent>
         </div>
       </Tabs>
@@ -157,7 +170,7 @@ export function ShiftConflictPanel({
 
 function NoConflicts({ type }: { type?: 'error' | 'warning' }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
+    <div className="flex flex-col items-center justify-center py-12 text-center bg-background rounded-lg border">
       <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3" />
       <p className="font-medium">No {type ? `${type}s` : 'conflicts'} found</p>
       <p className="text-sm text-muted-foreground">
@@ -182,15 +195,15 @@ function ConflictItem({ conflict, staffName, getIcon, onNavigate }: ConflictItem
   const getSeverityStyles = () => {
     if (conflict.severity === 'error') {
       return {
-        container: 'bg-red-50 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-800',
-        icon: 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400',
-        text: 'text-red-700 dark:text-red-300',
-        subtext: 'text-red-600 dark:text-red-400',
+        container: 'bg-destructive/5 border border-destructive/30',
+        icon: 'bg-destructive/10 text-destructive',
+        text: 'text-destructive',
+        subtext: 'text-destructive/80',
       };
     }
     return {
-      container: 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700',
-      icon: 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400',
+      container: 'bg-amber-500/5 border border-amber-500/30',
+      icon: 'bg-amber-500/10 text-amber-600',
       text: 'text-amber-700 dark:text-amber-300',
       subtext: 'text-amber-600 dark:text-amber-400',
     };
@@ -199,7 +212,7 @@ function ConflictItem({ conflict, staffName, getIcon, onNavigate }: ConflictItem
   const styles = getSeverityStyles();
 
   return (
-    <div className={cn("p-4 rounded-xl transition-all", styles.container)}>
+    <div className={cn("p-4 rounded-lg transition-all bg-background", styles.container)}>
       <div className="flex items-start gap-3">
         <div className={cn("p-2.5 rounded-lg shrink-0", styles.icon)}>
           <Icon className="h-5 w-5" />
@@ -207,8 +220,8 @@ function ConflictItem({ conflict, staffName, getIcon, onNavigate }: ConflictItem
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className={cn("font-semibold text-sm", styles.text)}>{conflict.message}</p>
-              <p className={cn("text-xs mt-0.5", styles.subtext)}>{staffName}</p>
+              <p className="font-semibold text-sm text-foreground">{conflict.message}</p>
+              <p className="text-xs mt-0.5 text-muted-foreground">{staffName}</p>
             </div>
             <Badge 
               className={cn(
@@ -222,13 +235,13 @@ function ConflictItem({ conflict, staffName, getIcon, onNavigate }: ConflictItem
             </Badge>
           </div>
           {conflict.details && (
-            <p className={cn("text-xs mt-2", styles.subtext)}>{conflict.details}</p>
+            <p className="text-xs mt-2 text-muted-foreground">{conflict.details}</p>
           )}
           <div className="flex items-center justify-end mt-3">
             <Button 
               variant="ghost" 
               size="sm" 
-              className={cn("h-7 text-xs", styles.text, "hover:bg-white/50 dark:hover:bg-black/20")}
+              className="h-7 text-xs text-primary hover:bg-primary/10"
               onClick={onNavigate}
             >
               View Shift

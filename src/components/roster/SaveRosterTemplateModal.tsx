@@ -1,18 +1,15 @@
 import { useState } from 'react';
-import {
-  Checkbox,
-  Box,
-  Typography,
-} from '@mui/material';
 import { Shift, Room } from '@/types/roster';
+import { Checkbox } from '@/components/ui/checkbox';
 import { RosterTemplate, RosterTemplateShift } from '@/types/rosterTemplates';
 import { format } from 'date-fns';
 import { Save, FileText, Clock, Users } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
+import { cn } from '@/lib/utils';
 
 interface SaveRosterTemplateModalProps {
   open: boolean;
@@ -131,53 +128,43 @@ export function SaveRosterTemplateModal({
 
         {/* Rooms Selection */}
         <FormSection title="Include Rooms" tooltip="Select which rooms to include in this template">
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
+          <div className="grid grid-cols-2 gap-3">
             {rooms.map(room => {
               const isSelected = selectedRooms.includes(room.id);
               return (
-                <Box
+                <div
                   key={room.id}
                   onClick={() => toggleRoom(room.id)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    p: 1.5,
-                    borderRadius: 1.5,
-                    border: 1,
-                    borderColor: isSelected ? 'hsl(var(--primary))' : 'divider',
-                    bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'background.paper',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease-in-out',
-                    '&:hover': { 
-                      bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
-                      borderColor: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.5)',
-                    },
-                  }}
+                  className={cn(
+                    "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
+                    isSelected 
+                      ? "border-primary bg-primary/5" 
+                      : "border-border bg-background hover:border-primary/50"
+                  )}
                 >
-                  <Checkbox 
-                    checked={isSelected} 
-                    size="small" 
-                    sx={{
-                      color: 'hsl(var(--primary))',
-                      '&.Mui-checked': { color: 'hsl(var(--primary))' },
-                    }}
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleRoom(room.id)}
+                    className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                   />
-                  <Typography variant="body2" fontWeight={isSelected ? 600 : 400} color={isSelected ? 'hsl(var(--primary))' : 'text.primary'}>
+                  <span className={cn(
+                    "text-sm",
+                    isSelected ? "font-semibold text-primary" : "text-foreground"
+                  )}>
                     {room.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-auto">
                     {groupedShifts[room.id] || 0} shifts
-                  </Typography>
-                </Box>
+                  </span>
+                </div>
               );
             })}
-          </Box>
+          </div>
         </FormSection>
 
         {/* Options */}
         <FormSection title="Options">
-          <div className="bg-background rounded-lg border p-3">
+          <div className="bg-background rounded-lg border p-4">
             <StyledSwitch
               checked={includeStaffPreferences}
               onChange={setIncludeStaffPreferences}
@@ -187,20 +174,22 @@ export function SaveRosterTemplateModal({
         </FormSection>
 
         {/* Summary */}
-        <div className="flex items-center gap-4 p-3 bg-primary/5 border border-primary rounded-lg">
-          <div className="flex items-center gap-1.5">
-            <FileText size={16} className="text-primary" />
-            <span className="text-sm font-medium">{relevantShifts.length} shifts</span>
+        <FormSection title="Summary">
+          <div className="flex items-center gap-4 p-4 bg-background border rounded-lg">
+            <div className="flex items-center gap-1.5">
+              <FileText size={16} className="text-primary" />
+              <span className="text-sm font-medium">{relevantShifts.length} shifts</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock size={16} className="text-primary" />
+              <span className="text-sm font-medium">{dates.length} days</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Users size={16} className="text-primary" />
+              <span className="text-sm font-medium">{selectedRooms.length} rooms</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Clock size={16} className="text-primary" />
-            <span className="text-sm font-medium">{dates.length} days</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Users size={16} className="text-primary" />
-            <span className="text-sm font-medium">{selectedRooms.length} rooms</span>
-          </div>
-        </div>
+        </FormSection>
       </div>
     </PrimaryOffCanvas>
   );
