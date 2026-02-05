@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, Save, X, Users } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Users, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { StaffingRatio } from '@/types/location';
+
+interface AttendanceBand {
+  id: string;
+  minAttendance: number;
+  maxAttendance: number;
+  staffRequired: number;
+}
 
 interface StaffingRatioEditorProps {
   ratios: StaffingRatio[];
@@ -25,7 +32,7 @@ const StaffingRatioEditor: React.FC<StaffingRatioEditorProps> = ({
 }) => {
   const [editingRatioId, setEditingRatioId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [formData, setFormData] = useState<Partial<StaffingRatio>>({
+  const [formData, setFormData] = useState<Partial<StaffingRatio> & { bands?: AttendanceBand[] }>({
     name: '',
     demandUnit: demandUnit,
     minAttendance: 1,
@@ -33,26 +40,96 @@ const StaffingRatioEditor: React.FC<StaffingRatioEditorProps> = ({
     staffRequired: 1,
     isDefault: false,
     notes: '',
+    bands: [],
   });
 
-  const handleAddRatio = () => {
-    const newRatio: StaffingRatio = {
-      id: `ratio-${Date.now()}`,
-      name: formData.name || 'New Ratio',
-      demandUnit: formData.demandUnit || demandUnit,
-      minAttendance: formData.minAttendance || 1,
-      maxAttendance: formData.maxAttendance || 4,
-      staffRequired: formData.staffRequired || 1,
-      isDefault: formData.isDefault || false,
-      notes: formData.notes,
+  // Convert bands to individual ratios for storage
+  const bandsToRatios = (name: string, demandUnit: string, bands: AttendanceBand[], isDefault: boolean, notes?: string): StaffingRatio[] => {
+    if (bands.length === 0) {
+      return [{
+        id: `ratio-${Date.now()}`,
+        name,
+        demandUnit,
+        minAttendance: formData.minAttendance || 1,
+        maxAttendance: formData.maxAttendance || 4,
+        staffRequired: formData.staffRequired || 1,
+        isDefault,
+        notes,
+      }];
+    }
+    return bands.map((band, index) => ({
+      id: `ratio-${Date.now()}-${index}`,
+      name: bands.length > 1 ? `${name} (Band ${index + 1})` : name,
+      demandUnit,
+      minAttendance: band.minAttendance,
+      maxAttendance: band.maxAttendance,
+      staffRequired: band.staffRequired,
+      isDefault: index === 0 ? isDefault : false,
+      notes: index === 0 ? notes : undefined,
+    }));
+  };
+
+  const addBand = () => {
+    const lastBand = formData.bands && formData.bands.length > 0 
+      ? formData.bands[formData.bands.length - 1]
+      : { maxAttendance: formData.maxAttendance || 4 };
+    
+    const newBand: AttendanceBand = {
+      id: `band-${Date.now()}`,
+      minAttendance: lastBand.maxAttendance + 1,
+      maxAttendance: lastBand.maxAttendance + 5,
+      staffRequired: (formData.bands?.length || 0) + 2,
     };
     
+    setFormData({
+      ...formData,
+      bands: [...(formData.bands || []), newBand],
+    });
+  };
+
+  const updateBand = (bandId: string, field: keyof AttendanceBand, value: number) => {
+    setFormData({
+      ...formData,
+      bands: formData.bands?.map(b => 
+        b.id === bandId ? { ...b, [field]: value } : b
+      ),
+    });
+  };
+
+  const removeBand = (bandId: string) => {
+    setFormData({
+      ...formData,
+      bands: formData.bands?.filter(b => b.id !== bandId),
+    });
+  };
+
+  const handleAddRatio = () => {
+    const hasBands = formData.bands && formData.bands.length > 0;
+    const newRatios = hasBands 
+      ? bandsToRatios(
+          formData.name || 'New Ratio',
+          formData.demandUnit || demandUnit,
+          formData.bands!,
+          formData.isDefault || false,
+          formData.notes
+        )
+      : [{
+          id: `ratio-${Date.now()}`,
+          name: formData.name || 'New Ratio',
+          demandUnit: formData.demandUnit || demandUnit,
+          minAttendance: formData.minAttendance || 1,
+          maxAttendance: formData.maxAttendance || 4,
+          staffRequired: formData.staffRequired || 1,
+          isDefault: formData.isDefault || false,
+          notes: formData.notes,
+        }];
+    
     let updatedRatios = [...ratios];
-    if (newRatio.isDefault) {
+    if (formData.isDefault) {
       updatedRatios = updatedRatios.map(r => ({ ...r, isDefault: false }));
     }
     
-    onUpdate([...updatedRatios, newRatio]);
+    onUpdate([...updatedRatios, ...newRatios]);
     setShowAddForm(false);
     resetForm();
   };
@@ -99,6 +176,7 @@ const StaffingRatioEditor: React.FC<StaffingRatioEditorProps> = ({
       staffRequired: ratio.staffRequired,
       isDefault: ratio.isDefault,
       notes: ratio.notes,
+      bands: [],
     });
   };
 
@@ -111,10 +189,11 @@ const StaffingRatioEditor: React.FC<StaffingRatioEditorProps> = ({
       staffRequired: 1,
       isDefault: false,
       notes: '',
+      bands: [],
     });
   };
 
-  const RatioForm = ({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) => (
+  const RatioForm = ({ onSave, onCancel, isEditMode = false }: { onSave: () => void; onCancel: () => void; isEditMode?: boolean }) => (
     <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -135,40 +214,109 @@ const StaffingRatioEditor: React.FC<StaffingRatioEditorProps> = ({
         </div>
       </div>
       
-      <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-        <h4 className="text-sm font-medium text-foreground">Attendance Range</h4>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Min {formData.demandUnit || demandUnit}</Label>
-            <Input
-              type="number"
-              min={0}
-              value={formData.minAttendance}
-              onChange={(e) => setFormData({ ...formData, minAttendance: parseInt(e.target.value) || 0 })}
-            />
+      {/* Base attendance band */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            Attendance Bands
+          </h4>
+          {!isEditMode && (
+            <Button type="button" variant="outline" size="sm" onClick={addBand}>
+              <Plus className="h-3 w-3 mr-1" />
+              Add Band
+            </Button>
+          )}
+        </div>
+        
+        {/* First/Base band */}
+        <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Band 1</span>
           </div>
-          <div className="space-y-2">
-            <Label>Max {formData.demandUnit || demandUnit}</Label>
-            <Input
-              type="number"
-              min={1}
-              value={formData.maxAttendance}
-              onChange={(e) => setFormData({ ...formData, maxAttendance: parseInt(e.target.value) || 1 })}
-            />
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Min {formData.demandUnit || demandUnit}</Label>
+              <Input
+                type="number"
+                min={0}
+                value={formData.minAttendance}
+                onChange={(e) => setFormData({ ...formData, minAttendance: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Max {formData.demandUnit || demandUnit}</Label>
+              <Input
+                type="number"
+                min={1}
+                value={formData.maxAttendance}
+                onChange={(e) => setFormData({ ...formData, maxAttendance: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Staff Required</Label>
+              <Input
+                type="number"
+                min={1}
+                value={formData.staffRequired}
+                onChange={(e) => setFormData({ ...formData, staffRequired: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground p-2 bg-muted/50 rounded">
+            <span className="font-medium">{formData.minAttendance} - {formData.maxAttendance}</span> {(formData.demandUnit || demandUnit).toLowerCase()} → <span className="font-medium">{formData.staffRequired}</span> staff
           </div>
         </div>
-        <div className="space-y-2">
-          <Label>Staff Required</Label>
-          <Input
-            type="number"
-            min={1}
-            value={formData.staffRequired}
-            onChange={(e) => setFormData({ ...formData, staffRequired: parseInt(e.target.value) || 1 })}
-          />
-        </div>
-        <div className="text-sm text-muted-foreground mt-2 p-2 bg-muted/50 rounded">
-          <span className="font-medium">{formData.minAttendance} - {formData.maxAttendance}</span> {(formData.demandUnit || demandUnit).toLowerCase()} → <span className="font-medium">{formData.staffRequired}</span> staff required
-        </div>
+        
+        {/* Additional stacked bands */}
+        {formData.bands && formData.bands.map((band, index) => (
+          <div key={band.id} className="bg-card border border-border rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">Band {index + 2}</span>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => removeBand(band.id)}
+                className="h-6 w-6 p-0"
+              >
+                <Trash2 className="h-3 w-3 text-destructive" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Min {formData.demandUnit || demandUnit}</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={band.minAttendance}
+                  onChange={(e) => updateBand(band.id, 'minAttendance', parseInt(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Max {formData.demandUnit || demandUnit}</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={band.maxAttendance}
+                  onChange={(e) => updateBand(band.id, 'maxAttendance', parseInt(e.target.value) || 1)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Staff Required</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={band.staffRequired}
+                  onChange={(e) => updateBand(band.id, 'staffRequired', parseInt(e.target.value) || 1)}
+                />
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground p-2 bg-muted/50 rounded">
+              <span className="font-medium">{band.minAttendance} - {band.maxAttendance}</span> {(formData.demandUnit || demandUnit).toLowerCase()} → <span className="font-medium">{band.staffRequired}</span> staff
+            </div>
+          </div>
+        ))}
       </div>
       
       <div className="space-y-2">
@@ -228,6 +376,7 @@ const StaffingRatioEditor: React.FC<StaffingRatioEditorProps> = ({
                 <RatioForm 
                   onSave={() => handleUpdateRatio(ratio.id)} 
                   onCancel={() => { setEditingRatioId(null); resetForm(); }} 
+                  isEditMode={true}
                 />
               ) : (
                 <div className="bg-card border border-border rounded-lg p-4">
