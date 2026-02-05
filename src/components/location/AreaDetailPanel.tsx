@@ -1,15 +1,15 @@
  import React, { useState, useEffect } from 'react';
-import { Layers, Save, Edit2, Wand2 } from 'lucide-react';
+import { Layers, Users, Shield, Clock, Plus, Trash2, Save, Edit2, Settings, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
  import { cn } from '@/lib/utils';
  import { areaSchema, validateForm, getFieldError, ValidationError } from '@/lib/validation/locationValidation';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { Area, Location, AREA_STATUS_LABELS, StaffingRatio, QualificationRequirement, ComplianceRule } from '@/types/location';
 import StaffingRatioEditor from './StaffingRatioEditor';
 import QualificationRequirementEditor from './QualificationRequirementEditor';
@@ -187,7 +187,7 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
         <TabsContent value="details" className="space-y-6">
           {/* Apply Industry Defaults Button */}
           {isEditing && currentLocation?.industryType && currentLocation.industryType !== 'custom' && (
-            <div className="bg-primary/10 border-l-4 border-primary rounded-r-lg p-4">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -206,10 +206,13 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
             </div>
           )}
 
-          <FormSection title="Basic Information" tooltip="Configure the basic area details">
+          <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">Basic Information</h3>
+            
            {/* Location selector for new areas */}
            {isNew && locations.length > 0 && (
-              <FormField label="Location" required error={getError('locationId')}>
+             <div className="space-y-2">
+               <Label>Location <span className="text-destructive">*</span></Label>
                <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
                  <SelectTrigger className={getError('locationId') ? 'border-destructive' : ''}>
                    <SelectValue placeholder="Select a location" />
@@ -220,38 +223,48 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
                    ))}
                  </SelectContent>
                </Select>
-              </FormField>
+               {getError('locationId') && <p className="text-xs text-destructive mt-1">{getError('locationId')}</p>}
+             </div>
            )}
  
-            <FormRow>
-              <FormField label="Area Name" required error={getError('name')}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+               <Label>Area Name <span className="text-destructive">*</span></Label>
                 {isEditing ? (
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter area name"
-                    className={getError('name') ? 'border-destructive' : ''}
-                  />
+                   <div>
+                     <Input
+                       value={formData.name}
+                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                       placeholder="Enter area name"
+                       className={getError('name') ? 'border-destructive' : ''}
+                     />
+                     {getError('name') && <p className="text-xs text-destructive mt-1">{getError('name')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{area?.name}</p>
                 )}
-              </FormField>
-              <FormField label="Area Code" required error={getError('code')}>
+              </div>
+              <div className="space-y-2">
+               <Label>Area Code <span className="text-destructive">*</span></Label>
                 {isEditing ? (
-                  <Input
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                    placeholder="e.g., NUR"
-                    className={getError('code') ? 'border-destructive' : ''}
-                  />
+                   <div>
+                     <Input
+                       value={formData.code}
+                       onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                       placeholder="e.g., NUR"
+                       className={getError('code') ? 'border-destructive' : ''}
+                     />
+                     {getError('code') && <p className="text-xs text-destructive mt-1">{getError('code')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{area?.code}</p>
                 )}
-              </FormField>
-            </FormRow>
+              </div>
+            </div>
 
-            <FormRow>
-              <FormField label="Status">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Status</Label>
                 {isEditing ? (
                   <Select
                     value={formData.status}
@@ -269,8 +282,9 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
                 ) : (
                   <Badge variant="outline">{AREA_STATUS_LABELS[area?.status || 'active']}</Badge>
                 )}
-              </FormField>
-              <FormField label="Service Category">
+              </div>
+              <div className="space-y-2">
+                <Label>Service Category</Label>
                 {isEditing ? (
                   currentLocation?.serviceCategories && currentLocation.serviceCategories.length > 0 ? (
                     <Select 
@@ -296,11 +310,12 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
                 ) : (
                   <p className="text-sm font-medium">{area?.serviceCategory || 'Not set'}</p>
                 )}
-              </FormField>
-            </FormRow>
+              </div>
+            </div>
 
-            <FormRow>
-              <FormField label="Service Type">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Service Type</Label>
                 {isEditing ? (
                   <Input
                     value={formData.serviceType}
@@ -310,50 +325,64 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
                 ) : (
                   <p className="text-sm font-medium">{area?.serviceType || 'Not set'}</p>
                 )}
-              </FormField>
-              <FormField label="Capacity" required error={getError('capacity')}>
+              </div>
+              <div className="space-y-2">
+               <Label>Capacity <span className="text-destructive">*</span></Label>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })}
-                    className={getError('capacity') ? 'border-destructive' : ''}
-                  />
+                   <div>
+                     <Input
+                       type="number"
+                       value={formData.capacity}
+                       onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })}
+                       className={getError('capacity') ? 'border-destructive' : ''}
+                     />
+                     {getError('capacity') && <p className="text-xs text-destructive mt-1">{getError('capacity')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{area?.capacity}</p>
                 )}
-              </FormField>
-            </FormRow>
-          </FormSection>
+              </div>
+            </div>
+          </div>
 
-          <FormSection title="Staffing Limits" tooltip="Set minimum and maximum staff requirements">
-            <FormRow>
-              <FormField label="Minimum Staff" required error={getError('minimumStaff')}>
+          <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">Staffing Limits</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+               <Label>Minimum Staff <span className="text-destructive">*</span></Label>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={formData.minimumStaff}
-                    onChange={(e) => setFormData({ ...formData, minimumStaff: parseInt(e.target.value) || 1 })}
-                    className={getError('minimumStaff') ? 'border-destructive' : ''}
-                  />
+                   <div>
+                     <Input
+                       type="number"
+                       value={formData.minimumStaff}
+                       onChange={(e) => setFormData({ ...formData, minimumStaff: parseInt(e.target.value) || 1 })}
+                       className={getError('minimumStaff') ? 'border-destructive' : ''}
+                     />
+                     {getError('minimumStaff') && <p className="text-xs text-destructive mt-1">{getError('minimumStaff')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{area?.minimumStaff}</p>
                 )}
-              </FormField>
-              <FormField label="Maximum Staff" error={getError('maximumStaff')}>
+              </div>
+              <div className="space-y-2">
+                <Label>Maximum Staff</Label>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={formData.maximumStaff}
-                    onChange={(e) => setFormData({ ...formData, maximumStaff: parseInt(e.target.value) || 10 })}
-                    className={getError('maximumStaff') ? 'border-destructive' : ''}
-                  />
+                   <div>
+                     <Input
+                       type="number"
+                       value={formData.maximumStaff}
+                       onChange={(e) => setFormData({ ...formData, maximumStaff: parseInt(e.target.value) || 10 })}
+                       className={getError('maximumStaff') ? 'border-destructive' : ''}
+                     />
+                     {getError('maximumStaff') && <p className="text-xs text-destructive mt-1">{getError('maximumStaff')}</p>}
+                   </div>
                 ) : (
                   <p className="text-sm font-medium">{area?.maximumStaff || 'No limit'}</p>
                 )}
-              </FormField>
-            </FormRow>
-          </FormSection>
+              </div>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="ratios" className="space-y-4">
