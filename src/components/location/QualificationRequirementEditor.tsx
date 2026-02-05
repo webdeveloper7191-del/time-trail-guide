@@ -6,8 +6,8 @@
  import { Label } from '@/components/ui/label';
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
  import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
  import { QualificationRequirement } from '@/types/location';
- import { cn } from '@/lib/utils';
  
  interface QualificationRequirementEditorProps {
    requirements: QualificationRequirement[];
@@ -46,6 +46,7 @@
      minimumCount: 1,
      notes: '',
    });
+  const [quantityType, setQuantityType] = useState<'count' | 'percentage'>('count');
  
    const handleSelectPreset = (presetId: string) => {
      const preset = PRESET_QUALIFICATIONS.find(p => p.id === presetId);
@@ -66,8 +67,8 @@
        qualificationName: formData.qualificationName || 'Custom Qualification',
        qualificationShortName: formData.qualificationShortName || 'Custom',
        requirementType: formData.requirementType || 'mandatory',
-       percentageRequired: formData.requirementType === 'percentage' ? formData.percentageRequired : undefined,
-       minimumCount: formData.requirementType === 'mandatory' ? formData.minimumCount : undefined,
+      percentageRequired: quantityType === 'percentage' ? formData.percentageRequired : undefined,
+      minimumCount: quantityType === 'count' ? formData.minimumCount : undefined,
        notes: formData.notes,
      };
      
@@ -85,8 +86,8 @@
            qualificationName: formData.qualificationName || r.qualificationName,
            qualificationShortName: formData.qualificationShortName || r.qualificationShortName,
            requirementType: formData.requirementType || r.requirementType,
-           percentageRequired: formData.requirementType === 'percentage' ? formData.percentageRequired : undefined,
-           minimumCount: formData.requirementType === 'mandatory' ? formData.minimumCount : undefined,
+          percentageRequired: quantityType === 'percentage' ? formData.percentageRequired : undefined,
+          minimumCount: quantityType === 'count' ? formData.minimumCount : undefined,
            notes: formData.notes,
          };
        }
@@ -113,6 +114,7 @@
        minimumCount: req.minimumCount || 1,
        notes: req.notes,
      });
+    setQuantityType(req.percentageRequired ? 'percentage' : 'count');
    };
  
    const resetForm = () => {
@@ -125,6 +127,7 @@
        minimumCount: 1,
        notes: '',
      });
+    setQuantityType('count');
    };
  
    const RequirementForm = ({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) => (
@@ -164,51 +167,73 @@
          </div>
        )}
        
-       <div className="grid grid-cols-2 gap-4">
-         <div className="space-y-2">
-           <Label>Requirement Type</Label>
-           <Select 
-             value={formData.requirementType} 
-             onValueChange={(v) => setFormData({ ...formData, requirementType: v as QualificationRequirement['requirementType'] })}
-           >
-             <SelectTrigger>
-               <SelectValue />
-             </SelectTrigger>
-             <SelectContent>
-               <SelectItem value="mandatory">Mandatory</SelectItem>
-               <SelectItem value="percentage">Percentage Required</SelectItem>
-               <SelectItem value="preferred">Preferred</SelectItem>
-             </SelectContent>
-           </Select>
-         </div>
-         
-         {formData.requirementType === 'percentage' && (
-           <div className="space-y-2">
-             <Label>Percentage Required</Label>
-             <div className="flex items-center gap-2">
-               <Input
-                 type="number"
-                 min={1}
-                 max={100}
-                 value={formData.percentageRequired}
-                 onChange={(e) => setFormData({ ...formData, percentageRequired: parseInt(e.target.value) || 50 })}
-               />
-               <span className="text-sm text-muted-foreground">%</span>
-             </div>
-           </div>
-         )}
-         
-         {formData.requirementType === 'mandatory' && (
-           <div className="space-y-2">
-             <Label>Minimum Count</Label>
-             <Input
-               type="number"
-               min={1}
-               value={formData.minimumCount}
-               onChange={(e) => setFormData({ ...formData, minimumCount: parseInt(e.target.value) || 1 })}
-             />
-           </div>
-         )}
+      <div className="space-y-2">
+        <Label>Requirement Type</Label>
+        <Select 
+          value={formData.requirementType} 
+          onValueChange={(v) => setFormData({ ...formData, requirementType: v as QualificationRequirement['requirementType'] })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="mandatory">Mandatory</SelectItem>
+            <SelectItem value="percentage">Percentage Required</SelectItem>
+            <SelectItem value="preferred">Preferred</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+        <h4 className="text-sm font-medium text-foreground">Quantity Required</h4>
+        <RadioGroup 
+          value={quantityType} 
+          onValueChange={(v) => setQuantityType(v as 'count' | 'percentage')}
+          className="flex gap-4"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="count" id="count" />
+            <Label htmlFor="count" className="cursor-pointer">Minimum Count</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="percentage" id="percentage" />
+            <Label htmlFor="percentage" className="cursor-pointer">Percentage of Staff</Label>
+          </div>
+        </RadioGroup>
+        
+        {quantityType === 'count' ? (
+          <div className="space-y-2">
+            <Label>Minimum Staff Required</Label>
+            <Input
+              type="number"
+              min={1}
+              value={formData.minimumCount}
+              onChange={(e) => setFormData({ ...formData, minimumCount: parseInt(e.target.value) || 1 })}
+              placeholder="e.g., 2"
+            />
+            <p className="text-xs text-muted-foreground">
+              At least {formData.minimumCount} staff member(s) must hold this qualification
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Label>Percentage of Staff Required</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={formData.percentageRequired}
+                onChange={(e) => setFormData({ ...formData, percentageRequired: parseInt(e.target.value) || 50 })}
+                placeholder="e.g., 50"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {formData.percentageRequired}% of rostered staff must hold this qualification
+            </p>
+          </div>
+        )}
        </div>
        
        <div className="space-y-2">
@@ -235,14 +260,24 @@
    const getRequirementBadge = (req: QualificationRequirement) => {
      switch (req.requirementType) {
        case 'mandatory':
-         return <Badge className="bg-red-500 text-white text-xs">Mandatory</Badge>;
+        return <Badge className="bg-destructive text-destructive-foreground text-xs">Mandatory</Badge>;
        case 'percentage':
-         return <Badge className="bg-amber-100 text-amber-700 text-xs">{req.percentageRequired}% Required</Badge>;
+        return <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">{req.percentageRequired}% Required</Badge>;
        case 'preferred':
          return <Badge variant="outline" className="text-xs">Preferred</Badge>;
      }
    };
  
+  const getQuantityBadge = (req: QualificationRequirement) => {
+    if (req.minimumCount) {
+      return <Badge variant="secondary" className="text-xs">Min: {req.minimumCount}</Badge>;
+    }
+    if (req.percentageRequired) {
+      return <Badge variant="secondary" className="text-xs">{req.percentageRequired}%</Badge>;
+    }
+    return null;
+  };
+
    return (
      <div className="space-y-4">
        <div className="flex items-center justify-between">
@@ -278,6 +313,7 @@
                        <div className="flex items-center gap-2 mb-1">
                          <h4 className="font-medium">{req.qualificationName}</h4>
                          {getRequirementBadge(req)}
+                        {getQuantityBadge(req)}
                        </div>
                        {req.notes && (
                          <p className="text-xs text-muted-foreground">{req.notes}</p>
