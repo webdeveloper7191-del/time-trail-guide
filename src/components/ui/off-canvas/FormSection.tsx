@@ -21,10 +21,10 @@ interface FormSectionProps {
  */
 export function FormSection({ title, tooltip, children, className }: FormSectionProps) {
   return (
-    <div className={cn("space-y-4", className)}>
-      {/* Section Header - Bold black text with cyan info icon */}
-      <div className="flex items-center gap-2">
-        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+    <div className={cn("rounded-lg border border-border bg-background p-4", className)}>
+      {/* Section Header - Bold black text with optional info icon */}
+      <div className="flex items-center gap-2 mb-4">
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
         {tooltip && (
           <TooltipProvider>
             <Tooltip>
@@ -38,8 +38,8 @@ export function FormSection({ title, tooltip, children, className }: FormSection
           </TooltipProvider>
         )}
       </div>
-      {/* Section Content */}
-      <div className="space-y-4">
+      {/* Section Content - Stacked fields */}
+      <div className="space-y-3">
         {children}
       </div>
     </div>
