@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Location, Area, Department, LOCATION_STATUS_LABELS, AUSTRALIAN_STATES, AUSTRALIAN_TIMEZONES, StaffingRatio, QualificationRequirement, AreaCombiningThreshold } from '@/types/location';
 import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
-import IndustryConfigSection from './IndustryConfigSection';
 import StaffingRatioEditor from './StaffingRatioEditor';
 import QualificationRequirementEditor from './QualificationRequirementEditor';
 import AreaCombiningEditor from './AreaCombiningEditor';
@@ -152,7 +151,6 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
         <TabsList className="w-full justify-start mb-4">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
-          <TabsTrigger value="industry">Industry Config</TabsTrigger>
           <TabsTrigger value="hours">Operating Hours</TabsTrigger>
           <TabsTrigger value="areas">Areas ({areas.length})</TabsTrigger>
           <TabsTrigger value="departments">Departments ({departments.length})</TabsTrigger>
@@ -463,16 +461,6 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               industryType={formData.industryType as any}
             />
           </div>
-        </TabsContent>
-
-        <TabsContent value="industry" className="space-y-6">
-          <IndustryConfigSection
-            industryType={formData.industryType as any}
-            onIndustryChange={(type) => setFormData({ ...formData, industryType: type })}
-            isEditing={isEditing}
-            showRatios={true}
-            showQualifications={true}
-          />
         </TabsContent>
 
         <TabsContent value="hours" className="space-y-4">
