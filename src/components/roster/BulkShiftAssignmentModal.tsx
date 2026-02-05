@@ -1,21 +1,18 @@
 import { useState, useMemo } from 'react';
 import {
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
   Chip,
-  Tabs,
-  Tab,
   Box,
   Typography,
 } from '@mui/material';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Shift, Room, StaffMember, ShiftTemplate, defaultShiftTemplates, roleLabels } from '@/types/roster';
 import { format } from 'date-fns';
 import { Users, Calendar, Clock, Plus, Check, AlertTriangle, UserPlus } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface BulkShiftAssignmentModalProps {
   open: boolean;
@@ -40,7 +37,7 @@ export function BulkShiftAssignmentModal({
   existingShifts,
   onAssign
 }: BulkShiftAssignmentModalProps) {
-  const [tabValue, setTabValue] = useState(0);
+  const [activeTab, setActiveTab] = useState('staff');
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
@@ -118,7 +115,7 @@ export function BulkShiftAssignmentModal({
     setSelectedDates(new Set());
     setSelectedRoomId('');
     setSelectedTemplateId('');
-    setTabValue(0);
+    setActiveTab('staff');
   };
 
   const toggleStaff = (staffId: string) => {
@@ -176,296 +173,242 @@ export function BulkShiftAssignmentModal({
       size="lg"
       actions={actions}
     >
-      <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} variant="fullWidth" sx={{ mb: 2 }}>
-        <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Users size={14} />Staff ({selectedStaff.size})</Box>} />
-        <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Calendar size={14} />Dates ({selectedDates.size})</Box>} />
-        <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Clock size={14} />Shift</Box>} />
-        <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Check size={14} />Preview</Box>} />
-      </Tabs>
+      <div className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="staff" className="flex items-center gap-1.5">
+              <Users size={14} />Staff ({selectedStaff.size})
+            </TabsTrigger>
+            <TabsTrigger value="dates" className="flex items-center gap-1.5">
+              <Calendar size={14} />Dates ({selectedDates.size})
+            </TabsTrigger>
+            <TabsTrigger value="shift" className="flex items-center gap-1.5">
+              <Clock size={14} />Shift
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="flex items-center gap-1.5">
+              <Check size={14} />Preview
+            </TabsTrigger>
+          </TabsList>
 
-      {tabValue === 0 && (
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" fontWeight={500}>Select Staff Members</Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button size="small" variant="text" onClick={selectAllStaff}>Select All</Button>
-              <Button size="small" variant="text" onClick={deselectAllStaff}>Clear</Button>
-            </Box>
-          </Box>
-          <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
-            {availableStaff.map(member => {
-              const isSelected = selectedStaff.has(member.id);
-              return (
-                <Box
-                  key={member.id}
-                  onClick={() => toggleStaff(member.id)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    p: 1.5,
-                    cursor: 'pointer',
-                    bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'transparent',
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    transition: 'all 0.15s ease-in-out',
-                    '&:hover': { 
-                      bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
-                    },
-                    '&:last-child': { borderBottom: 0 },
-                  }}
-                >
-                  <Checkbox checked={isSelected} size="small" color="primary" />
-                  <Box
-                    sx={{
-                      height: 32,
-                      width: 32,
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      bgcolor: member.color,
-                    }}
-                  >
-                    {member.name.charAt(0)}
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2" fontWeight={isSelected ? 600 : 500} color={isSelected ? 'primary.main' : 'text.primary'}>
-                      {member.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {roleLabels[member.role]} • {member.currentWeeklyHours}/{member.maxHoursPerWeek}h
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    size="small" 
-                    label={`$${member.hourlyRate}/hr`} 
-                    variant={isSelected ? 'filled' : 'outlined'}
-                    color={isSelected ? 'primary' : 'default'}
-                  />
-                </Box>
-              );
-            })}
-          </Box>
-        </Box>
-      )}
+          <TabsContent value="staff" className="mt-4">
+            <FormSection title="Select Staff Members">
+              <div className="flex items-center justify-end gap-2 mb-3">
+                <button onClick={selectAllStaff} className="text-xs text-primary hover:underline">Select All</button>
+                <button onClick={deselectAllStaff} className="text-xs text-muted-foreground hover:underline">Clear</button>
+              </div>
+              <div className="space-y-1 max-h-[400px] overflow-y-auto">
+                {availableStaff.map(member => {
+                  const isSelected = selectedStaff.has(member.id);
+                  return (
+                    <div
+                      key={member.id}
+                      onClick={() => toggleStaff(member.id)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                        isSelected 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border bg-background hover:border-primary/50"
+                      )}
+                    >
+                      <Checkbox checked={isSelected} onCheckedChange={() => toggleStaff(member.id)} />
+                      <div
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                        style={{ backgroundColor: member.color }}
+                      >
+                        {member.name.charAt(0)}
+                      </div>
+                      <div className="flex-1">
+                        <p className={cn("text-sm", isSelected ? "font-semibold text-primary" : "text-foreground")}>
+                          {member.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {roleLabels[member.role]} • {member.currentWeeklyHours}/{member.maxHoursPerWeek}h
+                        </p>
+                      </div>
+                      <span className={cn(
+                        "text-xs px-2 py-1 rounded-full border",
+                        isSelected ? "border-primary text-primary" : "border-border text-muted-foreground"
+                      )}>
+                        ${member.hourlyRate}/hr
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </FormSection>
+          </TabsContent>
 
-      {tabValue === 1 && (
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" fontWeight={500}>Select Dates</Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button size="small" variant="text" onClick={selectAllDates}>Select All</Button>
-              <Button size="small" variant="text" onClick={deselectAllDates}>Clear</Button>
-            </Box>
-          </Box>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
-            {dates.map(date => {
-              const dateStr = format(date, 'yyyy-MM-dd');
-              const isSelected = selectedDates.has(dateStr);
-              return (
-                <Box
-                  key={dateStr}
-                  onClick={() => toggleDate(dateStr)}
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    p: 1.5,
-                    borderRadius: 1.5,
-                    border: 2,
-                    borderColor: isSelected ? 'primary.main' : 'divider',
-                    bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'transparent',
-                    boxShadow: isSelected ? '0 0 0 3px rgba(3, 169, 244, 0.12)' : 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease-in-out',
-                    '&:hover': { 
-                      bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
-                      borderColor: isSelected ? 'primary.main' : 'primary.light',
-                    },
-                  }}
-                >
-                  <Typography variant="caption" color={isSelected ? 'primary.main' : 'text.secondary'}>{format(date, 'EEE')}</Typography>
-                  <Typography variant="h6" fontWeight={isSelected ? 700 : 500} color={isSelected ? 'primary.main' : 'text.primary'}>{format(date, 'd')}</Typography>
-                  <Typography variant="caption" color={isSelected ? 'primary.main' : 'text.secondary'}>{format(date, 'MMM')}</Typography>
-                </Box>
-              );
-            })}
-          </Box>
-        </Box>
-      )}
+          <TabsContent value="dates" className="mt-4">
+            <FormSection title="Select Dates">
+              <div className="flex items-center justify-end gap-2 mb-3">
+                <button onClick={selectAllDates} className="text-xs text-primary hover:underline">Select All</button>
+                <button onClick={deselectAllDates} className="text-xs text-muted-foreground hover:underline">Clear</button>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {dates.map(date => {
+                  const dateStr = format(date, 'yyyy-MM-dd');
+                  const isSelected = selectedDates.has(dateStr);
+                  return (
+                    <div
+                      key={dateStr}
+                      onClick={() => toggleDate(dateStr)}
+                      className={cn(
+                        "flex flex-col items-center p-3 rounded-lg border-2 cursor-pointer transition-all",
+                        isSelected 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      <span className={cn("text-xs", isSelected ? "text-primary" : "text-muted-foreground")}>
+                        {format(date, 'EEE')}
+                      </span>
+                      <span className={cn("text-lg font-semibold", isSelected ? "text-primary" : "text-foreground")}>
+                        {format(date, 'd')}
+                      </span>
+                      <span className={cn("text-xs", isSelected ? "text-primary" : "text-muted-foreground")}>
+                        {format(date, 'MMM')}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </FormSection>
+          </TabsContent>
 
-      {tabValue === 2 && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Room</InputLabel>
-            <Select value={selectedRoomId} label="Room" onChange={(e) => setSelectedRoomId(e.target.value)}>
-              {rooms.map(room => (
-                <MenuItem key={room.id} value={room.id}>{room.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <TabsContent value="shift" className="mt-4 space-y-4">
+            <FormSection title="Room & Template">
+              <FormField label="Room" required>
+                <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select room..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rooms.map(room => (
+                      <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
 
-          <FormControl fullWidth size="small">
-            <InputLabel>Shift Template</InputLabel>
-            <Select value={selectedTemplateId} label="Shift Template" onChange={(e) => setSelectedTemplateId(e.target.value)}>
-              {allTemplates.map(template => (
-                <MenuItem key={template.id} value={template.id}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ height: 12, width: 12, borderRadius: '50%', bgcolor: template.color }} />
-                    <span>{template.name}</span>
-                    <Typography variant="caption" color="text.secondary">
-                      ({template.startTime} - {template.endTime})
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              <FormField label="Shift Template" required>
+                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allTemplates.map(template => (
+                      <SelectItem key={template.id} value={template.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: template.color }} />
+                          <span>{template.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({template.startTime} - {template.endTime})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </FormSection>
 
-          <Box>
-            <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>Assignment Mode</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
-              {(['all-to-all', 'round-robin'] as const).map(mode => {
-                const isSelected = assignmentMode === mode;
-                return (
-                  <Box
-                    key={mode}
-                    onClick={() => setAssignmentMode(mode)}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 1.5,
-                      border: 2,
-                      borderColor: isSelected ? 'primary.main' : 'divider',
-                      bgcolor: isSelected ? 'rgba(3, 169, 244, 0.08)' : 'transparent',
-                      boxShadow: isSelected ? '0 0 0 3px rgba(3, 169, 244, 0.12)' : 'none',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease-in-out',
-                      '&:hover': {
-                        bgcolor: isSelected ? 'rgba(3, 169, 244, 0.12)' : 'action.hover',
-                        borderColor: isSelected ? 'primary.main' : 'primary.light',
-                      },
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={isSelected ? 600 : 500} color={isSelected ? 'primary.main' : 'text.primary'}>
-                      {mode === 'all-to-all' ? 'All to All' : 'Round Robin'}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {mode === 'all-to-all' 
-                        ? 'Every staff gets a shift on every date'
-                        : 'Distribute dates evenly among staff'}
-                    </Typography>
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
-        </Box>
-      )}
+            <FormSection title="Assignment Mode">
+              <div className="grid grid-cols-2 gap-3">
+                {(['all-to-all', 'round-robin'] as const).map(mode => {
+                  const isSelected = assignmentMode === mode;
+                  return (
+                    <div
+                      key={mode}
+                      onClick={() => setAssignmentMode(mode)}
+                      className={cn(
+                        "p-3 rounded-lg border-2 cursor-pointer transition-all",
+                        isSelected 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      <p className={cn("text-sm font-medium", isSelected ? "text-primary" : "text-foreground")}>
+                        {mode === 'all-to-all' ? 'All to All' : 'Round Robin'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {mode === 'all-to-all' 
+                          ? 'Every staff gets a shift on every date'
+                          : 'Distribute dates evenly among staff'}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </FormSection>
+          </TabsContent>
 
-      {tabValue === 3 && (
-        <Box>
-          {previewShifts.length === 0 ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 6, color: 'text.secondary' }}>
-              <Users size={48} style={{ opacity: 0.2, marginBottom: 8 }} />
-              <Typography variant="body2">Select staff, dates, and shift template to preview</Typography>
-            </Box>
-          ) : (
-            <>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'hsl(var(--primary))' }}>
-                  <Plus size={16} />
-                  <Typography variant="body2" fontWeight={500}>{shiftsWithoutConflicts.length} shifts to create</Typography>
-                </Box>
-                {previewShifts.some(s => s.hasConflict) && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#f59e0b' }}>
-                    <AlertTriangle size={16} />
-                    <Typography variant="body2">{previewShifts.filter(s => s.hasConflict).length} conflicts</Typography>
-                  </Box>
-                )}
-              </Box>
-              
-              {/* Table header */}
-              <Box sx={{ 
-                display: 'grid', 
-                gridTemplateColumns: '32px 1fr 24px 1fr 100px', 
-                alignItems: 'center', 
-                gap: 1.5,
-                p: 1.5,
-                bgcolor: 'grey.100',
-                borderRadius: '8px 8px 0 0',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-              }}>
-                <Box />
-                <Typography variant="caption" fontWeight={600} color="text.primary">Staff Member</Typography>
-                <Box />
-                <Typography variant="caption" fontWeight={600} color="text.primary">Date</Typography>
-                <Typography variant="caption" fontWeight={600} color="text.primary" textAlign="right">Status</Typography>
-              </Box>
-              
-              <Box sx={{ 
-                border: 1, 
-                borderColor: 'divider', 
-                borderTop: 0,
-                borderRadius: '0 0 8px 8px',
-                bgcolor: 'background.paper',
-                overflow: 'hidden',
-              }}>
-                {previewShifts.map((preview, idx) => (
-                  <Box
-                    key={idx}
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: '32px 1fr 24px 1fr 100px',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      p: 1.5,
-                      bgcolor: preview.hasConflict ? 'rgba(245, 158, 11, 0.08)' : 'background.paper',
-                      borderBottom: idx < previewShifts.length - 1 ? '1px solid' : 'none',
-                      borderColor: 'divider',
-                      transition: 'background-color 0.15s ease-in-out',
-                      '&:hover': {
-                        bgcolor: preview.hasConflict ? 'rgba(245, 158, 11, 0.12)' : 'action.hover',
-                      },
-                    }}
-                  >
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      color: preview.hasConflict ? '#f59e0b' : 'hsl(var(--primary))',
-                    }}>
-                      {preview.hasConflict ? <AlertTriangle size={18} /> : <Check size={18} />}
-                    </Box>
-                    <Typography variant="body2" fontWeight={500} color="text.primary">{getStaffName(preview.staffId)}</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>→</Typography>
-                    <Typography variant="body2" color="text.primary">{format(new Date(preview.date), 'EEE d MMM')}</Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <Chip 
-                        size="small" 
-                        label={preview.hasConflict ? 'Conflict' : 'Will Add'}
-                        sx={{ 
-                          height: 26,
-                          borderRadius: '6px',
-                          fontWeight: 500,
-                          fontSize: '0.75rem',
-                          bgcolor: preview.hasConflict ? 'rgba(245, 158, 11, 0.12)' : 'hsl(var(--primary))',
-                          color: preview.hasConflict ? '#b45309' : 'white',
-                          border: preview.hasConflict ? '1px solid rgba(245, 158, 11, 0.3)' : 'none',
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            </>
-          )}
-        </Box>
-      )}
+          <TabsContent value="preview" className="mt-4">
+            <FormSection title="Preview Shifts">
+              {previewShifts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Users size={48} className="opacity-20 mb-2" />
+                  <p className="text-sm">Select staff, dates, and shift template to preview</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex items-center gap-1.5 text-primary">
+                      <Plus size={16} />
+                      <span className="text-sm font-medium">{shiftsWithoutConflicts.length} shifts to create</span>
+                    </div>
+                    {previewShifts.some(s => s.hasConflict) && (
+                      <div className="flex items-center gap-1.5 text-destructive">
+                        <AlertTriangle size={16} />
+                        <span className="text-sm">{previewShifts.filter(s => s.hasConflict).length} conflicts</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="rounded-lg border overflow-hidden">
+                    <div className="grid grid-cols-[32px_1fr_24px_1fr_100px] items-center gap-3 p-3 bg-muted/50 border-b">
+                      <div />
+                      <span className="text-xs font-semibold">Staff Member</span>
+                      <div />
+                      <span className="text-xs font-semibold">Date</span>
+                      <span className="text-xs font-semibold text-right">Status</span>
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {previewShifts.map((preview, idx) => (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "grid grid-cols-[32px_1fr_24px_1fr_100px] items-center gap-3 p-3 border-b last:border-0",
+                            preview.hasConflict ? "bg-destructive/5" : "bg-background"
+                          )}
+                        >
+                          <div className="flex items-center justify-center">
+                            {preview.hasConflict ? (
+                              <AlertTriangle size={16} className="text-destructive" />
+                            ) : (
+                              <Check size={16} className="text-primary" />
+                            )}
+                          </div>
+                          <span className="text-sm font-medium truncate">{getStaffName(preview.staffId)}</span>
+                          <span className="text-muted-foreground">→</span>
+                          <span className="text-sm text-muted-foreground">{format(new Date(preview.date), 'EEE, MMM d')}</span>
+                          <span className={cn(
+                            "text-xs px-2 py-1 rounded-full text-right",
+                            preview.hasConflict 
+                              ? "bg-destructive/10 text-destructive" 
+                              : "bg-primary/10 text-primary"
+                          )}>
+                            {preview.hasConflict ? 'Conflict' : 'Will Add'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </FormSection>
+          </TabsContent>
+        </Tabs>
+      </div>
     </PrimaryOffCanvas>
   );
 }

@@ -1,20 +1,15 @@
 import { useState, useMemo } from 'react';
 import {
-  Button,
   Box,
   Typography,
   Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   TextField,
-  ToggleButtonGroup,
-  ToggleButton,
 } from '@mui/material';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import { 
   ShiftTemplate, 
   Room, 
@@ -500,9 +495,9 @@ export function AddEmptyShiftModal({
               </Box>
 
               {/* Recurring Preview */}
-              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'success.100', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Calendar className="h-4 w-4 text-emerald-700" />
-                <Typography variant="caption" color="success.dark">
+              <div className="p-3 rounded-lg bg-primary/10 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                <p className="text-xs text-primary">
                   {recurrenceEndType === 'never' 
                     ? 'This will create an ongoing recurring shift series'
                     : recurrenceEndType === 'after_occurrences'
@@ -511,51 +506,48 @@ export function AddEmptyShiftModal({
                         ? `This will create approximately ${recurringShiftCount} shifts until ${format(parseISO(recurrenceEndDate), 'MMM d, yyyy')}`
                         : 'Select an end date'
                   }
-                </Typography>
-              </Box>
+                </p>
+              </div>
             </Box>
           )}
         </Box>
 
         {/* Step 2: Select Rooms */}
-        <Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="subtitle2" fontWeight={600}>
-              Select Rooms
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button size="small" variant="text" onClick={selectAllRooms}>Select All</Button>
-              <Button size="small" variant="text" onClick={deselectAllRooms}>Clear</Button>
-            </Box>
-          </Box>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {rooms.map(room => (
-              <Chip
-                key={room.id}
-                label={room.name}
-                onClick={() => toggleRoom(room.id)}
-                color={selectedRoomIds.includes(room.id) ? 'primary' : 'default'}
-                variant={selectedRoomIds.includes(room.id) ? 'filled' : 'outlined'}
-                sx={{ cursor: 'pointer' }}
-              />
-            ))}
-          </Box>
-        </Box>
+        <FormSection title="Select Rooms">
+          <div className="flex items-center justify-end gap-2 mb-3">
+            <button onClick={selectAllRooms} className="text-xs text-primary hover:underline">Select All</button>
+            <button onClick={deselectAllRooms} className="text-xs text-muted-foreground hover:underline">Clear</button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {rooms.map(room => {
+              const isSelected = selectedRoomIds.includes(room.id);
+              return (
+                <button
+                  key={room.id}
+                  onClick={() => toggleRoom(room.id)}
+                  className={cn(
+                    "px-3 py-1.5 text-sm rounded-full border transition-all",
+                    isSelected 
+                      ? "bg-primary text-primary-foreground border-primary" 
+                      : "bg-background border-border hover:border-primary/50"
+                  )}
+                >
+                  {room.name}
+                </button>
+              );
+            })}
+          </div>
+        </FormSection>
 
         {/* Step 3: Select Dates */}
-        <Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="subtitle2" fontWeight={600}>
-              {isRecurring ? 'Start Date' : 'Select Dates'}
-            </Typography>
-            {!isRecurring && (
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button size="small" variant="text" onClick={selectAllDates}>Select All</Button>
-                <Button size="small" variant="text" onClick={deselectAllDates}>Clear</Button>
-              </Box>
-            )}
-          </Box>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 1 }}>
+        <FormSection title={isRecurring ? 'Start Date' : 'Select Dates'}>
+          {!isRecurring && (
+            <div className="flex items-center justify-end gap-2 mb-3">
+              <button onClick={selectAllDates} className="text-xs text-primary hover:underline">Select All</button>
+              <button onClick={deselectAllDates} className="text-xs text-muted-foreground hover:underline">Clear</button>
+            </div>
+          )}
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
             {availableDates.map(date => {
               const dateStr = format(date, 'yyyy-MM-dd');
               const isSelected = selectedDates.includes(dateStr);
@@ -564,7 +556,7 @@ export function AddEmptyShiftModal({
               if (!shouldShow && isRecurring) return null;
               
               return (
-                <Box
+                <div
                   key={dateStr}
                   onClick={() => {
                     if (isRecurring) {
@@ -573,72 +565,52 @@ export function AddEmptyShiftModal({
                       toggleDate(dateStr);
                     }
                   }}
-                  sx={{
-                    p: 1.5,
-                    borderRadius: 2,
-                    border: '2px solid',
-                    borderColor: isSelected ? 'primary.main' : 'divider',
-                    bgcolor: isSelected ? 'primary.50' : 'background.paper',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    transition: 'all 0.15s ease',
-                    '&:hover': {
-                      borderColor: isSelected ? 'primary.main' : 'primary.light',
-                    },
-                  }}
+                  className={cn(
+                    "p-3 rounded-lg border-2 cursor-pointer text-center transition-all",
+                    isSelected 
+                      ? "border-primary bg-primary/5" 
+                      : "border-border hover:border-primary/50"
+                  )}
                 >
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    {format(date, 'EEE')}
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {format(date, 'MMM d')}
-                  </Typography>
-                </Box>
+                  <span className="text-xs text-muted-foreground block">{format(date, 'EEE')}</span>
+                  <span className={cn("text-sm font-semibold", isSelected && "text-primary")}>{format(date, 'MMM d')}</span>
+                </div>
               );
             })}
-          </Box>
+          </div>
           {isRecurring && selectedDates.length === 0 && (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              Select a start date for the recurring series
-            </Typography>
+            <p className="text-xs text-muted-foreground mt-2">Select a start date for the recurring series</p>
           )}
-        </Box>
+        </FormSection>
 
         {/* Preview */}
         {previewShifts.length > 0 && (
-          <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              {isRecurring && <RefreshCw className="h-4 w-4 text-emerald-600" />}
-              <Typography variant="subtitle2" fontWeight={600}>
-                {isRecurring ? 'Recurring Series Preview' : 'Preview'}
-              </Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+          <FormSection title={isRecurring ? 'Recurring Series Preview' : 'Preview'}>
+            <div className="flex items-center gap-2 mb-2">
+              {isRecurring && <RefreshCw className="h-4 w-4 text-primary" />}
+              <p className="text-sm text-muted-foreground">
               {isRecurring 
                 ? `${recurringShiftCount} shifts will be created in this recurring series`
-                : `${previewShifts.length} empty shift(s) will be created:`
-              }
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                : `${previewShifts.length} empty shift(s) will be created:`}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
               {previewShifts.slice(0, 10).map(shift => (
-                <Chip
+                <span
                   key={shift.id}
-                  size="small"
-                  label={`${getRoomName(shift.roomId)} - ${format(parseISO(shift.date), 'EEE d')}`}
-                  variant="outlined"
-                  icon={isRecurring ? <RefreshCw size={12} /> : undefined}
-                />
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs border rounded-full bg-background"
+                >
+                  {isRecurring && <RefreshCw size={12} />}
+                  {getRoomName(shift.roomId)} - {format(parseISO(shift.date), 'EEE d')}
+                </span>
               ))}
               {(isRecurring ? recurringShiftCount : previewShifts.length) > 10 && (
-                <Chip
-                  size="small"
-                  label={`+${(isRecurring ? recurringShiftCount : previewShifts.length) - 10} more`}
-                  variant="outlined"
-                  color="primary"
-                />
+                <span className="inline-flex items-center px-2 py-1 text-xs border border-primary text-primary rounded-full">
+                  +{(isRecurring ? recurringShiftCount : previewShifts.length) - 10} more
+                </span>
               )}
-            </Box>
-          </Box>
+            </div>
+          </FormSection>
         )}
       </div>
     </PrimaryOffCanvas>

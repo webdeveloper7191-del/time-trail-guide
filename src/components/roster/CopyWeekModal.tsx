@@ -44,6 +44,7 @@ import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, eachDayOfI
 import { cn } from '@/lib/utils';
 import { Shift, Room, StaffMember } from '@/types/roster';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -669,24 +670,26 @@ export function CopyWeekModal({
           /* Preview Mode */
           <>
             {/* Summary Stats */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
-              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'success.50', textAlign: 'center' }}>
-                <Typography variant="h5" color="success.main" fontWeight={700}>{stats.toAdd}</Typography>
-                <Typography variant="caption" color="success.main">To Add</Typography>
-              </Box>
-              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'warning.50', textAlign: 'center' }}>
-                <Typography variant="h5" color="warning.main" fontWeight={700}>{stats.toOverwrite}</Typography>
-                <Typography variant="caption" color="warning.main">Overwrite</Typography>
-              </Box>
-              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'grey.100', textAlign: 'center' }}>
-                <Typography variant="h5" color="text.secondary" fontWeight={700}>{stats.toSkip}</Typography>
-                <Typography variant="caption" color="text.secondary">Skip</Typography>
-              </Box>
-              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'error.50', textAlign: 'center' }}>
-                <Typography variant="h5" color="error.main" fontWeight={700}>{stats.conflicts}</Typography>
-                <Typography variant="caption" color="error.main">Conflicts</Typography>
-              </Box>
-            </Box>
+            <FormSection title="Summary">
+              <div className="grid grid-cols-4 gap-2">
+                <div className="p-3 rounded-lg bg-primary/10 text-center">
+                  <p className="text-2xl font-bold text-primary">{stats.toAdd}</p>
+                  <p className="text-xs text-primary">To Add</p>
+                </div>
+                <div className="p-3 rounded-lg bg-warning/10 text-center">
+                  <p className="text-2xl font-bold text-warning">{stats.toOverwrite}</p>
+                  <p className="text-xs text-warning">Overwrite</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted text-center">
+                  <p className="text-2xl font-bold text-muted-foreground">{stats.toSkip}</p>
+                  <p className="text-xs text-muted-foreground">Skip</p>
+                </div>
+                <div className="p-3 rounded-lg bg-destructive/10 text-center">
+                  <p className="text-2xl font-bold text-destructive">{stats.conflicts}</p>
+                  <p className="text-xs text-destructive">Conflicts</p>
+                </div>
+              </div>
+            </FormSection>
 
             {/* Selection Controls */}
             <Stack direction="row" spacing={1}>
