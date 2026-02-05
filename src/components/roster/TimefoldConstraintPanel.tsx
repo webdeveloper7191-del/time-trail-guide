@@ -7,15 +7,13 @@ import {
   IconButton,
   Switch,
   Slider,
-  TextField,
-  Divider,
   Paper,
-  Alert,
   LinearProgress,
   Collapse,
   FormControlLabel,
   ToggleButton,
   ToggleButtonGroup,
+  Alert,
 } from '@mui/material';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +22,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
+import { cn } from '@/lib/utils';
 import {
   Settings,
   Save,
@@ -625,7 +625,7 @@ export function TimefoldConstraintPanel({
                     Medium
                   </ToggleButton>
                   <ToggleButton value="SOFT" sx={{ px: 2 }}>
-                    <CheckCircle2 size={14} className="mr-1 text-blue-500" />
+                    <CheckCircle2 size={14} className="mr-1 text-primary" />
                     Soft
                   </ToggleButton>
                 </ToggleButtonGroup>
@@ -705,17 +705,13 @@ export function TimefoldConstraintPanel({
       icon={Zap}
       size="3xl"
     >
-      <Stack spacing={3}>
+      <div className="space-y-4">
         {/* Industry Selector */}
-        <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.paper' }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Factory size={20} className="text-muted-foreground" />
-            <Box flex={1}>
-              <Typography variant="subtitle2">Industry</Typography>
-              <Typography variant="caption" color="text.secondary">
-                Select industry to load appropriate constraints
-              </Typography>
-            </Box>
+        <FormSection title="Industry">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Select industry to load appropriate constraints
+            </p>
             <Select value={selectedIndustry} onValueChange={(value) => handleIndustryChange(value as IndustryType)}>
               <SelectTrigger className="w-[220px]">
                 <SelectValue />
@@ -737,69 +733,61 @@ export function TimefoldConstraintPanel({
                 })}
               </SelectContent>
             </Select>
-          </Stack>
+          </div>
           
           {/* Industry Notes */}
           {currentIndustryConfig.regulatoryNotes.length > 0 && (
-            <Box mt={2} p={1.5} sx={{ bgcolor: 'action.hover', borderRadius: 1 }}>
-              <Typography variant="caption" fontWeight="medium" color="text.secondary">
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs font-medium text-muted-foreground mb-1">
                 Regulatory Requirements:
-              </Typography>
-              <ul className="list-disc list-inside text-xs text-muted-foreground mt-1 space-y-0.5">
+              </p>
+              <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5">
                 {currentIndustryConfig.regulatoryNotes.slice(0, 4).map((note, idx) => (
                   <li key={idx}>{note}</li>
                 ))}
               </ul>
-            </Box>
+            </div>
           )}
-        </Paper>
+        </FormSection>
 
         {/* NQF Compliance Summary (Childcare only) */}
         {selectedIndustry === 'childcare' && nqfComplianceSummary && (
-          <Paper 
-            variant="outlined" 
-            sx={{ 
-              p: 2, 
-              bgcolor: nqfComplianceSummary.isCompliant ? 'success.main' : 'error.main',
-              color: 'white',
-            }}
+          <div 
+            className={cn(
+              "p-4 rounded-lg text-white",
+              nqfComplianceSummary.isCompliant ? "bg-success" : "bg-destructive"
+            )}
           >
-            <Stack direction="row" alignItems="center" spacing={2}>
+            <div className="flex items-center gap-4">
               {nqfComplianceSummary.isCompliant ? (
                 <CheckCircle2 size={24} />
               ) : (
                 <AlertTriangle size={24} />
               )}
-              <Box flex={1}>
-                <Typography variant="subtitle2">
-                  NQF Compliance Status
-                </Typography>
-                <Typography variant="caption">
+              <div className="flex-1">
+                <p className="text-sm font-semibold">NQF Compliance Status</p>
+                <p className="text-xs opacity-90">
                   {nqfComplianceSummary.isCompliant 
                     ? `All ${nqfComplianceSummary.totalHard} regulatory constraints enabled`
                     : `${nqfComplianceSummary.disabledHard} of ${nqfComplianceSummary.totalHard} regulatory constraints disabled`
                   }
-                </Typography>
-              </Box>
-              <Box textAlign="right">
-                <Typography variant="h4" fontWeight="bold">
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold">
                   {nqfComplianceSummary.enabledHard}/{nqfComplianceSummary.totalHard}
-                </Typography>
-                <Typography variant="caption">Hard Constraints</Typography>
-              </Box>
-            </Stack>
+                </p>
+                <p className="text-xs">Hard Constraints</p>
+              </div>
+            </div>
             
             {!nqfComplianceSummary.isCompliant && nqfComplianceSummary.disabledNames.length > 0 && (
-              <Box mt={2} p={1} sx={{ bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
-                <Typography variant="caption" fontWeight="medium">
-                  ⚠️ Disabled constraints that may breach NQF:
-                </Typography>
-                <Typography variant="caption" display="block">
-                  {nqfComplianceSummary.disabledNames.join(', ')}
-                </Typography>
-              </Box>
+              <div className="mt-3 p-2 bg-white/10 rounded">
+                <p className="text-xs font-medium">⚠️ Disabled constraints that may breach NQF:</p>
+                <p className="text-xs">{nqfComplianceSummary.disabledNames.join(', ')}</p>
+              </div>
             )}
-          </Paper>
+          </div>
         )}
 
         {/* Validation Errors */}
@@ -866,14 +854,13 @@ export function TimefoldConstraintPanel({
         )}
 
         {/* Quick Presets */}
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="subtitle2">Quick Presets</Typography>
+        <FormSection title="Quick Presets">
+          <div className="flex justify-end mb-2">
             <Button variant="outline" size="sm" onClick={() => setShowSavePresetDialog(true)}>
               <BookmarkPlus size={14} className="mr-1" />
               Save Current
             </Button>
-          </Stack>
+          </div>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {selectedIndustry === 'childcare' ? (
               <>
@@ -960,16 +947,15 @@ export function TimefoldConstraintPanel({
               </Stack>
             </Box>
           )}
-        </Paper>
+        </FormSection>
 
         {/* Category Weights */}
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="subtitle2">Category Weights</Typography>
+        <FormSection title="Category Weights">
+          <div className="flex justify-end mb-3">
             <Button variant="ghost" size="sm" onClick={() => setShowAdvanced(!showAdvanced)}>
               {showAdvanced ? 'Hide' : 'Show'} Advanced
             </Button>
-          </Stack>
+          </div>
           
           <Box display="grid" gridTemplateColumns="repeat(4, 1fr)" gap={2}>
             {(Object.keys(config.categoryWeights) as ConstraintCategory[]).map(category => {
@@ -1002,14 +988,11 @@ export function TimefoldConstraintPanel({
               );
             })}
           </Box>
-        </Paper>
+        </FormSection>
 
         {/* Solver Settings */}
         <Collapse in={showAdvanced}>
-          <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Solver Settings
-            </Typography>
+          <FormSection title="Solver Settings" className="mb-4">
             <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
               <Box>
                 <Label className="text-xs">Termination Time (seconds)</Label>
@@ -1044,22 +1027,19 @@ export function TimefoldConstraintPanel({
                 />
               </Box>
             </Box>
-          </Paper>
+          </FormSection>
         </Collapse>
 
         {/* Constraints by Group */}
-        <Box>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="subtitle2">
-              Constraints ({config.constraints.filter(c => c.enabled).length}/{config.constraints.length} enabled)
-            </Typography>
+        <FormSection title={`Constraints (${config.constraints.filter(c => c.enabled).length}/${config.constraints.length} enabled)`}>
+          <div className="flex justify-end mb-2">
             {selectedIndustry === 'childcare' && (
               <Badge variant="outline" className="text-xs">
                 <ShieldCheck size={12} className="mr-1" />
                 NQF Compliant
               </Badge>
             )}
-          </Stack>
+          </div>
           
           {displayGroups.map(group => {
             const Icon = group.icon;
@@ -1114,7 +1094,7 @@ export function TimefoldConstraintPanel({
               </Box>
             );
           })}
-        </Box>
+        </FormSection>
 
         {/* Actions */}
         <Stack direction="row" spacing={2} justifyContent="flex-end">
@@ -1153,7 +1133,7 @@ export function TimefoldConstraintPanel({
             {' '}Hard constraints must always be satisfied, while soft constraints are optimized based on their weights.
           </Typography>
         </Alert>
-      </Stack>
+      </div>
       
       {/* Save Preset Dialog */}
       <Dialog open={showSavePresetDialog} onOpenChange={setShowSavePresetDialog}>

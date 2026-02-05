@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { 
   Shift, 
   StaffMember, 
@@ -630,10 +631,7 @@ export function AutoAssignStaffModal({
           <ScrollArea className="h-[calc(100vh-280px)]">
             <TabsContent value="config" className="p-6 pt-4 space-y-4">
               {/* Optimization Preset */}
-              <Box>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                  Optimization Strategy
-                </Typography>
+              <FormSection title="Optimization Strategy">
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   {Object.keys(OPTIMIZATION_PRESETS).map(preset => (
                     <Chip
@@ -653,18 +651,10 @@ export function AutoAssignStaffModal({
                     />
                   ))}
                 </Box>
-              </Box>
-
-              <Divider />
+              </FormSection>
 
               {/* Weight Sliders */}
-              <Accordion defaultExpanded>
-                <AccordionSummary expandIcon={<ChevronDown size={16} />}>
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    Scoring Weights
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
+              <FormSection title="Scoring Weights">
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {[
                       { key: 'cost', label: 'Cost Optimization', icon: <DollarSign size={14} /> },
@@ -694,17 +684,10 @@ export function AutoAssignStaffModal({
                       </Box>
                     ))}
                   </Box>
-                </AccordionDetails>
-              </Accordion>
+              </FormSection>
 
               {/* Staff Filters */}
-              <Accordion>
-                <AccordionSummary expandIcon={<ChevronDown size={16} />}>
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    Staff Filters
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
+              <FormSection title="Staff Filters">
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     <StyledSwitch
                       checked={includeCasual}
@@ -717,17 +700,10 @@ export function AutoAssignStaffModal({
                       label="Include agency staff"
                     />
                   </Box>
-                </AccordionDetails>
-              </Accordion>
+              </FormSection>
 
               {/* Rules */}
-              <Accordion>
-                <AccordionSummary expandIcon={<ChevronDown size={16} />}>
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    Assignment Rules
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
+              <FormSection title="Assignment Rules">
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <StyledSwitch
                       checked={enforceQualifications}
@@ -758,8 +734,7 @@ export function AutoAssignStaffModal({
                       </Box>
                     </Box>
                   </Box>
-                </AccordionDetails>
-              </Accordion>
+              </FormSection>
 
               {/* Summary of shifts to assign */}
               <Alert severity="info" icon={<Info size={16} />}>
@@ -785,7 +760,7 @@ export function AutoAssignStaffModal({
               ) : (
                 <>
                   {/* Summary Stats */}
-                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+                  <div className="grid grid-cols-3 gap-3">
                     <Box sx={{ p: 2, bgcolor: 'success.main', color: 'success.contrastText', borderRadius: 2, textAlign: 'center' }}>
                       <UserCheck className="w-6 h-6 mx-auto mb-1" />
                       <Typography variant="h5" fontWeight={700}>{assignedCount}</Typography>
@@ -801,10 +776,11 @@ export function AutoAssignStaffModal({
                       <Typography variant="h5" fontWeight={700}>${totalEstimatedCost.toFixed(0)}</Typography>
                       <Typography variant="caption">Est. Cost</Typography>
                     </Box>
-                  </Box>
+                  </div>
 
                   {/* Assignment Results */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <FormSection title="Assignment Results">
+                    <div className="space-y-3">
                     {assignments.map(assignment => (
                       <Box
                         key={assignment.shiftId}
@@ -837,14 +813,14 @@ export function AutoAssignStaffModal({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
                           {assignment.staffId ? (
                             <>
-                              <Check className="w-4 h-4 text-green-600" />
+                              <Check className="w-4 h-4 text-success" />
                               <Typography variant="body2" fontWeight={500}>
                                 {assignment.staffName}
                               </Typography>
                             </>
                           ) : (
                             <>
-                              <AlertTriangle className="w-4 h-4 text-amber-600" />
+                              <AlertTriangle className="w-4 h-4 text-warning" />
                               <Typography variant="body2" color="warning.main" fontWeight={500}>
                                 No eligible staff found
                               </Typography>
@@ -911,7 +887,8 @@ export function AutoAssignStaffModal({
                         )}
                       </Box>
                     ))}
-                  </Box>
+                    </div>
+                  </FormSection>
                 </>
               )}
             </TabsContent>

@@ -30,6 +30,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { AllowanceDropdownWithCreate } from './AllowanceDropdownWithCreate';
 import { 
   AllowanceType, 
@@ -698,17 +699,14 @@ export function ShiftTemplateManager({
 
         <ScrollArea className="flex-1 pr-4 mt-6">
           {/* All Templates - Unified Editable List */}
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="body2" fontWeight={600} color="text.secondary">
-                Shift Templates ({templates.length})
-              </Typography>
+          <FormSection title={`Shift Templates (${templates.length})`}>
+            <div className="flex justify-end mb-3">
               {!isAdding && (
                 <Button variant="text" size="small" startIcon={<Plus size={14} />} onClick={() => setIsAdding(true)}>
                   Add Template
                 </Button>
               )}
-            </Box>
+            </div>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {templates.map(template => (
@@ -1204,7 +1202,7 @@ export function ShiftTemplateManager({
                 </Box>
               )}
             </Box>
-          </Box>
+          </FormSection>
         </ScrollArea>
 
         <SheetFooter className="mt-6 pt-4 border-t border-border shrink-0">
