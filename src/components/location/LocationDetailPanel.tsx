@@ -430,6 +430,7 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               requirements={locationQualifications}
               onUpdate={setLocationQualifications}
               isEditing={isEditing}
+              industryType={formData.industryType as any}
             />
           </div>
 
@@ -439,6 +440,7 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               thresholds={areaCombiningThresholds}
               onUpdate={setAreaCombiningThresholds}
               isEditing={isEditing}
+              industryType={formData.industryType as any}
             />
           </div>
         </TabsContent>

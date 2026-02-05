@@ -124,7 +124,7 @@ export const mockAreas: Area[] = [
     status: 'active',
     color: 'hsl(340, 65%, 50%)',
     capacity: 16,
-    ageGroup: 'Nursery (0-2)',
+    serviceCategory: 'Nursery',
     serviceType: 'Early Learning',
     staffingRatios: [
       {
@@ -195,7 +195,7 @@ export const mockAreas: Area[] = [
     status: 'active',
     color: 'hsl(200, 70%, 50%)',
     capacity: 20,
-    ageGroup: 'Toddler (2-3)',
+    serviceCategory: 'Toddlers',
     serviceType: 'Early Learning',
     staffingRatios: [
       {
@@ -241,7 +241,7 @@ export const mockAreas: Area[] = [
     status: 'active',
     color: 'hsl(150, 60%, 45%)',
     capacity: 30,
-    ageGroup: 'Preschool (3-4)',
+    serviceCategory: 'Pre-Kindy',
     serviceType: 'Early Learning',
     staffingRatios: [
       {
@@ -280,7 +280,7 @@ export const mockAreas: Area[] = [
     status: 'active',
     color: 'hsl(280, 60%, 50%)',
     capacity: 33,
-    ageGroup: 'Kindy (4-5)',
+    serviceCategory: 'Kindergarten',
     serviceType: 'Early Learning',
     staffingRatios: [
       {
@@ -309,7 +309,7 @@ export const mockAreas: Area[] = [
     status: 'active',
     color: 'hsl(340, 65%, 50%)',
     capacity: 12,
-    ageGroup: 'Nursery (0-2)',
+    serviceCategory: 'Nursery',
     serviceType: 'Early Learning',
     staffingRatios: [
       {
@@ -337,7 +337,7 @@ export const mockAreas: Area[] = [
     status: 'active',
     color: 'hsl(200, 70%, 50%)',
     capacity: 25,
-    ageGroup: 'Toddler (2-3)',
+    serviceCategory: 'Toddlers',
     serviceType: 'Early Learning',
     staffingRatios: [
       {
@@ -365,7 +365,7 @@ export const mockAreas: Area[] = [
     status: 'active',
     color: 'hsl(150, 60%, 45%)',
     capacity: 44,
-    ageGroup: 'Preschool (3-5)',
+    serviceCategory: 'Pre-Kindy',
     serviceType: 'Early Learning',
     staffingRatios: [
       {
@@ -504,10 +504,10 @@ export const industryComplianceConfigs: IndustryComplianceConfig[] = [
       },
     ],
     areaPresets: [
-      { name: 'Nursery', ageGroup: 'Nursery (0-2)', serviceType: 'Early Learning', capacity: 16, ratios: [], qualifications: [] },
-      { name: 'Toddler', ageGroup: 'Toddler (2-3)', serviceType: 'Early Learning', capacity: 20, ratios: [], qualifications: [] },
-      { name: 'Preschool', ageGroup: 'Preschool (3-4)', serviceType: 'Early Learning', capacity: 30, ratios: [], qualifications: [] },
-      { name: 'Kindergarten', ageGroup: 'Kindy (4-5)', serviceType: 'Early Learning', capacity: 33, ratios: [], qualifications: [] },
+      { name: 'Nursery', serviceCategory: 'Nursery', serviceType: 'Early Learning', capacity: 16, ratios: [], qualifications: [] },
+      { name: 'Toddler', serviceCategory: 'Toddlers', serviceType: 'Early Learning', capacity: 20, ratios: [], qualifications: [] },
+      { name: 'Preschool', serviceCategory: 'Pre-Kindy', serviceType: 'Early Learning', capacity: 30, ratios: [], qualifications: [] },
+      { name: 'Kindergarten', serviceCategory: 'Kindergarten', serviceType: 'Early Learning', capacity: 33, ratios: [], qualifications: [] },
     ],
   },
   {
@@ -528,9 +528,9 @@ export const industryComplianceConfigs: IndustryComplianceConfig[] = [
     ],
     defaultComplianceRules: [],
     areaPresets: [
-      { name: 'General Ward', ageGroup: undefined, serviceType: 'Inpatient Care', capacity: 30, ratios: [], qualifications: [] },
-      { name: 'ICU', ageGroup: undefined, serviceType: 'Critical Care', capacity: 10, ratios: [], qualifications: [] },
-      { name: 'Emergency', ageGroup: undefined, serviceType: 'Emergency Care', capacity: 20, ratios: [], qualifications: [] },
+      { name: 'General Ward', serviceCategory: 'General Ward', serviceType: 'Inpatient Care', capacity: 30, ratios: [], qualifications: [] },
+      { name: 'ICU', serviceCategory: 'ICU', serviceType: 'Critical Care', capacity: 10, ratios: [], qualifications: [] },
+      { name: 'Emergency', serviceCategory: 'Emergency', serviceType: 'Emergency Care', capacity: 20, ratios: [], qualifications: [] },
     ],
   },
 ];

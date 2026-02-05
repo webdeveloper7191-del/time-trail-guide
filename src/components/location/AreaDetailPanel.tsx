@@ -45,7 +45,7 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
     status: area?.status || 'active',
     color: area?.color || 'hsl(200, 70%, 50%)',
     capacity: area?.capacity || 0,
-    ageGroup: area?.ageGroup || '',
+    serviceCategory: area?.serviceCategory || '',
     serviceType: area?.serviceType || '',
     minimumStaff: area?.minimumStaff || 1,
     maximumStaff: area?.maximumStaff || 10,
@@ -63,7 +63,7 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
          status: area?.status || 'active',
          color: area?.color || 'hsl(200, 70%, 50%)',
          capacity: area?.capacity || 20,
-         ageGroup: area?.ageGroup || '',
+          serviceCategory: area?.serviceCategory || '',
          serviceType: area?.serviceType || '',
          minimumStaff: area?.minimumStaff || 1,
          maximumStaff: area?.maximumStaff || 10,
@@ -216,15 +216,15 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Age Group / Category</Label>
+                <Label>Service Category</Label>
                 {isEditing ? (
                   <Input
-                    value={formData.ageGroup}
-                    onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
-                    placeholder="e.g., Nursery (0-2)"
+                    value={formData.serviceCategory}
+                    onChange={(e) => setFormData({ ...formData, serviceCategory: e.target.value })}
+                    placeholder="e.g., Nursery, ICU, Kitchen"
                   />
                 ) : (
-                  <p className="text-sm font-medium">{area?.ageGroup || 'Not set'}</p>
+                  <p className="text-sm font-medium">{area?.serviceCategory || 'Not set'}</p>
                 )}
               </div>
             </div>
@@ -315,6 +315,7 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
             requirements={qualificationRequirements}
             onUpdate={setQualificationRequirements}
             isEditing={isEditing}
+            industryType={location?.industryType}
           />
         </TabsContent>
 
@@ -340,7 +341,7 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
                       variant={rule.severity === 'critical' ? 'destructive' : 'outline'}
                       className={cn(
                         'text-xs',
-                        rule.severity === 'warning' && 'bg-amber-100 text-amber-700',
+                        rule.severity === 'warning' && 'bg-amber-500/20 text-amber-700 dark:text-amber-400',
                       )}
                     >
                       {rule.severity}

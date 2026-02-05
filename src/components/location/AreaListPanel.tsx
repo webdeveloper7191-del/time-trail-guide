@@ -107,9 +107,9 @@ const AreaListPanel: React.FC<AreaListPanelProps> = ({
               <Badge variant="outline" className={cn('text-xs', getStatusColor(area.status))}>
                 {AREA_STATUS_LABELS[area.status]}
               </Badge>
-              {area.ageGroup && (
+              {area.serviceCategory && (
                 <Badge variant="secondary" className="text-xs">
-                  {area.ageGroup}
+                  {area.serviceCategory}
                 </Badge>
               )}
             </div>

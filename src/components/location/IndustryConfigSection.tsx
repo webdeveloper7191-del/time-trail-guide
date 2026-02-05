@@ -131,8 +131,8 @@
                  variant={qual.requirementType === 'mandatory' ? 'default' : 'outline'}
                  className={cn(
                    'text-xs',
-                   qual.requirementType === 'mandatory' && 'bg-red-500 text-white',
-                   qual.requirementType === 'percentage' && 'bg-amber-100 text-amber-700 border-amber-200',
+                    qual.requirementType === 'mandatory' && 'bg-destructive text-destructive-foreground',
+                    qual.requirementType === 'percentage' && 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-200',
                  )}
                >
                  {qual.qualificationShortName}
