@@ -1,17 +1,15 @@
 import { useState, useMemo } from 'react';
 import {
-  Tab,
-  Tabs,
-  Box,
   Checkbox as MuiCheckbox,
-  Typography,
 } from '@mui/material';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
 import { 
   Bell, 
   Send, 
@@ -158,31 +156,40 @@ export function ShiftNotificationsModal({
     }
   };
 
+  const actions: OffCanvasAction[] = [
+    {
+      label: 'Cancel',
+      variant: 'outlined',
+      onClick: onClose,
+    },
+    {
+      label: `Send to ${selectedRecipients.length} Staff`,
+      variant: 'primary',
+      onClick: handleSendNotifications,
+      disabled: selectedRecipients.length === 0,
+      icon: <Send size={16} />,
+    },
+  ];
+
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-primary" />
-            Shift Notifications
-          </SheetTitle>
-          <SheetDescription>
-            Send notifications to staff about their shifts
-          </SheetDescription>
-        </SheetHeader>
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Shift Notifications"
+      description="Send notifications to staff about their shifts"
+      icon={Bell}
+      size="md"
+      actions={actions}
+    >
+      <Tabs defaultValue="send" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="send">Send Notifications</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+        </TabsList>
 
-        <div className="mt-6">
-          <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tab label="Send Notifications" />
-            <Tab label="History" />
-          </Tabs>
-
-          {/* Send Tab */}
-          {tabValue === 0 && (
-            <Box sx={{ mt: 2 }} className="space-y-4">
-              {/* Notification Type */}
-              <div className="space-y-2">
-                <Label>Notification Type</Label>
+        <TabsContent value="send" className="space-y-4">
+          {/* Notification Type */}
+          <FormSection title="Notification Type">
                 <div className="flex gap-2 flex-wrap">
                   <Button
                     variant={notificationType === 'publish' ? 'default' : 'outline'}
@@ -209,42 +216,32 @@ export function ShiftNotificationsModal({
                     Custom Message
                   </Button>
                 </div>
-              </div>
 
               {/* Custom Message */}
               {notificationType === 'custom' && (
-                <div className="space-y-2">
-                  <Label>Message</Label>
+                <FormField label="Message" className="mt-3">
                   <Textarea
                     placeholder="Enter your custom message..."
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
                     rows={3}
                   />
-                </div>
+                </FormField>
               )}
+          </FormSection>
 
-              {/* Recipients */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Recipients
-                    </span>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={selectAll}>
-                        Select All
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={clearAll}>
-                        Clear
-                      </Button>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[180px]">
-                    <div className="space-y-2">
+          {/* Recipients */}
+          <FormSection title="Recipients">
+            <div className="flex justify-end gap-2 mb-2">
+              <Button variant="ghost" size="sm" onClick={selectAll}>
+                Select All
+              </Button>
+              <Button variant="ghost" size="sm" onClick={clearAll}>
+                Clear
+              </Button>
+            </div>
+            <ScrollArea className="h-[180px]">
+              <div className="space-y-2">
                       {affectedStaff.map(member => (
                         <div
                           key={member.id}
@@ -269,58 +266,42 @@ export function ShiftNotificationsModal({
                           </div>
                         </div>
                       ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+              </div>
+            </ScrollArea>
+          </FormSection>
 
-              {/* Delivery Method */}
-              <Card className="bg-muted/30">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Delivery Method</CardTitle>
-                </CardHeader>
-                <CardContent className="flex gap-6">
-                  <div className="flex items-center gap-2">
-                    <MuiCheckbox 
-                      checked={sendViaEmail} 
-                      onChange={(e) => setSendViaEmail(e.target.checked)}
-                      size="small"
-                    />
-                    <Label className="flex items-center gap-1 cursor-pointer">
-                      <Mail className="h-4 w-4" />
-                      Email
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MuiCheckbox 
-                      checked={sendViaSms} 
-                      onChange={(e) => setSendViaSms(e.target.checked)}
-                      size="small"
-                    />
-                    <Label className="flex items-center gap-1 cursor-pointer">
-                      <Smartphone className="h-4 w-4" />
-                      SMS
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Delivery Method */}
+          <FormSection title="Delivery Method">
+            <div className="flex gap-6">
+              <div className="flex items-center gap-2">
+                <MuiCheckbox 
+                  checked={sendViaEmail} 
+                  onChange={(e) => setSendViaEmail(e.target.checked)}
+                  size="small"
+                />
+                <Label className="flex items-center gap-1 cursor-pointer">
+                  <Mail className="h-4 w-4" />
+                  Email
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <MuiCheckbox 
+                  checked={sendViaSms} 
+                  onChange={(e) => setSendViaSms(e.target.checked)}
+                  size="small"
+                />
+                <Label className="flex items-center gap-1 cursor-pointer">
+                  <Smartphone className="h-4 w-4" />
+                  SMS
+                </Label>
+              </div>
+            </div>
+          </FormSection>
+        </TabsContent>
 
-              <SheetFooter>
-                <Button variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSendNotifications} disabled={selectedRecipients.length === 0}>
-                  <Send className="h-4 w-4 mr-1" />
-                  Send to {selectedRecipients.length} Staff
-                </Button>
-              </SheetFooter>
-            </Box>
-          )}
-
-          {/* History Tab */}
-          {tabValue === 1 && (
-            <Box sx={{ mt: 2 }}>
-              <ScrollArea className="h-[calc(100vh-280px)]">
+        <TabsContent value="history">
+          <FormSection title="Notification History">
+            <ScrollArea className="h-[400px]">
                 {notifications.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <Bell className="h-12 w-12 text-muted-foreground mb-3" />
@@ -371,7 +352,7 @@ export function ShiftNotificationsModal({
                                     </Badge>
                                   )}
                                   {notif.read && (
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                    <CheckCircle2 className="h-4 w-4 text-success" />
                                   )}
                                 </div>
                               </div>
@@ -382,11 +363,10 @@ export function ShiftNotificationsModal({
                     })}
                   </div>
                 )}
-              </ScrollArea>
-            </Box>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+            </ScrollArea>
+          </FormSection>
+        </TabsContent>
+      </Tabs>
+    </PrimaryOffCanvas>
   );
 }
