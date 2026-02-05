@@ -8,32 +8,87 @@
  import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
  import { QualificationRequirement } from '@/types/location';
+import { IndustryType, INDUSTRY_TEMPLATES } from '@/types/industryConfig';
  
  interface QualificationRequirementEditorProps {
    requirements: QualificationRequirement[];
    onUpdate: (requirements: QualificationRequirement[]) => void;
    isEditing: boolean;
+  industryType?: IndustryType;
  }
  
- const PRESET_QUALIFICATIONS = [
+// Universal qualifications that apply across all industries
+const UNIVERSAL_QUALIFICATIONS = [
    { id: 'first_aid', name: 'First Aid Certificate', shortName: 'First Aid' },
    { id: 'cpr', name: 'CPR Certification', shortName: 'CPR' },
-   { id: 'wwc', name: 'Working with Children Check', shortName: 'WWC' },
    { id: 'police_check', name: 'Police Check', shortName: 'Police' },
-   { id: 'diploma_ece', name: 'Diploma in Early Childhood Education', shortName: 'Diploma ECE' },
-   { id: 'bachelor_ece', name: 'Bachelor of Early Childhood Education', shortName: 'Bachelor ECE' },
-   { id: 'rn', name: 'Registered Nurse', shortName: 'RN' },
-   { id: 'en', name: 'Enrolled Nurse', shortName: 'EN' },
-   { id: 'food_safety', name: 'Food Safety Certificate', shortName: 'Food Safe' },
-   { id: 'rsa', name: 'Responsible Service of Alcohol', shortName: 'RSA' },
    { id: 'manual_handling', name: 'Manual Handling', shortName: 'Manual' },
+  { id: 'whs', name: 'Work Health & Safety', shortName: 'WHS' },
    { id: 'custom', name: 'Custom Qualification', shortName: 'Custom' },
  ];
  
+// Industry-specific qualification presets
+const INDUSTRY_QUALIFICATIONS: Record<IndustryType, Array<{ id: string; name: string; shortName: string }>> = {
+  childcare: [
+    { id: 'wwc', name: 'Working with Children Check', shortName: 'WWC' },
+    { id: 'diploma_ece', name: 'Diploma in Early Childhood Education', shortName: 'Diploma ECE' },
+    { id: 'bachelor_ece', name: 'Bachelor of Early Childhood Education', shortName: 'Bachelor ECE' },
+    { id: 'cert3_ece', name: 'Certificate III in Early Childhood', shortName: 'Cert III ECE' },
+  ],
+  healthcare: [
+    { id: 'rn', name: 'Registered Nurse', shortName: 'RN' },
+    { id: 'en', name: 'Enrolled Nurse', shortName: 'EN' },
+    { id: 'bls', name: 'Basic Life Support', shortName: 'BLS' },
+    { id: 'acls', name: 'Advanced Cardiac Life Support', shortName: 'ACLS' },
+    { id: 'medication', name: 'Medication Administration', shortName: 'Med Admin' },
+  ],
+  hospitality: [
+    { id: 'rsa', name: 'Responsible Service of Alcohol', shortName: 'RSA' },
+    { id: 'food_safety', name: 'Food Safety Certificate', shortName: 'Food Safe' },
+    { id: 'barista', name: 'Barista Training', shortName: 'Barista' },
+  ],
+  retail: [
+    { id: 'rsa', name: 'Responsible Service of Alcohol', shortName: 'RSA' },
+    { id: 'pos', name: 'POS Training', shortName: 'POS' },
+    { id: 'customer_service', name: 'Customer Service Training', shortName: 'Customer Svc' },
+  ],
+  call_center: [
+    { id: 'product_cert', name: 'Product Certification', shortName: 'Product' },
+    { id: 'escalation', name: 'Escalation Handling', shortName: 'Escalation' },
+    { id: 'compliance_training', name: 'Compliance Training', shortName: 'Compliance' },
+  ],
+  manufacturing: [
+    { id: 'forklift', name: 'Forklift License', shortName: 'Forklift' },
+    { id: 'machinery', name: 'Machinery Operation', shortName: 'Machinery' },
+    { id: 'confined_space', name: 'Confined Space', shortName: 'Confined' },
+  ],
+  events: [
+    { id: 'security', name: 'Security License', shortName: 'Security' },
+    { id: 'rsa', name: 'Responsible Service of Alcohol', shortName: 'RSA' },
+    { id: 'crowd_control', name: 'Crowd Control', shortName: 'Crowd' },
+  ],
+  custom: [],
+};
+
+const getQualificationPresets = (industryType?: IndustryType) => {
+  const industryQuals = industryType ? INDUSTRY_QUALIFICATIONS[industryType] || [] : [];
+  // Combine universal + industry-specific, removing duplicates by id
+  const combined = [...UNIVERSAL_QUALIFICATIONS];
+  industryQuals.forEach(qual => {
+    if (!combined.find(q => q.id === qual.id)) {
+      // Insert industry qualifications before 'custom'
+      const customIndex = combined.findIndex(q => q.id === 'custom');
+      combined.splice(customIndex, 0, qual);
+    }
+  });
+  return combined;
+};
+
  const QualificationRequirementEditor: React.FC<QualificationRequirementEditorProps> = ({
    requirements,
    onUpdate,
    isEditing,
+  industryType,
  }) => {
    const [editingReqId, setEditingReqId] = useState<string | null>(null);
    const [showAddForm, setShowAddForm] = useState(false);
@@ -48,8 +103,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
    });
   const [quantityType, setQuantityType] = useState<'count' | 'percentage'>('count');
  
+  const qualificationPresets = getQualificationPresets(industryType);
+
    const handleSelectPreset = (presetId: string) => {
-     const preset = PRESET_QUALIFICATIONS.find(p => p.id === presetId);
+    const preset = qualificationPresets.find(p => p.id === presetId);
      if (preset) {
        setFormData({
          ...formData,
@@ -139,11 +196,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
              <SelectValue placeholder="Choose a qualification type" />
            </SelectTrigger>
            <SelectContent>
-             {PRESET_QUALIFICATIONS.map(preset => (
-               <SelectItem key={preset.id} value={preset.id}>{preset.name}</SelectItem>
+            {qualificationPresets.map(preset => (
+              <SelectItem key={preset.id} value={preset.id}>
+                {preset.name}
+              </SelectItem>
              ))}
            </SelectContent>
          </Select>
+        {industryType && industryType !== 'custom' && (
+          <p className="text-xs text-muted-foreground">
+            Showing qualifications for {INDUSTRY_TEMPLATES.find(t => t.id === industryType)?.name || industryType}
+          </p>
+        )}
        </div>
        
        {formData.qualificationId === 'custom' && (
@@ -262,7 +326,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
        case 'mandatory':
         return <Badge className="bg-destructive text-destructive-foreground text-xs">Mandatory</Badge>;
        case 'percentage':
-        return <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">{req.percentageRequired}% Required</Badge>;
+        return <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">{req.percentageRequired}% Required</Badge>;
        case 'preferred':
          return <Badge variant="outline" className="text-xs">Preferred</Badge>;
      }

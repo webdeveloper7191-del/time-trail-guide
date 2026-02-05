@@ -124,7 +124,7 @@ export interface Area {
   
   // Capacity
   capacity: number;
-  ageGroup?: string; // Industry-specific grouping (e.g., "Nursery", "ICU", "Kitchen")
+  serviceCategory?: string; // Industry-agnostic grouping (e.g., "Nursery", "ICU", "Kitchen", "Checkout")
   serviceType?: string; // Type of service offered
   
   // Staffing Configuration
@@ -206,10 +206,10 @@ export interface IndustryComplianceConfig {
   // Pre-defined compliance rules
   defaultComplianceRules: ComplianceRule[];
   
-  // Age group / service type presets
+  // Service category / service type presets
   areaPresets: {
     name: string;
-    ageGroup?: string;
+    serviceCategory?: string;
     serviceType?: string;
     capacity: number;
     ratios: StaffingRatio[];
@@ -264,8 +264,8 @@ export interface AreaCombiningThreshold {
   triggerType: 'attendance_percentage' | 'absolute_count' | 'staff_ratio';
   triggerValue: number; // e.g., 50 for 50% or 5 for absolute count
   combineWithAreaIds?: string[]; // Specific areas to suggest combining with
-  applicableAgeGroups?: string[]; // Age groups this threshold applies to
-  combineOnlyWithSameAgeGroup?: boolean; // Only suggest combining with same age group
+  applicableServiceCategories?: string[]; // Service categories this threshold applies to
+  combineOnlyWithSameCategory?: boolean; // Only suggest combining with same service category
   isActive: boolean;
   promptMessage?: string; // Custom message to show roster manager
 }

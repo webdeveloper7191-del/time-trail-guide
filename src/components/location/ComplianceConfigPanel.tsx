@@ -138,8 +138,8 @@ const ComplianceConfigPanel: React.FC = () => {
                     variant={qual.requirementType === 'mandatory' ? 'default' : 'outline'}
                     className={cn(
                       'text-xs',
-                      qual.requirementType === 'mandatory' && 'bg-red-500 text-white',
-                      qual.requirementType === 'percentage' && 'bg-amber-100 text-amber-700',
+                      qual.requirementType === 'mandatory' && 'bg-destructive text-destructive-foreground',
+                      qual.requirementType === 'percentage' && 'bg-amber-500/20 text-amber-700 dark:text-amber-400',
                     )}
                   >
                     {qual.qualificationShortName}
@@ -166,7 +166,7 @@ const ComplianceConfigPanel: React.FC = () => {
                 className="bg-muted/30 rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors"
               >
                 <h4 className="font-medium text-sm">{preset.name}</h4>
-                <p className="text-xs text-muted-foreground">{preset.ageGroup || preset.serviceType}</p>
+                <p className="text-xs text-muted-foreground">{preset.serviceCategory || preset.serviceType}</p>
                 <p className="text-xs text-muted-foreground">Capacity: {preset.capacity}</p>
               </div>
             ))}

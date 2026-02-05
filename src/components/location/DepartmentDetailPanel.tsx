@@ -283,7 +283,7 @@ const DepartmentDetailPanel: React.FC<DepartmentDetailPanelProps> = ({
                         <p className="text-xs text-muted-foreground">{area.code} • Capacity: {area.capacity}</p>
                       </div>
                     </div>
-                    <Badge variant="outline">{area.ageGroup}</Badge>
+                    <Badge variant="outline">{area.serviceCategory || 'No Category'}</Badge>
                   </div>
                 </div>
               ))}

@@ -9,12 +9,14 @@
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
  import { AreaCombiningThreshold } from '@/types/location';
+import { IndustryType, INDUSTRY_TEMPLATES } from '@/types/industryConfig';
  
  interface AreaCombiningEditorProps {
    thresholds: AreaCombiningThreshold[];
    onUpdate: (thresholds: AreaCombiningThreshold[]) => void;
    isEditing: boolean;
-  availableAgeGroups?: string[];
+  availableServiceCategories?: string[];
+  industryType?: IndustryType;
  }
  
  const TRIGGER_TYPES = [
@@ -23,21 +25,36 @@ import { Checkbox } from '@/components/ui/checkbox';
    { value: 'staff_ratio', label: 'Staff Ratio Inefficiency', unit: '%', description: 'When staff utilization falls below this %' },
  ];
  
-const DEFAULT_AGE_GROUPS = [
-  'Nursery (0-2 years)',
-  'Toddlers (2-3 years)',
-  'Pre-Kindy (3-4 years)',
-  'Kindergarten (4-5 years)',
-  'School Age (5+ years)',
-  'Mixed Age',
-];
+// Industry-specific service category defaults
+const getDefaultServiceCategories = (industryType?: IndustryType): string[] => {
+  switch (industryType) {
+    case 'childcare':
+      return ['Nursery', 'Toddlers', 'Pre-Kindy', 'Kindergarten', 'School Age', 'Mixed Age'];
+    case 'healthcare':
+      return ['ICU', 'Emergency', 'General Ward', 'Maternity', 'Paediatrics', 'Outpatient'];
+    case 'hospitality':
+      return ['Kitchen', 'Bar', 'Floor Service', 'Events', 'Takeaway'];
+    case 'retail':
+      return ['Checkout', 'Floor', 'Stockroom', 'Customer Service', 'Click & Collect'];
+    case 'call_center':
+      return ['Inbound', 'Outbound', 'Technical Support', 'Sales', 'Escalations'];
+    case 'manufacturing':
+      return ['Assembly Line', 'Quality Control', 'Packaging', 'Warehouse', 'Dispatch'];
+    case 'events':
+      return ['Front of House', 'Back of House', 'Security', 'VIP', 'Technical'];
+    default:
+      return ['Category A', 'Category B', 'Category C'];
+  }
+};
 
  const AreaCombiningEditor: React.FC<AreaCombiningEditorProps> = ({
    thresholds,
    onUpdate,
    isEditing,
-  availableAgeGroups = DEFAULT_AGE_GROUPS,
+  availableServiceCategories,
+  industryType,
  }) => {
+  const serviceCategories = availableServiceCategories || getDefaultServiceCategories(industryType);
    const [editingId, setEditingId] = useState<string | null>(null);
    const [showAddForm, setShowAddForm] = useState(false);
    const [formData, setFormData] = useState<Partial<AreaCombiningThreshold>>({
@@ -47,8 +64,8 @@ const DEFAULT_AGE_GROUPS = [
      triggerValue: 50,
      isActive: true,
      promptMessage: '',
-    applicableAgeGroups: [],
-    combineOnlyWithSameAgeGroup: true,
+    applicableServiceCategories: [],
+    combineOnlyWithSameCategory: true,
    });
  
    const handleAdd = () => {
@@ -60,8 +77,8 @@ const DEFAULT_AGE_GROUPS = [
        triggerValue: formData.triggerValue || 50,
        isActive: formData.isActive ?? true,
        promptMessage: formData.promptMessage,
-      applicableAgeGroups: formData.applicableAgeGroups,
-      combineOnlyWithSameAgeGroup: formData.combineOnlyWithSameAgeGroup,
+      applicableServiceCategories: formData.applicableServiceCategories,
+      combineOnlyWithSameCategory: formData.combineOnlyWithSameCategory,
      };
      onUpdate([...thresholds, newThreshold]);
      setShowAddForm(false);
@@ -79,8 +96,8 @@ const DEFAULT_AGE_GROUPS = [
            triggerValue: formData.triggerValue ?? t.triggerValue,
            isActive: formData.isActive ?? t.isActive,
            promptMessage: formData.promptMessage,
-          applicableAgeGroups: formData.applicableAgeGroups,
-          combineOnlyWithSameAgeGroup: formData.combineOnlyWithSameAgeGroup,
+          applicableServiceCategories: formData.applicableServiceCategories,
+          combineOnlyWithSameCategory: formData.combineOnlyWithSameCategory,
          };
        }
        return t;
@@ -103,8 +120,8 @@ const DEFAULT_AGE_GROUPS = [
        triggerValue: threshold.triggerValue,
        isActive: threshold.isActive,
        promptMessage: threshold.promptMessage,
-      applicableAgeGroups: threshold.applicableAgeGroups || [],
-      combineOnlyWithSameAgeGroup: threshold.combineOnlyWithSameAgeGroup ?? true,
+      applicableServiceCategories: threshold.applicableServiceCategories || [],
+      combineOnlyWithSameCategory: threshold.combineOnlyWithSameCategory ?? true,
      });
    };
  
@@ -116,19 +133,19 @@ const DEFAULT_AGE_GROUPS = [
        triggerValue: 50,
        isActive: true,
        promptMessage: '',
-      applicableAgeGroups: [],
-      combineOnlyWithSameAgeGroup: true,
+      applicableServiceCategories: [],
+      combineOnlyWithSameCategory: true,
      });
    };
  
    const getTriggerTypeInfo = (type: string) => TRIGGER_TYPES.find(t => t.value === type);
  
-  const toggleAgeGroup = (ageGroup: string) => {
-    const current = formData.applicableAgeGroups || [];
-    if (current.includes(ageGroup)) {
-      setFormData({ ...formData, applicableAgeGroups: current.filter(g => g !== ageGroup) });
+  const toggleServiceCategory = (category: string) => {
+    const current = formData.applicableServiceCategories || [];
+    if (current.includes(category)) {
+      setFormData({ ...formData, applicableServiceCategories: current.filter(g => g !== category) });
     } else {
-      setFormData({ ...formData, applicableAgeGroups: [...current, ageGroup] });
+      setFormData({ ...formData, applicableServiceCategories: [...current, category] });
     }
   };
 
@@ -175,28 +192,28 @@ const DEFAULT_AGE_GROUPS = [
          </p>
        </div>
  
-      {/* Age Group Configuration */}
+      {/* Service Category Configuration */}
       <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-        <h4 className="text-sm font-medium text-foreground">Age Group Settings</h4>
+        <h4 className="text-sm font-medium text-foreground">Service Category Settings</h4>
         
         <div className="space-y-2">
-          <Label>Applicable Age Groups</Label>
+          <Label>Applicable Service Categories</Label>
           <p className="text-xs text-muted-foreground mb-2">
-            Select which age groups this threshold applies to. Leave empty to apply to all.
+            Select which service categories this threshold applies to. Leave empty to apply to all.
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {availableAgeGroups.map((ageGroup) => (
-              <div key={ageGroup} className="flex items-center space-x-2">
+            {serviceCategories.map((category) => (
+              <div key={category} className="flex items-center space-x-2">
                 <Checkbox
-                  id={`age-${ageGroup}`}
-                  checked={formData.applicableAgeGroups?.includes(ageGroup)}
-                  onCheckedChange={() => toggleAgeGroup(ageGroup)}
+                  id={`cat-${category}`}
+                  checked={formData.applicableServiceCategories?.includes(category)}
+                  onCheckedChange={() => toggleServiceCategory(category)}
                 />
                 <label
-                  htmlFor={`age-${ageGroup}`}
+                  htmlFor={`cat-${category}`}
                   className="text-sm cursor-pointer"
                 >
-                  {ageGroup}
+                  {category}
                 </label>
               </div>
             ))}
@@ -205,13 +222,13 @@ const DEFAULT_AGE_GROUPS = [
         
         <div className="flex items-center gap-2 pt-2 border-t border-border">
           <Switch
-            checked={formData.combineOnlyWithSameAgeGroup}
-            onCheckedChange={(checked) => setFormData({ ...formData, combineOnlyWithSameAgeGroup: checked })}
+            checked={formData.combineOnlyWithSameCategory}
+            onCheckedChange={(checked) => setFormData({ ...formData, combineOnlyWithSameCategory: checked })}
           />
           <div>
-            <Label>Only combine with same age group</Label>
+            <Label>Only combine with same category</Label>
             <p className="text-xs text-muted-foreground">
-              When enabled, only suggest combining areas with matching age groups
+              When enabled, only suggest combining areas with matching service categories
             </p>
           </div>
         </div>
@@ -293,8 +310,8 @@ const DEFAULT_AGE_GROUPS = [
                        <Badge variant={threshold.isActive ? 'default' : 'secondary'} className="text-xs">
                          {threshold.isActive ? 'Active' : 'Inactive'}
                        </Badge>
-                      {threshold.combineOnlyWithSameAgeGroup && (
-                        <Badge variant="outline" className="text-xs">Same Age Group Only</Badge>
+                      {threshold.combineOnlyWithSameCategory && (
+                        <Badge variant="outline" className="text-xs">Same Category Only</Badge>
                       )}
                      </div>
                      <div className="flex items-center gap-2">
@@ -313,11 +330,11 @@ const DEFAULT_AGE_GROUPS = [
                        )}
                      </div>
                    </div>
-                  {threshold.applicableAgeGroups && threshold.applicableAgeGroups.length > 0 && (
+                  {threshold.applicableServiceCategories && threshold.applicableServiceCategories.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {threshold.applicableAgeGroups.map((ag) => (
-                        <Badge key={ag} variant="secondary" className="text-xs">
-                          {ag}
+                      {threshold.applicableServiceCategories.map((cat) => (
+                        <Badge key={cat} variant="secondary" className="text-xs">
+                          {cat}
                         </Badge>
                       ))}
                     </div>
