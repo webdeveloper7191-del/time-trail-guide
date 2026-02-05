@@ -207,8 +207,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
               </div>
             </FormSection>
 
-            <Separator />
-
             {/* Penalty Rate Multipliers */}
             <FormSection title="Penalty Rate Multipliers">
               <FormRow columns={2}>
@@ -242,8 +240,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 </FormField>
               </FormRow>
             </FormSection>
-
-            <Separator />
 
             {/* Allowance Budgets */}
             <FormSection title="Allowance Budgets" tooltip="Weekly allowance budget limits">
@@ -312,8 +308,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
               </div>
             </FormSection>
 
-            <Separator />
-
             {/* Casual Staff Mix */}
             <FormSection title="Casual vs Permanent Mix">
               <FormRow columns={2}>
@@ -349,8 +343,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 </FormField>
               </FormRow>
             </FormSection>
-
-            <Separator />
 
             {/* Trainee Limits */}
             <FormSection title="Max Trainee/Student Staff" tooltip="Cap on unqualified/trainee staff per shift">
@@ -427,8 +419,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                 )}
               </CardContent>
             </Card>
-
-            <Separator />
 
             {/* Shift Time Premiums */}
             <div className="space-y-3">
@@ -517,8 +507,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
               <p className="text-xs text-muted-foreground">Acceptable deviation from budget before triggering alerts</p>
             </div>
 
-            <Separator />
-
             {/* Seasonal Adjustments */}
             <Card className="border border-border bg-muted/30">
               <CardContent className="p-4 space-y-3">
@@ -578,8 +566,6 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
               />
               <p className="text-xs text-muted-foreground">Target change vs. same period last year (negative = cost reduction goal)</p>
             </div>
-
-            <Separator />
 
             {/* Alert Settings */}
             <Card className="border border-border bg-muted/30">

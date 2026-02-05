@@ -476,8 +476,6 @@ export function ShiftDetailPanel({
               )}
             </FormSection>
 
-            <Separator />
-
             {/* Leave/Absence Alert */}
             {(staffApprovedLeave || staffPendingLeave) && (
               <div className={cn(
@@ -688,8 +686,6 @@ export function ShiftDetailPanel({
               )}
             </FormSection>
 
-            <Separator />
-
             {/* Time Settings */}
             <FormSection title="Schedule">
               <FormRow columns={2}>
@@ -747,8 +743,6 @@ export function ShiftDetailPanel({
             {/* Recurring Shift Configuration - Only shown when templateMode is 'recurring' */}
             {templateMode === 'recurring' && (
               <>
-                <Separator />
-                
                 <FormSection title="Recurring Settings" tooltip="Configure repeat pattern for this shift">
                   
                   <div className="space-y-4 p-4 bg-background rounded-lg border">
@@ -875,12 +869,10 @@ export function ShiftDetailPanel({
                     </div>
                   </div>
                 </FormSection>
-              </>
-            )}
-
-            <Separator />
-
-            {/* Shift Status */}
+            </>
+          )}
+ 
+          {/* Shift Status */}
             <FormSection title="Shift Status">
               <FormField label="Current Status">
               <Select 
@@ -943,8 +935,6 @@ export function ShiftDetailPanel({
               </div>
             </FormSection>
 
-            <Separator />
-
             {/* Room Assignment */}
             <FormSection title="Room">
               <FormField label="Room Assignment" required>
@@ -965,8 +955,6 @@ export function ShiftDetailPanel({
               </Select>
               </FormField>
             </FormSection>
-
-            <Separator />
 
             {/* Notes */}
             <FormSection title="Notes">
@@ -993,8 +981,6 @@ export function ShiftDetailPanel({
               />
             </FormSection>
 
-            <Separator />
-
             {/* On-Call Pay Breakdown - Show for on-call or recall shifts */}
             {(editedShift.shiftType === 'on_call' || editedShift.shiftType === 'recall') && (
               <>
@@ -1003,7 +989,6 @@ export function ShiftDetailPanel({
                   staff={assignedStaff}
                   awardType="children_services"
                 />
-                <Separator />
               </>
             )}
 
