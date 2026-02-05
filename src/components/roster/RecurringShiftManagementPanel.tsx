@@ -22,6 +22,7 @@ import {
   Play
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Shift, StaffMember, Centre } from '@/types/roster';
 import { format, parseISO, differenceInDays, addDays, isBefore, isAfter } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -274,16 +275,18 @@ export function RecurringShiftManagementPanel({
         open={open}
         onClose={onClose}
         title="Recurring Shift Series"
+        description="Manage and configure recurring shift patterns"
         icon={RefreshCw}
-        width="lg"
+        size="lg"
+        showFooter={false}
       >
         <div className="flex flex-col h-full">
           {/* Expiring Soon Section */}
           {expiringSeries.length > 0 && (
-            <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800">
+            <div className="p-4 bg-amber-500/5 border border-amber-500/30 rounded-lg mb-4">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
                   {expiringSeries.length} series ending soon
                 </span>
               </div>
@@ -293,7 +296,7 @@ export function RecurringShiftManagementPanel({
                     key={series.groupId}
                     variant="outline"
                     size="sm"
-                    className="h-7 text-xs bg-white dark:bg-background border-amber-300 dark:border-amber-700"
+                      className="h-7 text-xs bg-background border-amber-500/50"
                     onClick={() => setSelectedSeries(series)}
                   >
                     {series.staffName}
@@ -307,10 +310,10 @@ export function RecurringShiftManagementPanel({
           )}
 
           {/* Main Content */}
-          <ScrollArea className="flex-1">
-            <div className="p-4 space-y-3">
+          <ScrollArea className="flex-1 -mx-4 sm:-mx-6 px-4 sm:px-6">
+            <div className="space-y-3">
               {recurringSeries.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
+                <div className="text-center py-12 text-muted-foreground bg-background rounded-lg border">
                   <RefreshCw className="h-12 w-12 mx-auto mb-3 opacity-30" />
                   <p className="text-sm">No recurring shift series configured</p>
                   <p className="text-xs mt-1">Create shifts with recurring patterns to see them here</p>
@@ -320,9 +323,9 @@ export function RecurringShiftManagementPanel({
                   <div
                     key={series.groupId}
                     className={cn(
-                      "p-4 rounded-lg border transition-all cursor-pointer",
+                      "p-4 rounded-lg border transition-all cursor-pointer bg-background",
                       "hover:border-primary/50 hover:shadow-sm",
-                      series.isExpiringSoon && "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20",
+                      series.isExpiringSoon && "border-amber-500/50",
                       selectedSeries?.groupId === series.groupId && "border-primary ring-1 ring-primary"
                     )}
                     onClick={() => setSelectedSeries(series)}
@@ -390,7 +393,7 @@ export function RecurringShiftManagementPanel({
 
           {/* Selected Series Actions */}
           {selectedSeries && (
-            <div className="border-t p-4 bg-muted/30">
+            <div className="mt-4 p-4 bg-background border rounded-lg">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium">{selectedSeries.staffName}'s Series</span>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedSeries(null)}>

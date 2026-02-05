@@ -1,22 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { Shift } from '@/types/roster';
-import {
-  Box,
-  Typography,
-  IconButton,
-  Stack,
-  Chip,
-  Divider,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  ListItemIcon,
-  Paper,
-} from '@mui/material';
 import { 
-  X, 
   History, 
   Undo2, 
   Plus, 
@@ -27,6 +12,10 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 
 interface HistoryEntry {
   id: string;
@@ -102,131 +91,79 @@ export function RosterHistoryPanel({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <Paper
-      elevation={8}
-      sx={{
-        position: 'fixed',
-        right: 16,
-        top: 80,
-        width: 320,
-        maxHeight: 'calc(100vh - 120px)',
-        zIndex: 1300,
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 2,
-        overflow: 'hidden',
-      }}
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Change History"
+      description="Click any entry to revert to that state"
+      icon={History}
+      size="sm"
+      showFooter={false}
     >
-      {/* Header */}
-      <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'primary.contrastText' }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <History size={20} />
-            <Typography variant="subtitle1" fontWeight={600}>
-              Change History
-            </Typography>
-          </Stack>
-          <IconButton size="small" onClick={onClose} sx={{ color: 'inherit' }}>
-            <X size={18} />
-          </IconButton>
-        </Stack>
-        <Typography variant="caption" sx={{ opacity: 0.8 }}>
-          Click any entry to revert to that state
-        </Typography>
-      </Box>
-
-      {/* History List */}
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
+      <FormSection title="History Entries">
+        <ScrollArea className="h-[400px]">
         {historyEntries.length === 0 ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-background rounded-lg border">
             <History size={40} className="mx-auto mb-2 opacity-30" />
-            <Typography variant="body2" color="text.secondary">
-              No changes recorded yet
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Changes will appear here as you modify shifts
-            </Typography>
-          </Box>
+            <p className="text-sm font-medium">No changes recorded yet</p>
+            <p className="text-xs text-muted-foreground">Changes will appear here as you modify shifts</p>
+          </div>
         ) : (
-          <List sx={{ py: 0 }}>
+          <div className="space-y-1">
             {historyEntries.map((entry, index) => {
               const isCurrent = index === currentIndex;
               const isFuture = index > currentIndex;
               
               return (
-                <ListItem
+                <div
                   key={entry.id}
-                  disablePadding
                   onMouseEnter={() => setHoveredIndex(index)}
                   onMouseLeave={() => setHoveredIndex(null)}
-                  sx={{
-                    borderLeft: 4,
-                    borderColor: isCurrent 
-                      ? 'primary.main' 
-                      : isFuture 
-                        ? 'grey.300' 
-                        : 'transparent',
-                    opacity: isFuture ? 0.6 : 1,
-                  }}
+                  onClick={() => !isCurrent && onRevertToIndex(index)}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                    "hover:bg-muted/50",
+                    isCurrent ? "border-primary bg-primary/5" : "border-border bg-background",
+                    isFuture && "opacity-60",
+                    !isCurrent && "hover:border-primary/50"
+                  )}
                 >
-                  <ListItemButton
-                    onClick={() => onRevertToIndex(index)}
-                    disabled={isCurrent}
-                    sx={{
-                      py: 1.5,
-                      px: 2,
-                      bgcolor: isCurrent ? 'action.selected' : 'transparent',
-                      '&:hover': {
-                        bgcolor: isCurrent ? 'action.selected' : 'action.hover',
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      {getActionIcon(entry.actionType)}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Typography variant="body2" fontWeight={isCurrent ? 600 : 400}>
-                            {entry.description}
-                          </Typography>
-                          {isCurrent && (
-                            <Chip 
-                              label="Current" 
-                              size="small" 
-                              color="primary" 
-                              sx={{ height: 18, fontSize: 10 }} 
-                            />
-                          )}
-                        </Stack>
-                      }
-                      secondary={
-                        <Typography variant="caption" color="text.secondary">
-                          {format(entry.timestamp, 'h:mm:ss a')}
-                        </Typography>
-                      }
-                    />
+                  <div className="flex items-center justify-center w-6">
+                    {getActionIcon(entry.actionType)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-sm truncate", isCurrent && "font-semibold")}>
+                        {entry.description}
+                      </span>
+                      {isCurrent && (
+                        <Badge variant="default" className="text-[10px] h-4 px-1.5 bg-primary text-primary-foreground">
+                          Current
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {format(entry.timestamp, 'h:mm:ss a')}
+                    </span>
+                  </div>
                     {hoveredIndex === index && !isCurrent && (
-                      <RotateCcw size={14} className="text-primary" />
+                    <RotateCcw size={14} className="text-primary shrink-0" />
                     )}
-                  </ListItemButton>
-                </ListItem>
+                </div>
               );
             })}
-          </List>
+          </div>
         )}
-      </Box>
+        </ScrollArea>
+      </FormSection>
 
-      {/* Footer */}
-      <Box sx={{ p: 1.5, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
+      <div className="mt-4 p-3 bg-background border rounded-lg text-center">
+        <span className="text-xs text-muted-foreground">
           {historyEntries.length} entries • Auto-saved
-        </Typography>
-      </Box>
-    </Paper>
+        </span>
+      </div>
+    </PrimaryOffCanvas>
   );
 }
 

@@ -17,6 +17,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { 
   mockPublicHolidays, 
   mockRosterEvents, 
@@ -116,28 +117,33 @@ export function HolidayEventCalendarPanel({
     >
       <div className="space-y-4">
         {/* Month Navigation */}
-        <div className="flex items-center justify-between bg-background rounded-lg border p-2">
-          <Button variant="ghost" size="sm" onClick={() => navigateMonth('prev')}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h3 className="text-base font-semibold">{format(viewDate, 'MMMM yyyy')}</h3>
-          <Button variant="ghost" size="sm" onClick={() => navigateMonth('next')}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        <FormSection title={format(viewDate, 'MMMM yyyy')}>
+          <div className="flex items-center justify-between bg-background rounded-lg border p-2">
+            <Button variant="ghost" size="sm" onClick={() => navigateMonth('prev')}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground">Navigate months</span>
+            <Button variant="ghost" size="sm" onClick={() => navigateMonth('next')}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </FormSection>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-3 p-3 bg-background rounded-lg border">
-          {legendItems.map((item, idx) => (
-            <div key={idx} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              {item.icon}
-              <span>{item.label}</span>
-            </div>
-          ))}
-        </div>
+        <FormSection title="Legend">
+          <div className="flex flex-wrap gap-3 p-4 bg-background rounded-lg border">
+            {legendItems.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                {item.icon}
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </FormSection>
 
         {/* Calendar Grid */}
-        <div className="bg-background rounded-lg border p-3">
+        <FormSection title="Calendar">
+        <div className="bg-background rounded-lg border p-4">
           <div className="grid grid-cols-7 gap-1">
             {/* Day headers */}
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -239,14 +245,12 @@ export function HolidayEventCalendarPanel({
             })}
           </div>
         </div>
+        </FormSection>
 
         {/* Selected Date Details */}
         {selectedDate && (selectedDateDetails.holidays.length > 0 || selectedDateDetails.events.length > 0) && (
-          <div className="p-3 bg-background rounded-lg border">
-            <h4 className="font-medium text-sm mb-2">
-              {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-            </h4>
-            <div className="space-y-2">
+          <FormSection title={format(selectedDate, 'EEEE, MMMM d, yyyy')}>
+            <div className="p-4 bg-background rounded-lg border space-y-2">
               {selectedDateDetails.holidays.map(h => (
                 <div key={h.id} className="flex items-center gap-2">
                   {h.type === 'public_holiday' ? (
@@ -282,17 +286,14 @@ export function HolidayEventCalendarPanel({
                 </div>
               ))}
             </div>
-          </div>
+          </FormSection>
         )}
 
         {/* Upcoming this month */}
-        <div className="bg-background rounded-lg border">
-          <h4 className="text-sm font-medium p-3 border-b flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" />
-            Upcoming This Month
-          </h4>
-          <ScrollArea className="h-48">
-            <div className="p-3 space-y-2">
+        <FormSection title="Upcoming This Month" tooltip="Holidays and events this month">
+          <div className="bg-background rounded-lg border">
+            <ScrollArea className="h-48">
+              <div className="p-4 space-y-2">
               {monthHolidays.filter(h => h.type === 'public_holiday').map(h => (
                 <div 
                   key={h.id} 
@@ -332,9 +333,10 @@ export function HolidayEventCalendarPanel({
                   No holidays or events this month
                 </p>
               )}
-            </div>
-          </ScrollArea>
-        </div>
+              </div>
+            </ScrollArea>
+          </div>
+        </FormSection>
       </div>
     </PrimaryOffCanvas>
   );

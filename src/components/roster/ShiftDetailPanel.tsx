@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { 
   Clock, 
   AlertTriangle, 
@@ -399,15 +400,13 @@ export function ShiftDetailPanel({
             )}
 
             {/* Staff Assignment */}
-            <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                Staff Assignment
-              </Label>
+            <FormSection title="Staff Assignment">
+              <FormField label="Assigned Staff" required>
               <Select 
                 value={editedShift.staffId} 
                 onValueChange={(value) => setEditedShift(prev => ({ ...prev, staffId: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Select staff member" />
                 </SelectTrigger>
                 <SelectContent>
@@ -427,9 +426,10 @@ export function ShiftDetailPanel({
                   ))}
                 </SelectContent>
               </Select>
+              </FormField>
 
               {assignedStaff && (
-                <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                <div className="bg-background rounded-lg border p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div 
@@ -474,7 +474,7 @@ export function ShiftDetailPanel({
                   )}
                 </div>
               )}
-            </div>
+            </FormSection>
 
             <Separator />
 
@@ -529,11 +529,7 @@ export function ShiftDetailPanel({
             )}
 
             {/* Unified Templates Section */}
-            <div className="space-y-4">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Templates
-              </Label>
+            <FormSection title="Templates" tooltip="Apply a shift template or set up recurring pattern">
               
               {/* Radio Selection */}
               <RadioGroup 
@@ -690,58 +686,47 @@ export function ShiftDetailPanel({
                   </p>
                 </div>
               )}
-            </div>
+            </FormSection>
 
             <Separator />
 
             {/* Time Settings */}
-            <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                Schedule
-              </Label>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="startTime" className="text-sm">Start Time</Label>
+            <FormSection title="Schedule">
+              <FormRow columns={2}>
+                <FormField label="Start Time" required>
                   <Input
-                    id="startTime"
                     type="time"
                     value={editedShift.startTime}
                     onChange={(e) => setEditedShift(prev => ({ ...prev, startTime: e.target.value }))}
+                    className="bg-background h-11"
                   />
-                </div>
-                <div>
-                  <Label htmlFor="endTime" className="text-sm">End Time</Label>
+                </FormField>
+                <FormField label="End Time" required>
                   <Input
-                    id="endTime"
                     type="time"
                     value={editedShift.endTime}
                     onChange={(e) => setEditedShift(prev => ({ ...prev, endTime: e.target.value }))}
+                    className="bg-background h-11"
                   />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="break" className="text-sm flex items-center gap-1">
-                  <Coffee className="h-3.5 w-3.5" />
-                  Break Duration
-                </Label>
-                <div className="flex items-center gap-2 mt-1">
+                </FormField>
+              </FormRow>
+              
+              <FormField label="Break Duration">
+                <div className="flex items-center gap-2">
                   <Input
-                    id="break"
                     type="number"
                     min={0}
                     step={15}
                     value={editedShift.breakMinutes}
                     onChange={(e) => setEditedShift(prev => ({ ...prev, breakMinutes: parseInt(e.target.value) || 0 }))}
-                    className="w-24"
+                    className="w-24 bg-background h-11"
                   />
                   <span className="text-sm text-muted-foreground">minutes</span>
                 </div>
-              </div>
+              </FormField>
 
               {/* Duration & Cost Summary */}
-              <div className="bg-muted/50 rounded-lg p-3 grid grid-cols-2 gap-3">
+              <div className="bg-background rounded-lg border p-3 grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
@@ -757,23 +742,18 @@ export function ShiftDetailPanel({
                   </div>
                 </div>
               </div>
-            </div>
+            </FormSection>
 
             {/* Recurring Shift Configuration - Only shown when templateMode is 'recurring' */}
             {templateMode === 'recurring' && (
               <>
                 <Separator />
                 
-                <div className="space-y-3">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    Recurring Settings
-                  </Label>
+                <FormSection title="Recurring Settings" tooltip="Configure repeat pattern for this shift">
                   
-                  <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border">
+                  <div className="space-y-4 p-4 bg-background rounded-lg border">
                     {/* Pattern Selection */}
-                    <div className="space-y-2">
-                      <Label className="text-sm">Repeat Pattern</Label>
+                    <FormField label="Repeat Pattern">
                       <Select
                         value={editedShift.recurring?.pattern || 'weekly'}
                         onValueChange={(value: RecurrencePattern) => setEditedShift(prev => ({
@@ -795,12 +775,11 @@ export function ShiftDetailPanel({
                           <SelectItem value="fortnightly">Fortnightly</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
+                    </FormField>
 
                     {/* Days of Week - for weekly/fortnightly patterns */}
                     {(editedShift.recurring?.pattern === 'weekly' || editedShift.recurring?.pattern === 'fortnightly') && (
-                      <div className="space-y-2">
-                        <Label className="text-sm">Repeat on</Label>
+                      <FormField label="Repeat on">
                         <div className="flex flex-wrap gap-2">
                           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
                             <div key={day} className="flex items-center gap-1">
@@ -822,12 +801,11 @@ export function ShiftDetailPanel({
                             </div>
                           ))}
                         </div>
-                      </div>
+                      </FormField>
                     )}
 
                     {/* End Condition */}
-                    <div className="space-y-2">
-                      <Label className="text-sm">Ends</Label>
+                    <FormField label="Ends">
                       <Select
                         value={editedShift.recurring?.endType || 'after_occurrences'}
                         onValueChange={(value: RecurrenceEndType) => setEditedShift(prev => ({
@@ -844,12 +822,11 @@ export function ShiftDetailPanel({
                           <SelectItem value="on_date">On a specific date</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
+                    </FormField>
 
                     {/* Occurrences count */}
                     {editedShift.recurring?.endType === 'after_occurrences' && (
-                      <div className="space-y-2">
-                        <Label className="text-sm">Number of occurrences</Label>
+                      <FormField label="Number of occurrences">
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
@@ -864,13 +841,12 @@ export function ShiftDetailPanel({
                           />
                           <span className="text-sm text-muted-foreground">occurrences</span>
                         </div>
-                      </div>
+                      </FormField>
                     )}
 
                     {/* End date */}
                     {editedShift.recurring?.endType === 'on_date' && (
-                      <div className="space-y-2">
-                        <Label className="text-sm">End date</Label>
+                      <FormField label="End date">
                         <Input
                           type="date"
                           value={editedShift.recurring?.endDate || ''}
@@ -881,7 +857,7 @@ export function ShiftDetailPanel({
                           }))}
                           className="bg-background"
                         />
-                      </div>
+                      </FormField>
                     )}
 
                     {/* Preview info */}
@@ -898,22 +874,20 @@ export function ShiftDetailPanel({
                       </p>
                     </div>
                   </div>
-                </div>
+                </FormSection>
               </>
             )}
 
             <Separator />
 
             {/* Shift Status */}
-            <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                Shift Status
-              </Label>
+            <FormSection title="Shift Status">
+              <FormField label="Current Status">
               <Select 
                 value={editedShift.status} 
                 onValueChange={(value) => handleStatusChange(value as Shift['status'])}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -931,6 +905,7 @@ export function ShiftDetailPanel({
                   ))}
                 </SelectContent>
               </Select>
+              </FormField>
 
               {/* Quick status actions */}
               <div className="flex gap-2">
@@ -966,20 +941,18 @@ export function ShiftDetailPanel({
                   </Button>
                 )}
               </div>
-            </div>
+            </FormSection>
 
             <Separator />
 
             {/* Room Assignment */}
-            <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                Room
-              </Label>
+            <FormSection title="Room">
+              <FormField label="Room Assignment" required>
               <Select 
                 value={editedShift.roomId} 
                 onValueChange={(value) => setEditedShift(prev => ({ ...prev, roomId: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -990,34 +963,35 @@ export function ShiftDetailPanel({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+              </FormField>
+            </FormSection>
 
             <Separator />
 
             {/* Notes */}
-            <div className="space-y-3">
-              <Label htmlFor="notes" className="text-xs text-muted-foreground uppercase tracking-wide">
-                Notes
-              </Label>
+            <FormSection title="Notes">
+              <FormField label="Shift Notes">
               <Textarea
-                id="notes"
                 value={editedShift.notes || ''}
                 onChange={(e) => setEditedShift(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Add notes for this shift..."
                 rows={3}
+                className="bg-background resize-none"
               />
-            </div>
+              </FormField>
+            </FormSection>
           </div>
         </TabsContent>
 
         {/* Allowances Tab */}
         <TabsContent value="allowances" className="flex-1 m-0 mt-4">
           <div className="space-y-6">
-            {/* Shift Type Editor */}
-            <ShiftTypeEditor 
-              shift={editedShift}
-              onChange={setEditedShift}
-            />
+            <FormSection title="Shift Type">
+              <ShiftTypeEditor 
+                shift={editedShift}
+                onChange={setEditedShift}
+              />
+            </FormSection>
 
             <Separator />
 
@@ -1034,34 +1008,27 @@ export function ShiftDetailPanel({
             )}
 
             {/* Allowance Eligibility */}
-            <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                Allowance Eligibility
-              </Label>
+            <FormSection title="Allowance Eligibility" tooltip="View eligible allowances for this shift">
               <AllowanceEligibilityPanel 
                 shift={editedShift}
                 staff={assignedStaff}
               />
-            </div>
+            </FormSection>
           </div>
         </TabsContent>
 
         {/* Demand Tab */}
         <TabsContent value="demand" className="flex-1 m-0 mt-4">
           <div className="space-y-6">
+            <FormSection title="Demand Context" tooltip="View demand histogram for this shift">
             {room && (
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                  Demand Context
-                </Label>
                 <DemandHistogram 
                   demandData={demandData}
                   room={room}
                   date={shift.date}
                 />
-              </div>
             )}
+            </FormSection>
           </div>
         </TabsContent>
       </Tabs>

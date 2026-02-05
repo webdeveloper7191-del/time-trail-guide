@@ -33,6 +33,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 
 const budgetSettingsValidationSchema = z.object({
   weeklyBudget: z.number().min(0, 'Budget must be positive').max(1000000, 'Budget too high'),
@@ -166,63 +167,52 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
           {/* COSTS TAB */}
           <TabsContent value="costs" className="mt-0 space-y-6">
             {/* Weekly Budget */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-primary flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Weekly Budget
-              </Label>
+            <FormSection title="Weekly Budget">
+              <FormField label="Total Budget" required tooltip="Total labor budget for this centre per week">
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="number"
                   value={settings.weeklyBudget}
                   onChange={(e) => setSettings({ ...settings, weeklyBudget: Number(e.target.value) })}
-                  className="pl-9 bg-background"
+                  className="pl-9 bg-background h-11"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">Total labor budget for this centre per week</p>
-            </div>
+              </FormField>
+            </FormSection>
 
             {/* Minimum Staffing Cost Floor */}
-            <Card className="border border-border bg-muted/30">
-              <CardContent className="p-4 space-y-3">
+            <FormSection title="Minimum Staffing Cost Floor" tooltip="Alert if daily costs drop below this (quality concern)">
+              <div className="bg-background rounded-lg border p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-amber-500" />
-                    Minimum Staffing Cost Floor
-                  </Label>
+                  <span className="text-sm text-muted-foreground">Enable low cost alerts</span>
                   <StyledSwitch
                     checked={settings.alertOnLowCost}
                     onChange={(checked) => setSettings({ ...settings, alertOnLowCost: checked })}
                     size="small"
                   />
                 </div>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    value={settings.minStaffingCostFloor}
-                    onChange={(e) => setSettings({ ...settings, minStaffingCostFloor: Number(e.target.value) })}
-                    disabled={!settings.alertOnLowCost}
-                    className="pl-9 bg-background"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Alert if daily costs drop below this (quality concern)</p>
-              </CardContent>
-            </Card>
+                <FormField label="Minimum Floor">
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      value={settings.minStaffingCostFloor}
+                      onChange={(e) => setSettings({ ...settings, minStaffingCostFloor: Number(e.target.value) })}
+                      disabled={!settings.alertOnLowCost}
+                      className="pl-9 bg-background h-11"
+                    />
+                  </div>
+                </FormField>
+              </div>
+            </FormSection>
 
             <Separator />
 
             {/* Penalty Rate Multipliers */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Percent className="h-4 w-4" />
-                Penalty Rate Multipliers
-              </Label>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Weekend Rate</Label>
+            <FormSection title="Penalty Rate Multipliers">
+              <FormRow columns={2}>
+                <FormField label="Weekend Rate">
                   <div className="relative">
                     <Input
                       type="number"
@@ -231,13 +221,12 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                       step={0.1}
                       min={1}
                       max={3}
-                      className="bg-background pr-8"
+                      className="bg-background pr-8 h-11"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">×</span>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Public Holiday Rate</Label>
+                </FormField>
+                <FormField label="Public Holiday Rate">
                   <div className="relative">
                     <Input
                       type="number"
@@ -246,173 +235,149 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                       step={0.1}
                       min={1}
                       max={4}
-                      className="bg-background pr-8"
+                      className="bg-background pr-8 h-11"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">×</span>
                   </div>
-                </div>
-              </div>
-            </div>
+                </FormField>
+              </FormRow>
+            </FormSection>
 
             <Separator />
 
             {/* Allowance Budgets */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Coffee className="h-4 w-4" />
-                Allowance Budgets (Weekly)
-              </Label>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-1">
-                    <Coffee className="h-3 w-3" />
-                    Meal Allowance
-                  </Label>
+            <FormSection title="Allowance Budgets" tooltip="Weekly allowance budget limits">
+              <FormRow columns={2}>
+                <FormField label="Meal Allowance">
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="number"
                       value={settings.mealAllowanceBudget}
                       onChange={(e) => setSettings({ ...settings, mealAllowanceBudget: Number(e.target.value) })}
-                      className="pl-9 bg-background"
+                      className="pl-9 bg-background h-11"
                     />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-1">
-                    <Car className="h-3 w-3" />
-                    Travel Allowance
-                  </Label>
+                </FormField>
+                <FormField label="Travel Allowance">
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="number"
                       value={settings.travelAllowanceBudget}
                       onChange={(e) => setSettings({ ...settings, travelAllowanceBudget: Number(e.target.value) })}
-                      className="pl-9 bg-background"
+                      className="pl-9 bg-background h-11"
                     />
                   </div>
-                </div>
-              </div>
-            </div>
+                </FormField>
+              </FormRow>
+            </FormSection>
           </TabsContent>
 
           {/* STAFFING TAB */}
           <TabsContent value="staffing" className="mt-0 space-y-6">
             {/* Overtime Threshold */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium text-primary flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Overtime Threshold
-                </Label>
-                <Badge variant="secondary">{settings.overtimeThreshold}h/week</Badge>
+            <FormSection title="Overtime Threshold" tooltip="Hours after which overtime rates apply">
+              <div className="bg-background rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Weekly threshold</span>
+                  <Badge variant="secondary">{settings.overtimeThreshold}h/week</Badge>
+                </div>
+                <Slider
+                  value={[settings.overtimeThreshold]}
+                  onValueChange={(v) => setSettings({ ...settings, overtimeThreshold: v[0] })}
+                  min={30}
+                  max={50}
+                  step={1}
+                  className="w-full"
+                />
               </div>
-              <Slider
-                value={[settings.overtimeThreshold]}
-                onValueChange={(v) => setSettings({ ...settings, overtimeThreshold: v[0] })}
-                min={30}
-                max={50}
-                step={1}
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground">Hours after which overtime rates apply</p>
-            </div>
+            </FormSection>
 
             {/* Agency Staff */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium text-primary flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Max Agency Staff
-                </Label>
-                <Badge variant="secondary">{settings.maxAgencyPercent}%</Badge>
+            <FormSection title="Max Agency Staff">
+              <div className="bg-background rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Maximum percentage</span>
+                  <Badge variant="secondary">{settings.maxAgencyPercent}%</Badge>
+                </div>
+                <Slider
+                  value={[settings.maxAgencyPercent]}
+                  onValueChange={(v) => setSettings({ ...settings, maxAgencyPercent: v[0] })}
+                  min={0}
+                  max={50}
+                  step={5}
+                  className="w-full"
+                />
               </div>
-              <Slider
-                value={[settings.maxAgencyPercent]}
-                onValueChange={(v) => setSettings({ ...settings, maxAgencyPercent: v[0] })}
-                min={0}
-                max={50}
-                step={5}
-                className="w-full"
-              />
-            </div>
+            </FormSection>
 
             <Separator />
 
             {/* Casual Staff Mix */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Casual vs Permanent Mix
-              </Label>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm">Min Casual %</Label>
-                    <Badge variant="outline">{settings.minCasualPercent}%</Badge>
+            <FormSection title="Casual vs Permanent Mix">
+              <FormRow columns={2}>
+                <FormField label="Min Casual %">
+                  <div className="bg-background rounded-lg border p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline">{settings.minCasualPercent}%</Badge>
+                    </div>
+                    <Slider
+                      value={[settings.minCasualPercent]}
+                      onValueChange={(v) => setSettings({ ...settings, minCasualPercent: v[0] })}
+                      min={0}
+                      max={50}
+                      step={5}
+                      className="w-full"
+                    />
                   </div>
-                  <Slider
-                    value={[settings.minCasualPercent]}
-                    onValueChange={(v) => setSettings({ ...settings, minCasualPercent: v[0] })}
-                    min={0}
-                    max={50}
-                    step={5}
-                    className="w-full"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm">Max Casual %</Label>
-                    <Badge variant="outline">{settings.maxCasualPercent}%</Badge>
+                </FormField>
+                <FormField label="Max Casual %">
+                  <div className="bg-background rounded-lg border p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline">{settings.maxCasualPercent}%</Badge>
+                    </div>
+                    <Slider
+                      value={[settings.maxCasualPercent]}
+                      onValueChange={(v) => setSettings({ ...settings, maxCasualPercent: v[0] })}
+                      min={10}
+                      max={80}
+                      step={5}
+                      className="w-full"
+                    />
                   </div>
-                  <Slider
-                    value={[settings.maxCasualPercent]}
-                    onValueChange={(v) => setSettings({ ...settings, maxCasualPercent: v[0] })}
-                    min={10}
-                    max={80}
-                    step={5}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </div>
+                </FormField>
+              </FormRow>
+            </FormSection>
 
             <Separator />
 
             {/* Trainee Limits */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4 text-primary" />
-                  Max Trainee/Student Staff
-                </Label>
-                <Badge variant="secondary">{settings.maxTraineePercent}%</Badge>
+            <FormSection title="Max Trainee/Student Staff" tooltip="Cap on unqualified/trainee staff per shift">
+              <div className="bg-background rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Maximum percentage</span>
+                  <Badge variant="secondary">{settings.maxTraineePercent}%</Badge>
+                </div>
+                <Slider
+                  value={[settings.maxTraineePercent]}
+                  onValueChange={(v) => setSettings({ ...settings, maxTraineePercent: v[0] })}
+                  min={0}
+                  max={30}
+                  step={5}
+                  className="w-full"
+                />
               </div>
-              <Slider
-                value={[settings.maxTraineePercent]}
-                onValueChange={(v) => setSettings({ ...settings, maxTraineePercent: v[0] })}
-                min={0}
-                max={30}
-                step={5}
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground">Cap on unqualified/trainee staff per shift</p>
-            </div>
+            </FormSection>
 
             {/* Lead Educator Requirements */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
-                Min Lead Educators Per Room
-              </Label>
+            <FormSection title="Lead Educator Requirements" tooltip="Minimum qualified lead educators required per room at all times">
+              <FormField label="Min Lead Educators Per Room">
               <Select
                 value={String(settings.minLeadEducatorsPerRoom)}
                 onValueChange={(v) => setSettings({ ...settings, minLeadEducatorsPerRoom: Number(v) })}
               >
-                <SelectTrigger className="bg-background">
+                <SelectTrigger className="bg-background h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -421,8 +386,8 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
                   <SelectItem value="3">3 Lead Educators</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Minimum qualified lead educators required per room at all times</p>
-            </div>
+              </FormField>
+            </FormSection>
           </TabsContent>
 
           {/* TIME-BASED TAB */}

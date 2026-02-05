@@ -1,29 +1,16 @@
 import { useState, useMemo } from 'react';
-import {
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
-  Chip,
-  Box,
-  Typography,
-  FormControlLabel,
-} from '@mui/material';
 import { Shift, Room, ShiftTemplate } from '@/types/roster';
 import { RosterTemplate, TemplateMatchResult } from '@/types/rosterTemplates';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { FileStack, Check, Plus, ArrowRight, Layers } from 'lucide-react';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
+import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface ApplyTemplateModalProps {
   open: boolean;
@@ -153,209 +140,170 @@ export function ApplyTemplateModal({
   };
 
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <FileStack className="h-5 w-5 text-primary" />
-            Apply Roster Template
-          </SheetTitle>
-          <SheetDescription>
-            Apply a saved template to the current week. Existing shifts can be skipped or updated.
-          </SheetDescription>
-        </SheetHeader>
-
-        <ScrollArea className="flex-1 pr-4 mt-6 h-[calc(100vh-260px)]">
-          <Box sx={{ mb: 3 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Select Template</InputLabel>
-              <Select
-                value={selectedTemplateId}
-                label="Select Template"
-                onChange={(e) => setSelectedTemplateId(e.target.value)}
-              >
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Apply Roster Template"
+      description="Apply a saved template to the current week"
+      icon={FileStack}
+      size="lg"
+      actions={[
+        { label: 'Cancel', onClick: onClose, variant: 'outlined' },
+        { 
+          label: `Apply ${shiftsToAdd.length} Shifts`, 
+          onClick: handleApply, 
+          variant: 'primary',
+          disabled: !selectedTemplate || shiftsToAdd.length === 0,
+          icon: <Plus size={16} />
+        },
+      ]}
+    >
+      <div className="space-y-5">
+        {/* Template Selection */}
+        <FormSection title="Select Template">
+          <FormField label="Template" required tooltip="Choose a saved roster template to apply">
+            <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+              <SelectTrigger className="bg-background h-11">
+                <SelectValue placeholder="Select a template..." />
+              </SelectTrigger>
+              <SelectContent>
                 {rosterTemplates.length === 0 ? (
-                  <MenuItem disabled>
-                    <Typography variant="body2" color="text.secondary">
-                      No templates saved yet. Save your current roster as a template first.
-                    </Typography>
-                  </MenuItem>
+                  <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                    No templates saved yet
+                  </div>
                 ) : (
                   rosterTemplates.map(template => (
-                    <MenuItem key={template.id} value={template.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Layers size={16} />
+                    <SelectItem key={template.id} value={template.id}>
+                      <div className="flex items-center gap-2">
+                        <Layers size={14} className="text-primary" />
                         <span>{template.name}</span>
-                        <Chip size="small" label={`${template.shifts.length} shifts`} />
-                      </Box>
-                    </MenuItem>
+                        <Badge variant="secondary" className="ml-1 text-xs">
+                          {template.shifts.length} shifts
+                        </Badge>
+                      </div>
+                    </SelectItem>
                   ))
                 )}
-              </Select>
-            </FormControl>
-          </Box>
+              </SelectContent>
+            </Select>
+          </FormField>
+        </FormSection>
 
-          {selectedTemplate && (
-            <>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={skipExisting}
-                      onChange={(e) => setSkipExisting(e.target.checked)}
-                      size="small"
-                    />
-                  }
-                  label={<Typography variant="body2">Skip existing shifts (don't overwrite)</Typography>}
-                />
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button variant="text" size="small" onClick={selectAll}>Select All</Button>
-                  <Button variant="text" size="small" onClick={deselectAll}>Deselect All</Button>
-                </Box>
-              </Box>
+        {selectedTemplate && (
+          <>
+            {/* Options */}
+            <FormSection title="Options">
+              <div className="flex items-center justify-between bg-background rounded-lg border p-4">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={skipExisting}
+                    onCheckedChange={(checked) => setSkipExisting(checked as boolean)}
+                  />
+                  <span className="text-sm">Skip existing shifts (don't overwrite)</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={selectAll}>Select All</Button>
+                  <Button variant="ghost" size="sm" onClick={deselectAll}>Deselect All</Button>
+                </div>
+              </div>
+            </FormSection>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'hsl(var(--primary))' }}>
+            {/* Summary */}
+            <FormSection title="Preview">
+              <div className="flex items-center gap-4 p-4 bg-background border rounded-lg">
+                <div className="flex items-center gap-1.5 text-primary">
                   <Plus size={16} />
-                  <Typography variant="body2" fontWeight={500}>{shiftsToAdd.length} to add</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
+                  <span className="text-sm font-medium">{shiftsToAdd.length} to add</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Check size={16} />
-                  <Typography variant="body2">{shiftsToSkip.length} will be skipped</Typography>
-                </Box>
-              </Box>
+                  <span className="text-sm">{shiftsToSkip.length} will be skipped</span>
+                </div>
+              </div>
+            </FormSection>
 
-              {/* Table header */}
-              <Box sx={{ 
-                display: 'grid', 
-                gridTemplateColumns: '32px 1fr 24px 120px 100px 80px', 
-                alignItems: 'center', 
-                gap: 1.5,
-                p: 1.5,
-                bgcolor: 'grey.100',
-                borderRadius: '8px 8px 0 0',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-              }}>
-                <Box />
-                <Typography variant="caption" fontWeight={600} color="text.primary">Room</Typography>
-                <Box />
-                <Typography variant="caption" fontWeight={600} color="text.primary">Date</Typography>
-                <Typography variant="caption" fontWeight={600} color="text.primary">Time</Typography>
-                <Typography variant="caption" fontWeight={600} color="text.primary" textAlign="right">Status</Typography>
-              </Box>
-
-              <Box sx={{ 
-                border: 1, 
-                borderColor: 'divider',
-                borderTop: 0,
-                borderRadius: '0 0 8px 8px',
-                bgcolor: 'background.paper',
-                overflow: 'hidden',
-              }}>
-                {matchResults.map((result, idx) => {
-                  const room = rooms.find(r => r.id === result.templateShift.roomId);
-                  const isSelected = selectedShifts.size === 0 || selectedShifts.has(result.templateShift.id);
-                  
-                  return (
-                    <Box
-                      key={idx}
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: '32px 1fr 24px 120px 100px 80px',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        p: 1.5,
-                        bgcolor: result.action === 'skip' 
-                          ? 'grey.50' 
-                          : (isSelected ? 'rgba(3, 169, 244, 0.06)' : 'background.paper'),
-                        opacity: result.action === 'skip' ? 0.6 : 1,
-                        borderBottom: idx < matchResults.length - 1 ? '1px solid' : 'none',
-                        borderColor: 'divider',
-                        transition: 'all 0.15s ease-in-out',
-                        cursor: result.action === 'add' ? 'pointer' : 'default',
-                        '&:hover': result.action === 'add' ? {
-                          bgcolor: 'rgba(3, 169, 244, 0.08)',
-                        } : {},
-                      }}
-                      onClick={() => result.action === 'add' && toggleShift(result.templateShift.id)}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {result.action === 'add' ? (
-                          <Checkbox
-                            checked={isSelected}
-                            onChange={() => toggleShift(result.templateShift.id)}
-                            size="small"
-                            sx={{ 
-                              p: 0,
-                              '&.Mui-checked': { color: 'hsl(var(--primary))' }
-                            }}
-                          />
-                        ) : (
-                          <Check size={16} style={{ opacity: 0.4, color: 'var(--muted-foreground)' }} />
-                        )}
-                      </Box>
+            {/* Shifts Table */}
+            <FormSection title="Shifts to Apply">
+              <div className="bg-background rounded-lg border overflow-hidden">
+                {/* Table Header */}
+                <div className="grid grid-cols-[32px_1fr_24px_120px_100px_80px] items-center gap-3 px-4 py-2 bg-muted/50 border-b">
+                  <div />
+                  <span className="text-xs font-medium text-muted-foreground">Room</span>
+                  <div />
+                  <span className="text-xs font-medium text-muted-foreground">Date</span>
+                  <span className="text-xs font-medium text-muted-foreground">Time</span>
+                  <span className="text-xs font-medium text-muted-foreground text-right">Status</span>
+                </div>
+                
+                <ScrollArea className="h-64">
+                  <div className="divide-y divide-border">
+                    {matchResults.map((result, idx) => {
+                      const room = rooms.find(r => r.id === result.templateShift.roomId);
+                      const isSelected = selectedShifts.size === 0 || selectedShifts.has(result.templateShift.id);
                       
-                      <Typography 
-                        variant="body2" 
-                        fontWeight={500} 
-                        color={isSelected && result.action === 'add' ? 'primary.main' : 'text.primary'}
-                      >
-                        {room?.name || 'Unknown'}
-                      </Typography>
-                      <ArrowRight size={12} style={{ opacity: 0.4, color: 'var(--muted-foreground)' }} />
-                      <Typography variant="body2" color="text.primary">
-                        {result.date ? format(new Date(result.date), 'EEE, MMM d') : 'N/A'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {result.templateShift.startTime} - {result.templateShift.endTime}
-                      </Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Chip 
-                          size="small" 
-                          label={result.action === 'add' ? 'Add' : 'Skip'}
-                          sx={{ 
-                            height: 24,
-                            borderRadius: '6px',
-                            fontWeight: 500,
-                            fontSize: '0.7rem',
-                            bgcolor: result.action === 'add' && isSelected 
-                              ? 'hsl(var(--primary))' 
-                              : (result.action === 'add' ? 'rgba(3, 169, 244, 0.12)' : 'grey.200'),
-                            color: result.action === 'add' && isSelected 
-                              ? 'white' 
-                              : (result.action === 'add' ? 'hsl(var(--primary))' : 'text.secondary'),
-                            border: result.action === 'add' && !isSelected ? '1px solid rgba(3, 169, 244, 0.3)' : 'none',
-                          }}
-                        />
-                      </Box>
-                    </Box>
-                  );
-                })}
-              </Box>
-            </>
-          )}
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => result.action === 'add' && toggleShift(result.templateShift.id)}
+                          className={cn(
+                            "grid grid-cols-[32px_1fr_24px_120px_100px_80px] items-center gap-3 px-4 py-3 transition-all",
+                            result.action === 'skip' ? "opacity-60" : "cursor-pointer hover:bg-primary/5",
+                            result.action === 'add' && isSelected && "bg-primary/5"
+                          )}
+                        >
+                          <div className="flex items-center justify-center">
+                            {result.action === 'add' ? (
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleShift(result.templateShift.id)}
+                                className="border-primary data-[state=checked]:bg-primary"
+                              />
+                            ) : (
+                              <Check size={16} className="text-muted-foreground/40" />
+                            )}
+                          </div>
+                          
+                          <span className={cn(
+                            "text-sm font-medium",
+                            isSelected && result.action === 'add' ? "text-primary" : "text-foreground"
+                          )}>
+                            {room?.name || 'Unknown'}
+                          </span>
+                          <ArrowRight size={12} className="text-muted-foreground/40" />
+                          <span className="text-sm">
+                            {result.date ? format(new Date(result.date), 'EEE, MMM d') : 'N/A'}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {result.templateShift.startTime} - {result.templateShift.endTime}
+                          </span>
+                          <div className="flex justify-end">
+                            <Badge 
+                              variant={result.action === 'add' && isSelected ? 'default' : 'secondary'}
+                              className={cn(
+                                "text-xs",
+                                result.action === 'add' && isSelected && "bg-primary text-primary-foreground"
+                              )}
+                            >
+                              {result.action === 'add' ? 'Add' : 'Skip'}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </div>
+            </FormSection>
+          </>
+        )}
 
-          {!selectedTemplate && rosterTemplates.length > 0 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 6, color: 'text.secondary' }}>
-              <FileStack size={48} style={{ opacity: 0.2, marginBottom: 8 }} />
-              <Typography variant="body2">Select a template to preview shifts</Typography>
-            </Box>
-          )}
-        </ScrollArea>
-
-        <SheetFooter className="mt-6">
-          <Button variant="outlined" onClick={onClose}>Cancel</Button>
-          <Button 
-            variant="contained"
-            onClick={handleApply} 
-            disabled={!selectedTemplate || shiftsToAdd.length === 0}
-            startIcon={<Plus size={16} />}
-          >
-            Apply {shiftsToAdd.length} Shifts
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        {!selectedTemplate && rosterTemplates.length > 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background rounded-lg border">
+            <FileStack size={48} className="opacity-20 mb-2" />
+            <p className="text-sm">Select a template to preview shifts</p>
+          </div>
+        )}
+      </div>
+    </PrimaryOffCanvas>
   );
 }
