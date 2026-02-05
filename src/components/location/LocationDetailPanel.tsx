@@ -15,7 +15,6 @@ import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
 import StaffingRatioEditor from './StaffingRatioEditor';
 import QualificationRequirementEditor from './QualificationRequirementEditor';
 import AreaCombiningEditor from './AreaCombiningEditor';
-import ServiceCategoriesEditor from './ServiceCategoriesEditor';
 
 interface LocationDetailPanelProps {
   open: boolean;
@@ -68,7 +67,6 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
   const [underRoofRatios, setUnderRoofRatios] = useState<StaffingRatio[]>([]);
   const [locationQualifications, setLocationQualifications] = useState<QualificationRequirement[]>([]);
   const [areaCombiningThresholds, setAreaCombiningThresholds] = useState<AreaCombiningThreshold[]>([]);
-  const [serviceCategories, setServiceCategories] = useState<string[]>(location?.serviceCategories || []);
 
    // Reset form when location changes or panel opens
    useEffect(() => {
@@ -94,7 +92,6 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
        });
        setErrors([]);
        setIsEditing(isNew);
-       setServiceCategories(location?.serviceCategories || []);
      }
    }, [open, location, isNew]);
  
@@ -114,7 +111,6 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
        if (onSave) {
           onSave({
             ...result.data,
-            serviceCategories,
             underRoofRatios,
             locationQualifications,
             areaCombiningThresholds,
@@ -446,17 +442,6 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
             <AreaCombiningEditor
               thresholds={areaCombiningThresholds}
               onUpdate={setAreaCombiningThresholds}
-              isEditing={isEditing}
-              industryType={formData.industryType as any}
-              availableServiceCategories={serviceCategories.length > 0 ? serviceCategories : undefined}
-            />
-          </div>
-
-          {/* Service Categories */}
-          <div className="bg-card border border-border rounded-lg p-4">
-            <ServiceCategoriesEditor
-              categories={serviceCategories}
-              onUpdate={setServiceCategories}
               isEditing={isEditing}
               industryType={formData.industryType as any}
             />
