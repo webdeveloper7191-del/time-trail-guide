@@ -101,11 +101,11 @@ const ComplianceConfigPanel: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium">{ratio.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {ratio.ratioNumerator} staff per {ratio.ratioDenominator} {ratio.demandUnit.toLowerCase()}
+                      {ratio.minAttendance}-{ratio.maxAttendance} {ratio.demandUnit.toLowerCase()} → {ratio.staffRequired} staff
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-lg font-bold">
-                    {ratio.ratioNumerator}:{ratio.ratioDenominator}
+                  <Badge variant="outline" className="text-sm font-medium">
+                    {ratio.minAttendance}-{ratio.maxAttendance} → {ratio.staffRequired}
                   </Badge>
                 </div>
               ))}

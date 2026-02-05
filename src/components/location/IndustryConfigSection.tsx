@@ -109,7 +109,7 @@
                <div key={ratio.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                  <span className="text-sm">{ratio.name}</span>
                  <Badge variant="outline" className="font-mono">
-                   {ratio.ratioNumerator}:{ratio.ratioDenominator}
+                   {ratio.minAttendance}-{ratio.maxAttendance} → {ratio.staffRequired}
                  </Badge>
                </div>
              ))}
