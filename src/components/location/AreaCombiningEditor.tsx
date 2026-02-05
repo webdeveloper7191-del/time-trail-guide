@@ -278,8 +278,8 @@ const getDefaultServiceCategories = (industryType?: IndustryType): string[] => {
      <div className="space-y-4">
        <div className="flex items-center justify-between">
          <div>
-           <h3 className="text-sm font-semibold text-foreground">Area Combining Thresholds</h3>
-           <p className="text-xs text-muted-foreground">Configure when to prompt roster managers to combine areas</p>
+            <h3 className="text-sm font-semibold text-foreground">Combine Area or Reduce Staff</h3>
+            <p className="text-xs text-muted-foreground">Configure when to prompt roster managers to combine areas or reduce staffing</p>
          </div>
          {isEditing && !showAddForm && (
            <Button size="sm" variant="outline" onClick={() => setShowAddForm(true)}>
@@ -356,7 +356,7 @@ const getDefaultServiceCategories = (industryType?: IndustryType): string[] => {
        ) : !showAddForm && (
          <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed border-border">
            <Combine className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-           <p className="text-sm text-muted-foreground">No area combining thresholds configured</p>
+            <p className="text-sm text-muted-foreground">No thresholds configured</p>
            {isEditing && (
              <Button size="sm" variant="outline" className="mt-3" onClick={() => setShowAddForm(true)}>
                <Plus className="h-4 w-4 mr-2" />
