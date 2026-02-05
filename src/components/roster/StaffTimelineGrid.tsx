@@ -1457,8 +1457,9 @@ export function StaffTimelineGrid({
                                               />
                                             ))}
                                           </div>
-
-                                          {cellShifts.length === 0 && (
+                                          
+                                          {/* Add shift dropdown - shows for empty cells OR after existing shifts */}
+                                          {cellShifts.length === 0 ? (
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                 <Button
@@ -1472,6 +1473,83 @@ export function StaffTimelineGrid({
                                                 >
                                                   <Plus className="h-3 w-3 mr-1" />
                                                   <ChevronDown className="h-2.5 w-2.5" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent>
+                                                <DropdownMenuItem 
+                                                  onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'morning', name: 'Morning', startTime: '06:30', endTime: '14:30', breakMinutes: 30, color: 'hsl(200, 70%, 50%)' })}
+                                                >
+                                                  <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(200, 70%, 50%)' }} />
+                                                    <span>Morning</span>
+                                                    <span className="text-muted-foreground text-[10px]">06:30-14:30</span>
+                                                  </div>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem 
+                                                  onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'afternoon', name: 'Afternoon', startTime: '12:00', endTime: '18:30', breakMinutes: 30, color: 'hsl(280, 60%, 50%)' })}
+                                                >
+                                                  <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(280, 60%, 50%)' }} />
+                                                    <span>Afternoon</span>
+                                                    <span className="text-muted-foreground text-[10px]">12:00-18:30</span>
+                                                  </div>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem 
+                                                  onClick={() => onAddShift(member.id, dateStr, room.id, { id: 'fullday', name: 'Full Day', startTime: '07:00', endTime: '18:00', breakMinutes: 60, color: 'hsl(340, 65%, 50%)' })}
+                                                >
+                                                  <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(340, 65%, 50%)' }} />
+                                                    <span>Full Day</span>
+                                                    <span className="text-muted-foreground text-[10px]">07:00-18:00</span>
+                                                  </div>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => onAddShift(member.id, dateStr, room.id)}>
+                                                  Custom Shift
+                                                </DropdownMenuItem>
+                                                {shiftTemplates.length > 0 && (
+                                                  <>
+                                                    <DropdownMenuSeparator />
+                                                    {shiftTemplates.map(template => (
+                                                      <DropdownMenuItem 
+                                                        key={template.id}
+                                                        onClick={() => onAddShift(member.id, dateStr, room.id, template)}
+                                                      >
+                                                        <div className="flex items-center gap-2">
+                                                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: template.color }} />
+                                                          <span>{template.name}</span>
+                                                          <span className="text-muted-foreground text-[10px]">
+                                                            {template.startTime}-{template.endTime}
+                                                          </span>
+                                                        </div>
+                                                      </DropdownMenuItem>
+                                                    ))}
+                                                  </>
+                                                )}
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => onOpenShiftTemplateManager?.()}>
+                                                  <div className="flex items-center gap-2">
+                                                    <Settings className="h-3 w-3" />
+                                                    <span>Create Shift Type...</span>
+                                                  </div>
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          ) : (
+                                            /* Add more shift button - appears after existing shifts */
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className={cn(
+                                                    "w-full h-6 text-[10px] text-muted-foreground/40 hover:text-muted-foreground",
+                                                    "border border-dashed border-transparent hover:border-muted-foreground/30",
+                                                    "opacity-0 hover:opacity-100 transition-opacity mt-1"
+                                                  )}
+                                                >
+                                                  <Plus className="h-2.5 w-2.5 mr-0.5" />
+                                                  <span>Add</span>
                                                 </Button>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent>
