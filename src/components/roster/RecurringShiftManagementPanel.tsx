@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
- import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -276,13 +275,13 @@ export function RecurringShiftManagementPanel({
         onClose={onClose}
         title="Recurring Shift Series"
         icon={RefreshCw}
-         size="lg"
+        width="lg"
       >
         <div className="flex flex-col h-full">
           {/* Expiring Soon Section */}
           {expiringSeries.length > 0 && (
-             <FormSection title="Expiring Soon" variant="card" className="border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/30">
-               <div className="flex items-center gap-2 mb-2 -mt-2">
+            <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800">
+              <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
                 <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
                   {expiringSeries.length} series ending soon
@@ -304,14 +303,14 @@ export function RecurringShiftManagementPanel({
                   </Button>
                 ))}
               </div>
-             </FormSection>
+            </div>
           )}
 
           {/* Main Content */}
           <ScrollArea className="flex-1">
-             <div className="space-y-3 mt-4">
+            <div className="p-4 space-y-3">
               {recurringSeries.length === 0 ? (
-                 <div className="text-center py-12 text-muted-foreground bg-background rounded-lg border border-border">
+                <div className="text-center py-12 text-muted-foreground">
                   <RefreshCw className="h-12 w-12 mx-auto mb-3 opacity-30" />
                   <p className="text-sm">No recurring shift series configured</p>
                   <p className="text-xs mt-1">Create shifts with recurring patterns to see them here</p>
@@ -321,10 +320,10 @@ export function RecurringShiftManagementPanel({
                   <div
                     key={series.groupId}
                     className={cn(
-                       "p-4 rounded-lg border border-l-4 border-l-primary bg-background transition-all cursor-pointer",
-                       "hover:shadow-sm",
-                       series.isExpiringSoon && "border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20",
-                       selectedSeries?.groupId === series.groupId && "ring-2 ring-primary"
+                      "p-4 rounded-lg border transition-all cursor-pointer",
+                      "hover:border-primary/50 hover:shadow-sm",
+                      series.isExpiringSoon && "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20",
+                      selectedSeries?.groupId === series.groupId && "border-primary ring-1 ring-primary"
                     )}
                     onClick={() => setSelectedSeries(series)}
                   >

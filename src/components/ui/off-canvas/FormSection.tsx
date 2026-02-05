@@ -13,23 +13,15 @@ interface FormSectionProps {
   tooltip?: string;
   children: React.ReactNode;
   className?: string;
-   /** Use card style with border - matches reference UI design */
-   variant?: 'default' | 'card';
 }
 
 /**
  * FormSection - A styled section container for forms in off-canvas drawers.
  * Features bold section headers with optional info tooltip, matching the reference design.
  */
- export function FormSection({ title, tooltip, children, className, variant = 'default' }: FormSectionProps) {
-   const isCard = variant === 'card';
- 
+export function FormSection({ title, tooltip, children, className }: FormSectionProps) {
   return (
-     <div className={cn(
-       "space-y-4",
-       isCard && "bg-background rounded-lg border border-border p-4 border-l-4 border-l-primary",
-       className
-     )}>
+    <div className={cn("space-y-4", className)}>
       {/* Section Header - Bold black text with cyan info icon */}
       <div className="flex items-center gap-2">
         <h3 className="text-lg font-semibold text-foreground">{title}</h3>
@@ -61,23 +53,18 @@ interface FormFieldProps {
   error?: string;
   children: React.ReactNode;
   className?: string;
-   /** Use subtle label style without primary color */
-   labelVariant?: 'primary' | 'subtle';
 }
 
 /**
  * FormField - A styled form field wrapper with label, tooltip, and error display.
  * Labels are styled in PRIMARY/cyan color matching the reference design.
  */
- export function FormField({ label, required, tooltip, error, children, className, labelVariant = 'primary' }: FormFieldProps) {
+export function FormField({ label, required, tooltip, error, children, className }: FormFieldProps) {
   return (
     <div className={cn("space-y-1.5", className)}>
       {/* Label row - Primary/cyan colored label with red asterisk and info icon */}
       <div className="flex items-center gap-1">
-         <label className={cn(
-           "text-sm font-medium",
-           labelVariant === 'primary' ? "text-primary" : "text-foreground"
-         )}>
+        <label className="text-sm font-medium text-primary">
           {label}
           {required && <span className="text-destructive ml-0.5">*</span>}
         </label>
