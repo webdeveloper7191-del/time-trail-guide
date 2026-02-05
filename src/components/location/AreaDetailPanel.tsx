@@ -13,6 +13,7 @@ import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Area, Location, AREA_STATUS_LABELS, StaffingRatio, QualificationRequirement, ComplianceRule } from '@/types/location';
 import StaffingRatioEditor from './StaffingRatioEditor';
 import QualificationRequirementEditor from './QualificationRequirementEditor';
+import ComplianceRuleEditor from './ComplianceRuleEditor';
 import { industryComplianceConfigs } from '@/data/mockLocationData';
 import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
 
@@ -403,47 +404,11 @@ const AreaDetailPanel: React.FC<AreaDetailPanelProps> = ({
         </TabsContent>
 
         <TabsContent value="compliance" className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Compliance Rules</h3>
-              <p className="text-xs text-muted-foreground">Automated compliance checking rules</p>
-            </div>
-            <Button size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Rule
-            </Button>
-          </div>
-
-          {complianceRules.length > 0 ? (
-            <div className="space-y-3">
-              {complianceRules.map(rule => (
-                <div key={rule.id} className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">{rule.name}</h4>
-                    <Badge 
-                      variant={rule.severity === 'critical' ? 'destructive' : 'outline'}
-                      className={cn(
-                        'text-xs',
-                        rule.severity === 'warning' && 'bg-amber-500/20 text-amber-700 dark:text-amber-400',
-                      )}
-                    >
-                      {rule.severity}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{rule.description}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed border-border">
-              <Shield className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No compliance rules configured</p>
-              <Button size="sm" variant="outline" className="mt-3">
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Rule
-              </Button>
-            </div>
-          )}
+          <ComplianceRuleEditor
+            rules={complianceRules}
+            onUpdate={setComplianceRules}
+            isEditing={isEditing}
+          />
         </TabsContent>
       </Tabs>
     </PrimaryOffCanvas>
