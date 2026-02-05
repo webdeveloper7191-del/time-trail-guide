@@ -1,0 +1,581 @@
+// Mock data for Location Management module
+
+import { 
+  Location, 
+  Area, 
+  Department, 
+  IndustryComplianceConfig,
+  LocationSummary,
+  AreaSummary
+} from '@/types/location';
+
+// ============= Mock Locations =============
+
+export const mockLocations: Location[] = [
+  {
+    id: 'loc-1',
+    name: 'Melbourne CBD Centre',
+    code: 'MEL-CBD',
+    status: 'active',
+    address: {
+      line1: '123 Collins Street',
+      line2: 'Level 2',
+      suburb: 'Melbourne',
+      state: 'VIC',
+      postcode: '3000',
+      country: 'Australia',
+    },
+    phone: '+61 3 9876 5432',
+    email: 'melbourne.cbd@example.com',
+    timezone: 'Australia/Melbourne',
+    operatingHours: [
+      { dayOfWeek: 0, isOpen: false, openTime: '00:00', closeTime: '00:00' },
+      { dayOfWeek: 1, isOpen: true, openTime: '06:30', closeTime: '18:30' },
+      { dayOfWeek: 2, isOpen: true, openTime: '06:30', closeTime: '18:30' },
+      { dayOfWeek: 3, isOpen: true, openTime: '06:30', closeTime: '18:30' },
+      { dayOfWeek: 4, isOpen: true, openTime: '06:30', closeTime: '18:30' },
+      { dayOfWeek: 5, isOpen: true, openTime: '06:30', closeTime: '18:30' },
+      { dayOfWeek: 6, isOpen: false, openTime: '00:00', closeTime: '00:00' },
+    ],
+    totalCapacity: 120,
+    maxStaff: 25,
+    industryType: 'childcare',
+    geofenceZones: [
+      { id: 'geo-1', name: 'Main Building', latitude: -37.8136, longitude: 144.9631, radiusMeters: 100, isClockInZone: true },
+    ],
+    areaIds: ['area-1', 'area-2', 'area-3', 'area-4'],
+    departmentIds: ['dept-1', 'dept-2', 'dept-3'],
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-12-01T14:30:00Z',
+  },
+  {
+    id: 'loc-2',
+    name: 'South Yarra Branch',
+    code: 'MEL-SY',
+    status: 'active',
+    address: {
+      line1: '45 Toorak Road',
+      suburb: 'South Yarra',
+      state: 'VIC',
+      postcode: '3141',
+      country: 'Australia',
+    },
+    phone: '+61 3 9123 4567',
+    email: 'southyarra@example.com',
+    timezone: 'Australia/Melbourne',
+    operatingHours: [
+      { dayOfWeek: 0, isOpen: false, openTime: '00:00', closeTime: '00:00' },
+      { dayOfWeek: 1, isOpen: true, openTime: '07:00', closeTime: '18:00' },
+      { dayOfWeek: 2, isOpen: true, openTime: '07:00', closeTime: '18:00' },
+      { dayOfWeek: 3, isOpen: true, openTime: '07:00', closeTime: '18:00' },
+      { dayOfWeek: 4, isOpen: true, openTime: '07:00', closeTime: '18:00' },
+      { dayOfWeek: 5, isOpen: true, openTime: '07:00', closeTime: '18:00' },
+      { dayOfWeek: 6, isOpen: false, openTime: '00:00', closeTime: '00:00' },
+    ],
+    totalCapacity: 80,
+    maxStaff: 18,
+    industryType: 'childcare',
+    areaIds: ['area-5', 'area-6', 'area-7'],
+    departmentIds: ['dept-4', 'dept-5'],
+    createdAt: '2024-03-01T09:00:00Z',
+    updatedAt: '2024-11-15T10:00:00Z',
+  },
+  {
+    id: 'loc-3',
+    name: 'Prahran Clinic',
+    code: 'MEL-PR',
+    status: 'pending_setup',
+    address: {
+      line1: '78 Chapel Street',
+      suburb: 'Prahran',
+      state: 'VIC',
+      postcode: '3181',
+      country: 'Australia',
+    },
+    phone: '+61 3 9876 1234',
+    timezone: 'Australia/Melbourne',
+    operatingHours: [
+      { dayOfWeek: 0, isOpen: false, openTime: '00:00', closeTime: '00:00' },
+      { dayOfWeek: 1, isOpen: true, openTime: '08:00', closeTime: '17:00' },
+      { dayOfWeek: 2, isOpen: true, openTime: '08:00', closeTime: '17:00' },
+      { dayOfWeek: 3, isOpen: true, openTime: '08:00', closeTime: '17:00' },
+      { dayOfWeek: 4, isOpen: true, openTime: '08:00', closeTime: '17:00' },
+      { dayOfWeek: 5, isOpen: true, openTime: '08:00', closeTime: '17:00' },
+      { dayOfWeek: 6, isOpen: false, openTime: '00:00', closeTime: '00:00' },
+    ],
+    totalCapacity: 50,
+    maxStaff: 12,
+    industryType: 'healthcare',
+    areaIds: [],
+    departmentIds: [],
+    createdAt: '2024-11-01T09:00:00Z',
+    updatedAt: '2024-11-01T09:00:00Z',
+  },
+];
+
+// ============= Mock Areas =============
+
+export const mockAreas: Area[] = [
+  {
+    id: 'area-1',
+    locationId: 'loc-1',
+    name: 'Nursery Room',
+    code: 'NUR',
+    status: 'active',
+    color: 'hsl(340, 65%, 50%)',
+    capacity: 16,
+    ageGroup: 'Nursery (0-2)',
+    serviceType: 'Early Learning',
+    staffingRatios: [
+      {
+        id: 'ratio-1',
+        name: 'NQF Standard',
+        demandUnit: 'Children',
+        ratioNumerator: 1,
+        ratioDenominator: 4,
+        isDefault: true,
+        notes: 'National Quality Framework ratio for 0-2 year olds',
+      },
+    ],
+    minimumStaff: 2,
+    maximumStaff: 6,
+    qualificationRequirements: [
+      {
+        id: 'qual-1',
+        qualificationId: 'diploma_ece',
+        qualificationName: 'Diploma in Early Childhood Education',
+        qualificationShortName: 'Diploma ECE',
+        requirementType: 'percentage',
+        percentageRequired: 50,
+        notes: 'At least 50% of staff must hold Diploma or higher',
+      },
+      {
+        id: 'qual-2',
+        qualificationId: 'first_aid',
+        qualificationName: 'First Aid Certificate',
+        qualificationShortName: 'First Aid',
+        requirementType: 'mandatory',
+        minimumCount: 1,
+        notes: 'At least one staff member with current First Aid at all times',
+      },
+      {
+        id: 'qual-3',
+        qualificationId: 'wwc',
+        qualificationName: 'Working with Children Check',
+        qualificationShortName: 'WWC',
+        requirementType: 'mandatory',
+        notes: 'All staff must have valid WWC',
+      },
+    ],
+    complianceRules: [
+      {
+        id: 'rule-1',
+        name: 'Minimum Ratio Check',
+        description: 'Ensure staff:child ratio is maintained at 1:4',
+        ruleType: 'ratio',
+        severity: 'critical',
+        isActive: true,
+        conditions: [
+          { field: 'staffCount', operator: 'greater_than', value: 0 },
+          { field: 'childCount', operator: 'less_than', value: 17 },
+        ],
+        action: 'block',
+        notifyRoles: ['manager', 'compliance'],
+      },
+    ],
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-12-01T14:30:00Z',
+  },
+  {
+    id: 'area-2',
+    locationId: 'loc-1',
+    name: 'Toddler Room',
+    code: 'TOD',
+    status: 'active',
+    color: 'hsl(200, 70%, 50%)',
+    capacity: 20,
+    ageGroup: 'Toddler (2-3)',
+    serviceType: 'Early Learning',
+    staffingRatios: [
+      {
+        id: 'ratio-2',
+        name: 'NQF Standard',
+        demandUnit: 'Children',
+        ratioNumerator: 1,
+        ratioDenominator: 5,
+        isDefault: true,
+        notes: 'National Quality Framework ratio for 2-3 year olds',
+      },
+    ],
+    minimumStaff: 2,
+    maximumStaff: 5,
+    qualificationRequirements: [
+      {
+        id: 'qual-4',
+        qualificationId: 'diploma_ece',
+        qualificationName: 'Diploma in Early Childhood Education',
+        qualificationShortName: 'Diploma ECE',
+        requirementType: 'percentage',
+        percentageRequired: 50,
+      },
+      {
+        id: 'qual-5',
+        qualificationId: 'first_aid',
+        qualificationName: 'First Aid Certificate',
+        qualificationShortName: 'First Aid',
+        requirementType: 'mandatory',
+        minimumCount: 1,
+      },
+    ],
+    complianceRules: [],
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-11-20T10:00:00Z',
+  },
+  {
+    id: 'area-3',
+    locationId: 'loc-1',
+    name: 'Preschool Room',
+    code: 'PRE',
+    status: 'active',
+    color: 'hsl(150, 60%, 45%)',
+    capacity: 30,
+    ageGroup: 'Preschool (3-4)',
+    serviceType: 'Early Learning',
+    staffingRatios: [
+      {
+        id: 'ratio-3',
+        name: 'NQF Standard',
+        demandUnit: 'Children',
+        ratioNumerator: 1,
+        ratioDenominator: 10,
+        isDefault: true,
+        notes: 'National Quality Framework ratio for 3-4 year olds',
+      },
+    ],
+    minimumStaff: 2,
+    maximumStaff: 4,
+    qualificationRequirements: [
+      {
+        id: 'qual-6',
+        qualificationId: 'bachelor_ece',
+        qualificationName: 'Bachelor of Early Childhood Education',
+        qualificationShortName: 'Bachelor ECE',
+        requirementType: 'mandatory',
+        minimumCount: 1,
+        notes: 'Early Childhood Teacher required',
+      },
+    ],
+    complianceRules: [],
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-10-15T11:00:00Z',
+  },
+  {
+    id: 'area-4',
+    locationId: 'loc-1',
+    name: 'Kindergarten Room',
+    code: 'KIN',
+    status: 'active',
+    color: 'hsl(280, 60%, 50%)',
+    capacity: 33,
+    ageGroup: 'Kindy (4-5)',
+    serviceType: 'Early Learning',
+    staffingRatios: [
+      {
+        id: 'ratio-4',
+        name: 'NQF Standard',
+        demandUnit: 'Children',
+        ratioNumerator: 1,
+        ratioDenominator: 11,
+        isDefault: true,
+        notes: 'National Quality Framework ratio for 4-5 year olds',
+      },
+    ],
+    minimumStaff: 2,
+    maximumStaff: 4,
+    qualificationRequirements: [],
+    complianceRules: [],
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-09-01T09:00:00Z',
+  },
+  {
+    id: 'area-5',
+    locationId: 'loc-2',
+    name: 'Babies Room',
+    code: 'BAB',
+    status: 'active',
+    color: 'hsl(340, 65%, 50%)',
+    capacity: 12,
+    ageGroup: 'Nursery (0-2)',
+    serviceType: 'Early Learning',
+    staffingRatios: [
+      {
+        id: 'ratio-5',
+        name: 'NQF Standard',
+        demandUnit: 'Children',
+        ratioNumerator: 1,
+        ratioDenominator: 4,
+        isDefault: true,
+      },
+    ],
+    minimumStaff: 2,
+    maximumStaff: 4,
+    qualificationRequirements: [],
+    complianceRules: [],
+    createdAt: '2024-03-01T09:00:00Z',
+    updatedAt: '2024-11-15T10:00:00Z',
+  },
+  {
+    id: 'area-6',
+    locationId: 'loc-2',
+    name: 'Junior Room',
+    code: 'JUN',
+    status: 'active',
+    color: 'hsl(200, 70%, 50%)',
+    capacity: 25,
+    ageGroup: 'Toddler (2-3)',
+    serviceType: 'Early Learning',
+    staffingRatios: [
+      {
+        id: 'ratio-6',
+        name: 'NQF Standard',
+        demandUnit: 'Children',
+        ratioNumerator: 1,
+        ratioDenominator: 5,
+        isDefault: true,
+      },
+    ],
+    minimumStaff: 2,
+    maximumStaff: 6,
+    qualificationRequirements: [],
+    complianceRules: [],
+    createdAt: '2024-03-01T09:00:00Z',
+    updatedAt: '2024-11-15T10:00:00Z',
+  },
+  {
+    id: 'area-7',
+    locationId: 'loc-2',
+    name: 'Senior Room',
+    code: 'SEN',
+    status: 'active',
+    color: 'hsl(150, 60%, 45%)',
+    capacity: 44,
+    ageGroup: 'Preschool (3-5)',
+    serviceType: 'Early Learning',
+    staffingRatios: [
+      {
+        id: 'ratio-7',
+        name: 'NQF Standard',
+        demandUnit: 'Children',
+        ratioNumerator: 1,
+        ratioDenominator: 11,
+        isDefault: true,
+      },
+    ],
+    minimumStaff: 2,
+    maximumStaff: 5,
+    qualificationRequirements: [],
+    complianceRules: [],
+    createdAt: '2024-03-01T09:00:00Z',
+    updatedAt: '2024-11-15T10:00:00Z',
+  },
+];
+
+// ============= Mock Departments =============
+
+export const mockDepartments: Department[] = [
+  {
+    id: 'dept-1',
+    locationId: 'loc-1',
+    name: 'Education',
+    code: 'EDU',
+    type: 'operational',
+    description: 'Core education and childcare services',
+    areaIds: ['area-1', 'area-2', 'area-3', 'area-4'],
+    managerId: 'staff-2',
+    managerName: 'Sarah Williams',
+    budgetAllocation: 150000,
+    costCentreCode: 'CC-EDU-001',
+    headcount: 15,
+    isActive: true,
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-12-01T14:30:00Z',
+  },
+  {
+    id: 'dept-2',
+    locationId: 'loc-1',
+    name: 'Administration',
+    code: 'ADM',
+    type: 'administrative',
+    description: 'Reception, enrollment, and administrative functions',
+    areaIds: [],
+    budgetAllocation: 45000,
+    costCentreCode: 'CC-ADM-001',
+    headcount: 3,
+    isActive: true,
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-10-01T10:00:00Z',
+  },
+  {
+    id: 'dept-3',
+    locationId: 'loc-1',
+    name: 'Kitchen & Nutrition',
+    code: 'KIT',
+    type: 'support',
+    description: 'Meal preparation and nutrition services',
+    areaIds: [],
+    budgetAllocation: 30000,
+    costCentreCode: 'CC-KIT-001',
+    headcount: 2,
+    isActive: true,
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-08-15T11:00:00Z',
+  },
+  {
+    id: 'dept-4',
+    locationId: 'loc-2',
+    name: 'Education',
+    code: 'EDU',
+    type: 'operational',
+    description: 'Core education and childcare services',
+    areaIds: ['area-5', 'area-6', 'area-7'],
+    budgetAllocation: 100000,
+    costCentreCode: 'CC-EDU-002',
+    headcount: 12,
+    isActive: true,
+    createdAt: '2024-03-01T09:00:00Z',
+    updatedAt: '2024-11-15T10:00:00Z',
+  },
+  {
+    id: 'dept-5',
+    locationId: 'loc-2',
+    name: 'Administration',
+    code: 'ADM',
+    type: 'administrative',
+    description: 'Reception and administrative functions',
+    areaIds: [],
+    budgetAllocation: 35000,
+    costCentreCode: 'CC-ADM-002',
+    headcount: 2,
+    isActive: true,
+    createdAt: '2024-03-01T09:00:00Z',
+    updatedAt: '2024-11-15T10:00:00Z',
+  },
+];
+
+// ============= Industry Compliance Configs =============
+
+export const industryComplianceConfigs: IndustryComplianceConfig[] = [
+  {
+    id: 'config-childcare',
+    industryType: 'childcare',
+    name: 'Australian Childcare (NQF)',
+    regulatoryBody: 'Australian Children\'s Education & Care Quality Authority',
+    regulatoryReference: 'National Quality Framework',
+    regulatoryUrl: 'https://www.acecqa.gov.au/',
+    defaultRatios: [
+      { id: 'r-1', name: 'Birth to 24 months', demandUnit: 'Children', ratioNumerator: 1, ratioDenominator: 4, isDefault: true },
+      { id: 'r-2', name: '24 to 36 months', demandUnit: 'Children', ratioNumerator: 1, ratioDenominator: 5, isDefault: true },
+      { id: 'r-3', name: 'Over 36 months (not school age)', demandUnit: 'Children', ratioNumerator: 1, ratioDenominator: 10, isDefault: true },
+      { id: 'r-4', name: 'Over preschool age', demandUnit: 'Children', ratioNumerator: 1, ratioDenominator: 11, isDefault: true },
+    ],
+    defaultQualifications: [
+      { id: 'q-1', qualificationId: 'diploma_ece', qualificationName: 'Diploma ECE', qualificationShortName: 'Dip ECE', requirementType: 'percentage', percentageRequired: 50 },
+      { id: 'q-2', qualificationId: 'bachelor_ece', qualificationName: 'Bachelor ECE', qualificationShortName: 'Bach ECE', requirementType: 'preferred' },
+      { id: 'q-3', qualificationId: 'first_aid', qualificationName: 'First Aid', qualificationShortName: 'FA', requirementType: 'mandatory', minimumCount: 1 },
+      { id: 'q-4', qualificationId: 'wwc', qualificationName: 'Working with Children', qualificationShortName: 'WWC', requirementType: 'mandatory' },
+    ],
+    defaultComplianceRules: [
+      {
+        id: 'cr-1',
+        name: 'Ratio Compliance',
+        description: 'Staff to child ratio must be maintained at all times',
+        ruleType: 'ratio',
+        severity: 'critical',
+        isActive: true,
+        conditions: [],
+        action: 'block',
+      },
+    ],
+    areaPresets: [
+      { name: 'Nursery', ageGroup: 'Nursery (0-2)', serviceType: 'Early Learning', capacity: 16, ratios: [], qualifications: [] },
+      { name: 'Toddler', ageGroup: 'Toddler (2-3)', serviceType: 'Early Learning', capacity: 20, ratios: [], qualifications: [] },
+      { name: 'Preschool', ageGroup: 'Preschool (3-4)', serviceType: 'Early Learning', capacity: 30, ratios: [], qualifications: [] },
+      { name: 'Kindergarten', ageGroup: 'Kindy (4-5)', serviceType: 'Early Learning', capacity: 33, ratios: [], qualifications: [] },
+    ],
+  },
+  {
+    id: 'config-healthcare',
+    industryType: 'healthcare',
+    name: 'Australian Healthcare',
+    regulatoryBody: 'Australian Health Practitioner Regulation Agency',
+    regulatoryReference: 'AHPRA Standards',
+    regulatoryUrl: 'https://www.ahpra.gov.au/',
+    defaultRatios: [
+      { id: 'r-h1', name: 'General Ward', demandUnit: 'Patients', ratioNumerator: 1, ratioDenominator: 4, isDefault: true },
+      { id: 'r-h2', name: 'ICU', demandUnit: 'Patients', ratioNumerator: 1, ratioDenominator: 1, isDefault: false },
+      { id: 'r-h3', name: 'Aged Care', demandUnit: 'Residents', ratioNumerator: 1, ratioDenominator: 7, isDefault: false },
+    ],
+    defaultQualifications: [
+      { id: 'q-h1', qualificationId: 'rn', qualificationName: 'Registered Nurse', qualificationShortName: 'RN', requirementType: 'mandatory' },
+      { id: 'q-h2', qualificationId: 'bls', qualificationName: 'Basic Life Support', qualificationShortName: 'BLS', requirementType: 'mandatory' },
+    ],
+    defaultComplianceRules: [],
+    areaPresets: [
+      { name: 'General Ward', ageGroup: undefined, serviceType: 'Inpatient Care', capacity: 30, ratios: [], qualifications: [] },
+      { name: 'ICU', ageGroup: undefined, serviceType: 'Critical Care', capacity: 10, ratios: [], qualifications: [] },
+      { name: 'Emergency', ageGroup: undefined, serviceType: 'Emergency Care', capacity: 20, ratios: [], qualifications: [] },
+    ],
+  },
+];
+
+// ============= Helper Functions =============
+
+export function getLocationById(id: string): Location | undefined {
+  return mockLocations.find(l => l.id === id);
+}
+
+export function getAreasByLocationId(locationId: string): Area[] {
+  return mockAreas.filter(a => a.locationId === locationId);
+}
+
+export function getDepartmentsByLocationId(locationId: string): Department[] {
+  return mockDepartments.filter(d => d.locationId === locationId);
+}
+
+export function getLocationSummaries(): LocationSummary[] {
+  return mockLocations.map(loc => ({
+    id: loc.id,
+    name: loc.name,
+    code: loc.code,
+    status: loc.status,
+    areaCount: mockAreas.filter(a => a.locationId === loc.id).length,
+    departmentCount: mockDepartments.filter(d => d.locationId === loc.id).length,
+    totalCapacity: loc.totalCapacity,
+    currentOccupancy: Math.floor(loc.totalCapacity * (0.6 + Math.random() * 0.3)),
+    staffCount: mockDepartments.filter(d => d.locationId === loc.id).reduce((sum, d) => sum + (d.headcount || 0), 0),
+    complianceStatus: loc.status === 'active' ? 'compliant' : 'warning',
+  }));
+}
+
+export function getAreaSummaries(locationId: string): AreaSummary[] {
+  return mockAreas
+    .filter(a => a.locationId === locationId)
+    .map(area => {
+      const occupancy = Math.floor(area.capacity * (0.5 + Math.random() * 0.4));
+      const requiredStaff = Math.ceil(occupancy / (area.staffingRatios[0]?.ratioDenominator || 10));
+      const staffOnDuty = requiredStaff + Math.floor(Math.random() * 2);
+      
+      return {
+        id: area.id,
+        name: area.name,
+        code: area.code,
+        status: area.status,
+        capacity: area.capacity,
+        currentOccupancy: occupancy,
+        staffOnDuty,
+        requiredStaff,
+        complianceStatus: staffOnDuty >= requiredStaff ? 'compliant' : 'warning',
+        complianceIssues: staffOnDuty < requiredStaff ? ['Ratio below minimum'] : [],
+      };
+    });
+}
