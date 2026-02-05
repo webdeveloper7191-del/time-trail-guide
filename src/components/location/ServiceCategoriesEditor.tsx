@@ -72,11 +72,11 @@
      <div className="space-y-4">
        <div className="flex items-center justify-between">
          <div>
-           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
              <FolderTree className="h-4 w-4" />
-             Service Categories
+              Area Settings
            </h3>
-           <p className="text-xs text-muted-foreground">Define available categories for areas at this location</p>
+            <p className="text-xs text-muted-foreground">Define available settings for areas at this location</p>
          </div>
          {isEditing && industryType && industryType !== 'custom' && (
            <Button size="sm" variant="outline" onClick={handleApplyDefaults}>
