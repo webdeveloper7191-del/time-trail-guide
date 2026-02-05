@@ -1543,13 +1543,14 @@ export function StaffTimelineGrid({
                                                   variant="ghost"
                                                   size="sm"
                                                   className={cn(
-                                                    "w-full h-6 text-[10px] text-muted-foreground/40 hover:text-muted-foreground",
-                                                    "border border-dashed border-transparent hover:border-muted-foreground/30",
-                                                    "opacity-0 hover:opacity-100 transition-opacity mt-1"
+                                                    "absolute bottom-0.5 right-0.5 z-20",
+                                                    "h-5 w-5 min-w-0 p-0 rounded-full",
+                                                    "bg-primary/80 hover:bg-primary text-primary-foreground",
+                                                    "opacity-0 group-hover/cell:opacity-100 transition-opacity",
+                                                    "shadow-sm"
                                                   )}
                                                 >
-                                                  <Plus className="h-2.5 w-2.5 mr-0.5" />
-                                                  <span>Add</span>
+                                                  <Plus className="h-3 w-3" />
                                                 </Button>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent>
