@@ -2,17 +2,14 @@ import { useState, useEffect } from 'react';
 import {
   Tab,
   Tabs,
-  Box,
   Switch as MuiSwitch,
   Slider as MuiSlider,
   Checkbox as MuiCheckbox,
-  Typography,
 } from '@mui/material';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   User, 
   Clock, 
@@ -34,6 +31,7 @@ import {
   SheetDescription,
   SheetFooter,
 } from '@/components/ui/sheet';
+import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
 
 interface SchedulingPreferencesModalProps {
   open: boolean;
@@ -128,13 +126,13 @@ export function SchedulingPreferencesModal({
           <ScrollArea className="h-[calc(100vh-320px)] mt-4">
             {/* Schedule Tab */}
             {tabValue === 0 && (
-              <Box className="space-y-6 pr-4">
+              <div className="space-y-5 pr-4">
                 {/* Max Consecutive Days */}
-                <div className="space-y-3">
+                <FormSection title="Max Consecutive Work Days">
                   <Label className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary" />
-                      Max Consecutive Work Days
+                      Days in a row
                     </span>
                     <Badge variant="secondary">{preferences.maxConsecutiveDays} days</Badge>
                   </Label>
@@ -150,14 +148,14 @@ export function SchedulingPreferencesModal({
                   <p className="text-xs text-muted-foreground">
                     Maximum number of days in a row this staff can work
                   </p>
-                </div>
+                </FormSection>
 
                 {/* Min Rest Hours */}
-                <div className="space-y-3">
+                <FormSection title="Minimum Rest Between Shifts">
                   <Label className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <BedDouble className="h-4 w-4 text-primary" />
-                      Minimum Rest Between Shifts
+                      Rest hours
                     </span>
                     <Badge variant="secondary">{preferences.minRestHoursBetweenShifts}h</Badge>
                   </Label>
@@ -173,14 +171,14 @@ export function SchedulingPreferencesModal({
                   <p className="text-xs text-muted-foreground">
                     Minimum hours of rest required between consecutive shifts
                   </p>
-                </div>
+                </FormSection>
 
                 {/* Max Shifts Per Week */}
-                <div className="space-y-3">
+                <FormSection title="Max Shifts Per Week">
                   <Label className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-primary" />
-                      Max Shifts Per Week
+                      Weekly limit
                     </span>
                     <Badge variant="secondary">{preferences.maxShiftsPerWeek} shifts</Badge>
                   </Label>
@@ -193,17 +191,14 @@ export function SchedulingPreferencesModal({
                     marks
                     valueLabelDisplay="auto"
                   />
-                </div>
+                </FormSection>
 
                 {/* Shift Time Preferences */}
-                <Card className="bg-muted/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Shift Time Preferences</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
+                <FormSection title="Shift Time Preferences">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Label className="flex items-center gap-2">
-                        <Sun className="h-4 w-4 text-amber-500" />
+                        <Sun className="h-4 w-4 text-warning" />
                         Prefer Early Shifts (6:30 AM - 2:30 PM)
                       </Label>
                       <MuiSwitch
@@ -217,7 +212,7 @@ export function SchedulingPreferencesModal({
                     </div>
                     <div className="flex items-center justify-between">
                       <Label className="flex items-center gap-2">
-                        <Moon className="h-4 w-4 text-indigo-500" />
+                        <Moon className="h-4 w-4 text-primary" />
                         Prefer Late Shifts (10:30 AM - 6:30 PM)
                       </Label>
                       <MuiSwitch
@@ -229,99 +224,77 @@ export function SchedulingPreferencesModal({
                         })}
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              </Box>
+                  </div>
+                </FormSection>
+              </div>
             )}
 
             {/* Rooms Tab */}
             {tabValue === 1 && (
-              <Box className="space-y-4 pr-4">
+              <div className="space-y-5 pr-4">
                 {/* Preferred Rooms */}
-                <Card className="bg-emerald-500/5 border-emerald-500/20">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-emerald-500" />
-                      Preferred Rooms
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-2">
-                      {allRooms.map(room => (
-                        <div
-                          key={room.id}
-                          className={cn(
-                            "flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition-colors",
-                            preferences.preferredRooms?.includes(room.id)
-                              ? "bg-emerald-500/10 border-emerald-500"
-                              : "bg-background hover:bg-muted"
-                          )}
-                          onClick={() => togglePreferredRoom(room.id)}
-                        >
-                          <MuiCheckbox 
-                            checked={preferences.preferredRooms?.includes(room.id)}
-                            size="small"
-                            sx={{ '&.Mui-checked': { color: '#10b981' } }}
-                          />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{room.name}</p>
-                            <p className="text-xs text-muted-foreground">{room.ageGroup}</p>
-                          </div>
+                <FormSection title="Preferred Rooms">
+                  <div className="grid grid-cols-2 gap-2">
+                    {allRooms.map(room => (
+                      <div
+                        key={room.id}
+                        className={cn(
+                          "flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition-colors",
+                          preferences.preferredRooms?.includes(room.id)
+                            ? "bg-primary/10 border-primary"
+                            : "bg-background hover:bg-muted"
+                        )}
+                        onClick={() => togglePreferredRoom(room.id)}
+                      >
+                        <MuiCheckbox 
+                          checked={preferences.preferredRooms?.includes(room.id)}
+                          size="small"
+                          sx={{ '&.Mui-checked': { color: 'hsl(var(--primary))' } }}
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{room.name}</p>
+                          <p className="text-xs text-muted-foreground">{room.ageGroup}</p>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    ))}
+                  </div>
+                </FormSection>
 
                 {/* Rooms to Avoid */}
-                <Card className="bg-destructive/5 border-destructive/20">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Ban className="h-4 w-4 text-destructive" />
-                      Rooms to Avoid
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-2">
-                      {allRooms.map(room => (
-                        <div
-                          key={room.id}
-                          className={cn(
-                            "flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition-colors",
-                            preferences.avoidRooms?.includes(room.id)
-                              ? "bg-destructive/10 border-destructive"
-                              : "bg-background hover:bg-muted"
-                          )}
-                          onClick={() => toggleAvoidRoom(room.id)}
-                        >
-                          <MuiCheckbox 
-                            checked={preferences.avoidRooms?.includes(room.id)}
-                            size="small"
-                            color="error"
-                          />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{room.name}</p>
-                            <p className="text-xs text-muted-foreground">{room.ageGroup}</p>
-                          </div>
+                <FormSection title="Rooms to Avoid">
+                  <div className="grid grid-cols-2 gap-2">
+                    {allRooms.map(room => (
+                      <div
+                        key={room.id}
+                        className={cn(
+                          "flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition-colors",
+                          preferences.avoidRooms?.includes(room.id)
+                            ? "bg-destructive/10 border-destructive"
+                            : "bg-background hover:bg-muted"
+                        )}
+                        onClick={() => toggleAvoidRoom(room.id)}
+                      >
+                        <MuiCheckbox 
+                          checked={preferences.avoidRooms?.includes(room.id)}
+                          size="small"
+                          color="error"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{room.name}</p>
+                          <p className="text-xs text-muted-foreground">{room.ageGroup}</p>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Box>
+                      </div>
+                    ))}
+                  </div>
+                </FormSection>
+              </div>
             )}
 
             {/* Notifications Tab */}
             {tabValue === 2 && (
-              <Box className="space-y-4 pr-4">
-                <Card className="bg-muted/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Bell className="h-4 w-4 text-primary" />
-                      Notification Preferences
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+              <div className="space-y-5 pr-4">
+                <FormSection title="Notification Preferences">
+                  <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Shift Published</Label>
@@ -360,16 +333,15 @@ export function SchedulingPreferencesModal({
                         onChange={(e) => setPreferences({ ...preferences, notifyOnOpenShifts: e.target.checked })}
                       />
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </FormSection>
 
-                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <FormSection title="Email Configuration">
                   <p className="text-sm text-muted-foreground">
-                    <Bell className="h-4 w-4 inline mr-2" />
                     Notifications will be sent via email to <span className="font-medium">{staff.email || 'Not configured'}</span>
                   </p>
-                </div>
-              </Box>
+                </FormSection>
+              </div>
             )}
           </ScrollArea>
         </div>
