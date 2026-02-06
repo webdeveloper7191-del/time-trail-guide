@@ -2004,6 +2004,9 @@ function StaffShiftCard({
   isCompact?: boolean;
   isMonthView?: boolean;
 }) {
+  // Track drag state to disable tooltip during drag
+  const [isDragging, setIsDragging] = useState(false);
+  
   // Use centralized color system
   const style = shiftStatusColors[shift.status] || shiftStatusColors.draft;
   const shiftTypeInfo = shift.shiftType && shift.shiftType !== 'regular' ? getShiftTypeConfig(shift.shiftType) : null;
@@ -2012,6 +2015,15 @@ function StaffShiftCard({
   const seriesId = shift.recurring?.isRecurring ? shift.recurring.recurrenceGroupId : undefined;
   const isSeriesHighlighted = !!seriesId && !!highlightedRecurrenceGroupId && seriesId === highlightedRecurrenceGroupId;
   const shouldDim = !!highlightedRecurrenceGroupId && (!seriesId || seriesId !== highlightedRecurrenceGroupId);
+
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    onDragStart(e, shift);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
 
   const handleQuickToggle = (type: ShiftSpecialType, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -2086,15 +2098,17 @@ function StaffShiftCard({
   if (isMonthView) {
     return (
       <TooltipProvider>
-        <Tooltip>
+        <Tooltip open={isDragging ? false : undefined}>
           <TooltipTrigger asChild>
             <div
               draggable
-              onDragStart={(e) => onDragStart(e, shift)}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
               onClick={onEdit}
               className={cn(
-                "relative rounded border overflow-hidden cursor-pointer transition-all duration-150",
+                "relative rounded border overflow-hidden cursor-grab transition-all duration-150",
                 "hover:shadow-sm hover:scale-105 active:cursor-grabbing",
+                isDragging && "opacity-50 scale-95",
                 style.bg,
                 style.border,
                 shift.status === 'draft' && "border-dashed",
@@ -2133,7 +2147,7 @@ function StaffShiftCard({
               </div>
             </div>
           </TooltipTrigger>
-          <TooltipContent side="right" className="max-w-[200px]">
+          <TooltipContent side="right" className="max-w-[200px] p-0 bg-slate-800 border-slate-700">
             {tooltipContent}
           </TooltipContent>
         </Tooltip>
@@ -2141,26 +2155,32 @@ function StaffShiftCard({
     );
   }
 
+  // Week/WorkWeek/Fortnight view - wrap with tooltip
   return (
-    <div
-      draggable
-      onDragStart={(e) => onDragStart(e, shift)}
-      className={cn(
-        "group relative rounded-lg border overflow-hidden transition-all duration-200",
-        "hover:shadow-md hover:-translate-y-0.5 active:cursor-grabbing",
-        style.bg,
-        style.border,
-        shift.status === 'draft' && "border-dashed",
-        shift.isAbsent && "border-destructive/70",
-        isSeriesHighlighted && "ring-2 ring-primary/40",
-        shouldDim && "opacity-50"
-      )}
-      style={{
-        backgroundImage: shift.isAbsent
-          ? 'repeating-linear-gradient(135deg, hsl(var(--destructive) / 0.10), hsl(var(--destructive) / 0.10) 10px, hsl(var(--destructive) / 0.18) 10px, hsl(var(--destructive) / 0.18) 20px)'
-          : undefined,
-      }}
-    >
+    <TooltipProvider>
+      <Tooltip open={isDragging ? false : undefined}>
+        <TooltipTrigger asChild>
+          <div
+            draggable
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            className={cn(
+              "group relative rounded-lg border overflow-hidden transition-all duration-200 cursor-grab",
+              "hover:shadow-md hover:-translate-y-0.5 active:cursor-grabbing",
+              isDragging && "opacity-50 scale-95",
+              style.bg,
+              style.border,
+              shift.status === 'draft' && "border-dashed",
+              shift.isAbsent && "border-destructive/70",
+              isSeriesHighlighted && "ring-2 ring-primary/40",
+              shouldDim && "opacity-50"
+            )}
+            style={{
+              backgroundImage: shift.isAbsent
+                ? 'repeating-linear-gradient(135deg, hsl(var(--destructive) / 0.10), hsl(var(--destructive) / 0.10) 10px, hsl(var(--destructive) / 0.18) 10px, hsl(var(--destructive) / 0.18) 20px)'
+                : undefined,
+            }}
+          >
       {/* Left accent bar - colored by shift type if special */}
       <div className={cn(
         "absolute left-0 top-0 bottom-0 w-1",
@@ -2386,8 +2406,14 @@ function StaffShiftCard({
             Covered by {allStaff?.find(s => s.id === shift.replacementStaffId)?.name?.split(' ')[0] || 'Staff'}
           </Badge>
         )}
-      </div>
-    </div>
+            </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="p-0 bg-slate-800 border-slate-700 max-w-[220px]">
+          {tooltipContent}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
