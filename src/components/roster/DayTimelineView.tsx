@@ -765,15 +765,18 @@ function ShiftBar({
   staff, 
   onEdit,
   onResize,
-  isResizingRef
+  isResizingRef,
+  onDragStart,
 }: { 
   shift: Shift; 
   staff: StaffMember; 
   onEdit: () => void;
   onResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
   isResizingRef?: React.MutableRefObject<boolean>;
+  onDragStart?: (e: React.DragEvent, shift: Shift) => void;
 }) {
   const [isResizing, setIsResizing] = useState<'left' | 'right' | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [resizeStartX, setResizeStartX] = useState(0);
   const [originalLeft, setOriginalLeft] = useState(0);
   const [originalWidth, setOriginalWidth] = useState(0);
@@ -786,6 +789,19 @@ function ShiftBar({
   // Use centralized color system
   const colors = shiftStatusColors[shift.status] || shiftStatusColors.draft;
   const duration = ((timeToSlotIndex(shift.endTime) - timeToSlotIndex(shift.startTime)) * 15 - shift.breakMinutes) / 60;
+
+  // Disable tooltip during drag or resize
+  const disableTooltip = isResizing !== null || isDragging;
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setIsDragging(true);
+    onDragStart?.(e, shift);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
 
   // Handle resize start
   const handleResizeStart = (e: React.MouseEvent, side: 'left' | 'right') => {
@@ -907,11 +923,11 @@ function ShiftBar({
 
   return (
     <MuiTooltip
-      title={isResizing ? null : tooltipContent}
+      title={disableTooltip ? '' : tooltipContent}
       placement="top"
       arrow
-      enterDelay={200}
-      followCursor
+      enterDelay={300}
+      leaveDelay={0}
       PopperProps={{
         disablePortal: false,
         modifiers: [
@@ -949,11 +965,15 @@ function ShiftBar({
       }}
     >
       <div
+        draggable
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
         className={cn(
-          "absolute top-2 bottom-2 rounded-lg border-2 cursor-pointer group/shiftbar",
+          "absolute top-2 bottom-2 rounded-lg border-2 cursor-grab active:cursor-grabbing group/shiftbar",
           "transition-all duration-200",
-          !isResizing && "hover:shadow-lg hover:scale-y-110 hover:z-10",
+          !isResizing && !isDragging && "hover:shadow-lg hover:scale-y-110 hover:z-10",
           isResizing && "z-30 shadow-xl",
+          isDragging && "opacity-50 scale-95 z-30",
           colors.bg,
           colors.border,
           shift.status === 'draft' && "border-dashed",
@@ -970,7 +990,7 @@ function ShiftBar({
         }}
         onClick={(e) => {
           e.stopPropagation(); // Prevent creating new shift when clicking existing one
-          if (!isResizing) onEdit();
+          if (!isResizing && !isDragging) onEdit();
         }}
       >
         {shift.isAbsent && (
