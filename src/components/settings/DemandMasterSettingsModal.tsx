@@ -137,6 +137,9 @@ export function DemandMasterSettingsModal({
   const [settings, setSettings] = useState<DemandMasterSettings>(initialSettings || defaultSettings);
   const [newPatternName, setNewPatternName] = useState('');
   const [newThresholdName, setNewThresholdName] = useState('');
+  const [showManualEntryForm, setShowManualEntryForm] = useState(false);
+  const [manualEntries, setManualEntries] = useState<{ timeSlot: string; expectedDemand: number; notes: string }[]>([]);
+  const [newEntry, setNewEntry] = useState({ timeSlot: '09:00', expectedDemand: 10, notes: '' });
 
   const handleSave = () => {
     onSave(settings);
@@ -401,9 +404,106 @@ export function DemandMasterSettingsModal({
                   </Stack>
                   {settings.dataSources.manual.enabled && (
                     <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-                      <Button variant="outlined" size="small" startIcon={<Plus size={14} />}>
-                        Open Manual Entry Form
+                      <Button 
+                        variant="outlined" 
+                        size="small" 
+                        startIcon={<Plus size={14} />}
+                        onClick={() => setShowManualEntryForm(!showManualEntryForm)}
+                      >
+                        {showManualEntryForm ? 'Hide Manual Entry Form' : 'Open Manual Entry Form'}
                       </Button>
+                      
+                      {showManualEntryForm && (
+                        <Box sx={{ mt: 2 }}>
+                          <Divider sx={{ mb: 2 }} />
+                          <Typography variant="subtitle2" fontWeight={600} mb={1}>Add Demand Entry</Typography>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: 1.5, alignItems: 'end', mb: 2 }}>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Time Slot</Typography>
+                              <TextField
+                                type="time"
+                                value={newEntry.timeSlot}
+                                onChange={(e) => setNewEntry(prev => ({ ...prev, timeSlot: e.target.value }))}
+                                size="small"
+                                fullWidth
+                              />
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Expected Demand</Typography>
+                              <TextField
+                                type="number"
+                                value={newEntry.expectedDemand}
+                                onChange={(e) => setNewEntry(prev => ({ ...prev, expectedDemand: parseInt(e.target.value) || 0 }))}
+                                size="small"
+                                fullWidth
+                                inputProps={{ min: 0 }}
+                              />
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Notes (optional)</Typography>
+                              <TextField
+                                value={newEntry.notes}
+                                onChange={(e) => setNewEntry(prev => ({ ...prev, notes: e.target.value }))}
+                                size="small"
+                                fullWidth
+                                placeholder="e.g., School holiday expected"
+                              />
+                            </Box>
+                            <Button 
+                              size="small"
+                              onClick={() => {
+                                setManualEntries(prev => [...prev, { ...newEntry }]);
+                                setNewEntry({ timeSlot: '09:00', expectedDemand: 10, notes: '' });
+                                toast.success('Manual demand entry added');
+                              }}
+                            >
+                              <Plus size={14} className="mr-1" />
+                              Add
+                            </Button>
+                          </Box>
+                          
+                          {manualEntries.length > 0 && (
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" mb={1} display="block">
+                                Added Entries ({manualEntries.length})
+                              </Typography>
+                              <Stack spacing={0.5}>
+                                {manualEntries.map((entry, idx) => (
+                                  <Stack 
+                                    key={idx} 
+                                    direction="row" 
+                                    alignItems="center" 
+                                    justifyContent="space-between"
+                                    sx={{ p: 1, borderRadius: 1, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
+                                  >
+                                    <Stack direction="row" spacing={2} alignItems="center">
+                                      <Chip label={entry.timeSlot} size="small" color="primary" variant="outlined" />
+                                      <Typography variant="body2" fontWeight={500}>{entry.expectedDemand} expected</Typography>
+                                      {entry.notes && (
+                                        <Typography variant="caption" color="text.secondary">— {entry.notes}</Typography>
+                                      )}
+                                    </Stack>
+                                    <IconButton 
+                                      size="small" 
+                                      onClick={() => setManualEntries(prev => prev.filter((_, i) => i !== idx))}
+                                    >
+                                      <Trash2 size={14} />
+                                    </IconButton>
+                                  </Stack>
+                                ))}
+                              </Stack>
+                            </Box>
+                          )}
+                          
+                          {manualEntries.length === 0 && (
+                            <Box sx={{ textAlign: 'center', py: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                No entries added yet. Use the form above to add time-slot demand values.
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      )}
                     </Box>
                   )}
                 </CardContent>

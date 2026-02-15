@@ -187,6 +187,21 @@ export function BreakSchedulingPanel({ centreId, selectedDate, onClose }: BreakS
   const [scheduledBreaks, setScheduledBreaks] = useState<LocalScheduledBreak[]>(mockScheduledBreaks);
   const [isAutoScheduling, setIsAutoScheduling] = useState(false);
   const [showRuleEditor, setShowRuleEditor] = useState(false);
+  const [newRule, setNewRule] = useState({
+    name: '',
+    minShiftDuration: 4,
+    shiftDurationMax: 12,
+    breakDuration: 30,
+    isPaid: false,
+    isMandatory: true,
+    earliestBreakStart: 3,
+    latestBreakEnd: 2,
+    mustBeTakenBetweenStart: '11:00',
+    mustBeTakenBetweenEnd: '14:00',
+    minimumStaffDuringBreak: 2,
+    staggerBreaks: true,
+    staggerIntervalMinutes: 15,
+  });
 
   const getStatusColor = (status: LocalScheduledBreak['status']) => {
     switch (status) {
@@ -352,6 +367,164 @@ export function BreakSchedulingPanel({ centreId, selectedDate, onClose }: BreakS
           </div>
         </CardHeader>
         <CardContent>
+          {/* Add Rule Editor Form */}
+          {showRuleEditor && (
+            <div className="mb-4 p-4 rounded-lg border border-primary/20 bg-muted/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-sm">New Break Rule</p>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowRuleEditor(false)}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+              
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Rule Name</label>
+                <input 
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  placeholder="e.g., Afternoon Rest Break"
+                  value={newRule.name}
+                  onChange={(e) => setNewRule(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Min Shift Duration (hrs)</label>
+                  <input 
+                    type="number" min={1} max={24}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={newRule.minShiftDuration}
+                    onChange={(e) => setNewRule(prev => ({ ...prev, minShiftDuration: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Max Shift Duration (hrs)</label>
+                  <input 
+                    type="number" min={1} max={24}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={newRule.shiftDurationMax}
+                    onChange={(e) => setNewRule(prev => ({ ...prev, shiftDurationMax: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Break Duration (mins)</label>
+                  <input 
+                    type="number" min={5} max={120}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={newRule.breakDuration}
+                    onChange={(e) => setNewRule(prev => ({ ...prev, breakDuration: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Min Staff During Break</label>
+                  <input 
+                    type="number" min={1} max={50}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={newRule.minimumStaffDuringBreak}
+                    onChange={(e) => setNewRule(prev => ({ ...prev, minimumStaffDuringBreak: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Must Take Between (Start)</label>
+                  <input 
+                    type="time"
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={newRule.mustBeTakenBetweenStart}
+                    onChange={(e) => setNewRule(prev => ({ ...prev, mustBeTakenBetweenStart: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Must Take Between (End)</label>
+                  <input 
+                    type="time"
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={newRule.mustBeTakenBetweenEnd}
+                    onChange={(e) => setNewRule(prev => ({ ...prev, mustBeTakenBetweenEnd: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <Switch checked={newRule.isPaid} onCheckedChange={(checked) => setNewRule(prev => ({ ...prev, isPaid: checked }))} />
+                  <label className="text-sm">Paid Break</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={newRule.isMandatory} onCheckedChange={(checked) => setNewRule(prev => ({ ...prev, isMandatory: checked }))} />
+                  <label className="text-sm">Mandatory</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={newRule.staggerBreaks} onCheckedChange={(checked) => setNewRule(prev => ({ ...prev, staggerBreaks: checked }))} />
+                  <label className="text-sm">Stagger Breaks</label>
+                </div>
+              </div>
+
+              {newRule.staggerBreaks && (
+                <div className="w-1/2">
+                  <label className="text-xs text-muted-foreground mb-1 block">Stagger Interval (mins)</label>
+                  <input 
+                    type="number" min={5} max={60}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={newRule.staggerIntervalMinutes}
+                    onChange={(e) => setNewRule(prev => ({ ...prev, staggerIntervalMinutes: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => setShowRuleEditor(false)}>Cancel</Button>
+                <Button 
+                  size="sm" 
+                  disabled={!newRule.name.trim()}
+                  onClick={() => {
+                    const rule: ExtendedBreakRule = {
+                      id: `rule-${Date.now()}`,
+                      name: newRule.name.trim(),
+                      minShiftDuration: newRule.minShiftDuration,
+                      shiftDurationMax: newRule.shiftDurationMax,
+                      breakDuration: newRule.breakDuration,
+                      isPaid: newRule.isPaid,
+                      isMandatory: newRule.isMandatory,
+                      earliestBreakStart: newRule.earliestBreakStart,
+                      latestBreakEnd: newRule.latestBreakEnd,
+                      mustBeTakenBetween: { start: newRule.mustBeTakenBetweenStart, end: newRule.mustBeTakenBetweenEnd },
+                      minimumStaffDuringBreak: newRule.minimumStaffDuringBreak,
+                      staggerBreaks: newRule.staggerBreaks,
+                      staggerIntervalMinutes: newRule.staggerIntervalMinutes,
+                      isActive: true,
+                    };
+                    setBreakRules(prev => [...prev, rule]);
+                    setShowRuleEditor(false);
+                    setNewRule({
+                      name: '',
+                      minShiftDuration: 4,
+                      shiftDurationMax: 12,
+                      breakDuration: 30,
+                      isPaid: false,
+                      isMandatory: true,
+                      earliestBreakStart: 3,
+                      latestBreakEnd: 2,
+                      mustBeTakenBetweenStart: '11:00',
+                      mustBeTakenBetweenEnd: '14:00',
+                      minimumStaffDuringBreak: 2,
+                      staggerBreaks: true,
+                      staggerIntervalMinutes: 15,
+                    });
+                    toast.success('Break rule added successfully');
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Save Rule
+                </Button>
+              </div>
+            </div>
+          )}
           <ScrollArea className="h-[200px]">
             <div className="space-y-2">
               {breakRules.map(rule => (
