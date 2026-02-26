@@ -29,7 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { 
   CalendarIcon, TrendingUp, TrendingDown, AlertCircle, Check, Download, 
   History, Calculator, Clock, DollarSign, ArrowRight, Zap, CalendarPlus,
-  ArrowLeftCircle, Save
+  ArrowLeftCircle, Save, FileText, PenTool, Send, ArrowLeft
 } from 'lucide-react';
 import { format, isBefore, startOfDay, addDays, subMonths, isAfter } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -92,6 +92,7 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
   const [payPeriod, setPayPeriod] = useState(currentCondition?.payPeriod || 'fortnightly');
   const [reason, setReason] = useState('');
   const [backPayCalculation, setBackPayCalculation] = useState<BackPayCalculation | null>(null);
+  const [showDocumentStep, setShowDocumentStep] = useState(false);
 
   const selectedAwardData = getAwardById(selectedAward);
   const selectedClassificationData = selectedAwardData?.classifications.find(
@@ -183,7 +184,28 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
     };
 
     toast.success(messages[mode]);
+    setShowDocumentStep(true);
+  };
+
+  const handleGenerateContract = () => {
+    toast.success('Employment contract generated', {
+      description: `Contract for ${staff.firstName} ${staff.lastName} has been generated and is ready for review.`,
+    });
     onOpenChange(false);
+    setShowDocumentStep(false);
+  };
+
+  const handleSendForSigning = () => {
+    toast.success('Document sent for e-signature', {
+      description: `A signing request has been sent to ${staff.email || `${staff.firstName} ${staff.lastName}`}.`,
+    });
+    onOpenChange(false);
+    setShowDocumentStep(false);
+  };
+
+  const handleSkipDocuments = () => {
+    onOpenChange(false);
+    setShowDocumentStep(false);
   };
 
   const config = modeConfig[mode];
@@ -669,19 +691,76 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
             </Card>
           )}
 
+          {/* Document Generation Step */}
+          {showDocumentStep && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Generate Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Pay conditions have been saved. Would you like to generate or send any documents?
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex flex-col items-center gap-2 h-auto py-4 border-2 hover:border-primary/50 hover:bg-primary/5"
+                    onClick={handleGenerateContract}
+                  >
+                    <FileText className="h-5 w-5 text-primary" />
+                    <div className="text-center">
+                      <p className="text-sm font-medium">Generate Contract</p>
+                      <p className="text-xs text-muted-foreground">Create updated employment contract</p>
+                    </div>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex flex-col items-center gap-2 h-auto py-4 border-2 hover:border-primary/50 hover:bg-primary/5"
+                    onClick={handleSendForSigning}
+                  >
+                    <PenTool className="h-5 w-5 text-primary" />
+                    <div className="text-center">
+                      <p className="text-sm font-medium">Send for Signing</p>
+                      <p className="text-xs text-muted-foreground">E-sign the updated conditions</p>
+                    </div>
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="w-full text-muted-foreground"
+                  onClick={handleSkipDocuments}
+                >
+                  Skip — I'll do this later
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSubmit} 
-              className={cn("flex-1", mode === 'previous' && !backPayCalculation && "opacity-50")}
-              disabled={mode === 'previous' && !backPayCalculation}
-            >
-              <Check className="h-4 w-4 mr-2" />
-              {mode === 'previous' ? 'Submit Adjustment' : mode === 'current' ? 'Apply Now' : 'Schedule Change'}
-            </Button>
+            {showDocumentStep ? (
+              <Button variant="outline" onClick={() => setShowDocumentStep(false)} className="flex-1">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Edit
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSubmit} 
+                  className={cn("flex-1", mode === 'previous' && !backPayCalculation && "opacity-50")}
+                  disabled={mode === 'previous' && !backPayCalculation}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  {mode === 'previous' ? 'Submit Adjustment' : mode === 'current' ? 'Apply Now' : 'Schedule Change'}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </SheetContent>
