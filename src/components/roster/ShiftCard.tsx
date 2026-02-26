@@ -318,6 +318,12 @@ export function ShiftCard({
           {!isCompact && (
             <span className="text-muted-foreground/60">({duration}h)</span>
           )}
+          {shift.requiredEmployeeCount && shift.requiredEmployeeCount > 1 && (
+            <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 ml-auto">
+              <Users className="h-2.5 w-2.5 mr-0.5" />
+              {shift.requiredEmployeeCount}
+            </Badge>
+          )}
         </div>
 
         {/* Quick shift type toggle buttons - show on hover */}
@@ -489,6 +495,13 @@ export function OpenShiftCard({
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Users className="h-3 w-3" />
               <span>{openShift.applicants.length} applicant(s)</span>
+            </div>
+          )}
+
+          {openShift.requiredEmployeeCount && openShift.requiredEmployeeCount > 0 && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              <Users className="h-3 w-3" />
+              <span>{openShift.requiredEmployeeCount} staff needed</span>
             </div>
           )}
         </>
