@@ -1808,12 +1808,96 @@ export function CustomRuleBuilderPanel() {
                                     </SelectContent>
                                   </Select>
                                   <div className="flex gap-1">
-                                    <Input
-                                      placeholder="Value"
-                                      value={condition.value}
-                                      onChange={(e) => updateCondition(groupIndex, conditionIndex, 'value', e.target.value)}
-                                      className="h-9"
-                                    />
+                                    {(() => {
+                                      const fieldConfig = conditionFields.find(f => f.value === condition.field);
+                                      const fieldType = fieldConfig?.type || 'text';
+                                      const isBooleanOp = condition.operator === 'is_true' || condition.operator === 'is_false';
+
+                                      if (isBooleanOp) {
+                                        return (
+                                          <div className="h-9 flex items-center px-3 rounded-md border bg-muted/50 text-sm text-muted-foreground flex-1">
+                                            {condition.operator === 'is_true' ? 'True' : 'False'}
+                                          </div>
+                                        );
+                                      }
+
+                                      if (fieldType === 'select') {
+                                        const selectOptions: Record<string, string[]> = {
+                                          shift_type: ['regular', 'overtime', 'on_call', 'sleepover', 'broken', 'recall'],
+                                          day_of_week: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                                          employment_type: ['full_time', 'part_time', 'casual'],
+                                          qualification: ['ECT', 'Diploma', 'Certificate III', 'First Aid', 'Working With Children'],
+                                          location: ['Main Centre', 'Branch A', 'Branch B'],
+                                          classification_level: ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6'],
+                                        };
+                                        const options = selectOptions[condition.field] || [];
+                                        return (
+                                          <Select
+                                            value={condition.value}
+                                            onValueChange={(v) => updateCondition(groupIndex, conditionIndex, 'value', v)}
+                                          >
+                                            <SelectTrigger className="h-9 flex-1">
+                                              <SelectValue placeholder="Select value" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {options.map(opt => (
+                                                <SelectItem key={opt} value={opt}>{opt.replace(/_/g, ' ')}</SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        );
+                                      }
+
+                                      if (fieldType === 'boolean') {
+                                        return (
+                                          <Select
+                                            value={condition.value}
+                                            onValueChange={(v) => updateCondition(groupIndex, conditionIndex, 'value', v)}
+                                          >
+                                            <SelectTrigger className="h-9 flex-1">
+                                              <SelectValue placeholder="Select" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="true">Yes</SelectItem>
+                                              <SelectItem value="false">No</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        );
+                                      }
+
+                                      if (fieldType === 'time') {
+                                        return (
+                                          <Input
+                                            type="time"
+                                            placeholder="HH:MM"
+                                            value={condition.value}
+                                            onChange={(e) => updateCondition(groupIndex, conditionIndex, 'value', e.target.value)}
+                                            className="h-9 flex-1"
+                                          />
+                                        );
+                                      }
+
+                                      if (fieldType === 'date') {
+                                        return (
+                                          <Input
+                                            type="date"
+                                            value={condition.value}
+                                            onChange={(e) => updateCondition(groupIndex, conditionIndex, 'value', e.target.value)}
+                                            className="h-9 flex-1"
+                                          />
+                                        );
+                                      }
+
+                                      return (
+                                        <Input
+                                          type={fieldType === 'number' ? 'number' : 'text'}
+                                          placeholder={fieldType === 'number' ? 'Enter number' : 'Enter value'}
+                                          value={condition.value}
+                                          onChange={(e) => updateCondition(groupIndex, conditionIndex, 'value', e.target.value)}
+                                          className="h-9 flex-1"
+                                        />
+                                      );
+                                    })()}
                                     {group.conditions.length > 1 && (
                                       <Button
                                         variant="ghost"
