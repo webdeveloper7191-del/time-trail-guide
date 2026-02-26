@@ -1836,16 +1836,31 @@ export function CustomRuleBuilderPanel() {
                                           location: ['Main Centre', 'Branch A', 'Branch B'],
                                           classification_level: ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6'],
                                         };
-                                        const multiSelectFields = ['day_of_week'];
+                                        const multiSelectFields = ['day_of_week', 'shift_type', 'employment_type', 'qualification', 'classification_level', 'location'];
                                         const options = selectOptions[condition.field] || [];
                                         const isMulti = multiSelectFields.includes(condition.field);
 
+                                        // Short label map for toggle buttons
+                                        const shortLabels: Record<string, Record<string, string>> = {
+                                          day_of_week: { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' },
+                                          shift_type: { regular: 'Reg', overtime: 'OT', on_call: 'On-Call', sleepover: 'Sleep', broken: 'Broken', recall: 'Recall' },
+                                          employment_type: { full_time: 'Full-Time', part_time: 'Part-Time', casual: 'Casual' },
+                                          qualification: { ECT: 'ECT', Diploma: 'Dip', 'Certificate III': 'Cert III', 'First Aid': 'FA', 'Working With Children': 'WWC' },
+                                          classification_level: { 'Level 1': 'L1', 'Level 2': 'L2', 'Level 3': 'L3', 'Level 4': 'L4', 'Level 5': 'L5', 'Level 6': 'L6' },
+                                        };
+                                        const fieldLabels = shortLabels[condition.field] || {};
+                                        const fieldNoun: Record<string, string> = {
+                                          day_of_week: 'day', shift_type: 'type', employment_type: 'type',
+                                          qualification: 'qualification', classification_level: 'level', location: 'location',
+                                        };
+                                        const noun = fieldNoun[condition.field] || 'item';
+
                                         if (isMulti) {
                                           const selectedValues = condition.value ? condition.value.split(',').map(v => v.trim()) : [];
-                                          const toggleDay = (day: string) => {
-                                            const updated = selectedValues.includes(day)
-                                              ? selectedValues.filter(d => d !== day)
-                                              : [...selectedValues, day];
+                                          const toggleValue = (val: string) => {
+                                            const updated = selectedValues.includes(val)
+                                              ? selectedValues.filter(d => d !== val)
+                                              : [...selectedValues, val];
                                             updateCondition(groupIndex, conditionIndex, 'value', updated.join(','));
                                           };
                                           return (
@@ -1860,16 +1875,16 @@ export function CustomRuleBuilderPanel() {
                                                       size="sm"
                                                       variant={isSelected ? 'default' : 'outline'}
                                                       className="h-7 px-2.5 text-xs"
-                                                      onClick={() => toggleDay(opt)}
+                                                      onClick={() => toggleValue(opt)}
                                                     >
-                                                      {opt.slice(0, 3)}
+                                                      {fieldLabels[opt] || opt}
                                                     </Button>
                                                   );
                                                 })}
                                               </div>
                                               {selectedValues.length > 0 && (
                                                 <p className="text-xs text-muted-foreground">
-                                                  {selectedValues.length} day{selectedValues.length > 1 ? 's' : ''} selected
+                                                  {selectedValues.length} {noun}{selectedValues.length > 1 ? 's' : ''} selected
                                                 </p>
                                               )}
                                             </div>
