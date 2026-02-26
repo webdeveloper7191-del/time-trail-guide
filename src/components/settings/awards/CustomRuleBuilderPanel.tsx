@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { australianAwards } from '@/data/australianAwards';
 import { 
@@ -22,7 +23,7 @@ import {
   GripVertical, ChevronDown, ChevronRight, Eye, EyeOff,
   BookOpen, Lightbulb, FileText, RefreshCw, AlertTriangle,
   Sparkles, Target, Shield, X, MoreVertical, History, Save,
-  RotateCcw, ArrowUpDown, MoveUp, MoveDown, Clock3, User
+  RotateCcw, ArrowUpDown, MoveUp, MoveDown, Clock3, User, Check
 } from 'lucide-react';
 
 // Version history types
@@ -1856,37 +1857,53 @@ export function CustomRuleBuilderPanel() {
                                         const noun = fieldNoun[condition.field] || 'item';
 
                                         if (isMulti) {
-                                          const selectedValues = condition.value ? condition.value.split(',').map(v => v.trim()) : [];
+                                          const selectedValues = condition.value ? condition.value.split(',').map(v => v.trim()).filter(Boolean) : [];
                                           const toggleValue = (val: string) => {
                                             const updated = selectedValues.includes(val)
                                               ? selectedValues.filter(d => d !== val)
                                               : [...selectedValues, val];
                                             updateCondition(groupIndex, conditionIndex, 'value', updated.join(','));
                                           };
+                                          const displayText = selectedValues.length === 0
+                                            ? `Select ${noun}s...`
+                                            : selectedValues.length <= 2
+                                              ? selectedValues.map(v => fieldLabels[v] || v).join(', ')
+                                              : `${selectedValues.length} ${noun}s selected`;
+
                                           return (
-                                            <div className="flex-1 space-y-1.5">
-                                              <div className="flex flex-wrap gap-1.5">
-                                                {options.map(opt => {
-                                                  const isSelected = selectedValues.includes(opt);
-                                                  return (
-                                                    <Button
-                                                      key={opt}
-                                                      type="button"
-                                                      size="sm"
-                                                      variant={isSelected ? 'default' : 'outline'}
-                                                      className="h-7 px-2.5 text-xs"
-                                                      onClick={() => toggleValue(opt)}
-                                                    >
-                                                      {fieldLabels[opt] || opt}
-                                                    </Button>
-                                                  );
-                                                })}
-                                              </div>
-                                              {selectedValues.length > 0 && (
-                                                <p className="text-xs text-muted-foreground">
-                                                  {selectedValues.length} {noun}{selectedValues.length > 1 ? 's' : ''} selected
-                                                </p>
-                                              )}
+                                            <div className="flex-1 relative">
+                                              <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                  <Button
+                                                    variant="outline"
+                                                    className="h-9 w-full justify-between text-xs font-normal"
+                                                    type="button"
+                                                  >
+                                                    <span className="truncate">{displayText}</span>
+                                                    <ChevronDown className="h-3.5 w-3.5 opacity-50 ml-2 shrink-0" />
+                                                  </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="start" className="w-56 bg-popover border shadow-md z-50 max-h-60 overflow-y-auto">
+                                                  {options.map(opt => {
+                                                    const isSelected = selectedValues.includes(opt);
+                                                    return (
+                                                      <DropdownMenuItem
+                                                        key={opt}
+                                                        onSelect={(e) => {
+                                                          e.preventDefault();
+                                                          toggleValue(opt);
+                                                        }}
+                                                        className="flex items-center gap-2 cursor-pointer"
+                                                      >
+                                                        <div className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-primary border-primary' : 'border-input'}`}>
+                                                          {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                                                        </div>
+                                                        <span>{fieldLabels[opt] || opt}</span>
+                                                      </DropdownMenuItem>
+                                                    );
+                                                  })}
+                                                </DropdownMenuContent>
+                                              </DropdownMenu>
                                             </div>
                                           );
                                         }
