@@ -707,19 +707,35 @@ export function ShiftDetailPanel({
                 </FormField>
               </FormRow>
               
-              <FormField label="Break Duration">
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    step={15}
-                    value={editedShift.breakMinutes}
-                    onChange={(e) => setEditedShift(prev => ({ ...prev, breakMinutes: parseInt(e.target.value) || 0 }))}
-                    className="w-24 bg-background h-11"
-                  />
-                  <span className="text-sm text-muted-foreground">minutes</span>
-                </div>
-              </FormField>
+              <FormRow columns={2}>
+                <FormField label="Break Duration">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={15}
+                      value={editedShift.breakMinutes}
+                      onChange={(e) => setEditedShift(prev => ({ ...prev, breakMinutes: parseInt(e.target.value) || 0 }))}
+                      className="w-24 bg-background h-11"
+                    />
+                    <span className="text-sm text-muted-foreground">mins</span>
+                  </div>
+                </FormField>
+                <FormField label="Required Employees">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={50}
+                      step={1}
+                      value={editedShift.requiredEmployeeCount || 1}
+                      onChange={(e) => setEditedShift(prev => ({ ...prev, requiredEmployeeCount: parseInt(e.target.value) || 1 }))}
+                      className="w-24 bg-background h-11"
+                    />
+                    <span className="text-sm text-muted-foreground">staff</span>
+                  </div>
+                </FormField>
+              </FormRow>
 
               {/* Duration & Cost Summary */}
               <div className="bg-background rounded-lg border p-3 grid grid-cols-2 gap-3">
