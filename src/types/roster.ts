@@ -231,6 +231,7 @@ export interface Shift {
   status: 'draft' | 'published' | 'confirmed' | 'completed';
   isOpenShift: boolean;
   notes?: string;
+  requiredEmployeeCount?: number; // Number of employees needed for this shift
   
   // Recurring shift tracking
   recurring?: RecurringShiftConfig;
@@ -292,6 +293,7 @@ export interface OpenShift {
   requiredQualifications: QualificationType[];
   urgency: 'low' | 'medium' | 'high' | 'critical';
   applicants: string[]; // staff IDs who applied
+  requiredEmployeeCount?: number; // Number of employees needed for this open shift
   
   // Fields from ShiftTemplate
   breakMinutes?: number;

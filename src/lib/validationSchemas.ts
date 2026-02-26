@@ -50,6 +50,7 @@ export const openShiftSchema = z.object({
   endTime: timeString,
   urgency: z.enum(['low', 'medium', 'high', 'critical']),
   requiredQualifications: z.array(z.string()),
+  requiredEmployeeCount: z.number().min(1).max(50).optional(),
   notes: z.string().max(500).optional(),
   
   // Template-based fields

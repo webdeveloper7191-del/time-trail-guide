@@ -123,6 +123,7 @@ export function AddOpenShiftModal({
       endTime: '17:00',
       urgency: 'medium',
       requiredQualifications: [],
+      requiredEmployeeCount: 1,
       notes: '',
       breakMinutes: 30,
       shiftType: 'regular',
@@ -158,9 +159,10 @@ export function AddOpenShiftModal({
         startTime: '09:00',
         endTime: '17:00',
         urgency: 'medium',
-        requiredQualifications: [],
-        notes: '',
-        breakMinutes: 30,
+      requiredQualifications: [],
+      requiredEmployeeCount: 1,
+      notes: '',
+      breakMinutes: 30,
         shiftType: 'regular',
         minimumClassification: '',
         preferredRole: undefined,
@@ -266,6 +268,7 @@ export function AddOpenShiftModal({
       requiredQualifications: selectedQualifications,
       urgency: data.urgency,
       applicants: [],
+      requiredEmployeeCount: data.requiredEmployeeCount || 1,
       breakMinutes: data.breakMinutes,
       shiftType: data.shiftType,
       minimumClassification: data.minimumClassification || undefined,
@@ -828,6 +831,14 @@ export function AddOpenShiftModal({
                       <TextField {...field} type="number" size="small" fullWidth InputProps={{ inputProps: { min: 0, max: 120, step: 15 } }} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
                     )} />
                   </FormField>
+                  <FormField label="Required Employees">
+                    <Controller name="requiredEmployeeCount" control={control} render={({ field }) => (
+                      <TextField {...field} type="number" size="small" fullWidth InputProps={{ inputProps: { min: 1, max: 50, step: 1 } }} onChange={(e) => field.onChange(parseInt(e.target.value) || 1)} helperText="Number of staff needed" />
+                    )} />
+                  </FormField>
+                </FormRow>
+
+                <FormRow>
                   <FormField label="Shift Type">
                     <Controller name="shiftType" control={control} render={({ field }) => (
                       <FormControl fullWidth size="small">
