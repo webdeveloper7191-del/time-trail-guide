@@ -675,7 +675,13 @@ export function CustomRuleBuilderPanel() {
 
     switch (condition.operator) {
       case 'equals':
-        matched = String(actualValue).toLowerCase() === String(expectedValue).toLowerCase();
+        // Support comma-separated multi-values (e.g. day_of_week: "Monday,Friday")
+        if (String(expectedValue).includes(',')) {
+          const expectedValues = expectedValue.split(',').map(v => v.trim().toLowerCase());
+          matched = expectedValues.includes(String(actualValue).toLowerCase());
+        } else {
+          matched = String(actualValue).toLowerCase() === String(expectedValue).toLowerCase();
+        }
         break;
       case 'not_equals':
         matched = String(actualValue).toLowerCase() !== String(expectedValue).toLowerCase();
@@ -1830,7 +1836,46 @@ export function CustomRuleBuilderPanel() {
                                           location: ['Main Centre', 'Branch A', 'Branch B'],
                                           classification_level: ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6'],
                                         };
+                                        const multiSelectFields = ['day_of_week'];
                                         const options = selectOptions[condition.field] || [];
+                                        const isMulti = multiSelectFields.includes(condition.field);
+
+                                        if (isMulti) {
+                                          const selectedValues = condition.value ? condition.value.split(',').map(v => v.trim()) : [];
+                                          const toggleDay = (day: string) => {
+                                            const updated = selectedValues.includes(day)
+                                              ? selectedValues.filter(d => d !== day)
+                                              : [...selectedValues, day];
+                                            updateCondition(groupIndex, conditionIndex, 'value', updated.join(','));
+                                          };
+                                          return (
+                                            <div className="flex-1 space-y-1.5">
+                                              <div className="flex flex-wrap gap-1.5">
+                                                {options.map(opt => {
+                                                  const isSelected = selectedValues.includes(opt);
+                                                  return (
+                                                    <Button
+                                                      key={opt}
+                                                      type="button"
+                                                      size="sm"
+                                                      variant={isSelected ? 'default' : 'outline'}
+                                                      className="h-7 px-2.5 text-xs"
+                                                      onClick={() => toggleDay(opt)}
+                                                    >
+                                                      {opt.slice(0, 3)}
+                                                    </Button>
+                                                  );
+                                                })}
+                                              </div>
+                                              {selectedValues.length > 0 && (
+                                                <p className="text-xs text-muted-foreground">
+                                                  {selectedValues.length} day{selectedValues.length > 1 ? 's' : ''} selected
+                                                </p>
+                                              )}
+                                            </div>
+                                          );
+                                        }
+
                                         return (
                                           <Select
                                             value={condition.value}
