@@ -1429,10 +1429,10 @@ export default function RosterScheduler() {
           <Stack direction="row" spacing={{ xs: 1, lg: 3 }} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1 }}>
             {/* Logo/Brand */}
             <Stack direction="row" spacing={1} alignItems="center">
-              <Box sx={{ height: 32, width: 32, borderRadius: 2, bgcolor: 'primary.main', opacity: 0.1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <Calendar className="h-5 w-5" style={{ position: 'absolute', color: 'var(--mui-palette-primary-main)' }} />
-              </Box>
-              <Typography variant="h6" fontWeight={600}>Rosters</Typography>
+              <IconButton size="small" onClick={() => navigate('/')} sx={{ mr: 0.5 }}>
+                <ArrowLeft className="h-5 w-5" />
+              </IconButton>
+              <img src={rosteredLogo} alt="Rostered.ai" style={{ height: 28 }} />
             </Stack>
 
             {/* Centre Selector */}
