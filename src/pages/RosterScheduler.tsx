@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, addDays, addMonths, startOfWeek, subWeeks, startOfMonth, endOfMonth, getDaysInMonth, setMonth, setYear, getYear, getMonth } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -104,6 +105,7 @@ import { useThemeMode } from '@/theme/ThemeProvider';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { 
+  ArrowLeft,
   Calendar, 
   ChevronLeft, 
   ChevronRight, 
@@ -159,6 +161,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
+import rosteredLogo from '@/assets/rostered-logo.png';
 
 // Default budget configuration per centre
 const defaultCentreBudgets: Record<string, number> = {
@@ -168,6 +171,7 @@ const defaultCentreBudgets: Record<string, number> = {
 };
 
 export default function RosterScheduler() {
+  const navigate = useNavigate();
   const { mode, setMode, resolvedMode } = useThemeMode();
   const isMobile = useIsMobile();
   const breakpoint = useBreakpoint();
@@ -1429,10 +1433,10 @@ export default function RosterScheduler() {
           <Stack direction="row" spacing={{ xs: 1, lg: 3 }} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1 }}>
             {/* Logo/Brand */}
             <Stack direction="row" spacing={1} alignItems="center">
-              <Box sx={{ height: 32, width: 32, borderRadius: 2, bgcolor: 'primary.main', opacity: 0.1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <Calendar className="h-5 w-5" style={{ position: 'absolute', color: 'var(--mui-palette-primary-main)' }} />
-              </Box>
-              <Typography variant="h6" fontWeight={600}>Rosters</Typography>
+              <IconButton size="small" onClick={() => navigate('/')} sx={{ mr: 0.5 }}>
+                <ArrowLeft className="h-5 w-5" />
+              </IconButton>
+              <img src={rosteredLogo} alt="Rostered.ai" style={{ height: 28 }} />
             </Stack>
 
             {/* Centre Selector */}
