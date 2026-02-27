@@ -161,6 +161,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { BarChart2 } from 'lucide-react';
+import rosteredLogo from '@/assets/rostered-logo.png';
 
 // Default budget configuration per centre
 const defaultCentreBudgets: Record<string, number> = {
