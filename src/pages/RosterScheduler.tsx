@@ -171,6 +171,7 @@ const defaultCentreBudgets: Record<string, number> = {
 };
 
 export default function RosterScheduler() {
+  const navigate = useNavigate();
   const { mode, setMode, resolvedMode } = useThemeMode();
   const isMobile = useIsMobile();
   const breakpoint = useBreakpoint();
