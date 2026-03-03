@@ -1343,8 +1343,8 @@ export function SendToAgencyModal({
       size="lg"
     >
       {/* Progress Indicator */}
-      <Box sx={{ mb: 3 }}>
-        <Stack direction="row" spacing={1} mb={1}>
+      <div className="mb-4">
+        <div className="flex gap-2 mb-1">
           {['Configure', 'Agencies', 'Review'].map((label, index) => {
             const stepNames = ['config', 'agencies', 'review'];
             const currentIndex = stepNames.indexOf(step);
@@ -1352,28 +1352,24 @@ export function SendToAgencyModal({
             const isComplete = index < currentIndex;
             
             return (
-              <Box key={label} sx={{ flex: 1 }}>
-                <Box
-                  sx={{
-                    height: 4,
-                    borderRadius: 2,
-                    bgcolor: isComplete ? 'success.main' : isActive ? 'primary.main' : 'grey.200',
-                    transition: 'all 0.3s',
-                  }}
+              <div key={label} className="flex-1">
+                <div
+                  className={cn(
+                    "h-1 rounded-full transition-all duration-300",
+                    isComplete ? "bg-green-500" : isActive ? "bg-primary" : "bg-border"
+                  )}
                 />
-                <Typography
-                  variant="caption"
-                  color={isActive ? 'primary' : 'text.secondary'}
-                  fontWeight={isActive ? 600 : 400}
-                  sx={{ mt: 0.5, display: 'block', textAlign: 'center' }}
-                >
+                <p className={cn(
+                  "mt-1 text-xs text-center",
+                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                )}>
                   {label}
-                </Typography>
-              </Box>
+                </p>
+              </div>
             );
           })}
-        </Stack>
-      </Box>
+        </div>
+      </div>
 
       {step === 'config' && renderConfigStep()}
       {step === 'agencies' && renderAgenciesStep()}
