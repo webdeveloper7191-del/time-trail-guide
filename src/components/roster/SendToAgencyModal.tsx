@@ -61,6 +61,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { OpenShift, Shift, StaffMember } from '@/types/roster';
 import { Agency, ShiftUrgency, FillMode } from '@/types/agency';
 import { format, parseISO, addHours, differenceInHours } from 'date-fns';
