@@ -768,67 +768,57 @@ export function SendToAgencyModal({
         </Stack>
       </FormSection>
 
-      {/* Collapsible Sections */}
       {/* Timing & Response */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
+      <div className="rounded-lg border border-border bg-background overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => toggleSection('timing')}
-          endIcon={expandedSections.has('timing') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary' }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Timer size={16} />
-            <Typography variant="subtitle2">Timing & Response</Typography>
-          </Stack>
-        </Button>
+          <div className="flex items-center gap-2">
+            <Timer size={16} className="text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Timing & Response</span>
+          </div>
+          {expandedSections.has('timing') ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
         <Collapse in={expandedSections.has('timing')}>
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Response Deadline: {responseDeadlineHours} hours
-                </Typography>
-                <Slider
-                  value={responseDeadlineHours}
-                  onChange={(_, v) => setResponseDeadlineHours(v as number)}
-                  min={1}
-                  max={24}
-                  marks={[
-                    { value: 1, label: '1h' },
-                    { value: 6, label: '6h' },
-                    { value: 12, label: '12h' },
-                    { value: 24, label: '24h' },
-                  ]}
-                  valueLabelDisplay="auto"
-                  size="small"
-                />
-              </Box>
-              
-              <Box>
-                <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Auto-escalate after: {autoEscalateMinutes} minutes
-                </Typography>
-                <Slider
-                  value={autoEscalateMinutes}
-                  onChange={(_, v) => setAutoEscalateMinutes(v as number)}
-                  min={15}
-                  max={180}
-                  step={15}
-                  marks={[
-                    { value: 15, label: '15m' },
-                    { value: 60, label: '1h' },
-                    { value: 120, label: '2h' },
-                  ]}
-                  valueLabelDisplay="auto"
-                  size="small"
-                />
-              </Box>
-            </Stack>
-          </Box>
+          <div className="px-4 pb-4 pt-1 bg-muted/30 space-y-4">
+            <div>
+              <p className="text-xs text-primary mb-1">Response Deadline: {responseDeadlineHours} hours</p>
+              <Slider
+                value={responseDeadlineHours}
+                onChange={(_, v) => setResponseDeadlineHours(v as number)}
+                min={1}
+                max={24}
+                marks={[
+                  { value: 1, label: '1h' },
+                  { value: 6, label: '6h' },
+                  { value: 12, label: '12h' },
+                  { value: 24, label: '24h' },
+                ]}
+                valueLabelDisplay="auto"
+                size="small"
+              />
+            </div>
+            <div>
+              <p className="text-xs text-primary mb-1">Auto-escalate after: {autoEscalateMinutes} minutes</p>
+              <Slider
+                value={autoEscalateMinutes}
+                onChange={(_, v) => setAutoEscalateMinutes(v as number)}
+                min={15}
+                max={180}
+                step={15}
+                marks={[
+                  { value: 15, label: '15m' },
+                  { value: 60, label: '1h' },
+                  { value: 120, label: '2h' },
+                ]}
+                valueLabelDisplay="auto"
+                size="small"
+              />
+            </div>
+          </div>
         </Collapse>
-      </Box>
+      </div>
 
       {/* Acceptance Mode */}
       <Box>
