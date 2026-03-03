@@ -821,21 +821,19 @@ export function SendToAgencyModal({
       </div>
 
       {/* Acceptance Mode */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
+      <div className="rounded-lg border border-border bg-background overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => toggleSection('acceptance')}
-          endIcon={expandedSections.has('acceptance') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary' }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Target size={16} />
-            <Typography variant="subtitle2">Acceptance Mode</Typography>
-          </Stack>
-        </Button>
+          <div className="flex items-center gap-2">
+            <Target size={16} className="text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Acceptance Mode</span>
+          </div>
+          {expandedSections.has('acceptance') ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
         <Collapse in={expandedSections.has('acceptance')}>
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
+          <div className="px-4 pb-4 pt-1 bg-muted/30">
             <RadioGroup value={acceptanceMode} onChange={(e) => setAcceptanceMode(e.target.value as AcceptanceMode)}>
               <FormControlLabel
                 value="first_response"
@@ -886,126 +884,112 @@ export function SendToAgencyModal({
                 }
               />
             </RadioGroup>
-          </Box>
+          </div>
         </Collapse>
-      </Box>
+      </div>
 
       {/* Rate Controls */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
+      <div className="rounded-lg border border-border bg-background overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => toggleSection('rates')}
-          endIcon={expandedSections.has('rates') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary' }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <DollarSign size={16} />
-            <Typography variant="subtitle2">Rate Controls</Typography>
-          </Stack>
-        </Button>
+          <div className="flex items-center gap-2">
+            <DollarSign size={16} className="text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Rate Controls</span>
+          </div>
+          {expandedSections.has('rates') ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
         <Collapse in={expandedSections.has('rates')}>
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
-            <Stack spacing={2}>
-              <Stack direction="row" spacing={2}>
-                <TextField
-                  label="Max Pay Rate ($/hr)"
-                  type="number"
-                  size="small"
-                  value={maxPayRate}
-                  onChange={(e) => setMaxPayRate(Number(e.target.value))}
-                  fullWidth
-                />
-                <TextField
-                  label="Max Charge Rate ($/hr)"
-                  type="number"
-                  size="small"
-                  value={maxChargeRate}
-                  onChange={(e) => setMaxChargeRate(Number(e.target.value))}
-                  fullWidth
-                />
-              </Stack>
-              <StyledSwitch
-                checked={allowNegotiation}
-                onChange={setAllowNegotiation}
-                label="Allow rate negotiation"
+          <div className="px-4 pb-4 pt-1 bg-muted/30 space-y-3">
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label="Max Pay Rate ($/hr)"
+                type="number"
                 size="small"
+                value={maxPayRate}
+                onChange={(e) => setMaxPayRate(Number(e.target.value))}
+                fullWidth
+              />
+              <TextField
+                label="Max Charge Rate ($/hr)"
+                type="number"
+                size="small"
+                value={maxChargeRate}
+                onChange={(e) => setMaxChargeRate(Number(e.target.value))}
+                fullWidth
               />
             </Stack>
-          </Box>
+            <StyledSwitch
+              checked={allowNegotiation}
+              onChange={setAllowNegotiation}
+              label="Allow rate negotiation"
+              size="small"
+            />
+          </div>
         </Collapse>
-      </Box>
+      </div>
 
       {/* Quality Requirements */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
+      <div className="rounded-lg border border-border bg-background overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => toggleSection('quality')}
-          endIcon={expandedSections.has('quality') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary' }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Award size={16} />
-            <Typography variant="subtitle2">Quality Requirements</Typography>
-          </Stack>
-        </Button>
+          <div className="flex items-center gap-2">
+            <Award size={16} className="text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Quality Requirements</span>
+          </div>
+          {expandedSections.has('quality') ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
         <Collapse in={expandedSections.has('quality')}>
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Minimum Compliance Score: {minComplianceScore}%
-                </Typography>
-                <Slider
-                  value={minComplianceScore}
-                  onChange={(_, v) => setMinComplianceScore(v as number)}
-                  min={0}
-                  max={100}
-                  valueLabelDisplay="auto"
-                  size="small"
-                />
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Minimum Reliability Score: {minReliabilityScore}%
-                </Typography>
-                <Slider
-                  value={minReliabilityScore}
-                  onChange={(_, v) => setMinReliabilityScore(v as number)}
-                  min={0}
-                  max={100}
-                  valueLabelDisplay="auto"
-                  size="small"
-                />
-              </Box>
-              <StyledSwitch
-                checked={preferPreviousWorkers}
-                onChange={setPreferPreviousWorkers}
-                label="Prefer workers who've worked at this centre before"
+          <div className="px-4 pb-4 pt-1 bg-muted/30 space-y-4">
+            <div>
+              <p className="text-xs text-primary mb-1">Minimum Compliance Score: {minComplianceScore}%</p>
+              <Slider
+                value={minComplianceScore}
+                onChange={(_, v) => setMinComplianceScore(v as number)}
+                min={0}
+                max={100}
+                valueLabelDisplay="auto"
                 size="small"
               />
-            </Stack>
-          </Box>
+            </div>
+            <div>
+              <p className="text-xs text-primary mb-1">Minimum Reliability Score: {minReliabilityScore}%</p>
+              <Slider
+                value={minReliabilityScore}
+                onChange={(_, v) => setMinReliabilityScore(v as number)}
+                min={0}
+                max={100}
+                valueLabelDisplay="auto"
+                size="small"
+              />
+            </div>
+            <StyledSwitch
+              checked={preferPreviousWorkers}
+              onChange={setPreferPreviousWorkers}
+              label="Prefer workers who've worked at this centre before"
+              size="small"
+            />
+          </div>
         </Collapse>
-      </Box>
+      </div>
 
       {/* Custom Message */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
+      <div className="rounded-lg border border-border bg-background overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => toggleSection('message')}
-          endIcon={expandedSections.has('message') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary' }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <MessageSquare size={16} />
-            <Typography variant="subtitle2">Custom Message (Optional)</Typography>
-          </Stack>
-        </Button>
+          <div className="flex items-center gap-2">
+            <MessageSquare size={16} className="text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Custom Message (Optional)</span>
+          </div>
+          {expandedSections.has('message') ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
         <Collapse in={expandedSections.has('message')}>
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
+          <div className="px-4 pb-4 pt-1 bg-muted/30">
             <TextField
               multiline
               rows={3}
@@ -1015,9 +999,9 @@ export function SendToAgencyModal({
               onChange={(e) => setCustomMessage(e.target.value)}
               size="small"
             />
-          </Box>
+          </div>
         </Collapse>
-      </Box>
+      </div>
     </Stack>
   );
 
