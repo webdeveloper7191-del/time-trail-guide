@@ -61,6 +61,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { OpenShift, Shift, StaffMember } from '@/types/roster';
 import { Agency, ShiftUrgency, FillMode } from '@/types/agency';
 import { format, parseISO, addHours, differenceInHours } from 'date-fns';
@@ -714,27 +715,31 @@ export function SendToAgencyModal({
   };
 
   const renderConfigStep = () => (
-    <Stack spacing={3}>
+    <Stack spacing={2.5}>
       {/* Shift Summary */}
       {shiftDetails && (
-        <Alert severity="info" icon={<Clock size={18} />}>
-          <Typography variant="subtitle2">
-            {absentStaff ? `Covering for: ${absentStaff.name}` : 'Open Shift'}
-          </Typography>
-          <Typography variant="body2">
-            {format(parseISO(shiftDetails.date), 'EEEE, d MMMM yyyy')} • {shiftDetails.startTime} - {shiftDetails.endTime}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {centreName}
-          </Typography>
-        </Alert>
+        <FormSection title="">
+          <div className="flex items-start gap-3 -mt-4">
+            <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10 shrink-0 mt-0.5">
+              <Clock size={18} className="text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-primary">
+                {absentStaff ? `Covering for: ${absentStaff.name}` : 'Open Shift'}
+              </p>
+              <p className="text-sm text-foreground">
+                {format(parseISO(shiftDetails.date), 'EEEE, d MMMM yyyy')} • {shiftDetails.startTime} - {shiftDetails.endTime}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {centreName}
+              </p>
+            </div>
+          </div>
+        </FormSection>
       )}
 
       {/* Broadcast Type */}
-      <Box>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Layers size={16} /> Broadcast Type
-        </Typography>
+      <FormSection title="Broadcast Type">
         <RadioGroup
           row
           value={broadcastType}
@@ -745,13 +750,10 @@ export function SendToAgencyModal({
           <FormControlLabel value="emergency" control={<Radio size="small" />} label="Emergency" />
           <FormControlLabel value="recurring" control={<Radio size="small" />} label="Recurring" />
         </RadioGroup>
-      </Box>
+      </FormSection>
 
       {/* Urgency */}
-      <Box>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AlertTriangle size={16} /> Urgency Level
-        </Typography>
+      <FormSection title="Urgency Level">
         <Stack direction="row" spacing={1}>
           {(['standard', 'urgent', 'critical'] as ShiftUrgency[]).map(level => (
             <Chip
@@ -764,86 +766,74 @@ export function SendToAgencyModal({
             />
           ))}
         </Stack>
-      </Box>
+      </FormSection>
 
-      {/* Collapsible Sections */}
       {/* Timing & Response */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
+      <div className="rounded-lg border border-border bg-background overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => toggleSection('timing')}
-          endIcon={expandedSections.has('timing') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary' }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Timer size={16} />
-            <Typography variant="subtitle2">Timing & Response</Typography>
-          </Stack>
-        </Button>
+          <div className="flex items-center gap-2">
+            <Timer size={16} className="text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Timing & Response</span>
+          </div>
+          {expandedSections.has('timing') ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
         <Collapse in={expandedSections.has('timing')}>
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Response Deadline: {responseDeadlineHours} hours
-                </Typography>
-                <Slider
-                  value={responseDeadlineHours}
-                  onChange={(_, v) => setResponseDeadlineHours(v as number)}
-                  min={1}
-                  max={24}
-                  marks={[
-                    { value: 1, label: '1h' },
-                    { value: 6, label: '6h' },
-                    { value: 12, label: '12h' },
-                    { value: 24, label: '24h' },
-                  ]}
-                  valueLabelDisplay="auto"
-                  size="small"
-                />
-              </Box>
-              
-              <Box>
-                <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Auto-escalate after: {autoEscalateMinutes} minutes
-                </Typography>
-                <Slider
-                  value={autoEscalateMinutes}
-                  onChange={(_, v) => setAutoEscalateMinutes(v as number)}
-                  min={15}
-                  max={180}
-                  step={15}
-                  marks={[
-                    { value: 15, label: '15m' },
-                    { value: 60, label: '1h' },
-                    { value: 120, label: '2h' },
-                  ]}
-                  valueLabelDisplay="auto"
-                  size="small"
-                />
-              </Box>
-            </Stack>
-          </Box>
+          <div className="px-4 pb-4 pt-1 bg-muted/30 space-y-4">
+            <div>
+              <p className="text-xs text-primary mb-1">Response Deadline: {responseDeadlineHours} hours</p>
+              <Slider
+                value={responseDeadlineHours}
+                onChange={(_, v) => setResponseDeadlineHours(v as number)}
+                min={1}
+                max={24}
+                marks={[
+                  { value: 1, label: '1h' },
+                  { value: 6, label: '6h' },
+                  { value: 12, label: '12h' },
+                  { value: 24, label: '24h' },
+                ]}
+                valueLabelDisplay="auto"
+                size="small"
+              />
+            </div>
+            <div>
+              <p className="text-xs text-primary mb-1">Auto-escalate after: {autoEscalateMinutes} minutes</p>
+              <Slider
+                value={autoEscalateMinutes}
+                onChange={(_, v) => setAutoEscalateMinutes(v as number)}
+                min={15}
+                max={180}
+                step={15}
+                marks={[
+                  { value: 15, label: '15m' },
+                  { value: 60, label: '1h' },
+                  { value: 120, label: '2h' },
+                ]}
+                valueLabelDisplay="auto"
+                size="small"
+              />
+            </div>
+          </div>
         </Collapse>
-      </Box>
+      </div>
 
       {/* Acceptance Mode */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
+      <div className="rounded-lg border border-border bg-background overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => toggleSection('acceptance')}
-          endIcon={expandedSections.has('acceptance') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary' }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Target size={16} />
-            <Typography variant="subtitle2">Acceptance Mode</Typography>
-          </Stack>
-        </Button>
+          <div className="flex items-center gap-2">
+            <Target size={16} className="text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Acceptance Mode</span>
+          </div>
+          {expandedSections.has('acceptance') ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
         <Collapse in={expandedSections.has('acceptance')}>
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
+          <div className="px-4 pb-4 pt-1 bg-muted/30">
             <RadioGroup value={acceptanceMode} onChange={(e) => setAcceptanceMode(e.target.value as AcceptanceMode)}>
               <FormControlLabel
                 value="first_response"
@@ -894,126 +884,112 @@ export function SendToAgencyModal({
                 }
               />
             </RadioGroup>
-          </Box>
+          </div>
         </Collapse>
-      </Box>
+      </div>
 
       {/* Rate Controls */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
+      <div className="rounded-lg border border-border bg-background overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => toggleSection('rates')}
-          endIcon={expandedSections.has('rates') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary' }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <DollarSign size={16} />
-            <Typography variant="subtitle2">Rate Controls</Typography>
-          </Stack>
-        </Button>
+          <div className="flex items-center gap-2">
+            <DollarSign size={16} className="text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Rate Controls</span>
+          </div>
+          {expandedSections.has('rates') ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
         <Collapse in={expandedSections.has('rates')}>
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
-            <Stack spacing={2}>
-              <Stack direction="row" spacing={2}>
-                <TextField
-                  label="Max Pay Rate ($/hr)"
-                  type="number"
-                  size="small"
-                  value={maxPayRate}
-                  onChange={(e) => setMaxPayRate(Number(e.target.value))}
-                  fullWidth
-                />
-                <TextField
-                  label="Max Charge Rate ($/hr)"
-                  type="number"
-                  size="small"
-                  value={maxChargeRate}
-                  onChange={(e) => setMaxChargeRate(Number(e.target.value))}
-                  fullWidth
-                />
-              </Stack>
-              <StyledSwitch
-                checked={allowNegotiation}
-                onChange={setAllowNegotiation}
-                label="Allow rate negotiation"
+          <div className="px-4 pb-4 pt-1 bg-muted/30 space-y-3">
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label="Max Pay Rate ($/hr)"
+                type="number"
                 size="small"
+                value={maxPayRate}
+                onChange={(e) => setMaxPayRate(Number(e.target.value))}
+                fullWidth
+              />
+              <TextField
+                label="Max Charge Rate ($/hr)"
+                type="number"
+                size="small"
+                value={maxChargeRate}
+                onChange={(e) => setMaxChargeRate(Number(e.target.value))}
+                fullWidth
               />
             </Stack>
-          </Box>
+            <StyledSwitch
+              checked={allowNegotiation}
+              onChange={setAllowNegotiation}
+              label="Allow rate negotiation"
+              size="small"
+            />
+          </div>
         </Collapse>
-      </Box>
+      </div>
 
       {/* Quality Requirements */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
+      <div className="rounded-lg border border-border bg-background overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => toggleSection('quality')}
-          endIcon={expandedSections.has('quality') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary' }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Award size={16} />
-            <Typography variant="subtitle2">Quality Requirements</Typography>
-          </Stack>
-        </Button>
+          <div className="flex items-center gap-2">
+            <Award size={16} className="text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Quality Requirements</span>
+          </div>
+          {expandedSections.has('quality') ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
         <Collapse in={expandedSections.has('quality')}>
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Minimum Compliance Score: {minComplianceScore}%
-                </Typography>
-                <Slider
-                  value={minComplianceScore}
-                  onChange={(_, v) => setMinComplianceScore(v as number)}
-                  min={0}
-                  max={100}
-                  valueLabelDisplay="auto"
-                  size="small"
-                />
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Minimum Reliability Score: {minReliabilityScore}%
-                </Typography>
-                <Slider
-                  value={minReliabilityScore}
-                  onChange={(_, v) => setMinReliabilityScore(v as number)}
-                  min={0}
-                  max={100}
-                  valueLabelDisplay="auto"
-                  size="small"
-                />
-              </Box>
-              <StyledSwitch
-                checked={preferPreviousWorkers}
-                onChange={setPreferPreviousWorkers}
-                label="Prefer workers who've worked at this centre before"
+          <div className="px-4 pb-4 pt-1 bg-muted/30 space-y-4">
+            <div>
+              <p className="text-xs text-primary mb-1">Minimum Compliance Score: {minComplianceScore}%</p>
+              <Slider
+                value={minComplianceScore}
+                onChange={(_, v) => setMinComplianceScore(v as number)}
+                min={0}
+                max={100}
+                valueLabelDisplay="auto"
                 size="small"
               />
-            </Stack>
-          </Box>
+            </div>
+            <div>
+              <p className="text-xs text-primary mb-1">Minimum Reliability Score: {minReliabilityScore}%</p>
+              <Slider
+                value={minReliabilityScore}
+                onChange={(_, v) => setMinReliabilityScore(v as number)}
+                min={0}
+                max={100}
+                valueLabelDisplay="auto"
+                size="small"
+              />
+            </div>
+            <StyledSwitch
+              checked={preferPreviousWorkers}
+              onChange={setPreferPreviousWorkers}
+              label="Prefer workers who've worked at this centre before"
+              size="small"
+            />
+          </div>
         </Collapse>
-      </Box>
+      </div>
 
       {/* Custom Message */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
+      <div className="rounded-lg border border-border bg-background overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => toggleSection('message')}
-          endIcon={expandedSections.has('message') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          sx={{ justifyContent: 'space-between', textTransform: 'none', color: 'text.primary' }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <MessageSquare size={16} />
-            <Typography variant="subtitle2">Custom Message (Optional)</Typography>
-          </Stack>
-        </Button>
+          <div className="flex items-center gap-2">
+            <MessageSquare size={16} className="text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Custom Message (Optional)</span>
+          </div>
+          {expandedSections.has('message') ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
         <Collapse in={expandedSections.has('message')}>
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
+          <div className="px-4 pb-4 pt-1 bg-muted/30">
             <TextField
               multiline
               rows={3}
@@ -1023,9 +999,9 @@ export function SendToAgencyModal({
               onChange={(e) => setCustomMessage(e.target.value)}
               size="small"
             />
-          </Box>
+          </div>
         </Collapse>
-      </Box>
+      </div>
     </Stack>
   );
 
@@ -1263,36 +1239,27 @@ export function SendToAgencyModal({
   );
 
   const renderReviewStep = () => (
-    <Stack spacing={3}>
-      <Alert severity="info" icon={<Eye size={18} />}>
-        Review your broadcast configuration before sending
-      </Alert>
+    <Stack spacing={2.5}>
+      <div className="rounded-lg border border-border bg-primary/5 p-3">
+        <div className="flex items-center gap-2">
+          <Eye size={16} className="text-primary" />
+          <p className="text-sm text-foreground">Review your broadcast configuration before sending</p>
+        </div>
+      </div>
 
       {/* Shift Details */}
-      <Paper sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Clock size={16} /> Shift Details
-        </Typography>
+      <FormSection title="Shift Details">
         {shiftDetails && (
-          <Stack spacing={0.5}>
-            <Typography variant="body2">
-              {format(parseISO(shiftDetails.date), 'EEEE, d MMMM yyyy')}
-            </Typography>
-            <Typography variant="body2">
-              {shiftDetails.startTime} - {shiftDetails.endTime}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {centreName}
-            </Typography>
-          </Stack>
+          <div className="space-y-1">
+            <p className="text-sm text-foreground">{format(parseISO(shiftDetails.date), 'EEEE, d MMMM yyyy')}</p>
+            <p className="text-sm text-foreground">{shiftDetails.startTime} - {shiftDetails.endTime}</p>
+            <p className="text-xs text-muted-foreground">{centreName}</p>
+          </div>
         )}
-      </Paper>
+      </FormSection>
 
       {/* Broadcast Settings */}
-      <Paper sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Settings size={16} /> Broadcast Settings
-        </Typography>
+      <FormSection title="Broadcast Settings">
         <Stack direction="row" flexWrap="wrap" gap={1}>
           <Chip size="small" label={`Type: ${broadcastType.replace('_', ' ')}`} />
           <Chip size="small" label={`Urgency: ${urgency}`} color={urgency === 'critical' ? 'error' : urgency === 'urgent' ? 'warning' : 'default'} />
@@ -1300,13 +1267,10 @@ export function SendToAgencyModal({
           <Chip size="small" label={`Deadline: ${responseDeadlineHours}h`} />
           <Chip size="small" label={`Max Rate: $${maxPayRate}/hr`} />
         </Stack>
-      </Paper>
+      </FormSection>
 
       {/* Selected Agencies */}
-      <Paper sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Building2 size={16} /> Selected Agencies ({selectedAgencyList.length})
-        </Typography>
+      <FormSection title={`Selected Agencies (${selectedAgencyList.length})`}>
         <Stack spacing={1}>
           {selectedAgencyList.map(({ agency, rule }) => (
             <Stack key={agency.id} direction="row" alignItems="center" justifyContent="space-between">
@@ -1321,32 +1285,27 @@ export function SendToAgencyModal({
             </Stack>
           ))}
         </Stack>
-      </Paper>
+      </FormSection>
 
       {/* Notification Preview */}
-      <Paper sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Send size={16} /> Notification Preview
-        </Typography>
-        <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-          <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+      <FormSection title="Notification Preview">
+        <div className="p-3 bg-muted/50 rounded-md">
+          <p className="text-sm whitespace-pre-line">
             <strong>New Shift Request</strong>{'\n'}
             {centreName} needs a staff member{'\n'}
             {shiftDetails && `${format(parseISO(shiftDetails.date), 'EEE d MMM')} • ${shiftDetails.startTime} - ${shiftDetails.endTime}`}{'\n'}
             Urgency: {urgency.toUpperCase()}{'\n'}
             Rate: Up to ${maxPayRate}/hr{'\n'}
             {customMessage && `\nNotes: ${customMessage}`}
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={1} mt={1}>
-          <Typography variant="caption" color="text.secondary">
-            Via:
-          </Typography>
+          </p>
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-xs text-muted-foreground">Via:</span>
           {notifyChannels.map(channel => (
             <Chip key={channel} size="small" label={channel.toUpperCase()} variant="outlined" sx={{ fontSize: '0.65rem' }} />
           ))}
-        </Stack>
-      </Paper>
+        </div>
+      </FormSection>
     </Stack>
   );
 
@@ -1384,8 +1343,8 @@ export function SendToAgencyModal({
       size="lg"
     >
       {/* Progress Indicator */}
-      <Box sx={{ mb: 3 }}>
-        <Stack direction="row" spacing={1} mb={1}>
+      <div className="mb-4">
+        <div className="flex gap-2 mb-1">
           {['Configure', 'Agencies', 'Review'].map((label, index) => {
             const stepNames = ['config', 'agencies', 'review'];
             const currentIndex = stepNames.indexOf(step);
@@ -1393,28 +1352,24 @@ export function SendToAgencyModal({
             const isComplete = index < currentIndex;
             
             return (
-              <Box key={label} sx={{ flex: 1 }}>
-                <Box
-                  sx={{
-                    height: 4,
-                    borderRadius: 2,
-                    bgcolor: isComplete ? 'success.main' : isActive ? 'primary.main' : 'grey.200',
-                    transition: 'all 0.3s',
-                  }}
+              <div key={label} className="flex-1">
+                <div
+                  className={cn(
+                    "h-1 rounded-full transition-all duration-300",
+                    isComplete ? "bg-green-500" : isActive ? "bg-primary" : "bg-border"
+                  )}
                 />
-                <Typography
-                  variant="caption"
-                  color={isActive ? 'primary' : 'text.secondary'}
-                  fontWeight={isActive ? 600 : 400}
-                  sx={{ mt: 0.5, display: 'block', textAlign: 'center' }}
-                >
+                <p className={cn(
+                  "mt-1 text-xs text-center",
+                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                )}>
                   {label}
-                </Typography>
-              </Box>
+                </p>
+              </div>
             );
           })}
-        </Stack>
-      </Box>
+        </div>
+      </div>
 
       {step === 'config' && renderConfigStep()}
       {step === 'agencies' && renderAgenciesStep()}
