@@ -1239,36 +1239,27 @@ export function SendToAgencyModal({
   );
 
   const renderReviewStep = () => (
-    <Stack spacing={3}>
-      <Alert severity="info" icon={<Eye size={18} />}>
-        Review your broadcast configuration before sending
-      </Alert>
+    <Stack spacing={2.5}>
+      <div className="rounded-lg border border-border bg-primary/5 p-3">
+        <div className="flex items-center gap-2">
+          <Eye size={16} className="text-primary" />
+          <p className="text-sm text-foreground">Review your broadcast configuration before sending</p>
+        </div>
+      </div>
 
       {/* Shift Details */}
-      <Paper sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Clock size={16} /> Shift Details
-        </Typography>
+      <FormSection title="Shift Details">
         {shiftDetails && (
-          <Stack spacing={0.5}>
-            <Typography variant="body2">
-              {format(parseISO(shiftDetails.date), 'EEEE, d MMMM yyyy')}
-            </Typography>
-            <Typography variant="body2">
-              {shiftDetails.startTime} - {shiftDetails.endTime}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {centreName}
-            </Typography>
-          </Stack>
+          <div className="space-y-1">
+            <p className="text-sm text-foreground">{format(parseISO(shiftDetails.date), 'EEEE, d MMMM yyyy')}</p>
+            <p className="text-sm text-foreground">{shiftDetails.startTime} - {shiftDetails.endTime}</p>
+            <p className="text-xs text-muted-foreground">{centreName}</p>
+          </div>
         )}
-      </Paper>
+      </FormSection>
 
       {/* Broadcast Settings */}
-      <Paper sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Settings size={16} /> Broadcast Settings
-        </Typography>
+      <FormSection title="Broadcast Settings">
         <Stack direction="row" flexWrap="wrap" gap={1}>
           <Chip size="small" label={`Type: ${broadcastType.replace('_', ' ')}`} />
           <Chip size="small" label={`Urgency: ${urgency}`} color={urgency === 'critical' ? 'error' : urgency === 'urgent' ? 'warning' : 'default'} />
@@ -1276,13 +1267,10 @@ export function SendToAgencyModal({
           <Chip size="small" label={`Deadline: ${responseDeadlineHours}h`} />
           <Chip size="small" label={`Max Rate: $${maxPayRate}/hr`} />
         </Stack>
-      </Paper>
+      </FormSection>
 
       {/* Selected Agencies */}
-      <Paper sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Building2 size={16} /> Selected Agencies ({selectedAgencyList.length})
-        </Typography>
+      <FormSection title={`Selected Agencies (${selectedAgencyList.length})`}>
         <Stack spacing={1}>
           {selectedAgencyList.map(({ agency, rule }) => (
             <Stack key={agency.id} direction="row" alignItems="center" justifyContent="space-between">
@@ -1297,32 +1285,27 @@ export function SendToAgencyModal({
             </Stack>
           ))}
         </Stack>
-      </Paper>
+      </FormSection>
 
       {/* Notification Preview */}
-      <Paper sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Send size={16} /> Notification Preview
-        </Typography>
-        <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-          <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+      <FormSection title="Notification Preview">
+        <div className="p-3 bg-muted/50 rounded-md">
+          <p className="text-sm whitespace-pre-line">
             <strong>New Shift Request</strong>{'\n'}
             {centreName} needs a staff member{'\n'}
             {shiftDetails && `${format(parseISO(shiftDetails.date), 'EEE d MMM')} • ${shiftDetails.startTime} - ${shiftDetails.endTime}`}{'\n'}
             Urgency: {urgency.toUpperCase()}{'\n'}
             Rate: Up to ${maxPayRate}/hr{'\n'}
             {customMessage && `\nNotes: ${customMessage}`}
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={1} mt={1}>
-          <Typography variant="caption" color="text.secondary">
-            Via:
-          </Typography>
+          </p>
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-xs text-muted-foreground">Via:</span>
           {notifyChannels.map(channel => (
             <Chip key={channel} size="small" label={channel.toUpperCase()} variant="outlined" sx={{ fontSize: '0.65rem' }} />
           ))}
-        </Stack>
-      </Paper>
+        </div>
+      </FormSection>
     </Stack>
   );
 
