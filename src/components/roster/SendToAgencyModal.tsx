@@ -739,10 +739,7 @@ export function SendToAgencyModal({
       )}
 
       {/* Broadcast Type */}
-      <Box>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Layers size={16} /> Broadcast Type
-        </Typography>
+      <FormSection title="Broadcast Type">
         <RadioGroup
           row
           value={broadcastType}
@@ -753,13 +750,10 @@ export function SendToAgencyModal({
           <FormControlLabel value="emergency" control={<Radio size="small" />} label="Emergency" />
           <FormControlLabel value="recurring" control={<Radio size="small" />} label="Recurring" />
         </RadioGroup>
-      </Box>
+      </FormSection>
 
       {/* Urgency */}
-      <Box>
-        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AlertTriangle size={16} /> Urgency Level
-        </Typography>
+      <FormSection title="Urgency Level">
         <Stack direction="row" spacing={1}>
           {(['standard', 'urgent', 'critical'] as ShiftUrgency[]).map(level => (
             <Chip
@@ -772,7 +766,7 @@ export function SendToAgencyModal({
             />
           ))}
         </Stack>
-      </Box>
+      </FormSection>
 
       {/* Collapsible Sections */}
       {/* Timing & Response */}
