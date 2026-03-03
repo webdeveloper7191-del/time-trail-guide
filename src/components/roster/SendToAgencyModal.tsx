@@ -715,20 +715,27 @@ export function SendToAgencyModal({
   };
 
   const renderConfigStep = () => (
-    <Stack spacing={3}>
+    <Stack spacing={2.5}>
       {/* Shift Summary */}
       {shiftDetails && (
-        <Alert severity="info" icon={<Clock size={18} />}>
-          <Typography variant="subtitle2">
-            {absentStaff ? `Covering for: ${absentStaff.name}` : 'Open Shift'}
-          </Typography>
-          <Typography variant="body2">
-            {format(parseISO(shiftDetails.date), 'EEEE, d MMMM yyyy')} • {shiftDetails.startTime} - {shiftDetails.endTime}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {centreName}
-          </Typography>
-        </Alert>
+        <FormSection title="">
+          <div className="flex items-start gap-3 -mt-4">
+            <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10 shrink-0 mt-0.5">
+              <Clock size={18} className="text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-primary">
+                {absentStaff ? `Covering for: ${absentStaff.name}` : 'Open Shift'}
+              </p>
+              <p className="text-sm text-foreground">
+                {format(parseISO(shiftDetails.date), 'EEEE, d MMMM yyyy')} • {shiftDetails.startTime} - {shiftDetails.endTime}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {centreName}
+              </p>
+            </div>
+          </div>
+        </FormSection>
       )}
 
       {/* Broadcast Type */}
