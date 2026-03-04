@@ -30,6 +30,7 @@ import {
   MessageSquare,
   Users,
   Sparkles,
+  ClipboardCheck,
 } from 'lucide-react';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -127,6 +128,7 @@ export function EmployeePortal() {
         )}
 
         {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -186,6 +188,7 @@ export function EmployeePortal() {
             <TabsTrigger value="current" className="gap-2">
               <Clock className="h-4 w-4" /> Timesheets
             </TabsTrigger>
+            <TabsTrigger value="recognition" className="gap-2">
               <Sparkles className="h-4 w-4" /> Recognition
             </TabsTrigger>
             <TabsTrigger value="performance" className="gap-2">
@@ -207,6 +210,10 @@ export function EmployeePortal() {
               <GraduationCap className="h-4 w-4" /> Learning
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="onboarding">
+            <EmployeeOnboardingPanel />
+          </TabsContent>
 
           <TabsContent value="current">
             {currentWeekTimesheet ? (
