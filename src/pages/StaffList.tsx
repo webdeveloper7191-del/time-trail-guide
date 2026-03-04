@@ -55,7 +55,6 @@ import { toast } from 'sonner';
 import { StaffImportModal } from '@/components/workforce/StaffImportModal';
 import { StaffImportResult } from '@/lib/etl/staffETL';
 import { AddStaffOptionsDialog } from '@/components/workforce/AddStaffOptionsDialog';
-import { PaperlessOnboardingDialog } from '@/components/workforce/PaperlessOnboardingDialog';
 
 export default function StaffList() {
   const navigate = useNavigate();
@@ -67,12 +66,12 @@ export default function StaffList() {
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [showImportModal, setShowImportModal] = useState(false);
   const [showAddOptions, setShowAddOptions] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  
 
   const handleAddStaffOption = (option: 'onboarding' | 'csv' | 'manual') => {
     switch (option) {
       case 'onboarding':
-        setShowOnboarding(true);
+        navigate('/workforce/onboarding');
         break;
       case 'csv':
         setShowImportModal(true);
@@ -539,12 +538,6 @@ export default function StaffList() {
         open={showAddOptions}
         onOpenChange={setShowAddOptions}
         onSelectOption={handleAddStaffOption}
-      />
-
-      {/* Paperless Onboarding */}
-      <PaperlessOnboardingDialog
-        open={showOnboarding}
-        onOpenChange={setShowOnboarding}
       />
     </div>
   );
