@@ -545,13 +545,8 @@ export default function PaperlessOnboarding() {
                       <span>Location / Area</span>
                     </div>
                     {form.availability.map((day, i) => {
-                      // Build location/area options from selected work locations + areas
-                      const locationAreaOptions: { value: string; label: string; group?: string }[] = [];
-                      form.workLocations.forEach(loc => {
-                        locationAreaOptions.push({ value: loc, label: loc });
-                        const areas = (mockAreas[loc] || []).filter(a => form.workAreas.includes(a));
-                        areas.forEach(a => locationAreaOptions.push({ value: `${loc} › ${a}`, label: `${loc} › ${a}`, group: loc }));
-                      });
+                      // Use selected work locations as the options for availability
+                      const locationAreaOptions = form.workLocations.map(loc => ({ value: loc, label: loc }));
 
                       return (
                         <div key={day.day} className={cn(
