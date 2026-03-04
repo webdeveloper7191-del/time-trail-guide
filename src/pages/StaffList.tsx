@@ -54,6 +54,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { StaffImportModal } from '@/components/workforce/StaffImportModal';
 import { StaffImportResult } from '@/lib/etl/staffETL';
+import { AddStaffOptionsDialog } from '@/components/workforce/AddStaffOptionsDialog';
 
 export default function StaffList() {
   const navigate = useNavigate();
@@ -64,6 +65,21 @@ export default function StaffList() {
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showAddOptions, setShowAddOptions] = useState(false);
+
+  const handleAddStaffOption = (option: 'onboarding' | 'csv' | 'manual') => {
+    switch (option) {
+      case 'onboarding':
+        toast.info('Paperless onboarding flow coming soon');
+        break;
+      case 'csv':
+        setShowImportModal(true);
+        break;
+      case 'manual':
+        navigate('/workforce/new?mode=manual');
+        break;
+    }
+  };
 
   const handleImportComplete = (result: StaffImportResult) => {
     console.log('Import completed:', result);
@@ -180,7 +196,7 @@ export default function StaffList() {
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
-                <Button size="sm" className="bg-primary">
+                <Button size="sm" className="bg-primary" onClick={() => setShowAddOptions(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Staff
                 </Button>
