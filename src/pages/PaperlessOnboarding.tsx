@@ -580,46 +580,62 @@ export default function PaperlessOnboarding() {
                   <h3 className="text-sm font-semibold text-foreground mb-3">Same Every Week</h3>
                   <div className="border border-border/60 rounded-lg overflow-hidden">
                     {/* Table Header */}
-                    <div className="grid grid-cols-[160px_1fr_1fr_80px_80px_120px] gap-2 px-4 py-2.5 bg-muted/50 text-xs font-medium text-muted-foreground border-b border-border/40">
+                    <div className="grid grid-cols-[160px_1fr_1fr_80px_80px_180px] gap-2 px-4 py-2.5 bg-muted/50 text-xs font-medium text-muted-foreground border-b border-border/40">
                       <span>Day</span>
                       <span>Start</span>
                       <span>Finish</span>
                       <span>Hours</span>
                       <span>Breaks</span>
-                      <span>Area</span>
+                      <span>Location / Area</span>
                     </div>
-                    {form.availability.map((day, i) => (
-                      <div key={day.day} className={cn(
-                        "grid grid-cols-[160px_1fr_1fr_80px_80px_120px] gap-2 px-4 py-3 items-center",
-                        i < form.availability.length - 1 && "border-b border-border/30"
-                      )}>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{day.day}</p>
+                    {form.availability.map((day, i) => {
+                      // Build location/area options from selected work locations + areas
+                      const locationAreaOptions: { value: string; label: string; group?: string }[] = [];
+                      form.workLocations.forEach(loc => {
+                        locationAreaOptions.push({ value: loc, label: loc });
+                        const areas = (mockAreas[loc] || []).filter(a => form.workAreas.includes(a));
+                        areas.forEach(a => locationAreaOptions.push({ value: `${loc} › ${a}`, label: `${loc} › ${a}`, group: loc }));
+                      });
+
+                      return (
+                        <div key={day.day} className={cn(
+                          "grid grid-cols-[160px_1fr_1fr_80px_80px_180px] gap-2 px-4 py-3 items-center",
+                          i < form.availability.length - 1 && "border-b border-border/30"
+                        )}>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{day.day}</p>
+                          </div>
+                          <Input
+                            type="time"
+                            value={day.start}
+                            onChange={e => updateAvailability(i, 'start', e.target.value)}
+                            className="h-8 text-xs"
+                            placeholder="--:--"
+                          />
+                          <Input
+                            type="time"
+                            value={day.end}
+                            onChange={e => updateAvailability(i, 'end', e.target.value)}
+                            className="h-8 text-xs"
+                            placeholder="--:--"
+                          />
+                          <span className="text-xs text-muted-foreground text-center">0h</span>
+                          <span className="text-xs text-muted-foreground text-center">0 min</span>
+                          <Select value={day.area} onValueChange={v => updateAvailability(i, 'area', v)}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select..." /></SelectTrigger>
+                            <SelectContent>
+                              {locationAreaOptions.length > 0 ? (
+                                locationAreaOptions.map(opt => (
+                                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                ))
+                              ) : (
+                                locations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)
+                              )}
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <Input
-                          type="time"
-                          value={day.start}
-                          onChange={e => updateAvailability(i, 'start', e.target.value)}
-                          className="h-8 text-xs"
-                          placeholder="--:--"
-                        />
-                        <Input
-                          type="time"
-                          value={day.end}
-                          onChange={e => updateAvailability(i, 'end', e.target.value)}
-                          className="h-8 text-xs"
-                          placeholder="--:--"
-                        />
-                        <span className="text-xs text-muted-foreground text-center">0h</span>
-                        <span className="text-xs text-muted-foreground text-center">0 min</span>
-                        <Select value={day.area} onValueChange={v => updateAvailability(i, 'area', v)}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Area" /></SelectTrigger>
-                          <SelectContent>
-                            {locations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </section>
