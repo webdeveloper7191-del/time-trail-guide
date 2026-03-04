@@ -13,6 +13,7 @@ import EmployeePortal from "./pages/EmployeePortal";
 import RosterScheduler from "./pages/RosterScheduler";
 import StaffList from "./pages/StaffList";
 import StaffDetail from "./pages/StaffDetail";
+import AddStaffManual from "./pages/AddStaffManual";
 import AgencyPortal from "./pages/AgencyPortal";
 import PerformanceManagement from "./pages/PerformanceManagement";
 import RecognitionPage from "./pages/RecognitionPage";
@@ -42,6 +43,7 @@ const App = () => (
                   <Route path="/employee-portal" element={<EmployeePortal />} />
                   <Route path="/roster" element={<RosterScheduler />} />
                   <Route path="/workforce" element={<StaffList />} />
+                  <Route path="/workforce/new" element={<AddStaffManual />} />
                   <Route path="/workforce/:id" element={<StaffDetail />} />
                   <Route path="/agency" element={<AgencyPortal />} />
                   <Route path="/performance" element={<PerformanceManagement />} />
