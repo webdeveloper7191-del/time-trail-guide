@@ -105,7 +105,7 @@ export default function PaperlessOnboarding() {
     }));
   };
 
-  const canProceedStep1 = form.firstName && form.lastName && form.email.includes('@') && form.location;
+  const canProceedStep1 = form.firstName && form.lastName && form.email.includes('@') && form.workLocations.length > 0;
   const canProceedStep2 = form.position && form.employmentType;
 
   const handleSend = async () => {
@@ -223,23 +223,65 @@ export default function PaperlessOnboarding() {
 
               <hr className="border-border/50" />
 
-              {/* Employment Location */}
+              {/* Work Locations */}
               <section>
-                <h2 className="text-lg font-semibold text-foreground mb-1">Employment Location</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-1">Work Locations</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                  <FieldGroup label="Location(s)/Area(s)" required>
-                    <Select value={form.location} onValueChange={v => update('location', v)}>
-                      <SelectTrigger><SelectValue placeholder="Select Area" /></SelectTrigger>
-                      <SelectContent>
-                        {locations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                  <FieldGroup label="Work Locations" required>
+                    <div className="space-y-2">
+                      {form.workLocations.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {form.workLocations.map(loc => (
+                            <Badge key={loc} variant="secondary" className="text-xs gap-1 pr-1">
+                              {loc}
+                              <button
+                                onClick={() => {
+                                  const updated = form.workLocations.filter(l => l !== loc);
+                                  update('workLocations', updated);
+                                  if (form.primaryLocation === loc) {
+                                    update('primaryLocation', updated[0] || '');
+                                  }
+                                }}
+                                className="ml-0.5 h-4 w-4 rounded-full hover:bg-destructive/20 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      <Select
+                        value=""
+                        onValueChange={v => {
+                          if (!form.workLocations.includes(v)) {
+                            const updated = [...form.workLocations, v];
+                            update('workLocations', updated);
+                            if (updated.length === 1) update('primaryLocation', v);
+                          }
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Add location..." /></SelectTrigger>
+                        <SelectContent>
+                          {locations.filter(l => !form.workLocations.includes(l)).map(l => (
+                            <SelectItem key={l} value={l}>{l}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </FieldGroup>
-                  <FieldGroup label="Primary Location/Area" required>
-                    <Select value={form.primaryLocation} onValueChange={v => update('primaryLocation', v)}>
-                      <SelectTrigger><SelectValue placeholder="Select Primary Location/Area" /></SelectTrigger>
+                  <FieldGroup label="Primary Work Location" required>
+                    <Select
+                      value={form.primaryLocation}
+                      onValueChange={v => update('primaryLocation', v)}
+                      disabled={form.workLocations.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={form.workLocations.length === 0 ? "Add work locations first" : "Select primary location"} />
+                      </SelectTrigger>
                       <SelectContent>
-                        {locations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                        {form.workLocations.map(l => (
+                          <SelectItem key={l} value={l}>{l}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </FieldGroup>
@@ -252,14 +294,26 @@ export default function PaperlessOnboarding() {
               <section>
                 <h2 className="text-lg font-semibold text-foreground mb-1">Role Assignment & Access Rights</h2>
                 <p className="text-sm text-muted-foreground mb-3">You can select more than one</p>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {accessRoles.map(role => (
-                    <label key={role} className="flex items-center gap-3 cursor-pointer py-1">
+                    <label
+                      key={role.id}
+                      className={cn(
+                        "flex items-start gap-3 cursor-pointer p-3 rounded-lg border transition-colors",
+                        form.selectedRoles.includes(role.id)
+                          ? "border-primary/40 bg-primary/5"
+                          : "border-transparent hover:bg-muted/40"
+                      )}
+                    >
                       <Checkbox
-                        checked={form.selectedRoles.includes(role)}
-                        onCheckedChange={() => toggleRole(role)}
+                        checked={form.selectedRoles.includes(role.id)}
+                        onCheckedChange={() => toggleRole(role.id)}
+                        className="mt-0.5"
                       />
-                      <span className="text-sm text-foreground">{role}</span>
+                      <div>
+                        <span className="text-sm font-medium text-foreground">{role.label}</span>
+                        <p className="text-xs text-muted-foreground mt-0.5">{role.description}</p>
+                      </div>
                     </label>
                   ))}
                 </div>
@@ -578,7 +632,7 @@ export default function PaperlessOnboarding() {
                         {form.workPhone && <SummaryItem label="Work Phone" value={form.workPhone} />}
                         {form.gender && <SummaryItem label="Gender" value={form.gender} />}
                         {form.dateOfBirth && <SummaryItem label="Date of Birth" value={form.dateOfBirth} />}
-                        <SummaryItem label="Location" value={form.location} />
+                        <SummaryItem label="Work Locations" value={form.workLocations.join(', ') || '—'} />
                         {form.primaryLocation && <SummaryItem label="Primary Location" value={form.primaryLocation} />}
                       </div>
                       {form.selectedRoles.length > 0 && (
