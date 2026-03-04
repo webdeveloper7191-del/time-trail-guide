@@ -72,7 +72,7 @@ export default function StaffList() {
   const handleAddStaffOption = (option: 'onboarding' | 'csv' | 'manual') => {
     switch (option) {
       case 'onboarding':
-        setShowOnboarding(true);
+        navigate('/workforce/onboarding');
         break;
       case 'csv':
         setShowImportModal(true);
