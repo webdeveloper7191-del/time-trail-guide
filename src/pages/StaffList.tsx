@@ -531,6 +531,13 @@ export default function StaffList() {
         onOpenChange={setShowImportModal}
         onImportComplete={handleImportComplete}
       />
+
+      {/* Add Staff Options */}
+      <AddStaffOptionsDialog
+        open={showAddOptions}
+        onOpenChange={setShowAddOptions}
+        onSelectOption={handleAddStaffOption}
+      />
     </div>
   );
 }
