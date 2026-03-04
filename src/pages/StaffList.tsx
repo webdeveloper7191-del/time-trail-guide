@@ -47,7 +47,12 @@ import {
   Trash2,
   UserMinus,
   Send,
+  History,
+  HelpCircle,
 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import OnboardingHistory from '@/components/workforce/OnboardingHistory';
+import OnboardingQuestions from '@/components/workforce/OnboardingQuestions';
 import { mockStaff, departments, locations } from '@/data/mockStaffData';
 import { StaffMember, employmentStatusLabels, employmentTypeLabels, EmploymentStatus, EmploymentType } from '@/types/staff';
 import { cn } from '@/lib/utils';
