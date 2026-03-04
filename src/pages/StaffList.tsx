@@ -66,7 +66,7 @@ export default function StaffList() {
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [showImportModal, setShowImportModal] = useState(false);
   const [showAddOptions, setShowAddOptions] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  
 
   const handleAddStaffOption = (option: 'onboarding' | 'csv' | 'manual') => {
     switch (option) {
@@ -539,12 +539,8 @@ export default function StaffList() {
         onOpenChange={setShowAddOptions}
         onSelectOption={handleAddStaffOption}
       />
-
-      {/* Paperless Onboarding */}
-      <PaperlessOnboardingDialog
-        open={showOnboarding}
-        onOpenChange={setShowOnboarding}
-      />
     </div>
+  );
+}
   );
 }
