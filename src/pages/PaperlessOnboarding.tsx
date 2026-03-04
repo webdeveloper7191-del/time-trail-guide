@@ -819,3 +819,47 @@ function RateItem({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+// Multi-select with badges
+function MultiSelectField({ selected, onChange, placeholder, options }: {
+  selected: string[];
+  onChange: (val: string[]) => void;
+  placeholder: string;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div className="space-y-2">
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map(val => {
+            const opt = options.find(o => o.value === val);
+            return (
+              <Badge key={val} variant="secondary" className="text-xs gap-1 pr-1">
+                {opt?.label || val}
+                <button
+                  onClick={() => onChange(selected.filter(s => s !== val))}
+                  className="ml-0.5 h-4 w-4 rounded-full hover:bg-destructive/20 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  ×
+                </button>
+              </Badge>
+            );
+          })}
+        </div>
+      )}
+      <Select
+        value=""
+        onValueChange={v => {
+          if (!selected.includes(v)) onChange([...selected, v]);
+        }}
+      >
+        <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
+        <SelectContent>
+          {options.filter(o => !selected.includes(o.value)).map(o => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
