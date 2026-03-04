@@ -210,7 +210,7 @@ export default function StaffList() {
             </div>
           </div>
         </div>
-
+        <div className="p-6 space-y-6">
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
@@ -226,7 +226,7 @@ export default function StaffList() {
             </TabsList>
 
             <TabsContent value="directory">
-        <div className="space-y-6">
+              <div className="space-y-6">
             <Card className="border-l-4 border-l-primary">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
