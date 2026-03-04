@@ -52,6 +52,14 @@ const steps = [
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+const mockAreas: Record<string, string[]> = {
+  'Melbourne CBD': ['Toddler', 'Kindergarten', 'Nursery', 'Pre-School'],
+  'South Yarra': ['Toddler', 'Kindergarten', 'Baby Room'],
+  'Prahran': ['Pre-School', 'Toddler', 'After School'],
+  'Richmond': ['Nursery', 'Toddler', 'Kindergarten'],
+  'Fitzroy': ['Baby Room', 'Toddler', 'Pre-School'],
+};
+
 export default function PaperlessOnboarding() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
