@@ -30,6 +30,7 @@ import {
   MessageSquare,
   Users,
   Sparkles,
+  ClipboardCheck,
 } from 'lucide-react';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,8 @@ import { EmployeeSurveyPanel } from '@/components/performance/EmployeeSurveyPane
 import { Employee360Panel } from '@/components/performance/Employee360Panel';
 import { EmployeeRecognitionPanel } from '@/components/performance/EmployeeRecognitionPanel';
 import { EmployeeCareerPathingPanel } from '@/components/performance/employee/EmployeeCareerPathingPanel';
+import { EmployeeOnboardingPanel } from '@/components/employee/EmployeeOnboardingPanel';
+import { OnboardingBanner } from '@/components/employee/OnboardingBanner';
 
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
@@ -54,7 +57,8 @@ const currentEmployee = {
 
 export function EmployeePortal() {
   const [activeTab, setActiveTab] = useState('current');
-
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const onboardingProgress = onboardingComplete ? 100 : 35; // Mock progress
   // Filter timesheets for current employee
   const myTimesheets = useMemo(() => {
     return mockTimesheets.filter(ts => 
@@ -115,6 +119,14 @@ export function EmployeePortal() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* Onboarding Banner */}
+        {!onboardingComplete && (
+          <OnboardingBanner
+            progressPct={onboardingProgress}
+            onNavigate={() => setActiveTab('onboarding')}
+          />
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
@@ -168,6 +180,11 @@ export function EmployeePortal() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6 flex-wrap">
+            {!onboardingComplete && (
+              <TabsTrigger value="onboarding" className="gap-2">
+                <ClipboardCheck className="h-4 w-4" /> Onboarding
+              </TabsTrigger>
+            )}
             <TabsTrigger value="current" className="gap-2">
               <Clock className="h-4 w-4" /> Timesheets
             </TabsTrigger>
@@ -193,6 +210,10 @@ export function EmployeePortal() {
               <GraduationCap className="h-4 w-4" /> Learning
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="onboarding">
+            <EmployeeOnboardingPanel />
+          </TabsContent>
 
           <TabsContent value="current">
             {currentWeekTimesheet ? (
