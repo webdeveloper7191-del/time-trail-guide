@@ -540,6 +540,12 @@ export default function StaffList() {
         onOpenChange={setShowAddOptions}
         onSelectOption={handleAddStaffOption}
       />
+
+      {/* Paperless Onboarding */}
+      <PaperlessOnboardingDialog
+        open={showOnboarding}
+        onOpenChange={setShowOnboarding}
+      />
     </div>
   );
 }
