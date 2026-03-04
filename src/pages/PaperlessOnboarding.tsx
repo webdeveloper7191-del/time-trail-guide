@@ -26,7 +26,7 @@ import {
   Upload,
   Info,
 } from 'lucide-react';
-import { departments, locations } from '@/data/mockStaffData';
+import { departments, locations, mockAwardRules } from '@/data/mockStaffData';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -69,6 +69,8 @@ export default function PaperlessOnboarding() {
     contractedHours: '',
     position: '',
     payRateType: '',
+    awardName: '',
+    awardClassification: '',
     employmentType: '',
     hourlyRate: '',
     annualSalary: '',
@@ -305,7 +307,13 @@ export default function PaperlessOnboarding() {
                 <h2 className="text-lg font-semibold text-foreground mb-1">Pay Details</h2>
                 <div className="mt-4">
                   <FieldGroup label="Payrate Type">
-                    <Select value={form.payRateType} onValueChange={v => update('payRateType', v)}>
+                    <Select value={form.payRateType} onValueChange={v => {
+                      update('payRateType', v);
+                      if (v !== 'Award Rate') {
+                        update('awardName', '');
+                        update('awardClassification', '');
+                      }
+                    }}>
                       <SelectTrigger><SelectValue placeholder="Select pay rate type" /></SelectTrigger>
                       <SelectContent>
                         {payRateTypes.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
@@ -313,6 +321,75 @@ export default function PaperlessOnboarding() {
                     </Select>
                   </FieldGroup>
                 </div>
+
+                {/* Award Rate Fields */}
+                {form.payRateType === 'Award Rate' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                      <FieldGroup label="Award" required>
+                        <Select value={form.awardName} onValueChange={v => {
+                          update('awardName', v);
+                          update('awardClassification', '');
+                        }}>
+                          <SelectTrigger><SelectValue placeholder="Select award" /></SelectTrigger>
+                          <SelectContent>
+                            {[...new Set(mockAwardRules.map(a => a.awardName))].map(name => (
+                              <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FieldGroup>
+                      <FieldGroup label="Classification" required>
+                        <Select value={form.awardClassification} onValueChange={v => update('awardClassification', v)} disabled={!form.awardName}>
+                          <SelectTrigger><SelectValue placeholder={form.awardName ? "Select classification" : "Select award first"} /></SelectTrigger>
+                          <SelectContent>
+                            {mockAwardRules
+                              .filter(a => a.awardName === form.awardName)
+                              .map(a => (
+                                <SelectItem key={a.id} value={a.id}>{a.classification} — {a.level}</SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </FieldGroup>
+                    </div>
+
+                    {/* Applicable Pay Rates Preview */}
+                    {form.awardClassification && (() => {
+                      const award = mockAwardRules.find(a => a.id === form.awardClassification);
+                      if (!award) return null;
+                      return (
+                        <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                          <h4 className="text-sm font-semibold text-foreground mb-2">Applicable Pay Rates</h4>
+                          <p className="text-xs text-muted-foreground mb-3">{award.awardName} — {award.classification} ({award.level})</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <RateItem label="Base Hourly Rate" value={`$${award.baseHourlyRate.toFixed(2)}/hour`} />
+                            {award.casualLoading && <RateItem label="Casual Loading" value={`${award.casualLoading}%`} />}
+                            {award.saturdayRate && <RateItem label="Saturday" value={`${award.saturdayRate}%`} />}
+                            {award.sundayRate && <RateItem label="Sunday" value={`${award.sundayRate}%`} />}
+                            {award.publicHolidayRate && <RateItem label="Public Holiday" value={`${award.publicHolidayRate}%`} />}
+                            <RateItem label="OT (first 2hrs)" value={`${award.overtimeRates.first2Hours}%`} />
+                            <RateItem label="OT (after 2hrs)" value={`${award.overtimeRates.after2Hours}%`} />
+                            {award.penaltyRates?.evening && <RateItem label="Evening Penalty" value={`${award.penaltyRates.evening}%`} />}
+                            {award.penaltyRates?.night && <RateItem label="Night Penalty" value={`${award.penaltyRates.night}%`} />}
+                          </div>
+                          {award.allowances.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-primary/10">
+                              <p className="text-xs font-medium text-muted-foreground mb-1.5">Allowances</p>
+                              <div className="flex flex-wrap gap-2">
+                                {award.allowances.map(a => (
+                                  <Badge key={a.id} variant="outline" className="text-xs">
+                                    {a.name}: ${a.amount.toFixed(2)}/{a.type.replace('per_', '')}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                   <FieldGroup label="Employment Type" required>
                     <Select value={form.employmentType} onValueChange={v => update('employmentType', v)}>
@@ -322,15 +399,19 @@ export default function PaperlessOnboarding() {
                       </SelectContent>
                     </Select>
                   </FieldGroup>
-                  <FieldGroup label="Hourly Rate">
-                    <Input type="number" value={form.hourlyRate} onChange={e => update('hourlyRate', e.target.value)} placeholder="Enter Your Hourly Rate" />
-                  </FieldGroup>
+                  {form.payRateType !== 'Award Rate' && (
+                    <FieldGroup label="Hourly Rate">
+                      <Input type="number" value={form.hourlyRate} onChange={e => update('hourlyRate', e.target.value)} placeholder="Enter Your Hourly Rate" />
+                    </FieldGroup>
+                  )}
                 </div>
-                <div className="mt-4 max-w-sm">
-                  <FieldGroup label="Annual Salary">
-                    <Input type="number" value={form.annualSalary} onChange={e => update('annualSalary', e.target.value)} placeholder="Enter annual salary" />
-                  </FieldGroup>
-                </div>
+                {form.payRateType === 'Annual Salary' && (
+                  <div className="mt-4 max-w-sm">
+                    <FieldGroup label="Annual Salary">
+                      <Input type="number" value={form.annualSalary} onChange={e => update('annualSalary', e.target.value)} placeholder="Enter annual salary" />
+                    </FieldGroup>
+                  </div>
+                )}
               </section>
 
               <hr className="border-border/50" />
@@ -515,6 +596,16 @@ export default function PaperlessOnboarding() {
                         {form.employmentStartDate && <SummaryItem label="Start Date" value={form.employmentStartDate} />}
                         {form.contractedHours && <SummaryItem label="Contracted Hours" value={`${form.contractedHours}h/week`} />}
                         {form.payRateType && <SummaryItem label="Pay Rate Type" value={form.payRateType} />}
+                        {form.payRateType === 'Award Rate' && form.awardClassification && (() => {
+                          const award = mockAwardRules.find(a => a.id === form.awardClassification);
+                          return award ? (
+                            <>
+                              <SummaryItem label="Award" value={award.awardName} />
+                              <SummaryItem label="Classification" value={`${award.classification} — ${award.level}`} />
+                              <SummaryItem label="Base Rate" value={`$${award.baseHourlyRate.toFixed(2)}/hr`} />
+                            </>
+                          ) : null;
+                        })()}
                         {form.hourlyRate && <SummaryItem label="Hourly Rate" value={`$${form.hourlyRate}`} />}
                         {form.annualSalary && <SummaryItem label="Annual Salary" value={`$${Number(form.annualSalary).toLocaleString()}`} />}
                       </div>
@@ -612,6 +703,16 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="font-medium text-foreground">{value || '—'}</p>
+    </div>
+  );
+}
+
+// Rate display item
+function RateItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-sm">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="font-semibold text-foreground">{value}</p>
     </div>
   );
 }
