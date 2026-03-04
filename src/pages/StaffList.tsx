@@ -47,7 +47,12 @@ import {
   Trash2,
   UserMinus,
   Send,
+  History,
+  HelpCircle,
 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import OnboardingHistory from '@/components/workforce/OnboardingHistory';
+import OnboardingQuestions from '@/components/workforce/OnboardingQuestions';
 import { mockStaff, departments, locations } from '@/data/mockStaffData';
 import { StaffMember, employmentStatusLabels, employmentTypeLabels, EmploymentStatus, EmploymentType } from '@/types/staff';
 import { cn } from '@/lib/utils';
@@ -66,7 +71,7 @@ export default function StaffList() {
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [showImportModal, setShowImportModal] = useState(false);
   const [showAddOptions, setShowAddOptions] = useState(false);
-  
+  const [activeTab, setActiveTab] = useState('directory');
 
   const handleAddStaffOption = (option: 'onboarding' | 'csv' | 'manual') => {
     switch (option) {
@@ -205,8 +210,23 @@ export default function StaffList() {
             </div>
           </div>
         </div>
-
         <div className="p-6 space-y-6">
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="directory" className="gap-2">
+                <Users className="h-4 w-4" /> Staff Directory
+              </TabsTrigger>
+              <TabsTrigger value="onboarding-history" className="gap-2">
+                <History className="h-4 w-4" /> Onboarding History
+              </TabsTrigger>
+              <TabsTrigger value="onboarding-questions" className="gap-2">
+                <HelpCircle className="h-4 w-4" /> Onboarding Questions
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="directory">
+              <div className="space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="border-l-4 border-l-primary">
@@ -523,6 +543,17 @@ export default function StaffList() {
               )}
             </CardContent>
           </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="onboarding-history">
+              <OnboardingHistory />
+            </TabsContent>
+
+            <TabsContent value="onboarding-questions">
+              <OnboardingQuestions />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       
