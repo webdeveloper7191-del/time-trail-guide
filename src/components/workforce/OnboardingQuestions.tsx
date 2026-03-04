@@ -54,19 +54,16 @@ const categoryConfig: Record<QuestionCategory, { label: string; color: string }>
 const defaultQuestions: OnboardingQuestion[] = [
   { id: 'q1', question: 'Uniform / Shirt Size', description: 'Select your preferred uniform size for ordering', type: 'dropdown', category: 'preferences', required: true, enabled: true, options: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'], isBuiltIn: true, order: 1 },
   { id: 'q2', question: 'Dietary Requirements', description: 'Any allergies or dietary needs we should know about', type: 'checkbox', category: 'preferences', required: false, enabled: true, options: ['Vegetarian', 'Vegan', 'Gluten Free', 'Halal', 'Kosher', 'Nut Allergy', 'Lactose Intolerant', 'None'], isBuiltIn: true, order: 2 },
-  { id: 'q3', question: 'Emergency Contact Name', description: 'Full name of your primary emergency contact', type: 'text', category: 'personal', required: true, enabled: true, isBuiltIn: true, order: 3 },
-  { id: 'q4', question: 'Emergency Contact Phone', description: 'Phone number for your emergency contact', type: 'text', category: 'personal', required: true, enabled: true, isBuiltIn: true, order: 4 },
-  { id: 'q5', question: 'Emergency Contact Relationship', description: 'Relationship to you (e.g. spouse, parent)', type: 'dropdown', category: 'personal', required: true, enabled: true, options: ['Spouse/Partner', 'Parent', 'Sibling', 'Friend', 'Other'], isBuiltIn: true, order: 5 },
-  { id: 'q6', question: 'Do you have a valid driver\'s licence?', description: 'Required for roles involving driving', type: 'dropdown', category: 'compliance', required: false, enabled: true, options: ['Yes – Full Licence', 'Yes – Provisional', 'No'], isBuiltIn: true, order: 6 },
-  { id: 'q7', question: 'Languages Spoken', description: 'Languages you are comfortable communicating in', type: 'checkbox', category: 'personal', required: false, enabled: true, options: ['English', 'Mandarin', 'Cantonese', 'Vietnamese', 'Arabic', 'Hindi', 'Spanish', 'Italian', 'Greek', 'Other'], isBuiltIn: true, order: 7 },
-  { id: 'q8', question: 'Pre-existing Medical Conditions', description: 'Any conditions that may affect your work capacity (confidential)', type: 'textarea', category: 'compliance', required: false, enabled: false, isBuiltIn: true, order: 8 },
-  { id: 'q9', question: 'Working With Children Check', description: 'Upload your valid WWCC if applicable', type: 'file_upload', category: 'compliance', required: false, enabled: false, isBuiltIn: true, order: 9 },
-  { id: 'q10', question: 'RSA Certificate', description: 'Upload your Responsible Service of Alcohol certificate', type: 'file_upload', category: 'compliance', required: false, enabled: true, isBuiltIn: true, order: 10 },
+  { id: 'q3', question: 'Do you have a valid driver\'s licence?', description: 'Required for roles involving driving', type: 'dropdown', category: 'compliance', required: false, enabled: true, options: ['Yes – Full Licence', 'Yes – Provisional', 'No'], isBuiltIn: true, order: 3 },
+  { id: 'q4', question: 'Languages Spoken', description: 'Languages you are comfortable communicating in', type: 'checkbox', category: 'personal', required: false, enabled: true, options: ['English', 'Mandarin', 'Cantonese', 'Vietnamese', 'Arabic', 'Hindi', 'Spanish', 'Italian', 'Greek', 'Other'], isBuiltIn: true, order: 4 },
+  { id: 'q5', question: 'Pre-existing Medical Conditions', description: 'Any conditions that may affect your work capacity (confidential)', type: 'textarea', category: 'compliance', required: false, enabled: false, isBuiltIn: true, order: 5 },
+  { id: 'q6', question: 'Working With Children Check', description: 'Upload your valid WWCC if applicable', type: 'file_upload', category: 'compliance', required: false, enabled: false, isBuiltIn: true, order: 6 },
+  { id: 'q7', question: 'RSA Certificate', description: 'Upload your Responsible Service of Alcohol certificate', type: 'file_upload', category: 'compliance', required: false, enabled: true, isBuiltIn: true, order: 7 },
 ];
 
 const categoryIcons: Record<string, React.ElementType> = {
-  q1: Shirt, q2: UtensilsCrossed, q3: Phone, q4: Phone, q5: Heart,
-  q6: Car, q7: Languages, q8: ShieldCheck, q9: ShieldCheck, q10: FileText,
+  q1: Shirt, q2: UtensilsCrossed, q3: Car, q4: Languages,
+  q5: ShieldCheck, q6: ShieldCheck, q7: FileText,
 };
 
 export default function OnboardingQuestions() {
