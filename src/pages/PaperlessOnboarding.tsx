@@ -86,6 +86,13 @@ export default function PaperlessOnboarding() {
     payRateType: '',
     awardName: '',
     awardClassification: '',
+    overrideEnabled: false,
+    overrideHourlyRate: '',
+    overrideSaturdayRate: '',
+    overrideSundayRate: '',
+    overridePublicHolidayRate: '',
+    overrideOt1: '',
+    overrideOt2: '',
     employmentType: '',
     hourlyRate: '',
     annualSalary: '',
@@ -467,6 +474,49 @@ export default function PaperlessOnboarding() {
                                   </Badge>
                                 ))}
                               </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Rate Override */}
+                    {form.awardClassification && (() => {
+                      const award = mockAwardRules.find(a => a.id === form.awardClassification);
+                      if (!award) return null;
+                      return (
+                        <div className="mt-4 rounded-xl border border-border/60 p-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={form.overrideEnabled}
+                              onCheckedChange={(v) => update('overrideEnabled', !!v)}
+                            />
+                            <span className="text-sm font-medium text-foreground">Override award rates for this employee</span>
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1 ml-7">
+                            Custom rates will apply instead of the standard award rates. Original award rates are shown as placeholders.
+                          </p>
+
+                          {form.overrideEnabled && (
+                            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                              <FieldGroup label="Base Hourly Rate">
+                                <Input type="number" step="0.01" value={form.overrideHourlyRate} onChange={e => update('overrideHourlyRate', e.target.value)} placeholder={`$${award.baseHourlyRate.toFixed(2)}`} />
+                              </FieldGroup>
+                              <FieldGroup label="Saturday Rate (%)">
+                                <Input type="number" value={form.overrideSaturdayRate} onChange={e => update('overrideSaturdayRate', e.target.value)} placeholder={`${award.saturdayRate || 0}`} />
+                              </FieldGroup>
+                              <FieldGroup label="Sunday Rate (%)">
+                                <Input type="number" value={form.overrideSundayRate} onChange={e => update('overrideSundayRate', e.target.value)} placeholder={`${award.sundayRate || 0}`} />
+                              </FieldGroup>
+                              <FieldGroup label="Public Holiday (%)">
+                                <Input type="number" value={form.overridePublicHolidayRate} onChange={e => update('overridePublicHolidayRate', e.target.value)} placeholder={`${award.publicHolidayRate || 0}`} />
+                              </FieldGroup>
+                              <FieldGroup label="OT First 2hrs (%)">
+                                <Input type="number" value={form.overrideOt1} onChange={e => update('overrideOt1', e.target.value)} placeholder={`${award.overtimeRates.first2Hours}`} />
+                              </FieldGroup>
+                              <FieldGroup label="OT After 2hrs (%)">
+                                <Input type="number" value={form.overrideOt2} onChange={e => update('overrideOt2', e.target.value)} placeholder={`${award.overtimeRates.after2Hours}`} />
+                              </FieldGroup>
                             </div>
                           )}
                         </div>
