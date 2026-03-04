@@ -13,11 +13,12 @@ import {
 import {
   Upload, CheckCircle2, Clock, FileText, ShieldCheck, AlertCircle,
   Shirt, UtensilsCrossed, Phone, Car, Languages, Heart, ArrowRight,
-  PartyPopper, Loader2,
+  PartyPopper, Loader2, User, MapPin, Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+// ─── Types ───────────────────────────────────────────────────────
 type QuestionType = 'text' | 'textarea' | 'dropdown' | 'checkbox' | 'file_upload';
 
 interface OnboardingQuestion {
@@ -36,7 +37,9 @@ interface ContractDocument {
   acknowledged: boolean;
 }
 
-// Mock data representing what the admin configured
+// ─── Mock Data ───────────────────────────────────────────────────
+const genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
+
 const onboardingQuestions: OnboardingQuestion[] = [
   { id: 'q1', question: 'Uniform / Shirt Size', description: 'Select your preferred uniform size for ordering', type: 'dropdown', required: true, options: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'] },
   { id: 'q2', question: 'Dietary Requirements', description: 'Any allergies or dietary needs we should know about', type: 'checkbox', required: false, options: ['Vegetarian', 'Vegan', 'Gluten Free', 'Halal', 'Kosher', 'Nut Allergy', 'Lactose Intolerant', 'None'] },
@@ -60,37 +63,72 @@ const questionIcons: Record<string, React.ElementType> = {
   q6: Car, q7: Languages, q10: FileText,
 };
 
-type Step = 'questions' | 'documents' | 'contracts' | 'complete';
+// ─── Steps ───────────────────────────────────────────────────────
+type Step = 'details' | 'questions' | 'documents' | 'contracts' | 'complete';
 const steps: { key: Step; label: string }[] = [
-  { key: 'questions', label: 'Your Details' },
+  { key: 'details', label: 'Your Details' },
+  { key: 'questions', label: 'Onboarding Questions' },
   { key: 'documents', label: 'Documents' },
   { key: 'contracts', label: 'Contracts' },
   { key: 'complete', label: 'Complete' },
 ];
 
+// ─── Helpers ─────────────────────────────────────────────────────
+function FieldGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm font-medium">
+        {label} {required && <span className="text-destructive">*</span>}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
+// ─── Component ───────────────────────────────────────────────────
 export function EmployeeOnboardingPanel() {
-  const [currentStep, setCurrentStep] = useState<Step>('questions');
+  const [currentStep, setCurrentStep] = useState<Step>('details');
+  // Step 1 — Personal Details
+  const [personalDetails, setPersonalDetails] = useState({
+    firstName: '', middleName: '', lastName: '', preferredName: '',
+    email: '', mobilePhone: '', workPhone: '', gender: '', dateOfBirth: '',
+    address: '', suburb: '', state: '', postcode: '',
+  });
+  // Step 2 — Onboarding Questions
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+  // Step 3 — Uploads
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, string>>({});
+  // Step 4 — Contracts
   const [contracts, setContracts] = useState<ContractDocument[]>(contractDocuments);
   const [submitting, setSubmitting] = useState(false);
 
   const stepIndex = steps.findIndex(s => s.key === currentStep);
 
-  // Calculate progress
-  const totalRequired = onboardingQuestions.filter(q => q.required).length + contracts.length;
-  const answeredRequired = onboardingQuestions.filter(q => {
-    if (!q.required) return false;
-    if (q.type === 'file_upload') return !!uploadedFiles[q.id];
+  // ─── Progress Calculation ──────────────────────────────────────
+  const detailsRequiredFields = ['firstName', 'lastName', 'email', 'mobilePhone'] as const;
+  const detailsFilled = detailsRequiredFields.filter(f => personalDetails[f].trim() !== '').length;
+
+  const requiredQuestions = onboardingQuestions.filter(q => q.required && q.type !== 'file_upload');
+  const answeredQuestions = requiredQuestions.filter(q => {
     const a = answers[q.id];
     return a && (Array.isArray(a) ? a.length > 0 : a.trim() !== '');
   }).length;
-  const acknowledgedContracts = contracts.filter(c => c.acknowledged).length;
-  const progressPct = Math.round(((answeredRequired + acknowledgedContracts) / totalRequired) * 100);
 
-  const updateAnswer = (id: string, value: string | string[]) => {
+  const fileQuestions = onboardingQuestions.filter(q => q.type === 'file_upload' && q.required);
+  const uploadedCount = fileQuestions.filter(q => !!uploadedFiles[q.id]).length;
+
+  const acknowledgedContracts = contracts.filter(c => c.acknowledged).length;
+
+  const totalItems = detailsRequiredFields.length + requiredQuestions.length + fileQuestions.length + contracts.length;
+  const completedItems = detailsFilled + answeredQuestions + uploadedCount + acknowledgedContracts;
+  const progressPct = Math.round((completedItems / totalItems) * 100);
+
+  // ─── Handlers ──────────────────────────────────────────────────
+  const updateDetail = (field: string, value: string) =>
+    setPersonalDetails(prev => ({ ...prev, [field]: value }));
+
+  const updateAnswer = (id: string, value: string | string[]) =>
     setAnswers(prev => ({ ...prev, [id]: value }));
-  };
 
   const toggleCheckboxOption = (questionId: string, option: string) => {
     setAnswers(prev => {
@@ -114,12 +152,17 @@ export function EmployeeOnboardingPanel() {
   };
 
   const canProceed = () => {
+    if (currentStep === 'details') {
+      return detailsRequiredFields.every(f => personalDetails[f].trim() !== '');
+    }
     if (currentStep === 'questions') {
-      return onboardingQuestions.filter(q => q.required).every(q => {
-        if (q.type === 'file_upload') return !!uploadedFiles[q.id];
+      return requiredQuestions.every(q => {
         const a = answers[q.id];
         return a && (Array.isArray(a) ? a.length > 0 : a.trim() !== '');
       });
+    }
+    if (currentStep === 'documents') {
+      return fileQuestions.every(q => !!uploadedFiles[q.id]);
     }
     if (currentStep === 'contracts') {
       return contracts.every(c => c.acknowledged);
@@ -127,24 +170,27 @@ export function EmployeeOnboardingPanel() {
     return true;
   };
 
+  const stepOrder: Step[] = ['details', 'questions', 'documents', 'contracts', 'complete'];
   const handleNext = () => {
-    if (currentStep === 'questions') setCurrentStep('documents');
-    else if (currentStep === 'documents') setCurrentStep('contracts');
-    else if (currentStep === 'contracts') {
+    const idx = stepOrder.indexOf(currentStep);
+    if (currentStep === 'contracts') {
       setSubmitting(true);
       setTimeout(() => {
         setSubmitting(false);
         setCurrentStep('complete');
         toast.success('Onboarding completed successfully!');
       }, 1500);
+    } else if (idx < stepOrder.length - 1) {
+      setCurrentStep(stepOrder[idx + 1]);
     }
   };
 
   const handleBack = () => {
-    if (currentStep === 'documents') setCurrentStep('questions');
-    else if (currentStep === 'contracts') setCurrentStep('documents');
+    const idx = stepOrder.indexOf(currentStep);
+    if (idx > 0) setCurrentStep(stepOrder[idx - 1]);
   };
 
+  // ─── Complete ──────────────────────────────────────────────────
   if (currentStep === 'complete') {
     return (
       <Card className="max-w-2xl mx-auto border-border/50">
@@ -205,12 +251,116 @@ export function EmployeeOnboardingPanel() {
         </CardContent>
       </Card>
 
-      {/* Step Content */}
+      {/* ═══════ STEP 1: Your Details ═══════ */}
+      {currentStep === 'details' && (
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" /> Your Details
+            </CardTitle>
+            <CardDescription>Please provide your personal information</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Name */}
+            <section>
+              <h3 className="text-sm font-semibold text-foreground mb-3">Basic Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <FieldGroup label="First Name" required>
+                  <Input value={personalDetails.firstName} onChange={e => updateDetail('firstName', e.target.value)} placeholder="Enter your first name" />
+                </FieldGroup>
+                <FieldGroup label="Middle Name/s">
+                  <Input value={personalDetails.middleName} onChange={e => updateDetail('middleName', e.target.value)} placeholder="Enter your middle name" />
+                </FieldGroup>
+                <FieldGroup label="Last Name" required>
+                  <Input value={personalDetails.lastName} onChange={e => updateDetail('lastName', e.target.value)} placeholder="Enter your last name" />
+                </FieldGroup>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <FieldGroup label="Preferred Name">
+                  <Input value={personalDetails.preferredName} onChange={e => updateDetail('preferredName', e.target.value)} placeholder="Enter your preferred name" />
+                </FieldGroup>
+                <FieldGroup label="Email Address" required>
+                  <Input type="email" value={personalDetails.email} onChange={e => updateDetail('email', e.target.value)} placeholder="Enter your email address" />
+                </FieldGroup>
+              </div>
+            </section>
+
+            <hr className="border-border/50" />
+
+            {/* Contact */}
+            <section>
+              <h3 className="text-sm font-semibold text-foreground mb-3">Contact Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FieldGroup label="Mobile Number" required>
+                  <Input type="tel" value={personalDetails.mobilePhone} onChange={e => updateDetail('mobilePhone', e.target.value)} placeholder="+61" />
+                </FieldGroup>
+                <FieldGroup label="Work Number">
+                  <Input type="tel" value={personalDetails.workPhone} onChange={e => updateDetail('workPhone', e.target.value)} placeholder="+61" />
+                </FieldGroup>
+              </div>
+            </section>
+
+            <hr className="border-border/50" />
+
+            {/* Personal */}
+            <section>
+              <h3 className="text-sm font-semibold text-foreground mb-3">Personal Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FieldGroup label="Gender">
+                  <Select value={personalDetails.gender} onValueChange={v => updateDetail('gender', v)}>
+                    <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                    <SelectContent>
+                      {genderOptions.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FieldGroup>
+                <FieldGroup label="Date of Birth">
+                  <Input type="date" value={personalDetails.dateOfBirth} onChange={e => updateDetail('dateOfBirth', e.target.value)} />
+                </FieldGroup>
+              </div>
+            </section>
+
+            <hr className="border-border/50" />
+
+            {/* Address */}
+            <section>
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" /> Address
+              </h3>
+              <div className="space-y-4">
+                <FieldGroup label="Street Address">
+                  <Input value={personalDetails.address} onChange={e => updateDetail('address', e.target.value)} placeholder="Enter your street address" />
+                </FieldGroup>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <FieldGroup label="Suburb / City">
+                    <Input value={personalDetails.suburb} onChange={e => updateDetail('suburb', e.target.value)} placeholder="Suburb" />
+                  </FieldGroup>
+                  <FieldGroup label="State">
+                    <Select value={personalDetails.state} onValueChange={v => updateDetail('state', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                      <SelectContent>
+                        {['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT'].map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FieldGroup>
+                  <FieldGroup label="Postcode">
+                    <Input value={personalDetails.postcode} onChange={e => updateDetail('postcode', e.target.value)} placeholder="0000" />
+                  </FieldGroup>
+                </div>
+              </div>
+            </section>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══════ STEP 2: Onboarding Questions ═══════ */}
       {currentStep === 'questions' && (
         <Card className="border-border/50">
           <CardHeader>
-            <CardTitle className="text-lg">Your Details</CardTitle>
-            <CardDescription>Please fill in the required information below</CardDescription>
+            <CardTitle className="text-lg">Onboarding Questions</CardTitle>
+            <CardDescription>Please fill in the additional information below</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {onboardingQuestions.filter(q => q.type !== 'file_upload').map(q => {
@@ -268,6 +418,7 @@ export function EmployeeOnboardingPanel() {
         </Card>
       )}
 
+      {/* ═══════ STEP 3: Documents ═══════ */}
       {currentStep === 'documents' && (
         <Card className="border-border/50">
           <CardHeader>
@@ -327,6 +478,7 @@ export function EmployeeOnboardingPanel() {
         </Card>
       )}
 
+      {/* ═══════ STEP 4: Contracts ═══════ */}
       {currentStep === 'contracts' && (
         <Card className="border-border/50">
           <CardHeader>
@@ -373,7 +525,7 @@ export function EmployeeOnboardingPanel() {
         <Button
           variant="outline"
           onClick={handleBack}
-          disabled={currentStep === 'questions'}
+          disabled={currentStep === 'details'}
         >
           Back
         </Button>
