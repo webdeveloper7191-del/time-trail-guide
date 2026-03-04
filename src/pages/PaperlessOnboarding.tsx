@@ -596,6 +596,16 @@ export default function PaperlessOnboarding() {
                         {form.employmentStartDate && <SummaryItem label="Start Date" value={form.employmentStartDate} />}
                         {form.contractedHours && <SummaryItem label="Contracted Hours" value={`${form.contractedHours}h/week`} />}
                         {form.payRateType && <SummaryItem label="Pay Rate Type" value={form.payRateType} />}
+                        {form.payRateType === 'Award Rate' && form.awardClassification && (() => {
+                          const award = mockAwardRules.find(a => a.id === form.awardClassification);
+                          return award ? (
+                            <>
+                              <SummaryItem label="Award" value={award.awardName} />
+                              <SummaryItem label="Classification" value={`${award.classification} — ${award.level}`} />
+                              <SummaryItem label="Base Rate" value={`$${award.baseHourlyRate.toFixed(2)}/hr`} />
+                            </>
+                          ) : null;
+                        })()}
                         {form.hourlyRate && <SummaryItem label="Hourly Rate" value={`$${form.hourlyRate}`} />}
                         {form.annualSalary && <SummaryItem label="Annual Salary" value={`$${Number(form.annualSalary).toLocaleString()}`} />}
                       </div>
