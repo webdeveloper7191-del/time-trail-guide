@@ -41,6 +41,8 @@ import { EmployeeSurveyPanel } from '@/components/performance/EmployeeSurveyPane
 import { Employee360Panel } from '@/components/performance/Employee360Panel';
 import { EmployeeRecognitionPanel } from '@/components/performance/EmployeeRecognitionPanel';
 import { EmployeeCareerPathingPanel } from '@/components/performance/employee/EmployeeCareerPathingPanel';
+import { EmployeeOnboardingPanel } from '@/components/employee/EmployeeOnboardingPanel';
+import { OnboardingBanner } from '@/components/employee/OnboardingBanner';
 
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
