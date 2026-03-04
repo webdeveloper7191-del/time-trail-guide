@@ -696,3 +696,13 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+// Rate display item
+function RateItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-sm">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
