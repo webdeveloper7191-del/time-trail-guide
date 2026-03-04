@@ -69,6 +69,7 @@ export default function PaperlessOnboarding() {
     gender: '',
     dateOfBirth: '',
     workLocations: [] as string[],
+    workAreas: [] as string[],
     primaryLocation: '',
     selectedRoles: [] as string[],
     // Step 2
@@ -223,10 +224,11 @@ export default function PaperlessOnboarding() {
 
               <hr className="border-border/50" />
 
-              {/* Work Locations */}
+              {/* Work Locations & Areas */}
               <section>
                 <h2 className="text-lg font-semibold text-foreground mb-1">Work Locations</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div className="space-y-4 mt-4">
+                  {/* Work Locations Multi-select */}
                   <FieldGroup label="Work Locations" required>
                     <div className="space-y-2">
                       {form.workLocations.length > 0 && (
@@ -238,9 +240,12 @@ export default function PaperlessOnboarding() {
                                 onClick={() => {
                                   const updated = form.workLocations.filter(l => l !== loc);
                                   update('workLocations', updated);
-                                  if (form.primaryLocation === loc) {
-                                    update('primaryLocation', updated[0] || '');
-                                  }
+                                  if (form.primaryLocation === loc) update('primaryLocation', updated[0] || '');
+                                  // Remove areas belonging to removed location
+                                  const remainingAreas = form.workAreas.filter(a => 
+                                    updated.some(l => mockAreas[l]?.includes(a))
+                                  );
+                                  update('workAreas', remainingAreas);
                                 }}
                                 className="ml-0.5 h-4 w-4 rounded-full hover:bg-destructive/20 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
                               >
@@ -269,22 +274,75 @@ export default function PaperlessOnboarding() {
                       </Select>
                     </div>
                   </FieldGroup>
-                  <FieldGroup label="Primary Work Location" required>
-                    <Select
-                      value={form.primaryLocation}
-                      onValueChange={v => update('primaryLocation', v)}
-                      disabled={form.workLocations.length === 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={form.workLocations.length === 0 ? "Add work locations first" : "Select primary location"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {form.workLocations.map(l => (
-                          <SelectItem key={l} value={l}>{l}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FieldGroup>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Primary Work Location */}
+                    <FieldGroup label="Primary Work Location" required>
+                      <Select
+                        value={form.primaryLocation}
+                        onValueChange={v => update('primaryLocation', v)}
+                        disabled={form.workLocations.length === 0}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={form.workLocations.length === 0 ? "Add work locations first" : "Select primary location"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {form.workLocations.map(l => (
+                            <SelectItem key={l} value={l}>{l}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FieldGroup>
+
+                    {/* Work Areas Multi-select */}
+                    <FieldGroup label="Work Areas">
+                      <div className="space-y-2">
+                        {form.workAreas.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {form.workAreas.map(area => (
+                              <Badge key={area} variant="outline" className="text-xs gap-1 pr-1">
+                                {area}
+                                <button
+                                  onClick={() => update('workAreas', form.workAreas.filter(a => a !== area))}
+                                  className="ml-0.5 h-4 w-4 rounded-full hover:bg-destructive/20 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                                >
+                                  ×
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <Select
+                          value=""
+                          onValueChange={v => {
+                            if (!form.workAreas.includes(v)) {
+                              update('workAreas', [...form.workAreas, v]);
+                            }
+                          }}
+                          disabled={form.workLocations.length === 0}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={form.workLocations.length === 0 ? "Add locations first" : "Add area..."} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {/* Grouped by location */}
+                            {form.workLocations.map(loc => {
+                              const areas = (mockAreas[loc] || []).filter(a => !form.workAreas.includes(a));
+                              if (areas.length === 0) return null;
+                              return (
+                                <div key={loc}>
+                                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{loc}</div>
+                                  {areas.map(a => (
+                                    <SelectItem key={`${loc}-${a}`} value={a}>{a}</SelectItem>
+                                  ))}
+                                </div>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FieldGroup>
+                  </div>
                 </div>
               </section>
 
