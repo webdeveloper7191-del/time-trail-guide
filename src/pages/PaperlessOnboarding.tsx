@@ -91,6 +91,8 @@ export default function PaperlessOnboarding() {
     annualSalary: '',
     availabilityPattern: 'same_every_week' as 'same_every_week' | 'alternate',
     availability: days.map(d => ({ day: d, enabled: false, start: '', end: '', area: '' })),
+    selectedContracts: [] as string[],
+    selectedDocuments: [] as string[],
     // Step 3
     personalMessage: '',
   });
@@ -598,24 +600,31 @@ export default function PaperlessOnboarding() {
                 <h2 className="text-lg font-semibold text-foreground mb-1">Employment Contract & Documents</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                   <FieldGroup label="Select & Send Employment Contracts">
-                    <Select>
-                      <SelectTrigger><SelectValue placeholder="Select Contracts" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="standard">Standard Employment Contract</SelectItem>
-                        <SelectItem value="casual">Casual Employment Contract</SelectItem>
-                        <SelectItem value="fixed">Fixed Term Contract</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <MultiSelectField
+                      selected={form.selectedContracts}
+                      onChange={v => update('selectedContracts', v)}
+                      placeholder="Select Contracts"
+                      options={[
+                        { value: 'standard', label: 'Standard Employment Contract' },
+                        { value: 'casual', label: 'Casual Employment Contract' },
+                        { value: 'fixed', label: 'Fixed Term Contract' },
+                      ]}
+                    />
                   </FieldGroup>
                   <FieldGroup label="Select Documents">
-                    <Select>
-                      <SelectTrigger><SelectValue placeholder="Select Documents" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="policy">Company Policy</SelectItem>
-                        <SelectItem value="handbook">Employee Handbook</SelectItem>
-                        <SelectItem value="nda">NDA</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <MultiSelectField
+                      selected={form.selectedDocuments}
+                      onChange={v => update('selectedDocuments', v)}
+                      placeholder="Select Documents"
+                      options={[
+                        { value: 'policy', label: 'Company Policy' },
+                        { value: 'handbook', label: 'Employee Handbook' },
+                        { value: 'nda', label: 'NDA' },
+                        { value: 'code-of-conduct', label: 'Code of Conduct' },
+                        { value: 'safety', label: 'WHS Safety Policy' },
+                        { value: 'privacy', label: 'Privacy Policy' },
+                      ]}
+                    />
                   </FieldGroup>
                 </div>
 
