@@ -211,9 +211,22 @@ export default function StaffList() {
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="directory" className="gap-2">
+                <Users className="h-4 w-4" /> Staff Directory
+              </TabsTrigger>
+              <TabsTrigger value="onboarding-history" className="gap-2">
+                <History className="h-4 w-4" /> Onboarding History
+              </TabsTrigger>
+              <TabsTrigger value="onboarding-questions" className="gap-2">
+                <HelpCircle className="h-4 w-4" /> Onboarding Questions
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="directory">
+        <div className="space-y-6">
             <Card className="border-l-4 border-l-primary">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
