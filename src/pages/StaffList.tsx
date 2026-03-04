@@ -539,9 +539,9 @@ export default function StaffList() {
                   <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
                 </div>
               )}
-             </CardContent>
-           </Card>
-         </div>
+            </CardContent>
+          </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="onboarding-history">
