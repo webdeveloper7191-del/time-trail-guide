@@ -31,7 +31,14 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const roles = ['Support Worker', 'Team Leader', 'Room Leader', 'Centre Manager', 'Educator', 'Cook', 'Administrator'];
-const accessRoles = ['HR', 'LocationAdmin', 'Manager', 'PayrollAdmin', 'Staff', 'TenantAdmin'];
+const accessRoles = [
+  { id: 'HR', label: 'HR', description: 'Manage employee records and onboarding' },
+  { id: 'Manager', label: 'Manager', description: 'Manage team members' },
+  { id: 'Staff', label: 'Staff', description: 'Standard employee access' },
+  { id: 'PayrollAdmin', label: 'Payroll Admin', description: 'Access payroll functions' },
+  { id: 'LocationAdmin', label: 'Location Admin', description: 'Manage staff at assigned location' },
+  { id: 'Admin', label: 'Admin', description: 'Full system access' },
+];
 const genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
 const employmentTypes = ['Full Time', 'Part Time', 'Casual', 'Contractor'];
 const payRateTypes = ['No award', 'Hourly Rate', 'Annual Salary', 'Award Rate'];
@@ -61,7 +68,7 @@ export default function PaperlessOnboarding() {
     workPhone: '',
     gender: '',
     dateOfBirth: '',
-    location: '',
+    workLocations: [] as string[],
     primaryLocation: '',
     selectedRoles: [] as string[],
     // Step 2
