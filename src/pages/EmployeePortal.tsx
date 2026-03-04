@@ -56,7 +56,8 @@ const currentEmployee = {
 
 export function EmployeePortal() {
   const [activeTab, setActiveTab] = useState('current');
-
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const onboardingProgress = onboardingComplete ? 100 : 35; // Mock progress
   // Filter timesheets for current employee
   const myTimesheets = useMemo(() => {
     return mockTimesheets.filter(ts => 
