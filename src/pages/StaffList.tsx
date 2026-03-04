@@ -542,5 +542,3 @@ export default function StaffList() {
     </div>
   );
 }
-  );
-}
