@@ -276,9 +276,38 @@ export function CallbackEventLoggingPanel() {
     toast.success('Callback event logged successfully');
   };
 
+  const generateTimesheetEntry = (event: CallbackEvent) => {
+    // Auto-generate a timesheet clock entry from the approved callback
+    const entry = {
+      id: `ts-callback-${event.id}`,
+      date: event.workStartTime.split('T')[0],
+      clockIn: event.workStartTime,
+      clockOut: event.workEndTime,
+      breaks: [] as any[],
+      totalBreakMinutes: 0,
+      grossHours: event.paidMinutes / 60,
+      netHours: event.paidMinutes / 60,
+      overtime: 0,
+      notes: `[CALLBACK - ${event.callbackType.toUpperCase()}] ${event.reason}. Rate: ${event.rateMultiplier}x, Min engagement: ${event.minimumEngagementApplied ? event.minimumEngagementHours + 'h applied' : 'not needed'}. Pay: $${event.calculatedPay.toFixed(2)}`,
+      wasEdited: false,
+    };
+    return entry;
+  };
+
   const handleApprove = (id: string) => {
+    const event = events.find(e => e.id === id);
     setEvents(prev => prev.map(e => e.id === id ? { ...e, status: 'approved' as const, approvedBy: 'Admin', approvedAt: new Date().toISOString() } : e));
-    toast.success('Callback approved');
+    
+    if (event) {
+      const tsEntry = generateTimesheetEntry(event);
+      console.log('[Callback→Timesheet] Auto-generated timesheet entry:', tsEntry);
+      toast.success(
+        `Callback approved — timesheet entry created for ${(event.paidMinutes / 60).toFixed(1)}h at ${event.rateMultiplier}x rate ($${event.calculatedPay.toFixed(2)})`,
+        { duration: 5000 }
+      );
+    } else {
+      toast.success('Callback approved');
+    }
   };
 
   const handleReject = (id: string) => {
