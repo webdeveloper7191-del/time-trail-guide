@@ -13,7 +13,8 @@ import {
 import {
   Upload, CheckCircle2, Clock, FileText, ShieldCheck, AlertCircle,
   Shirt, UtensilsCrossed, Phone, Car, Languages, Heart, ArrowRight,
-  PartyPopper, Loader2, User, MapPin, Calendar,
+  PartyPopper, Loader2, User, MapPin, Calendar, CreditCard, Building2,
+  Plus, Trash2, UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -37,15 +38,19 @@ interface ContractDocument {
   acknowledged: boolean;
 }
 
+interface EmergencyContactEntry {
+  id: string;
+  name: string;
+  phone: string;
+  relationship: string;
+}
+
 // ─── Mock Data ───────────────────────────────────────────────────
 const genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
 
 const onboardingQuestions: OnboardingQuestion[] = [
   { id: 'q1', question: 'Uniform / Shirt Size', description: 'Select your preferred uniform size for ordering', type: 'dropdown', required: true, options: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'] },
   { id: 'q2', question: 'Dietary Requirements', description: 'Any allergies or dietary needs we should know about', type: 'checkbox', required: false, options: ['Vegetarian', 'Vegan', 'Gluten Free', 'Halal', 'Kosher', 'Nut Allergy', 'Lactose Intolerant', 'None'] },
-  { id: 'q3', question: 'Emergency Contact Name', description: 'Full name of your primary emergency contact', type: 'text', required: true },
-  { id: 'q4', question: 'Emergency Contact Phone', description: 'Phone number for your emergency contact', type: 'text', required: true },
-  { id: 'q5', question: 'Emergency Contact Relationship', description: 'Relationship to you (e.g. spouse, parent)', type: 'dropdown', required: true, options: ['Spouse/Partner', 'Parent', 'Sibling', 'Friend', 'Other'] },
   { id: 'q6', question: "Do you have a valid driver's licence?", description: 'Required for roles involving driving', type: 'dropdown', required: false, options: ['Yes – Full Licence', 'Yes – Provisional', 'No'] },
   { id: 'q7', question: 'Languages Spoken', description: 'Languages you are comfortable communicating in', type: 'checkbox', required: false, options: ['English', 'Mandarin', 'Cantonese', 'Vietnamese', 'Arabic', 'Hindi', 'Spanish', 'Italian', 'Greek', 'Other'] },
   { id: 'q10', question: 'RSA Certificate', description: 'Upload your Responsible Service of Alcohol certificate', type: 'file_upload', required: true },
@@ -59,19 +64,25 @@ const contractDocuments: ContractDocument[] = [
 ];
 
 const questionIcons: Record<string, React.ElementType> = {
-  q1: Shirt, q2: UtensilsCrossed, q3: Phone, q4: Phone, q5: Heart,
-  q6: Car, q7: Languages, q10: FileText,
+  q1: Shirt, q2: UtensilsCrossed, q6: Car, q7: Languages, q10: FileText,
 };
 
+const relationshipOptions = ['Spouse/Partner', 'Parent', 'Sibling', 'Child', 'Friend', 'Other'];
+
 // ─── Steps ───────────────────────────────────────────────────────
-type Step = 'details' | 'questions' | 'documents' | 'contracts' | 'complete';
+type Step = 'details' | 'emergency_contacts' | 'bank_super' | 'tax_declaration' | 'questions' | 'documents' | 'contracts' | 'complete';
 const steps: { key: Step; label: string }[] = [
   { key: 'details', label: 'Your Details' },
-  { key: 'questions', label: 'Onboarding Questions' },
+  { key: 'emergency_contacts', label: 'Emergency Contacts' },
+  { key: 'bank_super', label: 'Bank & Super' },
+  { key: 'tax_declaration', label: 'Tax Declaration' },
+  { key: 'questions', label: 'Questions' },
   { key: 'documents', label: 'Documents' },
   { key: 'contracts', label: 'Contracts' },
   { key: 'complete', label: 'Complete' },
 ];
+
+const stepOrder: Step[] = steps.map(s => s.key);
 
 // ─── Helpers ─────────────────────────────────────────────────────
 function FieldGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
@@ -85,20 +96,72 @@ function FieldGroup({ label, required, children }: { label: string; required?: b
   );
 }
 
+function RadioGroup({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { label: string; value: string }[] }) {
+  return (
+    <div className="flex flex-wrap gap-4">
+      {options.map(opt => (
+        <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="radio"
+            checked={value === opt.value}
+            onChange={() => onChange(opt.value)}
+            className="h-4 w-4 text-primary border-border focus:ring-primary"
+          />
+          {opt.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 // ─── Component ───────────────────────────────────────────────────
 export function EmployeeOnboardingPanel() {
   const [currentStep, setCurrentStep] = useState<Step>('details');
+
   // Step 1 — Personal Details
   const [personalDetails, setPersonalDetails] = useState({
     firstName: '', middleName: '', lastName: '', preferredName: '',
     email: '', mobilePhone: '', workPhone: '', gender: '', dateOfBirth: '',
     address: '', suburb: '', state: '', postcode: '',
   });
-  // Step 2 — Onboarding Questions
+
+  // Step 2 — Emergency Contacts
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContactEntry[]>([]);
+
+  // Step 3 — Bank & Super
+  const [bankDetails, setBankDetails] = useState({
+    accountName: '', bsb: '', accountNumber: '', bankName: '',
+  });
+  const [superDetails, setSuperDetails] = useState({
+    hasExistingFund: 'yes',
+    fundType: 'apra',
+    fundName: '', memberNumber: '', fundABN: '',
+  });
+
+  // Step 4 — Tax Declaration
+  const [taxDeclaration, setTaxDeclaration] = useState({
+    tfn: '', noTFN: false,
+    payBasis: 'full_time',
+    residencyStatus: 'resident',
+    incomeType: 'salary_wages',
+    employmentType: 'employee',
+    claimTaxFreeThreshold: true,
+    claimZoneOffset: false,
+    hasHELPDebt: false,
+    hasFinancialSupplement: false,
+    hasPreviousFamilyName: false,
+    employerClaimZone: 'no',
+    employerClaimTaxFree: 'yes',
+    employerHELPDebt: 'no',
+  });
+
+  // Step 5 — Onboarding Questions
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
-  // Step 3 — Uploads
+
+  // Step 6 — Uploads
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, string>>({});
-  // Step 4 — Contracts
+
+  // Step 7 — Contracts
   const [contracts, setContracts] = useState<ContractDocument[]>(contractDocuments);
   const [submitting, setSubmitting] = useState(false);
 
@@ -107,6 +170,13 @@ export function EmployeeOnboardingPanel() {
   // ─── Progress Calculation ──────────────────────────────────────
   const detailsRequiredFields = ['firstName', 'lastName', 'email', 'mobilePhone'] as const;
   const detailsFilled = detailsRequiredFields.filter(f => personalDetails[f].trim() !== '').length;
+
+  const emergencyFilled = emergencyContacts.length > 0 ? 1 : 0;
+
+  const bankRequiredFields = ['accountName', 'bsb', 'accountNumber'] as const;
+  const bankFilled = bankRequiredFields.filter(f => bankDetails[f].trim() !== '').length;
+
+  const taxFilled = (taxDeclaration.tfn.trim() !== '' || taxDeclaration.noTFN) ? 1 : 0;
 
   const requiredQuestions = onboardingQuestions.filter(q => q.required && q.type !== 'file_upload');
   const answeredQuestions = requiredQuestions.filter(q => {
@@ -119,8 +189,8 @@ export function EmployeeOnboardingPanel() {
 
   const acknowledgedContracts = contracts.filter(c => c.acknowledged).length;
 
-  const totalItems = detailsRequiredFields.length + requiredQuestions.length + fileQuestions.length + contracts.length;
-  const completedItems = detailsFilled + answeredQuestions + uploadedCount + acknowledgedContracts;
+  const totalItems = detailsRequiredFields.length + 1 + bankRequiredFields.length + 1 + requiredQuestions.length + fileQuestions.length + contracts.length;
+  const completedItems = detailsFilled + emergencyFilled + bankFilled + taxFilled + answeredQuestions + uploadedCount + acknowledgedContracts;
   const progressPct = Math.round((completedItems / totalItems) * 100);
 
   // ─── Handlers ──────────────────────────────────────────────────
@@ -151,10 +221,26 @@ export function EmployeeOnboardingPanel() {
     setContracts(prev => prev.map(c => c.id === id ? { ...c, acknowledged: !c.acknowledged } : c));
   };
 
+  // Emergency Contacts
+  const addEmergencyContact = () => {
+    setEmergencyContacts(prev => [...prev, { id: `ec-${Date.now()}`, name: '', phone: '', relationship: '' }]);
+  };
+
+  const updateEmergencyContact = (id: string, field: keyof EmergencyContactEntry, value: string) => {
+    setEmergencyContacts(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+  };
+
+  const removeEmergencyContact = (id: string) => {
+    setEmergencyContacts(prev => prev.filter(c => c.id !== id));
+  };
+
   const canProceed = () => {
     if (currentStep === 'details') {
       return detailsRequiredFields.every(f => personalDetails[f].trim() !== '');
     }
+    if (currentStep === 'emergency_contacts') return true; // optional
+    if (currentStep === 'bank_super') return true; // can skip
+    if (currentStep === 'tax_declaration') return true; // can skip
     if (currentStep === 'questions') {
       return requiredQuestions.every(q => {
         const a = answers[q.id];
@@ -170,7 +256,6 @@ export function EmployeeOnboardingPanel() {
     return true;
   };
 
-  const stepOrder: Step[] = ['details', 'questions', 'documents', 'contracts', 'complete'];
   const handleNext = () => {
     const idx = stepOrder.indexOf(currentStep);
     if (currentStep === 'contracts') {
@@ -220,27 +305,27 @@ export function EmployeeOnboardingPanel() {
             <span className="text-sm font-bold text-primary">{progressPct}%</span>
           </div>
           <Progress value={progressPct} className="h-2 mb-4" />
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between overflow-x-auto">
             {steps.map((step, i) => {
               const isActive = i === stepIndex;
               const isDone = i < stepIndex;
               return (
-                <div key={step.key} className="flex items-center gap-2">
+                <div key={step.key} className="flex items-center gap-1.5 shrink-0">
                   <div className={cn(
-                    'h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors',
+                    'h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors',
                     isDone ? 'bg-emerald-500 text-white' :
                     isActive ? 'bg-primary text-primary-foreground' :
                     'bg-muted text-muted-foreground'
                   )}>
-                    {isDone ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                    {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
                   </div>
                   <span className={cn(
-                    'text-sm hidden sm:inline',
+                    'text-xs hidden lg:inline',
                     isActive ? 'font-semibold text-foreground' : 'text-muted-foreground'
                   )}>{step.label}</span>
                   {i < steps.length - 1 && (
                     <div className={cn(
-                      'hidden sm:block w-8 h-px mx-1',
+                      'hidden lg:block w-6 h-px mx-0.5',
                       isDone ? 'bg-emerald-500' : 'bg-border'
                     )} />
                   )}
@@ -261,7 +346,6 @@ export function EmployeeOnboardingPanel() {
             <CardDescription>Please provide your personal information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Name */}
             <section>
               <h3 className="text-sm font-semibold text-foreground mb-3">Basic Information</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -287,7 +371,6 @@ export function EmployeeOnboardingPanel() {
 
             <hr className="border-border/50" />
 
-            {/* Contact */}
             <section>
               <h3 className="text-sm font-semibold text-foreground mb-3">Contact Information</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -302,7 +385,6 @@ export function EmployeeOnboardingPanel() {
 
             <hr className="border-border/50" />
 
-            {/* Personal */}
             <section>
               <h3 className="text-sm font-semibold text-foreground mb-3">Personal Information</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -322,7 +404,6 @@ export function EmployeeOnboardingPanel() {
 
             <hr className="border-border/50" />
 
-            {/* Address */}
             <section>
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary" /> Address
@@ -355,7 +436,384 @@ export function EmployeeOnboardingPanel() {
         </Card>
       )}
 
-      {/* ═══════ STEP 2: Onboarding Questions ═══════ */}
+      {/* ═══════ STEP 2: Emergency Contacts ═══════ */}
+      {currentStep === 'emergency_contacts' && (
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Phone className="h-5 w-5 text-primary" /> Emergency Contacts
+            </CardTitle>
+            <CardDescription>Add your emergency contact details</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {emergencyContacts.length === 0 ? (
+              <div className="text-center py-12 bg-muted/30 rounded-lg">
+                <UserPlus className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-muted-foreground font-medium">No emergency contacts added</p>
+                <p className="text-sm text-muted-foreground mt-1">Add at least one emergency contact</p>
+                <Button variant="outline" size="sm" className="mt-4" onClick={addEmergencyContact}>
+                  <Plus className="h-4 w-4 mr-2" /> New Emergency Contact
+                </Button>
+              </div>
+            ) : (
+              <>
+                {emergencyContacts.map((contact, idx) => (
+                  <div key={contact.id} className="p-4 border border-border rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-foreground">Contact {idx + 1}</h4>
+                      <Button variant="ghost" size="sm" onClick={() => removeEmergencyContact(contact.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <FieldGroup label="Contact Name" required>
+                        <Input
+                          value={contact.name}
+                          onChange={e => updateEmergencyContact(contact.id, 'name', e.target.value)}
+                          placeholder="Enter contact name"
+                        />
+                      </FieldGroup>
+                      <FieldGroup label="Mobile Number" required>
+                        <Input
+                          type="tel"
+                          value={contact.phone}
+                          onChange={e => updateEmergencyContact(contact.id, 'phone', e.target.value)}
+                          placeholder="+61"
+                        />
+                      </FieldGroup>
+                      <FieldGroup label="Relationship to Employee" required>
+                        <Select value={contact.relationship} onValueChange={v => updateEmergencyContact(contact.id, 'relationship', v)}>
+                          <SelectTrigger><SelectValue placeholder="Select relationship" /></SelectTrigger>
+                          <SelectContent>
+                            {relationshipOptions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </FieldGroup>
+                    </div>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={addEmergencyContact}>
+                  <Plus className="h-4 w-4 mr-2" /> Add Another Contact
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══════ STEP 3: Bank & Super Details ═══════ */}
+      {currentStep === 'bank_super' && (
+        <div className="space-y-6">
+          {/* Bank Details */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" /> Bank Details
+              </CardTitle>
+              <CardDescription>Enter your bank account details for payroll</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FieldGroup label="Account Name" required>
+                  <Input
+                    value={bankDetails.accountName}
+                    onChange={e => setBankDetails(prev => ({ ...prev, accountName: e.target.value }))}
+                    placeholder="e.g. John Citizen"
+                  />
+                </FieldGroup>
+                <FieldGroup label="Bank Name" required>
+                  <Input
+                    value={bankDetails.bankName}
+                    onChange={e => setBankDetails(prev => ({ ...prev, bankName: e.target.value }))}
+                    placeholder="e.g. National Australia Bank (NAB)"
+                  />
+                </FieldGroup>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FieldGroup label="BSB Number" required>
+                  <Input
+                    value={bankDetails.bsb}
+                    onChange={e => setBankDetails(prev => ({ ...prev, bsb: e.target.value }))}
+                    placeholder="e.g. 123-456"
+                  />
+                </FieldGroup>
+                <FieldGroup label="Account Number" required>
+                  <Input
+                    value={bankDetails.accountNumber}
+                    onChange={e => setBankDetails(prev => ({ ...prev, accountNumber: e.target.value }))}
+                    placeholder="e.g. 12345678"
+                  />
+                </FieldGroup>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Super Fund */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-emerald-600" /> Super Fund
+              </CardTitle>
+              <CardDescription>Set up your superannuation fund details</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Do you have an existing Super Fund account?</Label>
+                <RadioGroup
+                  value={superDetails.hasExistingFund}
+                  onChange={v => setSuperDetails(prev => ({ ...prev, hasExistingFund: v }))}
+                  options={[
+                    { label: 'Yes', value: 'yes' },
+                    { label: 'No (Create my account with your chosen fund partner.)', value: 'no' },
+                  ]}
+                />
+              </div>
+
+              {superDetails.hasExistingFund === 'yes' && (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Please select type of Super Fund?</Label>
+                    <RadioGroup
+                      value={superDetails.fundType}
+                      onChange={v => setSuperDetails(prev => ({ ...prev, fundType: v }))}
+                      options={[
+                        { label: 'APRA-regulated fund', value: 'apra' },
+                        { label: 'SMSF', value: 'smsf' },
+                      ]}
+                    />
+                  </div>
+
+                  <FieldGroup label="Super Fund Legal Name" required>
+                    <Input
+                      value={superDetails.fundName}
+                      onChange={e => setSuperDetails(prev => ({ ...prev, fundName: e.target.value }))}
+                      placeholder="Select or enter Super Fund name"
+                    />
+                  </FieldGroup>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FieldGroup label="Membership Number" required>
+                      <Input
+                        value={superDetails.memberNumber}
+                        onChange={e => setSuperDetails(prev => ({ ...prev, memberNumber: e.target.value }))}
+                        placeholder="e.g. ABC12345"
+                      />
+                    </FieldGroup>
+                    <FieldGroup label="Fund ABN" required>
+                      <Input
+                        value={superDetails.fundABN}
+                        onChange={e => setSuperDetails(prev => ({ ...prev, fundABN: e.target.value }))}
+                        placeholder="e.g. 12345678901"
+                      />
+                    </FieldGroup>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Upload Letter of Compliance (optional)</Label>
+                    <label className="flex items-center justify-center gap-3 p-6 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+                      <input type="file" className="hidden" onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) toast.success(`${file.name} uploaded`);
+                      }} />
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Select a file or drag and drop here</p>
+                        <p className="text-xs text-muted-foreground">JPG, PNG or PDF, file size no more than 10MB</p>
+                      </div>
+                    </label>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ═══════ STEP 4: Tax Declaration ═══════ */}
+      {currentStep === 'tax_declaration' && (
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" /> Tax Declaration
+            </CardTitle>
+            <CardDescription>Complete your TFN declaration for tax purposes</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* TFN */}
+            <section className="space-y-3">
+              <FieldGroup label="Enter your Tax File Number (TFN)">
+                <Input
+                  value={taxDeclaration.tfn}
+                  onChange={e => setTaxDeclaration(prev => ({ ...prev, tfn: e.target.value }))}
+                  placeholder="Enter TFN Number"
+                  disabled={taxDeclaration.noTFN}
+                />
+              </FieldGroup>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={taxDeclaration.noTFN}
+                  onCheckedChange={checked => setTaxDeclaration(prev => ({ ...prev, noTFN: !!checked, tfn: checked ? '' : prev.tfn }))}
+                />
+                I do not have a Tax File Number
+              </label>
+            </section>
+
+            <hr className="border-border/50" />
+
+            {/* Pay Basis */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Pay basis</h3>
+              <RadioGroup
+                value={taxDeclaration.payBasis}
+                onChange={v => setTaxDeclaration(prev => ({ ...prev, payBasis: v }))}
+                options={[
+                  { label: 'Full Time', value: 'full_time' },
+                  { label: 'Part Time', value: 'part_time' },
+                  { label: 'Casual', value: 'casual' },
+                ]}
+              />
+            </section>
+
+            <hr className="border-border/50" />
+
+            {/* Residency */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Residency status</h3>
+              <RadioGroup
+                value={taxDeclaration.residencyStatus}
+                onChange={v => setTaxDeclaration(prev => ({ ...prev, residencyStatus: v }))}
+                options={[
+                  { label: 'Australian resident for tax purposes', value: 'resident' },
+                  { label: 'Foreign resident for tax purposes', value: 'foreign' },
+                ]}
+              />
+            </section>
+
+            <hr className="border-border/50" />
+
+            {/* Income Type */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Income type</h3>
+              <RadioGroup
+                value={taxDeclaration.incomeType}
+                onChange={v => setTaxDeclaration(prev => ({ ...prev, incomeType: v }))}
+                options={[
+                  { label: 'Salary and wages', value: 'salary_wages' },
+                  { label: 'Working holiday maker', value: 'working_holiday' },
+                  { label: 'Closely held payee', value: 'closely_held' },
+                ]}
+              />
+            </section>
+
+            <hr className="border-border/50" />
+
+            {/* Employment Type */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Employment Type</h3>
+              <RadioGroup
+                value={taxDeclaration.employmentType}
+                onChange={v => setTaxDeclaration(prev => ({ ...prev, employmentType: v }))}
+                options={[
+                  { label: 'Employee', value: 'employee' },
+                ]}
+              />
+            </section>
+
+            <hr className="border-border/50" />
+
+            {/* Tax Additional Information */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Tax Additional Information</h3>
+              <div className="space-y-3">
+                <label className="flex items-start gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={taxDeclaration.claimTaxFreeThreshold}
+                    onCheckedChange={checked => setTaxDeclaration(prev => ({ ...prev, claimTaxFreeThreshold: !!checked }))}
+                    className="mt-0.5"
+                  />
+                  I want to claim the tax-free threshold
+                </label>
+                <label className="flex items-start gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={taxDeclaration.claimZoneOffset}
+                    onCheckedChange={checked => setTaxDeclaration(prev => ({ ...prev, claimZoneOffset: !!checked }))}
+                    className="mt-0.5"
+                  />
+                  I want to claim a zone, overseas forces or invalid and invalid carer tax offset
+                </label>
+                <label className="flex items-start gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={taxDeclaration.hasHELPDebt}
+                    onCheckedChange={checked => setTaxDeclaration(prev => ({ ...prev, hasHELPDebt: !!checked }))}
+                    className="mt-0.5"
+                  />
+                  I have a Higher Education Loan Program (HELP), Student Startup Loan (SSL) or Trade Support Loan (TSL) debt
+                </label>
+                <label className="flex items-start gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={taxDeclaration.hasFinancialSupplement}
+                    onCheckedChange={checked => setTaxDeclaration(prev => ({ ...prev, hasFinancialSupplement: !!checked }))}
+                    className="mt-0.5"
+                  />
+                  I have a Financial Supplement debt
+                </label>
+                <label className="flex items-start gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={taxDeclaration.hasPreviousFamilyName}
+                    onCheckedChange={checked => setTaxDeclaration(prev => ({ ...prev, hasPreviousFamilyName: !!checked }))}
+                    className="mt-0.5"
+                  />
+                  I have a previous family name
+                </label>
+              </div>
+            </section>
+
+            <hr className="border-border/50" />
+
+            {/* Additional Information */}
+            <section className="space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Additional Information</h3>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Does this employee claim a zone, overseas forces or invalid carer tax offset from this employer?</p>
+                <RadioGroup
+                  value={taxDeclaration.employerClaimZone}
+                  onChange={v => setTaxDeclaration(prev => ({ ...prev, employerClaimZone: v }))}
+                  options={[
+                    { label: 'Yes, claim it', value: 'yes' },
+                    { label: "No, don't claim it", value: 'no' },
+                  ]}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Does this employee claim the tax free threshold from this employer?</p>
+                <RadioGroup
+                  value={taxDeclaration.employerClaimTaxFree}
+                  onChange={v => setTaxDeclaration(prev => ({ ...prev, employerClaimTaxFree: v }))}
+                  options={[
+                    { label: 'Yes, claim it', value: 'yes' },
+                    { label: "No, don't claim it", value: 'no' },
+                  ]}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Does this employee have a Higher Education Loan Program (HELP), Student Startup Loan (SSL), Trade Support Loan (TSL) debt?</p>
+                <RadioGroup
+                  value={taxDeclaration.employerHELPDebt}
+                  onChange={v => setTaxDeclaration(prev => ({ ...prev, employerHELPDebt: v }))}
+                  options={[
+                    { label: 'Yes, they have this debt', value: 'yes' },
+                    { label: "No, they don't have this debt", value: 'no' },
+                  ]}
+                />
+              </div>
+            </section>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══════ STEP 5: Onboarding Questions ═══════ */}
       {currentStep === 'questions' && (
         <Card className="border-border/50">
           <CardHeader>
@@ -418,7 +876,7 @@ export function EmployeeOnboardingPanel() {
         </Card>
       )}
 
-      {/* ═══════ STEP 3: Documents ═══════ */}
+      {/* ═══════ STEP 6: Documents ═══════ */}
       {currentStep === 'documents' && (
         <Card className="border-border/50">
           <CardHeader>
@@ -478,7 +936,7 @@ export function EmployeeOnboardingPanel() {
         </Card>
       )}
 
-      {/* ═══════ STEP 4: Contracts ═══════ */}
+      {/* ═══════ STEP 7: Contracts ═══════ */}
       {currentStep === 'contracts' && (
         <Card className="border-border/50">
           <CardHeader>
