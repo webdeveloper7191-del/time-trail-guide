@@ -268,6 +268,8 @@ export default function RosterScheduler() {
   const [showSkillMatrix, setShowSkillMatrix] = useState(false);
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
+  const [showCallbackLogging, setShowCallbackLogging] = useState(false);
+  const [showOnCallOverlay, setShowOnCallOverlay] = useState(false);
   const [shiftForAgency, setShiftForAgency] = useState<OpenShift | Shift | null>(null);
   const [showAgencyTracker, setShowAgencyTracker] = useState(false);
   const [showNotificationTemplates, setShowNotificationTemplates] = useState(false);
