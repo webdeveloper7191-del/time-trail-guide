@@ -31,6 +31,7 @@ import {
   Save
 } from 'lucide-react';
 import { OnCallPayCalculationPreview } from './OnCallPayCalculationPreview';
+import { MinimumEngagementRulesPanel } from './MinimumEngagementRulesPanel';
 import { toast } from 'sonner';
 import { 
   OnCallConfiguration, 
