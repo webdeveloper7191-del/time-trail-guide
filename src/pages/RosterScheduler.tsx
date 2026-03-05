@@ -1931,6 +1931,12 @@ export default function RosterScheduler() {
                       <DropdownMenuItem onClick={() => setShowGPSClockIn(true)} icon={<MapPin size={16} />}>
                         GPS Clock-in/out
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowCallbackLogging(true)} icon={<PhoneCall size={16} />}>
+                        Callback Event Log
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowOnCallOverlay(true)} icon={<Phone size={16} />}>
+                        On-Call Roster
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setShowWeatherIntegration(true)} icon={<CloudSun size={16} />}>
                         Weather Integration
