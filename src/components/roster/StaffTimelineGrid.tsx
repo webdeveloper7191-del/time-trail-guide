@@ -877,6 +877,23 @@ export function StaffTimelineGrid({
                           </div>
                         )}
 
+                        {/* On-Call Lane - left side */}
+                        {(() => {
+                          const onCallShifts = shifts.filter(s => s.roomId === room.id && s.centreId === centre.id && s.shiftType === 'on_call');
+                          if (onCallShifts.length === 0) return null;
+                          return (
+                            <div className="h-[44px] md:h-[52px] border-b border-indigo-200/50 bg-gradient-to-r from-indigo-50/80 to-indigo-50/40 dark:from-indigo-950/30 dark:to-indigo-950/10 flex items-center gap-1.5 md:gap-2 p-1.5 md:p-2">
+                              <div className="h-7 w-7 md:h-9 md:w-9 rounded-full flex items-center justify-center bg-indigo-500/20 border-2 border-dashed border-indigo-500/50 shrink-0">
+                                <Phone className="h-3 w-3 md:h-4 md:w-4 text-indigo-600 dark:text-indigo-400" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs md:text-sm font-medium text-indigo-700 dark:text-indigo-300 truncate">On-Call</p>
+                                <p className="text-[9px] md:text-[10px] text-indigo-600 dark:text-indigo-400 hidden sm:block">Drop staff for standby</p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
                         {/* Empty Shifts row - left side */}
                         {(() => {
                           const roomEmptyShifts = emptyShifts.filter(es => es.roomId === room.id && es.centreId === centre.id);
@@ -1756,6 +1773,76 @@ export function StaffTimelineGrid({
                               />
                             </div>
                           )}
+
+                          {/* On-Call Lane - right side */}
+                          {(() => {
+                            const onCallShifts = shifts.filter(s => s.roomId === room.id && s.centreId === centre.id && s.shiftType === 'on_call');
+                            if (onCallShifts.length === 0) return null;
+                            return (
+                              <div className="h-[44px] md:h-[52px] flex border-b border-indigo-200/50 bg-gradient-to-r from-indigo-50/80 to-indigo-50/40 dark:from-indigo-950/30 dark:to-indigo-950/10">
+                                {dates.map((date) => {
+                                  const dateStr = format(date, 'yyyy-MM-dd');
+                                  const dayOnCallShifts = onCallShifts.filter(s => s.date === dateStr);
+                                  const cellKey = `oncall-${room.id}-${dateStr}`;
+                                  const isDragOver = dragOverCell === cellKey;
+
+                                  return (
+                                    <div
+                                      key={cellKey}
+                                      data-drop-zone
+                                      className={cn(
+                                        "p-1 border-r border-indigo-200/30 relative group/oncall-cell",
+                                        "transition-all duration-200 ease-out",
+                                        columnWidthClass,
+                                        isDragging && "bg-indigo-50/50 dark:bg-indigo-950/20",
+                                        isDragOver && "bg-indigo-100 dark:bg-indigo-900/40 ring-2 ring-inset ring-indigo-500/50"
+                                      )}
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        handleDragOver(e, cellKey);
+                                      }}
+                                      onDragLeave={handleDragLeave}
+                                      onDrop={(e) => {
+                                        e.preventDefault();
+                                        const staffId = e.dataTransfer.getData('staffId');
+                                        const draggedType = e.dataTransfer.getData('dragType');
+                                        if (staffId && draggedType !== 'shift') {
+                                          setDragOverCell(null);
+                                          setIsDragging(false);
+                                          setDragType(null);
+                                          // Create an on-call shift for this staff
+                                          const onCallTemplate = shiftTemplates.find(t => t.shiftType === 'on_call') || { startTime: '18:00', endTime: '06:00', breakMinutes: 0 };
+                                          onAddShift(staffId, dateStr, room.id, onCallTemplate as ShiftTemplate);
+                                        }
+                                      }}
+                                    >
+                                      {dayOnCallShifts.map((shift) => {
+                                        const staffMember = staff.find(s => s.id === shift.staffId);
+                                        return (
+                                          <div
+                                            key={shift.id}
+                                            className="px-1 py-0.5 rounded bg-indigo-500/15 border border-indigo-400/30 text-[10px] font-medium text-indigo-700 dark:text-indigo-300 truncate cursor-pointer hover:bg-indigo-500/25 transition-colors"
+                                            onClick={() => onShiftEdit(shift)}
+                                          >
+                                            <Phone className="h-2.5 w-2.5 inline mr-0.5" />
+                                            {staffMember?.name?.split(' ')[0] || 'On-Call'}
+                                          </div>
+                                        );
+                                      })}
+                                      {isDragOver && (
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                                          <div className="bg-indigo-600 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg animate-scale-in">
+                                            Assign on-call
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                                <div className="w-16 md:w-20 lg:w-24 shrink-0 border-l border-indigo-200/30 bg-indigo-50/40 dark:bg-indigo-950/10" />
+                              </div>
+                            );
+                          })()}
 
                           {/* Empty Shifts row - right side */}
                           {(() => {
