@@ -31,6 +31,7 @@ import {
   Save
 } from 'lucide-react';
 import { OnCallPayCalculationPreview } from './OnCallPayCalculationPreview';
+import { MinimumEngagementRulesPanel } from './MinimumEngagementRulesPanel';
 import { toast } from 'sonner';
 import { 
   OnCallConfiguration, 
@@ -371,6 +372,11 @@ export function OnCallAllowancePanel() {
 
       {/* Pay Calculation Preview */}
       <OnCallPayCalculationPreview allowances={allowances} />
+
+      {/* Minimum Engagement Rules */}
+      <MinimumEngagementRulesPanel />
+
+      <Separator />
 
       {/* Allowances List */}
       <div className="grid gap-4">
