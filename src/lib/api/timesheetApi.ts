@@ -90,6 +90,29 @@ export const timesheetApi = {
     return mockApiCall({ downloadUrl: `/exports/timesheets-${Date.now()}.${format}` }, { delay: 1000 });
   },
 
+  // Create a timesheet entry from an approved callback event
+  async createCallbackTimesheetEntry(params: {
+    staffId: string;
+    staffName: string;
+    date: string;
+    clockIn: string;
+    clockOut: string;
+    paidMinutes: number;
+    rateMultiplier: number;
+    baseRate: number;
+    calculatedPay: number;
+    callbackType: string;
+    reason: string;
+    minimumEngagementApplied: boolean;
+    minimumEngagementHours: number;
+  }): Promise<ApiResponse<{ timesheetEntryId: string; entryDate: string }>> {
+    const entryId = `ts-callback-${Date.now()}`;
+    return mockApiCall(
+      { timesheetEntryId: entryId, entryDate: params.date },
+      { delay: 400 }
+    );
+  },
+
   // Mark a timesheet entry as absent for a specific shift date
   async markTimesheetAbsent(
     staffId: string, 

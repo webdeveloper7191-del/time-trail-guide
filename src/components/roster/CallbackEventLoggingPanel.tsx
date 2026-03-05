@@ -484,12 +484,22 @@ export function CallbackEventLoggingPanel() {
                 <p className="text-sm text-muted-foreground mb-3">{event.reason}</p>
                 {event.notes && <p className="text-xs text-muted-foreground italic mb-3">{event.notes}</p>}
 
+                {/* Timesheet link indicator */}
+                {(event.status === 'approved' || event.status === 'paid') && (
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded bg-emerald-500/10 border border-emerald-200/50">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xs text-emerald-700 font-medium">
+                      Timesheet entry auto-generated • {(event.paidMinutes / 60).toFixed(1)}h @ {event.rateMultiplier}x = ${event.calculatedPay.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
                 {/* Actions */}
                 {event.status === 'logged' && (
                   <div className="flex items-center gap-2 pt-2 border-t">
                     <Button size="sm" variant="outline" className="gap-1 text-green-700" onClick={() => handleApprove(event.id)}>
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      Approve
+                      Approve & Create Timesheet
                     </Button>
                     <Button size="sm" variant="outline" className="gap-1 text-red-700" onClick={() => handleReject(event.id)}>
                       <XCircle className="h-3.5 w-3.5" />
