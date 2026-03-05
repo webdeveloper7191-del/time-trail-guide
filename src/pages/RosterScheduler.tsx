@@ -2700,6 +2700,30 @@ export default function RosterScheduler() {
         <WeatherIntegrationPanel />
       </PrimaryOffCanvas>
 
+      <PrimaryOffCanvas
+        open={showCallbackLogging}
+        onClose={() => setShowCallbackLogging(false)}
+        title="Callback Event Log"
+        description="Record and manage on-call callback events"
+        icon={PhoneCall}
+        size="3xl"
+        showFooter={false}
+      >
+        <CallbackEventLoggingPanel />
+      </PrimaryOffCanvas>
+
+      <PrimaryOffCanvas
+        open={showOnCallOverlay}
+        onClose={() => setShowOnCallOverlay(false)}
+        title="On-Call Roster"
+        description="View who is on standby, escalation chain, and callback history"
+        icon={Phone}
+        size="3xl"
+        showFooter={false}
+      >
+        <OnCallRosterOverlay />
+      </PrimaryOffCanvas>
+
       {/* Send to Agency Modal */}
       <SendToAgencyModal
         open={showSendToAgencyModal}
