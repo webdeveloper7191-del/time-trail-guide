@@ -373,6 +373,11 @@ export function OnCallAllowancePanel() {
       {/* Pay Calculation Preview */}
       <OnCallPayCalculationPreview allowances={allowances} />
 
+      {/* Minimum Engagement Rules */}
+      <MinimumEngagementRulesPanel />
+
+      <Separator />
+
       {/* Allowances List */}
       <div className="grid gap-4">
         {allowances.map(allowance => (
