@@ -295,17 +295,38 @@ export function CallbackEventLoggingPanel() {
     return entry;
   };
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
     const event = events.find(e => e.id === id);
     setEvents(prev => prev.map(e => e.id === id ? { ...e, status: 'approved' as const, approvedBy: 'Admin', approvedAt: new Date().toISOString() } : e));
     
     if (event) {
-      const tsEntry = generateTimesheetEntry(event);
-      console.log('[Callback→Timesheet] Auto-generated timesheet entry:', tsEntry);
-      toast.success(
-        `Callback approved — timesheet entry created for ${(event.paidMinutes / 60).toFixed(1)}h at ${event.rateMultiplier}x rate ($${event.calculatedPay.toFixed(2)})`,
-        { duration: 5000 }
-      );
+      try {
+        // Auto-generate timesheet entry via API
+        const result = await timesheetApi.createCallbackTimesheetEntry({
+          staffId: event.staffId,
+          staffName: event.staffName,
+          date: event.workStartTime.split('T')[0],
+          clockIn: event.workStartTime,
+          clockOut: event.workEndTime,
+          paidMinutes: event.paidMinutes,
+          rateMultiplier: event.rateMultiplier,
+          baseRate: event.baseRate,
+          calculatedPay: event.calculatedPay,
+          callbackType: event.callbackType,
+          reason: event.reason,
+          minimumEngagementApplied: event.minimumEngagementApplied,
+          minimumEngagementHours: event.minimumEngagementHours,
+        });
+        
+        console.log('[Callback→Timesheet] Entry created:', result.data);
+        toast.success(
+          `Callback approved — timesheet entry created for ${(event.paidMinutes / 60).toFixed(1)}h at ${event.rateMultiplier}x rate ($${event.calculatedPay.toFixed(2)})`,
+          { duration: 5000 }
+        );
+      } catch (err) {
+        console.error('[Callback→Timesheet] Failed to create entry:', err);
+        toast.error('Callback approved but timesheet entry creation failed');
+      }
     } else {
       toast.success('Callback approved');
     }
