@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { timesheetApi } from '@/lib/api/timesheetApi';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -276,9 +277,59 @@ export function CallbackEventLoggingPanel() {
     toast.success('Callback event logged successfully');
   };
 
-  const handleApprove = (id: string) => {
+  const generateTimesheetEntry = (event: CallbackEvent) => {
+    // Auto-generate a timesheet clock entry from the approved callback
+    const entry = {
+      id: `ts-callback-${event.id}`,
+      date: event.workStartTime.split('T')[0],
+      clockIn: event.workStartTime,
+      clockOut: event.workEndTime,
+      breaks: [] as any[],
+      totalBreakMinutes: 0,
+      grossHours: event.paidMinutes / 60,
+      netHours: event.paidMinutes / 60,
+      overtime: 0,
+      notes: `[CALLBACK - ${event.callbackType.toUpperCase()}] ${event.reason}. Rate: ${event.rateMultiplier}x, Min engagement: ${event.minimumEngagementApplied ? event.minimumEngagementHours + 'h applied' : 'not needed'}. Pay: $${event.calculatedPay.toFixed(2)}`,
+      wasEdited: false,
+    };
+    return entry;
+  };
+
+  const handleApprove = async (id: string) => {
+    const event = events.find(e => e.id === id);
     setEvents(prev => prev.map(e => e.id === id ? { ...e, status: 'approved' as const, approvedBy: 'Admin', approvedAt: new Date().toISOString() } : e));
-    toast.success('Callback approved');
+    
+    if (event) {
+      try {
+        // Auto-generate timesheet entry via API
+        const result = await timesheetApi.createCallbackTimesheetEntry({
+          staffId: event.staffId,
+          staffName: event.staffName,
+          date: event.workStartTime.split('T')[0],
+          clockIn: event.workStartTime,
+          clockOut: event.workEndTime,
+          paidMinutes: event.paidMinutes,
+          rateMultiplier: event.rateMultiplier,
+          baseRate: event.baseRate,
+          calculatedPay: event.calculatedPay,
+          callbackType: event.callbackType,
+          reason: event.reason,
+          minimumEngagementApplied: event.minimumEngagementApplied,
+          minimumEngagementHours: event.minimumEngagementHours,
+        });
+        
+        console.log('[Callback→Timesheet] Entry created:', result.data);
+        toast.success(
+          `Callback approved — timesheet entry created for ${(event.paidMinutes / 60).toFixed(1)}h at ${event.rateMultiplier}x rate ($${event.calculatedPay.toFixed(2)})`,
+          { duration: 5000 }
+        );
+      } catch (err) {
+        console.error('[Callback→Timesheet] Failed to create entry:', err);
+        toast.error('Callback approved but timesheet entry creation failed');
+      }
+    } else {
+      toast.success('Callback approved');
+    }
   };
 
   const handleReject = (id: string) => {
@@ -455,12 +506,22 @@ export function CallbackEventLoggingPanel() {
                 <p className="text-sm text-muted-foreground mb-3">{event.reason}</p>
                 {event.notes && <p className="text-xs text-muted-foreground italic mb-3">{event.notes}</p>}
 
+                {/* Timesheet link indicator */}
+                {(event.status === 'approved' || event.status === 'paid') && (
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded bg-emerald-500/10 border border-emerald-200/50">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xs text-emerald-700 font-medium">
+                      Timesheet entry auto-generated • {(event.paidMinutes / 60).toFixed(1)}h @ {event.rateMultiplier}x = ${event.calculatedPay.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
                 {/* Actions */}
                 {event.status === 'logged' && (
                   <div className="flex items-center gap-2 pt-2 border-t">
                     <Button size="sm" variant="outline" className="gap-1 text-green-700" onClick={() => handleApprove(event.id)}>
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      Approve
+                      Approve & Create Timesheet
                     </Button>
                     <Button size="sm" variant="outline" className="gap-1 text-red-700" onClick={() => handleReject(event.id)}>
                       <XCircle className="h-3.5 w-3.5" />
