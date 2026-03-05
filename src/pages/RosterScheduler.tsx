@@ -58,6 +58,8 @@ import { GPSClockInPanel } from '@/components/roster/GPSClockInPanel';
 import { WeatherIntegrationPanel } from '@/components/roster/WeatherIntegrationPanel';
 import { BreakSchedulingPanel } from '@/components/roster/BreakSchedulingPanel';
 import { SkillMatrixPanel } from '@/components/roster/SkillMatrixPanel';
+import { CallbackEventLoggingPanel } from '@/components/roster/CallbackEventLoggingPanel';
+import { OnCallRosterOverlay } from '@/components/roster/OnCallRosterOverlay';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { SendToAgencyModal, BroadcastConfig } from '@/components/roster/SendToAgencyModal';
 import { AgencyResponseTracker } from '@/components/roster/AgencyResponseTracker';
@@ -160,7 +162,7 @@ import {
   Star,
   RefreshCw,
 } from 'lucide-react';
-import { BarChart2 } from 'lucide-react';
+import { BarChart2, Phone, PhoneCall } from 'lucide-react';
 import rosteredLogo from '@/assets/rostered-logo.png';
 
 // Default budget configuration per centre
@@ -266,6 +268,8 @@ export default function RosterScheduler() {
   const [showSkillMatrix, setShowSkillMatrix] = useState(false);
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
+  const [showCallbackLogging, setShowCallbackLogging] = useState(false);
+  const [showOnCallOverlay, setShowOnCallOverlay] = useState(false);
   const [shiftForAgency, setShiftForAgency] = useState<OpenShift | Shift | null>(null);
   const [showAgencyTracker, setShowAgencyTracker] = useState(false);
   const [showNotificationTemplates, setShowNotificationTemplates] = useState(false);
@@ -1927,6 +1931,12 @@ export default function RosterScheduler() {
                       <DropdownMenuItem onClick={() => setShowGPSClockIn(true)} icon={<MapPin size={16} />}>
                         GPS Clock-in/out
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowCallbackLogging(true)} icon={<PhoneCall size={16} />}>
+                        Callback Event Log
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowOnCallOverlay(true)} icon={<Phone size={16} />}>
+                        On-Call Roster
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setShowWeatherIntegration(true)} icon={<CloudSun size={16} />}>
                         Weather Integration
@@ -2688,6 +2698,30 @@ export default function RosterScheduler() {
         showFooter={false}
       >
         <WeatherIntegrationPanel />
+      </PrimaryOffCanvas>
+
+      <PrimaryOffCanvas
+        open={showCallbackLogging}
+        onClose={() => setShowCallbackLogging(false)}
+        title="Callback Event Log"
+        description="Record and manage on-call callback events"
+        icon={PhoneCall}
+        size="3xl"
+        showFooter={false}
+      >
+        <CallbackEventLoggingPanel />
+      </PrimaryOffCanvas>
+
+      <PrimaryOffCanvas
+        open={showOnCallOverlay}
+        onClose={() => setShowOnCallOverlay(false)}
+        title="On-Call Roster"
+        description="View who is on standby, escalation chain, and callback history"
+        icon={Phone}
+        size="3xl"
+        showFooter={false}
+      >
+        <OnCallRosterOverlay />
       </PrimaryOffCanvas>
 
       {/* Send to Agency Modal */}
