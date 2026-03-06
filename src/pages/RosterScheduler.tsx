@@ -1859,13 +1859,7 @@ export default function RosterScheduler() {
                       <DropdownMenuItem onClick={() => setShowDemandImportModal(true)} icon={<Download size={16} />}>
                         Import Demand Data
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setShowIntegrationManager(true)} icon={<Plug size={16} />}>
-                        Integration Manager
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowTimefoldIntegration(true)} icon={<PlugZap size={16} />}>
-                        Solver Integration Settings
-                      </DropdownMenuItem>
+                      
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </span>
@@ -2538,11 +2532,7 @@ export default function RosterScheduler() {
         currentDate={currentDate}
       />
 
-      {/* Integration Manager Modal */}
-      <IntegrationManagerModal
-        open={showIntegrationManager}
-        onClose={() => setShowIntegrationManager(false)}
-      />
+      
 
       {/* Demand Import Modal */}
       <DemandImportModal
@@ -2888,11 +2878,7 @@ export default function RosterScheduler() {
         isSolving={isSolvingTimefold}
       />
 
-      {/* Timefold Integration Settings Panel */}
-      <TimefoldIntegrationPanel
-        open={showTimefoldIntegration}
-        onClose={() => setShowTimefoldIntegration(false)}
-      />
+      
 
       <div className="hidden">
         <RosterPrintView
