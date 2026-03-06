@@ -1693,7 +1693,15 @@ export function IntegrationManagerModal({
                   </Typography>
                 </Card>
               ) : (
-                syncHistory.map((result, idx) => (
+                (() => {
+                  const historyTotalPages = Math.ceil(syncHistory.length / ITEMS_PER_PAGE);
+                  const paginatedHistory = syncHistory.slice(
+                    historyPage * ITEMS_PER_PAGE,
+                    (historyPage + 1) * ITEMS_PER_PAGE
+                  );
+                  return (
+                    <>
+                    {paginatedHistory.map((result, idx) => (
                   <Card key={idx} variant="outlined">
                     <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                       <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -1736,7 +1744,24 @@ export function IntegrationManagerModal({
                       </Stack>
                     </CardContent>
                   </Card>
-                ))
+                ))}
+                {historyTotalPages > 1 && (
+                  <Stack direction="row" justifyContent="center" sx={{ mt: 2 }}>
+                    <Pagination
+                      count={historyTotalPages}
+                      page={historyPage + 1}
+                      onChange={(_, page) => setHistoryPage(page - 1)}
+                      size="small"
+                      color="primary"
+                    />
+                  </Stack>
+                )}
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
+                  Showing {paginatedHistory.length} of {syncHistory.length} sync records
+                </Typography>
+                </>
+                );
+                })()
               )}
             </Stack>
           </TabsContent>
