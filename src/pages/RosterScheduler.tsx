@@ -253,7 +253,7 @@ export default function RosterScheduler() {
   // Demand settings modals
   const [showDemandSettings, setShowDemandSettings] = useState(false);
   const [showDemandDataEntry, setShowDemandDataEntry] = useState(false);
-  const [showIntegrationManager, setShowIntegrationManager] = useState(false);
+  
   const [showDemandImportModal, setShowDemandImportModal] = useState(false);
   const [showHolidayCalendar, setShowHolidayCalendar] = useState(false);
   const [showAddEmptyShiftModal, setShowAddEmptyShiftModal] = useState(false);
@@ -311,7 +311,7 @@ export default function RosterScheduler() {
   
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
-  const [showTimefoldIntegration, setShowTimefoldIntegration] = useState(false);
+  
   const [timefoldConfig, setTimefoldConfig] = useState<TimefoldSolverConfig>(defaultSolverConfig);
   const [isSolvingTimefold, setIsSolvingTimefold] = useState(false);
   const [lastTimefoldSolution, setLastTimefoldSolution] = useState<TimefoldSolution | null>(null);
