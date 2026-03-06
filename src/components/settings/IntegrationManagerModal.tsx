@@ -57,6 +57,8 @@ interface IntegrationManagerModalProps {
   onClose: () => void;
 }
 
+const ITEMS_PER_PAGE = 5;
+
 interface ApiHeader {
   key: string;
   value: string;
@@ -180,6 +182,8 @@ export function IntegrationManagerModal({
   const [testData, setTestData] = useState<string>('');
   const [testResult, setTestResult] = useState<TransformationResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [integrationPage, setIntegrationPage] = useState(0);
+  const [historyPage, setHistoryPage] = useState(0);
   
   // Initialize from config
   useEffect(() => {
