@@ -1372,7 +1372,7 @@ export default function RosterScheduler() {
         onIndustrySettings={() => setShowIndustryConfig(true)}
         onDemandSettings={() => setShowDemandSettings(true)}
         onDemandDataEntry={() => setShowDemandDataEntry(true)}
-        onIntegrationManager={() => setShowIntegrationManager(true)}
+        onIntegrationManager={() => {}}
         onShowHolidays={() => setShowHolidayCalendar(true)}
         onShowAvailability={() => setShowAvailabilityModal(true)}
         onShowLeaveRequests={() => setShowLeaveModal(true)}
