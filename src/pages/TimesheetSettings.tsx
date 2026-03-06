@@ -1273,64 +1273,117 @@ export default function TimesheetSettings() {
                 </p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
-                {/* Timefold Constraint Configuration */}
-                <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowTimefoldPanel(true)}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Zap className="h-5 w-5 text-primary" />
-                      Solver Constraints
-                    </CardTitle>
-                    <CardDescription>
+              <div className="grid gap-6 md:grid-cols-3">
+                {/* Solver Constraints Card */}
+                <Card 
+                  className="bg-background border border-border rounded-lg hover:border-primary/40 transition-all cursor-pointer group"
+                  onClick={() => setShowTimefoldPanel(true)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <Zap className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">Solver Constraints</CardTitle>
+                        <Badge variant="outline" className="text-xs mt-0.5">AI Engine</Badge>
+                      </div>
+                    </div>
+                    <CardDescription className="text-sm">
                       Configure AI optimization constraints including industry-specific rules, staffing ratios, and compliance requirements.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full gap-2">
+                  <CardContent className="pt-0">
+                    <Button variant="outline" className="w-full gap-2 group-hover:border-primary/40">
                       <Settings className="h-4 w-4" />
                       Configure Constraints
+                      <ChevronRight className="h-4 w-4 ml-auto opacity-50 group-hover:opacity-100 transition-opacity" />
                     </Button>
                   </CardContent>
                 </Card>
 
-                {/* Timefold Integration Settings */}
-                <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowTimefoldIntegration(true)}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <PlugZap className="h-5 w-5 text-primary" />
-                      Solver Integration
-                    </CardTitle>
-                    <CardDescription>
+                {/* Solver Integration Card */}
+                <Card 
+                  className="bg-background border border-border rounded-lg hover:border-primary/40 transition-all cursor-pointer group"
+                  onClick={() => setShowTimefoldIntegration(true)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <PlugZap className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">Solver Integration</CardTitle>
+                        <Badge variant="outline" className="text-xs mt-0.5">API & Webhooks</Badge>
+                      </div>
+                    </div>
+                    <CardDescription className="text-sm">
                       Manage API connections, data mapping profiles, webhook endpoints, and constraint imports for the solver.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full gap-2">
+                  <CardContent className="pt-0">
+                    <Button variant="outline" className="w-full gap-2 group-hover:border-primary/40">
                       <Settings className="h-4 w-4" />
                       Integration Settings
+                      <ChevronRight className="h-4 w-4 ml-auto opacity-50 group-hover:opacity-100 transition-opacity" />
                     </Button>
                   </CardContent>
                 </Card>
 
-                {/* Integration Manager */}
-                <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowIntegrationManager(true)}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Plug className="h-5 w-5 text-primary" />
-                      Integration Manager
-                    </CardTitle>
-                    <CardDescription>
+                {/* Integration Manager Card */}
+                <Card 
+                  className="bg-background border border-border rounded-lg hover:border-primary/40 transition-all cursor-pointer group"
+                  onClick={() => setShowIntegrationManager(true)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <Plug className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">Integration Manager</CardTitle>
+                        <Badge variant="outline" className="text-xs mt-0.5">External Systems</Badge>
+                      </div>
+                    </div>
+                    <CardDescription className="text-sm">
                       Connect and manage external system integrations, data syncing, and third-party service configurations.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full gap-2">
+                  <CardContent className="pt-0">
+                    <Button variant="outline" className="w-full gap-2 group-hover:border-primary/40">
                       <Settings className="h-4 w-4" />
                       Manage Integrations
+                      <ChevronRight className="h-4 w-4 ml-auto opacity-50 group-hover:opacity-100 transition-opacity" />
                     </Button>
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Quick Status Summary */}
+              <Card className="bg-background border border-border rounded-lg">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                    Configuration Overview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-3 rounded-lg bg-muted/50">
+                      <p className="text-2xl font-bold text-foreground">—</p>
+                      <p className="text-xs text-muted-foreground mt-1">Active Constraints</p>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-muted/50">
+                      <p className="text-2xl font-bold text-foreground">—</p>
+                      <p className="text-xs text-muted-foreground mt-1">API Connections</p>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-muted/50">
+                      <p className="text-2xl font-bold text-foreground">—</p>
+                      <p className="text-xs text-muted-foreground mt-1">Integrations</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Panels */}
               <TimefoldConstraintPanel
