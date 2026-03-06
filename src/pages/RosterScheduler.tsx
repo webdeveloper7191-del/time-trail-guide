@@ -44,7 +44,7 @@ import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
 import { DemandMasterSettings } from '@/types/industryConfig';
 import { useDemand } from '@/contexts/DemandContext';
-import { IntegrationManagerModal } from '@/components/settings/IntegrationManagerModal';
+
 import { DemandImportModal } from '@/components/demand';
 import { HolidayEventCalendarPanel } from '@/components/roster/HolidayEventCalendarPanel';
 import { MobileRosterToolbar } from '@/components/roster/MobileRosterToolbar';
@@ -68,7 +68,7 @@ import { CentreAgencyPreferencesPanel } from '@/components/roster/CentreAgencyPr
 import { PostPlacementRatingModal } from '@/components/roster/PostPlacementRatingModal';
 import { AgencyPerformanceDashboard } from '@/components/roster/AgencyPerformanceDashboard';
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
-import { TimefoldIntegrationPanel } from '@/components/roster/TimefoldIntegrationPanel';
+
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
