@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Button,
   TextField,
@@ -14,6 +14,7 @@ import {
   LinearProgress,
   InputAdornment,
   CircularProgress,
+  Pagination,
 } from '@mui/material';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import {
@@ -56,6 +57,8 @@ interface IntegrationManagerModalProps {
   open: boolean;
   onClose: () => void;
 }
+
+const ITEMS_PER_PAGE = 5;
 
 interface ApiHeader {
   key: string;
@@ -180,6 +183,8 @@ export function IntegrationManagerModal({
   const [testData, setTestData] = useState<string>('');
   const [testResult, setTestResult] = useState<TransformationResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [integrationPage, setIntegrationPage] = useState(0);
+  const [historyPage, setHistoryPage] = useState(0);
   
   // Initialize from config
   useEffect(() => {
@@ -795,7 +800,15 @@ export function IntegrationManagerModal({
                   </Typography>
                 </Card>
               ) : (
-                activeIntegrations.map((integration) => (
+                (() => {
+                  const totalPages = Math.ceil(activeIntegrations.length / ITEMS_PER_PAGE);
+                  const paginatedIntegrations = activeIntegrations.slice(
+                    integrationPage * ITEMS_PER_PAGE,
+                    (integrationPage + 1) * ITEMS_PER_PAGE
+                  );
+                  return (
+                    <>
+                    {paginatedIntegrations.map((integration) => (
                   <Card 
                     key={integration.id} 
                     variant="outlined"
@@ -1439,6 +1452,24 @@ export function IntegrationManagerModal({
                     </CardContent>
                   </Card>
                 ))
+                }
+                {totalPages > 1 && (
+                  <Stack direction="row" justifyContent="center" sx={{ mt: 2 }}>
+                    <Pagination
+                      count={totalPages}
+                      page={integrationPage + 1}
+                      onChange={(_, page) => setIntegrationPage(page - 1)}
+                      size="small"
+                      color="primary"
+                    />
+                  </Stack>
+                )}
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
+                  Showing {paginatedIntegrations.length} of {activeIntegrations.length} integrations
+                </Typography>
+                </>
+                );
+                })()
               )}
             </Stack>
           </TabsContent>
@@ -1662,7 +1693,15 @@ export function IntegrationManagerModal({
                   </Typography>
                 </Card>
               ) : (
-                syncHistory.map((result, idx) => (
+                (() => {
+                  const historyTotalPages = Math.ceil(syncHistory.length / ITEMS_PER_PAGE);
+                  const paginatedHistory = syncHistory.slice(
+                    historyPage * ITEMS_PER_PAGE,
+                    (historyPage + 1) * ITEMS_PER_PAGE
+                  );
+                  return (
+                    <>
+                    {paginatedHistory.map((result, idx) => (
                   <Card key={idx} variant="outlined">
                     <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                       <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -1705,7 +1744,24 @@ export function IntegrationManagerModal({
                       </Stack>
                     </CardContent>
                   </Card>
-                ))
+                ))}
+                {historyTotalPages > 1 && (
+                  <Stack direction="row" justifyContent="center" sx={{ mt: 2 }}>
+                    <Pagination
+                      count={historyTotalPages}
+                      page={historyPage + 1}
+                      onChange={(_, page) => setHistoryPage(page - 1)}
+                      size="small"
+                      color="primary"
+                    />
+                  </Stack>
+                )}
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
+                  Showing {paginatedHistory.length} of {syncHistory.length} sync records
+                </Typography>
+                </>
+                );
+                })()
               )}
             </Stack>
           </TabsContent>
