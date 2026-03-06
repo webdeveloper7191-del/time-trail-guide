@@ -800,7 +800,15 @@ export function IntegrationManagerModal({
                   </Typography>
                 </Card>
               ) : (
-                activeIntegrations.map((integration) => (
+                (() => {
+                  const totalPages = Math.ceil(activeIntegrations.length / ITEMS_PER_PAGE);
+                  const paginatedIntegrations = activeIntegrations.slice(
+                    integrationPage * ITEMS_PER_PAGE,
+                    (integrationPage + 1) * ITEMS_PER_PAGE
+                  );
+                  return (
+                    <>
+                    {paginatedIntegrations.map((integration) => (
                   <Card 
                     key={integration.id} 
                     variant="outlined"
@@ -1444,6 +1452,24 @@ export function IntegrationManagerModal({
                     </CardContent>
                   </Card>
                 ))
+                }
+                {totalPages > 1 && (
+                  <Stack direction="row" justifyContent="center" sx={{ mt: 2 }}>
+                    <Pagination
+                      count={totalPages}
+                      page={integrationPage + 1}
+                      onChange={(_, page) => setIntegrationPage(page - 1)}
+                      size="small"
+                      color="primary"
+                    />
+                  </Stack>
+                )}
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
+                  Showing {paginatedIntegrations.length} of {activeIntegrations.length} integrations
+                </Typography>
+                </>
+                );
+                })()
               )}
             </Stack>
           </TabsContent>
