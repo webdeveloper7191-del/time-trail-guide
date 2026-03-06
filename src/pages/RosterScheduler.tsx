@@ -44,7 +44,7 @@ import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
 import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
 import { DemandMasterSettings } from '@/types/industryConfig';
 import { useDemand } from '@/contexts/DemandContext';
-import { IntegrationManagerModal } from '@/components/settings/IntegrationManagerModal';
+
 import { DemandImportModal } from '@/components/demand';
 import { HolidayEventCalendarPanel } from '@/components/roster/HolidayEventCalendarPanel';
 import { MobileRosterToolbar } from '@/components/roster/MobileRosterToolbar';
@@ -68,7 +68,7 @@ import { CentreAgencyPreferencesPanel } from '@/components/roster/CentreAgencyPr
 import { PostPlacementRatingModal } from '@/components/roster/PostPlacementRatingModal';
 import { AgencyPerformanceDashboard } from '@/components/roster/AgencyPerformanceDashboard';
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
-import { TimefoldIntegrationPanel } from '@/components/roster/TimefoldIntegrationPanel';
+
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
@@ -253,7 +253,7 @@ export default function RosterScheduler() {
   // Demand settings modals
   const [showDemandSettings, setShowDemandSettings] = useState(false);
   const [showDemandDataEntry, setShowDemandDataEntry] = useState(false);
-  const [showIntegrationManager, setShowIntegrationManager] = useState(false);
+  
   const [showDemandImportModal, setShowDemandImportModal] = useState(false);
   const [showHolidayCalendar, setShowHolidayCalendar] = useState(false);
   const [showAddEmptyShiftModal, setShowAddEmptyShiftModal] = useState(false);
@@ -311,7 +311,7 @@ export default function RosterScheduler() {
   
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
-  const [showTimefoldIntegration, setShowTimefoldIntegration] = useState(false);
+  
   const [timefoldConfig, setTimefoldConfig] = useState<TimefoldSolverConfig>(defaultSolverConfig);
   const [isSolvingTimefold, setIsSolvingTimefold] = useState(false);
   const [lastTimefoldSolution, setLastTimefoldSolution] = useState<TimefoldSolution | null>(null);
@@ -1372,7 +1372,7 @@ export default function RosterScheduler() {
         onIndustrySettings={() => setShowIndustryConfig(true)}
         onDemandSettings={() => setShowDemandSettings(true)}
         onDemandDataEntry={() => setShowDemandDataEntry(true)}
-        onIntegrationManager={() => setShowIntegrationManager(true)}
+        onIntegrationManager={() => {}}
         onShowHolidays={() => setShowHolidayCalendar(true)}
         onShowAvailability={() => setShowAvailabilityModal(true)}
         onShowLeaveRequests={() => setShowLeaveModal(true)}
@@ -1859,13 +1859,7 @@ export default function RosterScheduler() {
                       <DropdownMenuItem onClick={() => setShowDemandImportModal(true)} icon={<Download size={16} />}>
                         Import Demand Data
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setShowIntegrationManager(true)} icon={<Plug size={16} />}>
-                        Integration Manager
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowTimefoldIntegration(true)} icon={<PlugZap size={16} />}>
-                        Solver Integration Settings
-                      </DropdownMenuItem>
+                      
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </span>
@@ -2538,11 +2532,7 @@ export default function RosterScheduler() {
         currentDate={currentDate}
       />
 
-      {/* Integration Manager Modal */}
-      <IntegrationManagerModal
-        open={showIntegrationManager}
-        onClose={() => setShowIntegrationManager(false)}
-      />
+      
 
       {/* Demand Import Modal */}
       <DemandImportModal
@@ -2888,11 +2878,7 @@ export default function RosterScheduler() {
         isSolving={isSolvingTimefold}
       />
 
-      {/* Timefold Integration Settings Panel */}
-      <TimefoldIntegrationPanel
-        open={showTimefoldIntegration}
-        onClose={() => setShowTimefoldIntegration(false)}
-      />
+      
 
       <div className="hidden">
         <RosterPrintView

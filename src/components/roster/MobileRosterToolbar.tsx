@@ -739,17 +739,6 @@ export function MobileRosterToolbar({
                   Enter Demand Data
                 </Button>
 
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-10"
-                  onClick={() => {
-                    onIntegrationManager();
-                    setShowActionsSheet(false);
-                  }}
-                >
-                  <Plug className="h-4 w-4 mr-3" />
-                  Integration Manager
-                </Button>
 
                 <div className="border-t border-border my-2" />
 

@@ -46,6 +46,14 @@ import {
 } from 'lucide-react';
 import { ApprovalTier, BreakRule, ApprovalRule } from '@/types/compliance';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
+import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
+import { TimefoldIntegrationPanel } from '@/components/roster/TimefoldIntegrationPanel';
+import { IntegrationManagerModal } from '@/components/settings/IntegrationManagerModal';
+import { 
+  TimefoldSolverConfig, 
+  defaultSolverConfig, 
+} from '@/lib/timefoldSolver';
+import { Plug, PlugZap, Cpu } from 'lucide-react';
 
 interface AutoApprovalCondition {
   id: string;
@@ -256,7 +264,13 @@ export default function TimesheetSettings() {
     return labels[tier];
   };
 
-  const [activeSection, setActiveSection] = useState<'timesheet' | 'awards'>('timesheet');
+  const [activeSection, setActiveSection] = useState<'timesheet' | 'awards' | 'solver'>('timesheet');
+  
+  // Solver configuration state
+  const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
+  const [showTimefoldIntegration, setShowTimefoldIntegration] = useState(false);
+  const [showIntegrationManager, setShowIntegrationManager] = useState(false);
+  const [timefoldConfig, setTimefoldConfig] = useState<TimefoldSolverConfig>(defaultSolverConfig);
 
   return (
     <div className="flex h-screen bg-background">
@@ -312,6 +326,14 @@ export default function TimesheetSettings() {
               >
                 <Award className="h-4 w-4" />
                 Awards Configuration
+              </Button>
+              <Button
+                variant={activeSection === 'solver' ? 'default' : 'outline'}
+                onClick={() => setActiveSection('solver')}
+                className="gap-2"
+              >
+                <Cpu className="h-4 w-4" />
+                Solver & Integrations
               </Button>
             </div>
           </div>
@@ -1237,8 +1259,95 @@ export default function TimesheetSettings() {
               </Card>
             </TabsContent>
             </Tabs>
-          ) : (
+          ) : activeSection === 'awards' ? (
             <AwardsConfigurationTab />
+          ) : (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                  <Cpu className="h-6 w-6 text-primary" />
+                  Solver & Integration Configuration
+                </h2>
+                <p className="text-muted-foreground mt-1">
+                  Configure the Timefold AI solver constraints, API connections, data mappings, and third-party integrations.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                {/* Timefold Constraint Configuration */}
+                <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowTimefoldPanel(true)}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Zap className="h-5 w-5 text-primary" />
+                      Solver Constraints
+                    </CardTitle>
+                    <CardDescription>
+                      Configure AI optimization constraints including industry-specific rules, staffing ratios, and compliance requirements.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full gap-2">
+                      <Settings className="h-4 w-4" />
+                      Configure Constraints
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Timefold Integration Settings */}
+                <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowTimefoldIntegration(true)}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <PlugZap className="h-5 w-5 text-primary" />
+                      Solver Integration
+                    </CardTitle>
+                    <CardDescription>
+                      Manage API connections, data mapping profiles, webhook endpoints, and constraint imports for the solver.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full gap-2">
+                      <Settings className="h-4 w-4" />
+                      Integration Settings
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Integration Manager */}
+                <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowIntegrationManager(true)}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Plug className="h-5 w-5 text-primary" />
+                      Integration Manager
+                    </CardTitle>
+                    <CardDescription>
+                      Connect and manage external system integrations, data syncing, and third-party service configurations.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full gap-2">
+                      <Settings className="h-4 w-4" />
+                      Manage Integrations
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Panels */}
+              <TimefoldConstraintPanel
+                open={showTimefoldPanel}
+                onClose={() => setShowTimefoldPanel(false)}
+                config={timefoldConfig}
+                onConfigChange={setTimefoldConfig}
+              />
+              <TimefoldIntegrationPanel
+                open={showTimefoldIntegration}
+                onClose={() => setShowTimefoldIntegration(false)}
+              />
+              <IntegrationManagerModal
+                open={showIntegrationManager}
+                onClose={() => setShowIntegrationManager(false)}
+              />
+            </div>
           )}
         </div>
       </main>
