@@ -754,8 +754,10 @@ export function TimefoldConstraintPanel({
         {selectedIndustry === 'childcare' && nqfComplianceSummary && (
           <div 
             className={cn(
-              "p-4 rounded-lg text-white",
-              nqfComplianceSummary.isCompliant ? "bg-success" : "bg-destructive"
+              "p-4 rounded-lg border",
+              nqfComplianceSummary.isCompliant 
+                ? "bg-[hsl(var(--success-bg))] border-[hsl(var(--success)/0.3)] text-[hsl(var(--success))]" 
+                : "bg-[hsl(var(--error-bg))] border-[hsl(var(--error)/0.3)] text-[hsl(var(--error))]"
             )}
           >
             <div className="flex items-center gap-4">
@@ -765,8 +767,8 @@ export function TimefoldConstraintPanel({
                 <AlertTriangle size={24} />
               )}
               <div className="flex-1">
-                <p className="text-sm font-semibold">NQF Compliance Status</p>
-                <p className="text-xs opacity-90">
+                <p className="text-sm font-semibold text-foreground">NQF Compliance Status</p>
+                <p className="text-xs text-muted-foreground">
                   {nqfComplianceSummary.isCompliant 
                     ? `All ${nqfComplianceSummary.totalHard} regulatory constraints enabled`
                     : `${nqfComplianceSummary.disabledHard} of ${nqfComplianceSummary.totalHard} regulatory constraints disabled`
@@ -777,14 +779,14 @@ export function TimefoldConstraintPanel({
                 <p className="text-3xl font-bold">
                   {nqfComplianceSummary.enabledHard}/{nqfComplianceSummary.totalHard}
                 </p>
-                <p className="text-xs">Hard Constraints</p>
+                <p className="text-xs text-muted-foreground">Hard Constraints</p>
               </div>
             </div>
             
             {!nqfComplianceSummary.isCompliant && nqfComplianceSummary.disabledNames.length > 0 && (
-              <div className="mt-3 p-2 bg-white/10 rounded">
-                <p className="text-xs font-medium">⚠️ Disabled constraints that may breach NQF:</p>
-                <p className="text-xs">{nqfComplianceSummary.disabledNames.join(', ')}</p>
+              <div className="mt-3 p-2 bg-[hsl(var(--error)/0.08)] rounded">
+                <p className="text-xs font-medium text-foreground">⚠️ Disabled constraints that may breach NQF:</p>
+                <p className="text-xs text-muted-foreground">{nqfComplianceSummary.disabledNames.join(', ')}</p>
               </div>
             )}
           </div>
