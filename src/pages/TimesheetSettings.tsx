@@ -1263,129 +1263,97 @@ export default function TimesheetSettings() {
             <AwardsConfigurationTab />
           ) : (
             <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                  <Cpu className="h-6 w-6 text-primary" />
-                  Solver & Integration Configuration
-                </h2>
-                <p className="text-muted-foreground mt-1">
-                  Configure the Timefold AI solver constraints, API connections, data mappings, and third-party integrations.
+              {/* Section Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                    <Cpu className="h-6 w-6 text-primary" />
+                    Solver & Integration Configuration
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Configure the Timefold AI solver constraints, API connections, data mappings, and third-party integrations.
+                  </p>
+                </div>
+              </div>
+
+              {/* Configuration Modules - Vertical List */}
+              <div className="space-y-3">
+                {/* Solver Constraints */}
+                <button
+                  onClick={() => setShowTimefoldPanel(true)}
+                  className="w-full text-left bg-background border border-border rounded-lg p-5 hover:border-primary/40 hover:shadow-sm transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+                      <Zap className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-sm font-semibold text-foreground">Solver Constraints</h3>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">AI Engine</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-snug">
+                        Configure AI optimization constraints including industry-specific rules, staffing ratios, and compliance requirements.
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+                  </div>
+                </button>
+
+                {/* Solver Integration */}
+                <button
+                  onClick={() => setShowTimefoldIntegration(true)}
+                  className="w-full text-left bg-background border border-border rounded-lg p-5 hover:border-primary/40 hover:shadow-sm transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+                      <PlugZap className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-sm font-semibold text-foreground">Solver Integration</h3>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">API & Webhooks</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-snug">
+                        Manage API connections, data mapping profiles, webhook endpoints, and constraint imports for the solver.
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+                  </div>
+                </button>
+
+                {/* Integration Manager */}
+                <button
+                  onClick={() => setShowIntegrationManager(true)}
+                  className="w-full text-left bg-background border border-border rounded-lg p-5 hover:border-primary/40 hover:shadow-sm transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+                      <Plug className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-sm font-semibold text-foreground">Integration Manager</h3>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">External Systems</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-snug">
+                        Connect and manage external system integrations, data syncing, and third-party service configurations.
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+                  </div>
+                </button>
+              </div>
+
+              {/* Helpful Tip */}
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/40 border border-border">
+                <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-medium text-foreground">Tip:</span> Start with Solver Constraints to select your industry and configure optimization rules. Then use Solver Integration for API connections and the Integration Manager for external system syncing.
                 </p>
               </div>
 
-              <div className="grid gap-6 md:grid-cols-3">
-                {/* Solver Constraints Card */}
-                <Card 
-                  className="bg-background border border-border rounded-lg hover:border-primary/40 transition-all cursor-pointer group"
-                  onClick={() => setShowTimefoldPanel(true)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <Zap className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">Solver Constraints</CardTitle>
-                        <Badge variant="outline" className="text-xs mt-0.5">AI Engine</Badge>
-                      </div>
-                    </div>
-                    <CardDescription className="text-sm">
-                      Configure AI optimization constraints including industry-specific rules, staffing ratios, and compliance requirements.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <Button variant="outline" className="w-full gap-2 group-hover:border-primary/40">
-                      <Settings className="h-4 w-4" />
-                      Configure Constraints
-                      <ChevronRight className="h-4 w-4 ml-auto opacity-50 group-hover:opacity-100 transition-opacity" />
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Solver Integration Card */}
-                <Card 
-                  className="bg-background border border-border rounded-lg hover:border-primary/40 transition-all cursor-pointer group"
-                  onClick={() => setShowTimefoldIntegration(true)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <PlugZap className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">Solver Integration</CardTitle>
-                        <Badge variant="outline" className="text-xs mt-0.5">API & Webhooks</Badge>
-                      </div>
-                    </div>
-                    <CardDescription className="text-sm">
-                      Manage API connections, data mapping profiles, webhook endpoints, and constraint imports for the solver.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <Button variant="outline" className="w-full gap-2 group-hover:border-primary/40">
-                      <Settings className="h-4 w-4" />
-                      Integration Settings
-                      <ChevronRight className="h-4 w-4 ml-auto opacity-50 group-hover:opacity-100 transition-opacity" />
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Integration Manager Card */}
-                <Card 
-                  className="bg-background border border-border rounded-lg hover:border-primary/40 transition-all cursor-pointer group"
-                  onClick={() => setShowIntegrationManager(true)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <Plug className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">Integration Manager</CardTitle>
-                        <Badge variant="outline" className="text-xs mt-0.5">External Systems</Badge>
-                      </div>
-                    </div>
-                    <CardDescription className="text-sm">
-                      Connect and manage external system integrations, data syncing, and third-party service configurations.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <Button variant="outline" className="w-full gap-2 group-hover:border-primary/40">
-                      <Settings className="h-4 w-4" />
-                      Manage Integrations
-                      <ChevronRight className="h-4 w-4 ml-auto opacity-50 group-hover:opacity-100 transition-opacity" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Quick Status Summary */}
-              <Card className="bg-background border border-border rounded-lg">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                    Configuration Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-3 rounded-lg bg-muted/50">
-                      <p className="text-2xl font-bold text-foreground">—</p>
-                      <p className="text-xs text-muted-foreground mt-1">Active Constraints</p>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-muted/50">
-                      <p className="text-2xl font-bold text-foreground">—</p>
-                      <p className="text-xs text-muted-foreground mt-1">API Connections</p>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-muted/50">
-                      <p className="text-2xl font-bold text-foreground">—</p>
-                      <p className="text-xs text-muted-foreground mt-1">Integrations</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Panels */}
+              {/* Panels (rendered outside visible flow) */}
               <TimefoldConstraintPanel
                 open={showTimefoldPanel}
                 onClose={() => setShowTimefoldPanel(false)}
