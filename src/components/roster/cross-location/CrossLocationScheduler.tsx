@@ -23,6 +23,10 @@ interface CrossLocationSchedulerProps {
   viewMode?: ViewMode;
   onSelectCentre: (centreId: string) => void;
   onUpdateShifts: (updater: (prev: Shift[]) => Shift[]) => void;
+  onShiftClick?: (shift: Shift) => void;
+  onShiftDelete?: (shiftId: string) => void;
+  onShiftCopy?: (shift: Shift) => void;
+  onShiftSwap?: (shift: Shift) => void;
 }
 
 
