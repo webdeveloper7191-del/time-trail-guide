@@ -2114,6 +2114,16 @@ export default function RosterScheduler() {
       )}
 
       {/* Main Content - with swipe gesture support for mobile/tablet */}
+      {isAllLocationsView ? (
+        <MultiLocationRosterGrid
+          centres={mockCentres}
+          shifts={shifts}
+          openShifts={openShifts}
+          staff={allStaff}
+          dates={dates}
+          onSelectCentre={(centreId) => setSelectedCentreId(centreId)}
+        />
+      ) : (
       <Box 
         ref={swipeContainerRef}
         className="flex-1 flex overflow-hidden w-full max-w-full touch-pan-y"
