@@ -1310,10 +1310,15 @@ export default function RosterScheduler() {
 
   const allShiftTemplates = [...defaultShiftTemplates, ...shiftTemplates];
 
-  const centreOptions = mockCentres.map(centre => ({
-    value: centre.id,
-    label: centre.name,
-  }));
+  const centreOptions = [
+    { value: 'all', label: '🏢 All Locations' },
+    ...mockCentres.map(centre => ({
+      value: centre.id,
+      label: centre.name,
+    })),
+  ];
+
+  const isAllLocationsView = selectedCentreId === 'all';
 
   const roleOptions = [
     { value: 'all', label: 'All Roles' },
