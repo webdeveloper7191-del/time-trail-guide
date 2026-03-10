@@ -44,6 +44,7 @@ export function CrossLocationScheduler({
   onShiftDelete,
   onShiftCopy,
   onShiftSwap,
+  onShiftResize,
 }: CrossLocationSchedulerProps) {
   const [activePaneIds, setActivePaneIds] = useState<string[]>(
     centres.slice(0, Math.min(2, centres.length)).map((c) => c.id)
