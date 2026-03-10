@@ -279,6 +279,8 @@ export function CentreRosterPane({
           );
         })}
       </div>
+        </>
+      )}
     </div>
   );
 }
