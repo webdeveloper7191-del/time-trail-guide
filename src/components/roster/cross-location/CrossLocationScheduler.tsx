@@ -141,7 +141,7 @@ export function CrossLocationScheduler({
   }, [centres, shifts, openShifts, activePaneIds]);
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden min-h-0">
       {/* Left: Shared Staff Pool */}
       <div className="w-[260px] flex-shrink-0">
         <SharedStaffPool
@@ -154,7 +154,7 @@ export function CrossLocationScheduler({
       </div>
 
       {/* Right: Scheduler area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {/* Top toolbar */}
         <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border flex-wrap">
           {/* Centre chips — scrollable for many centres */}
@@ -254,7 +254,7 @@ export function CrossLocationScheduler({
         )}
 
         {/* Panes */}
-        <div className="flex-1 flex gap-2 p-2 overflow-auto">
+        <div className="flex-1 flex gap-2 p-2 overflow-auto min-h-0">
           {activePaneIds.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-3 max-w-md">
