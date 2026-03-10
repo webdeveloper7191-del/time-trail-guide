@@ -2,6 +2,14 @@ import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Centre, Shift, OpenShift, StaffMember, ViewMode, roleLabels } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import {
   MapPin,
@@ -12,6 +20,11 @@ import {
   ChevronRight,
   Plus,
   X,
+  MoreHorizontal,
+  Edit,
+  Copy,
+  ArrowLeftRight,
+  Trash2,
 } from 'lucide-react';
 
 interface CentreRosterPaneProps {
@@ -23,6 +36,10 @@ interface CentreRosterPaneProps {
   viewMode?: ViewMode;
   onRemovePane: () => void;
   onAssignStaff: (staffId: string, centreId: string, roomId: string, date: string) => void;
+  onShiftClick?: (shift: Shift) => void;
+  onShiftDelete?: (shiftId: string) => void;
+  onShiftCopy?: (shift: Shift) => void;
+  onShiftSwap?: (shift: Shift) => void;
   isDragOver: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
@@ -81,6 +98,10 @@ export function CentreRosterPane({
   viewMode = 'workweek',
   onRemovePane,
   onAssignStaff,
+  onShiftClick,
+  onShiftDelete,
+  onShiftCopy,
+  onShiftSwap,
   isDragOver,
   onDragOver,
   onDragLeave,
@@ -257,6 +278,10 @@ export function CentreRosterPane({
                       centreId={centre.id}
                       dateStr={dateStrings[0]}
                       onAssignStaff={onAssignStaff}
+                      onShiftClick={onShiftClick}
+                      onShiftDelete={onShiftDelete}
+                      onShiftCopy={onShiftCopy}
+                      onShiftSwap={onShiftSwap}
                     />
                   ) : expanded ? (
                     <MultiDayGridContent
@@ -268,6 +293,10 @@ export function CentreRosterPane({
                       dateStrings={dateStrings}
                       centreId={centre.id}
                       onAssignStaff={onAssignStaff}
+                      onShiftClick={onShiftClick}
+                      onShiftDelete={onShiftDelete}
+                      onShiftCopy={onShiftCopy}
+                      onShiftSwap={onShiftSwap}
                     />
                   ) : null}
                 </div>
@@ -291,6 +320,10 @@ interface DayTimelineContentProps {
   centreId: string;
   dateStr: string;
   onAssignStaff: (staffId: string, centreId: string, roomId: string, date: string) => void;
+  onShiftClick?: (shift: Shift) => void;
+  onShiftDelete?: (shiftId: string) => void;
+  onShiftCopy?: (shift: Shift) => void;
+  onShiftSwap?: (shift: Shift) => void;
 }
 
 function DayTimelineContent({
@@ -302,6 +335,10 @@ function DayTimelineContent({
   centreId,
   dateStr,
   onAssignStaff,
+  onShiftClick,
+  onShiftDelete,
+  onShiftCopy,
+  onShiftSwap,
 }: DayTimelineContentProps) {
   // Build shift bars with position info
   const shiftBars = useMemo(() => {
@@ -379,14 +416,20 @@ function DayTimelineContent({
           return (
             <div
               key={shift.id}
-              className="absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-primary/15 text-primary border border-primary/20 truncate cursor-default pointer-events-none"
+              className="absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-primary/15 text-primary border border-primary/20 truncate cursor-pointer hover:bg-primary/25 hover:border-primary/40 transition-colors group/shift"
               style={{
                 left: startIdx * 40,
                 width: span * 40 - 2,
                 top: rowIdx * 24 + 2,
                 height: 20,
+                pointerEvents: 'auto',
+                zIndex: 2,
               }}
               title={`${staffMember?.name} · ${shift.startTime}–${shift.endTime}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onShiftClick?.(shift);
+              }}
             >
               <div
                 className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[7px] font-bold flex-shrink-0"
@@ -398,6 +441,41 @@ function DayTimelineContent({
               <span className="text-muted-foreground ml-auto flex-shrink-0">
                 {shift.startTime}–{shift.endTime}
               </span>
+              {/* 3-dot menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 opacity-0 group-hover/shift:opacity-100 transition-opacity flex-shrink-0 -mr-0.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreHorizontal className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => onShiftClick?.(shift)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Shift
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onShiftCopy?.(shift)}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy to Dates...
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onShiftSwap?.(shift)}>
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    Swap Staff
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => onShiftDelete?.(shift.id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Shift
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           );
         })}
@@ -442,6 +520,10 @@ interface MultiDayGridContentProps {
   dateStrings: string[];
   centreId: string;
   onAssignStaff: (staffId: string, centreId: string, roomId: string, date: string) => void;
+  onShiftClick?: (shift: Shift) => void;
+  onShiftDelete?: (shiftId: string) => void;
+  onShiftCopy?: (shift: Shift) => void;
+  onShiftSwap?: (shift: Shift) => void;
 }
 
 function MultiDayGridContent({
@@ -453,6 +535,10 @@ function MultiDayGridContent({
   dateStrings,
   centreId,
   onAssignStaff,
+  onShiftClick,
+  onShiftDelete,
+  onShiftCopy,
+  onShiftSwap,
 }: MultiDayGridContentProps) {
   return (
     <div className="px-2 pb-2">
@@ -500,8 +586,12 @@ function MultiDayGridContent({
                 return (
                   <div
                     key={shift.id}
-                    className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] bg-primary/10 text-primary truncate"
+                    className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] bg-primary/10 text-primary truncate cursor-pointer hover:bg-primary/20 transition-colors group/shift"
                     title={`${staffMember?.name} · ${shift.startTime}-${shift.endTime}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onShiftClick?.(shift);
+                    }}
                   >
                     <div
                       className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[7px] font-bold flex-shrink-0"
@@ -510,6 +600,41 @@ function MultiDayGridContent({
                       {initials}
                     </div>
                     <span className="truncate">{shift.startTime}</span>
+                    {/* 3-dot menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 ml-auto opacity-0 group-hover/shift:opacity-100 transition-opacity flex-shrink-0 -mr-0.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => onShiftClick?.(shift)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Shift
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onShiftCopy?.(shift)}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy to Dates...
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onShiftSwap?.(shift)}>
+                          <ArrowLeftRight className="h-4 w-4 mr-2" />
+                          Swap Staff
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => onShiftDelete?.(shift.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Shift
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 );
               })}

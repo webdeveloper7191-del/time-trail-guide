@@ -23,6 +23,10 @@ interface CrossLocationSchedulerProps {
   viewMode?: ViewMode;
   onSelectCentre: (centreId: string) => void;
   onUpdateShifts: (updater: (prev: Shift[]) => Shift[]) => void;
+  onShiftClick?: (shift: Shift) => void;
+  onShiftDelete?: (shiftId: string) => void;
+  onShiftCopy?: (shift: Shift) => void;
+  onShiftSwap?: (shift: Shift) => void;
 }
 
 
@@ -35,6 +39,10 @@ export function CrossLocationScheduler({
   viewMode = 'workweek',
   onSelectCentre,
   onUpdateShifts,
+  onShiftClick,
+  onShiftDelete,
+  onShiftCopy,
+  onShiftSwap,
 }: CrossLocationSchedulerProps) {
   const [activePaneIds, setActivePaneIds] = useState<string[]>(
     centres.slice(0, Math.min(2, centres.length)).map((c) => c.id)
@@ -224,6 +232,10 @@ export function CrossLocationScheduler({
                     viewMode={viewMode}
                     onRemovePane={() => removePane(centreId)}
                     onAssignStaff={handleAssignStaff}
+                    onShiftClick={onShiftClick}
+                    onShiftDelete={onShiftDelete}
+                    onShiftCopy={onShiftCopy}
+                    onShiftSwap={onShiftSwap}
                     isDragOver={dragOverPaneId === centreId}
                     collapsed={collapsedPanes.has(centreId)}
                     onToggleCollapse={() => toggleCollapse(centreId)}

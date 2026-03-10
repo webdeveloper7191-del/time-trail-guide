@@ -2124,6 +2124,10 @@ export default function RosterScheduler() {
           viewMode={viewMode}
           onSelectCentre={(centreId) => setSelectedCentreId(centreId)}
           onUpdateShifts={(updater) => setShifts(updater(shifts), 'Cross-location assignment', 'add')}
+          onShiftClick={setSelectedShift}
+          onShiftDelete={handleShiftDelete}
+          onShiftCopy={handleCopyShift}
+          onShiftSwap={handleSwapStaff}
         />
       ) : (
       <Box 
