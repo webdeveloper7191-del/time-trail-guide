@@ -284,6 +284,7 @@ export function CentreRosterPane({
                       onShiftDelete={onShiftDelete}
                       onShiftCopy={onShiftCopy}
                       onShiftSwap={onShiftSwap}
+                      onShiftResize={onShiftResize}
                     />
                   ) : expanded ? (
                     <MultiDayGridContent
