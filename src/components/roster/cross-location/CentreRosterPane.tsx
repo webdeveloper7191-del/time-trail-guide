@@ -26,6 +26,8 @@ interface CentreRosterPaneProps {
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export function CentreRosterPane({
