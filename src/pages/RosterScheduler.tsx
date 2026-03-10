@@ -2122,7 +2122,7 @@ export default function RosterScheduler() {
           staff={allStaff}
           dates={dates}
           onSelectCentre={(centreId) => setSelectedCentreId(centreId)}
-          onUpdateShifts={(updater) => setShifts(updater(shifts), 'Cross-location assignment', 'create')}
+          onUpdateShifts={(updater) => setShifts(updater(shifts), 'Cross-location assignment', 'add')}
         />
       ) : (
       <Box 
