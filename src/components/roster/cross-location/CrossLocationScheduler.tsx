@@ -189,10 +189,9 @@ export function CrossLocationScheduler({
                       setDragOverPaneId(null);
                       const staffId = e.dataTransfer.getData('text/staff-id');
                       if (staffId) {
-                        // Dropped on centre header - prompt or use first room
                         const firstRoom = centre.rooms[0];
                         if (firstRoom && dates[0]) {
-                          const { format } = require('date-fns');
+                          const { format } = await import('date-fns');
                           handleAssignStaff(staffId, centreId, firstRoom.id, format(dates[0], 'yyyy-MM-dd'));
                         }
                       }
