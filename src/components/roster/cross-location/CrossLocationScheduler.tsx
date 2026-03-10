@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Centre, Shift, OpenShift, StaffMember } from '@/types/roster';
+import { Centre, Shift, OpenShift, StaffMember, ViewMode } from '@/types/roster';
 import { SharedStaffPool } from './SharedStaffPool';
 import { CentreRosterPane } from './CentreRosterPane';
 import { CrossLocationConflictBar } from './CrossLocationConflictBar';
@@ -20,6 +20,7 @@ interface CrossLocationSchedulerProps {
   openShifts: OpenShift[];
   staff: StaffMember[];
   dates: Date[];
+  viewMode?: ViewMode;
   onSelectCentre: (centreId: string) => void;
   onUpdateShifts: (updater: (prev: Shift[]) => Shift[]) => void;
 }
@@ -31,6 +32,7 @@ export function CrossLocationScheduler({
   openShifts,
   staff,
   dates,
+  viewMode = 'workweek',
   onSelectCentre,
   onUpdateShifts,
 }: CrossLocationSchedulerProps) {
@@ -219,6 +221,7 @@ export function CrossLocationScheduler({
                     openShifts={openShifts}
                     staff={staff}
                     dates={dates}
+                    viewMode={viewMode}
                     onRemovePane={() => removePane(centreId)}
                     onAssignStaff={handleAssignStaff}
                     isDragOver={dragOverPaneId === centreId}
