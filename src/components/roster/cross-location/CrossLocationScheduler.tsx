@@ -192,7 +192,6 @@ export function CrossLocationScheduler({
                       if (staffId) {
                         const firstRoom = centre.rooms[0];
                         if (firstRoom && dates[0]) {
-                          const { format } = await import('date-fns');
                           handleAssignStaff(staffId, centreId, firstRoom.id, format(dates[0], 'yyyy-MM-dd'));
                         }
                       }
