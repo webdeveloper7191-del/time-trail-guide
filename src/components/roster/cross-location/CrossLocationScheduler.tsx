@@ -38,7 +38,6 @@ export function CrossLocationScheduler({
     centres.slice(0, Math.min(2, centres.length)).map((c) => c.id)
   );
   const [dragOverPaneId, setDragOverPaneId] = useState<string | null>(null);
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('2-col');
   const [collapsedPanes, setCollapsedPanes] = useState<Set<string>>(new Set());
   const [centrePickerOpen, setCentrePickerOpen] = useState(false);
 
