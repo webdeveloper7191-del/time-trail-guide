@@ -60,6 +60,7 @@ import { BreakSchedulingPanel } from '@/components/roster/BreakSchedulingPanel';
 import { SkillMatrixPanel } from '@/components/roster/SkillMatrixPanel';
 import { CallbackEventLoggingPanel } from '@/components/roster/CallbackEventLoggingPanel';
 import { OnCallRosterOverlay } from '@/components/roster/OnCallRosterOverlay';
+import { MultiLocationRosterGrid } from '@/components/roster/MultiLocationRosterGrid';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { SendToAgencyModal, BroadcastConfig } from '@/components/roster/SendToAgencyModal';
 import { AgencyResponseTracker } from '@/components/roster/AgencyResponseTracker';
@@ -388,7 +389,7 @@ export default function RosterScheduler() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canUndo, canRedo, undoShifts, redoShifts]);
   
-  const selectedCentre = mockCentres.find(c => c.id === selectedCentreId)!;
+  const selectedCentre = selectedCentreId === 'all' ? mockCentres[0] : mockCentres.find(c => c.id === selectedCentreId)!;
   const allStaff = staffList;
   const weeklyBudget = centreBudgets[selectedCentreId] || 7000;
   
@@ -1310,10 +1311,15 @@ export default function RosterScheduler() {
 
   const allShiftTemplates = [...defaultShiftTemplates, ...shiftTemplates];
 
-  const centreOptions = mockCentres.map(centre => ({
-    value: centre.id,
-    label: centre.name,
-  }));
+  const centreOptions = [
+    { value: 'all', label: '🏢 All Locations' },
+    ...mockCentres.map(centre => ({
+      value: centre.id,
+      label: centre.name,
+    })),
+  ];
+
+  const isAllLocationsView = selectedCentreId === 'all';
 
   const roleOptions = [
     { value: 'all', label: 'All Roles' },
@@ -2108,6 +2114,16 @@ export default function RosterScheduler() {
       )}
 
       {/* Main Content - with swipe gesture support for mobile/tablet */}
+      {isAllLocationsView ? (
+        <MultiLocationRosterGrid
+          centres={mockCentres}
+          shifts={shifts}
+          openShifts={openShifts}
+          staff={allStaff}
+          dates={dates}
+          onSelectCentre={(centreId) => setSelectedCentreId(centreId)}
+        />
+      ) : (
       <Box 
         ref={swipeContainerRef}
         className="flex-1 flex overflow-hidden w-full max-w-full touch-pan-y"
@@ -2205,6 +2221,7 @@ export default function RosterScheduler() {
           />
         </div>
       </Box>
+      )}
 
       {/* Summary Bar */}
       <RosterSummaryBar
