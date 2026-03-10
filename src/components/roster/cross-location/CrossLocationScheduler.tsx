@@ -241,30 +241,8 @@ export function CrossLocationScheduler({
           centres={centres}
         />
 
-        {/* Pane navigation (when more panes than visible slots) */}
-        {hasMorePanes && (
-          <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-muted/30 border-b border-border">
-            <button
-              onClick={() => scrollPanes('left')}
-              className="p-1 rounded hover:bg-muted transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-            </button>
-            <span className="text-[10px] text-muted-foreground">
-              Showing {visiblePaneIds.length} of {activePaneIds.length} active centres
-              — click arrows to cycle
-            </span>
-            <button
-              onClick={() => scrollPanes('right')}
-              className="p-1 rounded hover:bg-muted transition-colors"
-            >
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </div>
-        )}
-
-        {/* Panes */}
-        <div className="flex-1 flex gap-2 p-2 overflow-auto min-h-0">
+        {/* Panes - vertical stack */}
+        <div className="flex-1 flex flex-col gap-2 p-2 overflow-auto min-h-0">
           {activePaneIds.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-3 max-w-md">
