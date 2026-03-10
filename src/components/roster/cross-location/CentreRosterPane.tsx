@@ -320,6 +320,10 @@ interface DayTimelineContentProps {
   centreId: string;
   dateStr: string;
   onAssignStaff: (staffId: string, centreId: string, roomId: string, date: string) => void;
+  onShiftClick?: (shift: Shift) => void;
+  onShiftDelete?: (shiftId: string) => void;
+  onShiftCopy?: (shift: Shift) => void;
+  onShiftSwap?: (shift: Shift) => void;
 }
 
 function DayTimelineContent({
@@ -331,6 +335,10 @@ function DayTimelineContent({
   centreId,
   dateStr,
   onAssignStaff,
+  onShiftClick,
+  onShiftDelete,
+  onShiftCopy,
+  onShiftSwap,
 }: DayTimelineContentProps) {
   // Build shift bars with position info
   const shiftBars = useMemo(() => {
