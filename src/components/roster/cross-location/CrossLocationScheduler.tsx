@@ -254,7 +254,7 @@ export function CrossLocationScheduler({
         )}
 
         {/* Panes */}
-        <div className="flex-1 flex gap-2 p-2 overflow-auto">
+        <div className="flex-1 flex gap-2 p-2 overflow-auto min-h-0">
           {activePaneIds.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-3 max-w-md">
