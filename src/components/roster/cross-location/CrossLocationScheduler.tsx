@@ -141,7 +141,7 @@ export function CrossLocationScheduler({
   }, [centres, shifts, openShifts, activePaneIds]);
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden min-h-0">
       {/* Left: Shared Staff Pool */}
       <div className="w-[260px] flex-shrink-0">
         <SharedStaffPool
