@@ -221,6 +221,7 @@ export function CrossLocationScheduler({
                     openShifts={openShifts}
                     staff={staff}
                     dates={dates}
+                    viewMode={viewMode}
                     onRemovePane={() => removePane(centreId)}
                     onAssignStaff={handleAssignStaff}
                     isDragOver={dragOverPaneId === centreId}
