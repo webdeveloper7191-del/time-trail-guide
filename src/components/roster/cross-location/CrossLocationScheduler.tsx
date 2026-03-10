@@ -9,16 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
-  Plus,
-  LayoutGrid,
   Columns,
   MapPin,
-  ChevronLeft,
-  ChevronRight,
   Check,
-  Grid2x2,
-  Grid3x3,
-  Rows3,
 } from 'lucide-react';
 
 interface CrossLocationSchedulerProps {
