@@ -60,7 +60,7 @@ import { BreakSchedulingPanel } from '@/components/roster/BreakSchedulingPanel';
 import { SkillMatrixPanel } from '@/components/roster/SkillMatrixPanel';
 import { CallbackEventLoggingPanel } from '@/components/roster/CallbackEventLoggingPanel';
 import { OnCallRosterOverlay } from '@/components/roster/OnCallRosterOverlay';
-import { MultiLocationRosterGrid } from '@/components/roster/MultiLocationRosterGrid';
+import { CrossLocationScheduler } from '@/components/roster/cross-location/CrossLocationScheduler';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { SendToAgencyModal, BroadcastConfig } from '@/components/roster/SendToAgencyModal';
 import { AgencyResponseTracker } from '@/components/roster/AgencyResponseTracker';
@@ -2115,13 +2115,14 @@ export default function RosterScheduler() {
 
       {/* Main Content - with swipe gesture support for mobile/tablet */}
       {isAllLocationsView ? (
-        <MultiLocationRosterGrid
+        <CrossLocationScheduler
           centres={mockCentres}
           shifts={shifts}
           openShifts={openShifts}
           staff={allStaff}
           dates={dates}
           onSelectCentre={(centreId) => setSelectedCentreId(centreId)}
+          onUpdateShifts={(updater) => setShifts(updater(shifts), 'Cross-location assignment', 'add')}
         />
       ) : (
       <Box 
