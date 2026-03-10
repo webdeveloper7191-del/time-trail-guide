@@ -36,6 +36,10 @@ interface CentreRosterPaneProps {
   viewMode?: ViewMode;
   onRemovePane: () => void;
   onAssignStaff: (staffId: string, centreId: string, roomId: string, date: string) => void;
+  onShiftClick?: (shift: Shift) => void;
+  onShiftDelete?: (shiftId: string) => void;
+  onShiftCopy?: (shift: Shift) => void;
+  onShiftSwap?: (shift: Shift) => void;
   isDragOver: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
