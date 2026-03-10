@@ -132,32 +132,34 @@ export function CentreRosterPane({
         </button>
       </div>
 
-      {/* Stats bar */}
-      <div className="flex items-center gap-3 px-3 py-1.5 bg-muted/30 border-b border-border text-[11px]">
-        <span className="flex items-center gap-1 text-foreground">
-          <Users className="h-3 w-3 text-muted-foreground" />
-          {stats.staffCount} staff
-        </span>
-        <span className="flex items-center gap-1 text-foreground">
-          <Clock className="h-3 w-3 text-muted-foreground" />
-          {stats.totalHours}h
-        </span>
-        {stats.openCount > 0 && (
-          <span className="flex items-center gap-1 text-amber-600 font-medium">
-            <AlertTriangle className="h-3 w-3" />
-            {stats.openCount} open
-          </span>
-        )}
-      </div>
+      {!collapsed && (
+        <>
+          {/* Stats bar */}
+          <div className="flex items-center gap-3 px-3 py-1.5 bg-muted/30 border-b border-border text-[11px]">
+            <span className="flex items-center gap-1 text-foreground">
+              <Users className="h-3 w-3 text-muted-foreground" />
+              {stats.staffCount} staff
+            </span>
+            <span className="flex items-center gap-1 text-foreground">
+              <Clock className="h-3 w-3 text-muted-foreground" />
+              {stats.totalHours}h
+            </span>
+            {stats.openCount > 0 && (
+              <span className="flex items-center gap-1 text-amber-600 font-medium">
+                <AlertTriangle className="h-3 w-3" />
+                {stats.openCount} open
+              </span>
+            )}
+          </div>
 
-      {/* Drop zone hint */}
-      {isDragOver && (
-        <div className="px-3 py-2 bg-primary/10 text-center">
-          <p className="text-xs font-medium text-primary">
-            Drop to assign staff to {centre.name}
-          </p>
-        </div>
-      )}
+          {/* Drop zone hint */}
+          {isDragOver && (
+            <div className="px-3 py-2 bg-primary/10 text-center">
+              <p className="text-xs font-medium text-primary">
+                Drop to assign staff to {centre.name}
+              </p>
+            </div>
+          )}
 
       {/* Roster Grid - Rooms × Dates */}
       <div className="flex-1 overflow-auto">
