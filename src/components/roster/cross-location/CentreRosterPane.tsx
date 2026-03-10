@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Centre, Shift, OpenShift, StaffMember, ViewMode, roleLabels } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,7 @@ interface CentreRosterPaneProps {
   onShiftDelete?: (shiftId: string) => void;
   onShiftCopy?: (shift: Shift) => void;
   onShiftSwap?: (shift: Shift) => void;
+  onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
   isDragOver: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
@@ -102,6 +103,7 @@ export function CentreRosterPane({
   onShiftDelete,
   onShiftCopy,
   onShiftSwap,
+  onShiftResize,
   isDragOver,
   onDragOver,
   onDragLeave,
@@ -282,6 +284,7 @@ export function CentreRosterPane({
                       onShiftDelete={onShiftDelete}
                       onShiftCopy={onShiftCopy}
                       onShiftSwap={onShiftSwap}
+                      onShiftResize={onShiftResize}
                     />
                   ) : expanded ? (
                     <MultiDayGridContent
@@ -324,6 +327,25 @@ interface DayTimelineContentProps {
   onShiftDelete?: (shiftId: string) => void;
   onShiftCopy?: (shift: Shift) => void;
   onShiftSwap?: (shift: Shift) => void;
+  onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
+}
+
+const SLOT_PX = 40; // pixels per 15-min slot
+
+/** Convert a pixel offset to a time string, snapped to 15-min */
+function pixelsToTime(px: number, baseSlots: string[]): string {
+  const idx = Math.round(px / SLOT_PX);
+  const clampedIdx = Math.max(0, Math.min(idx, baseSlots.length));
+  if (clampedIdx < baseSlots.length) return baseSlots[clampedIdx];
+  // Beyond last slot — return end time
+  const last = baseSlots[baseSlots.length - 1];
+  const [h, m] = last.split(':').map(Number);
+  const totalMin = h * 60 + m + 15;
+  return `${String(Math.floor(totalMin / 60)).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`;
+}
+
+function snapToGrid(px: number): number {
+  return Math.round(px / SLOT_PX) * SLOT_PX;
 }
 
 function DayTimelineContent({
@@ -339,7 +361,10 @@ function DayTimelineContent({
   onShiftDelete,
   onShiftCopy,
   onShiftSwap,
+  onShiftResize,
 }: DayTimelineContentProps) {
+  const isResizingRef = useRef(false);
+
   // Build shift bars with position info
   const shiftBars = useMemo(() => {
     return roomShifts.map((shift) => {
@@ -369,7 +394,7 @@ function DayTimelineContent({
                 'flex-shrink-0 text-center border-r border-border/20',
                 isHour ? 'border-r-border/50' : ''
               )}
-              style={{ width: 40, minWidth: 40 }}
+              style={{ width: SLOT_PX, minWidth: SLOT_PX }}
             >
               {isHour && (
                 <span className="text-[9px] text-muted-foreground font-medium">
@@ -402,83 +427,29 @@ function DayTimelineContent({
                 'flex-shrink-0 border-r',
                 slot.endsWith(':00') ? 'border-border/30' : 'border-border/10'
               )}
-              style={{ width: 40, minWidth: 40 }}
+              style={{ width: SLOT_PX, minWidth: SLOT_PX }}
             />
           ))}
         </div>
 
-        {/* Assigned shift bars */}
-        {shiftBars.map(({ shift, startIdx, span, staffMember }, rowIdx) => {
-          const initials = staffMember?.name
-            .split(' ')
-            .map((n) => n[0])
-            .join('') || '?';
-          return (
-            <div
-              key={shift.id}
-              className="absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-primary/15 text-primary border border-primary/20 truncate cursor-pointer hover:bg-primary/25 hover:border-primary/40 transition-colors group/shift"
-              style={{
-                left: startIdx * 40,
-                width: span * 40 - 2,
-                top: rowIdx * 24 + 2,
-                height: 20,
-                pointerEvents: 'auto',
-                zIndex: 2,
-              }}
-              title={`${staffMember?.name} · ${shift.startTime}–${shift.endTime}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onShiftClick?.(shift);
-              }}
-            >
-              <div
-                className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[7px] font-bold flex-shrink-0"
-                style={{ backgroundColor: staffMember?.color || 'hsl(var(--primary))' }}
-              >
-                {initials}
-              </div>
-              <span className="truncate font-medium">{staffMember?.name}</span>
-              <span className="text-muted-foreground ml-auto flex-shrink-0">
-                {shift.startTime}–{shift.endTime}
-              </span>
-              {/* 3-dot menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-4 w-4 opacity-0 group-hover/shift:opacity-100 transition-opacity flex-shrink-0 -mr-0.5"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreHorizontal className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => onShiftClick?.(shift)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Shift
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onShiftCopy?.(shift)}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy to Dates...
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onShiftSwap?.(shift)}>
-                    <ArrowLeftRight className="h-4 w-4 mr-2" />
-                    Swap Staff
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => onShiftDelete?.(shift.id)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Shift
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          );
-        })}
+        {/* Assigned shift bars with resize */}
+        {shiftBars.map(({ shift, startIdx, span, staffMember }, rowIdx) => (
+          <ResizableShiftBar
+            key={shift.id}
+            shift={shift}
+            staffMember={staffMember}
+            startIdx={startIdx}
+            span={span}
+            rowIdx={rowIdx}
+            timeSlots={timeSlots}
+            isResizingRef={isResizingRef}
+            onShiftClick={onShiftClick}
+            onShiftDelete={onShiftDelete}
+            onShiftCopy={onShiftCopy}
+            onShiftSwap={onShiftSwap}
+            onShiftResize={onShiftResize}
+          />
+        ))}
 
         {/* Open shift bars */}
         {openBars.map(({ openShift, startIdx, span }, idx) => (
@@ -486,8 +457,8 @@ function DayTimelineContent({
             key={openShift.id}
             className="absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-amber-500/10 text-amber-600 border border-amber-500/20 border-dashed truncate pointer-events-none"
             style={{
-              left: startIdx * 40,
-              width: span * 40 - 2,
+              left: startIdx * SLOT_PX,
+              width: span * SLOT_PX - 2,
               top: (shiftBars.length + idx) * 24 + 2,
               height: 20,
             }}
@@ -509,7 +480,183 @@ function DayTimelineContent({
   );
 }
 
-/* ── Multi-Day Grid Sub-component ── */
+/* ── Resizable Shift Bar ── */
+
+function ResizableShiftBar({
+  shift,
+  staffMember,
+  startIdx,
+  span,
+  rowIdx,
+  timeSlots,
+  isResizingRef,
+  onShiftClick,
+  onShiftDelete,
+  onShiftCopy,
+  onShiftSwap,
+  onShiftResize,
+}: {
+  shift: Shift;
+  staffMember?: StaffMember;
+  startIdx: number;
+  span: number;
+  rowIdx: number;
+  timeSlots: string[];
+  isResizingRef: React.MutableRefObject<boolean>;
+  onShiftClick?: (shift: Shift) => void;
+  onShiftDelete?: (shiftId: string) => void;
+  onShiftCopy?: (shift: Shift) => void;
+  onShiftSwap?: (shift: Shift) => void;
+  onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
+}) {
+  const [resizeSide, setResizeSide] = useState<'left' | 'right' | null>(null);
+  const [resizeStartX, setResizeStartX] = useState(0);
+  const [origLeft, setOrigLeft] = useState(startIdx * SLOT_PX);
+  const [origWidth, setOrigWidth] = useState(span * SLOT_PX - 2);
+  const [curLeft, setCurLeft] = useState(startIdx * SLOT_PX);
+  const [curWidth, setCurWidth] = useState(span * SLOT_PX - 2);
+
+  const displayLeft = resizeSide ? curLeft : startIdx * SLOT_PX;
+  const displayWidth = resizeSide ? curWidth : span * SLOT_PX - 2;
+
+  const displayStart = resizeSide ? pixelsToTime(curLeft, timeSlots) : shift.startTime;
+  const displayEnd = resizeSide ? pixelsToTime(curLeft + curWidth, timeSlots) : shift.endTime;
+
+  const initials = staffMember?.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('') || '?';
+
+  const handleResizeStart = (e: React.MouseEvent, side: 'left' | 'right') => {
+    e.stopPropagation();
+    e.preventDefault();
+    setResizeSide(side);
+    isResizingRef.current = true;
+    setResizeStartX(e.clientX);
+    const l = startIdx * SLOT_PX;
+    const w = span * SLOT_PX - 2;
+    setOrigLeft(l);
+    setOrigWidth(w);
+    setCurLeft(l);
+    setCurWidth(w);
+  };
+
+  useEffect(() => {
+    if (!resizeSide) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const delta = e.clientX - resizeStartX;
+      if (resizeSide === 'left') {
+        const newLeft = snapToGrid(Math.max(0, origLeft + delta));
+        const newWidth = Math.max(SLOT_PX * 2, snapToGrid(origWidth - delta));
+        setCurLeft(newLeft);
+        setCurWidth(newWidth);
+      } else {
+        const newWidth = Math.max(SLOT_PX * 2, snapToGrid(origWidth + delta));
+        setCurWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (onShiftResize && resizeSide) {
+        const newStart = pixelsToTime(curLeft, timeSlots);
+        const newEnd = pixelsToTime(curLeft + curWidth, timeSlots);
+        if (newStart < newEnd) {
+          onShiftResize(shift.id, newStart, newEnd);
+        }
+      }
+      setResizeSide(null);
+      setTimeout(() => { isResizingRef.current = false; }, 50);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizeSide, resizeStartX, origLeft, origWidth, curLeft, curWidth, onShiftResize, shift.id, timeSlots, isResizingRef]);
+
+  return (
+    <div
+      className={cn(
+        'absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-primary/15 text-primary border border-primary/20 truncate cursor-pointer hover:bg-primary/25 hover:border-primary/40 transition-colors group/shift',
+        resizeSide && 'ring-1 ring-primary/50 bg-primary/20'
+      )}
+      style={{
+        left: displayLeft,
+        width: displayWidth,
+        top: rowIdx * 24 + 2,
+        height: 20,
+        pointerEvents: 'auto',
+        zIndex: resizeSide ? 10 : 2,
+      }}
+      title={`${staffMember?.name} · ${displayStart}–${displayEnd}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!isResizingRef.current) onShiftClick?.(shift);
+      }}
+    >
+      {/* Left resize handle */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/30 rounded-l z-10"
+        onMouseDown={(e) => handleResizeStart(e, 'left')}
+      />
+
+      <div
+        className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[7px] font-bold flex-shrink-0"
+        style={{ backgroundColor: staffMember?.color || 'hsl(var(--primary))' }}
+      >
+        {initials}
+      </div>
+      <span className="truncate font-medium">{staffMember?.name}</span>
+      <span className="text-muted-foreground ml-auto flex-shrink-0">
+        {displayStart}–{displayEnd}
+      </span>
+      {/* 3-dot menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-4 w-4 opacity-0 group-hover/shift:opacity-100 transition-opacity flex-shrink-0 -mr-0.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={() => onShiftClick?.(shift)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Shift
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onShiftCopy?.(shift)}>
+            <Copy className="h-4 w-4 mr-2" />
+            Copy to Dates...
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onShiftSwap?.(shift)}>
+            <ArrowLeftRight className="h-4 w-4 mr-2" />
+            Swap Staff
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive"
+            onClick={() => onShiftDelete?.(shift.id)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Shift
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Right resize handle */}
+      <div
+        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/30 rounded-r z-10"
+        onMouseDown={(e) => handleResizeStart(e, 'right')}
+      />
+    </div>
+  );
+}
 
 interface MultiDayGridContentProps {
   room: Centre['rooms'][0];

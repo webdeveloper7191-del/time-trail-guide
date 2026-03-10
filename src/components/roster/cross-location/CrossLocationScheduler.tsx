@@ -27,6 +27,7 @@ interface CrossLocationSchedulerProps {
   onShiftDelete?: (shiftId: string) => void;
   onShiftCopy?: (shift: Shift) => void;
   onShiftSwap?: (shift: Shift) => void;
+  onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
 }
 
 
@@ -43,6 +44,7 @@ export function CrossLocationScheduler({
   onShiftDelete,
   onShiftCopy,
   onShiftSwap,
+  onShiftResize,
 }: CrossLocationSchedulerProps) {
   const [activePaneIds, setActivePaneIds] = useState<string[]>(
     centres.slice(0, Math.min(2, centres.length)).map((c) => c.id)
@@ -236,6 +238,7 @@ export function CrossLocationScheduler({
                     onShiftDelete={onShiftDelete}
                     onShiftCopy={onShiftCopy}
                     onShiftSwap={onShiftSwap}
+                    onShiftResize={onShiftResize}
                     isDragOver={dragOverPaneId === centreId}
                     collapsed={collapsedPanes.has(centreId)}
                     onToggleCollapse={() => toggleCollapse(centreId)}
