@@ -168,39 +168,6 @@ export function CrossLocationScheduler({
             ))}
           </div>
 
-          {/* Layout switcher */}
-          <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5 flex-shrink-0">
-            <button
-              onClick={() => setLayoutMode('1-col')}
-              className={cn(
-                'p-1.5 rounded transition-colors',
-                layoutMode === '1-col' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-              )}
-              title="Single pane"
-            >
-              <Rows3 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setLayoutMode('2-col')}
-              className={cn(
-                'p-1.5 rounded transition-colors',
-                layoutMode === '2-col' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-              )}
-              title="Two panes"
-            >
-              <Grid2x2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setLayoutMode('3-col')}
-              className={cn(
-                'p-1.5 rounded transition-colors',
-                layoutMode === '3-col' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-              )}
-              title="Three panes"
-            >
-              <Grid3x3 className="h-3.5 w-3.5" />
-            </button>
-          </div>
 
           {/* Active count */}
           <Badge variant="secondary" className="text-[10px] flex-shrink-0">
