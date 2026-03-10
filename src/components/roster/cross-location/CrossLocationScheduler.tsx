@@ -32,6 +32,7 @@ export function CrossLocationScheduler({
   openShifts,
   staff,
   dates,
+  viewMode = 'workweek',
   onSelectCentre,
   onUpdateShifts,
 }: CrossLocationSchedulerProps) {
