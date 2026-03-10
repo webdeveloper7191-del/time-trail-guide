@@ -2115,13 +2115,14 @@ export default function RosterScheduler() {
 
       {/* Main Content - with swipe gesture support for mobile/tablet */}
       {isAllLocationsView ? (
-        <MultiLocationRosterGrid
+        <CrossLocationScheduler
           centres={mockCentres}
           shifts={shifts}
           openShifts={openShifts}
           staff={allStaff}
           dates={dates}
           onSelectCentre={(centreId) => setSelectedCentreId(centreId)}
+          onUpdateShifts={(updater) => setShifts(updater(shifts), 'Cross-location assignment', 'create')}
         />
       ) : (
       <Box 
