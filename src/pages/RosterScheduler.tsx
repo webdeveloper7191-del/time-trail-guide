@@ -2221,6 +2221,7 @@ export default function RosterScheduler() {
           />
         </div>
       </Box>
+      )}
 
       {/* Summary Bar */}
       <RosterSummaryBar
