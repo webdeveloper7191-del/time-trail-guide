@@ -344,8 +344,18 @@ function DayTimelineContent({
         })}
       </div>
 
-      {/* Shift bars */}
-      <div className="relative" style={{ minHeight: Math.max(28, (shiftBars.length + openBars.length) * 24 + 4) }}>
+      {/* Shift bars - entire area is droppable */}
+      <div
+        className="relative"
+        style={{ minHeight: Math.max(28, (shiftBars.length + openBars.length) * 24 + 4) }}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const staffId = e.dataTransfer.getData('text/staff-id');
+          if (staffId) onAssignStaff(staffId, centreId, room.id, dateStr);
+        }}
+      >
         {/* Grid lines */}
         <div className="absolute inset-0 flex pointer-events-none">
           {timeSlots.map((slot, i) => (
@@ -369,7 +379,7 @@ function DayTimelineContent({
           return (
             <div
               key={shift.id}
-              className="absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-primary/15 text-primary border border-primary/20 truncate cursor-default"
+              className="absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-primary/15 text-primary border border-primary/20 truncate cursor-default pointer-events-none"
               style={{
                 left: startIdx * 40,
                 width: span * 40 - 2,
@@ -396,7 +406,7 @@ function DayTimelineContent({
         {openBars.map(({ openShift, startIdx, span }, idx) => (
           <div
             key={openShift.id}
-            className="absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-amber-500/10 text-amber-600 border border-amber-500/20 border-dashed truncate"
+            className="absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-amber-500/10 text-amber-600 border border-amber-500/20 border-dashed truncate pointer-events-none"
             style={{
               left: startIdx * 40,
               width: span * 40 - 2,
@@ -409,18 +419,9 @@ function DayTimelineContent({
           </div>
         ))}
 
-        {/* Empty state with drop zone */}
+        {/* Empty state hint */}
         {shiftBars.length === 0 && openBars.length === 0 && (
-          <div
-            className="flex items-center justify-center h-7 text-muted-foreground/30"
-            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            onDrop={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const staffId = e.dataTransfer.getData('text/staff-id');
-              if (staffId) onAssignStaff(staffId, centreId, room.id, dateStr);
-            }}
-          >
+          <div className="flex items-center justify-center h-7 text-muted-foreground/30">
             <Plus className="h-3 w-3 mr-1" />
             <span className="text-[9px]">Drop staff here</span>
           </div>
