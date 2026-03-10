@@ -103,6 +103,7 @@ export function CentreRosterPane({
   onShiftDelete,
   onShiftCopy,
   onShiftSwap,
+  onShiftResize,
   isDragOver,
   onDragOver,
   onDragLeave,
