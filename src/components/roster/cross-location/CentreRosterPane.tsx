@@ -416,14 +416,20 @@ function DayTimelineContent({
           return (
             <div
               key={shift.id}
-              className="absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-primary/15 text-primary border border-primary/20 truncate cursor-default pointer-events-none"
+              className="absolute flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-primary/15 text-primary border border-primary/20 truncate cursor-pointer hover:bg-primary/25 hover:border-primary/40 transition-colors group/shift"
               style={{
                 left: startIdx * 40,
                 width: span * 40 - 2,
                 top: rowIdx * 24 + 2,
                 height: 20,
+                pointerEvents: 'auto',
+                zIndex: 2,
               }}
               title={`${staffMember?.name} · ${shift.startTime}–${shift.endTime}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onShiftClick?.(shift);
+              }}
             >
               <div
                 className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[7px] font-bold flex-shrink-0"
@@ -435,6 +441,41 @@ function DayTimelineContent({
               <span className="text-muted-foreground ml-auto flex-shrink-0">
                 {shift.startTime}–{shift.endTime}
               </span>
+              {/* 3-dot menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 opacity-0 group-hover/shift:opacity-100 transition-opacity flex-shrink-0 -mr-0.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreHorizontal className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => onShiftClick?.(shift)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Shift
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onShiftCopy?.(shift)}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy to Dates...
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onShiftSwap?.(shift)}>
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    Swap Staff
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => onShiftDelete?.(shift.id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Shift
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           );
         })}
