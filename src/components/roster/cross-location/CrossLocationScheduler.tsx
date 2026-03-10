@@ -154,7 +154,7 @@ export function CrossLocationScheduler({
       </div>
 
       {/* Right: Scheduler area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {/* Top toolbar */}
         <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border flex-wrap">
           {/* Centre chips — scrollable for many centres */}
