@@ -2,6 +2,14 @@ import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Centre, Shift, OpenShift, StaffMember, ViewMode, roleLabels } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import {
   MapPin,
@@ -12,6 +20,11 @@ import {
   ChevronRight,
   Plus,
   X,
+  MoreHorizontal,
+  Edit,
+  Copy,
+  ArrowLeftRight,
+  Trash2,
 } from 'lucide-react';
 
 interface CentreRosterPaneProps {
