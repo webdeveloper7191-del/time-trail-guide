@@ -20,6 +20,7 @@ interface CrossLocationSchedulerProps {
   openShifts: OpenShift[];
   staff: StaffMember[];
   dates: Date[];
+  viewMode?: ViewMode;
   onSelectCentre: (centreId: string) => void;
   onUpdateShifts: (updater: (prev: Shift[]) => Shift[]) => void;
 }
