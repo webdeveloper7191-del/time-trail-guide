@@ -232,6 +232,10 @@ export function CrossLocationScheduler({
                     viewMode={viewMode}
                     onRemovePane={() => removePane(centreId)}
                     onAssignStaff={handleAssignStaff}
+                    onShiftClick={onShiftClick}
+                    onShiftDelete={onShiftDelete}
+                    onShiftCopy={onShiftCopy}
+                    onShiftSwap={onShiftSwap}
                     isDragOver={dragOverPaneId === centreId}
                     collapsed={collapsedPanes.has(centreId)}
                     onToggleCollapse={() => toggleCollapse(centreId)}
