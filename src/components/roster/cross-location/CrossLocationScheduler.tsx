@@ -52,12 +52,6 @@ export function CrossLocationScheduler({
     });
   };
 
-  // Max visible panes based on layout
-  const maxPanes: Record<LayoutMode, number> = { '1-col': 1, '2-col': 2, '3-col': 3 };
-
-  const visiblePaneIds = activePaneIds.slice(0, maxPanes[layoutMode]);
-  const hasMorePanes = activePaneIds.length > maxPanes[layoutMode];
-
   const toggleCentrePane = (centreId: string) => {
     setActivePaneIds((prev) =>
       prev.includes(centreId) ? prev.filter((id) => id !== centreId) : [...prev, centreId]
@@ -66,19 +60,6 @@ export function CrossLocationScheduler({
 
   const removePane = (centreId: string) => {
     setActivePaneIds((prev) => prev.filter((id) => id !== centreId));
-  };
-
-  // Scroll through panes when more than maxPanes are active
-  const scrollPanes = (direction: 'left' | 'right') => {
-    setActivePaneIds((prev) => {
-      if (direction === 'right') {
-        // Rotate left: move first to end
-        return [...prev.slice(1), prev[0]];
-      } else {
-        // Rotate right: move last to front
-        return [prev[prev.length - 1], ...prev.slice(0, -1)];
-      }
-    });
   };
 
   const handleDragStart = useCallback((staffId: string, e: React.DragEvent) => {
