@@ -32,6 +32,7 @@ interface CrossLocationSchedulerProps {
 }
 
 type LayoutMode = '1-col' | '2-col' | '3-col';
+// Track which centres are collapsed
 
 export function CrossLocationScheduler({
   centres,
