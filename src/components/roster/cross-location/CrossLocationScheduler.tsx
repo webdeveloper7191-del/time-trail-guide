@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Centre, Shift, OpenShift, StaffMember } from '@/types/roster';
+import { Centre, Shift, OpenShift, StaffMember, ViewMode } from '@/types/roster';
 import { SharedStaffPool } from './SharedStaffPool';
 import { CentreRosterPane } from './CentreRosterPane';
 import { CrossLocationConflictBar } from './CrossLocationConflictBar';
