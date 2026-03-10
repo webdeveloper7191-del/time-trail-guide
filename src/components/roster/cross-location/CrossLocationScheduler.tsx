@@ -5,20 +5,13 @@ import { SharedStaffPool } from './SharedStaffPool';
 import { CentreRosterPane } from './CentreRosterPane';
 import { CrossLocationConflictBar } from './CrossLocationConflictBar';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
-  Plus,
-  LayoutGrid,
   Columns,
   MapPin,
-  ChevronLeft,
-  ChevronRight,
   Check,
-  Grid2x2,
-  Grid3x3,
-  Rows3,
 } from 'lucide-react';
 
 interface CrossLocationSchedulerProps {
@@ -31,7 +24,6 @@ interface CrossLocationSchedulerProps {
   onUpdateShifts: (updater: (prev: Shift[]) => Shift[]) => void;
 }
 
-type LayoutMode = '1-col' | '2-col' | '3-col';
 
 export function CrossLocationScheduler({
   centres,
@@ -46,14 +38,16 @@ export function CrossLocationScheduler({
     centres.slice(0, Math.min(2, centres.length)).map((c) => c.id)
   );
   const [dragOverPaneId, setDragOverPaneId] = useState<string | null>(null);
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('2-col');
+  const [collapsedPanes, setCollapsedPanes] = useState<Set<string>>(new Set());
   const [centrePickerOpen, setCentrePickerOpen] = useState(false);
 
-  // Max visible panes based on layout
-  const maxPanes: Record<LayoutMode, number> = { '1-col': 1, '2-col': 2, '3-col': 3 };
-
-  const visiblePaneIds = activePaneIds.slice(0, maxPanes[layoutMode]);
-  const hasMorePanes = activePaneIds.length > maxPanes[layoutMode];
+  const toggleCollapse = (centreId: string) => {
+    setCollapsedPanes((prev) => {
+      const next = new Set(prev);
+      next.has(centreId) ? next.delete(centreId) : next.add(centreId);
+      return next;
+    });
+  };
 
   const toggleCentrePane = (centreId: string) => {
     setActivePaneIds((prev) =>
@@ -63,19 +57,6 @@ export function CrossLocationScheduler({
 
   const removePane = (centreId: string) => {
     setActivePaneIds((prev) => prev.filter((id) => id !== centreId));
-  };
-
-  // Scroll through panes when more than maxPanes are active
-  const scrollPanes = (direction: 'left' | 'right') => {
-    setActivePaneIds((prev) => {
-      if (direction === 'right') {
-        // Rotate left: move first to end
-        return [...prev.slice(1), prev[0]];
-      } else {
-        // Rotate right: move last to front
-        return [prev[prev.length - 1], ...prev.slice(0, -1)];
-      }
-    });
   };
 
   const handleDragStart = useCallback((staffId: string, e: React.DragEvent) => {
@@ -184,39 +165,6 @@ export function CrossLocationScheduler({
             ))}
           </div>
 
-          {/* Layout switcher */}
-          <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5 flex-shrink-0">
-            <button
-              onClick={() => setLayoutMode('1-col')}
-              className={cn(
-                'p-1.5 rounded transition-colors',
-                layoutMode === '1-col' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-              )}
-              title="Single pane"
-            >
-              <Rows3 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setLayoutMode('2-col')}
-              className={cn(
-                'p-1.5 rounded transition-colors',
-                layoutMode === '2-col' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-              )}
-              title="Two panes"
-            >
-              <Grid2x2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setLayoutMode('3-col')}
-              className={cn(
-                'p-1.5 rounded transition-colors',
-                layoutMode === '3-col' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-              )}
-              title="Three panes"
-            >
-              <Grid3x3 className="h-3.5 w-3.5" />
-            </button>
-          </div>
 
           {/* Active count */}
           <Badge variant="secondary" className="text-[10px] flex-shrink-0">
@@ -231,30 +179,8 @@ export function CrossLocationScheduler({
           centres={centres}
         />
 
-        {/* Pane navigation (when more panes than visible slots) */}
-        {hasMorePanes && (
-          <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-muted/30 border-b border-border">
-            <button
-              onClick={() => scrollPanes('left')}
-              className="p-1 rounded hover:bg-muted transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-            </button>
-            <span className="text-[10px] text-muted-foreground">
-              Showing {visiblePaneIds.length} of {activePaneIds.length} active centres
-              — click arrows to cycle
-            </span>
-            <button
-              onClick={() => scrollPanes('right')}
-              className="p-1 rounded hover:bg-muted transition-colors"
-            >
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </div>
-        )}
-
-        {/* Panes */}
-        <div className="flex-1 flex gap-2 p-2 overflow-auto min-h-0">
+        {/* Panes - vertical stack */}
+        <div className="flex-1 flex flex-col gap-2 p-2 overflow-auto min-h-0">
           {activePaneIds.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-3 max-w-md">
@@ -282,11 +208,11 @@ export function CrossLocationScheduler({
               </div>
             </div>
           ) : (
-            visiblePaneIds.map((centreId) => {
+            activePaneIds.map((centreId) => {
               const centre = centres.find((c) => c.id === centreId);
               if (!centre) return null;
               return (
-                <div key={centreId} className="flex-1 min-w-[280px]">
+                <div key={centreId}>
                   <CentreRosterPane
                     centre={centre}
                     shifts={shifts}
@@ -296,6 +222,8 @@ export function CrossLocationScheduler({
                     onRemovePane={() => removePane(centreId)}
                     onAssignStaff={handleAssignStaff}
                     isDragOver={dragOverPaneId === centreId}
+                    collapsed={collapsedPanes.has(centreId)}
+                    onToggleCollapse={() => toggleCollapse(centreId)}
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOverPaneId(centreId);

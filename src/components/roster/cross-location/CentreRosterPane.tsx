@@ -26,6 +26,8 @@ interface CentreRosterPaneProps {
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export function CentreRosterPane({
@@ -40,6 +42,8 @@ export function CentreRosterPane({
   onDragOver,
   onDragLeave,
   onDrop,
+  collapsed = false,
+  onToggleCollapse,
 }: CentreRosterPaneProps) {
   const [expandedRooms, setExpandedRooms] = useState<Set<string>>(
     new Set(centre.rooms.map((r) => r.id))
@@ -82,7 +86,7 @@ export function CentreRosterPane({
   return (
     <div
       className={cn(
-        'flex flex-col h-full border border-border rounded-lg overflow-hidden transition-all',
+        'flex flex-col border border-border rounded-lg overflow-hidden transition-all',
         isDragOver && 'border-primary border-2 shadow-lg shadow-primary/10 bg-primary/5'
       )}
       onDragOver={onDragOver}
@@ -91,7 +95,12 @@ export function CentreRosterPane({
     >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 bg-card border-b border-border">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" onClick={onToggleCollapse}>
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          )}
           <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
           <div className="min-w-0">
             <h4 className="font-semibold text-sm text-foreground truncate">{centre.name}</h4>
@@ -99,6 +108,21 @@ export function CentreRosterPane({
               {centre.operatingHours.start} – {centre.operatingHours.end}
             </p>
           </div>
+          {collapsed && (
+            <div className="flex items-center gap-2 ml-2 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Users className="h-3 w-3" /> {stats.staffCount}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" /> {stats.totalHours}h
+              </span>
+              {stats.openCount > 0 && (
+                <span className="flex items-center gap-1 text-amber-600 font-medium">
+                  <AlertTriangle className="h-3 w-3" /> {stats.openCount} open
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <button
           onClick={onRemovePane}
@@ -108,32 +132,34 @@ export function CentreRosterPane({
         </button>
       </div>
 
-      {/* Stats bar */}
-      <div className="flex items-center gap-3 px-3 py-1.5 bg-muted/30 border-b border-border text-[11px]">
-        <span className="flex items-center gap-1 text-foreground">
-          <Users className="h-3 w-3 text-muted-foreground" />
-          {stats.staffCount} staff
-        </span>
-        <span className="flex items-center gap-1 text-foreground">
-          <Clock className="h-3 w-3 text-muted-foreground" />
-          {stats.totalHours}h
-        </span>
-        {stats.openCount > 0 && (
-          <span className="flex items-center gap-1 text-amber-600 font-medium">
-            <AlertTriangle className="h-3 w-3" />
-            {stats.openCount} open
-          </span>
-        )}
-      </div>
+      {!collapsed && (
+        <>
+          {/* Stats bar */}
+          <div className="flex items-center gap-3 px-3 py-1.5 bg-muted/30 border-b border-border text-[11px]">
+            <span className="flex items-center gap-1 text-foreground">
+              <Users className="h-3 w-3 text-muted-foreground" />
+              {stats.staffCount} staff
+            </span>
+            <span className="flex items-center gap-1 text-foreground">
+              <Clock className="h-3 w-3 text-muted-foreground" />
+              {stats.totalHours}h
+            </span>
+            {stats.openCount > 0 && (
+              <span className="flex items-center gap-1 text-amber-600 font-medium">
+                <AlertTriangle className="h-3 w-3" />
+                {stats.openCount} open
+              </span>
+            )}
+          </div>
 
-      {/* Drop zone hint */}
-      {isDragOver && (
-        <div className="px-3 py-2 bg-primary/10 text-center">
-          <p className="text-xs font-medium text-primary">
-            Drop to assign staff to {centre.name}
-          </p>
-        </div>
-      )}
+          {/* Drop zone hint */}
+          {isDragOver && (
+            <div className="px-3 py-2 bg-primary/10 text-center">
+              <p className="text-xs font-medium text-primary">
+                Drop to assign staff to {centre.name}
+              </p>
+            </div>
+          )}
 
       {/* Roster Grid - Rooms × Dates */}
       <div className="flex-1 overflow-auto">
@@ -253,6 +279,8 @@ export function CentreRosterPane({
           );
         })}
       </div>
+        </>
+      )}
     </div>
   );
 }
