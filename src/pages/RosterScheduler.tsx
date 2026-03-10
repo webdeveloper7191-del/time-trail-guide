@@ -389,7 +389,7 @@ export default function RosterScheduler() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canUndo, canRedo, undoShifts, redoShifts]);
   
-  const selectedCentre = mockCentres.find(c => c.id === selectedCentreId)!;
+  const selectedCentre = selectedCentreId === 'all' ? mockCentres[0] : mockCentres.find(c => c.id === selectedCentreId)!;
   const allStaff = staffList;
   const weeklyBudget = centreBudgets[selectedCentreId] || 7000;
   
