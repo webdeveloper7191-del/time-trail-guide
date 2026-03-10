@@ -40,6 +40,7 @@ interface CentreRosterPaneProps {
   onShiftDelete?: (shiftId: string) => void;
   onShiftCopy?: (shift: Shift) => void;
   onShiftSwap?: (shift: Shift) => void;
+  onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
   isDragOver: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
