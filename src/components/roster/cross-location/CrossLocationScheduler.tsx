@@ -270,11 +270,11 @@ export function CrossLocationScheduler({
               </div>
             </div>
           ) : (
-            visiblePaneIds.map((centreId) => {
+            activePaneIds.map((centreId) => {
               const centre = centres.find((c) => c.id === centreId);
               if (!centre) return null;
               return (
-                <div key={centreId} className="flex-1 min-w-[280px]">
+                <div key={centreId}>
                   <CentreRosterPane
                     centre={centre}
                     shifts={shifts}
@@ -284,6 +284,8 @@ export function CrossLocationScheduler({
                     onRemovePane={() => removePane(centreId)}
                     onAssignStaff={handleAssignStaff}
                     isDragOver={dragOverPaneId === centreId}
+                    collapsed={collapsedPanes.has(centreId)}
+                    onToggleCollapse={() => toggleCollapse(centreId)}
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOverPaneId(centreId);
