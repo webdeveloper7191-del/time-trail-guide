@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Centre, Shift, OpenShift, StaffMember, ViewMode, roleLabels } from '@/types/roster';
 import { Badge } from '@/components/ui/badge';
