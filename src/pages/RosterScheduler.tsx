@@ -2128,6 +2128,7 @@ export default function RosterScheduler() {
           onShiftDelete={handleShiftDelete}
           onShiftCopy={handleCopyShift}
           onShiftSwap={handleSwapStaff}
+          onShiftResize={handleShiftResize}
         />
       ) : (
       <Box 

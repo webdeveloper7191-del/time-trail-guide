@@ -238,6 +238,7 @@ export function CrossLocationScheduler({
                     onShiftDelete={onShiftDelete}
                     onShiftCopy={onShiftCopy}
                     onShiftSwap={onShiftSwap}
+                    onShiftResize={onShiftResize}
                     isDragOver={dragOverPaneId === centreId}
                     collapsed={collapsedPanes.has(centreId)}
                     onToggleCollapse={() => toggleCollapse(centreId)}
