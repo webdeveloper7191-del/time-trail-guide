@@ -42,6 +42,8 @@ export function CentreRosterPane({
   onDragOver,
   onDragLeave,
   onDrop,
+  collapsed = false,
+  onToggleCollapse,
 }: CentreRosterPaneProps) {
   const [expandedRooms, setExpandedRooms] = useState<Set<string>>(
     new Set(centre.rooms.map((r) => r.id))
