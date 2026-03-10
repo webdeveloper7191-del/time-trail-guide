@@ -1,170 +1,63 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Phone,
   PhoneCall,
-  User,
   Calendar,
   Clock,
   Shield,
   AlertTriangle,
   ChevronRight,
-  MapPin,
-  Users,
   ArrowUpDown,
   History,
   Star,
+  Plus,
 } from 'lucide-react';
 import { format, addDays, startOfWeek } from 'date-fns';
 
-// ============= Types =============
-interface OnCallAssignment {
-  id: string;
-  staffId: string;
-  staffName: string;
-  staffRole: string;
-  staffPhone: string;
-  staffAvatar?: string;
-  centreId: string;
-  centreName: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  isPrimary: boolean;
-  escalationOrder: number;
-  status: 'scheduled' | 'active' | 'completed' | 'cancelled';
-  callbackCount: number;
-  lastCallback?: string;
-}
-
-interface EscalationContact {
-  order: number;
-  staffId: string;
-  staffName: string;
-  staffRole: string;
-  phone: string;
-  responseTimeMinutes: number;
-  isAvailable: boolean;
-}
-
-interface CallbackHistoryItem {
-  id: string;
-  date: string;
-  staffName: string;
-  type: 'callback' | 'recall' | 'emergency';
-  duration: string;
-  outcome: string;
-  paidAmount: number;
-}
-
-// Mock data
-const generateWeekAssignments = (): OnCallAssignment[] => {
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const staff = [
-    { id: 's1', name: 'Sarah Johnson', role: 'Senior Educator', phone: '0412 345 678' },
-    { id: 's2', name: 'Michael Brown', role: 'Team Leader', phone: '0423 456 789' },
-    { id: 's3', name: 'Emily Chen', role: 'Centre Coordinator', phone: '0434 567 890' },
-    { id: 's4', name: 'James Wilson', role: 'Nurse', phone: '0445 678 901' },
-    { id: 's5', name: 'Lisa Park', role: 'Senior Educator', phone: '0456 789 012' },
-  ];
-
-  const assignments: OnCallAssignment[] = [];
-  for (let i = 0; i < 7; i++) {
-    const date = format(addDays(weekStart, i), 'yyyy-MM-dd');
-    const primaryIdx = i % staff.length;
-    const secondaryIdx = (i + 1) % staff.length;
-
-    assignments.push({
-      id: `oc-${i}-primary`,
-      staffId: staff[primaryIdx].id,
-      staffName: staff[primaryIdx].name,
-      staffRole: staff[primaryIdx].role,
-      staffPhone: staff[primaryIdx].phone,
-      centreId: 'centre-1',
-      centreName: 'Sunshine Early Learning',
-      date,
-      startTime: '17:00',
-      endTime: '07:00',
-      isPrimary: true,
-      escalationOrder: 1,
-      status: i < 2 ? 'completed' : i === 2 ? 'active' : 'scheduled',
-      callbackCount: i < 2 ? Math.floor(Math.random() * 3) : 0,
-      lastCallback: i === 0 ? '2025-03-03T22:30:00' : undefined,
-    });
-
-    assignments.push({
-      id: `oc-${i}-secondary`,
-      staffId: staff[secondaryIdx].id,
-      staffName: staff[secondaryIdx].name,
-      staffRole: staff[secondaryIdx].role,
-      staffPhone: staff[secondaryIdx].phone,
-      centreId: 'centre-1',
-      centreName: 'Sunshine Early Learning',
-      date,
-      startTime: '17:00',
-      endTime: '07:00',
-      isPrimary: false,
-      escalationOrder: 2,
-      status: i < 2 ? 'completed' : i === 2 ? 'active' : 'scheduled',
-      callbackCount: 0,
-    });
-  }
-  return assignments;
-};
-
-const mockEscalation: EscalationContact[] = [
-  { order: 1, staffId: 's3', staffName: 'Emily Chen', staffRole: 'Centre Coordinator', phone: '0434 567 890', responseTimeMinutes: 5, isAvailable: true },
-  { order: 2, staffId: 's2', staffName: 'Michael Brown', staffRole: 'Team Leader', phone: '0423 456 789', responseTimeMinutes: 10, isAvailable: true },
-  { order: 3, staffId: 's1', staffName: 'Sarah Johnson', staffRole: 'Senior Educator', phone: '0412 345 678', responseTimeMinutes: 15, isAvailable: false },
-];
-
-const mockCallbackHistory: CallbackHistoryItem[] = [
-  { id: 'h1', date: '2025-03-04', staffName: 'Sarah Johnson', type: 'callback', duration: '45min', outcome: 'Resolved', paidAmount: 157.50 },
-  { id: 'h2', date: '2025-03-03', staffName: 'Emily Chen', type: 'recall', duration: '4h', outcome: 'Staff covered', paidAmount: 280.00 },
-  { id: 'h3', date: '2025-03-02', staffName: 'Michael Brown', type: 'emergency', duration: '45min', outcome: 'False alarm', paidAmount: 350.00 },
-  { id: 'h4', date: '2025-02-28', staffName: 'Lisa Park', type: 'callback', duration: '1.5h', outcome: 'Resolved', paidAmount: 105.00 },
-  { id: 'h5', date: '2025-02-25', staffName: 'James Wilson', type: 'callback', duration: '30min', outcome: 'Resolved', paidAmount: 105.00 },
-];
-
-const statusColors: Record<OnCallAssignment['status'], string> = {
-  scheduled: 'bg-blue-500/10 text-blue-700',
-  active: 'bg-green-500/10 text-green-700 animate-pulse',
-  completed: 'bg-muted text-muted-foreground',
-  cancelled: 'bg-red-500/10 text-red-700',
-};
-
-const callbackTypeColors: Record<CallbackHistoryItem['type'], string> = {
-  callback: 'bg-amber-500/10 text-amber-700',
-  recall: 'bg-orange-500/10 text-orange-700',
-  emergency: 'bg-red-500/10 text-red-700',
-};
+import { statusColors, callbackTypeColors } from './on-call/types';
+import type { OnCallAssignment } from './on-call/types';
+import { generateWeekAssignments, mockEscalation, mockCallbackHistory } from './on-call/mockData';
+import { AssignStaffDialog } from './on-call/AssignStaffDialog';
+import { EscalationSimulation } from './on-call/EscalationSimulation';
 
 const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('');
 
 export function OnCallRosterOverlay() {
-  const [assignments] = useState<OnCallAssignment[]>(generateWeekAssignments());
+  const [assignments, setAssignments] = useState<OnCallAssignment[]>(generateWeekAssignments());
   const [activeTab, setActiveTab] = useState('roster');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [assignDialogDate, setAssignDialogDate] = useState('');
 
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  // Group assignments by date
   const byDate: Record<string, OnCallAssignment[]> = {};
   assignments.forEach(a => {
     if (!byDate[a.date]) byDate[a.date] = [];
     byDate[a.date].push(a);
   });
 
-  const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('');
+  const handleAssign = useCallback((assignment: Omit<OnCallAssignment, 'id'>) => {
+    const newAssignment: OnCallAssignment = {
+      ...assignment,
+      id: `oc-custom-${Date.now()}`,
+    };
+    setAssignments(prev => [...prev, newAssignment]);
+  }, []);
+
+  const openAssignDialog = (date: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setAssignDialogDate(date);
+    setAssignDialogOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -186,7 +79,6 @@ export function OnCallRosterOverlay() {
 
         {/* Weekly Roster Tab */}
         <TabsContent value="roster" className="mt-4 space-y-4">
-          {/* Week grid */}
           <div className="grid grid-cols-7 gap-2">
             {Array.from({ length: 7 }, (_, i) => {
               const date = format(addDays(weekStart, i), 'yyyy-MM-dd');
@@ -195,6 +87,7 @@ export function OnCallRosterOverlay() {
               const isToday = date === today;
               const primary = dayAssignments.find(a => a.isPrimary);
               const secondary = dayAssignments.find(a => !a.isPrimary);
+              const canAssign = !primary || !secondary;
 
               return (
                 <Card
@@ -214,7 +107,6 @@ export function OnCallRosterOverlay() {
                       </span>
                     </div>
 
-                    {/* Primary */}
                     {primary && (
                       <div className="mb-2">
                         <div className="flex items-center gap-1.5 mb-1">
@@ -246,7 +138,6 @@ export function OnCallRosterOverlay() {
                       </div>
                     )}
 
-                    {/* Secondary */}
                     {secondary && (
                       <div className="pt-1.5 border-t">
                         <div className="flex items-center gap-1.5 mb-1">
@@ -263,6 +154,19 @@ export function OnCallRosterOverlay() {
                         </div>
                       </div>
                     )}
+
+                    {/* Assign button */}
+                    {canAssign && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-2 h-7 text-[10px] gap-1 text-primary hover:text-primary hover:bg-primary/5 border border-dashed border-primary/30"
+                        onClick={(e) => openAssignDialog(date, e)}
+                      >
+                        <Plus className="h-3 w-3" />
+                        Assign Staff
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -273,10 +177,21 @@ export function OnCallRosterOverlay() {
           {selectedDate && byDate[selectedDate] && (
             <Card className="card-material-elevated">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}
+                  </CardTitle>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={(e) => openAssignDialog(selectedDate, e)}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Assign
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -340,6 +255,9 @@ export function OnCallRosterOverlay() {
 
         {/* Escalation Chain Tab */}
         <TabsContent value="escalation" className="mt-4 space-y-4">
+          {/* Simulation */}
+          <EscalationSimulation />
+
           <Card className="card-material">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -461,6 +379,15 @@ export function OnCallRosterOverlay() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Assign Staff Dialog */}
+      <AssignStaffDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        date={assignDialogDate}
+        existingAssignments={assignments}
+        onAssign={handleAssign}
+      />
     </div>
   );
 }
