@@ -278,6 +278,10 @@ export function CentreRosterPane({
                       centreId={centre.id}
                       dateStr={dateStrings[0]}
                       onAssignStaff={onAssignStaff}
+                      onShiftClick={onShiftClick}
+                      onShiftDelete={onShiftDelete}
+                      onShiftCopy={onShiftCopy}
+                      onShiftSwap={onShiftSwap}
                     />
                   ) : expanded ? (
                     <MultiDayGridContent
@@ -289,6 +293,10 @@ export function CentreRosterPane({
                       dateStrings={dateStrings}
                       centreId={centre.id}
                       onAssignStaff={onAssignStaff}
+                      onShiftClick={onShiftClick}
+                      onShiftDelete={onShiftDelete}
+                      onShiftCopy={onShiftCopy}
+                      onShiftSwap={onShiftSwap}
                     />
                   ) : null}
                 </div>
