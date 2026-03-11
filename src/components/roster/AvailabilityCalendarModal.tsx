@@ -1,27 +1,38 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Chip,
   Box,
   Typography,
 } from '@mui/material';
-import { StaffMember, roleLabels } from '@/types/roster';
+import { StaffMember, Centre, roleLabels } from '@/types/roster';
 import { format, startOfWeek, addDays } from 'date-fns';
-import { Check, X, Users } from 'lucide-react';
+import { Check, X, Users, Building2 } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AvailabilityCalendarModalProps {
   open: boolean;
   onClose: () => void;
   staff: StaffMember[];
   currentDate: Date;
+  centres?: Centre[];
 }
 
 const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export function AvailabilityCalendarModal({ open, onClose, staff, currentDate }: AvailabilityCalendarModalProps) {
+export function AvailabilityCalendarModal({ open, onClose, staff, currentDate, centres = [] }: AvailabilityCalendarModalProps) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const dates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('all');
+
+  const filteredStaff = useMemo(() => {
+    if (selectedLocationId === 'all' || centres.length === 0) return staff;
+    return staff.filter(s =>
+      s.defaultCentreId === selectedLocationId ||
+      s.preferredCentres?.includes(selectedLocationId)
+    );
+  }, [staff, selectedLocationId, centres]);
 
   const getAvailabilityForDay = (member: StaffMember, dayOfWeek: number) => {
     const availDayOfWeek = dayOfWeek === 6 ? 0 : dayOfWeek + 1;
@@ -53,6 +64,27 @@ export function AvailabilityCalendarModal({ open, onClose, staff, currentDate }:
       actions={actions}
     >
       <div className="space-y-4">
+        {/* Location Filter */}
+        {centres.length > 0 && (
+          <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+            <SelectTrigger className="w-full">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                <SelectValue placeholder="Filter by location" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations ({staff.length} staff)</SelectItem>
+              {centres.map(c => {
+                const count = staff.filter(s => s.defaultCentreId === c.id || s.preferredCentres?.includes(c.id)).length;
+                return (
+                  <SelectItem key={c.id} value={c.id}>{c.name} ({count})</SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        )}
+
         {/* Availability Grid */}
         <div className="bg-background rounded-lg border overflow-hidden">
           <ScrollArea className="h-[calc(100vh-300px)]">
@@ -74,7 +106,7 @@ export function AvailabilityCalendarModal({ open, onClose, staff, currentDate }:
               </Box>
 
               {/* Staff rows */}
-              {staff.map((member) => (
+              {filteredStaff.map((member) => (
                 <Box key={member.id} sx={{ display: 'flex', borderBottom: 1, borderColor: 'divider', '&:hover': { bgcolor: 'action.hover' } }}>
                   <Box sx={{ width: 180, flexShrink: 0, p: 1, borderRight: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'background.paper' }}>
                     <Box 
