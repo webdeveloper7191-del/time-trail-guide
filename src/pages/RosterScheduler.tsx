@@ -655,23 +655,48 @@ export default function RosterScheduler() {
   };
 
   const handleExportPDF = (useColors: boolean = false) => {
-    const roomColors = selectedCentre.rooms.map((_, idx) => {
-      // Get colors from the current palette - default to ocean palette colors
-      const paletteColors = [
-        'hsl(200, 75%, 50%)',
-        'hsl(185, 70%, 45%)',
-        'hsl(220, 70%, 55%)',
-        'hsl(195, 80%, 40%)',
-      ];
-      return paletteColors[idx % paletteColors.length];
-    });
-    exportToPDF({ shifts, staff: allStaff, centre: selectedCentre, dates, weeklyBudget, roomColors }, useColors);
-    toast.success(useColors ? 'Color PDF exported successfully' : 'PDF exported successfully');
+    const paletteColors = [
+      'hsl(200, 75%, 50%)',
+      'hsl(185, 70%, 45%)',
+      'hsl(220, 70%, 55%)',
+      'hsl(195, 80%, 40%)',
+    ];
+
+    if (isAllLocationsView) {
+      const roomColorsByCentre: Record<string, string[]> = {};
+      mockCentres.forEach(centre => {
+        roomColorsByCentre[centre.id] = centre.rooms.map((_, idx) => paletteColors[idx % paletteColors.length]);
+      });
+      exportAllLocationsToPDF({
+        shifts,
+        staff: allStaff,
+        centres: mockCentres.filter(c => activeCentreIds.includes(c.id)),
+        dates,
+        weeklyBudgets: centreBudgets,
+        roomColorsByCentre,
+      }, useColors);
+      toast.success(useColors ? 'All locations color PDF exported' : 'All locations PDF exported');
+    } else {
+      const roomColors = selectedCentre.rooms.map((_, idx) => paletteColors[idx % paletteColors.length]);
+      exportToPDF({ shifts, staff: allStaff, centre: selectedCentre, dates, weeklyBudget, roomColors }, useColors);
+      toast.success(useColors ? 'Color PDF exported successfully' : 'PDF exported successfully');
+    }
   };
 
   const handleExportExcel = () => {
-    exportToExcel({ shifts, staff: allStaff, centre: selectedCentre, dates, weeklyBudget });
-    toast.success('Excel exported successfully');
+    if (isAllLocationsView) {
+      exportAllLocationsToExcel({
+        shifts,
+        staff: allStaff,
+        centres: mockCentres.filter(c => activeCentreIds.includes(c.id)),
+        dates,
+        weeklyBudgets: centreBudgets,
+      });
+      toast.success('All locations Excel exported');
+    } else {
+      exportToExcel({ shifts, staff: allStaff, centre: selectedCentre, dates, weeklyBudget });
+      toast.success('Excel exported successfully');
+    }
   };
 
   const navigateDate = useCallback((direction: 'prev' | 'next') => {
