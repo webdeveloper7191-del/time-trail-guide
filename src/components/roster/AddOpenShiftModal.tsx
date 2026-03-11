@@ -53,6 +53,7 @@ interface AddOpenShiftModalProps {
   onClose: () => void;
   rooms: Room[];
   centreId: string;
+  centres?: Centre[];
   selectedDate?: string;
   selectedRoomId?: string;
   onAdd: (openShifts: Omit<OpenShift, 'id'>[]) => void;
