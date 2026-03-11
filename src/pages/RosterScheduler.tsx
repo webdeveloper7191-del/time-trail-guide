@@ -61,6 +61,7 @@ import { SkillMatrixPanel } from '@/components/roster/SkillMatrixPanel';
 import { CallbackEventLoggingPanel } from '@/components/roster/CallbackEventLoggingPanel';
 import { OnCallRosterOverlay } from '@/components/roster/OnCallRosterOverlay';
 import { MultiLocationRosterView } from '@/components/roster/MultiLocationRosterView';
+import { VirtualizedLocationList } from '@/components/roster/VirtualizedLocationList';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { SendToAgencyModal, BroadcastConfig } from '@/components/roster/SendToAgencyModal';
 import { AgencyResponseTracker } from '@/components/roster/AgencyResponseTracker';
