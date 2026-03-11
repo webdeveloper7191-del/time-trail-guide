@@ -2217,6 +2217,8 @@ export default function RosterScheduler() {
             staff={allStaff}
             centreId={selectedCentreId}
             weeklyBudget={weeklyBudget}
+            centres={mockCentres}
+            centreBudgets={centreBudgets}
           />
         </Collapse>
       </Box>
