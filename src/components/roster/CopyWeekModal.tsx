@@ -42,7 +42,7 @@ import {
 } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, eachDayOfInterval, isSameDay, differenceInWeeks } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Shift, Room, StaffMember } from '@/types/roster';
+import { Shift, Room, StaffMember, Centre } from '@/types/roster';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { toast } from 'sonner';
