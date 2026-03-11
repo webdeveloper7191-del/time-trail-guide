@@ -123,13 +123,14 @@ interface FormActionsRowProps {
 /**
  * FormActionsRow - A row for inline action buttons within a section.
  */
-export function FormActionsRow({ children, className }: FormActionsRowProps) {
+export const FormActionsRow = React.forwardRef<HTMLDivElement, FormActionsRowProps>(
+  function FormActionsRow({ children, className }, ref) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div ref={ref} className={cn("flex items-center gap-2", className)}>
       {children}
     </div>
   );
-}
+});
 
 /**
  * FormQuestionLabel - A question-style header for form sections
