@@ -443,7 +443,7 @@ export function CandidateBulkImport({ open, onClose, onImport }: CandidateBulkIm
 
           {/* Validation errors */}
           {validationErrors.length > 0 && (
-            <FormSection title="Validation Issues" description={`${errorCount} errors, ${warningCount} warnings`}>
+            <FormSection title={`Validation Issues (${errorCount} errors, ${warningCount} warnings)`}>
               <div className="max-h-[150px] overflow-auto space-y-1">
                 {validationErrors.slice(0, 20).map((err, idx) => (
                   <div
