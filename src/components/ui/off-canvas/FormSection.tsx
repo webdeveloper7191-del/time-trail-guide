@@ -45,7 +45,7 @@ export const FormSection = React.forwardRef<HTMLDivElement, FormSectionProps>(
       </div>
     </div>
   );
-}
+});
 
 interface FormFieldProps {
   label: string;
