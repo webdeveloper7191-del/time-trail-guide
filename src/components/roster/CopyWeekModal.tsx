@@ -60,6 +60,7 @@ interface CopyWeekModalProps {
   rooms: Room[];
   staff: StaffMember[];
   centreId: string;
+  centres?: Centre[];
   currentDate: Date;
   onCopy: (newShifts: Omit<Shift, 'id'>[]) => void;
 }
