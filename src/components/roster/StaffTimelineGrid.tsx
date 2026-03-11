@@ -5,6 +5,7 @@ import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { InlineDemandChart } from './InlineDemandChart';
@@ -1454,25 +1455,74 @@ export function StaffTimelineGrid({
                                             />
                                           )}
                                           
-                                          <div className="space-y-1 relative z-10">
-                                            {cellShifts.map((shift) => (
-                                              <StaffShiftCard
-                                                key={shift.id}
-                                                shift={shift}
-                                                staff={member}
-                                                allStaff={staff}
-                                                highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
-                                                onViewSeries={onViewSeries}
-                                                onEdit={() => onShiftEdit(shift)}
-                                                onDelete={() => handleRequestDeleteShift(shift, member)}
-                                                onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
-                                                onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
-                                                onShiftTypeChange={onShiftTypeChange}
-                                                onDragStart={handleShiftDragStart}
-                                                isCompact={isCompact}
-                                                isMonthView={isMonthView}
-                                              />
-                                            ))}
+                                          <div className="space-y-0.5 relative z-10">
+                                            {cellShifts.length <= 2 ? (
+                                              cellShifts.map((shift) => (
+                                                <StaffShiftCard
+                                                  key={shift.id}
+                                                  shift={shift}
+                                                  staff={member}
+                                                  allStaff={staff}
+                                                  highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+                                                  onViewSeries={onViewSeries}
+                                                  onEdit={() => onShiftEdit(shift)}
+                                                  onDelete={() => handleRequestDeleteShift(shift, member)}
+                                                  onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
+                                                  onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
+                                                  onShiftTypeChange={onShiftTypeChange}
+                                                  onDragStart={handleShiftDragStart}
+                                                  isCompact={isCompact}
+                                                  isMonthView={isMonthView}
+                                                />
+                                              ))
+                                            ) : (
+                                              <>
+                                                <StaffShiftCard
+                                                  key={cellShifts[0].id}
+                                                  shift={cellShifts[0]}
+                                                  staff={member}
+                                                  allStaff={staff}
+                                                  highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+                                                  onViewSeries={onViewSeries}
+                                                  onEdit={() => onShiftEdit(cellShifts[0])}
+                                                  onDelete={() => handleRequestDeleteShift(cellShifts[0], member)}
+                                                  onCopy={onShiftCopy ? () => onShiftCopy(cellShifts[0]) : undefined}
+                                                  onSwap={onShiftSwap ? () => onShiftSwap(cellShifts[0]) : undefined}
+                                                  onShiftTypeChange={onShiftTypeChange}
+                                                  onDragStart={handleShiftDragStart}
+                                                  isCompact={isCompact}
+                                                  isMonthView={isMonthView}
+                                                />
+                                                <Popover>
+                                                  <PopoverTrigger asChild>
+                                                    <button className="w-full text-[10px] font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded px-1.5 py-0.5 transition-colors text-center">
+                                                      +{cellShifts.length - 1} more shift{cellShifts.length - 1 > 1 ? 's' : ''}
+                                                    </button>
+                                                  </PopoverTrigger>
+                                                  <PopoverContent className="w-64 p-2 space-y-1" align="start">
+                                                    <p className="text-xs font-medium text-muted-foreground px-1 pb-1">{cellShifts.length} shifts</p>
+                                                    {cellShifts.map((shift) => (
+                                                      <StaffShiftCard
+                                                        key={shift.id}
+                                                        shift={shift}
+                                                        staff={member}
+                                                        allStaff={staff}
+                                                        highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+                                                        onViewSeries={onViewSeries}
+                                                        onEdit={() => onShiftEdit(shift)}
+                                                        onDelete={() => handleRequestDeleteShift(shift, member)}
+                                                        onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
+                                                        onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
+                                                        onShiftTypeChange={onShiftTypeChange}
+                                                        onDragStart={handleShiftDragStart}
+                                                        isCompact={false}
+                                                        isMonthView={false}
+                                                      />
+                                                    ))}
+                                                  </PopoverContent>
+                                                </Popover>
+                                              </>
+                                            )}
                                           </div>
                                           
                                           {/* Add shift dropdown - shows for empty cells OR after existing shifts */}
