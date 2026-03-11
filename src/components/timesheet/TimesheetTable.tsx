@@ -120,6 +120,7 @@ export function TimesheetTable({
             <TableHead className="font-semibold text-foreground">Employee</TableHead>
             <TableHead className="font-semibold text-foreground">Location</TableHead>
             <TableHead className="font-semibold text-foreground">Week</TableHead>
+            <TableHead className="font-semibold text-foreground text-center">Clock In/Out</TableHead>
             <TableHead className="font-semibold text-foreground text-center">Hours</TableHead>
             <TableHead className="font-semibold text-foreground text-center">Breaks</TableHead>
             <TableHead className="font-semibold text-foreground text-center">Overtime</TableHead>
