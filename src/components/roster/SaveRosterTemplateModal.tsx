@@ -139,6 +139,20 @@ export function SaveRosterTemplateModal({
 
         {/* Rooms Selection */}
         <FormSection title="Include Rooms" tooltip="Select which rooms to include in this template">
+          {/* Location Selector */}
+          {centres && centres.length > 0 && (
+            <div className="mb-3">
+              <CentreSelector
+                centres={centres}
+                selectedCentreId={activeCentreId}
+                onCentreChange={(id) => {
+                  setActiveCentreId(id);
+                  setSelectedRooms([]);
+                }}
+                label="Location"
+              />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             {rooms.map(room => {
               const isSelected = selectedRooms.includes(room.id);

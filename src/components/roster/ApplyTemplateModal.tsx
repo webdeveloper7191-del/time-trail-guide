@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Shift, Room, ShiftTemplate } from '@/types/roster';
+import { Shift, Room, ShiftTemplate, Centre } from '@/types/roster';
 import { RosterTemplate, TemplateMatchResult } from '@/types/rosterTemplates';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { FileStack, Check, Plus, ArrowRight, Layers } from 'lucide-react';
@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CentreSelector } from './CentreSelector';
 import { cn } from '@/lib/utils';
 
 interface ApplyTemplateModalProps {
@@ -20,6 +21,7 @@ interface ApplyTemplateModalProps {
   existingShifts: Shift[];
   rooms: Room[];
   centreId: string;
+  centres?: Centre[];
   currentDate: Date;
   onApply: (shifts: Omit<Shift, 'id'>[]) => void;
 }
@@ -30,11 +32,20 @@ export function ApplyTemplateModal({
   rosterTemplates,
   shiftTemplates,
   existingShifts,
-  rooms,
+  rooms: defaultRooms,
   centreId,
+  centres,
   currentDate,
   onApply
 }: ApplyTemplateModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const rooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [skipExisting, setSkipExisting] = useState(true);
   const [selectedShifts, setSelectedShifts] = useState<Set<string>>(new Set());
