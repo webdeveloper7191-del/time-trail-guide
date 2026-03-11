@@ -84,7 +84,7 @@ const classificationLevels = [
 export function AddOpenShiftModal({ 
   open, 
   onClose, 
-  rooms, 
+  rooms: defaultRooms, 
   centreId, 
   centres,
   selectedDate,
@@ -94,13 +94,13 @@ export function AddOpenShiftModal({
   availableDates,
 }: AddOpenShiftModalProps) {
   const [activeCentreId, setActiveCentreId] = useState(centreId);
-  const activeRooms = useMemo(() => {
+  const rooms = useMemo(() => {
     if (centres) {
       const centre = centres.find(c => c.id === activeCentreId);
       return centre?.rooms || [];
     }
-    return rooms;
-  }, [centres, activeCentreId, rooms]);
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [createMode, setCreateMode] = useState<CreateMode>('single');
   const [selectedQualifications, setSelectedQualifications] = useState<QualificationType[]>([]);
   const [selectedAllowances, setSelectedAllowances] = useState<string[]>([]);
