@@ -5,6 +5,14 @@ import { SharedStaffPool } from './SharedStaffPool';
 import { CentreRosterPane } from './CentreRosterPane';
 import { CrossLocationConflictBar } from './CrossLocationConflictBar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -12,6 +20,9 @@ import {
   Columns,
   MapPin,
   Check,
+  ChevronDown,
+  Search,
+  X,
 } from 'lucide-react';
 
 interface CrossLocationSchedulerProps {
