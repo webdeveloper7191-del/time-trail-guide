@@ -2,6 +2,7 @@ import { Timesheet } from '@/types/timesheet';
 import { StatusBadge } from './StatusBadge';
 import { validateCompliance } from '@/lib/complianceEngine';
 import { format } from 'date-fns';
+import { formatTime12h } from '@/lib/timeFormat';
 import { Eye, Edit2, MapPin, Coffee, AlertTriangle, ShieldCheck, ShieldAlert, CheckSquare, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
