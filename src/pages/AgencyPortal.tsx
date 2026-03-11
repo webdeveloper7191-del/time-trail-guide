@@ -10,7 +10,8 @@ import {
   ArrowLeft, Plus, UserPlus, Zap, Receipt, ClipboardCheck, Briefcase,
   ArrowUpRight, ArrowDownRight, Search, Filter, Bell, Settings,
   Star, MapPin, DollarSign, Activity, Eye, MoreVertical,
-  RefreshCw, Download, ChevronRight, Percent, Target
+  RefreshCw, Download, ChevronRight, Percent, Target, Upload,
+  CalendarDays, List
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockAgency, mockCandidates, mockShiftRequests, mockInvoices, mockAgencyAnalytics } from '@/data/mockAgencyData';
@@ -22,6 +23,10 @@ import InvoiceGenerator from '@/components/agency/InvoiceGenerator';
 import CandidateAvailabilityCalendar from '@/components/agency/CandidateAvailabilityCalendar';
 import TimesheetApprovalWorkflow from '@/components/agency/TimesheetApprovalWorkflow';
 import ClientManagementPanel from '@/components/agency/ClientManagementPanel';
+import { ShiftBroadcastInbox } from '@/components/agency/ShiftBroadcastInbox';
+import { ShiftCalendarView } from '@/components/agency/ShiftCalendarView';
+import { CandidateBulkImport } from '@/components/agency/CandidateBulkImport';
+import rosteredLogo from '@/assets/rostered-logo.png';
 import { cn } from '@/lib/utils';
 
 // ─── Tab Configuration ───────────────────────────────────────────────────────
@@ -107,6 +112,8 @@ const AgencyPortal = () => {
   const [candidateSearch, setCandidateSearch] = useState('');
   const [candidateStatusFilter, setCandidateStatusFilter] = useState('all');
   const [shiftStatusFilter, setShiftStatusFilter] = useState('all');
+  const [shiftViewMode, setShiftViewMode] = useState<'list' | 'calendar'>('list');
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   const openShifts = mockShiftRequests.filter(s => s.status === 'open' || s.status === 'partially_filled');
   const urgentShifts = mockShiftRequests.filter(s => s.urgency === 'critical' || s.urgency === 'urgent');
@@ -141,12 +148,10 @@ const AgencyPortal = () => {
         <div className="px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="small" onClick={() => navigate('/')}>
+              <Button variant="ghost" size="small" onClick={() => navigate('/')} className="h-8 w-8 p-0">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-primary" />
-              </div>
+              <img src={rosteredLogo} alt="Rostered.ai" className="h-7" />
               <div>
                 <h1 className="text-base font-semibold tracking-tight leading-tight">
                   {mockAgency.tradingName || mockAgency.name}
@@ -380,6 +385,13 @@ const AgencyPortal = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Broadcast Inbox */}
+            <ShiftBroadcastInbox
+              onMatchCandidates={(id) => {
+                setActiveTab('shifts');
+              }}
+            />
           </div>
         )}
 
@@ -411,10 +423,16 @@ const AgencyPortal = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={() => setShowCandidateForm(true)} size="small">
-                <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-                Add Candidate
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button onClick={() => setShowBulkImport(true)} variant="outlined" size="small">
+                  <Upload className="h-3.5 w-3.5 mr-1.5" />
+                  Import
+                </Button>
+                <Button onClick={() => setShowCandidateForm(true)} size="small">
+                  <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                  Add Candidate
+                </Button>
+              </div>
             </div>
 
             {/* Stats */}
@@ -511,26 +529,49 @@ const AgencyPortal = () => {
                 {/* Toolbar */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <Select value={shiftStatusFilter} onValueChange={setShiftStatusFilter}>
-                      <SelectTrigger className="w-[140px] h-8 text-xs">
-                        <Filter className="h-3 w-3 mr-1.5 text-muted-foreground" />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="partially_filled">Partially Filled</SelectItem>
-                        <SelectItem value="filled">Filled</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {shiftViewMode === 'list' && (
+                      <Select value={shiftStatusFilter} onValueChange={setShiftStatusFilter}>
+                        <SelectTrigger className="w-[140px] h-8 text-xs">
+                          <Filter className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Status</SelectItem>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="partially_filled">Partially Filled</SelectItem>
+                          <SelectItem value="filled">Filled</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {filteredShifts.length} shift{filteredShifts.length !== 1 ? 's' : ''}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center rounded-md border bg-background">
+                      <button
+                        onClick={() => setShiftViewMode('list')}
+                        className={cn(
+                          'flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-l-md transition-colors',
+                          shiftViewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        <List className="h-3 w-3" /> List
+                      </button>
+                      <button
+                        onClick={() => setShiftViewMode('calendar')}
+                        className={cn(
+                          'flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-r-md transition-colors',
+                          shiftViewMode === 'calendar' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        <CalendarDays className="h-3 w-3" /> Calendar
+                      </button>
+                    </div>
                   </div>
                 </div>
 
+                {shiftViewMode === 'list' && (
+                  <>
                 {/* Stats */}
                 <div className="grid grid-cols-4 gap-2">
                   <MiniStat label="Total" value={mockShiftRequests.length} icon={Calendar} />
@@ -599,6 +640,14 @@ const AgencyPortal = () => {
                     </div>
                   </CardContent>
                 </Card>
+                  </>
+                )}
+
+                {shiftViewMode === 'calendar' && (
+                  <ShiftCalendarView
+                    onSelectShift={(id) => setSelectedShiftForMatching(id)}
+                  />
+                )}
               </>
             )}
           </div>
@@ -791,6 +840,14 @@ const AgencyPortal = () => {
           }}
         />
       )}
+
+      <CandidateBulkImport
+        open={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onImport={(candidates) => {
+          console.log('Imported candidates:', candidates);
+        }}
+      />
     </div>
   );
 };
