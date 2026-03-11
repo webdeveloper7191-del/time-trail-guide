@@ -14,7 +14,7 @@ import { ComplianceScorecard } from '@/components/timesheet/ComplianceScorecard'
 import { ExportDialog } from '@/components/timesheet/ExportDialog';
 import { NotificationCenter, generateMockNotifications, Notification } from '@/components/timesheet/NotificationCenter';
 import { ApprovalDelegationModal, generateMockDelegations } from '@/components/timesheet/ApprovalDelegationModal';
-import { AddTimesheetModal } from '@/components/timesheet/AddTimesheetModal';
+import { AddTimesheetPanel } from '@/components/timesheet/AddTimesheetPanel';
 import { ImportTimesheetModal } from '@/components/timesheet/ImportTimesheetModal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
