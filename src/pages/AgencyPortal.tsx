@@ -373,7 +373,7 @@ const AgencyPortal = () => {
                       </div>
                       <div className="flex items-center gap-0.5">
                         <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
-                        <span className="text-xs font-semibold">{performer.rating.toFixed(1)}</span>
+                        <span className="text-xs font-semibold">{performer.shiftsCompleted}</span>
                       </div>
                     </div>
                   ))}
