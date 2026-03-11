@@ -2726,14 +2726,6 @@ export default function RosterScheduler() {
         currentDate={currentDate}
       />
 
-      {/* Leave & Holidays by Location Panel */}
-      <LeaveByLocationPanel
-        open={showLeaveByLocation}
-        onClose={() => setShowLeaveByLocation(false)}
-        centres={mockCentres}
-        staff={allStaff}
-        currentDate={currentDate}
-      />
 
 
       {/* Demand Import Modal */}
