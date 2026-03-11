@@ -167,34 +167,106 @@ export function CrossLocationScheduler({
       {/* Right: Scheduler area */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {/* Top toolbar */}
-        <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border flex-wrap">
-          {/* Centre chips — scrollable for many centres */}
-          <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto no-scrollbar">
-            {centreStats.map(({ centre, staffCount, openCount, isActive }) => (
-              <button
-                key={centre.id}
-                onClick={() => toggleCentrePane(centre.id)}
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap flex-shrink-0',
-                  'border',
-                  isActive
-                    ? 'bg-primary/10 border-primary/30 text-primary shadow-sm'
-                    : 'bg-card border-border text-muted-foreground hover:border-primary/20 hover:bg-accent/50'
-                )}
-              >
-                {isActive && <Check className="h-3 w-3" />}
-                <MapPin className="h-3 w-3" />
-                {centre.name}
-                <span className="text-[9px] opacity-70">({staffCount})</span>
-                {openCount > 0 && (
-                  <Badge variant="destructive" className="text-[8px] px-1 py-0 h-3.5 ml-0.5">
-                    {openCount}
-                  </Badge>
-                )}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border">
+          {/* Searchable centre multi-select dropdown */}
+          <Popover open={centrePickerOpen} onOpenChange={setCentrePickerOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+                {activePaneIds.length === 0
+                  ? 'Select Centres'
+                  : activePaneIds.length <= 2
+                    ? activePaneIds.map(id => centres.find(c => c.id === id)?.name).filter(Boolean).join(', ')
+                    : `${activePaneIds.length} centres selected`}
+                <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-0" align="start">
+              <div className="p-2 border-b border-border">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search centres..."
+                    value={centreSearch}
+                    onChange={(e) => setCentreSearch(e.target.value)}
+                    className="h-8 pl-7 text-xs"
+                  />
+                </div>
+              </div>
+              <div className="p-1 flex items-center justify-between border-b border-border">
+                <button
+                  onClick={() => setActivePaneIds(centres.map(c => c.id))}
+                  className="text-[10px] text-primary hover:underline px-2 py-1"
+                >
+                  Select all
+                </button>
+                <button
+                  onClick={() => setActivePaneIds([])}
+                  className="text-[10px] text-muted-foreground hover:underline px-2 py-1"
+                >
+                  Clear all
+                </button>
+              </div>
+              <ScrollArea className="max-h-64">
+                <div className="p-1">
+                  {filteredCentreStats.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No centres found</p>
+                  ) : (
+                    filteredCentreStats.map(({ centre, staffCount, openCount, isActive }) => (
+                      <button
+                        key={centre.id}
+                        onClick={() => toggleCentrePane(centre.id)}
+                        className={cn(
+                          'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors',
+                          isActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-foreground hover:bg-accent'
+                        )}
+                      >
+                        <div className={cn(
+                          'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0',
+                          isActive ? 'bg-primary border-primary' : 'border-border'
+                        )}>
+                          {isActive && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </div>
+                        <MapPin className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                        <span className="truncate flex-1 text-left">{centre.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{staffCount} staff</span>
+                        {openCount > 0 && (
+                          <Badge variant="destructive" className="text-[8px] px-1 py-0 h-3.5">
+                            {openCount}
+                          </Badge>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
 
+          {/* Selected centre badges - removable */}
+          <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto no-scrollbar">
+            {activePaneIds.map((id) => {
+              const centre = centres.find(c => c.id === id);
+              if (!centre) return null;
+              return (
+                <Badge
+                  key={id}
+                  variant="secondary"
+                  className="text-[10px] gap-1 flex-shrink-0 pr-1"
+                >
+                  {centre.name}
+                  <button
+                    onClick={() => removePane(id)}
+                    className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </Badge>
+              );
+            })}
+          </div>
 
           {/* Active count */}
           <Badge variant="secondary" className="text-[10px] flex-shrink-0">
