@@ -495,14 +495,21 @@ export default function RosterScheduler() {
     const staff = allStaff.find(s => s.id === staffId);
     if (!staff) return;
 
+    // Derive centreId from the room's parent centre in multi-location mode
+    const centreId = isAllLocationsView
+      ? mockCentres.find(c => c.rooms.some(r => r.id === roomId))?.id || selectedCentreId
+      : selectedCentreId;
+
+    const centre = mockCentres.find(c => c.id === centreId);
+
     const newShift: Shift = {
       id: `shift-${Date.now()}`,
       staffId,
-      centreId: selectedCentreId,
+      centreId,
       roomId,
       date,
-      startTime: '09:00',
-      endTime: '17:00',
+      startTime: centre?.operatingHours.start || '09:00',
+      endTime: centre?.operatingHours.end || '17:00',
       breakMinutes: 30,
       status: 'draft',
       isOpenShift: false,
