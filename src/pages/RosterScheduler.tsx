@@ -192,6 +192,9 @@ export default function RosterScheduler() {
   
   const [viewMode, setViewMode] = useState<ViewMode>('workweek');
   const [selectedCentreId, setSelectedCentreId] = useState<string>(mockCentres[0].id);
+  const [activeCentreIds, setActiveCentreIds] = useState<string[]>(mockCentres.map(c => c.id));
+  const [centrePickerOpen, setCentrePickerOpen] = useState(false);
+  const [centreSearch, setCentreSearch] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
   
   // Use undo/redo for shifts with history tracking
