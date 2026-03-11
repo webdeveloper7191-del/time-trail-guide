@@ -432,7 +432,7 @@ export default function TimesheetAdmin() {
         onCreateDelegation={handleCreateDelegation}
         onRevokeDelegation={handleRevokeDelegation}
       />
-      <AddTimesheetModal
+      <AddTimesheetPanel
         open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={(ts) => setTimesheets(prev => [ts, ...prev])}

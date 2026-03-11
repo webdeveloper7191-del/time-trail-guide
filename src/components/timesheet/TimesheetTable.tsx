@@ -186,6 +186,31 @@ export function TimesheetTable({
                 </p>
               </TableCell>
               <TableCell className="text-center">
+                {(() => {
+                  const lastEntry = timesheet.entries[timesheet.entries.length - 1];
+                  const firstEntry = timesheet.entries[0];
+                  if (!firstEntry) return <span className="text-xs text-muted-foreground">—</span>;
+                  return (
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <div className="text-xs space-y-0.5">
+                          <div className="font-medium text-foreground">{formatTime12h(firstEntry.clockIn)}</div>
+                          <div className="text-muted-foreground">{formatTime12h(lastEntry?.clockOut)}</div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        <div className="space-y-1">
+                          {timesheet.entries.slice(0, 5).map((e, i) => (
+                            <div key={i}>{e.date}: {formatTime12h(e.clockIn)} – {formatTime12h(e.clockOut)}</div>
+                          ))}
+                          {timesheet.entries.length > 5 && <div>+{timesheet.entries.length - 5} more</div>}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })()}
+              </TableCell>
+              <TableCell className="text-center">
                 <span className="font-semibold text-card-foreground text-lg">
                   {timesheet.totalHours}h
                 </span>
