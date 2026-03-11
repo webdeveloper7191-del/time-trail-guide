@@ -15,6 +15,7 @@ import {
   ClipboardCheck,
   PartyPopper,
   BookOpen,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
@@ -27,12 +28,15 @@ import {
   getEventsForDate,
 } from '@/data/mockHolidaysEvents';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { Centre } from '@/types/roster';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface HolidayEventCalendarPanelProps {
   open: boolean;
   onClose: () => void;
   currentDate: Date;
   onDateClick?: (date: Date) => void;
+  centres?: Centre[];
 }
 
 const eventIcons: Record<RosterEvent['type'], React.ReactNode> = {
