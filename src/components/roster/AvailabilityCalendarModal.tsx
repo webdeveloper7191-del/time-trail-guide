@@ -64,6 +64,27 @@ export function AvailabilityCalendarModal({ open, onClose, staff, currentDate, c
       actions={actions}
     >
       <div className="space-y-4">
+        {/* Location Filter */}
+        {centres.length > 0 && (
+          <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+            <SelectTrigger className="w-full">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                <SelectValue placeholder="Filter by location" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations ({staff.length} staff)</SelectItem>
+              {centres.map(c => {
+                const count = staff.filter(s => s.defaultCentreId === c.id || s.preferredCentres?.includes(c.id)).length;
+                return (
+                  <SelectItem key={c.id} value={c.id}>{c.name} ({count})</SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        )}
+
         {/* Availability Grid */}
         <div className="bg-background rounded-lg border overflow-hidden">
           <ScrollArea className="h-[calc(100vh-300px)]">
