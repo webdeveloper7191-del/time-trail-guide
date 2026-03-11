@@ -25,6 +25,7 @@ import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { CentreSelector } from './CentreSelector';
 
 interface ShiftCopyModalProps {
   open: boolean;
