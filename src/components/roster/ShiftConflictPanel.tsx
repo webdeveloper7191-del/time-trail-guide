@@ -15,8 +15,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
-import { Shift, StaffMember, ShiftConflict, Room } from '@/types/roster';
+import { Shift, StaffMember, ShiftConflict, Room, Centre } from '@/types/roster';
 import { detectShiftConflicts, getConflictSeverityColor } from '@/lib/shiftConflictDetection';
+import { CentreSelector } from './CentreSelector';
 
 interface ShiftConflictPanelProps {
   open: boolean;
@@ -24,6 +25,7 @@ interface ShiftConflictPanelProps {
   shifts: Shift[];
   staff: StaffMember[];
   rooms: Room[];
+  centres?: Centre[];
   onNavigateToShift?: (shiftId: string) => void;
 }
 

@@ -20,6 +20,7 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import { Centre } from '@/types/roster';
+import { CentreSelector } from './CentreSelector';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
