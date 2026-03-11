@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Shift, Room } from '@/types/roster';
+import { useState, useMemo } from 'react';
+import { Shift, Room, Centre } from '@/types/roster';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RosterTemplate, RosterTemplateShift } from '@/types/rosterTemplates';
 import { format } from 'date-fns';
@@ -9,6 +9,7 @@ import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/Form
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
+import { CentreSelector } from './CentreSelector';
 import { cn } from '@/lib/utils';
 
 interface SaveRosterTemplateModalProps {
@@ -17,6 +18,7 @@ interface SaveRosterTemplateModalProps {
   shifts: Shift[];
   rooms: Room[];
   centreId: string;
+  centres?: Centre[];
   dates: Date[];
   onSave: (template: Omit<RosterTemplate, 'id' | 'createdAt' | 'updatedAt'>) => void;
 }
@@ -25,18 +27,27 @@ export function SaveRosterTemplateModal({
   open,
   onClose,
   shifts,
-  rooms,
+  rooms: defaultRooms,
   centreId,
+  centres,
   dates,
   onSave
 }: SaveRosterTemplateModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const rooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedRooms, setSelectedRooms] = useState<string[]>(rooms.map(r => r.id));
   const [includeStaffPreferences, setIncludeStaffPreferences] = useState(false);
 
   const relevantShifts = shifts.filter(s => 
-    s.centreId === centreId && 
+    s.centreId === activeCentreId && 
     selectedRooms.includes(s.roomId) &&
     dates.some(d => format(d, 'yyyy-MM-dd') === s.date)
   );
@@ -128,6 +139,20 @@ export function SaveRosterTemplateModal({
 
         {/* Rooms Selection */}
         <FormSection title="Include Rooms" tooltip="Select which rooms to include in this template">
+          {/* Location Selector */}
+          {centres && centres.length > 0 && (
+            <div className="mb-3">
+              <CentreSelector
+                centres={centres}
+                selectedCentreId={activeCentreId}
+                onCentreChange={(id) => {
+                  setActiveCentreId(id);
+                  setSelectedRooms([]);
+                }}
+                label="Location"
+              />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             {rooms.map(room => {
               const isSelected = selectedRooms.includes(room.id);
