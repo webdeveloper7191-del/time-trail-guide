@@ -457,7 +457,7 @@ const AgencyPortal = () => {
                           <span className="text-xs font-medium">{candidate.averageRating}</span>
                         </div>
                         <Badge variant="outline" className="text-[10px]">
-                          {candidate.completedShifts} shifts
+                          {candidate.totalShiftsCompleted} shifts
                         </Badge>
                         <Button 
                           variant="ghost" 
