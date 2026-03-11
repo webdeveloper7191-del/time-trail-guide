@@ -167,7 +167,7 @@ export function CopyWeekModal({
     const endStr = format(sourceDateRange.end, 'yyyy-MM-dd');
     
     return shifts.filter(s => {
-      if (s.centreId !== centreId) return false;
+      if (s.centreId !== activeCentreId) return false;
       if (s.date < startStr || s.date > endStr) return false;
       if (!selectedRooms.has(s.roomId)) return false;
       if (copyDraftsOnly && s.status !== 'draft') return false;
