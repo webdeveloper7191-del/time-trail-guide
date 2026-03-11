@@ -13,6 +13,7 @@ import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/Form
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { CentreSelector } from './CentreSelector';
 
 interface BulkShiftAssignmentModalProps {
   open: boolean;
