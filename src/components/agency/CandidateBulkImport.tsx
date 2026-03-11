@@ -299,7 +299,7 @@ export function CandidateBulkImport({ open, onClose, onImport }: CandidateBulkIm
       {/* ─── Step 1: Upload ─────────────────────────────────────────────── */}
       {step === 'upload' && (
         <div className="space-y-4">
-          <FormSection title="Upload File" description="Upload a CSV or Excel file with candidate data.">
+          <FormSection title="Upload File" tooltip="Upload a CSV or Excel file with candidate data.">
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
               <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm font-medium mb-1">Drop your file here or click to browse</p>
