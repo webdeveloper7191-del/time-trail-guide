@@ -232,7 +232,7 @@ export function LeaveByLocationPanel({
               )}
 
               {/* Per-location impact summary */}
-              <FormSection title="Location Impact Summary" defaultOpen>
+              <FormSection title="Location Impact Summary">
                 <div className="space-y-2">
                   {filteredCentres.map(centre => {
                     const centreStaff = staffByLocation[centre.id] || [];
