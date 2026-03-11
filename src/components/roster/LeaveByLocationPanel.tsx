@@ -163,7 +163,7 @@ export function LeaveByLocationPanel({
                 const centreStaff = staffByLocation[centre.id] || [];
 
                 return (
-                  <FormSection key={centre.id} title={centre.name} defaultOpen>
+                  <FormSection key={centre.id} title={centre.name}>
                     <div className="space-y-1 mb-2">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Users className="h-3 w-3" />
