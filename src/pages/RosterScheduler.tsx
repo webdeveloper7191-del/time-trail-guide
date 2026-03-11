@@ -853,10 +853,15 @@ export default function RosterScheduler() {
     const staff = allStaff.find(s => s.id === staffId);
     if (!staff) return;
 
+    // Derive centreId from the room when in all-locations mode
+    const centreId = isAllLocationsView
+      ? mockCentres.find(c => c.rooms.some(r => r.id === roomId))?.id || selectedCentreId
+      : selectedCentreId;
+
     const newShift: Shift = {
       id: `shift-${Date.now()}`,
       staffId,
-      centreId: selectedCentreId,
+      centreId,
       roomId,
       date,
       startTime: template?.startTime || '09:00',
