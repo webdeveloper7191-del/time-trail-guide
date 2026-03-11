@@ -87,7 +87,25 @@ export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget, centre
   };
 
   return (
-    <div className="flex items-center gap-6 px-4 py-3 bg-card border-b border-border">
+    <div className="flex items-center gap-4 px-4 py-3 bg-card border-b border-border">
+      {/* Location Filter */}
+      {centres.length > 0 && (
+        <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+          <SelectTrigger className="w-[180px] h-8 text-xs">
+            <div className="flex items-center gap-1.5">
+              <Building2 className="h-3 w-3 text-primary" />
+              <SelectValue placeholder="Location" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Locations</SelectItem>
+            {centres.map(c => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
       {/* Progress Bar */}
       <div className="flex-1 max-w-md">
         <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -95,7 +113,7 @@ export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget, centre
             <DollarSign className="h-3 w-3" />
             Spent: ${budgetData.totalCost.toLocaleString()}
           </span>
-          <span>Budget: ${weeklyBudget.toLocaleString()}</span>
+          <span>Budget: ${activeBudget.toLocaleString()}</span>
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
           <div 
