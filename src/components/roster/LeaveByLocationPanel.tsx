@@ -222,7 +222,7 @@ export function LeaveByLocationPanel({
 
               {/* State-specific holidays */}
               {monthHolidays.filter(h => h.state).length > 0 && (
-                <FormSection title="State/Regional Holidays" defaultOpen>
+                <FormSection title="State/Regional Holidays">
                   <div className="space-y-2">
                     {monthHolidays.filter(h => h.state).map(holiday => (
                       <HolidayRow key={holiday.id} holiday={holiday} affectedCentres={filteredCentres} />
