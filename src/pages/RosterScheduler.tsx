@@ -2515,9 +2515,10 @@ export default function RosterScheduler() {
       <ShiftConflictPanel
         open={showConflicts}
         onClose={() => setShowConflicts(false)}
-        shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+        shifts={shifts}
         staff={allStaff}
         rooms={selectedCentre.rooms}
+        centres={mockCentres}
       />
 
       {selectedStaffForPrefs && (
