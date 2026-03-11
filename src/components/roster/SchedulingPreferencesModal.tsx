@@ -17,16 +17,18 @@ import {
   Moon,
   BedDouble
 } from 'lucide-react';
-import { StaffMember, SchedulingPreferences, Room } from '@/types/roster';
+import { StaffMember, SchedulingPreferences, Room, Centre } from '@/types/roster';
 import { cn } from '@/lib/utils';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
+import { CentreSelector } from './CentreSelector';
 
 interface SchedulingPreferencesModalProps {
   open: boolean;
   onClose: () => void;
   staff: StaffMember;
   allRooms: Room[];
+  centres?: Centre[];
   onSave: (staffId: string, preferences: SchedulingPreferences) => void;
 }
 
