@@ -45,6 +45,7 @@ import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/Pr
 import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { openShiftSchema, OpenShiftFormValues } from '@/lib/validationSchemas';
+import { CentreSelector } from './CentreSelector';
 import { toast } from 'sonner';
 import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
 
