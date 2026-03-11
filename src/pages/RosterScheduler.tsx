@@ -2533,12 +2533,13 @@ export default function RosterScheduler() {
       <AlertNotificationsPanel
         open={showAlerts}
         onClose={() => setShowAlerts(false)}
-        shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+        shifts={shifts}
         staff={allStaff}
         complianceFlags={complianceFlags}
         weeklyBudget={weeklyBudget}
         totalCost={costSummary.totalCost}
         centreId={selectedCentreId}
+        centres={mockCentres}
       />
 
       <ShiftConflictPanel
