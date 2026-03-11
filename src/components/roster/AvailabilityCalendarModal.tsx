@@ -106,7 +106,7 @@ export function AvailabilityCalendarModal({ open, onClose, staff, currentDate, c
               </Box>
 
               {/* Staff rows */}
-              {staff.map((member) => (
+              {filteredStaff.map((member) => (
                 <Box key={member.id} sx={{ display: 'flex', borderBottom: 1, borderColor: 'divider', '&:hover': { bgcolor: 'action.hover' } }}>
                   <Box sx={{ width: 180, flexShrink: 0, p: 1, borderRight: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'background.paper' }}>
                     <Box 
