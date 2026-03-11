@@ -5,7 +5,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Shift, Room, StaffMember, ShiftTemplate, defaultShiftTemplates, roleLabels } from '@/types/roster';
+import { Shift, Room, StaffMember, ShiftTemplate, defaultShiftTemplates, roleLabels, Centre } from '@/types/roster';
 import { format } from 'date-fns';
 import { Users, Calendar, Clock, Plus, Check, AlertTriangle, UserPlus } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
