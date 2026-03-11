@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { 
   ShiftTemplate, 
   Room, 
+  Centre,
   QualificationType,
   qualificationLabels,
   roleLabels,
