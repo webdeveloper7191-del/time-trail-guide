@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -15,13 +15,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { TimeOff, timeOffTypeLabels, StaffMember } from '@/types/roster';
+import { TimeOff, timeOffTypeLabels, StaffMember, Centre } from '@/types/roster';
 import { format } from 'date-fns';
-import { Check, X, Clock, Calendar, User } from 'lucide-react';
+import { Check, X, Clock, Calendar, User, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { leaveRequestSchema, LeaveRequestFormValues } from '@/lib/validationSchemas';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface LeaveRequest extends TimeOff {
   staffName: string;
@@ -36,6 +37,7 @@ interface LeaveRequestModalProps {
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
   onCreateRequest: (request: Omit<TimeOff, 'id'>) => void;
+  centres?: Centre[];
 }
 
 export function LeaveRequestModal({ 
@@ -45,9 +47,11 @@ export function LeaveRequestModal({
   leaveRequests, 
   onApprove, 
   onReject,
-  onCreateRequest 
+  onCreateRequest,
+  centres = [],
 }: LeaveRequestModalProps) {
   const [tabValue, setTabValue] = useState(0);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('all');
 
   const methods = useForm<LeaveRequestFormValues>({
     resolver: zodResolver(leaveRequestSchema),
@@ -78,12 +82,25 @@ export function LeaveRequestModal({
         type: 'annual_leave',
         notes: '',
       });
+      setSelectedLocationId('all');
     }
   }, [open, reset]);
 
-  const pendingRequests = leaveRequests.filter(r => r.status === 'pending');
-  const approvedRequests = leaveRequests.filter(r => r.status === 'approved');
-  const rejectedRequests = leaveRequests.filter(r => r.status === 'rejected');
+  // Filter leave requests by location
+  const filteredLeaveRequests = useMemo(() => {
+    if (selectedLocationId === 'all' || centres.length === 0) return leaveRequests;
+    const locationStaffIds = new Set(
+      staff.filter(s => 
+        s.defaultCentreId === selectedLocationId || 
+        s.preferredCentres?.includes(selectedLocationId)
+      ).map(s => s.id)
+    );
+    return leaveRequests.filter(r => locationStaffIds.has(r.staffId));
+  }, [leaveRequests, selectedLocationId, staff, centres]);
+
+  const pendingRequests = filteredLeaveRequests.filter(r => r.status === 'pending');
+  const approvedRequests = filteredLeaveRequests.filter(r => r.status === 'approved');
+  const rejectedRequests = filteredLeaveRequests.filter(r => r.status === 'rejected');
 
   const onSubmit = (data: LeaveRequestFormValues) => {
     onCreateRequest({
@@ -129,6 +146,26 @@ export function LeaveRequestModal({
         showFooter={tabValue === 3}
       >
         <div>
+          {/* Location Filter */}
+          {centres.length > 0 && (
+            <div className="mb-3">
+              <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+                <SelectTrigger className="w-full">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 text-primary" />
+                    <SelectValue placeholder="Filter by location" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {centres.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>Pending <Badge variant="secondary" className="text-xs">{pendingRequests.length}</Badge></Box>} />
             <Tab label="Approved" />

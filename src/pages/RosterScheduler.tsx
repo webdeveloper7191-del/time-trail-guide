@@ -2466,6 +2466,7 @@ export default function RosterScheduler() {
         onApprove={handleLeaveApprove}
         onReject={handleLeaveReject}
         onCreateRequest={handleCreateLeaveRequest}
+        centres={mockCentres}
       />
 
       <ShiftSwapModal
@@ -2752,6 +2753,7 @@ export default function RosterScheduler() {
         open={showHolidayCalendar}
         onClose={() => setShowHolidayCalendar(false)}
         currentDate={currentDate}
+        centres={mockCentres}
         onDateClick={(date) => {
           setCurrentDate(date);
           setShowHolidayCalendar(false);

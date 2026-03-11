@@ -15,6 +15,7 @@ import {
   ClipboardCheck,
   PartyPopper,
   BookOpen,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
@@ -27,12 +28,15 @@ import {
   getEventsForDate,
 } from '@/data/mockHolidaysEvents';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { Centre } from '@/types/roster';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface HolidayEventCalendarPanelProps {
   open: boolean;
   onClose: () => void;
   currentDate: Date;
   onDateClick?: (date: Date) => void;
+  centres?: Centre[];
 }
 
 const eventIcons: Record<RosterEvent['type'], React.ReactNode> = {
@@ -50,9 +54,11 @@ export function HolidayEventCalendarPanel({
   onClose,
   currentDate: initialDate, 
   onDateClick,
+  centres = [],
 }: HolidayEventCalendarPanelProps) {
   const [viewDate, setViewDate] = useState(initialDate);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('all');
 
   const monthStart = startOfMonth(viewDate);
   const monthEnd = endOfMonth(viewDate);
@@ -116,6 +122,24 @@ export function HolidayEventCalendarPanel({
       actions={actions}
     >
       <div className="space-y-4">
+        {/* Location Filter */}
+        {centres.length > 0 && (
+          <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+            <SelectTrigger className="w-full">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                <SelectValue placeholder="Filter by location" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              {centres.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         {/* Month Navigation */}
         <FormSection title={format(viewDate, 'MMMM yyyy')}>
           <div className="flex items-center justify-between bg-background rounded-lg border p-2">
