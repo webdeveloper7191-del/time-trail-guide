@@ -97,7 +97,7 @@ export function AlertNotificationsPanel({
     }
 
     // Overtime alerts
-    const centreShifts = shifts.filter(s => s.centreId === centreId);
+    const centreShifts = filteredShifts;
     const staffHours: Record<string, number> = {};
     centreShifts.forEach(shift => {
       const [startH, startM] = shift.startTime.split(':').map(Number);
