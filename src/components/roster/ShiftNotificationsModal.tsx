@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { Shift, StaffMember, ShiftNotification, Centre } from '@/types/roster';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { CentreSelector } from './CentreSelector';
 import {
   Sheet,
   SheetContent,
