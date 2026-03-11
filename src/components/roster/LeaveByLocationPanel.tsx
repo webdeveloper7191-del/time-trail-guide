@@ -99,7 +99,7 @@ export function LeaveByLocationPanel({
       open={open}
       onClose={onClose}
       title="Leaves & Holidays by Location"
-      subtitle={`${format(viewDate, 'MMMM yyyy')} · ${filteredCentres.length} location${filteredCentres.length !== 1 ? 's' : ''}`}
+      description={`${format(viewDate, 'MMMM yyyy')} · ${filteredCentres.length} location${filteredCentres.length !== 1 ? 's' : ''}`}
       size="lg"
     >
       <div className="space-y-4">
