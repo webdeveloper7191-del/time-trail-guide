@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { 
   ShiftTemplate, 
   Room, 
+  Centre,
   QualificationType,
   qualificationLabels,
   roleLabels,
@@ -32,6 +33,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { format, parseISO, addDays, addWeeks, addMonths } from 'date-fns';
+import { CentreSelector } from './CentreSelector';
 
 interface EmptyShift {
   id: string;
@@ -53,6 +55,7 @@ interface AddEmptyShiftModalProps {
   onClose: () => void;
   rooms: Room[];
   centreId: string;
+  centres?: Centre[];
   availableDates: Date[];
   shiftTemplates: ShiftTemplate[];
   onAdd: (shifts: EmptyShift[]) => void;
@@ -71,12 +74,21 @@ const DAYS_OF_WEEK = [
 export function AddEmptyShiftModal({
   open,
   onClose,
-  rooms,
+  rooms: defaultRooms,
   centreId,
+  centres,
   availableDates,
   shiftTemplates,
   onAdd,
 }: AddEmptyShiftModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const rooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
@@ -141,7 +153,7 @@ export function AddEmptyShiftModal({
       selectedRoomIds.forEach(roomId => {
         const shift: EmptyShift = {
           id: `empty-${date}-${roomId}-${Date.now()}-${Math.random()}`,
-          centreId,
+          centreId: activeCentreId,
           roomId,
           date,
           startTime: selectedTemplate?.startTime || customStartTime,
@@ -244,6 +256,18 @@ export function AddEmptyShiftModal({
       actions={actions}
     >
       <div className="space-y-4">
+        {/* Location Selector */}
+        {centres && centres.length > 0 && (
+          <CentreSelector
+            centres={centres}
+            selectedCentreId={activeCentreId}
+            onCentreChange={(id) => {
+              setActiveCentreId(id);
+              setSelectedRoomIds([]);
+            }}
+          />
+        )}
+
         {/* Step 1: Select Template or Custom Times */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full grid grid-cols-2 mb-4">

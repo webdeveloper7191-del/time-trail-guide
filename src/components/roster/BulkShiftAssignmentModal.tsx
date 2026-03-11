@@ -5,7 +5,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Shift, Room, StaffMember, ShiftTemplate, defaultShiftTemplates, roleLabels } from '@/types/roster';
+import { Shift, Room, StaffMember, ShiftTemplate, defaultShiftTemplates, roleLabels, Centre } from '@/types/roster';
 import { format } from 'date-fns';
 import { Users, Calendar, Clock, Plus, Check, AlertTriangle, UserPlus } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
@@ -13,6 +13,7 @@ import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/Form
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { CentreSelector } from './CentreSelector';
 
 interface BulkShiftAssignmentModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface BulkShiftAssignmentModalProps {
   rooms: Room[];
   dates: Date[];
   centreId: string;
+  centres?: Centre[];
   shiftTemplates: ShiftTemplate[];
   existingShifts: Shift[];
   onAssign: (shifts: Omit<Shift, 'id'>[]) => void;
@@ -30,13 +32,22 @@ export function BulkShiftAssignmentModal({
   open,
   onClose,
   staff,
-  rooms,
+  rooms: defaultRooms,
   dates,
   centreId,
+  centres,
   shiftTemplates,
   existingShifts,
   onAssign
 }: BulkShiftAssignmentModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const rooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [activeTab, setActiveTab] = useState('staff');
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
@@ -95,7 +106,7 @@ export function BulkShiftAssignmentModal({
 
     const newShifts: Omit<Shift, 'id'>[] = shiftsWithoutConflicts.map(preview => ({
       staffId: preview.staffId,
-      centreId,
+      centreId: activeCentreId,
       roomId: selectedRoomId,
       date: preview.date,
       startTime: selectedTemplate.startTime,
@@ -174,6 +185,18 @@ export function BulkShiftAssignmentModal({
       actions={actions}
     >
       <div className="space-y-4">
+        {/* Location Selector */}
+        {centres && centres.length > 0 && (
+          <CentreSelector
+            centres={centres}
+            selectedCentreId={activeCentreId}
+            onCentreChange={(id) => {
+              setActiveCentreId(id);
+              setSelectedRoomId('');
+            }}
+          />
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="staff" className="flex items-center gap-1.5">

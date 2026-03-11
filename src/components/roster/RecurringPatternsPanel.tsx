@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { CentreSelector } from './CentreSelector';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
  import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import {
@@ -60,6 +61,7 @@ const mockRoles = [
 interface RecurringPatternsPanelProps {
   centreId?: string;
   centre?: Centre;
+  centres?: Centre[];
   staff?: StaffMember[];
   existingShifts?: Shift[];
   onGenerateShifts?: (shifts: Omit<Shift, 'id'>[]) => void;
@@ -68,10 +70,19 @@ interface RecurringPatternsPanelProps {
 export function RecurringPatternsPanel({ 
   centreId = 'centre-1',
   centre,
+  centres,
   staff = [],
   existingShifts = [],
   onGenerateShifts,
 }: RecurringPatternsPanelProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const activeRooms = useMemo(() => {
+    if (centres) {
+      const c = centres.find(c => c.id === activeCentreId);
+      return c?.rooms || centre?.rooms || [];
+    }
+    return centre?.rooms || [];
+  }, [centres, activeCentreId, centre]);
   // Use shared patterns hook for state management
   const { patterns, addPattern, updatePattern, deletePattern, togglePatternActive } = useRecurringPatterns();
   
@@ -222,6 +233,15 @@ export function RecurringPatternsPanel({
 
   return (
     <div className="space-y-6 w-full">
+      {/* Location Selector */}
+      {centres && centres.length > 0 && (
+        <CentreSelector
+          centres={centres}
+          selectedCentreId={activeCentreId}
+          onCentreChange={setActiveCentreId}
+        />
+      )}
+
       {/* Header */}
       <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="pb-4">

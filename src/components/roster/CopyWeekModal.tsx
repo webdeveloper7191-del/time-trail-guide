@@ -42,11 +42,12 @@ import {
 } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, eachDayOfInterval, isSameDay, differenceInWeeks } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Shift, Room, StaffMember } from '@/types/roster';
+import { Shift, Room, StaffMember, Centre } from '@/types/roster';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CentreSelector } from './CentreSelector';
 
 type PeriodType = 'week' | 'fortnight' | 'month' | 'custom';
 type ConflictHandling = 'skip' | 'overwrite' | 'merge';
@@ -59,6 +60,7 @@ interface CopyWeekModalProps {
   rooms: Room[];
   staff: StaffMember[];
   centreId: string;
+  centres?: Centre[];
   currentDate: Date;
   onCopy: (newShifts: Omit<Shift, 'id'>[]) => void;
 }
@@ -75,12 +77,21 @@ export function CopyWeekModal({
   open,
   onClose,
   shifts,
-  rooms,
+  rooms: defaultRooms,
   staff,
   centreId,
+  centres,
   currentDate,
   onCopy,
 }: CopyWeekModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const rooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   // Source selection
   const [sourcePeriodType, setSourcePeriodType] = useState<PeriodType>('week');
   const [sourceWeekOffset, setSourceWeekOffset] = useState(-1); // -1 = last week
@@ -156,14 +167,14 @@ export function CopyWeekModal({
     const endStr = format(sourceDateRange.end, 'yyyy-MM-dd');
     
     return shifts.filter(s => {
-      if (s.centreId !== centreId) return false;
+      if (s.centreId !== activeCentreId) return false;
       if (s.date < startStr || s.date > endStr) return false;
       if (!selectedRooms.has(s.roomId)) return false;
       if (copyDraftsOnly && s.status !== 'draft') return false;
       if (filterByStaff && selectedStaff.size > 0 && !selectedStaff.has(s.staffId)) return false;
       return true;
     });
-  }, [shifts, sourceDateRange, centreId, selectedRooms, copyDraftsOnly, filterByStaff, selectedStaff]);
+  }, [shifts, sourceDateRange, activeCentreId, selectedRooms, copyDraftsOnly, filterByStaff, selectedStaff]);
 
   // Generate preview with conflict detection
   const shiftPreviews = useMemo((): ShiftPreview[] => {
@@ -179,7 +190,7 @@ export function CopyWeekModal({
         
         // Check for conflicts in target
         const conflict = shifts.find(s => 
-          s.centreId === centreId &&
+          s.centreId === activeCentreId &&
           s.roomId === shift.roomId &&
           s.date === newDateStr &&
           s.startTime === shift.startTime &&
@@ -209,7 +220,7 @@ export function CopyWeekModal({
     });
     
     return previews;
-  }, [sourceShifts, targetDateRanges, sourceDateRange, shifts, centreId, conflictHandling, staffAssignment, selectAllMode, manualDeselected]);
+  }, [sourceShifts, targetDateRanges, sourceDateRange, shifts, activeCentreId, conflictHandling, staffAssignment, selectAllMode, manualDeselected]);
 
   // Stats
   const stats = useMemo(() => {
@@ -400,6 +411,17 @@ export function CopyWeekModal({
       actions={actions}
     >
       <Stack spacing={3}>
+        {/* Location Selector */}
+        {centres && centres.length > 0 && (
+          <CentreSelector
+            centres={centres}
+            selectedCentreId={activeCentreId}
+            onCentreChange={(id) => {
+              setActiveCentreId(id);
+              setSelectedRooms(new Set());
+            }}
+          />
+        )}
         {!showPreview ? (
           <>
             {/* Source Period Selection */}

@@ -19,12 +19,13 @@ import {
 import { format, addDays, addWeeks, parseISO, isBefore, isAfter } from 'date-fns';
 import { Copy, Calendar, Repeat, CalendarDays, X, Users } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { Shift, Room, StaffMember } from '@/types/roster';
+import { Shift, Room, StaffMember, Centre } from '@/types/roster';
 import { shiftCopySchema, ShiftCopyFormValues } from '@/lib/validationSchemas';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { CentreSelector } from './CentreSelector';
 
 interface ShiftCopyModalProps {
   open: boolean;
@@ -32,6 +33,7 @@ interface ShiftCopyModalProps {
   shift: Shift | null;
   rooms: Room[];
   staff: StaffMember[];
+  centres?: Centre[];
   existingShifts: Shift[];
   onCopy: (newShifts: Omit<Shift, 'id'>[]) => void;
 }
@@ -40,11 +42,20 @@ export function ShiftCopyModal({
   open,
   onClose,
   shift,
-  rooms,
+  rooms: defaultRooms,
   staff,
+  centres,
   existingShifts,
   onCopy,
 }: ShiftCopyModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(shift?.centreId || '');
+  const rooms = useMemo(() => {
+    if (centres && activeCentreId) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember[]>([]);
@@ -94,6 +105,7 @@ export function ShiftCopyModal({
     setSelectedDates([]);
     setSelectedStaff([]);
     setShowCalendar(false);
+    setActiveCentreId(shift.centreId);
   }, [open, shift, reset]);
 
   const copyMode = watch('copyMode');
@@ -306,6 +318,15 @@ export function ShiftCopyModal({
           showFooter
         >
           <div className="space-y-6">
+            {/* Location Selector */}
+            {centres && centres.length > 0 && (
+              <CentreSelector
+                centres={centres}
+                selectedCentreId={activeCentreId}
+                onCentreChange={setActiveCentreId}
+              />
+            )}
+
             {/* Source Shift Info */}
             <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover', border: 1, borderColor: 'divider' }}>
               <Typography variant="caption" color="text.secondary">

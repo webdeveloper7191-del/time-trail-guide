@@ -2446,6 +2446,7 @@ export default function RosterScheduler() {
         shift={shiftToCopy}
         rooms={selectedCentre.rooms}
         staff={allStaff}
+        centres={mockCentres}
         existingShifts={shifts}
         onCopy={handleConfirmCopy}
       />
@@ -2458,6 +2459,7 @@ export default function RosterScheduler() {
         }}
         rooms={selectedCentre.rooms}
         centreId={selectedCentreId}
+        centres={mockCentres}
         selectedRoomId={quickAddOpenShiftContext?.roomId}
         selectedDate={quickAddOpenShiftContext?.date}
         onAdd={handleAddOpenShift}
@@ -2471,6 +2473,7 @@ export default function RosterScheduler() {
         rooms={selectedCentre.rooms}
         staff={allStaff}
         centreId={selectedCentreId}
+        centres={mockCentres}
         currentDate={currentDate}
         onCopy={handleCopyWeekShifts}
       />
@@ -2628,6 +2631,7 @@ export default function RosterScheduler() {
         dates={dates}
         existingShifts={shifts}
         centreId={selectedCentreId}
+        centres={mockCentres}
         shiftTemplates={allShiftTemplates}
         onAssign={handleBulkAssignment}
       />
@@ -2709,6 +2713,7 @@ export default function RosterScheduler() {
         onClose={() => setShowAddEmptyShiftModal(false)}
         rooms={selectedCentre.rooms}
         centreId={selectedCentreId}
+        centres={mockCentres}
         availableDates={dates}
         shiftTemplates={allShiftTemplates}
         onAdd={handleAddEmptyShifts}
@@ -2738,6 +2743,7 @@ export default function RosterScheduler() {
         <RecurringPatternsPanel 
           centreId={selectedCentreId}
           centre={selectedCentre}
+          centres={mockCentres}
           staff={allStaff}
           existingShifts={shifts}
           onGenerateShifts={(newShifts) => {

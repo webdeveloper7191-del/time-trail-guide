@@ -40,10 +40,12 @@ import {
   defaultShiftTemplates,
 } from '@/types/roster';
 import { Plus, X, AlertCircle, Clock, Moon, Phone, Split, ChevronDown, FileText, Car, Award, Layers, Calendar } from 'lucide-react';
+import { Centre } from '@/types/roster';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { openShiftSchema, OpenShiftFormValues } from '@/lib/validationSchemas';
+import { CentreSelector } from './CentreSelector';
 import { toast } from 'sonner';
 import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
 
@@ -52,6 +54,7 @@ interface AddOpenShiftModalProps {
   onClose: () => void;
   rooms: Room[];
   centreId: string;
+  centres?: Centre[];
   selectedDate?: string;
   selectedRoomId?: string;
   onAdd: (openShifts: Omit<OpenShift, 'id'>[]) => void;
@@ -81,14 +84,23 @@ const classificationLevels = [
 export function AddOpenShiftModal({ 
   open, 
   onClose, 
-  rooms, 
+  rooms: defaultRooms, 
   centreId, 
+  centres,
   selectedDate,
   selectedRoomId,
   onAdd,
   shiftTemplates = defaultShiftTemplates,
   availableDates,
 }: AddOpenShiftModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const rooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [createMode, setCreateMode] = useState<CreateMode>('single');
   const [selectedQualifications, setSelectedQualifications] = useState<QualificationType[]>([]);
   const [selectedAllowances, setSelectedAllowances] = useState<string[]>([]);
@@ -152,8 +164,9 @@ export function AddOpenShiftModal({
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
+      setActiveCentreId(centreId);
       reset({
-        centreId,
+        centreId: centreId,
         roomId: selectedRoomId || '',
         date: selectedDate || '',
         startTime: '09:00',
@@ -604,6 +617,22 @@ export function AddOpenShiftModal({
           showFooter
         >
           <Stack spacing={3}>
+              {/* Location Selector */}
+              {centres && centres.length > 0 && (
+                <FormSection title="Location">
+                  <CentreSelector
+                    centres={centres}
+                    selectedCentreId={activeCentreId}
+                    onCentreChange={(id) => {
+                      setActiveCentreId(id);
+                      setValue('centreId', id);
+                      setValue('roomId', '');
+                      setSelectedRoomIds([]);
+                    }}
+                  />
+                </FormSection>
+              )}
+
               {/* Creation Mode Section */}
               <FormSection title="Creation Mode">
                 <ToggleButtonGroup
