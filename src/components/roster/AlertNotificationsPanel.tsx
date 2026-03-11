@@ -14,12 +14,14 @@ import {
   TrendingUp,
   Calendar,
   Shield,
-  RefreshCw
+  RefreshCw,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
-import { Shift, StaffMember, RosterComplianceFlag } from '@/types/roster';
+import { Shift, StaffMember, RosterComplianceFlag, Centre } from '@/types/roster';
 import { format, parseISO, differenceInDays, isAfter, isBefore } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Alert {
   id: string;
@@ -42,6 +44,7 @@ interface AlertNotificationsPanelProps {
   weeklyBudget: number;
   totalCost: number;
   centreId: string;
+  centres?: Centre[];
 }
 
 export function AlertNotificationsPanel({
@@ -52,9 +55,17 @@ export function AlertNotificationsPanel({
   complianceFlags,
   weeklyBudget,
   totalCost,
-  centreId,
+  centreId: defaultCentreId,
+  centres = [],
 }: AlertNotificationsPanelProps) {
   const [readAlerts, setReadAlerts] = useState<Set<string>>(new Set());
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(defaultCentreId);
+
+  const activeCentreId = selectedLocationId || defaultCentreId;
+  const filteredShifts = useMemo(() => {
+    if (activeCentreId === 'all') return shifts;
+    return shifts.filter(s => s.centreId === activeCentreId);
+  }, [shifts, activeCentreId]);
 
   const alerts = useMemo(() => {
     const alertList: Alert[] = [];
@@ -86,7 +97,7 @@ export function AlertNotificationsPanel({
     }
 
     // Overtime alerts
-    const centreShifts = shifts.filter(s => s.centreId === centreId);
+    const centreShifts = filteredShifts;
     const staffHours: Record<string, number> = {};
     centreShifts.forEach(shift => {
       const [startH, startM] = shift.startTime.split(':').map(Number);
@@ -120,7 +131,7 @@ export function AlertNotificationsPanel({
     }
 
     // Compliance alerts from flags
-    const centreFlags = complianceFlags.filter(f => f.centreId === centreId);
+    const centreFlags = activeCentreId === 'all' ? complianceFlags : complianceFlags.filter(f => f.centreId === activeCentreId);
     const criticalFlags = centreFlags.filter(f => f.severity === 'critical');
     const warningFlags = centreFlags.filter(f => f.severity === 'warning');
 
@@ -220,7 +231,7 @@ export function AlertNotificationsPanel({
       const severityOrder = { critical: 0, warning: 1, info: 2 };
       return severityOrder[a.severity] - severityOrder[b.severity];
     });
-  }, [shifts, staff, complianceFlags, weeklyBudget, totalCost, centreId, readAlerts]);
+  }, [filteredShifts, staff, complianceFlags, weeklyBudget, totalCost, activeCentreId, readAlerts]);
 
   const unreadCount = alerts.filter(a => !a.read).length;
 
@@ -261,6 +272,26 @@ export function AlertNotificationsPanel({
       }
       showFooter={false}
     >
+      {/* Location Filter */}
+      {centres.length > 0 && (
+        <div className="mb-3">
+          <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+            <SelectTrigger className="w-full">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                <SelectValue placeholder="Filter by location" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              {centres.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Tab Navigation */}
       <Tabs defaultValue="all" className="w-full">
           <div className="flex items-center justify-between">

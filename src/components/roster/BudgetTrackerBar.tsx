@@ -1,21 +1,31 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Clock, Users } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Clock, Users, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Shift, StaffMember } from '@/types/roster';
+import { Shift, StaffMember, Centre } from '@/types/roster';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface BudgetTrackerBarProps {
   shifts: Shift[];
   staff: StaffMember[];
   centreId: string;
   weeklyBudget: number;
+  centres?: Centre[];
+  centreBudgets?: Record<string, number>;
 }
 
-export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget }: BudgetTrackerBarProps) {
+export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget, centres = [], centreBudgets = {} }: BudgetTrackerBarProps) {
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(centreId);
+
+  const activeCentreId = selectedLocationId || centreId;
+  const activeBudget = activeCentreId === 'all'
+    ? Object.values(centreBudgets).reduce((sum, b) => sum + b, 0) || weeklyBudget * (centres.length || 1)
+    : centreBudgets[activeCentreId] || weeklyBudget;
+
   const budgetData = useMemo(() => {
-    const centreShifts = shifts.filter(s => s.centreId === centreId);
+    const centreShifts = activeCentreId === 'all' ? shifts : shifts.filter(s => s.centreId === activeCentreId);
     
     let regularCost = 0;
     let overtimeCost = 0;
@@ -43,8 +53,8 @@ export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget }: Budg
     });
 
     const totalCost = regularCost + overtimeCost;
-    const variance = totalCost - weeklyBudget;
-    const percentUsed = (totalCost / weeklyBudget) * 100;
+    const variance = totalCost - activeBudget;
+    const percentUsed = (totalCost / activeBudget) * 100;
     const agencyCost = centreShifts
       .filter(s => staff.find(st => st.id === s.staffId)?.agency)
       .reduce((sum, shift) => {
@@ -68,7 +78,7 @@ export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget }: Budg
       isOverBudget: totalCost > weeklyBudget,
       isNearBudget: percentUsed >= 90 && percentUsed < 100,
     };
-  }, [shifts, staff, centreId, weeklyBudget]);
+  }, [shifts, staff, activeCentreId, activeBudget]);
 
   const getProgressColor = () => {
     if (budgetData.percentUsed >= 100) return 'bg-destructive';
@@ -77,7 +87,25 @@ export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget }: Budg
   };
 
   return (
-    <div className="flex items-center gap-6 px-4 py-3 bg-card border-b border-border">
+    <div className="flex items-center gap-4 px-4 py-3 bg-card border-b border-border">
+      {/* Location Filter */}
+      {centres.length > 0 && (
+        <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+          <SelectTrigger className="w-[180px] h-8 text-xs">
+            <div className="flex items-center gap-1.5">
+              <Building2 className="h-3 w-3 text-primary" />
+              <SelectValue placeholder="Location" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Locations</SelectItem>
+            {centres.map(c => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
       {/* Progress Bar */}
       <div className="flex-1 max-w-md">
         <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -85,7 +113,7 @@ export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget }: Budg
             <DollarSign className="h-3 w-3" />
             Spent: ${budgetData.totalCost.toLocaleString()}
           </span>
-          <span>Budget: ${weeklyBudget.toLocaleString()}</span>
+          <span>Budget: ${activeBudget.toLocaleString()}</span>
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
           <div 

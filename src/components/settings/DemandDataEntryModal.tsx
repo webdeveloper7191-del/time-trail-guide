@@ -22,6 +22,7 @@ import {
   Copy,
   ChevronLeft,
   ChevronRight,
+  Building2,
 } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -39,6 +40,7 @@ interface DemandDataEntryModalProps {
   onClose: () => void;
   centre: Centre;
   currentDate: Date;
+  centres?: Centre[];
 }
 
 const demandEntrySchema = z.object({
@@ -51,8 +53,9 @@ const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function DemandDataEntryModal({
   open,
   onClose,
-  centre,
+  centre: defaultCentre,
   currentDate,
+  centres = [],
 }: DemandDataEntryModalProps) {
   const { 
     settings, 
@@ -65,6 +68,14 @@ export function DemandDataEntryModal({
     getThresholdForDemand,
     getActivePatterns,
   } = useDemand();
+
+  const [activeCentreId, setActiveCentreId] = useState<string>(defaultCentre.id);
+  const centre = useMemo(() => {
+    if (centres.length > 0) {
+      return centres.find(c => c.id === activeCentreId) || defaultCentre;
+    }
+    return defaultCentre;
+  }, [centres, activeCentreId, defaultCentre]);
 
   const [selectedRoom, setSelectedRoom] = useState<string>(centre.rooms[0]?.id || '');
   const [weekStart, setWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1 }));
@@ -257,6 +268,27 @@ export function DemandDataEntryModal({
       showFooter
     >
       <Stack spacing={3} sx={{ mt: 2 }}>
+        {/* Location Filter */}
+        {centres.length > 0 && (
+          <Select value={activeCentreId} onValueChange={(val) => {
+            setActiveCentreId(val);
+            const newCentre = centres.find(c => c.id === val);
+            if (newCentre?.rooms[0]) setSelectedRoom(newCentre.rooms[0].id);
+          }}>
+            <SelectTrigger className="w-full">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                <SelectValue placeholder="Select location" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {centres.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         {/* Controls */}
         <Card variant="outlined">
           <CardContent>
