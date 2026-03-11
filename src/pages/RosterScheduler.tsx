@@ -2119,6 +2119,119 @@ export default function RosterScheduler() {
         />
       )}
 
+      {/* Centre Filter Bar - only in All Locations view */}
+      {isAllLocationsView && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border flex-shrink-0">
+          <Popover open={centrePickerOpen} onOpenChange={setCentrePickerOpen}>
+            <PopoverTrigger asChild>
+              <button className="inline-flex items-center gap-1.5 text-xs h-8 px-3 rounded-md border border-border bg-background hover:bg-accent transition-colors">
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+                {activeCentreIds.length === 0
+                  ? 'Select Centres'
+                  : activeCentreIds.length <= 2
+                    ? activeCentreIds.map(id => mockCentres.find(c => c.id === id)?.name).filter(Boolean).join(', ')
+                    : `${activeCentreIds.length} centres selected`}
+                <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-0" align="start">
+              <div className="p-2 border-b border-border">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search centres..."
+                    value={centreSearch}
+                    onChange={(e) => setCentreSearch(e.target.value)}
+                    className="h-8 pl-7 text-xs"
+                  />
+                </div>
+              </div>
+              <div className="p-1 flex items-center justify-between border-b border-border">
+                <button
+                  onClick={() => setActiveCentreIds(mockCentres.map(c => c.id))}
+                  className="text-[10px] text-primary hover:underline px-2 py-1"
+                >
+                  Select all
+                </button>
+                <button
+                  onClick={() => setActiveCentreIds([])}
+                  className="text-[10px] text-muted-foreground hover:underline px-2 py-1"
+                >
+                  Clear all
+                </button>
+              </div>
+              <ScrollArea className="max-h-64">
+                <div className="p-1">
+                  {(() => {
+                    const filtered = centreSearch.trim()
+                      ? mockCentres.filter(c => c.name.toLowerCase().includes(centreSearch.toLowerCase()))
+                      : mockCentres;
+                    return filtered.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-4">No centres found</p>
+                    ) : (
+                      filtered.map(centre => {
+                        const isActive = activeCentreIds.includes(centre.id);
+                        const centreShiftCount = shifts.filter(s => s.centreId === centre.id).length;
+                        const openCount = openShifts.filter(os => os.centreId === centre.id).length;
+                        return (
+                          <button
+                            key={centre.id}
+                            onClick={() => setActiveCentreIds(prev =>
+                              prev.includes(centre.id) ? prev.filter(id => id !== centre.id) : [...prev, centre.id]
+                            )}
+                            className={cn(
+                              'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors',
+                              isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-accent'
+                            )}
+                          >
+                            <div className={cn(
+                              'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0',
+                              isActive ? 'bg-primary border-primary' : 'border-border'
+                            )}>
+                              {isActive && <Check className="h-3 w-3 text-primary-foreground" />}
+                            </div>
+                            <MapPin className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                            <span className="truncate flex-1 text-left">{centre.name}</span>
+                            {openCount > 0 && (
+                              <Badge variant="destructive" className="text-[8px] px-1 py-0 h-3.5">
+                                {openCount}
+                              </Badge>
+                            )}
+                          </button>
+                        );
+                      })
+                    );
+                  })()}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
+
+          {/* Selected centre badges */}
+          <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto no-scrollbar">
+            {activeCentreIds.map(id => {
+              const centre = mockCentres.find(c => c.id === id);
+              if (!centre) return null;
+              return (
+                <Badge key={id} variant="secondary" className="text-[10px] gap-1 flex-shrink-0 pr-1">
+                  {centre.name}
+                  <button
+                    onClick={() => setActiveCentreIds(prev => prev.filter(cid => cid !== id))}
+                    className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </Badge>
+              );
+            })}
+          </div>
+
+          <Badge variant="secondary" className="text-[10px] flex-shrink-0">
+            {activeCentreIds.length} / {mockCentres.length}
+          </Badge>
+        </div>
+      )}
+
       {/* Main Content - with swipe gesture support for mobile/tablet */}
       <Box 
         ref={swipeContainerRef}
@@ -2126,7 +2239,7 @@ export default function RosterScheduler() {
       >
         {isAllLocationsView ? (
           <MultiLocationRosterView
-            centres={mockCentres}
+            centres={mockCentres.filter(c => activeCentreIds.includes(c.id))}
             shifts={shifts}
             openShifts={openShifts}
             staff={filteredStaff}
