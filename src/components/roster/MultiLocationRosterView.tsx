@@ -320,6 +320,13 @@ export function MultiLocationRosterView({
                     {stats.openCount} open
                   </Badge>
                 )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeCentre(centre.id); }}
+                  className="ml-2 rounded-full hover:bg-destructive/10 p-1 flex-shrink-0"
+                  title="Remove centre"
+                >
+                  <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                </button>
               </div>
             </button>
 
