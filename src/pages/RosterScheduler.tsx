@@ -163,7 +163,10 @@ import {
   Star,
   RefreshCw,
 } from 'lucide-react';
-import { BarChart2, Phone, PhoneCall } from 'lucide-react';
+import { BarChart2, Phone, PhoneCall, Check, Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import rosteredLogo from '@/assets/rostered-logo.png';
 
 // Default budget configuration per centre
