@@ -34,21 +34,38 @@ export function ShiftConflictPanel({
   onClose,
   shifts,
   staff,
-  rooms,
+  rooms: defaultRooms,
+  centres,
   onNavigateToShift,
 }: ShiftConflictPanelProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centres?.[0]?.id || '');
+  const rooms = useMemo(() => {
+    if (centres && activeCentreId) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || defaultRooms;
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
+
+  const filteredShifts = useMemo(() => {
+    if (centres && activeCentreId) {
+      return shifts.filter(s => s.centreId === activeCentreId);
+    }
+    return shifts;
+  }, [shifts, centres, activeCentreId]);
+
   const allConflicts = useMemo(() => {
     const conflicts: ShiftConflict[] = [];
     
-    shifts.forEach(shift => {
-      const shiftConflicts = detectShiftConflicts(shift, shifts, staff, rooms);
+    filteredShifts.forEach(shift => {
+      const shiftConflicts = detectShiftConflicts(shift, filteredShifts, staff, rooms);
       conflicts.push(...shiftConflicts);
     });
     
     // Deduplicate by id
     const unique = Array.from(new Map(conflicts.map(c => [c.id, c])).values());
     return unique;
-  }, [shifts, staff, rooms]);
+  }, [filteredShifts, staff, rooms]);
 
   const errorConflicts = allConflicts.filter(c => c.severity === 'error');
   const warningConflicts = allConflicts.filter(c => c.severity === 'warning');
