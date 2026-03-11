@@ -2743,6 +2743,7 @@ export default function RosterScheduler() {
         <RecurringPatternsPanel 
           centreId={selectedCentreId}
           centre={selectedCentre}
+          centres={mockCentres}
           staff={allStaff}
           existingShifts={shifts}
           onGenerateShifts={(newShifts) => {
