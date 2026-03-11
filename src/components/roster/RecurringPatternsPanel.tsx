@@ -70,10 +70,19 @@ interface RecurringPatternsPanelProps {
 export function RecurringPatternsPanel({ 
   centreId = 'centre-1',
   centre,
+  centres,
   staff = [],
   existingShifts = [],
   onGenerateShifts,
 }: RecurringPatternsPanelProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const activeRooms = useMemo(() => {
+    if (centres) {
+      const c = centres.find(c => c.id === activeCentreId);
+      return c?.rooms || centre?.rooms || [];
+    }
+    return centre?.rooms || [];
+  }, [centres, activeCentreId, centre]);
   // Use shared patterns hook for state management
   const { patterns, addPattern, updatePattern, deletePattern, togglePatternActive } = useRecurringPatterns();
   
