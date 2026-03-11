@@ -49,9 +49,18 @@ export function SchedulingPreferencesModal({
   open, 
   onClose, 
   staff, 
-  allRooms,
+  allRooms: defaultRooms,
+  centres,
   onSave 
 }: SchedulingPreferencesModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centres?.[0]?.id || '');
+  const allRooms = useMemo(() => {
+    if (centres && activeCentreId) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || defaultRooms;
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [preferences, setPreferences] = useState<SchedulingPreferences>(
     staff.schedulingPreferences || defaultPreferences
   );
