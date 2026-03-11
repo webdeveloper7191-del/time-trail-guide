@@ -656,6 +656,20 @@ function ResizableShiftBar({
         className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/30 rounded-r z-10"
         onMouseDown={(e) => handleResizeStart(e, 'right')}
       />
+
+      {/* Resize time tooltip */}
+      {resizeSide && (
+        <div
+          className="fixed z-[99999] pointer-events-none px-2 py-1 rounded-md bg-foreground text-background text-[11px] font-medium shadow-lg whitespace-nowrap"
+          style={{
+            left: tooltipPos.x,
+            top: tooltipPos.y - 32,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          {displayStart} – {displayEnd}
+        </div>
+      )}
     </div>
   );
 }
