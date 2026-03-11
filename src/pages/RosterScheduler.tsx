@@ -1532,34 +1532,6 @@ export default function RosterScheduler() {
                 </PopoverContent>
               </Popover>
 
-              {/* Active centre badges - only in All Locations mode, capped at 5 */}
-              {isAllLocationsView && (
-                <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto no-scrollbar">
-                  {activeCentreIds.slice(0, 5).map(id => {
-                    const centre = mockCentres.find(c => c.id === id);
-                    if (!centre) return null;
-                    return (
-                      <Badge key={id} variant="secondary" className="text-[10px] gap-1 flex-shrink-0 pr-1">
-                        {centre.name}
-                        <button
-                          onClick={() => setActiveCentreIds(prev => prev.filter(cid => cid !== id))}
-                          className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </Badge>
-                    );
-                  })}
-                  {activeCentreIds.length > 5 && (
-                    <Badge variant="outline" className="text-[10px] flex-shrink-0">
-                      +{activeCentreIds.length - 5} more
-                    </Badge>
-                  )}
-                  <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                    {activeCentreIds.length}/{mockCentres.length}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Role Filter */}
