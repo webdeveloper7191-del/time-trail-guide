@@ -40,7 +40,7 @@ import { IndustryConfigurationModal } from '@/components/settings/IndustryConfig
 import { DemandMasterSettingsModal } from '@/components/settings/DemandMasterSettingsModal';
 import { DemandDataEntryModal } from '@/components/settings/DemandDataEntryModal';
 import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
-import { exportToPDF, exportToExcel } from '@/lib/rosterExport';
+import { exportToPDF, exportToExcel, exportAllLocationsToPDF, exportAllLocationsToExcel } from '@/lib/rosterExport';
 import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
 import { DemandMasterSettings } from '@/types/industryConfig';
 import { useDemand } from '@/contexts/DemandContext';
