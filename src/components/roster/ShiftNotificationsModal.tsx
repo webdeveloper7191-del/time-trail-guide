@@ -42,6 +42,7 @@ interface ShiftNotificationsModalProps {
   shifts: Shift[];
   staff: StaffMember[];
   centreId: string;
+  centres?: Centre[];
 }
 
 // Mock notification history
