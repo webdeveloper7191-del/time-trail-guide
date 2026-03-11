@@ -82,12 +82,25 @@ export function LeaveRequestModal({
         type: 'annual_leave',
         notes: '',
       });
+      setSelectedLocationId('all');
     }
   }, [open, reset]);
 
-  const pendingRequests = leaveRequests.filter(r => r.status === 'pending');
-  const approvedRequests = leaveRequests.filter(r => r.status === 'approved');
-  const rejectedRequests = leaveRequests.filter(r => r.status === 'rejected');
+  // Filter leave requests by location
+  const filteredLeaveRequests = useMemo(() => {
+    if (selectedLocationId === 'all' || centres.length === 0) return leaveRequests;
+    const locationStaffIds = new Set(
+      staff.filter(s => 
+        s.defaultCentreId === selectedLocationId || 
+        s.preferredCentres?.includes(selectedLocationId)
+      ).map(s => s.id)
+    );
+    return leaveRequests.filter(r => locationStaffIds.has(r.staffId));
+  }, [leaveRequests, selectedLocationId, staff, centres]);
+
+  const pendingRequests = filteredLeaveRequests.filter(r => r.status === 'pending');
+  const approvedRequests = filteredLeaveRequests.filter(r => r.status === 'approved');
+  const rejectedRequests = filteredLeaveRequests.filter(r => r.status === 'rejected');
 
   const onSubmit = (data: LeaveRequestFormValues) => {
     onCreateRequest({
