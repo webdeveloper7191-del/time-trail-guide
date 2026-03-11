@@ -5,6 +5,14 @@ import { SharedStaffPool } from './SharedStaffPool';
 import { CentreRosterPane } from './CentreRosterPane';
 import { CrossLocationConflictBar } from './CrossLocationConflictBar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -12,6 +20,9 @@ import {
   Columns,
   MapPin,
   Check,
+  ChevronDown,
+  Search,
+  X,
 } from 'lucide-react';
 
 interface CrossLocationSchedulerProps {
@@ -52,6 +63,7 @@ export function CrossLocationScheduler({
   const [dragOverPaneId, setDragOverPaneId] = useState<string | null>(null);
   const [collapsedPanes, setCollapsedPanes] = useState<Set<string>>(new Set());
   const [centrePickerOpen, setCentrePickerOpen] = useState(false);
+  const [centreSearch, setCentreSearch] = useState('');
 
   const toggleCollapse = (centreId: string) => {
     setCollapsedPanes((prev) => {
@@ -132,6 +144,12 @@ export function CrossLocationScheduler({
       };
     });
   }, [centres, shifts, openShifts, activePaneIds]);
+
+  const filteredCentreStats = useMemo(() => {
+    if (!centreSearch.trim()) return centreStats;
+    const q = centreSearch.toLowerCase();
+    return centreStats.filter(({ centre }) => centre.name.toLowerCase().includes(q));
+  }, [centreStats, centreSearch]);
 
   return (
     <div className="flex-1 flex overflow-hidden min-h-0">

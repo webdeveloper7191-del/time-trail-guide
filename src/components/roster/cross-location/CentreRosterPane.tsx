@@ -515,6 +515,7 @@ function ResizableShiftBar({
   const [origWidth, setOrigWidth] = useState(span * SLOT_PX - 2);
   const [curLeft, setCurLeft] = useState(startIdx * SLOT_PX);
   const [curWidth, setCurWidth] = useState(span * SLOT_PX - 2);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const displayLeft = resizeSide ? curLeft : startIdx * SLOT_PX;
   const displayWidth = resizeSide ? curWidth : span * SLOT_PX - 2;
@@ -546,6 +547,7 @@ function ResizableShiftBar({
 
     const handleMouseMove = (e: MouseEvent) => {
       const delta = e.clientX - resizeStartX;
+      setTooltipPos({ x: e.clientX, y: e.clientY });
       if (resizeSide === 'left') {
         const newLeft = snapToGrid(Math.max(0, origLeft + delta));
         const newWidth = Math.max(SLOT_PX * 2, snapToGrid(origWidth - delta));
@@ -654,6 +656,20 @@ function ResizableShiftBar({
         className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/30 rounded-r z-10"
         onMouseDown={(e) => handleResizeStart(e, 'right')}
       />
+
+      {/* Resize time tooltip */}
+      {resizeSide && (
+        <div
+          className="fixed z-[99999] pointer-events-none px-2 py-1 rounded-md bg-foreground text-background text-[11px] font-medium shadow-lg whitespace-nowrap"
+          style={{
+            left: tooltipPos.x,
+            top: tooltipPos.y - 32,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          {displayStart} – {displayEnd}
+        </div>
+      )}
     </div>
   );
 }
