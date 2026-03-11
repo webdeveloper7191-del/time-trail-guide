@@ -225,6 +225,16 @@ export function SchedulingPreferencesModal({
 
         {/* Rooms Tab */}
         <TabsContent value="1" className="space-y-4 mt-4">
+                {/* Location Selector */}
+                {centres && centres.length > 0 && (
+                  <FormSection title="Location">
+                    <CentreSelector
+                      centres={centres}
+                      selectedCentreId={activeCentreId}
+                      onCentreChange={setActiveCentreId}
+                    />
+                  </FormSection>
+                )}
                 {/* Preferred Rooms */}
                 <FormSection title="Preferred Rooms">
                   <div className="grid grid-cols-2 gap-2">

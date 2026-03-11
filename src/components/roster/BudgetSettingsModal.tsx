@@ -163,6 +163,15 @@ export function BudgetSettingsModal({ open, onClose, centre: defaultCentre, cent
       actions={actions}
       showFooter
     >
+      {centres && centres.length > 0 && (
+        <div className="mb-4">
+          <CentreSelector
+            centres={centres}
+            selectedCentreId={activeCentreId}
+            onCentreChange={setActiveCentreId}
+          />
+        </div>
+      )}
       <Tabs defaultValue="costs" className="mt-4">
         <TabsList className="grid w-full grid-cols-4 bg-muted/50 p-1 rounded-lg">
           <TabsTrigger value="costs" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Costs</TabsTrigger>
