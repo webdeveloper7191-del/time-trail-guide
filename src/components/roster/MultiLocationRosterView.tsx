@@ -65,7 +65,7 @@ interface MultiLocationRosterViewProps {
   onAssignStaffToRoom?: (staffId: string, roomId: string) => void;
   onRemoveStaffFromRoom?: (staffId: string, roomId: string) => void;
   onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
-  onAddShiftAtTime?: (roomId: string, date: string, startTime: string) => void;
+  onAddShiftAtTime?: (staffId: string, date: string, roomId: string, startTime: string) => void;
 }
 
 export function MultiLocationRosterView({
