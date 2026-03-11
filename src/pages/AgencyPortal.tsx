@@ -729,7 +729,7 @@ const AgencyPortal = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {(mockAgency.documents || []).slice(0, 4).map((doc, idx) => (
+                  {(mockAgency.complianceDocuments || []).slice(0, 4).map((doc, idx) => (
                     <div key={idx} className="flex items-center justify-between p-2 rounded border">
                       <div className="flex items-center gap-2">
                         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
