@@ -840,6 +840,14 @@ const AgencyPortal = () => {
           }}
         />
       )}
+
+      <CandidateBulkImport
+        open={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onImport={(candidates) => {
+          console.log('Imported candidates:', candidates);
+        }}
+      />
     </div>
   );
 };
