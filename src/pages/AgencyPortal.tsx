@@ -279,9 +279,9 @@ const AgencyPortal = () => {
             {/* Secondary Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <MiniStat label="Open Shifts" value={openShifts.length} icon={Calendar} />
-              <MiniStat label="Pending Invoices" value={mockInvoices.filter(i => i.status === 'pending' || i.status === 'submitted').length} icon={FileText} />
+              <MiniStat label="Pending Invoices" value={mockInvoices.filter(i => i.status === 'draft' || i.status === 'sent').length} icon={FileText} />
               <MiniStat label="Total Revenue" value={`$${mockAgencyAnalytics.totalRevenue.toLocaleString()}`} icon={DollarSign} />
-              <MiniStat label="Avg Rating" value={`${mockAgencyAnalytics.avgClientRating}/5`} icon={Star} />
+              <MiniStat label="Active Clients" value={mockAgencyAnalytics.totalActiveClients} icon={Star} />
             </div>
 
             {/* Two Column Layout */}
