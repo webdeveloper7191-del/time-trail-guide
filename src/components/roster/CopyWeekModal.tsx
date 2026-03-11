@@ -174,7 +174,7 @@ export function CopyWeekModal({
       if (filterByStaff && selectedStaff.size > 0 && !selectedStaff.has(s.staffId)) return false;
       return true;
     });
-  }, [shifts, sourceDateRange, centreId, selectedRooms, copyDraftsOnly, filterByStaff, selectedStaff]);
+  }, [shifts, sourceDateRange, activeCentreId, selectedRooms, copyDraftsOnly, filterByStaff, selectedStaff]);
 
   // Generate preview with conflict detection
   const shiftPreviews = useMemo((): ShiftPreview[] => {
