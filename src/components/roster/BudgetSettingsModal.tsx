@@ -74,13 +74,21 @@ interface BudgetSettingsModalProps {
   open: boolean;
   onClose: () => void;
   centre: Centre;
+  centres?: Centre[];
   currentBudget: number;
   onSave: (settings: BudgetSettings) => void;
 }
 
 const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSave }: BudgetSettingsModalProps) {
+export function BudgetSettingsModal({ open, onClose, centre: defaultCentre, centres, currentBudget, onSave }: BudgetSettingsModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(defaultCentre.id);
+  const centre = useMemo(() => {
+    if (centres) {
+      return centres.find(c => c.id === activeCentreId) || defaultCentre;
+    }
+    return defaultCentre;
+  }, [centres, activeCentreId, defaultCentre]);
   const [settings, setSettings] = useState<BudgetSettings>({
     weeklyBudget: currentBudget,
     overtimeThreshold: 38,
