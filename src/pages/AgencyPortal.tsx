@@ -658,7 +658,7 @@ const AgencyPortal = () => {
                       <div className="text-right shrink-0">
                         <p className="text-sm font-semibold">${invoice.total.toLocaleString()}</p>
                         <p className="text-[10px] text-muted-foreground">
-                          {format(new Date(invoice.issueDate), 'MMM d, yyyy')}
+                          {format(new Date(invoice.createdAt), 'MMM d, yyyy')}
                         </p>
                       </div>
                     </div>
