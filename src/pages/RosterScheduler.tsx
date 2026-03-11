@@ -60,7 +60,7 @@ import { BreakSchedulingPanel } from '@/components/roster/BreakSchedulingPanel';
 import { SkillMatrixPanel } from '@/components/roster/SkillMatrixPanel';
 import { CallbackEventLoggingPanel } from '@/components/roster/CallbackEventLoggingPanel';
 import { OnCallRosterOverlay } from '@/components/roster/OnCallRosterOverlay';
-import { CrossLocationScheduler } from '@/components/roster/cross-location/CrossLocationScheduler';
+import { MultiLocationRosterView } from '@/components/roster/MultiLocationRosterView';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { SendToAgencyModal, BroadcastConfig } from '@/components/roster/SendToAgencyModal';
 import { AgencyResponseTracker } from '@/components/roster/AgencyResponseTracker';
