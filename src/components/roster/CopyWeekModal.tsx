@@ -47,6 +47,7 @@ import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/Pr
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CentreSelector } from './CentreSelector';
 
 type PeriodType = 'week' | 'fortnight' | 'month' | 'custom';
 type ConflictHandling = 'skip' | 'overwrite' | 'merge';
