@@ -2044,7 +2044,7 @@ export function CustomRuleBuilderPanel() {
                                   <SelectValue placeholder="Action type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {actionTypes.map(a => (
+                                  {getActionsForRuleType(ruleForm.type).map(a => (
                                     <SelectItem key={a.value} value={a.value}>
                                       <div className="flex items-center gap-2">
                                         <a.icon className="h-4 w-4" />
