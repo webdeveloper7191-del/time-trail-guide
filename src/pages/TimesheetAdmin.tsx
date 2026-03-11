@@ -14,6 +14,8 @@ import { ComplianceScorecard } from '@/components/timesheet/ComplianceScorecard'
 import { ExportDialog } from '@/components/timesheet/ExportDialog';
 import { NotificationCenter, generateMockNotifications, Notification } from '@/components/timesheet/NotificationCenter';
 import { ApprovalDelegationModal, generateMockDelegations } from '@/components/timesheet/ApprovalDelegationModal';
+import { AddTimesheetModal } from '@/components/timesheet/AddTimesheetModal';
+import { ImportTimesheetModal } from '@/components/timesheet/ImportTimesheetModal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +46,8 @@ import {
   UserCheck,
   User,
   ClipboardList,
+  Plus,
+  Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -67,6 +71,8 @@ export default function TimesheetAdmin() {
   const [showSelection, setShowSelection] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(generateMockNotifications());
   const [delegations, setDelegations] = useState(generateMockDelegations());
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -276,6 +282,18 @@ export default function TimesheetAdmin() {
 
               <div className="w-px h-8 bg-border mx-2" />
 
+              {/* Add & Import */}
+              <Button size="sm" onClick={() => setIsAddModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Add Timesheet
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setIsImportModalOpen(true)}>
+                <Upload className="h-4 w-4 mr-1.5" />
+                Import
+              </Button>
+
+              <div className="w-px h-8 bg-border mx-2" />
+
               {/* Delegation Button */}
               <Button variant="outline" size="sm" onClick={() => setIsDelegationOpen(true)}>
                 <UserCheck className="h-4 w-4 mr-1.5" />
@@ -413,6 +431,16 @@ export default function TimesheetAdmin() {
         delegations={delegations}
         onCreateDelegation={handleCreateDelegation}
         onRevokeDelegation={handleRevokeDelegation}
+      />
+      <AddTimesheetModal
+        open={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={(ts) => setTimesheets(prev => [ts, ...prev])}
+      />
+      <ImportTimesheetModal
+        open={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={(imported) => setTimesheets(prev => [...imported, ...prev])}
       />
     </div>
   );
