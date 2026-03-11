@@ -2292,6 +2292,7 @@ export default function RosterScheduler() {
             onRemoveStaffFromRoom={handleRemoveStaffFromRoom}
             onShiftResize={handleShiftResize}
             onAddShiftAtTime={handleAddShiftAtTime}
+            onRemoveCentre={(centreId) => setActiveCentreIds(prev => prev.filter(id => id !== centreId))}
           />
         ) : viewMode === 'day' ? (
           <DayTimelineView
