@@ -421,7 +421,7 @@ export function CandidateBulkImport({ open, onClose, onImport }: CandidateBulkIm
 
           {/* Duplicates section */}
           {duplicates.length > 0 && (
-            <FormSection title="Duplicate Detection" description={`${duplicates.length} potential duplicate(s) found.`}>
+            <FormSection title={`Duplicate Detection (${duplicates.length} found)`}>
               <div className="flex items-center gap-2 mb-2">
                 <Checkbox
                   checked={skipDuplicates}
