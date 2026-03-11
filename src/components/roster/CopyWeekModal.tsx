@@ -190,7 +190,7 @@ export function CopyWeekModal({
         
         // Check for conflicts in target
         const conflict = shifts.find(s => 
-          s.centreId === centreId &&
+          s.centreId === activeCentreId &&
           s.roomId === shift.roomId &&
           s.date === newDateStr &&
           s.startTime === shift.startTime &&
