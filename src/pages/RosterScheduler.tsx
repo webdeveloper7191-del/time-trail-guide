@@ -2713,6 +2713,7 @@ export default function RosterScheduler() {
         onClose={() => setShowAddEmptyShiftModal(false)}
         rooms={selectedCentre.rooms}
         centreId={selectedCentreId}
+        centres={mockCentres}
         availableDates={dates}
         shiftTemplates={allShiftTemplates}
         onAdd={handleAddEmptyShifts}
