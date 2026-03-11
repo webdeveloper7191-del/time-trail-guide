@@ -1455,7 +1455,7 @@ export default function RosterScheduler() {
               <img src={rosteredLogo} alt="Rostered.ai" style={{ height: 28 }} />
             </Stack>
 
-            {/* Centre Selector - switches between single select and multi-select picker */}
+            {/* Centre Selector */}
             <Select
               value={selectedCentreId}
               onValueChange={setSelectedCentreId}
@@ -1464,11 +1464,21 @@ export default function RosterScheduler() {
               fullWidth={false}
               className="min-w-[160px] lg:min-w-[200px]"
             />
+
+            {/* Role Filter */}
+            <Select
+              value={roleFilter}
+              onValueChange={setRoleFilter}
+              options={roleOptions}
+              size="small"
+              fullWidth={false}
+              className="min-w-[100px] lg:min-w-[140px]"
+            />
           </Stack>
 
           {/* Centre filter badges - shown inline when All Locations is selected */}
           {isAllLocationsView && (
-            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
               <Popover open={centrePickerOpen} onOpenChange={setCentrePickerOpen}>
                 <PopoverTrigger asChild>
                   <button className="inline-flex items-center gap-1.5 text-xs h-7 px-2.5 rounded-md border border-border bg-background hover:bg-accent transition-colors flex-shrink-0">
@@ -1569,19 +1579,8 @@ export default function RosterScheduler() {
               <Badge variant="secondary" className="text-[10px] flex-shrink-0">
                 {activeCentreIds.length} / {mockCentres.length}
               </Badge>
-            </Stack>
+            </div>
           )}
-
-            {/* Role Filter */}
-            <Select
-              value={roleFilter}
-              onValueChange={setRoleFilter}
-              options={roleOptions}
-              size="small"
-              fullWidth={false}
-              className="min-w-[100px] lg:min-w-[140px]"
-            />
-          </Stack>
 
           {/* Status Badges & Primary Actions */}
           <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
