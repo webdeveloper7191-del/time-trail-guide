@@ -170,6 +170,17 @@ export function ApplyTemplateModal({
       ]}
     >
       <div className="space-y-5">
+        {/* Location Selector */}
+        {centres && centres.length > 0 && (
+          <FormSection title="Location">
+            <CentreSelector
+              centres={centres}
+              selectedCentreId={activeCentreId}
+              onCentreChange={setActiveCentreId}
+            />
+          </FormSection>
+        )}
+
         {/* Template Selection */}
         <FormSection title="Select Template">
           <FormField label="Template" required tooltip="Choose a saved roster template to apply">

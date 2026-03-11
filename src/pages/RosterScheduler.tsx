@@ -2627,6 +2627,7 @@ export default function RosterScheduler() {
         ]}
         rooms={selectedCentre.rooms}
         centreId={selectedCentreId}
+        centres={mockCentres}
         currentDate={currentDate}
         onApply={handleApplyTemplate}
       />
