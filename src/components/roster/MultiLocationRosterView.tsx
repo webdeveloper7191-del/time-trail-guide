@@ -114,20 +114,68 @@ export function MultiLocationRosterView({
   onAddShiftAtTime,
 }: MultiLocationRosterViewProps) {
   const [collapsedCentres, setCollapsedCentres] = useState<Set<string>>(new Set());
+  const MAX_EXPANDED_PANES = 6;
 
   const toggleCollapse = (centreId: string) => {
     setCollapsedCentres(prev => {
       const next = new Set(prev);
-      next.has(centreId) ? next.delete(centreId) : next.add(centreId);
+      if (next.has(centreId)) {
+        // Expanding - check if we'd exceed the limit
+        const currentExpanded = centres.filter(c => !next.has(c.id)).length;
+        if (currentExpanded >= MAX_EXPANDED_PANES) {
+          // Auto-collapse the first expanded centre to make room
+          const firstExpanded = centres.find(c => !next.has(c.id) && c.id !== centreId);
+          if (firstExpanded) next.add(firstExpanded.id);
+        }
+        next.delete(centreId);
+      } else {
+        next.add(centreId);
+      }
       return next;
     });
   };
 
-  // Compute stats per centre
+  // Auto-collapse centres beyond the limit on mount/when centres change
+  useMemo(() => {
+    if (centres.length > MAX_EXPANDED_PANES) {
+      const toCollapse = new Set<string>();
+      centres.slice(MAX_EXPANDED_PANES).forEach(c => toCollapse.add(c.id));
+      // Only update if needed
+      const needsUpdate = centres.slice(MAX_EXPANDED_PANES).some(c => !collapsedCentres.has(c.id));
+      if (needsUpdate) {
+        setCollapsedCentres(prev => {
+          const next = new Set(prev);
+          centres.slice(MAX_EXPANDED_PANES).forEach(c => next.add(c.id));
+          return next;
+        });
+      }
+    }
+  }, [centres.length]);
+
+  // Pre-group shifts by centreId for O(1) lookups
+  const shiftsByCentre = useMemo(() => {
+    const map = new Map<string, Shift[]>();
+    shifts.forEach(s => {
+      if (!map.has(s.centreId)) map.set(s.centreId, []);
+      map.get(s.centreId)!.push(s);
+    });
+    return map;
+  }, [shifts]);
+
+  const openShiftsByCentre = useMemo(() => {
+    const map = new Map<string, OpenShift[]>();
+    openShifts.forEach(os => {
+      if (!map.has(os.centreId)) map.set(os.centreId, []);
+      map.get(os.centreId)!.push(os);
+    });
+    return map;
+  }, [openShifts]);
+
+  // Compute stats per centre using pre-grouped maps
   const centreStats = useMemo(() => {
     const stats: Record<string, { staffCount: number; totalHours: number; openCount: number }> = {};
     centres.forEach(c => {
-      const centreShifts = shifts.filter(s => s.centreId === c.id);
+      const centreShifts = shiftsByCentre.get(c.id) || [];
       const staffIds = new Set(centreShifts.map(s => s.staffId));
       let totalHours = 0;
       centreShifts.forEach(shift => {
@@ -138,11 +186,11 @@ export function MultiLocationRosterView({
       stats[c.id] = {
         staffCount: staffIds.size,
         totalHours: Math.round(totalHours * 10) / 10,
-        openCount: openShifts.filter(os => os.centreId === c.id).length,
+        openCount: (openShiftsByCentre.get(c.id) || []).length,
       };
     });
     return stats;
-  }, [centres, shifts, openShifts]);
+  }, [centres, shiftsByCentre, openShiftsByCentre]);
 
   return (
     <div className="flex-1 flex flex-col overflow-auto min-h-0">

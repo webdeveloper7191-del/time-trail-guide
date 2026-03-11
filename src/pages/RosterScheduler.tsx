@@ -1494,7 +1494,6 @@ export default function RosterScheduler() {
                       All Locations
                     </button>
                   </div>
-                  {/* Individual centres - when All Locations, show checkboxes; otherwise single-select */}
                   {isAllLocationsView && (
                     <div className="p-1 flex items-center justify-between border-b border-border">
                       <button
@@ -1511,65 +1510,31 @@ export default function RosterScheduler() {
                       </button>
                     </div>
                   )}
-                  <ScrollArea className="max-h-64">
-                    <div className="p-1">
-                      {(() => {
-                        const filtered = centreSearch.trim()
-                          ? mockCentres.filter(c => c.name.toLowerCase().includes(centreSearch.toLowerCase()))
-                          : mockCentres;
-                        return filtered.length === 0 ? (
-                          <p className="text-xs text-muted-foreground text-center py-4">No locations found</p>
-                        ) : (
-                          filtered.map(centre => {
-                            const isActive = isAllLocationsView ? activeCentreIds.includes(centre.id) : selectedCentreId === centre.id;
-                            const openCount = openShifts.filter(os => os.centreId === centre.id).length;
-                            return (
-                              <button
-                                key={centre.id}
-                                onClick={() => {
-                                  if (isAllLocationsView) {
-                                    setActiveCentreIds(prev =>
-                                      prev.includes(centre.id) ? prev.filter(id => id !== centre.id) : [...prev, centre.id]
-                                    );
-                                  } else {
-                                    setSelectedCentreId(centre.id);
-                                    setCentrePickerOpen(false);
-                                  }
-                                }}
-                                className={cn(
-                                  'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors',
-                                  isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-accent'
-                                )}
-                              >
-                                {isAllLocationsView && (
-                                  <div className={cn(
-                                    'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0',
-                                    isActive ? 'bg-primary border-primary' : 'border-border'
-                                  )}>
-                                    {isActive && <Check className="h-3 w-3 text-primary-foreground" />}
-                                  </div>
-                                )}
-                                <MapPin className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
-                                <span className="truncate flex-1 text-left">{centre.name}</span>
-                                {openCount > 0 && (
-                                  <Badge variant="destructive" className="text-[8px] px-1 py-0 h-3.5">
-                                    {openCount}
-                                  </Badge>
-                                )}
-                              </button>
-                            );
-                          })
+                  <VirtualizedLocationList
+                    centres={mockCentres}
+                    searchQuery={centreSearch}
+                    isAllLocationsView={isAllLocationsView}
+                    activeCentreIds={activeCentreIds}
+                    selectedCentreId={selectedCentreId}
+                    openShifts={openShifts}
+                    onToggleCentre={(centreId) => {
+                      if (isAllLocationsView) {
+                        setActiveCentreIds(prev =>
+                          prev.includes(centreId) ? prev.filter(id => id !== centreId) : [...prev, centreId]
                         );
-                      })()}
-                    </div>
-                  </ScrollArea>
+                      } else {
+                        setSelectedCentreId(centreId);
+                        setCentrePickerOpen(false);
+                      }
+                    }}
+                  />
                 </PopoverContent>
               </Popover>
 
-              {/* Active centre badges - only in All Locations mode */}
+              {/* Active centre badges - only in All Locations mode, capped at 5 */}
               {isAllLocationsView && (
                 <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto no-scrollbar">
-                  {activeCentreIds.map(id => {
+                  {activeCentreIds.slice(0, 5).map(id => {
                     const centre = mockCentres.find(c => c.id === id);
                     if (!centre) return null;
                     return (
@@ -1584,6 +1549,11 @@ export default function RosterScheduler() {
                       </Badge>
                     );
                   })}
+                  {activeCentreIds.length > 5 && (
+                    <Badge variant="outline" className="text-[10px] flex-shrink-0">
+                      +{activeCentreIds.length - 5} more
+                    </Badge>
+                  )}
                   <span className="text-[10px] text-muted-foreground flex-shrink-0">
                     {activeCentreIds.length}/{mockCentres.length}
                   </span>
