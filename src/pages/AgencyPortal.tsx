@@ -385,6 +385,13 @@ const AgencyPortal = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Broadcast Inbox */}
+            <ShiftBroadcastInbox
+              onMatchCandidates={(id) => {
+                setActiveTab('shifts');
+              }}
+            />
           </div>
         )}
 
