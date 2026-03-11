@@ -77,12 +77,21 @@ export function CopyWeekModal({
   open,
   onClose,
   shifts,
-  rooms,
+  rooms: defaultRooms,
   staff,
   centreId,
+  centres,
   currentDate,
   onCopy,
 }: CopyWeekModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const rooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   // Source selection
   const [sourcePeriodType, setSourcePeriodType] = useState<PeriodType>('week');
   const [sourceWeekOffset, setSourceWeekOffset] = useState(-1); // -1 = last week
