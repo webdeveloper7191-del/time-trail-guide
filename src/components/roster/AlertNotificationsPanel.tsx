@@ -14,12 +14,14 @@ import {
   TrendingUp,
   Calendar,
   Shield,
-  RefreshCw
+  RefreshCw,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
-import { Shift, StaffMember, RosterComplianceFlag } from '@/types/roster';
+import { Shift, StaffMember, RosterComplianceFlag, Centre } from '@/types/roster';
 import { format, parseISO, differenceInDays, isAfter, isBefore } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Alert {
   id: string;
@@ -42,6 +44,7 @@ interface AlertNotificationsPanelProps {
   weeklyBudget: number;
   totalCost: number;
   centreId: string;
+  centres?: Centre[];
 }
 
 export function AlertNotificationsPanel({
@@ -52,9 +55,17 @@ export function AlertNotificationsPanel({
   complianceFlags,
   weeklyBudget,
   totalCost,
-  centreId,
+  centreId: defaultCentreId,
+  centres = [],
 }: AlertNotificationsPanelProps) {
   const [readAlerts, setReadAlerts] = useState<Set<string>>(new Set());
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(defaultCentreId);
+
+  const activeCentreId = selectedLocationId || defaultCentreId;
+  const filteredShifts = useMemo(() => {
+    if (activeCentreId === 'all') return shifts;
+    return shifts.filter(s => s.centreId === activeCentreId);
+  }, [shifts, activeCentreId]);
 
   const alerts = useMemo(() => {
     const alertList: Alert[] = [];
