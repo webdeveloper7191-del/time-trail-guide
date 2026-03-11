@@ -264,6 +264,7 @@ export default function RosterScheduler() {
   
   const [showDemandImportModal, setShowDemandImportModal] = useState(false);
   const [showHolidayCalendar, setShowHolidayCalendar] = useState(false);
+  const [showLeaveByLocation, setShowLeaveByLocation] = useState(false);
   const [showAddEmptyShiftModal, setShowAddEmptyShiftModal] = useState(false);
   
   // Advanced Features panels
