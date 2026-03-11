@@ -2446,6 +2446,7 @@ export default function RosterScheduler() {
         shift={shiftToCopy}
         rooms={selectedCentre.rooms}
         staff={allStaff}
+        centres={mockCentres}
         existingShifts={shifts}
         onCopy={handleConfirmCopy}
       />
