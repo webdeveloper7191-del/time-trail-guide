@@ -74,12 +74,21 @@ const DAYS_OF_WEEK = [
 export function AddEmptyShiftModal({
   open,
   onClose,
-  rooms,
+  rooms: defaultRooms,
   centreId,
+  centres,
   availableDates,
   shiftTemplates,
   onAdd,
 }: AddEmptyShiftModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const rooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
