@@ -1,12 +1,16 @@
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/mui/Button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Building2, Users, Calendar, FileText, BarChart3, 
   Shield, AlertTriangle, TrendingUp, Clock, CheckCircle2,
-  ArrowLeft, Plus, UserPlus, Zap, Receipt, ClipboardCheck, Briefcase
+  ArrowLeft, Plus, UserPlus, Zap, Receipt, ClipboardCheck, Briefcase,
+  ArrowUpRight, ArrowDownRight, Search, Filter, Bell, Settings,
+  Star, MapPin, DollarSign, Activity, Eye, MoreVertical,
+  RefreshCw, Download, ChevronRight, Percent, Target
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockAgency, mockCandidates, mockShiftRequests, mockInvoices, mockAgencyAnalytics } from '@/data/mockAgencyData';
@@ -18,6 +22,78 @@ import InvoiceGenerator from '@/components/agency/InvoiceGenerator';
 import CandidateAvailabilityCalendar from '@/components/agency/CandidateAvailabilityCalendar';
 import TimesheetApprovalWorkflow from '@/components/agency/TimesheetApprovalWorkflow';
 import ClientManagementPanel from '@/components/agency/ClientManagementPanel';
+import { cn } from '@/lib/utils';
+
+// ─── Tab Configuration ───────────────────────────────────────────────────────
+const TABS = [
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+  { id: 'candidates', label: 'Candidates', icon: Users },
+  { id: 'clients', label: 'Clients', icon: Briefcase },
+  { id: 'shifts', label: 'Shifts', icon: Calendar },
+  { id: 'timesheets', label: 'Timesheets', icon: ClipboardCheck },
+  { id: 'invoices', label: 'Invoices', icon: FileText },
+  { id: 'profile', label: 'Profile', icon: Building2 },
+] as const;
+
+// ─── KPI Card ────────────────────────────────────────────────────────────────
+function KPICard({
+  title, value, subtitle, icon: Icon, trend, trendValue, variant = 'default',
+}: {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: typeof TrendingUp;
+  trend?: 'up' | 'down';
+  trendValue?: string;
+  variant?: 'default' | 'success' | 'warning' | 'error';
+}) {
+  const iconBgMap = {
+    default: 'bg-primary/10 text-primary',
+    success: 'bg-emerald-500/10 text-emerald-600',
+    warning: 'bg-amber-500/10 text-amber-600',
+    error: 'bg-destructive/10 text-destructive',
+  };
+
+  return (
+    <Card className="relative overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div className={cn('p-2 rounded-lg', iconBgMap[variant])}>
+            <Icon className="h-4 w-4" />
+          </div>
+          {trend && trendValue && (
+            <Badge
+              variant="secondary"
+              className={cn(
+                'text-[10px] px-1.5 py-0 h-5 font-medium',
+                trend === 'up' ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50'
+              )}
+            >
+              {trend === 'up' ? <ArrowUpRight className="h-3 w-3 mr-0.5" /> : <ArrowDownRight className="h-3 w-3 mr-0.5" />}
+              {trendValue}
+            </Badge>
+          )}
+        </div>
+        <div className="mt-3">
+          <p className="text-2xl font-bold tracking-tight">{value}</p>
+          <p className="text-xs font-medium text-muted-foreground mt-0.5">{title}</p>
+          {subtitle && <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Mini Stat ───────────────────────────────────────────────────────────────
+function MiniStat({ label, value, icon: Icon }: { label: string; value: string | number; icon: typeof Star }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/50">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs font-semibold ml-auto">{value}</span>
+    </div>
+  );
+}
 
 const AgencyPortal = () => {
   const navigate = useNavigate();
@@ -28,6 +104,9 @@ const AgencyPortal = () => {
   const [selectedShiftForMatching, setSelectedShiftForMatching] = useState<string | null>(null);
   const [showAvailabilityCalendar, setShowAvailabilityCalendar] = useState(false);
   const [selectedCandidateForAvailability, setSelectedCandidateForAvailability] = useState<{ id: string; name: string } | null>(null);
+  const [candidateSearch, setCandidateSearch] = useState('');
+  const [candidateStatusFilter, setCandidateStatusFilter] = useState('all');
+  const [shiftStatusFilter, setShiftStatusFilter] = useState('all');
 
   const openShifts = mockShiftRequests.filter(s => s.status === 'open' || s.status === 'partially_filled');
   const urgentShifts = mockShiftRequests.filter(s => s.urgency === 'critical' || s.urgency === 'urgent');
@@ -37,214 +116,349 @@ const AgencyPortal = () => {
     ? mockShiftRequests.find(s => s.id === selectedShiftForMatching) 
     : null;
 
+  const filteredCandidates = useMemo(() => {
+    return mockCandidates.filter(c => {
+      const matchesSearch = !candidateSearch || 
+        `${c.firstName} ${c.lastName}`.toLowerCase().includes(candidateSearch.toLowerCase()) ||
+        c.primaryRole.toLowerCase().includes(candidateSearch.toLowerCase());
+      const matchesStatus = candidateStatusFilter === 'all' || c.status === candidateStatusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [candidateSearch, candidateStatusFilter]);
+
+  const filteredShifts = useMemo(() => {
+    if (shiftStatusFilter === 'all') return mockShiftRequests;
+    return mockShiftRequests.filter(s => s.status === shiftStatusFilter);
+  }, [shiftStatusFilter]);
+
+  const complianceColor = mockAgency.complianceScore >= 90 ? 'text-emerald-600' : 
+    mockAgency.complianceScore >= 70 ? 'text-amber-600' : 'text-destructive';
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen bg-[#fafafa]">
+      {/* ─── Header ──────────────────────────────────────────────────────── */}
+      <header className="border-b bg-background sticky top-0 z-30">
+        <div className="px-6 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Button variant="ghost" size="small" onClick={() => navigate('/')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                <ArrowLeft className="h-4 w-4" />
               </Button>
+              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
               <div>
-                <h1 className="text-xl font-bold">{mockAgency.tradingName || mockAgency.name}</h1>
-                <p className="text-sm text-muted-foreground">Agency Portal</p>
+                <h1 className="text-base font-semibold tracking-tight leading-tight">
+                  {mockAgency.tradingName || mockAgency.name}
+                </h1>
+                <p className="text-[11px] text-muted-foreground leading-tight">Agency Portal</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200">
+                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                <span className="text-[11px] font-medium text-emerald-700">Active</span>
+              </div>
+              <div className={cn(
+                'flex items-center gap-1.5 px-2.5 py-1 rounded-md border',
+                mockAgency.complianceScore >= 90 
+                  ? 'bg-emerald-50 border-emerald-200' 
+                  : 'bg-amber-50 border-amber-200'
+              )}>
+                <Shield className={cn('h-3 w-3', complianceColor)} />
+                <span className={cn('text-[11px] font-medium', complianceColor)}>
+                  {mockAgency.complianceScore}% Compliant
+                </span>
+              </div>
               <Button variant="outlined" size="small" onClick={() => setShowOnboardingWizard(true)}>
-                <Building2 className="h-4 w-4 mr-2" />
-                Agency Setup
+                <Settings className="h-3.5 w-3.5 mr-1.5" />
+                Settings
               </Button>
-              <Badge variant="outline" className="text-green-600 border-green-600">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Active
-              </Badge>
-              <Badge variant="secondary">
-                <Shield className="h-3 w-3 mr-1" />
-                {mockAgency.complianceScore}% Compliant
-              </Badge>
             </div>
           </div>
         </div>
+
+        {/* ─── Tab Bar ──────────────────────────────────────────────────── */}
+        <div className="px-6">
+          <nav className="flex gap-0 -mb-px">
+            {TABS.map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap',
+                    isActive
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  )}
+                >
+                  <tab.icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="dashboard" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </TabsTrigger>
-            <TabsTrigger value="candidates" className="gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Candidates</span>
-            </TabsTrigger>
-            <TabsTrigger value="clients" className="gap-2">
-              <Briefcase className="h-4 w-4" />
-              <span className="hidden sm:inline">Clients</span>
-            </TabsTrigger>
-            <TabsTrigger value="shifts" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Shifts</span>
-            </TabsTrigger>
-            <TabsTrigger value="timesheets" className="gap-2">
-              <ClipboardCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Timesheets</span>
-            </TabsTrigger>
-            <TabsTrigger value="invoices" className="gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Invoices</span>
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="gap-2">
-              <Building2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Profile</span>
-            </TabsTrigger>
-          </TabsList>
+      {/* ─── Main Content ────────────────────────────────────────────────── */}
+      <main className="px-6 py-5 max-w-[1400px] mx-auto">
 
-          {/* Dashboard Tab */}
-          <TabsContent value="dashboard" className="space-y-6">
-            {/* KPI Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Fill Rate</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{mockAgencyAnalytics.fillRate}%</div>
-                  <p className="text-xs text-muted-foreground">
-                    {mockAgencyAnalytics.totalShiftsFilled} of {mockAgencyAnalytics.totalShiftsRequested} shifts
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Avg Time to Fill</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{mockAgencyAnalytics.avgTimeToFillMinutes} min</div>
-                  <p className="text-xs text-muted-foreground">Response time</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Gross Margin</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">${mockAgencyAnalytics.grossProfit.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground">{mockAgencyAnalytics.marginPercentage}% margin</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Active Candidates</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{mockAgencyAnalytics.totalActiveCandidates}</div>
-                  <p className="text-xs text-muted-foreground">{mockAgencyAnalytics.avgWorkerUtilization}% utilization</p>
-                </CardContent>
-              </Card>
+        {/* ═══ DASHBOARD TAB ═══════════════════════════════════════════════ */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-5">
+            {/* KPI Row */}
+            <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+              <KPICard
+                title="Fill Rate"
+                value={`${mockAgencyAnalytics.fillRate}%`}
+                subtitle={`${mockAgencyAnalytics.totalShiftsFilled} of ${mockAgencyAnalytics.totalShiftsRequested} shifts`}
+                icon={Target}
+                trend="up"
+                trendValue="+3.2%"
+                variant="success"
+              />
+              <KPICard
+                title="Avg Response Time"
+                value={`${mockAgencyAnalytics.avgTimeToFillMinutes}m`}
+                subtitle="Time to fill"
+                icon={Clock}
+                trend="down"
+                trendValue="-5m"
+                variant="success"
+              />
+              <KPICard
+                title="Gross Margin"
+                value={`$${mockAgencyAnalytics.grossProfit.toLocaleString()}`}
+                subtitle={`${mockAgencyAnalytics.marginPercentage}% margin`}
+                icon={DollarSign}
+                trend="up"
+                trendValue="+8.1%"
+                variant="default"
+              />
+              <KPICard
+                title="Active Candidates"
+                value={mockAgencyAnalytics.totalActiveCandidates}
+                subtitle={`${mockAgencyAnalytics.avgWorkerUtilization}% utilization`}
+                icon={Users}
+                variant="default"
+              />
             </div>
 
-            {/* Alerts */}
+            {/* Alerts Banner */}
             {(urgentShifts.length > 0 || overdueInvoices.length > 0) && (
-              <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2 text-orange-700 dark:text-orange-400">
-                    <AlertTriangle className="h-4 w-4" />
-                    Attention Required
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {urgentShifts.length > 0 && (
-                    <p className="text-sm">{urgentShifts.length} urgent shift(s) need immediate attention</p>
-                  )}
-                  {overdueInvoices.length > 0 && (
-                    <p className="text-sm">{overdueInvoices.length} invoice(s) are overdue</p>
-                  )}
+              <Card className="border-amber-200 bg-amber-50/50">
+                <CardContent className="p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="flex-1 space-y-1">
+                      <p className="text-xs font-semibold text-amber-800">Attention Required</p>
+                      <div className="flex flex-wrap gap-2">
+                        {urgentShifts.length > 0 && (
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-800 text-[10px]">
+                            {urgentShifts.length} urgent shift{urgentShifts.length > 1 ? 's' : ''}
+                          </Badge>
+                        )}
+                        {overdueInvoices.length > 0 && (
+                          <Badge variant="secondary" className="bg-red-100 text-red-800 text-[10px]">
+                            {overdueInvoices.length} overdue invoice{overdueInvoices.length > 1 ? 's' : ''}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="small" onClick={() => setActiveTab('shifts')} className="text-xs">
+                      View <ChevronRight className="h-3 w-3 ml-0.5" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Quick Stats */}
-            <div className="grid gap-4 md:grid-cols-2">
+            {/* Secondary Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <MiniStat label="Open Shifts" value={openShifts.length} icon={Calendar} />
+              <MiniStat label="Pending Invoices" value={mockInvoices.filter(i => i.status === 'draft' || i.status === 'sent').length} icon={FileText} />
+              <MiniStat label="Total Revenue" value={`$${mockAgencyAnalytics.totalRevenue.toLocaleString()}`} icon={DollarSign} />
+              <MiniStat label="Active Clients" value={mockAgencyAnalytics.totalActiveClients} icon={Star} />
+            </div>
+
+            {/* Two Column Layout */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              {/* Open Shifts */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Open Shifts</CardTitle>
-                  <CardDescription>{openShifts.length} shifts need candidates</CardDescription>
+                <CardHeader className="p-4 pb-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-semibold">Open Shifts</CardTitle>
+                      <CardDescription className="text-[11px]">{openShifts.length} shifts need candidates</CardDescription>
+                    </div>
+                    <Button variant="ghost" size="small" onClick={() => setActiveTab('shifts')} className="text-xs">
+                      View All <ChevronRight className="h-3 w-3 ml-0.5" />
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {openShifts.slice(0, 3).map(shift => (
-                    <div key={shift.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                      <div>
-                        <p className="text-sm font-medium">{shift.clientName}</p>
-                        <p className="text-xs text-muted-foreground">{format(new Date(shift.date), 'MMM d')} • {shift.startTime}</p>
+                <CardContent className="p-4 pt-0 space-y-1.5">
+                  {openShifts.slice(0, 4).map(shift => (
+                    <div
+                      key={shift.id}
+                      className="flex items-center justify-between p-2.5 rounded-lg border bg-background hover:bg-muted/30 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedShiftForMatching(shift.id);
+                        setActiveTab('shifts');
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className={cn(
+                          'h-8 w-1 rounded-full',
+                          shift.urgency === 'critical' ? 'bg-destructive' :
+                          shift.urgency === 'urgent' ? 'bg-amber-500' : 'bg-emerald-500'
+                        )} />
+                        <div>
+                          <p className="text-xs font-medium">{shift.clientName}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {format(new Date(shift.date), 'MMM d')} · {shift.startTime} - {shift.endTime}
+                          </p>
+                        </div>
                       </div>
-                      <Badge variant={shift.urgency === 'critical' ? 'destructive' : shift.urgency === 'urgent' ? 'default' : 'secondary'}>
-                        {shift.filledPositions}/{shift.totalPositions}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={shift.urgency === 'critical' ? 'destructive' : 'secondary'}
+                          className="text-[10px] h-5"
+                        >
+                          {shift.filledPositions}/{shift.totalPositions}
+                        </Badge>
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
                     </div>
                   ))}
+                  {openShifts.length === 0 && (
+                    <div className="text-center py-6 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-400" />
+                      All shifts filled
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+
+              {/* Top Performers */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Top Performers</CardTitle>
-                  <CardDescription>This month's best workers</CardDescription>
+                <CardHeader className="p-4 pb-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-semibold">Top Performers</CardTitle>
+                      <CardDescription className="text-[11px]">This month's best workers</CardDescription>
+                    </div>
+                    <Button variant="ghost" size="small" onClick={() => setActiveTab('candidates')} className="text-xs">
+                      View All <ChevronRight className="h-3 w-3 ml-0.5" />
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="p-4 pt-0 space-y-1.5">
                   {mockAgencyAnalytics.topPerformers.map((performer, idx) => (
-                    <div key={performer.candidateId} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-muted-foreground">#{idx + 1}</span>
-                        <p className="text-sm font-medium">{performer.name}</p>
+                    <div key={performer.candidateId} className="flex items-center gap-3 p-2.5 rounded-lg border bg-background">
+                      <div className={cn(
+                        'h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold',
+                        idx === 0 ? 'bg-amber-100 text-amber-700' :
+                        idx === 1 ? 'bg-slate-100 text-slate-600' :
+                        idx === 2 ? 'bg-orange-100 text-orange-700' :
+                        'bg-muted text-muted-foreground'
+                      )}>
+                        #{idx + 1}
                       </div>
-                      <span className="text-sm text-muted-foreground">{performer.shiftsCompleted} shifts</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{performer.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{performer.shiftsCompleted} shifts</p>
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                        <span className="text-xs font-semibold">{performer.shiftsCompleted}</span>
+                      </div>
                     </div>
                   ))}
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          </div>
+        )}
 
-          {/* Candidates Tab */}
-          <TabsContent value="candidates">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Candidate Pool</CardTitle>
-                  <CardDescription>{mockCandidates.length} registered candidates</CardDescription>
+        {/* ═══ CANDIDATES TAB ══════════════════════════════════════════════ */}
+        {activeTab === 'candidates' && (
+          <div className="space-y-4">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1">
+                <div className="relative max-w-xs flex-1">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search candidates..."
+                    value={candidateSearch}
+                    onChange={e => setCandidateSearch(e.target.value)}
+                    className="pl-8 h-8 text-xs"
+                  />
                 </div>
-                <Button onClick={() => setShowCandidateForm(true)}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Candidate
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {mockCandidates.map(candidate => (
-                    <div key={candidate.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-medium">{candidate.firstName[0]}{candidate.lastName[0]}</span>
-                        </div>
-                        <div>
-                          <p className="font-medium">{candidate.firstName} {candidate.lastName}</p>
-                          <p className="text-sm text-muted-foreground">{candidate.primaryRole}</p>
-                        </div>
+                <Select value={candidateStatusFilter} onValueChange={setCandidateStatusFilter}>
+                  <SelectTrigger className="w-[130px] h-8 text-xs">
+                    <Filter className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="on_shift">On Shift</SelectItem>
+                    <SelectItem value="unavailable">Unavailable</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={() => setShowCandidateForm(true)} size="small">
+                <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                Add Candidate
+              </Button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-4 gap-2">
+              <MiniStat label="Total" value={mockCandidates.length} icon={Users} />
+              <MiniStat label="Available" value={mockCandidates.filter(c => c.status === 'available').length} icon={CheckCircle2} />
+              <MiniStat label="On Shift" value={mockCandidates.filter(c => c.status === 'on_shift').length} icon={Clock} />
+              <MiniStat label="Avg Rating" value={(mockCandidates.reduce((a, c) => a + c.averageRating, 0) / mockCandidates.length).toFixed(1)} icon={Star} />
+            </div>
+
+            {/* Candidate List */}
+            <Card>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {filteredCandidates.map(candidate => (
+                    <div key={candidate.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-xs font-semibold text-primary">
+                          {candidate.firstName[0]}{candidate.lastName[0]}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={candidate.status === 'available' ? 'default' : 'secondary'}>
-                          {candidate.status}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{candidate.firstName} {candidate.lastName}</p>
+                          <Badge
+                            variant={candidate.status === 'available' ? 'default' : 'secondary'}
+                            className={cn(
+                              'text-[10px] h-5',
+                              candidate.status === 'available' && 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
+                            )}
+                          >
+                            {candidate.status.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">{candidate.primaryRole}</p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex items-center gap-0.5">
+                          <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                          <span className="text-xs font-medium">{candidate.averageRating}</span>
+                        </div>
+                        <Badge variant="outline" className="text-[10px]">
+                          {candidate.totalShiftsCompleted} shifts
                         </Badge>
-                        <span className="text-sm">⭐ {candidate.averageRating}</span>
                         <Button 
                           variant="ghost" 
                           size="small"
@@ -253,28 +467,34 @@ const AgencyPortal = () => {
                             setSelectedCandidateForAvailability({ id: candidate.id, name: `${candidate.firstName} ${candidate.lastName}` });
                             setShowAvailabilityCalendar(true);
                           }}
+                          className="h-7 w-7 p-0"
                         >
-                          <Calendar className="h-4 w-4" />
+                          <Calendar className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
                   ))}
+                  {filteredCandidates.length === 0 && (
+                    <div className="text-center py-10 text-xs text-muted-foreground">
+                      No candidates match your filters
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+        )}
 
-          {/* Clients Tab */}
-          <TabsContent value="clients">
-            <ClientManagementPanel />
-          </TabsContent>
+        {/* ═══ CLIENTS TAB ═════════════════════════════════════════════════ */}
+        {activeTab === 'clients' && <ClientManagementPanel />}
 
-          {/* Shifts Tab */}
-          <TabsContent value="shifts" className="space-y-6">
+        {/* ═══ SHIFTS TAB ══════════════════════════════════════════════════ */}
+        {activeTab === 'shifts' && (
+          <div className="space-y-4">
             {selectedShift ? (
               <div className="space-y-4">
-                <Button variant="ghost" onClick={() => setSelectedShiftForMatching(null)}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                <Button variant="ghost" size="small" onClick={() => setSelectedShiftForMatching(null)}>
+                  <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
                   Back to Shifts
                 </Button>
                 <ShiftMatchingPanel 
@@ -287,130 +507,247 @@ const AgencyPortal = () => {
                 />
               </div>
             ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Shift Requests</CardTitle>
-                  <CardDescription>{mockShiftRequests.length} total requests</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {mockShiftRequests.map(shift => (
-                      <div key={shift.id} className="p-3 rounded-lg border">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <p className="font-medium">{shift.clientName}</p>
-                            <p className="text-sm text-muted-foreground">{shift.locationName}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Badge variant={shift.urgency === 'critical' ? 'destructive' : shift.urgency === 'urgent' ? 'default' : 'outline'}>
-                              {shift.urgency}
-                            </Badge>
-                            <Badge variant="secondary">{shift.status.replace('_', ' ')}</Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>{format(new Date(shift.date), 'MMM d, yyyy')}</span>
-                            <span>{shift.startTime} - {shift.endTime}</span>
-                            <span>{shift.filledPositions}/{shift.totalPositions} filled</span>
-                            <span className="text-green-600">${shift.chargeRate}/hr</span>
-                          </div>
-                          {(shift.status === 'open' || shift.status === 'partially_filled') && (
-                            <Button size="small" onClick={() => setSelectedShiftForMatching(shift.id)}>
-                              <Zap className="h-4 w-4 mr-1" />
-                              Match Candidates
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+              <>
+                {/* Toolbar */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Select value={shiftStatusFilter} onValueChange={setShiftStatusFilter}>
+                      <SelectTrigger className="w-[140px] h-8 text-xs">
+                        <Filter className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="partially_filled">Partially Filled</SelectItem>
+                        <SelectItem value="filled">Filled</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* Timesheets Tab */}
-          <TabsContent value="timesheets">
-            <TimesheetApprovalWorkflow />
-          </TabsContent>
-
-          {/* Invoices Tab */}
-          <TabsContent value="invoices">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Invoices</CardTitle>
-                  <CardDescription>{mockInvoices.length} invoices</CardDescription>
+                  <div className="text-xs text-muted-foreground">
+                    {filteredShifts.length} shift{filteredShifts.length !== 1 ? 's' : ''}
+                  </div>
                 </div>
-                <Button onClick={() => setShowInvoiceGenerator(true)}>
-                  <Receipt className="h-4 w-4 mr-2" />
-                  Generate Invoice
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+
+                {/* Stats */}
+                <div className="grid grid-cols-4 gap-2">
+                  <MiniStat label="Total" value={mockShiftRequests.length} icon={Calendar} />
+                  <MiniStat label="Open" value={mockShiftRequests.filter(s => s.status === 'open').length} icon={AlertTriangle} />
+                  <MiniStat label="Filled" value={mockShiftRequests.filter(s => s.status === 'filled').length} icon={CheckCircle2} />
+                  <MiniStat label="Urgent" value={urgentShifts.length} icon={Zap} />
+                </div>
+
+                {/* Shift List */}
+                <Card>
+                  <CardContent className="p-0">
+                    <div className="divide-y">
+                      {filteredShifts.map(shift => (
+                        <div key={shift.id} className="px-4 py-3 hover:bg-muted/30 transition-colors">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <div className={cn(
+                                'h-2 w-2 rounded-full',
+                                shift.urgency === 'critical' ? 'bg-destructive' :
+                                shift.urgency === 'urgent' ? 'bg-amber-500' :
+                                'bg-emerald-500'
+                              )} />
+                              <p className="text-sm font-medium">{shift.clientName}</p>
+                              <span className="text-[10px] text-muted-foreground">· {shift.locationName}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Badge
+                                variant={shift.urgency === 'critical' ? 'destructive' : 'outline'}
+                                className="text-[10px] h-5"
+                              >
+                                {shift.urgency}
+                              </Badge>
+                              <Badge variant="secondary" className="text-[10px] h-5">
+                                {shift.status.replace('_', ' ')}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {format(new Date(shift.date), 'MMM d, yyyy')}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {shift.startTime} - {shift.endTime}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {shift.filledPositions}/{shift.totalPositions}
+                              </span>
+                              <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                                <DollarSign className="h-3 w-3" />
+                                ${shift.chargeRate}/hr
+                              </span>
+                            </div>
+                            {(shift.status === 'open' || shift.status === 'partially_filled') && (
+                              <Button size="small" onClick={() => setSelectedShiftForMatching(shift.id)} className="h-7 text-xs">
+                                <Zap className="h-3 w-3 mr-1" />
+                                Match
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ TIMESHEETS TAB ══════════════════════════════════════════════ */}
+        {activeTab === 'timesheets' && <TimesheetApprovalWorkflow />}
+
+        {/* ═══ INVOICES TAB ════════════════════════════════════════════════ */}
+        {activeTab === 'invoices' && (
+          <div className="space-y-4">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between">
+              <div className="grid grid-cols-4 gap-2 flex-1 mr-4">
+              <MiniStat label="Total" value={mockInvoices.length} icon={FileText} />
+                <MiniStat label="Draft/Sent" value={mockInvoices.filter(i => i.status === 'draft' || i.status === 'sent').length} icon={Clock} />
+                <MiniStat label="Overdue" value={overdueInvoices.length} icon={AlertTriangle} />
+                <MiniStat label="Total Value" value={`$${mockInvoices.reduce((a, i) => a + i.total, 0).toLocaleString()}`} icon={DollarSign} />
+              </div>
+              <Button onClick={() => setShowInvoiceGenerator(true)} size="small">
+                <Receipt className="h-3.5 w-3.5 mr-1.5" />
+                Generate Invoice
+              </Button>
+            </div>
+
+            {/* Invoice List */}
+            <Card>
+              <CardContent className="p-0">
+                <div className="divide-y">
                   {mockInvoices.map(invoice => (
-                    <div key={invoice.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div>
-                        <p className="font-medium">{invoice.invoiceNumber}</p>
-                        <p className="text-sm text-muted-foreground">{invoice.clientName}</p>
+                    <div key={invoice.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                      <div className={cn(
+                        'h-9 w-9 rounded-lg flex items-center justify-center shrink-0',
+                        invoice.status === 'paid' ? 'bg-emerald-100' :
+                        invoice.status === 'overdue' ? 'bg-red-100' :
+                        'bg-muted'
+                      )}>
+                        <FileText className={cn(
+                          'h-4 w-4',
+                          invoice.status === 'paid' ? 'text-emerald-600' :
+                          invoice.status === 'overdue' ? 'text-red-600' :
+                          'text-muted-foreground'
+                        )} />
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">${invoice.total.toLocaleString()}</p>
-                        <Badge variant={
-                          invoice.status === 'paid' ? 'default' : 
-                          invoice.status === 'overdue' ? 'destructive' : 
-                          'secondary'
-                        }>
-                          {invoice.status}
-                        </Badge>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{invoice.invoiceNumber}</p>
+                          <Badge
+                            variant={invoice.status === 'paid' ? 'default' : invoice.status === 'overdue' ? 'destructive' : 'secondary'}
+                            className={cn('text-[10px] h-5', invoice.status === 'paid' && 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100')}
+                          >
+                            {invoice.status}
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">{invoice.clientName}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-semibold">${invoice.total.toLocaleString()}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {format(new Date(invoice.createdAt), 'MMM d, yyyy')}
+                        </p>
                       </div>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+        )}
 
-          {/* Profile Tab */}
-          <TabsContent value="profile">
+        {/* ═══ PROFILE TAB ═════════════════════════════════════════════════ */}
+        {activeTab === 'profile' && (
+          <div className="space-y-4 max-w-3xl">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Agency Profile</CardTitle>
-                  <CardDescription>Your agency details and compliance</CardDescription>
+              <CardHeader className="p-4 pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-semibold">Agency Details</CardTitle>
+                    <CardDescription className="text-[11px]">Your agency profile and compliance information</CardDescription>
+                  </div>
+                  <Button variant="outlined" size="small" onClick={() => setShowOnboardingWizard(true)}>
+                    Edit Profile
+                  </Button>
                 </div>
-                <Button variant="outlined" onClick={() => setShowOnboardingWizard(true)}>
-                  Edit Profile
-                </Button>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Legal Name</p>
-                    <p className="font-medium">{mockAgency.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">ABN</p>
-                    <p className="font-medium">{mockAgency.abn}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Primary Contact</p>
-                    <p className="font-medium">{mockAgency.primaryContactName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{mockAgency.primaryContactEmail}</p>
-                  </div>
+              <CardContent className="p-4 pt-2">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    { label: 'Legal Name', value: mockAgency.name },
+                    { label: 'ABN', value: mockAgency.abn },
+                    { label: 'Primary Contact', value: mockAgency.primaryContactName },
+                    { label: 'Email', value: mockAgency.primaryContactEmail },
+                    { label: 'Phone', value: mockAgency.primaryContactPhone },
+                    { label: 'Address', value: `${mockAgency.address?.street || ''}, ${mockAgency.address?.suburb || ''} ${mockAgency.address?.state || ''} ${mockAgency.address?.postcode || ''}` },
+                  ].map(item => (
+                    <div key={item.label} className="space-y-0.5">
+                      <p className="text-[11px] text-muted-foreground font-medium">{item.label}</p>
+                      <p className="text-sm">{item.value}</p>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+
+            {/* Compliance */}
+            <Card>
+              <CardHeader className="p-4 pb-2">
+                <CardTitle className="text-sm font-semibold">Compliance & Certifications</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-2">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 mb-3">
+                  <div className={cn(
+                    'h-12 w-12 rounded-full flex items-center justify-center',
+                    mockAgency.complianceScore >= 90 ? 'bg-emerald-100' : 'bg-amber-100'
+                  )}>
+                    <span className={cn(
+                      'text-lg font-bold',
+                      mockAgency.complianceScore >= 90 ? 'text-emerald-700' : 'text-amber-700'
+                    )}>
+                      {mockAgency.complianceScore}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Compliance Score</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {mockAgency.complianceScore >= 90 ? 'Excellent standing' : 'Some items need attention'}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {(mockAgency.complianceDocuments || []).slice(0, 4).map((doc, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 rounded border">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs">{doc.type?.replace(/_/g, ' ') || `Document ${idx + 1}`}</span>
+                      </div>
+                      <Badge variant={doc.status === 'valid' ? 'default' : 'secondary'} className="text-[10px] h-5">
+                        {doc.status || 'pending'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
 
-      {/* Modals and Dialogs */}
+      {/* ─── Modals ──────────────────────────────────────────────────────── */}
       <AgencyOnboardingWizard 
         open={showOnboardingWizard} 
         onClose={() => setShowOnboardingWizard(false)}
