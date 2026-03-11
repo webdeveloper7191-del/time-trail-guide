@@ -108,6 +108,15 @@ export function ShiftConflictPanel({
       }
       showFooter={false}
     >
+      {centres && centres.length > 0 && (
+        <div className="mb-4">
+          <CentreSelector
+            centres={centres}
+            selectedCentreId={activeCentreId}
+            onCentreChange={setActiveCentreId}
+          />
+        </div>
+      )}
       <Tabs defaultValue="all">
         <TabsList className="grid w-full grid-cols-3 bg-background border p-1 rounded-lg">
           <TabsTrigger value="all" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">

@@ -192,6 +192,14 @@ export function ShiftNotificationsModal({
         </TabsList>
 
         <TabsContent value="send" className="space-y-4">
+          {/* Location Selector */}
+          {centres && centres.length > 0 && (
+            <CentreSelector
+              centres={centres}
+              selectedCentreId={activeCentreId}
+              onCentreChange={setActiveCentreId}
+            />
+          )}
           {/* Notification Type */}
           <FormSection title="Notification Type">
                 <div className="flex gap-2 flex-wrap">
