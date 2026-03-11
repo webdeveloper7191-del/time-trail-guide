@@ -10,7 +10,8 @@ import {
   ArrowLeft, Plus, UserPlus, Zap, Receipt, ClipboardCheck, Briefcase,
   ArrowUpRight, ArrowDownRight, Search, Filter, Bell, Settings,
   Star, MapPin, DollarSign, Activity, Eye, MoreVertical,
-  RefreshCw, Download, ChevronRight, Percent, Target
+  RefreshCw, Download, ChevronRight, Percent, Target, Upload,
+  CalendarDays, List
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockAgency, mockCandidates, mockShiftRequests, mockInvoices, mockAgencyAnalytics } from '@/data/mockAgencyData';
@@ -22,6 +23,10 @@ import InvoiceGenerator from '@/components/agency/InvoiceGenerator';
 import CandidateAvailabilityCalendar from '@/components/agency/CandidateAvailabilityCalendar';
 import TimesheetApprovalWorkflow from '@/components/agency/TimesheetApprovalWorkflow';
 import ClientManagementPanel from '@/components/agency/ClientManagementPanel';
+import { ShiftBroadcastInbox } from '@/components/agency/ShiftBroadcastInbox';
+import { ShiftCalendarView } from '@/components/agency/ShiftCalendarView';
+import { CandidateBulkImport } from '@/components/agency/CandidateBulkImport';
+import rosteredLogo from '@/assets/rostered-logo.png';
 import { cn } from '@/lib/utils';
 
 // ─── Tab Configuration ───────────────────────────────────────────────────────
