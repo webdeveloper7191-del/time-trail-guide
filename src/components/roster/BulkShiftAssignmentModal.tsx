@@ -32,13 +32,22 @@ export function BulkShiftAssignmentModal({
   open,
   onClose,
   staff,
-  rooms,
+  rooms: defaultRooms,
   dates,
   centreId,
+  centres,
   shiftTemplates,
   existingShifts,
   onAssign
 }: BulkShiftAssignmentModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const rooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [activeTab, setActiveTab] = useState('staff');
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
