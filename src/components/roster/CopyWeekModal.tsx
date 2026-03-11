@@ -410,18 +410,7 @@ export function CopyWeekModal({
       size="lg"
       actions={actions}
     >
-      <Stack spacing={3}>
-        {/* Location Selector */}
-        {centres && centres.length > 0 && (
-          <CentreSelector
-            centres={centres}
-            selectedCentreId={activeCentreId}
-            onCentreChange={(id) => {
-              setActiveCentreId(id);
-              setSelectedRooms(new Set());
-            }}
-          />
-        )}
+        <Stack spacing={3}>
         {!showPreview ? (
           <>
             {/* Source Period Selection */}
@@ -530,6 +519,20 @@ export function CopyWeekModal({
               </AccordionSummary>
               <AccordionDetails>
                 <Stack spacing={2}>
+                  {/* Location Selector */}
+                  {centres && centres.length > 0 && (
+                    <Box>
+                      <CentreSelector
+                        centres={centres}
+                        selectedCentreId={activeCentreId}
+                        onCentreChange={(id) => {
+                          setActiveCentreId(id);
+                          setSelectedRooms(new Set());
+                        }}
+                        label="Location"
+                      />
+                    </Box>
+                  )}
                   {/* Room Filter */}
                   <Box>
                     <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>

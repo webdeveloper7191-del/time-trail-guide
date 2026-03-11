@@ -318,14 +318,6 @@ export function ShiftCopyModal({
           showFooter
         >
           <div className="space-y-6">
-            {/* Location Selector */}
-            {centres && centres.length > 0 && (
-              <CentreSelector
-                centres={centres}
-                selectedCentreId={activeCentreId}
-                onCentreChange={setActiveCentreId}
-              />
-            )}
 
             {/* Source Shift Info */}
             <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover', border: 1, borderColor: 'divider' }}>
@@ -532,6 +524,16 @@ export function ShiftCopyModal({
                   </Box>
                 )}
               </div>
+            )}
+
+            {/* Location Selector */}
+            {centres && centres.length > 0 && (
+              <CentreSelector
+                centres={centres}
+                selectedCentreId={activeCentreId}
+                onCentreChange={setActiveCentreId}
+                label="Location"
+              />
             )}
 
             {/* Copy to all rooms option */}

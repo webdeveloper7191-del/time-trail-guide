@@ -617,21 +617,6 @@ export function AddOpenShiftModal({
           showFooter
         >
           <Stack spacing={3}>
-              {/* Location Selector */}
-              {centres && centres.length > 0 && (
-                <FormSection title="Location">
-                  <CentreSelector
-                    centres={centres}
-                    selectedCentreId={activeCentreId}
-                    onCentreChange={(id) => {
-                      setActiveCentreId(id);
-                      setValue('centreId', id);
-                      setValue('roomId', '');
-                      setSelectedRoomIds([]);
-                    }}
-                  />
-                </FormSection>
-              )}
 
               {/* Creation Mode Section */}
               <FormSection title="Creation Mode">
@@ -730,6 +715,21 @@ export function AddOpenShiftModal({
 
               {/* Shift Details Section */}
               <FormSection title="Shift Details">
+                {/* Location Selector */}
+                {centres && centres.length > 0 && (
+                  <FormField label="Location">
+                    <CentreSelector
+                      centres={centres}
+                      selectedCentreId={activeCentreId}
+                      onCentreChange={(id) => {
+                        setActiveCentreId(id);
+                        setValue('centreId', id);
+                        setValue('roomId', '');
+                        setSelectedRoomIds([]);
+                      }}
+                    />
+                  </FormField>
+                )}
                 {/* Room Selection - Different UI for single vs bulk */}
                 {createMode === 'single' ? (
                   <FormField label="Room / Area" required>
