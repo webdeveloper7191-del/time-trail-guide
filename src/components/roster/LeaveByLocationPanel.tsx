@@ -193,8 +193,8 @@ export function LeaveByLocationPanel({
                               <div className="text-xs text-muted-foreground mt-0.5">
                                 {timeOffTypeLabels[leave.type]} · {format(new Date(leave.startDate), 'MMM d')} – {format(new Date(leave.endDate), 'MMM d')}
                               </div>
-                              {leave.reason && (
-                                <p className="text-xs text-muted-foreground mt-1 italic">"{leave.reason}"</p>
+                              {(leave as any).reason && (
+                                <p className="text-xs text-muted-foreground mt-1 italic">"{(leave as any).reason}"</p>
                               )}
                             </div>
                           </div>
