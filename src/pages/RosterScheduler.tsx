@@ -2728,6 +2728,7 @@ export default function RosterScheduler() {
         onClose={() => setShowDemandDataEntry(false)}
         centre={selectedCentre}
         currentDate={currentDate}
+        centres={mockCentres}
       />
 
 
