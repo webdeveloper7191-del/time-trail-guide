@@ -148,12 +148,10 @@ const AgencyPortal = () => {
         <div className="px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="small" onClick={() => navigate('/')}>
+              <Button variant="ghost" size="small" onClick={() => navigate('/')} className="h-8 w-8 p-0">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-primary" />
-              </div>
+              <img src={rosteredLogo} alt="Rostered.ai" className="h-7" />
               <div>
                 <h1 className="text-base font-semibold tracking-tight leading-tight">
                   {mockAgency.tradingName || mockAgency.name}
