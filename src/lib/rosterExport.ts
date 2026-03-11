@@ -331,3 +331,364 @@ export function exportToExcel(data: ExportData) {
   // Save
   XLSX.writeFile(wb, `roster-${centre.code}-${format(dates[0], 'yyyy-MM-dd')}.xlsx`);
 }
+
+// ========== Multi-Location Export Functions ==========
+
+interface MultiLocationExportData {
+  shifts: Shift[];
+  staff: StaffMember[];
+  centres: Centre[];
+  dates: Date[];
+  weeklyBudgets: Record<string, number>;
+  roomColorsByCentre?: Record<string, string[]>;
+}
+
+export function exportAllLocationsToPDF(data: MultiLocationExportData, useColors: boolean = false) {
+  const { shifts, staff, centres, dates, weeklyBudgets, roomColorsByCentre = {} } = data;
+  const doc = new jsPDF({ orientation: 'landscape' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Cover page
+  doc.setFontSize(22);
+  doc.setTextColor(30, 30, 30);
+  doc.text('All Locations - Weekly Roster', 14, 30);
+  
+  doc.setFontSize(12);
+  doc.setTextColor(80, 80, 80);
+  doc.text(`Week of ${format(dates[0], 'MMM d')} - ${format(dates[dates.length - 1], 'MMM d, yyyy')}`, 14, 42);
+
+  // Grand totals across all centres
+  let grandTotalHours = 0;
+  let grandTotalCost = 0;
+  let grandTotalBudget = 0;
+
+  centres.forEach(centre => {
+    const centreShifts = shifts.filter(s => s.centreId === centre.id);
+    const budget = weeklyBudgets[centre.id] || 7000;
+    grandTotalBudget += budget;
+    centreShifts.forEach(shift => {
+      const member = staff.find(s => s.id === shift.staffId);
+      if (member) {
+        const [startH, startM] = shift.startTime.split(':').map(Number);
+        const [endH, endM] = shift.endTime.split(':').map(Number);
+        const hours = ((endH * 60 + endM) - (startH * 60 + startM) - shift.breakMinutes) / 60;
+        grandTotalHours += hours;
+        grandTotalCost += hours * member.hourlyRate;
+      }
+    });
+  });
+
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  let coverY = 58;
+  doc.text(`Locations: ${centres.length}`, 14, coverY); coverY += 8;
+  doc.text(`Total Hours: ${Math.round(grandTotalHours * 10) / 10}h`, 14, coverY); coverY += 8;
+  doc.text(`Total Cost: $${Math.round(grandTotalCost).toLocaleString()}`, 14, coverY); coverY += 8;
+  doc.text(`Total Budget: $${grandTotalBudget.toLocaleString()}`, 14, coverY); coverY += 8;
+  const variance = grandTotalCost - grandTotalBudget;
+  doc.text(`Variance: ${variance > 0 ? '+' : '-'}$${Math.abs(Math.round(variance)).toLocaleString()}`, 14, coverY);
+
+  // Each centre gets its own page(s)
+  centres.forEach((centre) => {
+    doc.addPage();
+    const roomColors = roomColorsByCentre[centre.id] || [];
+    const centreData: ExportData = {
+      shifts,
+      staff,
+      centre,
+      dates,
+      weeklyBudget: weeklyBudgets[centre.id] || 7000,
+      roomColors,
+    };
+    // Render the centre content on the current page
+    renderCentrePDF(doc, centreData, useColors);
+  });
+
+  const colorSuffix = useColors ? '-color' : '';
+  doc.save(`roster-all-locations-${format(dates[0], 'yyyy-MM-dd')}${colorSuffix}.pdf`);
+}
+
+/** Renders a single centre's roster onto the current page of the given jsPDF doc */
+function renderCentrePDF(doc: jsPDF, data: ExportData, useColors: boolean) {
+  const { shifts, staff, centre, dates, weeklyBudget, roomColors = [] } = data;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  let yPos = 20;
+
+  // Title
+  doc.setFontSize(18);
+  doc.setTextColor(30, 30, 30);
+  doc.text(`Roster Schedule - ${centre.name}`, 14, yPos);
+  yPos += 10;
+
+  doc.setFontSize(12);
+  doc.setTextColor(80, 80, 80);
+  doc.text(`Week of ${format(dates[0], 'MMM d')} - ${format(dates[dates.length - 1], 'MMM d, yyyy')}`, 14, yPos);
+  yPos += 15;
+
+  const centreShifts = shifts.filter(s => s.centreId === centre.id);
+  let totalCost = 0;
+  let totalHours = 0;
+  centreShifts.forEach(shift => {
+    const member = staff.find(s => s.id === shift.staffId);
+    if (member) {
+      const [startH, startM] = shift.startTime.split(':').map(Number);
+      const [endH, endM] = shift.endTime.split(':').map(Number);
+      const hours = ((endH * 60 + endM) - (startH * 60 + startM) - shift.breakMinutes) / 60;
+      totalHours += hours;
+      totalCost += hours * member.hourlyRate;
+    }
+  });
+
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  doc.text(`Total Hours: ${Math.round(totalHours * 10) / 10}h | Total Cost: $${Math.round(totalCost).toLocaleString()} | Budget: $${weeklyBudget.toLocaleString()}`, 14, yPos);
+  yPos += 15;
+
+  const leftColWidth = 55;
+  const dateColWidth = (pageWidth - leftColWidth - 30) / dates.length;
+
+  if (useColors) {
+    doc.setFillColor(240, 245, 250);
+  } else {
+    doc.setFillColor(245, 245, 245);
+  }
+  doc.rect(14, yPos - 5, pageWidth - 28, 12, 'F');
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(50, 50, 50);
+
+  let xPos = 17;
+  doc.text('Room / Staff', xPos, yPos + 2);
+  xPos = leftColWidth + 14;
+
+  dates.forEach((date) => {
+    const dayText = format(date, 'EEE');
+    const dateText = format(date, 'd MMM');
+    doc.text(dayText, xPos + dateColWidth / 2 - doc.getTextWidth(dayText) / 2, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(dateText, xPos + dateColWidth / 2 - doc.getTextWidth(dateText) / 2, yPos + 5);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    xPos += dateColWidth;
+  });
+
+  yPos += 15;
+
+  centre.rooms.forEach((room, roomIndex) => {
+    const roomShifts = centreShifts.filter(s => s.roomId === room.id);
+    const roomStaffIds = [...new Set(roomShifts.map(s => s.staffId))];
+    const roomStaff = staff.filter(s => roomStaffIds.includes(s.id));
+
+    if (roomStaff.length === 0) return;
+
+    const estimatedHeight = (roomStaff.length + 1) * 8 + 10;
+    if (yPos + estimatedHeight > pageHeight - 20) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    const roomColor = roomColors[roomIndex] || 'hsl(200, 70%, 50%)';
+    const rgb = hslToRgb(roomColor);
+
+    if (useColors) {
+      const lightRgb = lightenRgb(rgb, 0.8);
+      doc.setFillColor(lightRgb.r, lightRgb.g, lightRgb.b);
+      doc.rect(14, yPos - 4, pageWidth - 28, 10, 'F');
+      doc.setFillColor(rgb.r, rgb.g, rgb.b);
+      doc.rect(14, yPos - 4, 3, 10, 'F');
+    } else {
+      doc.setFillColor(235, 235, 235);
+      doc.rect(14, yPos - 4, pageWidth - 28, 10, 'F');
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(40, 40, 40);
+    doc.text(`${room.name}`, 20, yPos + 2);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`(1:${room.requiredRatio} ratio, Cap: ${room.capacity})`, 20 + doc.getTextWidth(`${room.name} `) + 5, yPos + 2);
+
+    yPos += 10;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+
+    roomStaff.forEach((member, memberIndex) => {
+      if (yPos > pageHeight - 15) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      if (useColors) {
+        if (memberIndex % 2 === 0) {
+          const veryLightRgb = lightenRgb(rgb, 0.95);
+          doc.setFillColor(veryLightRgb.r, veryLightRgb.g, veryLightRgb.b);
+        } else {
+          doc.setFillColor(255, 255, 255);
+        }
+      } else {
+        if (memberIndex % 2 === 0) {
+          doc.setFillColor(250, 250, 250);
+        } else {
+          doc.setFillColor(255, 255, 255);
+        }
+      }
+      doc.rect(14, yPos - 3, pageWidth - 28, 8, 'F');
+
+      xPos = 20;
+      doc.setTextColor(50, 50, 50);
+      doc.text(member.name.substring(0, 22), xPos, yPos + 2);
+      xPos = leftColWidth + 14;
+
+      dates.forEach((date) => {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const dayShifts = roomShifts.filter(s => s.staffId === member.id && s.date === dateStr);
+
+        if (dayShifts.length > 0) {
+          if (useColors) {
+            doc.setFillColor(rgb.r, rgb.g, rgb.b);
+            doc.roundedRect(xPos + 1, yPos - 2, dateColWidth - 4, 6, 1, 1, 'F');
+            doc.setTextColor(255, 255, 255);
+          } else {
+            doc.setTextColor(30, 30, 30);
+          }
+
+          const shiftText = dayShifts.map(s => `${s.startTime}-${s.endTime}`).join(', ');
+          const displayText = shiftText.length > 11 ? shiftText.substring(0, 9) + '..' : shiftText;
+          doc.text(displayText, xPos + dateColWidth / 2 - doc.getTextWidth(displayText) / 2, yPos + 2);
+          doc.setTextColor(50, 50, 50);
+        } else {
+          doc.setTextColor(180, 180, 180);
+          doc.text('—', xPos + dateColWidth / 2 - 2, yPos + 2);
+          doc.setTextColor(50, 50, 50);
+        }
+        xPos += dateColWidth;
+      });
+
+      yPos += 8;
+    });
+
+    yPos += 5;
+  });
+
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text(`Generated on ${format(new Date(), 'MMM d, yyyy HH:mm')}`, 14, pageHeight - 10);
+}
+
+export function exportAllLocationsToExcel(data: MultiLocationExportData) {
+  const { shifts, staff, centres, dates, weeklyBudgets } = data;
+  const wb = XLSX.utils.book_new();
+
+  let grandTotalHours = 0;
+  let grandTotalCost = 0;
+  let grandTotalBudget = 0;
+
+  // One sheet per centre
+  centres.forEach(centre => {
+    const centreShifts = shifts.filter(s => s.centreId === centre.id);
+    const budget = weeklyBudgets[centre.id] || 7000;
+    grandTotalBudget += budget;
+
+    const scheduleData: (string | number)[][] = [];
+    const headerRow = ['Staff Name', 'Role', 'Hourly Rate', ...dates.map(d => format(d, 'EEE d MMM')), 'Total Hours', 'Total Cost'];
+    scheduleData.push(headerRow);
+
+    const staffWithShifts = staff.filter(s => centreShifts.some(shift => shift.staffId === s.id));
+
+    staffWithShifts.forEach((member) => {
+      const row: (string | number)[] = [member.name, roleLabels[member.role], member.hourlyRate];
+      let memberTotalHours = 0;
+
+      dates.forEach((date) => {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const dayShifts = centreShifts.filter(s => s.staffId === member.id && s.date === dateStr);
+
+        if (dayShifts.length > 0) {
+          const shiftTexts: string[] = [];
+          dayShifts.forEach(shift => {
+            shiftTexts.push(`${shift.startTime}-${shift.endTime}`);
+            const [startH, startM] = shift.startTime.split(':').map(Number);
+            const [endH, endM] = shift.endTime.split(':').map(Number);
+            memberTotalHours += ((endH * 60 + endM) - (startH * 60 + startM) - shift.breakMinutes) / 60;
+          });
+          row.push(shiftTexts.join(', '));
+        } else {
+          row.push('');
+        }
+      });
+
+      row.push(Math.round(memberTotalHours * 10) / 10);
+      row.push(Math.round(memberTotalHours * member.hourlyRate * 100) / 100);
+      scheduleData.push(row);
+    });
+
+    let centreTotalHours = 0;
+    let centreTotalCost = 0;
+    scheduleData.forEach((row, idx) => {
+      if (idx > 0) {
+        centreTotalHours += (row[row.length - 2] as number) || 0;
+        centreTotalCost += (row[row.length - 1] as number) || 0;
+      }
+    });
+    grandTotalHours += centreTotalHours;
+    grandTotalCost += centreTotalCost;
+
+    const totalsRow = ['TOTAL', '', '', ...dates.map(() => ''), centreTotalHours, centreTotalCost];
+    scheduleData.push(totalsRow);
+
+    // Truncate sheet name to 31 chars (Excel limit)
+    const sheetName = centre.name.substring(0, 31);
+    const ws = XLSX.utils.aoa_to_sheet(scheduleData);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  // Summary sheet
+  const summaryData: (string | number)[][] = [
+    ['All Locations - Roster Summary'],
+    [''],
+    ['Week', `${format(dates[0], 'MMM d')} - ${format(dates[dates.length - 1], 'MMM d, yyyy')}`],
+    [''],
+    ['Location', 'Shifts', 'Hours', 'Cost', 'Budget', 'Variance'],
+  ];
+
+  centres.forEach(centre => {
+    const centreShifts = shifts.filter(s => s.centreId === centre.id);
+    const budget = weeklyBudgets[centre.id] || 7000;
+    let hours = 0;
+    let cost = 0;
+    centreShifts.forEach(shift => {
+      const member = staff.find(s => s.id === shift.staffId);
+      if (member) {
+        const [startH, startM] = shift.startTime.split(':').map(Number);
+        const [endH, endM] = shift.endTime.split(':').map(Number);
+        const h = ((endH * 60 + endM) - (startH * 60 + startM) - shift.breakMinutes) / 60;
+        hours += h;
+        cost += h * member.hourlyRate;
+      }
+    });
+    summaryData.push([
+      centre.name,
+      centreShifts.length,
+      Math.round(hours * 10) / 10,
+      Math.round(cost),
+      budget,
+      Math.round(cost - budget),
+    ]);
+  });
+
+  summaryData.push(['']);
+  summaryData.push(['GRAND TOTAL', '', Math.round(grandTotalHours * 10) / 10, Math.round(grandTotalCost), grandTotalBudget, Math.round(grandTotalCost - grandTotalBudget)]);
+
+  const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+  XLSX.writeFile(wb, `roster-all-locations-${format(dates[0], 'yyyy-MM-dd')}.xlsx`);
+}
