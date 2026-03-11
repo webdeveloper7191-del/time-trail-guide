@@ -85,12 +85,21 @@ export function AddOpenShiftModal({
   onClose, 
   rooms, 
   centreId, 
+  centres,
   selectedDate,
   selectedRoomId,
   onAdd,
   shiftTemplates = defaultShiftTemplates,
   availableDates,
 }: AddOpenShiftModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const activeRooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return rooms;
+  }, [centres, activeCentreId, rooms]);
   const [createMode, setCreateMode] = useState<CreateMode>('single');
   const [selectedQualifications, setSelectedQualifications] = useState<QualificationType[]>([]);
   const [selectedAllowances, setSelectedAllowances] = useState<string[]>([]);
