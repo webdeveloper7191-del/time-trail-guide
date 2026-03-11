@@ -100,7 +100,8 @@ interface FormRowProps {
  * FormRow - A responsive grid row for form fields.
  * Stacks on mobile, shows multiple columns on larger screens.
  */
-export function FormRow({ children, columns = 2, className }: FormRowProps) {
+export const FormRow = React.forwardRef<HTMLDivElement, FormRowProps>(
+  function FormRow({ children, columns = 2, className }, ref) {
   const gridClass = {
     2: 'sm:grid-cols-2',
     3: 'sm:grid-cols-3',
@@ -108,11 +109,11 @@ export function FormRow({ children, columns = 2, className }: FormRowProps) {
   }[columns];
 
   return (
-    <div className={cn("grid grid-cols-1 gap-4", gridClass, className)}>
+    <div ref={ref} className={cn("grid grid-cols-1 gap-4", gridClass, className)}>
       {children}
     </div>
   );
-}
+});
 
 interface FormActionsRowProps {
   children: React.ReactNode;
