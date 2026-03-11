@@ -64,6 +64,7 @@ interface MultiLocationRosterViewProps {
   onAssignStaffToRoom?: (staffId: string, roomId: string) => void;
   onRemoveStaffFromRoom?: (staffId: string, roomId: string) => void;
   onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
+  onRemoveCentre?: (centreId: string) => void;
   onAddShiftAtTime?: (staffId: string, date: string, roomId: string, startTime: string) => void;
 }
 
