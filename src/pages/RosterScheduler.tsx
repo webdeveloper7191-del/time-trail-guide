@@ -2010,6 +2010,9 @@ export default function RosterScheduler() {
                       <DropdownMenuItem onClick={() => setShowLeaveModal(true)} icon={<CalendarDays size={16} />}>
                         Leave Requests
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowLeaveByLocation(true)} icon={<MapPin size={16} />}>
+                        Leaves & Holidays by Location
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => {
                         if (allStaff.length > 0) openPreferencesForStaff(allStaff[0]);
