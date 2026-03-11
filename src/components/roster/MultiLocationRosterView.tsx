@@ -208,7 +208,7 @@ export function MultiLocationRosterView({
                     onShiftEdit={onShiftEdit}
                     onShiftDelete={onShiftDelete}
                     onShiftResize={onShiftResize}
-                    onAddShift={(roomId, date) => onAddShift('', date, roomId)}
+                    onAddShift={onAddShift}
                     onAddShiftAtTime={onAddShiftAtTime}
                     onDragStart={onDragStart}
                     onDropStaff={onDropStaff}
