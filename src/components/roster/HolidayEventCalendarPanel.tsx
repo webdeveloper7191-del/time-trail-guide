@@ -54,9 +54,11 @@ export function HolidayEventCalendarPanel({
   onClose,
   currentDate: initialDate, 
   onDateClick,
+  centres = [],
 }: HolidayEventCalendarPanelProps) {
   const [viewDate, setViewDate] = useState(initialDate);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('all');
 
   const monthStart = startOfMonth(viewDate);
   const monthEnd = endOfMonth(viewDate);
