@@ -735,7 +735,7 @@ const AgencyPortal = () => {
                         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-xs">{doc.type?.replace(/_/g, ' ') || `Document ${idx + 1}`}</span>
                       </div>
-                      <Badge variant={doc.status === 'verified' ? 'default' : 'secondary'} className="text-[10px] h-5">
+                      <Badge variant={doc.status === 'valid' ? 'default' : 'secondary'} className="text-[10px] h-5">
                         {doc.status || 'pending'}
                       </Badge>
                     </div>
