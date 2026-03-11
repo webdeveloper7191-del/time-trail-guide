@@ -2084,41 +2084,6 @@ export default function RosterScheduler() {
         </Box>
       </Box>
 
-      {/* Collapsible Budget Tracker Bar */}
-      <Box>
-        <Button
-          fullWidth
-          variant="text"
-          size="small"
-          onClick={() => setShowBudgetBar(!showBudgetBar)}
-          sx={{ py: 0.75, bgcolor: 'action.hover', borderBottom: 1, borderColor: 'divider', borderRadius: 0 }}
-          startIcon={<DollarSign size={14} />}
-          endIcon={showBudgetBar ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        >
-          Budget Tracker
-        </Button>
-        <Collapse in={showBudgetBar}>
-          <BudgetTrackerBar
-            shifts={shifts}
-            staff={allStaff}
-            centreId={selectedCentreId}
-            weeklyBudget={weeklyBudget}
-          />
-        </Collapse>
-      </Box>
-
-      {/* Series Action Bar - shown when viewing a recurring series */}
-      {highlightedRecurrenceGroupId && (
-        <SeriesActionBar
-          highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
-          shifts={shifts}
-          staff={allStaff}
-          onExit={() => setHighlightedRecurrenceGroupId(null)}
-          onBulkEdit={() => setShowBulkSeriesEdit(true)}
-          onBulkDelete={() => setShowBulkSeriesDelete(true)}
-        />
-      )}
-
       {/* Centre Filter Bar - only in All Locations view */}
       {isAllLocationsView && (
         <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border flex-shrink-0">
@@ -2171,7 +2136,6 @@ export default function RosterScheduler() {
                     ) : (
                       filtered.map(centre => {
                         const isActive = activeCentreIds.includes(centre.id);
-                        const centreShiftCount = shifts.filter(s => s.centreId === centre.id).length;
                         const openCount = openShifts.filter(os => os.centreId === centre.id).length;
                         return (
                           <button
@@ -2230,6 +2194,41 @@ export default function RosterScheduler() {
             {activeCentreIds.length} / {mockCentres.length}
           </Badge>
         </div>
+      )}
+
+      {/* Collapsible Budget Tracker Bar */}
+      <Box>
+        <Button
+          fullWidth
+          variant="text"
+          size="small"
+          onClick={() => setShowBudgetBar(!showBudgetBar)}
+          sx={{ py: 0.75, bgcolor: 'action.hover', borderBottom: 1, borderColor: 'divider', borderRadius: 0 }}
+          startIcon={<DollarSign size={14} />}
+          endIcon={showBudgetBar ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        >
+          Budget Tracker
+        </Button>
+        <Collapse in={showBudgetBar}>
+          <BudgetTrackerBar
+            shifts={shifts}
+            staff={allStaff}
+            centreId={selectedCentreId}
+            weeklyBudget={weeklyBudget}
+          />
+        </Collapse>
+      </Box>
+
+      {/* Series Action Bar - shown when viewing a recurring series */}
+      {highlightedRecurrenceGroupId && (
+        <SeriesActionBar
+          highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+          shifts={shifts}
+          staff={allStaff}
+          onExit={() => setHighlightedRecurrenceGroupId(null)}
+          onBulkEdit={() => setShowBulkSeriesEdit(true)}
+          onBulkDelete={() => setShowBulkSeriesDelete(true)}
+        />
       )}
 
       {/* Main Content - with swipe gesture support for mobile/tablet */}
