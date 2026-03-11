@@ -129,6 +129,26 @@ export function LeaveRequestModal({
         showFooter={tabValue === 3}
       >
         <div>
+          {/* Location Filter */}
+          {centres.length > 0 && (
+            <div className="mb-3">
+              <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+                <SelectTrigger className="w-full">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 text-primary" />
+                    <SelectValue placeholder="Filter by location" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {centres.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tab label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>Pending <Badge variant="secondary" className="text-xs">{pendingRequests.length}</Badge></Box>} />
             <Tab label="Approved" />
