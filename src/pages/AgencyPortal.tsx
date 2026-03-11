@@ -423,10 +423,16 @@ const AgencyPortal = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={() => setShowCandidateForm(true)} size="small">
-                <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-                Add Candidate
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button onClick={() => setShowBulkImport(true)} variant="outlined" size="small">
+                  <Upload className="h-3.5 w-3.5 mr-1.5" />
+                  Import
+                </Button>
+                <Button onClick={() => setShowCandidateForm(true)} size="small">
+                  <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                  Add Candidate
+                </Button>
+              </div>
             </div>
 
             {/* Stats */}
