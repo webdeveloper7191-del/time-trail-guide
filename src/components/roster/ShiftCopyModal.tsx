@@ -33,6 +33,7 @@ interface ShiftCopyModalProps {
   shift: Shift | null;
   rooms: Room[];
   staff: StaffMember[];
+  centres?: Centre[];
   existingShifts: Shift[];
   onCopy: (newShifts: Omit<Shift, 'id'>[]) => void;
 }
