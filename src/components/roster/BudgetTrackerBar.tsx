@@ -53,8 +53,8 @@ export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget, centre
     });
 
     const totalCost = regularCost + overtimeCost;
-    const variance = totalCost - weeklyBudget;
-    const percentUsed = (totalCost / weeklyBudget) * 100;
+    const variance = totalCost - activeBudget;
+    const percentUsed = (totalCost / activeBudget) * 100;
     const agencyCost = centreShifts
       .filter(s => staff.find(st => st.id === s.staffId)?.agency)
       .reduce((sum, shift) => {
