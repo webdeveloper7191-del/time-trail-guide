@@ -143,9 +143,10 @@ interface FormQuestionLabelProps {
   className?: string;
 }
 
-export function FormQuestionLabel({ question, required, tooltip, className }: FormQuestionLabelProps) {
+export const FormQuestionLabel = React.forwardRef<HTMLDivElement, FormQuestionLabelProps>(
+  function FormQuestionLabel({ question, required, tooltip, className }, ref) {
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <div ref={ref} className={cn("flex items-center gap-1.5", className)}>
       <span className="text-base font-semibold text-foreground">
         {question}
         {required && <span className="text-destructive ml-0.5">*</span>}
@@ -164,6 +165,6 @@ export function FormQuestionLabel({ question, required, tooltip, className }: Fo
       )}
     </div>
   );
-}
+});
 
 export default FormSection;
