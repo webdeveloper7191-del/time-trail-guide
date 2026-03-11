@@ -282,6 +282,18 @@ export default function TimesheetAdmin() {
 
               <div className="w-px h-8 bg-border mx-2" />
 
+              {/* Add & Import */}
+              <Button size="sm" onClick={() => setIsAddModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Add Timesheet
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setIsImportModalOpen(true)}>
+                <Upload className="h-4 w-4 mr-1.5" />
+                Import
+              </Button>
+
+              <div className="w-px h-8 bg-border mx-2" />
+
               {/* Delegation Button */}
               <Button variant="outline" size="sm" onClick={() => setIsDelegationOpen(true)}>
                 <UserCheck className="h-4 w-4 mr-1.5" />
