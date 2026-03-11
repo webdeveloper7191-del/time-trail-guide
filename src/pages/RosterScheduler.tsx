@@ -2466,6 +2466,7 @@ export default function RosterScheduler() {
         onApprove={handleLeaveApprove}
         onReject={handleLeaveReject}
         onCreateRequest={handleCreateLeaveRequest}
+        centres={mockCentres}
       />
 
       <ShiftSwapModal
