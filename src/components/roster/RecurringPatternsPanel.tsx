@@ -233,6 +233,15 @@ export function RecurringPatternsPanel({
 
   return (
     <div className="space-y-6 w-full">
+      {/* Location Selector */}
+      {centres && centres.length > 0 && (
+        <CentreSelector
+          centres={centres}
+          selectedCentreId={activeCentreId}
+          onCentreChange={setActiveCentreId}
+        />
+      )}
+
       {/* Header */}
       <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="pb-4">
