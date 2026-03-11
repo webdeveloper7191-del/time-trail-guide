@@ -2631,6 +2631,7 @@ export default function RosterScheduler() {
         dates={dates}
         existingShifts={shifts}
         centreId={selectedCentreId}
+        centres={mockCentres}
         shiftTemplates={allShiftTemplates}
         onAssign={handleBulkAssignment}
       />
