@@ -231,7 +231,7 @@ export function AlertNotificationsPanel({
       const severityOrder = { critical: 0, warning: 1, info: 2 };
       return severityOrder[a.severity] - severityOrder[b.severity];
     });
-  }, [shifts, staff, complianceFlags, weeklyBudget, totalCost, centreId, readAlerts]);
+  }, [filteredShifts, staff, complianceFlags, weeklyBudget, totalCost, activeCentreId, readAlerts]);
 
   const unreadCount = alerts.filter(a => !a.read).length;
 
