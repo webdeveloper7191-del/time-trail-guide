@@ -2538,6 +2538,7 @@ export default function RosterScheduler() {
         shifts={shifts}
         staff={allStaff}
         centreId={selectedCentreId}
+        centres={mockCentres}
       />
 
       {/* Bulk Series Edit Modal */}
