@@ -22,6 +22,7 @@ import {
   Copy,
   ChevronLeft,
   ChevronRight,
+  Building2,
 } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { ScrollArea } from '@/components/ui/scroll-area';
