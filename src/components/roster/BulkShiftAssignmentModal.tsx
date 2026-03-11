@@ -22,6 +22,7 @@ interface BulkShiftAssignmentModalProps {
   rooms: Room[];
   dates: Date[];
   centreId: string;
+  centres?: Centre[];
   shiftTemplates: ShiftTemplate[];
   existingShifts: Shift[];
   onAssign: (shifts: Omit<Shift, 'id'>[]) => void;
