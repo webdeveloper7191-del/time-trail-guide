@@ -333,8 +333,7 @@ export function CandidateBulkImport({ open, onClose, onImport }: CandidateBulkIm
       {step === 'mapping' && (
         <div className="space-y-4">
           <FormSection
-            title="Column Mapping"
-            description={`Map columns from "${fileName}" to candidate fields. ${requiredMapped}/${REQUIRED_FIELDS.length} required fields mapped.`}
+            title={`Column Mapping (${requiredMapped}/${REQUIRED_FIELDS.length} required)`}
           >
             <div className="space-y-2">
               {rawHeaders.map((header, idx) => {
