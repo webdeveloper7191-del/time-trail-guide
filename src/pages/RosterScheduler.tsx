@@ -47,6 +47,7 @@ import { useDemand } from '@/contexts/DemandContext';
 
 import { DemandImportModal } from '@/components/demand';
 import { HolidayEventCalendarPanel } from '@/components/roster/HolidayEventCalendarPanel';
+import { LeaveByLocationPanel } from '@/components/roster/LeaveByLocationPanel';
 import { MobileRosterToolbar } from '@/components/roster/MobileRosterToolbar';
 import { MobileStaffPanel } from '@/components/roster/MobileStaffPanel';
 import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
