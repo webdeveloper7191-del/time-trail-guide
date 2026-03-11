@@ -2593,9 +2593,10 @@ export default function RosterScheduler() {
       <SaveRosterTemplateModal
         open={showSaveTemplateModal}
         onClose={() => setShowSaveTemplateModal(false)}
-        shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+        shifts={shifts}
         rooms={selectedCentre.rooms}
         centreId={selectedCentreId}
+        centres={mockCentres}
         dates={dates}
         onSave={handleSaveRosterTemplate}
       />
