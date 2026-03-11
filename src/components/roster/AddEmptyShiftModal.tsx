@@ -256,17 +256,6 @@ export function AddEmptyShiftModal({
       actions={actions}
     >
       <div className="space-y-4">
-        {/* Location Selector */}
-        {centres && centres.length > 0 && (
-          <CentreSelector
-            centres={centres}
-            selectedCentreId={activeCentreId}
-            onCentreChange={(id) => {
-              setActiveCentreId(id);
-              setSelectedRoomIds([]);
-            }}
-          />
-        )}
 
         {/* Step 1: Select Template or Custom Times */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
