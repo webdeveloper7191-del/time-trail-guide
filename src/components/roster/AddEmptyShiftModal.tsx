@@ -153,7 +153,7 @@ export function AddEmptyShiftModal({
       selectedRoomIds.forEach(roomId => {
         const shift: EmptyShift = {
           id: `empty-${date}-${roomId}-${Date.now()}-${Math.random()}`,
-          centreId,
+          centreId: activeCentreId,
           roomId,
           date,
           startTime: selectedTemplate?.startTime || customStartTime,
