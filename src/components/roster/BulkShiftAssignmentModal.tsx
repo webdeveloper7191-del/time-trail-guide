@@ -289,6 +289,19 @@ export function BulkShiftAssignmentModal({
 
           <TabsContent value="shift" className="mt-4 space-y-4">
             <FormSection title="Room & Template">
+              {/* Location Selector */}
+              {centres && centres.length > 0 && (
+                <FormField label="Location">
+                  <CentreSelector
+                    centres={centres}
+                    selectedCentreId={activeCentreId}
+                    onCentreChange={(id) => {
+                      setActiveCentreId(id);
+                      setSelectedRoomId('');
+                    }}
+                  />
+                </FormField>
+              )}
               <FormField label="Room" required>
                 <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
                   <SelectTrigger>

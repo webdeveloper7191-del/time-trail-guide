@@ -527,6 +527,20 @@ export function AddEmptyShiftModal({
 
         {/* Step 2: Select Rooms */}
         <FormSection title="Select Rooms">
+          {/* Location Selector */}
+          {centres && centres.length > 0 && (
+            <div className="mb-3">
+              <CentreSelector
+                centres={centres}
+                selectedCentreId={activeCentreId}
+                onCentreChange={(id) => {
+                  setActiveCentreId(id);
+                  setSelectedRoomIds([]);
+                }}
+                label="Location"
+              />
+            </div>
+          )}
           <div className="flex items-center justify-end gap-2 mb-3">
             <button onClick={selectAllRooms} className="text-xs text-primary hover:underline">Select All</button>
             <button onClick={deselectAllRooms} className="text-xs text-muted-foreground hover:underline">Clear</button>
