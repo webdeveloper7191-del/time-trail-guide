@@ -1,27 +1,38 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Chip,
   Box,
   Typography,
 } from '@mui/material';
-import { StaffMember, roleLabels } from '@/types/roster';
+import { StaffMember, Centre, roleLabels } from '@/types/roster';
 import { format, startOfWeek, addDays } from 'date-fns';
-import { Check, X, Users } from 'lucide-react';
+import { Check, X, Users, Building2 } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AvailabilityCalendarModalProps {
   open: boolean;
   onClose: () => void;
   staff: StaffMember[];
   currentDate: Date;
+  centres?: Centre[];
 }
 
 const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export function AvailabilityCalendarModal({ open, onClose, staff, currentDate }: AvailabilityCalendarModalProps) {
+export function AvailabilityCalendarModal({ open, onClose, staff, currentDate, centres = [] }: AvailabilityCalendarModalProps) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const dates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('all');
+
+  const filteredStaff = useMemo(() => {
+    if (selectedLocationId === 'all' || centres.length === 0) return staff;
+    return staff.filter(s =>
+      s.defaultCentreId === selectedLocationId ||
+      s.preferredCentres?.includes(selectedLocationId)
+    );
+  }, [staff, selectedLocationId, centres]);
 
   const getAvailabilityForDay = (member: StaffMember, dayOfWeek: number) => {
     const availDayOfWeek = dayOfWeek === 6 ? 0 : dayOfWeek + 1;
