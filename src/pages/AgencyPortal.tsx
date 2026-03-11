@@ -723,22 +723,17 @@ const AgencyPortal = () => {
             {/* ═══ SHIFTS ══════════════════════════════════════════════════ */}
             {activeTab === 'shifts' && (
               <div className="space-y-4">
-                {selectedShift ? (
-                  <div className="space-y-4">
-                    <Button variant="ghost" size="small" onClick={() => setSelectedShiftForMatching(null)}>
-                      <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-                      Back to Shifts
-                    </Button>
-                    <ShiftMatchingPanel 
-                      shiftRequest={selectedShift} 
-                      onAssign={(placements) => {
-                        console.log('Assigned placements:', placements);
-                        setSelectedShiftForMatching(null);
-                      }}
-                      onClose={() => setSelectedShiftForMatching(null)} 
-                    />
-                  </div>
-                ) : (
+                {selectedShift && (
+                  <ShiftMatchingPanel 
+                    shiftRequest={selectedShift}
+                    open={!!selectedShiftForMatching}
+                    onAssign={(placements) => {
+                      console.log('Assigned placements:', placements);
+                      setSelectedShiftForMatching(null);
+                    }}
+                    onClose={() => setSelectedShiftForMatching(null)} 
+                  />
+                )}
                   <>
                     {/* KPI Row */}
                     <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
@@ -863,8 +858,7 @@ const AgencyPortal = () => {
                     {shiftViewMode === 'calendar' && (
                       <ShiftCalendarView onSelectShift={(id) => setSelectedShiftForMatching(id)} />
                     )}
-                  </>
-                )}
+                   </>
               </div>
             )}
 
