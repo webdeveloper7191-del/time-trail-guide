@@ -2518,6 +2518,7 @@ export default function RosterScheduler() {
         onClose={() => setShowAvailabilityModal(false)}
         staff={allStaff}
         currentDate={currentDate}
+        centres={mockCentres}
       />
 
       <BudgetSettingsModal
