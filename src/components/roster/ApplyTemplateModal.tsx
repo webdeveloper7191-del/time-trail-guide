@@ -115,7 +115,7 @@ export function ApplyTemplateModal({
       .filter(r => selectedShifts.size === 0 || selectedShifts.has(r.templateShift.id))
       .map(result => ({
         staffId: '',
-        centreId,
+        centreId: activeCentreId,
         roomId: result.templateShift.roomId,
         date: result.date,
         startTime: result.templateShift.startTime,
