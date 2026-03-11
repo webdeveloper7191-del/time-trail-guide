@@ -42,11 +42,20 @@ export function ShiftCopyModal({
   open,
   onClose,
   shift,
-  rooms,
+  rooms: defaultRooms,
   staff,
+  centres,
   existingShifts,
   onCopy,
 }: ShiftCopyModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(shift?.centreId || '');
+  const rooms = useMemo(() => {
+    if (centres && activeCentreId) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember[]>([]);
