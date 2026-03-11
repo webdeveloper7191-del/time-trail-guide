@@ -55,6 +55,7 @@ interface AddEmptyShiftModalProps {
   onClose: () => void;
   rooms: Room[];
   centreId: string;
+  centres?: Centre[];
   availableDates: Date[];
   shiftTemplates: ShiftTemplate[];
   onAdd: (shifts: EmptyShift[]) => void;
