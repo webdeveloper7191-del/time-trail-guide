@@ -367,15 +367,36 @@ const operators = [
   { value: 'is_false', label: 'Is False', symbol: '✗' },
 ];
 
+// Map field types to their applicable operators
+const operatorsByFieldType: Record<string, string[]> = {
+  number: ['equals', 'not_equals', 'greater_than', 'less_than', 'greater_or_equal', 'less_or_equal', 'between'],
+  select: ['equals', 'not_equals', 'contains'],
+  boolean: ['is_true', 'is_false'],
+  time: ['equals', 'not_equals', 'greater_than', 'less_than', 'between'],
+  date: ['equals', 'not_equals', 'greater_than', 'less_than', 'between'],
+  text: ['equals', 'not_equals', 'contains', 'starts_with'],
+};
+
+const getOperatorsForField = (fieldValue: string) => {
+  const fieldConfig = conditionFields.find(f => f.value === fieldValue);
+  const fieldType = fieldConfig?.type || 'text';
+  const allowed = operatorsByFieldType[fieldType] || operatorsByFieldType.text;
+  return operators.filter(o => allowed.includes(o.value));
+};
+
 const actionTypes = [
-  { value: 'apply_multiplier', label: 'Apply Multiplier', icon: Zap, unit: 'x', description: 'Multiply base rate' },
-  { value: 'apply_percentage', label: 'Apply Percentage', icon: Percent, unit: '%', description: 'Add percentage to rate' },
-  { value: 'add_allowance', label: 'Add Allowance', icon: DollarSign, unit: '$', description: 'Add fixed amount' },
-  { value: 'set_rate', label: 'Set Fixed Rate', icon: Target, unit: '$', description: 'Override with fixed rate' },
-  { value: 'add_bonus', label: 'Add Bonus', icon: Sparkles, unit: '$', description: 'One-time bonus amount' },
-  { value: 'reduce_rate', label: 'Reduce Rate', icon: AlertTriangle, unit: '%', description: 'Reduce by percentage' },
-  { value: 'cap_at', label: 'Cap At Maximum', icon: Shield, unit: '$', description: 'Maximum cap on earnings' },
+  { value: 'apply_multiplier', label: 'Apply Multiplier', icon: Zap, unit: 'x', description: 'Multiply base rate', ruleTypes: ['overtime', 'penalty', 'condition'] as CustomRule['type'][] },
+  { value: 'apply_percentage', label: 'Apply Percentage', icon: Percent, unit: '%', description: 'Add percentage to rate', ruleTypes: ['overtime', 'penalty', 'leave_loading', 'condition'] as CustomRule['type'][] },
+  { value: 'add_allowance', label: 'Add Allowance', icon: DollarSign, unit: '$', description: 'Add fixed amount', ruleTypes: ['allowance', 'condition'] as CustomRule['type'][] },
+  { value: 'set_rate', label: 'Set Fixed Rate', icon: Target, unit: '$', description: 'Override with fixed rate', ruleTypes: ['overtime', 'penalty', 'allowance', 'condition'] as CustomRule['type'][] },
+  { value: 'add_bonus', label: 'Add Bonus', icon: Sparkles, unit: '$', description: 'One-time bonus amount', ruleTypes: ['allowance', 'condition'] as CustomRule['type'][] },
+  { value: 'reduce_rate', label: 'Reduce Rate', icon: AlertTriangle, unit: '%', description: 'Reduce by percentage', ruleTypes: ['penalty', 'condition'] as CustomRule['type'][] },
+  { value: 'cap_at', label: 'Cap At Maximum', icon: Shield, unit: '$', description: 'Maximum cap on earnings', ruleTypes: ['overtime', 'penalty', 'allowance', 'leave_loading', 'condition'] as CustomRule['type'][] },
 ];
+
+const getActionsForRuleType = (ruleType: CustomRule['type']) => {
+  return actionTypes.filter(a => a.ruleTypes.includes(ruleType));
+};
 
 const ruleTypeConfig = {
   overtime: { color: 'bg-blue-500/10 text-blue-700 border-blue-200', icon: Clock, label: 'Overtime' },
