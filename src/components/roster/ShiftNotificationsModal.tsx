@@ -23,9 +23,10 @@ import {
   Briefcase
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Shift, StaffMember, ShiftNotification } from '@/types/roster';
+import { Shift, StaffMember, ShiftNotification, Centre } from '@/types/roster';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { CentreSelector } from './CentreSelector';
 import {
   Sheet,
   SheetContent,
@@ -41,6 +42,7 @@ interface ShiftNotificationsModalProps {
   shifts: Shift[];
   staff: StaffMember[];
   centreId: string;
+  centres?: Centre[];
 }
 
 // Mock notification history
@@ -86,7 +88,9 @@ export function ShiftNotificationsModal({
   shifts,
   staff,
   centreId,
+  centres,
 }: ShiftNotificationsModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [notificationType, setNotificationType] = useState<'publish' | 'reminder' | 'custom'>('publish');
   const [customMessage, setCustomMessage] = useState('');
@@ -96,9 +100,9 @@ export function ShiftNotificationsModal({
   const [tabValue, setTabValue] = useState(0);
 
   const affectedStaff = useMemo(() => {
-    const staffIds = new Set(shifts.filter(s => s.centreId === centreId).map(s => s.staffId));
+    const staffIds = new Set(shifts.filter(s => s.centreId === activeCentreId).map(s => s.staffId));
     return staff.filter(s => staffIds.has(s.id));
-  }, [shifts, staff, centreId]);
+  }, [shifts, staff, activeCentreId]);
 
   const toggleRecipient = (staffId: string) => {
     setSelectedRecipients(prev => 
@@ -188,6 +192,14 @@ export function ShiftNotificationsModal({
         </TabsList>
 
         <TabsContent value="send" className="space-y-4">
+          {/* Location Selector */}
+          {centres && centres.length > 0 && (
+            <CentreSelector
+              centres={centres}
+              selectedCentreId={activeCentreId}
+              onCentreChange={setActiveCentreId}
+            />
+          )}
           {/* Notification Type */}
           <FormSection title="Notification Type">
                 <div className="flex gap-2 flex-wrap">

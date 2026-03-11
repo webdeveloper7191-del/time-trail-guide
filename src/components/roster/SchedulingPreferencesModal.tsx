@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,16 +17,18 @@ import {
   Moon,
   BedDouble
 } from 'lucide-react';
-import { StaffMember, SchedulingPreferences, Room } from '@/types/roster';
+import { StaffMember, SchedulingPreferences, Room, Centre } from '@/types/roster';
 import { cn } from '@/lib/utils';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
+import { CentreSelector } from './CentreSelector';
 
 interface SchedulingPreferencesModalProps {
   open: boolean;
   onClose: () => void;
   staff: StaffMember;
   allRooms: Room[];
+  centres?: Centre[];
   onSave: (staffId: string, preferences: SchedulingPreferences) => void;
 }
 
@@ -47,9 +49,18 @@ export function SchedulingPreferencesModal({
   open, 
   onClose, 
   staff, 
-  allRooms,
+  allRooms: defaultRooms,
+  centres,
   onSave 
 }: SchedulingPreferencesModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centres?.[0]?.id || '');
+  const allRooms = useMemo(() => {
+    if (centres && activeCentreId) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || defaultRooms;
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [preferences, setPreferences] = useState<SchedulingPreferences>(
     staff.schedulingPreferences || defaultPreferences
   );
@@ -214,6 +225,16 @@ export function SchedulingPreferencesModal({
 
         {/* Rooms Tab */}
         <TabsContent value="1" className="space-y-4 mt-4">
+                {/* Location Selector */}
+                {centres && centres.length > 0 && (
+                  <FormSection title="Location">
+                    <CentreSelector
+                      centres={centres}
+                      selectedCentreId={activeCentreId}
+                      onCentreChange={setActiveCentreId}
+                    />
+                  </FormSection>
+                )}
                 {/* Preferred Rooms */}
                 <FormSection title="Preferred Rooms">
                   <div className="grid grid-cols-2 gap-2">

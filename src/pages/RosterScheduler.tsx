@@ -2496,6 +2496,7 @@ export default function RosterScheduler() {
         open={showBudgetSettings}
         onClose={() => setShowBudgetSettings(false)}
         centre={selectedCentre}
+        centres={mockCentres}
         currentBudget={weeklyBudget}
         onSave={handleSaveBudgetSettings}
       />
@@ -2514,9 +2515,10 @@ export default function RosterScheduler() {
       <ShiftConflictPanel
         open={showConflicts}
         onClose={() => setShowConflicts(false)}
-        shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+        shifts={shifts}
         staff={allStaff}
         rooms={selectedCentre.rooms}
+        centres={mockCentres}
       />
 
       {selectedStaffForPrefs && (
@@ -2524,7 +2526,8 @@ export default function RosterScheduler() {
           open={showPreferences}
           onClose={() => { setShowPreferences(false); setSelectedStaffForPrefs(null); }}
           staff={selectedStaffForPrefs}
-          allRooms={selectedCentre.rooms}
+           allRooms={selectedCentre.rooms}
+           centres={mockCentres}
           onSave={handleSavePreferences}
         />
       )}
@@ -2535,6 +2538,7 @@ export default function RosterScheduler() {
         shifts={shifts}
         staff={allStaff}
         centreId={selectedCentreId}
+        centres={mockCentres}
       />
 
       {/* Bulk Series Edit Modal */}

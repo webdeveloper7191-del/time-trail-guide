@@ -19,9 +19,10 @@ interface FormSectionProps {
  * FormSection - A styled section container for forms in off-canvas drawers.
  * Features bold section headers with optional info tooltip, matching the reference design.
  */
-export function FormSection({ title, tooltip, children, className }: FormSectionProps) {
+export const FormSection = React.forwardRef<HTMLDivElement, FormSectionProps>(
+  function FormSection({ title, tooltip, children, className }, ref) {
   return (
-    <div className={cn("rounded-lg border border-border bg-background p-4", className)}>
+    <div ref={ref} className={cn("rounded-lg border border-border bg-background p-4", className)}>
       {/* Section Header - Bold black text with optional info icon */}
       <div className="flex items-center gap-2 mb-4">
         <h3 className="text-base font-semibold text-foreground">{title}</h3>
@@ -44,7 +45,7 @@ export function FormSection({ title, tooltip, children, className }: FormSection
       </div>
     </div>
   );
-}
+});
 
 interface FormFieldProps {
   label: string;

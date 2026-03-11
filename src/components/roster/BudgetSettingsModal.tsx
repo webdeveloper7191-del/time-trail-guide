@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { z } from 'zod';
 import { 
   DollarSign, 
@@ -20,6 +20,7 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import { Centre } from '@/types/roster';
+import { CentreSelector } from './CentreSelector';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -74,13 +75,21 @@ interface BudgetSettingsModalProps {
   open: boolean;
   onClose: () => void;
   centre: Centre;
+  centres?: Centre[];
   currentBudget: number;
   onSave: (settings: BudgetSettings) => void;
 }
 
 const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSave }: BudgetSettingsModalProps) {
+export function BudgetSettingsModal({ open, onClose, centre: defaultCentre, centres, currentBudget, onSave }: BudgetSettingsModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(defaultCentre.id);
+  const centre = useMemo(() => {
+    if (centres) {
+      return centres.find(c => c.id === activeCentreId) || defaultCentre;
+    }
+    return defaultCentre;
+  }, [centres, activeCentreId, defaultCentre]);
   const [settings, setSettings] = useState<BudgetSettings>({
     weeklyBudget: currentBudget,
     overtimeThreshold: 38,
@@ -155,6 +164,15 @@ export function BudgetSettingsModal({ open, onClose, centre, currentBudget, onSa
       actions={actions}
       showFooter
     >
+      {centres && centres.length > 0 && (
+        <div className="mb-4">
+          <CentreSelector
+            centres={centres}
+            selectedCentreId={activeCentreId}
+            onCentreChange={setActiveCentreId}
+          />
+        </div>
+      )}
       <Tabs defaultValue="costs" className="mt-4">
         <TabsList className="grid w-full grid-cols-4 bg-muted/50 p-1 rounded-lg">
           <TabsTrigger value="costs" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Costs</TabsTrigger>

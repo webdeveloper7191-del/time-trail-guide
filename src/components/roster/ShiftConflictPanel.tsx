@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,8 +15,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
-import { Shift, StaffMember, ShiftConflict, Room } from '@/types/roster';
+import { Shift, StaffMember, ShiftConflict, Room, Centre } from '@/types/roster';
 import { detectShiftConflicts, getConflictSeverityColor } from '@/lib/shiftConflictDetection';
+import { CentreSelector } from './CentreSelector';
 
 interface ShiftConflictPanelProps {
   open: boolean;
@@ -24,6 +25,7 @@ interface ShiftConflictPanelProps {
   shifts: Shift[];
   staff: StaffMember[];
   rooms: Room[];
+  centres?: Centre[];
   onNavigateToShift?: (shiftId: string) => void;
 }
 
@@ -32,21 +34,38 @@ export function ShiftConflictPanel({
   onClose,
   shifts,
   staff,
-  rooms,
+  rooms: defaultRooms,
+  centres,
   onNavigateToShift,
 }: ShiftConflictPanelProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centres?.[0]?.id || '');
+  const rooms = useMemo(() => {
+    if (centres && activeCentreId) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || defaultRooms;
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
+
+  const filteredShifts = useMemo(() => {
+    if (centres && activeCentreId) {
+      return shifts.filter(s => s.centreId === activeCentreId);
+    }
+    return shifts;
+  }, [shifts, centres, activeCentreId]);
+
   const allConflicts = useMemo(() => {
     const conflicts: ShiftConflict[] = [];
     
-    shifts.forEach(shift => {
-      const shiftConflicts = detectShiftConflicts(shift, shifts, staff, rooms);
+    filteredShifts.forEach(shift => {
+      const shiftConflicts = detectShiftConflicts(shift, filteredShifts, staff, rooms);
       conflicts.push(...shiftConflicts);
     });
     
     // Deduplicate by id
     const unique = Array.from(new Map(conflicts.map(c => [c.id, c])).values());
     return unique;
-  }, [shifts, staff, rooms]);
+  }, [filteredShifts, staff, rooms]);
 
   const errorConflicts = allConflicts.filter(c => c.severity === 'error');
   const warningConflicts = allConflicts.filter(c => c.severity === 'warning');
@@ -89,6 +108,15 @@ export function ShiftConflictPanel({
       }
       showFooter={false}
     >
+      {centres && centres.length > 0 && (
+        <div className="mb-4">
+          <CentreSelector
+            centres={centres}
+            selectedCentreId={activeCentreId}
+            onCentreChange={setActiveCentreId}
+          />
+        </div>
+      )}
       <Tabs defaultValue="all">
         <TabsList className="grid w-full grid-cols-3 bg-background border p-1 rounded-lg">
           <TabsTrigger value="all" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
