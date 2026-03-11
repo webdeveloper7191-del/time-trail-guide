@@ -131,7 +131,7 @@ export function AlertNotificationsPanel({
     }
 
     // Compliance alerts from flags
-    const centreFlags = complianceFlags.filter(f => f.centreId === centreId);
+    const centreFlags = activeCentreId === 'all' ? complianceFlags : complianceFlags.filter(f => f.centreId === activeCentreId);
     const criticalFlags = centreFlags.filter(f => f.severity === 'critical');
     const warningFlags = centreFlags.filter(f => f.severity === 'warning');
 
