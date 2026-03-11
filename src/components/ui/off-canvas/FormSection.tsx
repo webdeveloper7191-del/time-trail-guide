@@ -60,9 +60,10 @@ interface FormFieldProps {
  * FormField - A styled form field wrapper with label, tooltip, and error display.
  * Labels are styled in PRIMARY/cyan color matching the reference design.
  */
-export function FormField({ label, required, tooltip, error, children, className }: FormFieldProps) {
+export const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
+  function FormField({ label, required, tooltip, error, children, className }, ref) {
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div ref={ref} className={cn("space-y-1.5", className)}>
       {/* Label row - Primary/cyan colored label with red asterisk and info icon */}
       <div className="flex items-center gap-1">
         <label className="text-sm font-medium text-primary">
@@ -87,7 +88,7 @@ export function FormField({ label, required, tooltip, error, children, className
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
-}
+});
 
 interface FormRowProps {
   children: React.ReactNode;
@@ -99,7 +100,8 @@ interface FormRowProps {
  * FormRow - A responsive grid row for form fields.
  * Stacks on mobile, shows multiple columns on larger screens.
  */
-export function FormRow({ children, columns = 2, className }: FormRowProps) {
+export const FormRow = React.forwardRef<HTMLDivElement, FormRowProps>(
+  function FormRow({ children, columns = 2, className }, ref) {
   const gridClass = {
     2: 'sm:grid-cols-2',
     3: 'sm:grid-cols-3',
@@ -107,11 +109,11 @@ export function FormRow({ children, columns = 2, className }: FormRowProps) {
   }[columns];
 
   return (
-    <div className={cn("grid grid-cols-1 gap-4", gridClass, className)}>
+    <div ref={ref} className={cn("grid grid-cols-1 gap-4", gridClass, className)}>
       {children}
     </div>
   );
-}
+});
 
 interface FormActionsRowProps {
   children: React.ReactNode;
@@ -121,13 +123,14 @@ interface FormActionsRowProps {
 /**
  * FormActionsRow - A row for inline action buttons within a section.
  */
-export function FormActionsRow({ children, className }: FormActionsRowProps) {
+export const FormActionsRow = React.forwardRef<HTMLDivElement, FormActionsRowProps>(
+  function FormActionsRow({ children, className }, ref) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div ref={ref} className={cn("flex items-center gap-2", className)}>
       {children}
     </div>
   );
-}
+});
 
 /**
  * FormQuestionLabel - A question-style header for form sections
@@ -140,9 +143,10 @@ interface FormQuestionLabelProps {
   className?: string;
 }
 
-export function FormQuestionLabel({ question, required, tooltip, className }: FormQuestionLabelProps) {
+export const FormQuestionLabel = React.forwardRef<HTMLDivElement, FormQuestionLabelProps>(
+  function FormQuestionLabel({ question, required, tooltip, className }, ref) {
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <div ref={ref} className={cn("flex items-center gap-1.5", className)}>
       <span className="text-base font-semibold text-foreground">
         {question}
         {required && <span className="text-destructive ml-0.5">*</span>}
@@ -161,6 +165,6 @@ export function FormQuestionLabel({ question, required, tooltip, className }: Fo
       )}
     </div>
   );
-}
+});
 
 export default FormSection;
