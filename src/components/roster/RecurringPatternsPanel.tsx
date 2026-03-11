@@ -61,6 +61,7 @@ const mockRoles = [
 interface RecurringPatternsPanelProps {
   centreId?: string;
   centre?: Centre;
+  centres?: Centre[];
   staff?: StaffMember[];
   existingShifts?: Shift[];
   onGenerateShifts?: (shifts: Omit<Shift, 'id'>[]) => void;
