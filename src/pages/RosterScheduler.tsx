@@ -2496,6 +2496,7 @@ export default function RosterScheduler() {
         open={showBudgetSettings}
         onClose={() => setShowBudgetSettings(false)}
         centre={selectedCentre}
+        centres={mockCentres}
         currentBudget={weeklyBudget}
         onSave={handleSaveBudgetSettings}
       />
