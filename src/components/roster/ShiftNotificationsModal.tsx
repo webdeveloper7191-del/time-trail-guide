@@ -23,7 +23,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Shift, StaffMember, ShiftNotification } from '@/types/roster';
+import { Shift, StaffMember, ShiftNotification, Centre } from '@/types/roster';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import {
