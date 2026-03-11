@@ -1,21 +1,31 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Clock, Users } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Clock, Users, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Shift, StaffMember } from '@/types/roster';
+import { Shift, StaffMember, Centre } from '@/types/roster';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface BudgetTrackerBarProps {
   shifts: Shift[];
   staff: StaffMember[];
   centreId: string;
   weeklyBudget: number;
+  centres?: Centre[];
+  centreBudgets?: Record<string, number>;
 }
 
-export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget }: BudgetTrackerBarProps) {
+export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget, centres = [], centreBudgets = {} }: BudgetTrackerBarProps) {
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(centreId);
+
+  const activeCentreId = selectedLocationId || centreId;
+  const activeBudget = activeCentreId === 'all'
+    ? Object.values(centreBudgets).reduce((sum, b) => sum + b, 0) || weeklyBudget * (centres.length || 1)
+    : centreBudgets[activeCentreId] || weeklyBudget;
+
   const budgetData = useMemo(() => {
-    const centreShifts = shifts.filter(s => s.centreId === centreId);
+    const centreShifts = activeCentreId === 'all' ? shifts : shifts.filter(s => s.centreId === activeCentreId);
     
     let regularCost = 0;
     let overtimeCost = 0;
