@@ -2458,6 +2458,7 @@ export default function RosterScheduler() {
         }}
         rooms={selectedCentre.rooms}
         centreId={selectedCentreId}
+        centres={mockCentres}
         selectedRoomId={quickAddOpenShiftContext?.roomId}
         selectedDate={quickAddOpenShiftContext?.date}
         onAdd={handleAddOpenShift}
