@@ -63,6 +63,7 @@ export function CrossLocationScheduler({
   const [dragOverPaneId, setDragOverPaneId] = useState<string | null>(null);
   const [collapsedPanes, setCollapsedPanes] = useState<Set<string>>(new Set());
   const [centrePickerOpen, setCentrePickerOpen] = useState(false);
+  const [centreSearch, setCentreSearch] = useState('');
 
   const toggleCollapse = (centreId: string) => {
     setCollapsedPanes((prev) => {
