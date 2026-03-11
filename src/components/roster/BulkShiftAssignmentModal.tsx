@@ -106,7 +106,7 @@ export function BulkShiftAssignmentModal({
 
     const newShifts: Omit<Shift, 'id'>[] = shiftsWithoutConflicts.map(preview => ({
       staffId: preview.staffId,
-      centreId,
+      centreId: activeCentreId,
       roomId: selectedRoomId,
       date: preview.date,
       startTime: selectedTemplate.startTime,
