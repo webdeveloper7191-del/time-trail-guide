@@ -4,12 +4,8 @@ import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { StaffTimelineGrid } from './StaffTimelineGrid';
 import { DayTimelineView } from './DayTimelineView';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronRight, MapPin, Users, AlertTriangle, X, Clock, Check, Search } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ChevronDown, ChevronRight, MapPin, Users, AlertTriangle, X, Clock } from 'lucide-react';
 
 interface EmptyShift {
   id: string;
