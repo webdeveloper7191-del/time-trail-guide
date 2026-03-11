@@ -33,6 +33,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { format, parseISO, addDays, addWeeks, addMonths } from 'date-fns';
+import { CentreSelector } from './CentreSelector';
 
 interface EmptyShift {
   id: string;
