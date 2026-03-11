@@ -887,10 +887,15 @@ export default function RosterScheduler() {
     const endHour = Math.min(hours + 8, 21); // Cap at 9 PM
     const endTime = `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 
+    // Derive centreId from the room when in all-locations mode
+    const centreId = isAllLocationsView
+      ? mockCentres.find(c => c.rooms.some(r => r.id === roomId))?.id || selectedCentreId
+      : selectedCentreId;
+
     const newShift: Shift = {
       id: `shift-${Date.now()}`,
       staffId,
-      centreId: selectedCentreId,
+      centreId,
       roomId,
       date,
       startTime,
