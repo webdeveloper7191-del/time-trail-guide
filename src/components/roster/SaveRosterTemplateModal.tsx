@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Shift, Room } from '@/types/roster';
+import { useState, useMemo } from 'react';
+import { Shift, Room, Centre } from '@/types/roster';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RosterTemplate, RosterTemplateShift } from '@/types/rosterTemplates';
 import { format } from 'date-fns';
@@ -9,6 +9,7 @@ import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/Form
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
+import { CentreSelector } from './CentreSelector';
 import { cn } from '@/lib/utils';
 
 interface SaveRosterTemplateModalProps {
@@ -17,6 +18,7 @@ interface SaveRosterTemplateModalProps {
   shifts: Shift[];
   rooms: Room[];
   centreId: string;
+  centres?: Centre[];
   dates: Date[];
   onSave: (template: Omit<RosterTemplate, 'id' | 'createdAt' | 'updatedAt'>) => void;
 }
@@ -25,11 +27,20 @@ export function SaveRosterTemplateModal({
   open,
   onClose,
   shifts,
-  rooms,
+  rooms: defaultRooms,
   centreId,
+  centres,
   dates,
   onSave
 }: SaveRosterTemplateModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
+  const rooms = useMemo(() => {
+    if (centres) {
+      const centre = centres.find(c => c.id === activeCentreId);
+      return centre?.rooms || [];
+    }
+    return defaultRooms;
+  }, [centres, activeCentreId, defaultRooms]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedRooms, setSelectedRooms] = useState<string[]>(rooms.map(r => r.id));
