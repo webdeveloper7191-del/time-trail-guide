@@ -164,8 +164,9 @@ export function AddOpenShiftModal({
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
+      setActiveCentreId(centreId);
       reset({
-        centreId,
+        centreId: centreId,
         roomId: selectedRoomId || '',
         date: selectedDate || '',
         startTime: '09:00',
