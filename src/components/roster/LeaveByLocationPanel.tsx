@@ -208,7 +208,7 @@ export function LeaveByLocationPanel({
           ) : (
             <div className="space-y-4">
               {/* National holidays */}
-              <FormSection title="National Holidays" defaultOpen>
+              <FormSection title="National Holidays">
                 {monthHolidays.filter(h => !h.state).length === 0 ? (
                   <p className="text-sm text-muted-foreground py-3 text-center">No national holidays this month</p>
                 ) : (
