@@ -410,18 +410,7 @@ export function CopyWeekModal({
       size="lg"
       actions={actions}
     >
-      <Stack spacing={3}>
-        {/* Location Selector */}
-        {centres && centres.length > 0 && (
-          <CentreSelector
-            centres={centres}
-            selectedCentreId={activeCentreId}
-            onCentreChange={(id) => {
-              setActiveCentreId(id);
-              setSelectedRooms(new Set());
-            }}
-          />
-        )}
+        <Stack spacing={3}>
         {!showPreview ? (
           <>
             {/* Source Period Selection */}
