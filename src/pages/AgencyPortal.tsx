@@ -529,26 +529,49 @@ const AgencyPortal = () => {
                 {/* Toolbar */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <Select value={shiftStatusFilter} onValueChange={setShiftStatusFilter}>
-                      <SelectTrigger className="w-[140px] h-8 text-xs">
-                        <Filter className="h-3 w-3 mr-1.5 text-muted-foreground" />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="partially_filled">Partially Filled</SelectItem>
-                        <SelectItem value="filled">Filled</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {shiftViewMode === 'list' && (
+                      <Select value={shiftStatusFilter} onValueChange={setShiftStatusFilter}>
+                        <SelectTrigger className="w-[140px] h-8 text-xs">
+                          <Filter className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Status</SelectItem>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="partially_filled">Partially Filled</SelectItem>
+                          <SelectItem value="filled">Filled</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {filteredShifts.length} shift{filteredShifts.length !== 1 ? 's' : ''}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center rounded-md border bg-background">
+                      <button
+                        onClick={() => setShiftViewMode('list')}
+                        className={cn(
+                          'flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-l-md transition-colors',
+                          shiftViewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        <List className="h-3 w-3" /> List
+                      </button>
+                      <button
+                        onClick={() => setShiftViewMode('calendar')}
+                        className={cn(
+                          'flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-r-md transition-colors',
+                          shiftViewMode === 'calendar' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        <CalendarDays className="h-3 w-3" /> Calendar
+                      </button>
+                    </div>
                   </div>
                 </div>
 
+                {shiftViewMode === 'list' && (
+                  <>
                 {/* Stats */}
                 <div className="grid grid-cols-4 gap-2">
                   <MiniStat label="Total" value={mockShiftRequests.length} icon={Calendar} />
