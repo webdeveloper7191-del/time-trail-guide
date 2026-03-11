@@ -79,7 +79,7 @@ export function ApplyTemplateModal({
         const isTrulyOpen = !s.staffId;
 
         return (
-          s.centreId === centreId &&
+          s.centreId === activeCentreId &&
           s.roomId === templateShift.roomId &&
           s.date === dateStr &&
           s.startTime === templateShift.startTime &&
