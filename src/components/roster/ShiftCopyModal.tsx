@@ -19,7 +19,7 @@ import {
 import { format, addDays, addWeeks, parseISO, isBefore, isAfter } from 'date-fns';
 import { Copy, Calendar, Repeat, CalendarDays, X, Users } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { Shift, Room, StaffMember } from '@/types/roster';
+import { Shift, Room, StaffMember, Centre } from '@/types/roster';
 import { shiftCopySchema, ShiftCopyFormValues } from '@/lib/validationSchemas';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
