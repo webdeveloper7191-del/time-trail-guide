@@ -2472,6 +2472,7 @@ export default function RosterScheduler() {
         rooms={selectedCentre.rooms}
         staff={allStaff}
         centreId={selectedCentreId}
+        centres={mockCentres}
         currentDate={currentDate}
         onCopy={handleCopyWeekShifts}
       />
