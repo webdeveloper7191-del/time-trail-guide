@@ -320,7 +320,7 @@ export function CandidateBulkImport({ open, onClose, onImport }: CandidateBulkIm
             </div>
           </FormSection>
 
-          <FormSection title="Download Template" description="Use our template for fastest import.">
+          <FormSection title="Download Template" tooltip="Use our template for fastest import.">
             <Button variant="outlined" size="small" onClick={downloadTemplate}>
               <Download className="h-3.5 w-3.5 mr-1.5" />
               Download CSV Template
