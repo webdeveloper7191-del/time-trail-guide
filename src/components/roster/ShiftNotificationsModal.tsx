@@ -88,7 +88,9 @@ export function ShiftNotificationsModal({
   shifts,
   staff,
   centreId,
+  centres,
 }: ShiftNotificationsModalProps) {
+  const [activeCentreId, setActiveCentreId] = useState(centreId);
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [notificationType, setNotificationType] = useState<'publish' | 'reminder' | 'custom'>('publish');
   const [customMessage, setCustomMessage] = useState('');
@@ -98,9 +100,9 @@ export function ShiftNotificationsModal({
   const [tabValue, setTabValue] = useState(0);
 
   const affectedStaff = useMemo(() => {
-    const staffIds = new Set(shifts.filter(s => s.centreId === centreId).map(s => s.staffId));
+    const staffIds = new Set(shifts.filter(s => s.centreId === activeCentreId).map(s => s.staffId));
     return staff.filter(s => staffIds.has(s.id));
-  }, [shifts, staff, centreId]);
+  }, [shifts, staff, activeCentreId]);
 
   const toggleRecipient = (staffId: string) => {
     setSelectedRecipients(prev => 
