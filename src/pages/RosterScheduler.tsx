@@ -1591,6 +1591,17 @@ export default function RosterScheduler() {
               )}
             </div>
 
+            {/* Role Filter */}
+            <Select
+              value={roleFilter}
+              onValueChange={setRoleFilter}
+              options={roleOptions}
+              size="small"
+              fullWidth={false}
+              className="min-w-[100px] lg:min-w-[140px]"
+            />
+          </Stack>
+
           {/* Status Badges & Primary Actions */}
           <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {/* Status indicators - hide labels on tablet */}
