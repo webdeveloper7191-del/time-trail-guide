@@ -467,7 +467,7 @@ export function CandidateBulkImport({ open, onClose, onImport }: CandidateBulkIm
           )}
 
           {/* Data preview table */}
-          <FormSection title="Data Preview" description="First 10 rows of parsed data.">
+          <FormSection title="Data Preview">
             <div className="overflow-x-auto rounded border">
               <Table>
                 <TableHeader>
