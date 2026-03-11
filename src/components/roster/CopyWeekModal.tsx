@@ -220,7 +220,7 @@ export function CopyWeekModal({
     });
     
     return previews;
-  }, [sourceShifts, targetDateRanges, sourceDateRange, shifts, centreId, conflictHandling, staffAssignment, selectAllMode, manualDeselected]);
+  }, [sourceShifts, targetDateRanges, sourceDateRange, shifts, activeCentreId, conflictHandling, staffAssignment, selectAllMode, manualDeselected]);
 
   // Stats
   const stats = useMemo(() => {
