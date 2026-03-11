@@ -104,7 +104,7 @@ export function ApplyTemplateModal({
         action: 'add' as const
       };
     });
-  }, [selectedTemplate, dates, existingShifts, centreId, skipExisting]);
+  }, [selectedTemplate, dates, existingShifts, activeCentreId, skipExisting]);
 
   const shiftsToAdd = matchResults.filter(r => r.action === 'add');
   const shiftsToSkip = matchResults.filter(r => r.action === 'skip');
