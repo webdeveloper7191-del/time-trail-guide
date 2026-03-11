@@ -197,8 +197,8 @@ export function MultiLocationRosterView({
       {centres.map((centre) => {
         const isCollapsed = collapsedCentres.has(centre.id);
         const stats = centreStats[centre.id];
-        const centreShifts = shifts.filter(s => s.centreId === centre.id);
-        const centreOpenShifts = openShifts.filter(os => os.centreId === centre.id);
+        const centreShifts = shiftsByCentre.get(centre.id) || [];
+        const centreOpenShifts = openShiftsByCentre.get(centre.id) || [];
         const centreEmptyShifts = emptyShifts.filter(es => es.centreId === centre.id);
 
         return (
