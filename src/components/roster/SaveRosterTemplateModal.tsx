@@ -47,7 +47,7 @@ export function SaveRosterTemplateModal({
   const [includeStaffPreferences, setIncludeStaffPreferences] = useState(false);
 
   const relevantShifts = shifts.filter(s => 
-    s.centreId === centreId && 
+    s.centreId === activeCentreId && 
     selectedRooms.includes(s.roomId) &&
     dates.some(d => format(d, 'yyyy-MM-dd') === s.date)
   );
