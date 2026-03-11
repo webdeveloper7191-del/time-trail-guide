@@ -317,6 +317,15 @@ export function ShiftCopyModal({
           showFooter
         >
           <div className="space-y-6">
+            {/* Location Selector */}
+            {centres && centres.length > 0 && (
+              <CentreSelector
+                centres={centres}
+                selectedCentreId={activeCentreId}
+                onCentreChange={setActiveCentreId}
+              />
+            )}
+
             {/* Source Shift Info */}
             <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover', border: 1, borderColor: 'divider' }}>
               <Typography variant="caption" color="text.secondary">
