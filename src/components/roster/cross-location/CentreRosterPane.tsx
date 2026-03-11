@@ -547,6 +547,7 @@ function ResizableShiftBar({
 
     const handleMouseMove = (e: MouseEvent) => {
       const delta = e.clientX - resizeStartX;
+      setTooltipPos({ x: e.clientX, y: e.clientY });
       if (resizeSide === 'left') {
         const newLeft = snapToGrid(Math.max(0, origLeft + delta));
         const newWidth = Math.max(SLOT_PX * 2, snapToGrid(origWidth - delta));
