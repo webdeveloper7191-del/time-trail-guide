@@ -1053,7 +1053,20 @@ export function CustomRuleBuilderPanel() {
   const updateCondition = (groupIndex: number, conditionIndex: number, field: string, value: string) => {
     setRuleForm(prev => {
       const updated = [...prev.conditionGroups];
-      (updated[groupIndex].conditions[conditionIndex] as any)[field] = value;
+      const condition = { ...updated[groupIndex].conditions[conditionIndex] };
+      (condition as any)[field] = value;
+      
+      // When field changes, reset operator and value if operator is no longer valid
+      if (field === 'field') {
+        const validOps = getOperatorsForField(value);
+        if (!validOps.find(o => o.value === condition.operator)) {
+          condition.operator = '';
+          condition.value = '';
+        }
+      }
+      
+      updated[groupIndex] = { ...updated[groupIndex], conditions: [...updated[groupIndex].conditions] };
+      updated[groupIndex].conditions[conditionIndex] = condition;
       return { ...prev, conditionGroups: updated };
     });
   };
