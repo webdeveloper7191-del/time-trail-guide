@@ -1827,7 +1827,7 @@ export function CustomRuleBuilderPanel() {
                                       <SelectValue placeholder="Operator" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {operators.map(o => (
+                                      {getOperatorsForField(condition.field).map(o => (
                                         <SelectItem key={o.value} value={o.value}>
                                           <span className="font-mono mr-2">{o.symbol}</span>
                                           {o.label}
