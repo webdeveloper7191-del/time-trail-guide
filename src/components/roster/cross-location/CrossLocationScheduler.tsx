@@ -145,7 +145,11 @@ export function CrossLocationScheduler({
     });
   }, [centres, shifts, openShifts, activePaneIds]);
 
-  return (
+  const filteredCentreStats = useMemo(() => {
+    if (!centreSearch.trim()) return centreStats;
+    const q = centreSearch.toLowerCase();
+    return centreStats.filter(({ centre }) => centre.name.toLowerCase().includes(q));
+  }, [centreStats, centreSearch]);
     <div className="flex-1 flex overflow-hidden min-h-0">
       {/* Left: Shared Staff Pool */}
       <div className="w-[260px] flex-shrink-0">
