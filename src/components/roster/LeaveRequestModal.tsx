@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -15,13 +15,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { TimeOff, timeOffTypeLabels, StaffMember } from '@/types/roster';
+import { TimeOff, timeOffTypeLabels, StaffMember, Centre } from '@/types/roster';
 import { format } from 'date-fns';
-import { Check, X, Clock, Calendar, User } from 'lucide-react';
+import { Check, X, Clock, Calendar, User, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { leaveRequestSchema, LeaveRequestFormValues } from '@/lib/validationSchemas';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface LeaveRequest extends TimeOff {
   staffName: string;
@@ -36,6 +37,7 @@ interface LeaveRequestModalProps {
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
   onCreateRequest: (request: Omit<TimeOff, 'id'>) => void;
+  centres?: Centre[];
 }
 
 export function LeaveRequestModal({ 
@@ -45,9 +47,11 @@ export function LeaveRequestModal({
   leaveRequests, 
   onApprove, 
   onReject,
-  onCreateRequest 
+  onCreateRequest,
+  centres = [],
 }: LeaveRequestModalProps) {
   const [tabValue, setTabValue] = useState(0);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('all');
 
   const methods = useForm<LeaveRequestFormValues>({
     resolver: zodResolver(leaveRequestSchema),
