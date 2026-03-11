@@ -60,7 +60,7 @@ import { BreakSchedulingPanel } from '@/components/roster/BreakSchedulingPanel';
 import { SkillMatrixPanel } from '@/components/roster/SkillMatrixPanel';
 import { CallbackEventLoggingPanel } from '@/components/roster/CallbackEventLoggingPanel';
 import { OnCallRosterOverlay } from '@/components/roster/OnCallRosterOverlay';
-import { CrossLocationScheduler } from '@/components/roster/cross-location/CrossLocationScheduler';
+import { MultiLocationRosterView } from '@/components/roster/MultiLocationRosterView';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { SendToAgencyModal, BroadcastConfig } from '@/components/roster/SendToAgencyModal';
 import { AgencyResponseTracker } from '@/components/roster/AgencyResponseTracker';
@@ -2114,28 +2114,67 @@ export default function RosterScheduler() {
       )}
 
       {/* Main Content - with swipe gesture support for mobile/tablet */}
-      {isAllLocationsView ? (
-        <CrossLocationScheduler
-          centres={mockCentres}
-          shifts={shifts}
-          openShifts={openShifts}
-          staff={allStaff}
-          dates={dates}
-          viewMode={viewMode}
-          onSelectCentre={(centreId) => setSelectedCentreId(centreId)}
-          onUpdateShifts={(updater) => setShifts(updater(shifts), 'Cross-location assignment', 'add')}
-          onShiftClick={setSelectedShift}
-          onShiftDelete={handleShiftDelete}
-          onShiftCopy={handleCopyShift}
-          onShiftSwap={handleSwapStaff}
-          onShiftResize={handleShiftResize}
-        />
-      ) : (
       <Box 
         ref={swipeContainerRef}
         className="flex-1 flex overflow-hidden w-full max-w-full touch-pan-y"
       >
-        {viewMode === 'day' ? (
+        {isAllLocationsView ? (
+          <MultiLocationRosterView
+            centres={mockCentres}
+            shifts={shifts}
+            openShifts={openShifts}
+            staff={filteredStaff}
+            dates={dates}
+            currentDate={currentDate}
+            viewMode={viewMode}
+            showDemandOverlay={showDemandOverlay}
+            showAnalyticsCharts={showAnalyticsCharts}
+            demandData={demandData}
+            complianceFlags={complianceFlags}
+            demandAnalytics={demandAnalytics}
+            staffAbsences={staffAbsences}
+            shiftTemplates={[...defaultShiftTemplates, ...shiftTemplates]}
+            emptyShifts={emptyShifts}
+            highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+            staffRoomAssignmentsByCentre={staffRoomAssignmentsByCentre}
+            onViewSeries={(groupId) =>
+              setHighlightedRecurrenceGroupId(prev => (prev === groupId ? null : groupId))
+            }
+            onDropStaff={handleDropStaff}
+            onShiftEdit={setSelectedShift}
+            onShiftDelete={handleShiftDelete}
+            onShiftCopy={handleCopyShift}
+            onShiftSwap={handleSwapStaff}
+            onShiftTypeChange={handleShiftTypeChange}
+            onOpenShiftFill={(os) => toast.info('Drag a staff member to fill this shift')}
+            onOpenShiftClick={setSelectedOpenShift}
+            onOpenShiftDelete={handleDeleteOpenShift}
+            onAddOpenShift={(roomId, date) => {
+              setQuickAddOpenShiftContext({ roomId, date });
+              setShowAddOpenShiftModal(true);
+            }}
+            onAddShift={handleAddShift}
+            onDragStart={handleDragStart}
+            onOpenShiftDrop={handleOpenShiftDrop}
+            onShiftMove={handleShiftMove}
+            onShiftReassign={handleShiftReassign}
+            onStaffClick={openStaffProfile}
+            onOpenShiftTemplateManager={() => setShowShiftTemplateManager(true)}
+            onEmptyShiftClick={() => setShowAutoAssignModal(true)}
+            onDeleteEmptyShift={(id) => {
+              setEmptyShifts(prev => prev.filter(es => es.id !== id));
+              toast.success('Empty shift deleted');
+            }}
+            onSendToAgency={(openShift) => {
+              setShiftForAgency(openShift);
+              setShowSendToAgencyModal(true);
+            }}
+            onAssignStaffToRoom={handleAssignStaffToRoom}
+            onRemoveStaffFromRoom={handleRemoveStaffFromRoom}
+            onShiftResize={handleShiftResize}
+            onAddShiftAtTime={handleAddShiftAtTime}
+          />
+        ) : viewMode === 'day' ? (
           <DayTimelineView
             centre={selectedCentre}
             shifts={shifts.filter(s => s.centreId === selectedCentreId)}
@@ -2228,7 +2267,6 @@ export default function RosterScheduler() {
           />
         </div>
       </Box>
-      )}
 
       {/* Summary Bar */}
       <RosterSummaryBar
