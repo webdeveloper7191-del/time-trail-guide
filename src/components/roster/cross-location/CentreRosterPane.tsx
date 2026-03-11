@@ -515,6 +515,7 @@ function ResizableShiftBar({
   const [origWidth, setOrigWidth] = useState(span * SLOT_PX - 2);
   const [curLeft, setCurLeft] = useState(startIdx * SLOT_PX);
   const [curWidth, setCurWidth] = useState(span * SLOT_PX - 2);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const displayLeft = resizeSide ? curLeft : startIdx * SLOT_PX;
   const displayWidth = resizeSide ? curWidth : span * SLOT_PX - 2;
