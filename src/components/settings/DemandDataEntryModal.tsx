@@ -39,6 +39,7 @@ interface DemandDataEntryModalProps {
   onClose: () => void;
   centre: Centre;
   currentDate: Date;
+  centres?: Centre[];
 }
 
 const demandEntrySchema = z.object({
@@ -51,8 +52,9 @@ const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function DemandDataEntryModal({
   open,
   onClose,
-  centre,
+  centre: defaultCentre,
   currentDate,
+  centres = [],
 }: DemandDataEntryModalProps) {
   const { 
     settings, 
@@ -65,6 +67,14 @@ export function DemandDataEntryModal({
     getThresholdForDemand,
     getActivePatterns,
   } = useDemand();
+
+  const [activeCentreId, setActiveCentreId] = useState<string>(defaultCentre.id);
+  const centre = useMemo(() => {
+    if (centres.length > 0) {
+      return centres.find(c => c.id === activeCentreId) || defaultCentre;
+    }
+    return defaultCentre;
+  }, [centres, activeCentreId, defaultCentre]);
 
   const [selectedRoom, setSelectedRoom] = useState<string>(centre.rooms[0]?.id || '');
   const [weekStart, setWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1 }));
