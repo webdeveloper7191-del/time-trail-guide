@@ -105,6 +105,7 @@ export function ShiftCopyModal({
     setSelectedDates([]);
     setSelectedStaff([]);
     setShowCalendar(false);
+    setActiveCentreId(shift.centreId);
   }, [open, shift, reset]);
 
   const copyMode = watch('copyMode');
