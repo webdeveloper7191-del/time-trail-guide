@@ -71,6 +71,8 @@ export default function TimesheetAdmin() {
   const [showSelection, setShowSelection] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(generateMockNotifications());
   const [delegations, setDelegations] = useState(generateMockDelegations());
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Calculate stats
   const stats = useMemo(() => {
