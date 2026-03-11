@@ -150,6 +150,8 @@ export function CrossLocationScheduler({
     const q = centreSearch.toLowerCase();
     return centreStats.filter(({ centre }) => centre.name.toLowerCase().includes(q));
   }, [centreStats, centreSearch]);
+
+  return (
     <div className="flex-1 flex overflow-hidden min-h-0">
       {/* Left: Shared Staff Pool */}
       <div className="w-[260px] flex-shrink-0">
