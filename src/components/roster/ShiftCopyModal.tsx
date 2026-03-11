@@ -526,6 +526,16 @@ export function ShiftCopyModal({
               </div>
             )}
 
+            {/* Location Selector */}
+            {centres && centres.length > 0 && (
+              <CentreSelector
+                centres={centres}
+                selectedCentreId={activeCentreId}
+                onCentreChange={setActiveCentreId}
+                label="Location"
+              />
+            )}
+
             {/* Copy to all rooms option */}
             <Controller
               name="copyToAllRooms"
