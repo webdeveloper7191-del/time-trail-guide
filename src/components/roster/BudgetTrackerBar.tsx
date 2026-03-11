@@ -78,7 +78,7 @@ export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget, centre
       isOverBudget: totalCost > weeklyBudget,
       isNearBudget: percentUsed >= 90 && percentUsed < 100,
     };
-  }, [shifts, staff, centreId, weeklyBudget]);
+  }, [shifts, staff, activeCentreId, activeBudget]);
 
   const getProgressColor = () => {
     if (budgetData.percentUsed >= 100) return 'bg-destructive';
