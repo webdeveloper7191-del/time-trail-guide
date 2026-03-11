@@ -47,6 +47,7 @@ import { useDemand } from '@/contexts/DemandContext';
 
 import { DemandImportModal } from '@/components/demand';
 import { HolidayEventCalendarPanel } from '@/components/roster/HolidayEventCalendarPanel';
+import { LeaveByLocationPanel } from '@/components/roster/LeaveByLocationPanel';
 import { MobileRosterToolbar } from '@/components/roster/MobileRosterToolbar';
 import { MobileStaffPanel } from '@/components/roster/MobileStaffPanel';
 import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
@@ -264,6 +265,7 @@ export default function RosterScheduler() {
   
   const [showDemandImportModal, setShowDemandImportModal] = useState(false);
   const [showHolidayCalendar, setShowHolidayCalendar] = useState(false);
+  const [showLeaveByLocation, setShowLeaveByLocation] = useState(false);
   const [showAddEmptyShiftModal, setShowAddEmptyShiftModal] = useState(false);
   
   // Advanced Features panels
@@ -2008,6 +2010,9 @@ export default function RosterScheduler() {
                       <DropdownMenuItem onClick={() => setShowLeaveModal(true)} icon={<CalendarDays size={16} />}>
                         Leave Requests
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowLeaveByLocation(true)} icon={<MapPin size={16} />}>
+                        Leaves & Holidays by Location
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => {
                         if (allStaff.length > 0) openPreferencesForStaff(allStaff[0]);
@@ -2723,7 +2728,15 @@ export default function RosterScheduler() {
         currentDate={currentDate}
       />
 
-      
+      {/* Leave & Holidays by Location Panel */}
+      <LeaveByLocationPanel
+        open={showLeaveByLocation}
+        onClose={() => setShowLeaveByLocation(false)}
+        centres={mockCentres}
+        staff={allStaff}
+        currentDate={currentDate}
+      />
+
 
       {/* Demand Import Modal */}
       <DemandImportModal
