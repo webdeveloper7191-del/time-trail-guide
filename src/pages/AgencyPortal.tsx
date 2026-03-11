@@ -858,8 +858,7 @@ const AgencyPortal = () => {
                     {shiftViewMode === 'calendar' && (
                       <ShiftCalendarView onSelectShift={(id) => setSelectedShiftForMatching(id)} />
                     )}
-                  </>
-                )}
+                   </>
               </div>
             )}
 
