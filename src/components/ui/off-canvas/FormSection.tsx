@@ -60,9 +60,10 @@ interface FormFieldProps {
  * FormField - A styled form field wrapper with label, tooltip, and error display.
  * Labels are styled in PRIMARY/cyan color matching the reference design.
  */
-export function FormField({ label, required, tooltip, error, children, className }: FormFieldProps) {
+export const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
+  function FormField({ label, required, tooltip, error, children, className }, ref) {
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div ref={ref} className={cn("space-y-1.5", className)}>
       {/* Label row - Primary/cyan colored label with red asterisk and info icon */}
       <div className="flex items-center gap-1">
         <label className="text-sm font-medium text-primary">
@@ -87,7 +88,7 @@ export function FormField({ label, required, tooltip, error, children, className
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
-}
+});
 
 interface FormRowProps {
   children: React.ReactNode;
