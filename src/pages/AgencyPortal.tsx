@@ -613,8 +613,8 @@ const AgencyPortal = () => {
             {/* Toolbar */}
             <div className="flex items-center justify-between">
               <div className="grid grid-cols-4 gap-2 flex-1 mr-4">
-                <MiniStat label="Total" value={mockInvoices.length} icon={FileText} />
-                <MiniStat label="Pending" value={mockInvoices.filter(i => i.status === 'pending' || i.status === 'submitted').length} icon={Clock} />
+              <MiniStat label="Total" value={mockInvoices.length} icon={FileText} />
+                <MiniStat label="Draft/Sent" value={mockInvoices.filter(i => i.status === 'draft' || i.status === 'sent').length} icon={Clock} />
                 <MiniStat label="Overdue" value={overdueInvoices.length} icon={AlertTriangle} />
                 <MiniStat label="Total Value" value={`$${mockInvoices.reduce((a, i) => a + i.total, 0).toLocaleString()}`} icon={DollarSign} />
               </div>
