@@ -692,7 +692,7 @@ export function DayTimelineView({
             );
           })}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Blue Scroll Indicator (Day view) */}
       {showScrollIndicator && (
