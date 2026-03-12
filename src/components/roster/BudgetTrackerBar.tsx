@@ -96,22 +96,37 @@ export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget, centre
 
   return (
     <div className="flex items-center gap-4 px-4 py-3 bg-card border-b border-border">
-      {/* Location Filter */}
+      {/* Location Filter - synced with global */}
       {centres.length > 0 && (
-        <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
-          <SelectTrigger className="w-[180px] h-8 text-xs">
-            <div className="flex items-center gap-1.5">
-              <Building2 className="h-3 w-3 text-primary" />
+        <div className="flex items-center gap-2">
+          <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+          <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+            <SelectTrigger className="w-[180px] h-8 text-xs">
               <SelectValue placeholder="Location" />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Locations</SelectItem>
-            {centres.map(c => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              {centres.map(c => {
+                const isActive = activeCentreIds?.includes(c.id) ?? true;
+                return (
+                  <SelectItem key={c.id} value={c.id}>
+                    <div className="flex items-center gap-2">
+                      {activeCentreIds && (
+                        <div className={cn(
+                          'w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0',
+                          isActive ? 'bg-primary border-primary' : 'border-border'
+                        )}>
+                          {isActive && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+                        </div>
+                      )}
+                      <span>{c.name}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
       )}
 
       {/* Progress Bar */}
