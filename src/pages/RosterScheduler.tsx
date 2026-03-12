@@ -1089,7 +1089,16 @@ export default function RosterScheduler() {
       ...prev,
       [selectedCentreId]: settings.weeklyBudget
     }));
-    toast.success('Budget settings saved');
+  };
+
+  const handleSaveBudgetToAllLocations = (settings: { weeklyBudget: number }) => {
+    setCentreBudgets(prev => {
+      const updated = { ...prev };
+      mockCentres.forEach(c => {
+        updated[c.id] = settings.weeklyBudget;
+      });
+      return updated;
+    });
   };
 
   const handlePrint = () => {
@@ -2545,6 +2554,7 @@ export default function RosterScheduler() {
         centres={mockCentres}
         currentBudget={weeklyBudget}
         onSave={handleSaveBudgetSettings}
+        onSaveToAllLocations={handleSaveBudgetToAllLocations}
       />
 
       <AlertNotificationsPanel
