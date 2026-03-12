@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Shift, OpenShift, Centre, StaffMember, qualificationLabels, roleLabels, ShiftTemplate } from '@/types/roster';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip as MuiTooltip } from '@mui/material';
@@ -257,19 +257,24 @@ export function DayTimelineView({
   const staffByRoom = useMemo(() => {
     const roomStaff: Record<string, Set<string>> = {};
     centre.rooms.forEach(room => { roomStaff[room.id] = new Set(); });
+    
+    // 1) staff with shifts on this date at this centre
     shifts.forEach(shift => {
       if (shift.centreId === centre.id && shift.date === dateStr && roomStaff[shift.roomId]) {
         roomStaff[shift.roomId].add(shift.staffId);
       }
     });
+    
+    // 2) staff with this centre as preferred or default (assign to first room if not already placed)
     staff.forEach(s => {
-      if (s.preferredCentres.includes(centre.id) || s.preferredCentres.length === 0) {
-        const hasRoom = Object.values(roomStaff).some(set => set.has(s.id));
-        if (!hasRoom && centre.rooms.length > 0) {
+      if (s.preferredCentres.includes(centre.id) || s.defaultCentreId === centre.id) {
+        const alreadyPlaced = Object.values(roomStaff).some(set => set.has(s.id));
+        if (!alreadyPlaced && centre.rooms.length > 0) {
           roomStaff[centre.rooms[0].id].add(s.id);
         }
       }
     });
+    
     return roomStaff;
   }, [shifts, staff, centre, dateStr]);
 
@@ -342,12 +347,10 @@ export function DayTimelineView({
 
   return (
     <div className="flex-1 overflow-hidden bg-background w-full max-w-full relative" onDragEnd={handleDragEnd}>
-      <ScrollArea
+      <div
         ref={scrollRef}
         className={cn(
-          // Leave space so the always-visible blue scrollbar doesn't get covered by the footer legend
-          "h-full w-full pb-8",
-          // Hide native scrollbars everywhere for day view; we show a custom blue scrollbar instead
+          "h-full w-full pb-8 overflow-auto",
           showScrollIndicator && "scrollbar-hide"
         )}
         style={showScrollIndicator ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
@@ -689,7 +692,7 @@ export function DayTimelineView({
             );
           })}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Blue Scroll Indicator (Day view) */}
       {showScrollIndicator && (
@@ -932,18 +935,20 @@ function ShiftBar({
     </div>
   );
 
-  // For small shifts, use click-based tooltip instead of hover
+  // For small shifts, use right placement and ensure accessibility
   const isSmallShift = width < 80;
+  const isTinyShift = width < 50;
 
   return (
     <MuiTooltip
       title={disableTooltip ? '' : tooltipContent}
       placement={isSmallShift ? "right" : "top"}
       arrow
-      enterDelay={isSmallShift ? 100 : 300}
-      leaveDelay={0}
+      enterDelay={isTinyShift ? 0 : isSmallShift ? 100 : 300}
+      leaveDelay={100}
       PopperProps={{
         disablePortal: false,
+        style: { zIndex: 99999 },
         modifiers: [
           {
             name: 'preventOverflow',
@@ -951,7 +956,7 @@ function ShiftBar({
             options: {
               altAxis: true,
               altBoundary: true,
-              tether: true,
+              tether: false,
               rootBoundary: 'viewport',
               padding: 8,
             },
@@ -960,14 +965,16 @@ function ShiftBar({
             name: 'flip',
             enabled: true,
             options: {
-              fallbackPlacements: ['bottom', 'right', 'left', 'top'],
+              fallbackPlacements: isSmallShift 
+                ? ['right', 'left', 'top', 'bottom'] 
+                : ['bottom', 'right', 'left', 'top'],
             },
           },
           {
             name: 'offset',
             enabled: true,
             options: {
-              offset: [0, isSmallShift ? 4 : 8],
+              offset: [0, isSmallShift ? 12 : 8],
             },
           },
         ],
@@ -980,7 +987,7 @@ function ShiftBar({
             boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.3)',
             padding: 0,
             maxWidth: 260,
-            zIndex: 9999,
+            zIndex: 99999,
             '& .MuiTooltip-arrow': { color: 'hsl(220, 20%, 20%)' },
           },
         },
