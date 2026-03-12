@@ -78,6 +78,7 @@ interface BudgetSettingsModalProps {
   centres?: Centre[];
   currentBudget: number;
   onSave: (settings: BudgetSettings) => void;
+  onSaveToAllLocations?: (settings: BudgetSettings) => void;
 }
 
 const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
