@@ -83,7 +83,7 @@ interface BudgetSettingsModalProps {
 
 const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-export function BudgetSettingsModal({ open, onClose, centre: defaultCentre, centres, currentBudget, onSave }: BudgetSettingsModalProps) {
+export function BudgetSettingsModal({ open, onClose, centre: defaultCentre, centres, currentBudget, onSave, onSaveToAllLocations }: BudgetSettingsModalProps) {
   const [activeCentreId, setActiveCentreId] = useState(defaultCentre.id);
   const centre = useMemo(() => {
     if (centres) {
