@@ -527,7 +527,7 @@ export const mockShiftRequests: ShiftRequest[] = [
     clientName: 'Little Scholars Early Learning',
     locationName: 'Toddler Room',
     locationAddress: '45 Pacific Highway, Crows Nest NSW 2065',
-    date: '2025-01-16',
+    date: relativeDate(0),
     startTime: '07:30',
     endTime: '18:00',
     breakMinutes: 60,
