@@ -700,14 +700,9 @@ const AgencyPortal = () => {
 
             {/* ═══ AVAILABILITY ═════════════════════════════════════════════ */}
             {activeTab === 'availability' && (
-              <div className="text-center py-16 text-muted-foreground">
-                <CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-medium">Candidate Availability Calendar</p>
-                <p className="text-xs">Click the calendar icon on any candidate to view their availability</p>
-                <Button variant="outlined" size="small" className="mt-4" onClick={() => setActiveTab('candidates')}>
-                  Go to Candidates
-                </Button>
-              </div>
+              <AgencyAvailabilityScreen
+                onViewCandidate={(candidate) => setSelectedCandidateForProfile(candidate)}
+              />
             )}
 
             {/* ═══ ONBOARDING ══════════════════════════════════════════════ */}
