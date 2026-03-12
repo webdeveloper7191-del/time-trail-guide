@@ -91,9 +91,11 @@ export function MobileStaffPanel({
   const availableAgencyStaff = useMemo(() => {
     let filtered = agencyStaff.filter(s => !scheduledStaffIds.has(s.id));
     
-    filtered = filtered.filter(s => 
-      s.preferredCentres.includes(selectedCentreId) || s.preferredCentres.length === 0
-    );
+    if (!isAllLocations) {
+      filtered = filtered.filter(s => 
+        s.preferredCentres.includes(selectedCentreId) || s.preferredCentres.length === 0
+      );
+    }
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
