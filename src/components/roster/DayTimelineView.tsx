@@ -946,10 +946,11 @@ function ShiftBar({
       title={disableTooltip ? '' : tooltipContent}
       placement={isSmallShift ? "right" : "top"}
       arrow
-      enterDelay={isSmallShift ? 100 : 300}
-      leaveDelay={0}
+      enterDelay={isTinyShift ? 0 : isSmallShift ? 100 : 300}
+      leaveDelay={100}
       PopperProps={{
         disablePortal: false,
+        style: { zIndex: 99999 },
         modifiers: [
           {
             name: 'preventOverflow',
@@ -957,7 +958,7 @@ function ShiftBar({
             options: {
               altAxis: true,
               altBoundary: true,
-              tether: true,
+              tether: false,
               rootBoundary: 'viewport',
               padding: 8,
             },
@@ -966,14 +967,16 @@ function ShiftBar({
             name: 'flip',
             enabled: true,
             options: {
-              fallbackPlacements: ['bottom', 'right', 'left', 'top'],
+              fallbackPlacements: isSmallShift 
+                ? ['right', 'left', 'top', 'bottom'] 
+                : ['bottom', 'right', 'left', 'top'],
             },
           },
           {
             name: 'offset',
             enabled: true,
             options: {
-              offset: [0, isSmallShift ? 4 : 8],
+              offset: [0, isSmallShift ? 12 : 8],
             },
           },
         ],
@@ -986,7 +989,7 @@ function ShiftBar({
             boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.3)',
             padding: 0,
             maxWidth: 260,
-            zIndex: 9999,
+            zIndex: 99999,
             '& .MuiTooltip-arrow': { color: 'hsl(220, 20%, 20%)' },
           },
         },
