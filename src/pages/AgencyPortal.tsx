@@ -1049,6 +1049,17 @@ const AgencyPortal = () => {
           console.log('Imported candidates:', candidates);
         }}
       />
+
+      <CandidateProfilePanel
+        open={!!selectedCandidateForProfile}
+        onClose={() => setSelectedCandidateForProfile(null)}
+        candidate={selectedCandidateForProfile}
+        onViewAvailability={(candidate) => {
+          setSelectedCandidateForProfile(null);
+          setSelectedCandidateForAvailability({ id: candidate.id, name: `${candidate.firstName} ${candidate.lastName}` });
+          setShowAvailabilityCalendar(true);
+        }}
+      />
     </div>
   );
 };
