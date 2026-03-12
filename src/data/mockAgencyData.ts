@@ -561,7 +561,7 @@ export const mockShiftRequests: ShiftRequest[] = [
     clientName: 'Aged Care Plus - Bondi',
     locationName: 'Dementia Wing',
     locationAddress: '88 Blair St, Bondi NSW 2026',
-    date: '2025-01-16',
+    date: relativeDate(0),
     startTime: '15:00',
     endTime: '23:00',
     breakMinutes: 30,
