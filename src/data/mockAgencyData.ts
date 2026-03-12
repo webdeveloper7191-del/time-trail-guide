@@ -594,7 +594,7 @@ export const mockShiftRequests: ShiftRequest[] = [
     clientName: 'Darling Harbour Convention Centre',
     locationName: 'Grand Ballroom',
     locationAddress: '1 Darling Dr, Sydney NSW 2000',
-    date: '2025-01-18',
+    date: relativeDate(3),
     startTime: '17:00',
     endTime: '01:00',
     breakMinutes: 30,
