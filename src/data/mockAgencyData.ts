@@ -439,6 +439,13 @@ export const mockCandidates: Candidate[] = [
 
 // ============ SHIFT REQUESTS ============
 
+// Helper to generate dates relative to today for demo purposes
+function relativeDate(dayOffset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + dayOffset);
+  return d.toISOString().split('T')[0];
+}
+
 export const mockShiftRequests: ShiftRequest[] = [
   {
     id: 'shift-req-1',
@@ -446,7 +453,7 @@ export const mockShiftRequests: ShiftRequest[] = [
     clientName: 'Royal North Shore Hospital',
     locationName: 'Ward 5B - Surgical',
     locationAddress: '1 Reserve Rd, St Leonards NSW 2065',
-    date: '2025-01-16',
+    date: relativeDate(1),
     startTime: '07:00',
     endTime: '15:30',
     breakMinutes: 30,
@@ -479,7 +486,7 @@ export const mockShiftRequests: ShiftRequest[] = [
     clientName: 'The Langham Sydney',
     locationName: 'Kitchen - Main Restaurant',
     locationAddress: '89-113 Kent St, Millers Point NSW 2000',
-    date: '2025-01-17',
+    date: relativeDate(2),
     startTime: '16:00',
     endTime: '23:30',
     breakMinutes: 30,
@@ -520,7 +527,7 @@ export const mockShiftRequests: ShiftRequest[] = [
     clientName: 'Little Scholars Early Learning',
     locationName: 'Toddler Room',
     locationAddress: '45 Pacific Highway, Crows Nest NSW 2065',
-    date: '2025-01-16',
+    date: relativeDate(0),
     startTime: '07:30',
     endTime: '18:00',
     breakMinutes: 60,
@@ -554,7 +561,7 @@ export const mockShiftRequests: ShiftRequest[] = [
     clientName: 'Aged Care Plus - Bondi',
     locationName: 'Dementia Wing',
     locationAddress: '88 Blair St, Bondi NSW 2026',
-    date: '2025-01-16',
+    date: relativeDate(0),
     startTime: '15:00',
     endTime: '23:00',
     breakMinutes: 30,
@@ -587,7 +594,7 @@ export const mockShiftRequests: ShiftRequest[] = [
     clientName: 'Darling Harbour Convention Centre',
     locationName: 'Grand Ballroom',
     locationAddress: '1 Darling Dr, Sydney NSW 2000',
-    date: '2025-01-18',
+    date: relativeDate(3),
     startTime: '17:00',
     endTime: '01:00',
     breakMinutes: 30,
