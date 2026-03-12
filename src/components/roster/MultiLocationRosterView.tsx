@@ -270,6 +270,11 @@ export function MultiLocationRosterView({
                     onDropStaff={onDropStaff}
                     onStaffClick={onStaffClick}
                     onOpenShiftTemplateManager={onOpenShiftTemplateManager}
+                    onOpenShiftClick={onOpenShiftClick}
+                    onOpenShiftDrop={onOpenShiftDrop}
+                    onOpenShiftDelete={onOpenShiftDelete}
+                    onAddOpenShift={onAddOpenShift}
+                    onAssignStaffToRoom={onAssignStaffToRoom}
                   />
                 ) : (
                   <StaffTimelineGrid
