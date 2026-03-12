@@ -181,9 +181,20 @@ export function DayTimelineView({
     update();
     el.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
+    
+    // Use ResizeObserver to detect content size changes
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(update);
+    });
+    resizeObserver.observe(el);
+    if (el.firstElementChild) {
+      resizeObserver.observe(el.firstElementChild);
+    }
+
     return () => {
       el.removeEventListener('scroll', update as any);
       window.removeEventListener('resize', update);
+      resizeObserver.disconnect();
     };
   }, []);
 
@@ -921,12 +932,15 @@ function ShiftBar({
     </div>
   );
 
+  // For small shifts, use click-based tooltip instead of hover
+  const isSmallShift = width < 80;
+
   return (
     <MuiTooltip
       title={disableTooltip ? '' : tooltipContent}
-      placement="top"
+      placement={isSmallShift ? "right" : "top"}
       arrow
-      enterDelay={300}
+      enterDelay={isSmallShift ? 100 : 300}
       leaveDelay={0}
       PopperProps={{
         disablePortal: false,
@@ -946,7 +960,14 @@ function ShiftBar({
             name: 'flip',
             enabled: true,
             options: {
-              fallbackPlacements: ['bottom', 'left', 'right'],
+              fallbackPlacements: ['bottom', 'right', 'left', 'top'],
+            },
+          },
+          {
+            name: 'offset',
+            enabled: true,
+            options: {
+              offset: [0, isSmallShift ? 4 : 8],
             },
           },
         ],
@@ -959,6 +980,7 @@ function ShiftBar({
             boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.3)',
             padding: 0,
             maxWidth: 260,
+            zIndex: 9999,
             '& .MuiTooltip-arrow': { color: 'hsl(220, 20%, 20%)' },
           },
         },
@@ -982,6 +1004,9 @@ function ShiftBar({
         style={{ 
           left, 
           width: Math.max(width, 40),
+          // For very small shifts, ensure minimum clickable area
+          minWidth: 40,
+          zIndex: width < 60 ? 15 : undefined,
           backgroundColor: shift.isAbsent ? undefined : `${staff.color}20`,
           borderColor: shift.isAbsent ? 'hsl(var(--destructive) / 0.7)' : staff.color,
           backgroundImage: shift.isAbsent
