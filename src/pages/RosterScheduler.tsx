@@ -2219,6 +2219,7 @@ export default function RosterScheduler() {
             weeklyBudget={weeklyBudget}
             centres={mockCentres}
             centreBudgets={centreBudgets}
+            activeCentreIds={activeCentreIds}
           />
         </Collapse>
       </Box>
