@@ -257,19 +257,24 @@ export function DayTimelineView({
   const staffByRoom = useMemo(() => {
     const roomStaff: Record<string, Set<string>> = {};
     centre.rooms.forEach(room => { roomStaff[room.id] = new Set(); });
+    
+    // 1) staff with shifts on this date at this centre
     shifts.forEach(shift => {
       if (shift.centreId === centre.id && shift.date === dateStr && roomStaff[shift.roomId]) {
         roomStaff[shift.roomId].add(shift.staffId);
       }
     });
+    
+    // 2) staff with this centre as preferred or default (assign to first room if not already placed)
     staff.forEach(s => {
-      if (s.preferredCentres.includes(centre.id) || s.preferredCentres.length === 0) {
-        const hasRoom = Object.values(roomStaff).some(set => set.has(s.id));
-        if (!hasRoom && centre.rooms.length > 0) {
+      if (s.preferredCentres.includes(centre.id) || s.defaultCentreId === centre.id) {
+        const alreadyPlaced = Object.values(roomStaff).some(set => set.has(s.id));
+        if (!alreadyPlaced && centre.rooms.length > 0) {
           roomStaff[centre.rooms[0].id].add(s.id);
         }
       }
     });
+    
     return roomStaff;
   }, [shifts, staff, centre, dateStr]);
 
