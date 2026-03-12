@@ -486,7 +486,7 @@ export const mockShiftRequests: ShiftRequest[] = [
     clientName: 'The Langham Sydney',
     locationName: 'Kitchen - Main Restaurant',
     locationAddress: '89-113 Kent St, Millers Point NSW 2000',
-    date: '2025-01-17',
+    date: relativeDate(2),
     startTime: '16:00',
     endTime: '23:30',
     breakMinutes: 30,
