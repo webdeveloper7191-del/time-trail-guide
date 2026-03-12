@@ -140,6 +140,7 @@ export function DayTimelineView({
   onOpenShiftDelete,
   onAddOpenShift,
   onAssignStaffToRoom,
+  staffRoomAssignments = {},
 }: DayTimelineViewProps) {
   // keep hooks to ensure consistent behavior across breakpoints (and future tweaks)
   useIsMobile();
