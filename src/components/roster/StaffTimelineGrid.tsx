@@ -384,8 +384,18 @@ export function StaffTimelineGrid({
       if (roomStaff[roomId]) roomStaff[roomId].add(staffId);
     });
 
+    // 3) staff with this centre as preferred (assign to first room if not already placed)
+    staff.forEach(s => {
+      if (s.preferredCentres.includes(centre.id) || s.defaultCentreId === centre.id) {
+        const alreadyPlaced = Object.values(roomStaff).some(set => set.has(s.id));
+        if (!alreadyPlaced && centre.rooms.length > 0) {
+          roomStaff[centre.rooms[0].id].add(s.id);
+        }
+      }
+    });
+
     return roomStaff;
-  }, [shifts, centre, staffRoomAssignments]);
+  }, [shifts, centre, staffRoomAssignments, staff]);
 
   // Filter open shifts to only those within the visible date range
   const visibleDateStrings = useMemo(() => dates.map(d => format(d, 'yyyy-MM-dd')), [dates]);
