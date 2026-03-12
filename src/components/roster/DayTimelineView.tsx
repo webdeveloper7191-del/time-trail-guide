@@ -181,9 +181,20 @@ export function DayTimelineView({
     update();
     el.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
+    
+    // Use ResizeObserver to detect content size changes
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(update);
+    });
+    resizeObserver.observe(el);
+    if (el.firstElementChild) {
+      resizeObserver.observe(el.firstElementChild);
+    }
+
     return () => {
       el.removeEventListener('scroll', update as any);
       window.removeEventListener('resize', update);
+      resizeObserver.disconnect();
     };
   }, []);
 
