@@ -675,7 +675,7 @@ const AgencyPortal = () => {
                                   </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>View Profile</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setSelectedCandidateForProfile(candidate)}>View Profile</DropdownMenuItem>
                                   <DropdownMenuItem>Edit</DropdownMenuItem>
                                   <DropdownMenuItem>View Availability</DropdownMenuItem>
                                   <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
