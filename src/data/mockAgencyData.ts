@@ -439,6 +439,13 @@ export const mockCandidates: Candidate[] = [
 
 // ============ SHIFT REQUESTS ============
 
+// Helper to generate dates relative to today for demo purposes
+function relativeDate(dayOffset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + dayOffset);
+  return d.toISOString().split('T')[0];
+}
+
 export const mockShiftRequests: ShiftRequest[] = [
   {
     id: 'shift-req-1',
@@ -446,7 +453,7 @@ export const mockShiftRequests: ShiftRequest[] = [
     clientName: 'Royal North Shore Hospital',
     locationName: 'Ward 5B - Surgical',
     locationAddress: '1 Reserve Rd, St Leonards NSW 2065',
-    date: '2025-01-16',
+    date: relativeDate(1),
     startTime: '07:00',
     endTime: '15:30',
     breakMinutes: 30,
