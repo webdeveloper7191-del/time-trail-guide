@@ -937,8 +937,9 @@ function ShiftBar({
     </div>
   );
 
-  // For small shifts, use click-based tooltip instead of hover
+  // For small shifts, use right placement and ensure accessibility
   const isSmallShift = width < 80;
+  const isTinyShift = width < 50;
 
   return (
     <MuiTooltip
