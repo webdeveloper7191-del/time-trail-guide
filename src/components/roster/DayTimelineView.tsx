@@ -133,6 +133,11 @@ export function DayTimelineView({
   onDropStaff,
   onStaffClick,
   onOpenShiftTemplateManager,
+  onOpenShiftClick,
+  onOpenShiftDrop,
+  onOpenShiftDelete,
+  onAddOpenShift,
+  onAssignStaffToRoom,
 }: DayTimelineViewProps) {
   // keep hooks to ensure consistent behavior across breakpoints (and future tweaks)
   useIsMobile();
