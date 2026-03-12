@@ -64,12 +64,18 @@ export function MobileStaffPanel({
     );
   }, [shifts, selectedCentreId]);
 
+  const isAllLocations = selectedCentreId === 'all';
+
   const availableStaff = useMemo(() => {
     let filtered = staff.filter(s => !scheduledStaffIds.has(s.id));
     
-    filtered = filtered.filter(s => 
-      s.preferredCentres.includes(selectedCentreId) || s.preferredCentres.length === 0
-    );
+    if (!isAllLocations) {
+      filtered = filtered.filter(s => 
+        s.preferredCentres.includes(selectedCentreId) || 
+        s.defaultCentreId === selectedCentreId ||
+        s.preferredCentres.length === 0
+      );
+    }
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -80,7 +86,7 @@ export function MobileStaffPanel({
     }
 
     return filtered;
-  }, [staff, scheduledStaffIds, searchQuery, selectedCentreId]);
+  }, [staff, scheduledStaffIds, searchQuery, selectedCentreId, isAllLocations]);
 
   const availableAgencyStaff = useMemo(() => {
     let filtered = agencyStaff.filter(s => !scheduledStaffIds.has(s.id));
