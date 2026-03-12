@@ -982,6 +982,9 @@ function ShiftBar({
         style={{ 
           left, 
           width: Math.max(width, 40),
+          // For very small shifts, ensure minimum clickable area
+          minWidth: 40,
+          zIndex: width < 60 ? 15 : undefined,
           backgroundColor: shift.isAbsent ? undefined : `${staff.color}20`,
           borderColor: shift.isAbsent ? 'hsl(var(--destructive) / 0.7)' : staff.color,
           backgroundImage: shift.isAbsent
