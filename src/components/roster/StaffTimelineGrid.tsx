@@ -225,6 +225,16 @@ export function StaffTimelineGrid({
 
     if (!leftPane || !rightPane) return;
 
+    const updateScrollInfo = () => {
+      if (showScrollIndicator && rightPane) {
+        setScrollInfo({
+          scrollLeft: rightPane.scrollLeft,
+          scrollWidth: rightPane.scrollWidth,
+          clientWidth: rightPane.clientWidth,
+        });
+      }
+    };
+
     const handleLeftScroll = () => {
       if (isSyncingScroll.current) return;
       isSyncingScroll.current = true;
@@ -243,35 +253,35 @@ export function StaffTimelineGrid({
         if (timelineHeaderRef.current) {
           timelineHeaderRef.current.scrollLeft = rightPane.scrollLeft;
         }
-        // Update scroll info for indicator
-        if (showScrollIndicator) {
-          setScrollInfo({
-            scrollLeft: rightPane.scrollLeft,
-            scrollWidth: rightPane.scrollWidth,
-            clientWidth: rightPane.clientWidth,
-          });
-        }
+        updateScrollInfo();
         isSyncingScroll.current = false;
       });
     };
     
     // Initial scroll info
-    if (showScrollIndicator) {
-      setScrollInfo({
-        scrollLeft: rightPane.scrollLeft,
-        scrollWidth: rightPane.scrollWidth,
-        clientWidth: rightPane.clientWidth,
-      });
+    updateScrollInfo();
+
+    // Use ResizeObserver to detect content size changes (view mode switches, data changes)
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(updateScrollInfo);
+    });
+    resizeObserver.observe(rightPane);
+    // Also observe the inner content if it exists
+    if (rightPane.firstElementChild) {
+      resizeObserver.observe(rightPane.firstElementChild);
     }
 
     leftPane.addEventListener('scroll', handleLeftScroll);
     rightPane.addEventListener('scroll', handleRightScroll);
+    window.addEventListener('resize', updateScrollInfo);
 
     return () => {
       leftPane.removeEventListener('scroll', handleLeftScroll);
       rightPane.removeEventListener('scroll', handleRightScroll);
+      window.removeEventListener('resize', updateScrollInfo);
+      resizeObserver.disconnect();
     };
-  }, [showScrollIndicator]);
+  }, [showScrollIndicator, viewMode, dates.length]);
 
   // Draggable scroll thumb handlers
   const handleScrollThumbMouseDown = useCallback((e: React.MouseEvent) => {
