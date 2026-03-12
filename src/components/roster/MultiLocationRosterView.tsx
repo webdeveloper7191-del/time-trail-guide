@@ -275,6 +275,7 @@ export function MultiLocationRosterView({
                     onOpenShiftDelete={onOpenShiftDelete}
                     onAddOpenShift={onAddOpenShift}
                     onAssignStaffToRoom={onAssignStaffToRoom}
+                    staffRoomAssignments={staffRoomAssignmentsByCentre[centre.id] || {}}
                   />
                 ) : (
                   <StaffTimelineGrid

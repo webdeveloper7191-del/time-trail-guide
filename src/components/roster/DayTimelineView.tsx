@@ -48,6 +48,7 @@ interface DayTimelineViewProps {
   onOpenShiftDelete?: (openShiftId: string) => void;
   onAddOpenShift?: (roomId: string, date: string) => void;
   onAssignStaffToRoom?: (staffId: string, roomId: string) => void;
+  staffRoomAssignments?: Record<string, string>;
 }
 
 // Generate time slots from 5:00 AM to 9:00 PM with 15-minute intervals
@@ -139,6 +140,7 @@ export function DayTimelineView({
   onOpenShiftDelete,
   onAddOpenShift,
   onAssignStaffToRoom,
+  staffRoomAssignments = {},
 }: DayTimelineViewProps) {
   // keep hooks to ensure consistent behavior across breakpoints (and future tweaks)
   useIsMobile();
@@ -276,7 +278,12 @@ export function DayTimelineView({
       }
     });
     
-    // 2) staff with this centre as preferred or default (assign to first room if not already placed)
+    // 2) staff explicitly assigned to a room (even with no shifts)
+    Object.entries(staffRoomAssignments).forEach(([staffId, roomId]) => {
+      if (roomStaff[roomId]) roomStaff[roomId].add(staffId);
+    });
+    
+    // 3) staff with this centre as preferred or default (assign to first room if not already placed)
     staff.forEach(s => {
       if (s.preferredCentres.includes(centre.id) || s.defaultCentreId === centre.id) {
         const alreadyPlaced = Object.values(roomStaff).some(set => set.has(s.id));
@@ -287,7 +294,7 @@ export function DayTimelineView({
     });
     
     return roomStaff;
-  }, [shifts, staff, centre, dateStr]);
+  }, [shifts, staff, centre, dateStr, staffRoomAssignments]);
 
   const handleDragOver = (e: React.DragEvent, cellId: string) => {
     e.preventDefault();
