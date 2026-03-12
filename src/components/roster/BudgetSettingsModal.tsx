@@ -139,8 +139,27 @@ export function BudgetSettingsModal({ open, onClose, centre: defaultCentre, cent
     }
     
     onSave(settings);
-    toast.success('Budget settings saved');
+    toast.success(`Budget settings saved for ${centre.name}`);
     onClose();
+  };
+
+  const handleApplyToAll = () => {
+    const result = budgetSettingsValidationSchema.safeParse({
+      weeklyBudget: settings.weeklyBudget,
+      overtimeThreshold: settings.overtimeThreshold,
+      maxAgencyPercent: settings.maxAgencyPercent,
+    });
+    
+    if (!result.success) {
+      toast.error('Please check your budget settings');
+      return;
+    }
+
+    if (onSaveToAllLocations) {
+      onSaveToAllLocations(settings);
+      toast.success(`Budget settings applied to all ${centres?.length || 0} locations`);
+      onClose();
+    }
   };
 
   const updateDailyBudget = (day: string, value: number) => {
@@ -152,6 +171,9 @@ export function BudgetSettingsModal({ open, onClose, centre: defaultCentre, cent
 
   const actions: OffCanvasAction[] = [
     { label: 'Cancel', onClick: onClose, variant: 'outlined' },
+    ...(centres && centres.length > 1 && onSaveToAllLocations
+      ? [{ label: 'Apply to All Locations', onClick: handleApplyToAll, variant: 'outlined' as const }]
+      : []),
     { label: 'Save Settings', onClick: handleSave, variant: 'primary' },
   ];
 
