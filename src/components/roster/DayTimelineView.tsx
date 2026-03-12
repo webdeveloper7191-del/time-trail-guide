@@ -48,6 +48,7 @@ interface DayTimelineViewProps {
   onOpenShiftDelete?: (openShiftId: string) => void;
   onAddOpenShift?: (roomId: string, date: string) => void;
   onAssignStaffToRoom?: (staffId: string, roomId: string) => void;
+  staffRoomAssignments?: Record<string, string>;
 }
 
 // Generate time slots from 5:00 AM to 9:00 PM with 15-minute intervals
