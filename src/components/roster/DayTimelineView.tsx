@@ -278,7 +278,12 @@ export function DayTimelineView({
       }
     });
     
-    // 2) staff with this centre as preferred or default (assign to first room if not already placed)
+    // 2) staff explicitly assigned to a room (even with no shifts)
+    Object.entries(staffRoomAssignments).forEach(([staffId, roomId]) => {
+      if (roomStaff[roomId]) roomStaff[roomId].add(staffId);
+    });
+    
+    // 3) staff with this centre as preferred or default (assign to first room if not already placed)
     staff.forEach(s => {
       if (s.preferredCentres.includes(centre.id) || s.defaultCentreId === centre.id) {
         const alreadyPlaced = Object.values(roomStaff).some(set => set.has(s.id));
@@ -289,7 +294,7 @@ export function DayTimelineView({
     });
     
     return roomStaff;
-  }, [shifts, staff, centre, dateStr]);
+  }, [shifts, staff, centre, dateStr, staffRoomAssignments]);
 
   const handleDragOver = (e: React.DragEvent, cellId: string) => {
     e.preventDefault();
