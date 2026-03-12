@@ -2554,6 +2554,7 @@ export default function RosterScheduler() {
         centres={mockCentres}
         currentBudget={weeklyBudget}
         onSave={handleSaveBudgetSettings}
+        onSaveToAllLocations={handleSaveBudgetToAllLocations}
       />
 
       <AlertNotificationsPanel
