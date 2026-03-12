@@ -536,7 +536,20 @@ export default function RosterScheduler() {
     };
 
     setShifts(prev => [...prev, newShift], `Added shift for ${staff.name}`, 'add');
-    toast.success(`Added shift for ${staff.name}`);
+    
+    // Warn if staff is being assigned to a non-preferred location
+    if (centreId !== 'all' && 
+        staff.preferredCentres.length > 0 && 
+        !staff.preferredCentres.includes(centreId) && 
+        staff.defaultCentreId !== centreId) {
+      const centreName = centre?.name || centreId;
+      toast.warning(
+        `⚠️ ${staff.name} does not have "${centreName}" as a preferred location. Their preferred location${staff.preferredCentres.length > 1 ? 's are' : ' is'}: ${staff.preferredCentres.map(id => mockCentres.find(c => c.id === id)?.name || id).join(', ')}`,
+        { duration: 6000 }
+      );
+    } else {
+      toast.success(`Added shift for ${staff.name}`);
+    }
   };
 
   const handleShiftMove = (shiftId: string, newDate: string, newRoomId: string) => {
