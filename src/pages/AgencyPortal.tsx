@@ -29,8 +29,13 @@ import ClientManagementPanel from '@/components/agency/ClientManagementPanel';
 import { ShiftBroadcastInbox } from '@/components/agency/ShiftBroadcastInbox';
 import { ShiftCalendarView } from '@/components/agency/ShiftCalendarView';
 import { CandidateBulkImport } from '@/components/agency/CandidateBulkImport';
+import { CandidateProfilePanel } from '@/components/agency/CandidateProfilePanel';
+import { AgencyAvailabilityScreen } from '@/components/agency/AgencyAvailabilityScreen';
+import { AgencyOnboardingScreen } from '@/components/agency/AgencyOnboardingScreen';
+import { AgencySettingsScreen } from '@/components/agency/AgencySettingsScreen';
 import rosteredLogo from '@/assets/rostered-logo.png';
 import { cn } from '@/lib/utils';
+import { Candidate } from '@/types/agency';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -119,6 +124,7 @@ const AgencyPortal = () => {
   const [shiftViewMode, setShiftViewMode] = useState<'list' | 'calendar'>('list');
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
+  const [selectedCandidateForProfile, setSelectedCandidateForProfile] = useState<Candidate | null>(null);
 
   const openShifts = mockShiftRequests.filter(s => s.status === 'open' || s.status === 'partially_filled');
   const urgentShifts = mockShiftRequests.filter(s => s.urgency === 'critical' || s.urgency === 'urgent');
@@ -669,7 +675,7 @@ const AgencyPortal = () => {
                                   </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>View Profile</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setSelectedCandidateForProfile(candidate)}>View Profile</DropdownMenuItem>
                                   <DropdownMenuItem>Edit</DropdownMenuItem>
                                   <DropdownMenuItem>View Availability</DropdownMenuItem>
                                   <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
@@ -694,27 +700,14 @@ const AgencyPortal = () => {
 
             {/* ═══ AVAILABILITY ═════════════════════════════════════════════ */}
             {activeTab === 'availability' && (
-              <div className="text-center py-16 text-muted-foreground">
-                <CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-medium">Candidate Availability Calendar</p>
-                <p className="text-xs">Click the calendar icon on any candidate to view their availability</p>
-                <Button variant="outlined" size="small" className="mt-4" onClick={() => setActiveTab('candidates')}>
-                  Go to Candidates
-                </Button>
-              </div>
+              <AgencyAvailabilityScreen
+                onViewCandidate={(candidate) => setSelectedCandidateForProfile(candidate)}
+              />
             )}
 
             {/* ═══ ONBOARDING ══════════════════════════════════════════════ */}
             {activeTab === 'onboarding' && (
-              <div className="text-center py-16 text-muted-foreground">
-                <UserCog className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-medium">Candidate Onboarding</p>
-                <p className="text-xs">Start onboarding a new candidate</p>
-                <Button size="small" className="mt-4" onClick={() => setShowCandidateForm(true)}>
-                  <Plus className="h-3.5 w-3.5 mr-1.5" />
-                  Onboard New Candidate
-                </Button>
-              </div>
+              <AgencyOnboardingScreen onStartOnboarding={() => setShowCandidateForm(true)} />
             )}
 
             {/* ═══ CLIENTS ═════════════════════════════════════════════════ */}
@@ -998,14 +991,7 @@ const AgencyPortal = () => {
 
             {/* ═══ SETTINGS ════════════════════════════════════════════════ */}
             {activeTab === 'settings' && (
-              <div className="text-center py-16 text-muted-foreground">
-                <Settings className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-medium">Agency Settings</p>
-                <p className="text-xs">Configure notifications, integrations, and preferences</p>
-                <Button variant="outlined" size="small" className="mt-4" onClick={() => setShowOnboardingWizard(true)}>
-                  Open Setup Wizard
-                </Button>
-              </div>
+              <AgencySettingsScreen />
             )}
           </div>
         </main>
@@ -1061,6 +1047,17 @@ const AgencyPortal = () => {
         onClose={() => setShowBulkImport(false)}
         onImport={(candidates) => {
           console.log('Imported candidates:', candidates);
+        }}
+      />
+
+      <CandidateProfilePanel
+        open={!!selectedCandidateForProfile}
+        onClose={() => setSelectedCandidateForProfile(null)}
+        candidate={selectedCandidateForProfile}
+        onViewAvailability={(candidate) => {
+          setSelectedCandidateForProfile(null);
+          setSelectedCandidateForAvailability({ id: candidate.id, name: `${candidate.firstName} ${candidate.lastName}` });
+          setShowAvailabilityCalendar(true);
         }}
       />
     </div>
