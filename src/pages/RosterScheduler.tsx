@@ -2298,51 +2298,29 @@ export default function RosterScheduler() {
             onAddShiftAtTime={handleAddShiftAtTime}
             onRemoveCentre={(centreId) => setActiveCentreIds(prev => prev.filter(id => id !== centreId))}
           />
-        ) : viewMode === 'day' ? (
-          <DayTimelineView
-            centre={selectedCentre}
-            shifts={shifts.filter(s => s.centreId === selectedCentreId)}
-            openShifts={openShifts.filter(os => os.centreId === selectedCentreId)}
-            staff={filteredStaff}
-            date={currentDate}
-            shiftTemplates={shiftTemplates}
-            showAnalyticsCharts={showAnalyticsCharts}
-            demandAnalytics={demandAnalytics}
-            staffAbsences={staffAbsences}
-            onShiftEdit={setSelectedShift}
-            onShiftDelete={handleShiftDelete}
-            onShiftResize={handleShiftResize}
-            onAddShift={handleAddShift}
-            onAddShiftAtTime={handleAddShiftAtTime}
-            onDragStart={handleDragStart}
-            onDropStaff={handleDropStaff}
-            onStaffClick={openStaffProfile}
-            onOpenShiftTemplateManager={() => setShowShiftTemplateManager(true)}
-          />
         ) : (
-          <StaffTimelineGrid
-            centre={selectedCentre}
+          <MultiLocationRosterView
+            centres={[selectedCentre]}
             shifts={shifts.filter(s => s.centreId === selectedCentreId)}
             openShifts={openShifts.filter(os => os.centreId === selectedCentreId)}
             staff={filteredStaff}
-            demandData={demandData}
-            complianceFlags={complianceFlags}
             dates={dates}
+            currentDate={currentDate}
             viewMode={viewMode}
             showDemandOverlay={showDemandOverlay}
             showAnalyticsCharts={showAnalyticsCharts}
+            demandData={demandData}
+            complianceFlags={complianceFlags}
             demandAnalytics={demandAnalytics}
             staffAbsences={staffAbsences}
-            shiftTemplates={shiftTemplates}
+            shiftTemplates={[...defaultShiftTemplates, ...shiftTemplates]}
             emptyShifts={emptyShifts.filter(es => es.centreId === selectedCentreId)}
             highlightedRecurrenceGroupId={highlightedRecurrenceGroupId}
+            staffRoomAssignmentsByCentre={staffRoomAssignmentsByCentre}
             onViewSeries={(groupId) =>
               setHighlightedRecurrenceGroupId(prev => (prev === groupId ? null : groupId))
             }
             onDropStaff={handleDropStaff}
-            staffRoomAssignments={staffRoomAssignmentsByCentre[selectedCentreId] || {}}
-            onAssignStaffToRoom={handleAssignStaffToRoom}
-            onRemoveStaffFromRoom={handleRemoveStaffFromRoom}
             onShiftEdit={setSelectedShift}
             onShiftDelete={handleShiftDelete}
             onShiftCopy={handleCopyShift}
@@ -2371,6 +2349,11 @@ export default function RosterScheduler() {
               setShiftForAgency(openShift);
               setShowSendToAgencyModal(true);
             }}
+            onAssignStaffToRoom={handleAssignStaffToRoom}
+            onRemoveStaffFromRoom={handleRemoveStaffFromRoom}
+            onShiftResize={handleShiftResize}
+            onAddShiftAtTime={handleAddShiftAtTime}
+            onRemoveCentre={(centreId) => setActiveCentreIds(prev => prev.filter(id => id !== centreId))}
           />
         )}
 
