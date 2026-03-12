@@ -29,8 +29,13 @@ import ClientManagementPanel from '@/components/agency/ClientManagementPanel';
 import { ShiftBroadcastInbox } from '@/components/agency/ShiftBroadcastInbox';
 import { ShiftCalendarView } from '@/components/agency/ShiftCalendarView';
 import { CandidateBulkImport } from '@/components/agency/CandidateBulkImport';
+import { CandidateProfilePanel } from '@/components/agency/CandidateProfilePanel';
+import { AgencyAvailabilityScreen } from '@/components/agency/AgencyAvailabilityScreen';
+import { AgencyOnboardingScreen } from '@/components/agency/AgencyOnboardingScreen';
+import { AgencySettingsScreen } from '@/components/agency/AgencySettingsScreen';
 import rosteredLogo from '@/assets/rostered-logo.png';
 import { cn } from '@/lib/utils';
+import { Candidate } from '@/types/agency';
 import {
   DropdownMenu,
   DropdownMenuContent,
