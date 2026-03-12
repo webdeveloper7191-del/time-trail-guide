@@ -18,6 +18,7 @@ import {
   UserX,
   ChevronLeft,
   ChevronRight,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isToday } from 'date-fns';
