@@ -707,15 +707,7 @@ const AgencyPortal = () => {
 
             {/* ═══ ONBOARDING ══════════════════════════════════════════════ */}
             {activeTab === 'onboarding' && (
-              <div className="text-center py-16 text-muted-foreground">
-                <UserCog className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-medium">Candidate Onboarding</p>
-                <p className="text-xs">Start onboarding a new candidate</p>
-                <Button size="small" className="mt-4" onClick={() => setShowCandidateForm(true)}>
-                  <Plus className="h-3.5 w-3.5 mr-1.5" />
-                  Onboard New Candidate
-                </Button>
-              </div>
+              <AgencyOnboardingScreen onStartOnboarding={() => setShowCandidateForm(true)} />
             )}
 
             {/* ═══ CLIENTS ═════════════════════════════════════════════════ */}
