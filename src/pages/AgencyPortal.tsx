@@ -124,6 +124,7 @@ const AgencyPortal = () => {
   const [shiftViewMode, setShiftViewMode] = useState<'list' | 'calendar'>('list');
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
+  const [selectedCandidateForProfile, setSelectedCandidateForProfile] = useState<Candidate | null>(null);
 
   const openShifts = mockShiftRequests.filter(s => s.status === 'open' || s.status === 'partially_filled');
   const urgentShifts = mockShiftRequests.filter(s => s.urgency === 'critical' || s.urgency === 'urgent');
