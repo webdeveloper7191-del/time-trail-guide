@@ -644,13 +644,13 @@ export function DayTimelineView({
                 {/* Open shifts row */}
                 {roomOpenShifts.length > 0 && (
                   <div className={cn("flex border-b border-border", openShiftColors.bg)}>
-                    <div className={cn("w-32 md:w-48 lg:w-64 shrink-0 p-2 border-r border-border flex items-center gap-2 sticky left-0 z-20", openShiftColors.bg)}>
+                    <div className={cn("w-32 md:w-48 lg:w-64 shrink-0 p-2 border-r border-border flex items-center gap-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]", openShiftColors.bg)}>
                       <div className={cn("h-8 w-8 rounded-full flex items-center justify-center border-2 border-dashed", openShiftColors.bg, openShiftColors.border)}>
                         <AlertCircle className={cn("h-4 w-4", openShiftColors.icon)} />
                       </div>
                       <div>
                         <p className={cn("text-sm font-medium", openShiftColors.text)}>Open Shifts</p>
-                        <p className={cn("text-[10px]", openShiftColors.text, "opacity-80")}>{roomOpenShifts.length} unfilled</p>
+                        <p className={cn("text-[10px]", openShiftColors.text, "opacity-80")}>Drag staff to fill</p>
                       </div>
                     </div>
 
@@ -680,19 +680,101 @@ export function DayTimelineView({
                         />
                       )}
 
-                      {/* Open shift bars */}
+                      {/* Open shift bars - interactive */}
                       {roomOpenShifts.map((openShift) => (
-                        <OpenShiftBar key={openShift.id} openShift={openShift} />
+                        <InteractiveOpenShiftBar 
+                          key={openShift.id} 
+                          openShift={openShift}
+                          onOpenShiftClick={onOpenShiftClick}
+                          onOpenShiftDrop={onOpenShiftDrop}
+                          onOpenShiftDelete={onOpenShiftDelete}
+                        />
                       ))}
                     </div>
 
-                    <div className="w-24 shrink-0 border-l border-border bg-card sticky right-0 z-20" />
+                    <div className="w-24 shrink-0 border-l border-border bg-card sticky right-0 z-20 flex items-center justify-center">
+                      <span className={cn("text-xs font-medium", openShiftColors.text)}>{roomOpenShifts.length} open</span>
+                    </div>
                   </div>
                 )}
 
+                {/* Add Staff drop zone */}
+                <div 
+                  className={cn(
+                    "flex border-b transition-colors",
+                    isDragging
+                      ? "bg-gradient-to-r from-sky-50/80 to-sky-50/40 dark:from-sky-950/30 dark:to-sky-950/10 border-sky-200/50" 
+                      : "bg-muted/30 border-border/50"
+                  )}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    handleDragOver(e, `add-staff-${room.id}`);
+                  }}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const staffId = e.dataTransfer.getData('staffId');
+                    if (!staffId) return;
+                    setDragOverSlot(null);
+                    setIsDragging(false);
+                    if (onAssignStaffToRoom) {
+                      onAssignStaffToRoom(staffId, room.id);
+                    } else {
+                      onDropStaff(staffId, room.id, dateStr);
+                    }
+                  }}
+                >
+                  <div className={cn(
+                    "w-32 md:w-48 lg:w-64 shrink-0 p-2 border-r border-border flex items-center gap-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] transition-colors",
+                    isDragging ? "bg-sky-50/80 dark:bg-sky-950/30" : "bg-muted/30"
+                  )}>
+                    <div className={cn(
+                      "h-8 w-8 rounded-lg flex items-center justify-center transition-colors shadow-sm shrink-0",
+                      isDragging ? "bg-sky-100 dark:bg-sky-900/50" : "bg-muted"
+                    )}>
+                      <User className={cn(
+                        "h-4 w-4 transition-colors",
+                        isDragging ? "text-sky-600 dark:text-sky-400" : "text-muted-foreground"
+                      )} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className={cn(
+                        "text-xs font-semibold transition-colors truncate",
+                        isDragging ? "text-sky-800 dark:text-sky-200" : "text-muted-foreground"
+                      )}>
+                        {isDragging ? "Drop here" : "Add Staff"}
+                      </p>
+                      <p className={cn(
+                        "text-[10px] transition-colors",
+                        isDragging ? "text-sky-600/80 dark:text-sky-400/80" : "text-muted-foreground/60"
+                      )}>
+                        {isDragging ? `Assign to ${room.name}` : `Drag staff to ${room.name}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div 
+                    className={cn(
+                      "relative h-12",
+                      isDragging && dragOverSlot === `add-staff-${room.id}` && "bg-sky-100/50 dark:bg-sky-900/20"
+                    )}
+                    style={{ width: totalWidth }}
+                  >
+                    {isDragging && dragOverSlot === `add-staff-${room.id}` && (
+                      <div className="absolute inset-0 border-2 border-sky-400 border-dashed rounded flex items-center justify-center pointer-events-none z-10">
+                        <div className="bg-sky-500 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg">
+                          Drop to assign staff
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="w-24 shrink-0 border-l border-border bg-card sticky right-0 z-20" />
+                </div>
+
                 {roomStaff.length === 0 && roomOpenShifts.length === 0 && (
                   <div className="flex border-b border-border h-16">
-                    <div className="w-64 shrink-0 p-4 border-r border-border text-center text-muted-foreground text-sm flex items-center justify-center">
+                    <div className="w-32 md:w-48 lg:w-64 shrink-0 p-4 border-r border-border text-center text-muted-foreground text-sm flex items-center justify-center sticky left-0 z-20 bg-card shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       No staff assigned
                     </div>
                     <div style={{ width: totalWidth }} />
