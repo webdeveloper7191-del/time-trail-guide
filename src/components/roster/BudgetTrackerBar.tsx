@@ -14,10 +14,17 @@ interface BudgetTrackerBarProps {
   weeklyBudget: number;
   centres?: Centre[];
   centreBudgets?: Record<string, number>;
+  activeCentreIds?: string[];
 }
 
-export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget, centres = [], centreBudgets = {} }: BudgetTrackerBarProps) {
+export function BudgetTrackerBar({ shifts, staff, centreId, weeklyBudget, centres = [], centreBudgets = {}, activeCentreIds }: BudgetTrackerBarProps) {
+  // Sync with global location filter
   const [selectedLocationId, setSelectedLocationId] = useState<string>(centreId);
+  
+  // Update when global centreId changes
+  useEffect(() => {
+    setSelectedLocationId(centreId);
+  }, [centreId]);
 
   const activeCentreId = selectedLocationId || centreId;
   const activeBudget = activeCentreId === 'all'
