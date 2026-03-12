@@ -107,10 +107,12 @@ export function UnscheduledStaffPanel({
   const availableAgencyStaff = useMemo(() => {
     let filtered = agencyStaff.filter(s => !scheduledStaffIds.has(s.id));
     
-    // Prefer staff who have this centre as preferred
-    filtered = filtered.filter(s => 
-      s.preferredCentres.includes(selectedCentreId) || s.preferredCentres.length === 0
-    );
+    // In single location mode: only show agency staff eligible for this location
+    if (!isAllLocations) {
+      filtered = filtered.filter(s => 
+        s.preferredCentres.includes(selectedCentreId) || s.preferredCentres.length === 0
+      );
+    }
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -127,7 +129,7 @@ export function UnscheduledStaffPanel({
     }
 
     return filtered;
-  }, [agencyStaff, scheduledStaffIds, searchQuery, qualificationFilter, selectedCentreId]);
+  }, [agencyStaff, scheduledStaffIds, searchQuery, qualificationFilter, selectedCentreId, isAllLocations]);
 
   // Group by employment type for internal staff
   const groupedStaff = useMemo(() => {
