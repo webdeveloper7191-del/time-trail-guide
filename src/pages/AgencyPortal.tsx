@@ -991,14 +991,7 @@ const AgencyPortal = () => {
 
             {/* ═══ SETTINGS ════════════════════════════════════════════════ */}
             {activeTab === 'settings' && (
-              <div className="text-center py-16 text-muted-foreground">
-                <Settings className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-medium">Agency Settings</p>
-                <p className="text-xs">Configure notifications, integrations, and preferences</p>
-                <Button variant="outlined" size="small" className="mt-4" onClick={() => setShowOnboardingWizard(true)}>
-                  Open Setup Wizard
-                </Button>
-              </div>
+              <AgencySettingsScreen />
             )}
           </div>
         </main>
