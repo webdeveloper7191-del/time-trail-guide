@@ -1202,3 +1202,69 @@ function OpenShiftBar({ openShift }: { openShift: OpenShift }) {
     </div>
   );
 }
+
+// Interactive open shift bar with click, drag-drop, and delete
+function InteractiveOpenShiftBar({ 
+  openShift,
+  onOpenShiftClick,
+  onOpenShiftDrop,
+  onOpenShiftDelete,
+}: { 
+  openShift: OpenShift;
+  onOpenShiftClick?: (os: OpenShift) => void;
+  onOpenShiftDrop?: (staffId: string, os: OpenShift) => void;
+  onOpenShiftDelete?: (id: string) => void;
+}) {
+  const left = timeToPixels(openShift.startTime);
+  const width = getShiftWidth(openShift.startTime, openShift.endTime);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  return (
+    <div
+      className={cn(
+        "absolute top-2 bottom-2 rounded-lg border-2 border-dashed cursor-pointer group/openshift",
+        "flex items-center justify-center gap-1 px-2 transition-all",
+        openShiftColors.bgGradient,
+        openShiftColors.border,
+        openShift.urgency === 'critical' && "animate-pulse",
+        isDragOver && "ring-2 ring-primary scale-y-110 shadow-lg",
+        "hover:shadow-md hover:scale-y-105"
+      )}
+      style={{ left, width: Math.max(width, 60) }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpenShiftClick?.(openShift);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsDragOver(true);
+      }}
+      onDragLeave={() => setIsDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+        const staffId = e.dataTransfer.getData('staffId');
+        if (staffId) onOpenShiftDrop?.(staffId, openShift);
+      }}
+    >
+      <AlertCircle className={cn("h-4 w-4 shrink-0", openShiftColors.icon)} />
+      <span className={cn("text-xs font-medium truncate", openShiftColors.text)}>
+        {openShift.startTime}-{openShift.endTime}
+      </span>
+      {width > 120 && (
+        <Badge 
+          variant={openShift.urgency === 'critical' ? 'destructive' : 'outline'} 
+          className={cn("text-[8px] capitalize ml-1 shrink-0", openShiftColors.text)}
+        >
+          {openShift.urgency}
+        </Badge>
+      )}
+      {isDragOver && (
+        <div className="absolute inset-0 flex items-center justify-center bg-primary/20 rounded-lg pointer-events-none">
+          <span className="text-xs font-medium text-primary">Drop to fill</span>
+        </div>
+      )}
+    </div>
+  );
+}
