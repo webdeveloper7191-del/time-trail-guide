@@ -42,6 +42,11 @@ interface DayTimelineViewProps {
   onDropStaff: (staffId: string, roomId: string, date: string) => void;
   onStaffClick?: (staff: StaffMember) => void;
   onOpenShiftTemplateManager?: () => void;
+  onOpenShiftClick?: (openShift: OpenShift) => void;
+  onOpenShiftDrop?: (staffId: string, openShift: OpenShift) => void;
+  onOpenShiftDelete?: (openShiftId: string) => void;
+  onAddOpenShift?: (roomId: string, date: string) => void;
+  onAssignStaffToRoom?: (staffId: string, roomId: string) => void;
 }
 
 // Generate time slots from 5:00 AM to 9:00 PM with 15-minute intervals
