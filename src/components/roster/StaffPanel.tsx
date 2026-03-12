@@ -38,9 +38,11 @@ export function StaffPanel({ staff, selectedCentreId, onDragStart }: StaffPanelP
       );
     }
 
-    if (selectedCentreId) {
+    if (selectedCentreId && selectedCentreId !== 'all') {
       filtered = filtered.filter(s => 
-        s.preferredCentres.includes(selectedCentreId) || s.preferredCentres.length === 0
+        s.preferredCentres.includes(selectedCentreId) || 
+        s.defaultCentreId === selectedCentreId ||
+        s.preferredCentres.length === 0
       );
     }
 

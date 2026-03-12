@@ -478,11 +478,16 @@ export default function RosterScheduler() {
   };
 
   const handleAssignStaffToRoom = (staffId: string, roomId: string) => {
+    // Derive centreId from the room's parent centre in multi-location mode
+    const centreId = isAllLocationsView
+      ? mockCentres.find(c => c.rooms.some(r => r.id === roomId))?.id || selectedCentreId
+      : selectedCentreId;
+
     setStaffRoomAssignmentsByCentre(prev => {
-      const current = prev[selectedCentreId] || {};
+      const current = prev[centreId] || {};
       return {
         ...prev,
-        [selectedCentreId]: {
+        [centreId]: {
           ...current,
           [staffId]: roomId,
         },
@@ -490,7 +495,20 @@ export default function RosterScheduler() {
     });
 
     const staff = allStaff.find(s => s.id === staffId);
-    toast.success(`${staff?.name ?? 'Staff'} assigned to room`);
+    const centreName = mockCentres.find(c => c.id === centreId)?.name;
+    
+    // Warn if staff is being assigned to a non-preferred location
+    if (staff && centreId !== 'all' && 
+        staff.preferredCentres.length > 0 && 
+        !staff.preferredCentres.includes(centreId) && 
+        staff.defaultCentreId !== centreId) {
+      toast.warning(
+        `⚠️ ${staff.name} does not have "${centreName}" as a preferred location. Their preferred location${staff.preferredCentres.length > 1 ? 's are' : ' is'}: ${staff.preferredCentres.map(id => mockCentres.find(c => c.id === id)?.name || id).join(', ')}`,
+        { duration: 6000 }
+      );
+    } else {
+      toast.success(`${staff?.name ?? 'Staff'} assigned to room`);
+    }
   };
 
   const handleDropStaff = (staffId: string, roomId: string, date: string) => {
@@ -518,7 +536,20 @@ export default function RosterScheduler() {
     };
 
     setShifts(prev => [...prev, newShift], `Added shift for ${staff.name}`, 'add');
-    toast.success(`Added shift for ${staff.name}`);
+    
+    // Warn if staff is being assigned to a non-preferred location
+    if (centreId !== 'all' && 
+        staff.preferredCentres.length > 0 && 
+        !staff.preferredCentres.includes(centreId) && 
+        staff.defaultCentreId !== centreId) {
+      const centreName = centre?.name || centreId;
+      toast.warning(
+        `⚠️ ${staff.name} does not have "${centreName}" as a preferred location. Their preferred location${staff.preferredCentres.length > 1 ? 's are' : ' is'}: ${staff.preferredCentres.map(id => mockCentres.find(c => c.id === id)?.name || id).join(', ')}`,
+        { duration: 6000 }
+      );
+    } else {
+      toast.success(`Added shift for ${staff.name}`);
+    }
   };
 
   const handleShiftMove = (shiftId: string, newDate: string, newRoomId: string) => {
