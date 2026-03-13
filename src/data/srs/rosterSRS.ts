@@ -55,7 +55,7 @@ export interface ModuleSRS {
   businessRules: { id: string; rule: string; rationale: string }[];
 }
 
-
+export const rosterSRS: ModuleSRS = {
   moduleName: "Roster & Workforce Scheduling",
   version: "2.0.0",
   lastUpdated: "2026-01-30",
