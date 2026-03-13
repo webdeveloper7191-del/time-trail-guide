@@ -53,7 +53,1676 @@ export interface ModuleSRS {
   tableSpecs: TableSpec[];
   integrations: { system: string; type: string; description: string }[];
   businessRules: { id: string; rule: string; rationale: string }[];
-}
+    },
+
+    // ============================================================================
+    // SECTION 19: SIDE PANEL — SHIFT DETAIL & EDITING
+    // ============================================================================
+    {
+      id: "US-RST-042",
+      title: "View and Edit Shift Details via Side Panel",
+      actors: ["Location Manager", "Team Leader"],
+      description: "As a Location Manager, I want to click on any shift in the roster grid to open a comprehensive side panel showing all shift details with inline editing capabilities, so that I can quickly review and modify shifts without navigating away from the roster.",
+      acceptanceCriteria: [
+        "Clicking a shift card opens a side panel with full shift details",
+        "Can edit shift times, room assignment, staff assignment, and break duration",
+        "Real-time cost calculation updates as shift parameters change",
+        "Shift status can be changed (draft, published, confirmed, completed)",
+        "Demand histogram shows staffing levels for the shift's time period",
+        "Allowance eligibility panel shows applicable allowances based on shift type",
+        "Can duplicate, copy, swap staff, or delete shift from action buttons",
+        "Recurring shift indicator shows pattern details and allows series editing",
+        "Compliance flags are displayed inline with resolution suggestions",
+        "Coverage suggestion modal can be triggered for absent staff replacement"
+      ],
+      businessLogic: [
+        "Cost calculation: (endTime - startTime - breakMinutes) × staffHourlyRate",
+        "Overtime detection: Hours exceeding staff.maxHoursPerWeek in the current week",
+        "Shift types supported: regular, on_call, sleepover, broken, recall, emergency",
+        "On-call shifts show pay breakdown with base allowance + callback rates",
+        "Sleepover shifts track disturbance minutes for additional pay",
+        "Broken shift allowance: $18.46/occurrence when shift has unpaid gap >1 hour",
+        "Status transitions: draft → published → confirmed → completed (linear flow)",
+        "Absent marking triggers ShiftCoverageSuggestionModal for replacement",
+        "Recurring shifts display pattern info (daily/weekly/fortnightly/monthly) with series edit option",
+        "Shift template application pre-fills time, break, and qualification fields"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Awards", relationship: "Cost calculations use award rates and penalty multipliers" },
+        { module: "Compliance", relationship: "Inline compliance flags for ratio and qualification issues" },
+        { module: "Fatigue", relationship: "Staff fatigue score shown when assigning" }
+      ],
+      endToEndJourney: [
+        "1. Manager clicks on Emma's 7AM-3PM shift in the roster grid",
+        "2. Side panel opens showing: times, room, staff, cost, status",
+        "3. Manager changes room from 'Room A' to 'Room B'",
+        "4. Cost recalculates based on new room's qualification requirements",
+        "5. Demand histogram updates showing Room B staffing levels",
+        "6. Manager clicks Save, shift updates in real-time on the grid",
+        "7. Alternatively, Manager marks shift as 'Absent'",
+        "8. Coverage suggestion modal opens with ranked replacement candidates",
+        "9. Manager selects replacement, shift reassigned automatically"
+      ],
+      realWorldExample: {
+        scenario: "Manager needs to adjust a shift due to room closure for maintenance.",
+        steps: [
+          "Opens shift detail panel for Room A morning shift",
+          "Changes room to Room B",
+          "System warns: Room B already at 90% capacity",
+          "Manager confirms move, acknowledges capacity warning",
+          "Cost recalculates including any applicable allowances",
+          "Saves changes, staff notified of room change"
+        ],
+        outcome: "Quick shift modification with full visibility into cost and compliance impact."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 20: SIDE PANEL — ADD EMPTY SHIFT
+    // ============================================================================
+    {
+      id: "US-RST-043",
+      title: "Create Empty Shifts with Template or Custom Configuration",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to create unassigned shifts in bulk using templates or custom times, optionally with recurring patterns, so that I can build the roster structure before assigning staff.",
+      acceptanceCriteria: [
+        "Can select from predefined shift templates (AM, PM, Full Day, etc.)",
+        "Can define custom start time, end time, and break duration",
+        "Can select multiple rooms and multiple dates for bulk creation",
+        "Can configure recurring pattern (daily, weekly, fortnightly, monthly)",
+        "Recurring shifts support specific days of week selection",
+        "Can set required qualifications and preferred staff role",
+        "Location selector allows creating shifts for any location",
+        "Preview shows count of shifts to be created before confirmation"
+      ],
+      businessLogic: [
+        "Template application: Pre-fills startTime, endTime, breakMinutes from selected template",
+        "Bulk creation: Creates shifts for each combination of selectedRooms × selectedDates",
+        "Recurring generation: Uses pattern type to calculate future dates up to end date or occurrence count",
+        "Weekly recurrence: Creates shifts only on selected daysOfWeek",
+        "Fortnightly: Alternates weeks using anchor date for Week A/B determination",
+        "Monthly: Creates on same dayOfMonth each month",
+        "Qualification requirements: Filters eligible staff during later assignment",
+        "Location change resets room selection to rooms of the new centre",
+        "Created shifts default to 'draft' status and 'unassigned' (no staffId)"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Shift Templates", relationship: "Templates provide quick configuration presets" },
+        { module: "Recurring Shifts", relationship: "Recurring patterns auto-generate future instances" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens 'Add Empty Shift' from roster toolbar",
+        "2. Selects shift template: 'AM Shift (7:00-15:00)'",
+        "3. Selects rooms: Room A, Room B, Room C",
+        "4. Selects dates: Monday through Friday",
+        "5. Enables recurring: Weekly, no end date",
+        "6. Preview: 15 shifts per week (3 rooms × 5 days)",
+        "7. Manager confirms, shifts appear as unassigned blocks",
+        "8. Manager then assigns staff via drag-and-drop or auto-assign"
+      ],
+      realWorldExample: {
+        scenario: "Setting up a new week's roster structure using AM/PM shift templates.",
+        steps: [
+          "Manager selects AM template for 5 rooms across Mon-Fri",
+          "Then switches to PM template for same rooms",
+          "50 empty shifts created (25 AM + 25 PM)",
+          "Manager proceeds to assign staff manually or via AI optimizer"
+        ],
+        outcome: "Roster structure created in under 2 minutes using templates."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 21: SIDE PANEL — ADD OPEN SHIFT
+    // ============================================================================
+    {
+      id: "US-RST-044",
+      title: "Create Open Shifts with Qualification and Urgency Settings",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to create open shifts with detailed qualification requirements, shift type configuration, and urgency levels, so that eligible staff can claim shifts matching their skills.",
+      acceptanceCriteria: [
+        "Can create single or bulk open shifts",
+        "Supports all shift types: regular, on_call, sleepover, broken, recall, emergency",
+        "Can set required qualifications (First Aid, CPR, WWCC, Diploma, etc.)",
+        "Can set minimum classification level (Level 2.1 through Level 6.3)",
+        "Can set preferred staff role (Team Leader, Senior, Staff, etc.)",
+        "Urgency levels: normal, urgent, critical with visual differentiation",
+        "Zod schema validation ensures all required fields are completed",
+        "Location selector with dynamic room filtering per centre",
+        "Bulk mode allows selecting multiple dates for batch creation"
+      ],
+      businessLogic: [
+        "Open shift = shift with is_open_shift=true and staff_id=null",
+        "Qualification matching: Staff must hold ALL required qualifications to be eligible",
+        "Classification hierarchy: Staff classification must be ≥ minimumClassification",
+        "Urgency 'urgent': Shift within 24 hours, triggers immediate broadcast",
+        "Urgency 'critical': Shift within 12 hours, escalates to agency if unfilled after 30 min",
+        "Shift type 'on_call': Adds on-call allowance fields (base rate, recall provisions)",
+        "Shift type 'sleepover': Adds sleepover allowance and disturbance tracking",
+        "Shift type 'broken': Adds broken shift allowance when unpaid gap >1 hour",
+        "Validation: End time must be after start time, break ≤ shift duration",
+        "Bulk creation: One open shift per selected date × room combination"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Awards", relationship: "Shift type determines applicable allowances and rates" },
+        { module: "Open Shift Broadcasting", relationship: "Created shifts broadcast to eligible staff" },
+        { module: "Agency", relationship: "Unfilled urgent shifts escalate to agency partners" }
+      ],
+      endToEndJourney: [
+        "1. Manager needs to fill unexpected gap for tomorrow",
+        "2. Opens 'Add Open Shift' panel",
+        "3. Selects room, sets time 7:00-15:00",
+        "4. Sets urgency: 'Urgent'",
+        "5. Requires: First Aid, Diploma minimum",
+        "6. Sets minimum classification: Level 3.1",
+        "7. Saves open shift",
+        "8. System broadcasts to 6 eligible staff",
+        "9. Emma claims shift within 20 minutes",
+        "10. Open shift converts to assigned shift"
+      ],
+      realWorldExample: {
+        scenario: "Sleepover shift needs filling for overnight care coverage.",
+        steps: [
+          "Manager selects shift type: Sleepover",
+          "Sets times: 9PM-7AM with 30-min paid break",
+          "Adds on-call provisions for potential disturbances",
+          "Requires: First Aid, over-18 staff",
+          "System calculates: Base $69.85 + potential recall rates",
+          "Posts as open shift with full cost transparency"
+        ],
+        outcome: "Specialised shift created with all award-compliant allowances configured."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 22: SIDE PANEL — ALERT NOTIFICATIONS
+    // ============================================================================
+    {
+      id: "US-RST-045",
+      title: "View and Manage Roster Alerts and Notifications",
+      actors: ["Location Manager", "Area Manager"],
+      description: "As a Location Manager, I want a centralised alerts panel that aggregates budget warnings, overtime alerts, compliance issues, coverage gaps, agency notifications, and recurring pattern alerts, so that I can prioritise and resolve issues efficiently.",
+      acceptanceCriteria: [
+        "Alerts categorised into tabs: All, Budget, Staffing, Compliance",
+        "Each alert has severity: info, warning, critical with visual colour coding",
+        "Badge counts show unread alerts per category",
+        "Can mark individual alerts as read",
+        "Can dismiss all alerts with 'Mark All Read' action",
+        "Location filter allows viewing alerts for specific centre or all locations",
+        "Action buttons on alerts link to relevant resolution workflows",
+        "Alert types: budget, overtime, compliance, coverage, agency, recurring"
+      ],
+      businessLogic: [
+        "Budget alert (critical): Triggered when totalCost ≥ 100% of weeklyBudget",
+        "Budget alert (warning): Triggered when totalCost ≥ 90% of weeklyBudget",
+        "Overtime alert: Staff working >38 hours/week or >10 hours/day flagged",
+        "Coverage gap: Unfilled shifts within 48 hours generate warning",
+        "Coverage gap: Unfilled shifts within 24 hours generate critical alert",
+        "Compliance: Ratio breaches or at-risk periods generate alerts",
+        "Qualification expiry: Staff qualifications expiring within 30 days",
+        "Recurring pattern: Series ending within 14 days generates warning",
+        "Agency: Pending proposals awaiting review, SLA approaching deadline",
+        "Alert persistence: Read state tracked per session, alerts regenerate from live data"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Budget", relationship: "Budget utilisation drives budget alerts" },
+        { module: "Compliance", relationship: "Ratio compliance flags feed alert system" },
+        { module: "Agency", relationship: "Agency response status drives agency alerts" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Alert panel, sees bell icon with '5' badge",
+        "2. All tab shows: 2 critical, 2 warning, 1 info",
+        "3. Critical: 'Over Budget by 8%' and 'Room B understaffed tomorrow'",
+        "4. Warning: 'Tom approaching overtime limit (36/38 hrs)' and 'Emma's First Aid expiring in 25 days'",
+        "5. Info: 'Recurring pattern for Sarah ending in 12 days'",
+        "6. Manager clicks 'Review Shifts' on budget alert",
+        "7. Navigates to budget view to identify cost reduction opportunities",
+        "8. Returns and marks resolved alerts as read"
+      ],
+      realWorldExample: {
+        scenario: "Friday afternoon pre-publish alert review.",
+        steps: [
+          "Manager opens alerts before publishing next week's roster",
+          "3 overtime warnings for staff exceeding 36 hours",
+          "1 compliance warning for Thursday afternoon ratio risk",
+          "Manager adjusts shifts to resolve overtime issues",
+          "Adds extra staff for Thursday coverage",
+          "All alerts cleared, roster published"
+        ],
+        outcome: "Proactive alert review prevents issues before roster publication."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 23: SIDE PANEL — SHIFT CONFLICT DETECTION
+    // ============================================================================
+    {
+      id: "US-RST-046",
+      title: "Detect and Resolve Shift Scheduling Conflicts",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want a conflict detection panel that identifies all scheduling issues across the roster including overlapping shifts, availability violations, overtime breaches, insufficient rest periods, and leave conflicts, so that I can resolve them before publishing.",
+      acceptanceCriteria: [
+        "Conflicts categorised by severity: errors (must fix) and warnings (review)",
+        "Conflict types: overlap, outside_availability, overtime_exceeded, insufficient_rest, max_consecutive_days, on_leave",
+        "Each conflict shows affected staff member and shift details",
+        "Navigate-to-shift action from each conflict for quick resolution",
+        "Location filter to view conflicts per centre",
+        "Summary badges show total error and warning counts",
+        "Conflicts auto-deduplicated to prevent duplicate entries"
+      ],
+      businessLogic: [
+        "Overlap: Two shifts for same staff with overlapping time ranges on same date",
+        "Outside availability: Shift scheduled when staff availability is 'unavailable' or outside available hours",
+        "Overtime exceeded: Staff total weekly hours >maxHoursPerWeek (default 38)",
+        "Insufficient rest: <10 hours gap between end of one shift and start of next",
+        "Max consecutive days: Staff working >5 consecutive days without rest day",
+        "On leave: Shift assigned on date with approved leave request",
+        "Severity: overlap, on_leave = error (must resolve); others = warning (can override)",
+        "Detection runs on all shifts in current view filtered by selected centre",
+        "Deduplicate by conflict ID (hash of type + staffId + shiftIds)"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Fatigue Management", relationship: "Insufficient rest and consecutive day rules" },
+        { module: "Leave Management", relationship: "Leave dates used for conflict detection" },
+        { module: "Roster Publishing", relationship: "Errors block publication" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Conflict Panel, sees '3 errors, 5 warnings'",
+        "2. Error 1: Emma has overlapping shifts Mon 7-3PM and 2-10PM",
+        "3. Error 2: Tom assigned Tuesday shift but on approved leave",
+        "4. Error 3: Sarah has shift overlap across two rooms",
+        "5. Warning 1: David at 42/38 weekly hours (overtime)",
+        "6. Manager clicks 'Go to Shift' on Emma's conflict",
+        "7. Adjusts Emma's afternoon shift to 3-10PM (removes overlap)",
+        "8. Removes Tom's Tuesday shift (on leave)",
+        "9. Conflict panel refreshes: '0 errors, 5 warnings'",
+        "10. Manager overrides overtime warnings with justification, publishes roster"
+      ],
+      realWorldExample: {
+        scenario: "Pre-publication conflict review catches critical issues.",
+        steps: [
+          "Conflict panel shows 2 overlaps and 1 leave violation",
+          "Manager resolves all errors in 5 minutes",
+          "Remaining warnings reviewed and acknowledged",
+          "Roster published without critical issues"
+        ],
+        outcome: "All scheduling conflicts resolved before staff notification."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 24: SIDE PANEL — STAFF AVAILABILITY OVERLAY
+    // ============================================================================
+    {
+      id: "US-RST-047",
+      title: "Display Staff Availability Status on Roster Grid",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to see each staff member's availability status (available, unavailable, on leave, partial) overlaid on the roster grid, so that I can make informed scheduling decisions.",
+      acceptanceCriteria: [
+        "Availability overlay shows status per staff member per day",
+        "Statuses: available (green), partial (amber with time range), unavailable (grey), on leave (red with leave type)",
+        "Leave type labels displayed: Annual, Sick, Personal, Study, Unpaid, Long Service",
+        "Partial availability shows available time window (e.g., 9AM-3PM)",
+        "Tooltip shows detailed availability information on hover",
+        "Compact and expanded display modes available",
+        "Time slot view shows 15-minute blocks when enabled"
+      ],
+      businessLogic: [
+        "Availability determined from staff.availability[] matching dayOfWeek",
+        "Leave status: Check staff.timeOff[] for approved leave on the date",
+        "Leave takes priority: If on approved leave, show leave status regardless of availability",
+        "Partial availability: available=true but with restricted startTime-endTime window",
+        "Unavailable: availability.available=false for the day of week",
+        "Week A/B pattern: Use anchor date to determine which week pattern applies",
+        "Default: If no availability record, assume available",
+        "Leave type labels: annual_leave→'Annual Leave', sick_leave→'Sick Leave', etc."
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Staff Availability", relationship: "Uses availability patterns" },
+        { module: "Leave Management", relationship: "Shows approved leave status" },
+        { module: "Conflict Detection", relationship: "Availability violations trigger conflicts" }
+      ],
+      endToEndJourney: [
+        "1. Manager enables availability overlay on roster grid",
+        "2. Emma's Monday shows green (fully available 7AM-6PM)",
+        "3. Tom's Tuesday shows red badge: 'Sick Leave'",
+        "4. Sarah's Wednesday shows amber: 'Available 9AM-3PM only'",
+        "5. Manager avoids scheduling Tom on Tuesday",
+        "6. Schedules Sarah only within her available window",
+        "7. If manager accidentally assigns outside availability, conflict panel flags it"
+      ],
+      realWorldExample: {
+        scenario: "Planning roster with mixed availability patterns.",
+        steps: [
+          "Grid shows colour-coded availability for all staff",
+          "3 staff on leave this week clearly marked in red",
+          "2 part-time staff show restricted hours in amber",
+          "Manager plans around constraints efficiently",
+          "No availability-related conflicts in final roster"
+        ],
+        outcome: "Visual availability overlay reduces scheduling errors by 80%."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 25: SIDE PANEL — SKILL MATRIX MATCHING
+    // ============================================================================
+    {
+      id: "US-RST-048",
+      title: "Match Staff to Shifts Using Skill Matrix Scoring",
+      actors: ["Location Manager", "System"],
+      description: "As a Location Manager, I want the system to rank staff suitability for each shift based on weighted skill matching, so that I can assign the best-qualified staff to each role.",
+      acceptanceCriteria: [
+        "Skill weights configurable per skill (0-100 scale)",
+        "Skills marked as required vs preferred with mandatory flag",
+        "Staff proficiency levels tracked: basic, intermediate, advanced, expert",
+        "Match score calculated as weighted sum of matched skills",
+        "Results sorted by match score with recommendation level",
+        "Auto-match feature assigns best-fit staff to all open shifts",
+        "Minimum proficiency thresholds configurable per skill",
+        "Expiry checking for time-sensitive certifications"
+      ],
+      businessLogic: [
+        "Default skill weights: First Aid (75), Child Development (60), Special Needs (70), Behaviour Management (65), Curriculum Planning (55), Parent Communication (50), Leadership (65), Food Safety (45)",
+        "Match score = Σ(matchedSkillWeight × proficiencyFactor) / Σ(allSkillWeights) × 100",
+        "Proficiency factor: basic=0.25, intermediate=0.5, advanced=0.75, expert=1.0",
+        "Mandatory skills: Staff MUST meet minimum proficiency to be eligible",
+        "Recommendation levels: ≥85 = excellent, ≥70 = good, ≥55 = acceptable, <55 = not_recommended",
+        "Expiry check: Skills with expired certifications count as unmatched",
+        "Auto-match algorithm: Greedy assignment, highest score first, avoid double-booking",
+        "Skills data sourced from staff qualifications and proficiency assessments"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Staff Qualifications", relationship: "Qualification records feed skill profiles" },
+        { module: "AI Scheduler", relationship: "Skill scores used as soft constraint in optimization" },
+        { module: "Open Shifts", relationship: "Skill matching filters eligible claimants" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Skill Matrix panel for Room A shifts",
+        "2. Configures required skills: First Aid (mandatory), Special Needs (preferred)",
+        "3. System ranks 8 available staff by match score",
+        "4. Emma: 92% (excellent) - all skills matched, advanced proficiency",
+        "5. Tom: 78% (good) - missing Special Needs certification",
+        "6. Sarah: 61% (acceptable) - basic proficiency in most skills",
+        "7. Manager assigns Emma to the shift",
+        "8. Alternatively clicks 'Auto-Match All' to assign best-fit staff to all open shifts"
+      ],
+      realWorldExample: {
+        scenario: "Specialised room requires specific skill mix.",
+        steps: [
+          "Room has children with special needs",
+          "Skill matrix requires: Special Needs Support + First Aid (mandatory)",
+          "Only 3 of 12 staff meet mandatory requirements",
+          "System ranks by overall score including preferred skills",
+          "Best match assigned, ensuring quality care"
+        ],
+        outcome: "Data-driven staff matching ensures skill-appropriate assignments."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 26: SIDE PANEL — BULK SHIFT ASSIGNMENT
+    // ============================================================================
+    {
+      id: "US-RST-049",
+      title: "Assign Staff to Shifts in Bulk Across Dates and Rooms",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to assign multiple staff members to shifts across multiple dates and rooms in a single operation, so that I can rapidly build the weekly roster.",
+      acceptanceCriteria: [
+        "Can select multiple staff members for assignment",
+        "Can select multiple dates from the roster week",
+        "Can select target room for all shifts",
+        "Can choose shift template for timing",
+        "Assignment modes: all-to-all (every staff × every date) or round-robin (rotate staff across dates)",
+        "Preview shows total shifts to be created with conflict detection",
+        "Conflict detection flags overlapping shifts before creation",
+        "Staff filtered by location eligibility (preferredCentres)",
+        "Location selector allows cross-centre bulk assignment"
+      ],
+      businessLogic: [
+        "All-to-all mode: Creates staffCount × dateCount shifts total",
+        "Round-robin mode: Distributes dates evenly across staff (date[0]→staff[0], date[1]→staff[1], etc.)",
+        "Conflict detection: Check existingShifts for same staffId + same date + overlapping times",
+        "Staff eligibility: Filter staff by preferredCentres.includes(centreId) or no preferences set",
+        "Shift template: Applies startTime, endTime, breakMinutes from selected template",
+        "Room validation: Target room must belong to the selected centre",
+        "Created shifts inherit centreId from the selected location",
+        "Maximum bulk creation: 100 shifts per operation to prevent system overload"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Shift Templates", relationship: "Templates define shift timing for bulk creation" },
+        { module: "Staff Management", relationship: "Location preferences filter eligible staff" },
+        { module: "Conflict Detection", relationship: "Pre-creation conflict check" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Bulk Assign panel",
+        "2. Selects 4 staff members: Emma, Tom, Sarah, David",
+        "3. Selects dates: Mon, Tue, Wed, Thu, Fri",
+        "4. Selects room: Room A",
+        "5. Selects template: AM Shift (7:00-15:00)",
+        "6. Mode: Round-robin",
+        "7. Preview: 5 shifts (Emma→Mon, Tom→Tue, Sarah→Wed, David→Thu, Emma→Fri)",
+        "8. No conflicts detected",
+        "9. Manager confirms, 5 shifts created",
+        "10. Roster grid updates with new assignments"
+      ],
+      realWorldExample: {
+        scenario: "Rapidly staffing a new room that opens next week.",
+        steps: [
+          "Manager selects 6 qualified staff",
+          "Selects all 5 weekdays",
+          "Chooses round-robin to distribute fairly",
+          "Preview shows balanced assignment",
+          "One conflict detected: Tom already has Tuesday shift",
+          "Manager deselects Tom for Tuesday, confirms rest",
+          "Room fully staffed in under 3 minutes"
+        ],
+        outcome: "Bulk assignment saves 30+ minutes compared to individual shift creation."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 27: SIDE PANEL — AUTO-ASSIGN STAFF (AI)
+    // ============================================================================
+    {
+      id: "US-RST-050",
+      title: "Auto-Assign Staff to Open Shifts Using Weighted Scoring",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want the system to automatically suggest and assign the best-fit staff to open shifts using configurable weighted scoring across availability, qualifications, cost, fairness, and preferences, so that I can optimise assignments efficiently.",
+      acceptanceCriteria: [
+        "Scoring weights configurable via sliders: Availability, Qualifications, Cost, Fairness, Preference",
+        "Each staff scored 0-100 with detailed breakdown visible",
+        "Ineligible staff clearly marked with reasons",
+        "Can toggle employment type filters (permanent, casual, agency)",
+        "Can auto-assign all shifts or review suggestions per shift",
+        "Fairness score based on hours distribution across staff",
+        "Cost optimisation considers hourly rate and overtime implications",
+        "Penalty scoring for fatigue risk and consecutive day violations"
+      ],
+      businessLogic: [
+        "Availability score (0-100): 100 if fully available, 0 if unavailable or on leave",
+        "Qualification score (0-100): Based on matching required qualifications for the shift",
+        "Cost score (0-100): Inversely proportional to hourly rate (cheaper staff score higher)",
+        "Fairness score (0-100): Based on deviation from average weekly hours across staff",
+        "Preference score (0-100): 100 if room is in preferredRooms, 50 if neutral, 0 if in avoidRooms",
+        "Penalty deductions: -20 for fatigue risk >60, -30 for consecutive days >5, -50 for on leave",
+        "Overall score = weighted average of (availability × w1 + qualifications × w2 + cost × w3 + fairness × w4 + preference × w5) - penalties",
+        "Eligibility: Staff must have availability score >0 AND meet mandatory qualifications",
+        "Employment type priority: permanent_fulltime > permanent_parttime > casual > agency",
+        "Auto-assign order: Highest scoring eligible staff assigned first, with conflict re-check between each assignment"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "AI Scheduler", relationship: "Auto-assign is the simplified single-shift version of full optimization" },
+        { module: "Awards", relationship: "Cost calculations use award-determined rates" },
+        { module: "Fatigue Management", relationship: "Fatigue scores influence penalty deductions" }
+      ],
+      endToEndJourney: [
+        "1. Manager has 8 open shifts for next week",
+        "2. Opens Auto-Assign panel",
+        "3. Adjusts weights: Fairness=High, Cost=Medium, Qualifications=High",
+        "4. System scores 12 available staff for each shift",
+        "5. Review shows: Emma (87), Tom (82), Sarah (79), David (71)...",
+        "6. Emma scored highest due to low hours this week (fairness) and matching qualifications",
+        "7. Manager clicks 'Auto-Assign All'",
+        "8. System assigns top-scoring staff to each shift sequentially",
+        "9. Conflict detection between each assignment prevents double-booking",
+        "10. Result: 7/8 shifts filled, 1 requires agency (no eligible internal staff)"
+      ],
+      realWorldExample: {
+        scenario: "After applying a template, 20 open shifts need staff assignment.",
+        steps: [
+          "Manager opens auto-assign with 'Balanced' preset",
+          "System processes 20 shifts against 15 available staff",
+          "18 shifts assigned to internal staff",
+          "2 shifts flagged: No qualified internal staff available",
+          "Manager sends remaining 2 to agency broadcast",
+          "All 20 shifts covered within 10 minutes"
+        ],
+        outcome: "AI-powered assignment reduces manual scheduling from 45 minutes to 5 minutes."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 28: SIDE PANEL — SCHEDULING PREFERENCES
+    // ============================================================================
+    {
+      id: "US-RST-051",
+      title: "Configure Staff Scheduling Preferences and Notification Settings",
+      actors: ["Staff Member", "Location Manager"],
+      description: "As a Location Manager or Staff Member, I want to configure individual scheduling preferences including preferred/avoided rooms, shift patterns, rest requirements, and notification preferences, so that these are considered as soft constraints during scheduling.",
+      acceptanceCriteria: [
+        "Can set preferred rooms (prioritised during assignment)",
+        "Can set rooms to avoid (deprioritised during assignment)",
+        "Can configure maximum consecutive days (default 5)",
+        "Can set minimum rest hours between shifts (default 10)",
+        "Can indicate early shift or late shift preference",
+        "Can set maximum shifts per week limit",
+        "Notification preferences: toggle publish, swap, and open shift notifications",
+        "Location selector filters available rooms per centre"
+      ],
+      businessLogic: [
+        "Preferred rooms: Score +20 in auto-assign when shift is in preferred room",
+        "Avoided rooms: Score -20 in auto-assign when shift is in avoided room",
+        "Max consecutive days: Generates conflict warning when exceeded",
+        "Min rest hours: Generates conflict when gap between shifts < configured hours",
+        "Shift preference: Early shift preference = +10 for shifts starting before 9AM",
+        "Late shift preference: +10 for shifts starting after 2PM",
+        "Max shifts per week: Generates warning when total shifts exceed limit",
+        "Notification settings: Control which notification types staff receives",
+        "Preferences are soft constraints: Violations generate warnings, not blocks"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Auto-Assign", relationship: "Preferences influence scoring weights" },
+        { module: "AI Scheduler", relationship: "Preferences used as soft constraints" },
+        { module: "Notifications", relationship: "Notification toggles control delivery" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Emma's scheduling preferences",
+        "2. Sets preferred rooms: Room A, Room C (familiar with routines)",
+        "3. Sets avoided rooms: Room D (accessibility issues)",
+        "4. Max consecutive days: 4 (personal preference)",
+        "5. Min rest between shifts: 11 hours",
+        "6. Prefers early shifts (morning person)",
+        "7. Max 4 shifts per week (part-time contract)",
+        "8. Notifications: Enable all",
+        "9. Saves preferences",
+        "10. Auto-assign now prioritises Emma for Room A/C morning shifts"
+      ],
+      realWorldExample: {
+        scenario: "Staff member with specific needs configures preferences.",
+        steps: [
+          "Emma prefers Rooms A and C (familiar children)",
+          "Avoids Room D (stairs, mobility concern)",
+          "Prefers morning shifts due to school pickup at 3PM",
+          "Max 4 days to manage work-life balance",
+          "AI scheduler uses these as soft constraints",
+          "Emma gets 80% preferred assignments"
+        ],
+        outcome: "Staff satisfaction improved through personalised scheduling."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 29: SIDE PANEL — SHIFT COPY
+    // ============================================================================
+    {
+      id: "US-RST-052",
+      title: "Copy Individual Shift to Multiple Target Dates",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to copy a specific shift to one or more future dates with options to include staff assignment, so that I can replicate proven shift configurations.",
+      acceptanceCriteria: [
+        "Can copy shift to specific dates via calendar picker",
+        "Can copy to next N occurrences of same day of week",
+        "Option to copy with or without staff assignment",
+        "Conflict detection shows if target dates have existing shifts",
+        "Preview shows all shifts to be created before confirmation",
+        "Can copy across locations using centre selector",
+        "Zod schema validation for all form inputs"
+      ],
+      businessLogic: [
+        "Copy creates new shift with same: startTime, endTime, breakMinutes, roomId, requiredQualifications",
+        "Staff assignment optional: If excluded, creates open shift",
+        "Conflict detection: Skip dates where matching shift already exists (same room + overlapping time)",
+        "Day-of-week copy: Calculate next N instances of the same weekday",
+        "Date range copy: Create on each day within range that matches day-of-week",
+        "Cross-location copy: Validates target room exists in destination centre",
+        "Maximum copy targets: 12 dates per operation",
+        "Copied shifts created in 'draft' status regardless of source shift status"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Copy Week", relationship: "Shift copy is single-shift version of week copy" },
+        { module: "Recurring Shifts", relationship: "Alternative to creating recurring pattern" }
+      ],
+      endToEndJourney: [
+        "1. Manager right-clicks Emma's Tuesday morning shift",
+        "2. Selects 'Copy Shift' from context menu",
+        "3. Side panel opens with shift details",
+        "4. Selects 'Copy to next 4 Tuesdays'",
+        "5. Checks 'Include staff assignment'",
+        "6. Preview: 4 shifts, 0 conflicts",
+        "7. Confirms copy",
+        "8. 4 new shifts created with Emma assigned",
+        "9. All created in draft status for review"
+      ],
+      realWorldExample: {
+        scenario: "Extending a successful trial shift to regular schedule.",
+        steps: [
+          "Trial shift on Thursday worked well",
+          "Manager copies to next 8 Thursdays",
+          "Includes staff assignment",
+          "2 conflicts detected (public holidays) - skipped",
+          "6 shifts created successfully"
+        ],
+        outcome: "Quick replication of proven shift patterns."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 30: SIDE PANEL — STAFF PROFILE
+    // ============================================================================
+    {
+      id: "US-RST-053",
+      title: "View Comprehensive Staff Profile from Roster Context",
+      actors: ["Location Manager", "HR Administrator"],
+      description: "As a Location Manager, I want to view a comprehensive staff profile side panel from within the roster showing work summary, qualifications, skills, and shift history, so that I can make informed scheduling decisions.",
+      acceptanceCriteria: [
+        "Profile shows staff details: name, role, employment type, contact",
+        "Summary tab: Weekly hours, shifts this week, skills, fatigue score",
+        "Qualifications tab: All qualifications with status, expiry dates, verification",
+        "History tab: Recent shifts with hours worked and cost",
+        "Weekly hours progress bar against contracted hours",
+        "Fatigue score with risk level indicator",
+        "Qualification expiry warnings with days remaining",
+        "Skills proficiency display with visual indicators"
+      ],
+      businessLogic: [
+        "Weekly hours calculation: Sum of (endTime - startTime - breakMinutes) for current week shifts",
+        "Hours progress: weeklyHours / maxHoursPerWeek × 100",
+        "Overtime indicator: Hours > maxHoursPerWeek triggers amber warning",
+        "Fatigue score: Calculated from 14-day rolling window (hours, consecutive days, night shifts, rest periods)",
+        "Qualification status: current (green), expiring_soon (amber), expired (red)",
+        "Expiring soon threshold: Within 90 days of expiry",
+        "Skills display: Derived from qualifications mapped to proficiency levels",
+        "Shift history: Last 4 weeks of completed shifts with cost calculations"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "HR", relationship: "Staff profile data source" },
+        { module: "Fatigue Management", relationship: "Fatigue score displayed in profile" },
+        { module: "Awards", relationship: "Pay rates shown in profile" }
+      ],
+      endToEndJourney: [
+        "1. Manager clicks staff avatar in roster grid",
+        "2. Profile panel opens showing Emma Wilson",
+        "3. Summary: 32/38 hrs this week, 4 shifts, Fatigue: Low (35)",
+        "4. Skills: First Aid ★★★★, Child Dev ★★★, Leadership ★★",
+        "5. Qualifications tab: All current, CPR expiring in 45 days",
+        "6. History tab: 4 shifts this week, average 8hrs each",
+        "7. Manager confirms Emma has capacity for additional shift",
+        "8. Closes profile and assigns Emma to Friday open shift"
+      ],
+      realWorldExample: {
+        scenario: "Checking staff suitability before assigning to specialised room.",
+        steps: [
+          "Manager needs staff for Special Needs room",
+          "Opens profiles of 3 candidates",
+          "Emma: Has Special Needs cert, low fatigue, 32hrs booked",
+          "Tom: No Special Needs cert, moderate fatigue",
+          "Decision: Assign Emma based on qualification and capacity"
+        ],
+        outcome: "Informed decision-making from comprehensive staff profiles."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 31: SIDE PANEL — SHIFT TEMPLATE MANAGER
+    // ============================================================================
+    {
+      id: "US-RST-054",
+      title: "Create and Manage Reusable Shift Templates",
+      actors: ["Location Manager", "System Administrator"],
+      description: "As a Location Manager, I want to create, edit, and manage reusable shift templates with predefined times, breaks, and allowances, so that I can standardise shift configurations across the roster.",
+      acceptanceCriteria: [
+        "Can create new templates with name, start/end time, break duration",
+        "Can add allowances to templates (on-call, sleepover, first aid, etc.)",
+        "Template list shows all available templates with summary",
+        "Can edit and delete custom templates",
+        "Default templates (AM, PM, Full Day, Night) cannot be deleted",
+        "Templates available for selection in Add Shift, Bulk Assign, and Copy Week panels"
+      ],
+      businessLogic: [
+        "Default templates: AM Shift (7:00-15:00, 30min break), PM Shift (15:00-23:00, 30min), Full Day (9:00-17:00, 60min), Night Shift (23:00-07:00, 30min)",
+        "Custom templates: Created by location managers, scoped to their centre",
+        "Template fields: id, name, startTime, endTime, breakMinutes, allowances[]",
+        "Allowance types: on_call, sleepover, broken_shift, first_aid, higher_duties, vehicle, nqa_leadership",
+        "Templates are referenced by ID when creating shifts, not embedded",
+        "Template deletion: Soft delete, existing shifts retain template values",
+        "Template naming: Must be unique per centre, max 50 characters"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Shift Creation", relationship: "Templates used for rapid shift creation" },
+        { module: "Awards", relationship: "Allowances in templates trigger award calculations" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Shift Template Manager",
+        "2. Views existing templates: AM, PM, Full Day, Night",
+        "3. Clicks 'Create Template'",
+        "4. Names: 'Early Morning (5:30-13:30)'",
+        "5. Sets times: 5:30 AM - 1:30 PM, 30-min break",
+        "6. Adds allowance: First Aid ($3.32/day)",
+        "7. Saves template",
+        "8. New template appears in Add Shift dropdown"
+      ],
+      realWorldExample: {
+        scenario: "Centre creates specialised templates for new service hours.",
+        steps: [
+          "Extended hours approved: 5:30 AM start",
+          "Manager creates 'Early Morning' template",
+          "Creates 'Extended Evening' template (closing at 7 PM)",
+          "Templates used across roster planning",
+          "Consistent shift configurations across the team"
+        ],
+        outcome: "Standardised shift templates reduce configuration errors."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 32: SIDE PANEL — SAVE ROSTER TEMPLATE
+    // ============================================================================
+    {
+      id: "US-RST-055",
+      title: "Save Current Roster Configuration as Reusable Template",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to save the current week's roster as a reusable template, so that I can quickly replicate successful roster patterns in future weeks.",
+      acceptanceCriteria: [
+        "Can name and describe the template",
+        "Template captures all shifts with rooms, times, and day-of-week mappings",
+        "Summary shows total shifts, rooms covered, and staff roles",
+        "Template saved per centre for future application",
+        "Can apply saved template to any future week",
+        "Duplicate detection prevents overwriting existing template names"
+      ],
+      businessLogic: [
+        "Template captures: dayOfWeek (0-6), roomId, startTime, endTime, breakMinutes, staffRole",
+        "Staff assignments NOT saved (creates open shifts on apply)",
+        "Template scoped to centreId for multi-location isolation",
+        "Template stats: Total shifts, shifts per day, rooms covered, hours per day",
+        "Template naming: Must be unique per centre",
+        "Maximum templates per centre: 20",
+        "Template versioning: Updated templates create new version, old version archived"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Apply Template", relationship: "Saved templates applied to future weeks" },
+        { module: "Copy Week", relationship: "Alternative to week copy for pattern reuse" }
+      ],
+      endToEndJourney: [
+        "1. Manager completes an optimal roster for the week",
+        "2. Clicks 'Save as Template' in roster toolbar",
+        "3. Side panel shows roster summary: 35 shifts across 5 rooms",
+        "4. Manager names: 'Standard Week - Full Capacity'",
+        "5. Adds description: 'All rooms staffed Mon-Fri, AM/PM coverage'",
+        "6. Review shows: Mon 7 shifts, Tue 7, Wed 7, Thu 7, Fri 7",
+        "7. Saves template",
+        "8. Template available in 'Apply Template' for future weeks"
+      ],
+      realWorldExample: {
+        scenario: "Saving different roster templates for seasonal variations.",
+        steps: [
+          "Creates 'Summer Full Capacity' template (all rooms, extra staff)",
+          "Creates 'Winter Reduced' template (fewer rooms, standard staffing)",
+          "Creates 'School Holidays' template (max capacity, extended hours)",
+          "Each template applied seasonally",
+          "Significant planning time saved across the year"
+        ],
+        outcome: "Seasonal roster planning automated through template library."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 33: SIDE PANEL — HOLIDAY & EVENT CALENDAR
+    // ============================================================================
+    {
+      id: "US-RST-056",
+      title: "View and Manage Holidays and Events Affecting Roster",
+      actors: ["Location Manager", "System Administrator"],
+      description: "As a Location Manager, I want to view public holidays, school holidays, and custom events on a calendar alongside the roster, so that I can plan staffing adjustments for known demand variations.",
+      acceptanceCriteria: [
+        "Calendar view shows public holidays with name and date",
+        "School holiday periods displayed as date ranges",
+        "Custom events can be added with demand impact multiplier",
+        "Events colour-coded by type: Public Holiday (red), School Holiday (amber), Custom (blue)",
+        "Location filter shows events applicable to specific centres or all",
+        "Events integrated into demand forecasting adjustments",
+        "Can add, edit, and delete custom events"
+      ],
+      businessLogic: [
+        "Public holidays: Sourced from national/state holiday database",
+        "School holidays: State-specific school term dates",
+        "Custom events: Manager-created with name, date range, demand multiplier",
+        "Demand multiplier: 0.5 = 50% less demand, 1.5 = 50% more demand",
+        "Public holidays trigger penalty rate calculations in award engine",
+        "School holidays typically increase demand for childcare/education",
+        "Events affect all centres in region unless scoped to specific centres",
+        "Event overlap handling: Multiple multipliers compound (e.g., holiday + event)"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Demand Forecasting", relationship: "Events adjust demand multipliers" },
+        { module: "Awards", relationship: "Public holidays trigger penalty rates" },
+        { module: "Budget", relationship: "Holiday penalties impact cost projections" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Holiday Calendar panel",
+        "2. Views upcoming: Australia Day (public holiday) next Monday",
+        "3. School holidays starting in 2 weeks",
+        "4. Manager adds custom event: 'Open Day' with 1.3x demand multiplier",
+        "5. Demand forecast updates to show increased staffing need",
+        "6. Manager plans additional staff for Open Day",
+        "7. Penalty rates auto-applied for Australia Day shifts"
+      ],
+      realWorldExample: {
+        scenario: "Planning around a cluster of events in one week.",
+        steps: [
+          "Monday: Public holiday (penalty rates apply)",
+          "Tuesday-Friday: School holiday start (higher demand)",
+          "Thursday: Community event (custom, 1.2x multiplier)",
+          "Manager creates enhanced roster for the week",
+          "Budget automatically adjusts for penalty rates",
+          "All events visible in roster planning view"
+        ],
+        outcome: "Proactive event planning prevents understaffing during busy periods."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 34: SIDE PANEL — WEEKLY SUMMARY DASHBOARD
+    // ============================================================================
+    {
+      id: "US-RST-057",
+      title: "View Weekly Roster Summary with KPIs and Analytics",
+      actors: ["Location Manager", "Area Manager"],
+      description: "As a Location Manager, I want a weekly summary dashboard showing key roster metrics including hours, costs, staff utilisation, and role distribution, so that I can assess roster quality at a glance.",
+      acceptanceCriteria: [
+        "Total scheduled hours for the week",
+        "Total cost breakdown: regular hours, overtime, agency",
+        "Budget utilisation percentage with progress bar",
+        "Staff count by employment type pie chart",
+        "Hours by day of week bar chart",
+        "Role distribution across shifts",
+        "Cost per hour metrics",
+        "Comparison against budget target"
+      ],
+      businessLogic: [
+        "Total hours: Σ((endTime - startTime - breakMinutes) / 60) for all shifts",
+        "Regular cost: Σ(min(staffHours, maxHoursPerWeek) × hourlyRate)",
+        "Overtime cost: Σ(max(0, staffHours - maxHoursPerWeek) × overtimeRate)",
+        "Budget utilisation: (totalCost / weeklyBudget) × 100",
+        "Staff utilisation: actualHours / contractedHours × 100 per staff",
+        "Employment type groups: permanent_fulltime, permanent_parttime, casual, agency",
+        "Role distribution: Count shifts by staff.role (team_leader, senior, staff, etc.)",
+        "Cost metrics filtered by selected centre's shifts only"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Budget", relationship: "Budget targets used for utilisation calculation" },
+        { module: "Awards", relationship: "Pay rates determine cost calculations" },
+        { module: "Reporting", relationship: "Summary data feeds weekly reports" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Weekly Summary after completing roster",
+        "2. Dashboard shows: 285 total hours, $12,450 cost",
+        "3. Budget utilisation: 94% (within target)",
+        "4. Overtime: 12 hours across 3 staff ($680)",
+        "5. Staff mix: 60% permanent, 30% casual, 10% agency",
+        "6. Monday and Friday are lightest days",
+        "7. Role breakdown: 3 Team Leaders, 8 Staff, 2 Assistants",
+        "8. Manager satisfied with balance, proceeds to publish"
+      ],
+      realWorldExample: {
+        scenario: "End-of-week review before roster publication.",
+        steps: [
+          "Summary shows total cost $11,800 against $12,500 budget",
+          "Overtime concentrated on 2 staff members",
+          "Casual staff underused (only 15% of hours)",
+          "Manager redistributes to reduce overtime",
+          "Final cost: $11,200, better staff balance"
+        ],
+        outcome: "Summary dashboard drives cost and fairness optimisation."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 35: SIDE PANEL — WEEKLY OPTIMISATION REPORT
+    // ============================================================================
+    {
+      id: "US-RST-058",
+      title: "Generate Weekly Roster Optimisation Report",
+      actors: ["Location Manager", "Area Manager"],
+      description: "As a Location Manager, I want a detailed optimisation report that analyses the current roster and provides actionable recommendations for cost savings, fairness improvements, and compliance enhancement.",
+      acceptanceCriteria: [
+        "Overall optimisation score (0-100) with breakdown",
+        "Cost efficiency analysis with savings opportunities",
+        "Fairness analysis showing hours distribution across staff",
+        "Compliance analysis showing ratio coverage and violations",
+        "Specific recommendations with estimated impact",
+        "Historical comparison against previous weeks",
+        "Export capability for management reporting"
+      ],
+      businessLogic: [
+        "Optimisation score = weighted average of: Cost efficiency (30%), Fairness (25%), Compliance (25%), Coverage (20%)",
+        "Cost efficiency: Compare actual cost against minimum-cost alternative",
+        "Fairness: Standard deviation of weekly hours across staff (lower = fairer)",
+        "Compliance: Percentage of time slots with ratio compliance met",
+        "Coverage: Percentage of required shifts that are filled",
+        "Recommendations engine: Rule-based analysis of cost, fairness, and compliance gaps",
+        "Historical comparison: Compare metrics against 4-week rolling average",
+        "Savings opportunities: Identify overtime that could be redistributed to casuals"
+      ],
+      priority: "low",
+      relatedModules: [
+        { module: "AI Scheduler", relationship: "Optimisation report can trigger AI re-optimization" },
+        { module: "Budget", relationship: "Cost analysis feeds budget review" },
+        { module: "Reporting", relationship: "Report exportable for management" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Optimisation Report for current week",
+        "2. Overall score: 78/100",
+        "3. Cost: 85 (good, 6% below budget)",
+        "4. Fairness: 62 (needs attention, 15% variance in hours)",
+        "5. Compliance: 95 (excellent, minor risk Thursday PM)",
+        "6. Coverage: 88 (2 unfilled shifts)",
+        "7. Recommendation 1: 'Redistribute Tom's overtime to casual staff, saving $180'",
+        "8. Recommendation 2: 'Add 1 staff Thursday 2-6PM for compliance'",
+        "9. Manager implements changes, score improves to 86"
+      ],
+      realWorldExample: {
+        scenario: "Monthly management review uses optimisation reports.",
+        steps: [
+          "4-week trend shows declining fairness scores",
+          "Analysis reveals 3 staff consistently getting overtime",
+          "While 4 casual staff are underutilised",
+          "Manager adjusts distribution strategy",
+          "Next month shows improved fairness and cost"
+        ],
+        outcome: "Data-driven roster optimisation from detailed analytics."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 36: SIDE PANEL — ROSTER HISTORY
+    // ============================================================================
+    {
+      id: "US-RST-059",
+      title: "View Roster Change History and Version Timeline",
+      actors: ["Location Manager", "HR Administrator"],
+      description: "As a Location Manager, I want to view the complete history of roster changes including who made changes, when, and what was modified, so that I can audit scheduling decisions and revert if needed.",
+      acceptanceCriteria: [
+        "Timeline view of all roster modifications",
+        "Each entry shows: action, user, timestamp, before/after values",
+        "Filter by date range, user, and action type",
+        "Action types: created, modified, deleted, published, unpublished",
+        "Expandable entries show detailed field-level changes",
+        "Can compare two versions side-by-side",
+        "Export history for compliance reporting"
+      ],
+      businessLogic: [
+        "History entries stored per shift with: action, userId, timestamp, changedFields[]",
+        "Changed fields: Each field records oldValue and newValue",
+        "History immutable: Entries cannot be edited or deleted",
+        "Retention: 7 years per regulatory requirements",
+        "Bulk operations: Single history entry with multiple affected shifts listed",
+        "System actions (auto-generate, AI-assign) logged with actor='system'",
+        "History accessible from both shift detail panel and dedicated history panel"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Audit", relationship: "History feeds compliance audit trail" },
+        { module: "Compliance", relationship: "Change history supports regulatory reporting" }
+      ],
+      endToEndJourney: [
+        "1. HR Administrator opens Roster History for last week",
+        "2. Timeline shows 45 events across 3 days",
+        "3. Filters to 'Modified' actions only: 12 entries",
+        "4. Expands entry: 'Sarah changed Tom's shift from 7-3PM to 8-4PM'",
+        "5. Shows before/after values for startTime and endTime",
+        "6. Filters by user 'Sarah' to see all her changes",
+        "7. Exports filtered history for quarterly compliance report"
+      ],
+      realWorldExample: {
+        scenario: "Investigating scheduling complaint requires audit trail.",
+        steps: [
+          "Staff member claims shifts were changed without notice",
+          "HR opens roster history for the disputed period",
+          "History shows shift modification with timestamp and user",
+          "Modification occurred before roster publication",
+          "Evidence proves change was made before notification",
+          "Complaint resolved with documented audit trail"
+        ],
+        outcome: "Complete audit trail supports fair investigation and compliance."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 37: SIDE PANEL — SEND TO AGENCY
+    // ============================================================================
+    {
+      id: "US-RST-060",
+      title: "Send Open Shifts to Agency Partners via Side Panel",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to send unfilled open shifts to configured agency partners with specific requirements and urgency, so that external staff can be sourced when internal options are exhausted.",
+      acceptanceCriteria: [
+        "Can select specific open shifts to broadcast to agencies",
+        "Can choose which agencies to broadcast to from configured list",
+        "Shift details included: date, time, qualifications, urgency",
+        "Response deadline configurable per broadcast",
+        "Agency notification sent via configured channel (email, API, portal)",
+        "Broadcast status tracked: sent, viewed, responded, expired",
+        "Can cancel broadcast before deadline"
+      ],
+      businessLogic: [
+        "Only open shifts (is_open_shift=true, staff_id=null) can be sent to agencies",
+        "Agency selection filtered by centre preferences (CentreAgencyPreferencesPanel)",
+        "Priority order respects agency ranking configured per centre",
+        "Urgency impacts response deadline: normal=24hrs, urgent=4hrs, critical=1hr",
+        "Broadcast creates AgencyBroadcast record linked to shift and agency",
+        "Multiple agencies can receive same broadcast simultaneously",
+        "Response window: Agency must propose worker within deadline",
+        "Expired broadcasts: Auto-escalate to next tier if configured"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Agency Portal", relationship: "Agencies view and respond to broadcasts" },
+        { module: "Agency Preferences", relationship: "Centre preferences filter eligible agencies" },
+        { module: "Agency Response Tracker", relationship: "Tracks broadcast status and proposals" }
+      ],
+      endToEndJourney: [
+        "1. Manager has 3 unfilled shifts after internal broadcast timeout",
+        "2. Opens Send to Agency panel",
+        "3. Selects all 3 open shifts",
+        "4. Chooses Agency A (preferred) and Agency B (backup)",
+        "5. Sets urgency: Urgent (4-hour deadline)",
+        "6. Adds note: 'First Aid certification required'",
+        "7. Sends broadcast",
+        "8. Agency A responds with proposal within 2 hours",
+        "9. Manager reviews and accepts proposal in Agency Response Tracker"
+      ],
+      realWorldExample: {
+        scenario: "Friday afternoon agency broadcast for Monday coverage.",
+        steps: [
+          "3 Monday shifts unfilled after staff broadcast",
+          "Manager sends to 2 preferred agencies at 3 PM Friday",
+          "Agency A proposes 2 workers by 5 PM",
+          "Agency B proposes 1 worker by Saturday morning",
+          "Manager accepts all 3 proposals",
+          "Monday coverage secured before weekend"
+        ],
+        outcome: "Efficient agency engagement ensures complete coverage."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 38: SIDE PANEL — AGENCY RESPONSE TRACKER
+    // ============================================================================
+    {
+      id: "US-RST-061",
+      title: "Track and Manage Agency Broadcast Responses",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to track the status of all agency broadcasts and review incoming proposals with worker details, so that I can accept the best candidates quickly.",
+      acceptanceCriteria: [
+        "Dashboard shows all active broadcasts with status",
+        "Status tracking: sent, viewed, proposal_received, accepted, rejected, expired",
+        "Proposal details: Worker name, qualifications, hourly rate, agency",
+        "Can compare proposals from multiple agencies side-by-side",
+        "Can accept or reject individual proposals",
+        "SLA timer shows time remaining until deadline",
+        "Historical broadcasts viewable for trend analysis"
+      ],
+      businessLogic: [
+        "Broadcast lifecycle: sent → viewed → proposal_received → accepted/rejected/expired",
+        "SLA calculation: deadline = broadcastTime + urgencyTimeout",
+        "Proposal comparison: Ranked by qualification match, then hourly rate",
+        "Acceptance: Creates shift assignment with agency_type and agency rate",
+        "Rejection: Optional reason sent back to agency",
+        "Expiry: Broadcasts past deadline marked as expired, triggers escalation",
+        "History retention: All broadcast records kept for 12 months",
+        "Metrics: Average response time, fill rate, cost per agency"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Send to Agency", relationship: "Broadcasts originate from send panel" },
+        { module: "Agency Ratings", relationship: "Worker ratings inform future proposals" },
+        { module: "Budget", relationship: "Agency costs tracked against budget" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Agency Response Tracker",
+        "2. 3 active broadcasts, 1 with proposals",
+        "3. Broadcast #1: 2 proposals from Agency A and B",
+        "4. Agency A: Sarah ($48/hr, Diploma, First Aid, 4.5★ rating)",
+        "5. Agency B: Mike ($42/hr, Certificate III, First Aid, 3.8★ rating)",
+        "6. Manager compares: Sarah has higher qualification and rating",
+        "7. Accepts Sarah's proposal from Agency A",
+        "8. Rejects Agency B's proposal with note: 'Higher-qualified candidate accepted'",
+        "9. Sarah assigned to shift, Agency A notified"
+      ],
+      realWorldExample: {
+        scenario: "Managing multiple agency proposals for weekend coverage.",
+        steps: [
+          "5 broadcasts sent Friday afternoon",
+          "By Saturday morning, 8 proposals received across agencies",
+          "Manager reviews all proposals, comparing rates and ratings",
+          "Accepts 4 proposals, rejects 4 (duplicate coverage)",
+          "1 broadcast expired with no response, re-broadcast to tier 2",
+          "All shifts covered by Sunday"
+        ],
+        outcome: "Centralised tracking ensures timely agency response management."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 39: SIDE PANEL — CENTRE AGENCY PREFERENCES
+    // ============================================================================
+    {
+      id: "US-RST-062",
+      title: "Configure Agency Partner Preferences per Location",
+      actors: ["Location Manager", "System Administrator"],
+      description: "As a Location Manager, I want to configure which agency partners are preferred, their priority ranking, and rate caps for my location, so that agency broadcasts are targeted and cost-controlled.",
+      acceptanceCriteria: [
+        "Can add/remove agency partners for the location",
+        "Can set priority ranking (1=highest) for each agency",
+        "Can set maximum hourly rate cap per agency",
+        "Can configure escalation tiers for auto-escalation",
+        "Can set preferred worker list per agency",
+        "Can block specific agencies or workers",
+        "Settings apply to all future broadcasts from this location"
+      ],
+      businessLogic: [
+        "Agency priority: Lower number = first to receive broadcasts",
+        "Tier 1 agencies: Receive broadcast immediately",
+        "Tier 2: Receive after Tier 1 timeout (configurable, default 30 min)",
+        "Tier 3: Receive after Tier 2 timeout (default 60 min)",
+        "Rate cap: Proposals exceeding cap are flagged but not rejected",
+        "Preferred workers: Given priority when agency proposes multiple candidates",
+        "Blocked workers: Automatically rejected from proposals",
+        "Settings inheritance: New locations inherit organisation-level defaults"
+      ],
+      priority: "low",
+      relatedModules: [
+        { module: "Send to Agency", relationship: "Preferences filter agency selection" },
+        { module: "Auto-Escalation", relationship: "Tier configuration drives escalation timing" },
+        { module: "Agency Portal", relationship: "Agencies see their tier and relationship status" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Agency Preferences for Downtown Centre",
+        "2. Current config: 2 agencies, both Tier 1",
+        "3. Adds new Agency C as Tier 2 backup",
+        "4. Sets rate cap: $50/hr for Agency A, $48/hr for Agency B",
+        "5. Adds Sarah from Agency A as preferred worker",
+        "6. Blocks David from Agency B (poor past performance)",
+        "7. Saves preferences",
+        "8. Next broadcast automatically uses these settings"
+      ],
+      realWorldExample: {
+        scenario: "Optimising agency relationships based on performance data.",
+        steps: [
+          "Review shows Agency A: 4.5★ avg, 95% fill rate, $45/hr avg",
+          "Agency B: 3.8★ avg, 78% fill rate, $42/hr avg",
+          "Agency C: New partner, no history",
+          "Sets A as Tier 1, B as Tier 2, C as Tier 3",
+          "Rate caps reflect market rates and quality expectations",
+          "Quarterly review adjusts based on ongoing performance"
+        ],
+        outcome: "Structured agency management optimises cost and quality."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 40: SIDE PANEL — POST-PLACEMENT RATING
+    // ============================================================================
+    {
+      id: "US-RST-063",
+      title: "Rate Agency Workers After Shift Completion",
+      actors: ["Location Manager", "Team Leader"],
+      description: "As a Location Manager, I want to rate agency workers after each completed shift using structured criteria, so that ratings feed into future placement recommendations.",
+      acceptanceCriteria: [
+        "Rating prompt appears after agency shift completes",
+        "5-star overall rating scale",
+        "Specific criteria: Punctuality, Skills, Teamwork, Attitude",
+        "Free-text feedback field",
+        "Option to flag as preferred or block worker",
+        "Ratings visible in Agency Response Tracker for future proposals",
+        "Aggregate rating calculated from all placements"
+      ],
+      businessLogic: [
+        "Rating triggered: 2 hours after agency shift end time",
+        "Reminder: If not rated within 24 hours, send reminder notification",
+        "Overall rating = average of all criteria ratings",
+        "Preferred flag: Automatically set when avg rating ≥4.5 across 3+ placements",
+        "Block flag: Manager can manually flag to block future assignments",
+        "Low rating (<3): Triggers notification to agency for review",
+        "Rating history: All ratings retained for 12 months minimum",
+        "Aggregate: Rolling average of last 10 placements at this centre"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Agency Response Tracker", relationship: "Ratings influence proposal ranking" },
+        { module: "Agency Preferences", relationship: "Preferred/blocked status from ratings" }
+      ],
+      endToEndJourney: [
+        "1. Agency worker Sarah completes 7AM-3PM shift",
+        "2. At 5PM, Manager receives rating prompt",
+        "3. Rates: Overall 5★, Punctuality 5★, Skills 4★, Teamwork 5★, Attitude 5★",
+        "4. Feedback: 'Excellent with children, very professional'",
+        "5. Marks Sarah as 'Preferred Worker'",
+        "6. Rating saved, Sarah's aggregate score updates to 4.8★",
+        "7. Next agency broadcast prioritises Sarah for this centre"
+      ],
+      realWorldExample: {
+        scenario: "Building a reliable agency worker pool through consistent ratings.",
+        steps: [
+          "Centre uses 3 agencies with 10 regular workers",
+          "After 3 months, ratings show clear quality tiers",
+          "Top 3 workers auto-flagged as preferred",
+          "1 worker blocked due to consistent low ratings",
+          "Agency notified of low-performing worker",
+          "Quality of agency staff improves over time"
+        ],
+        outcome: "Structured ratings drive continuous improvement in agency worker quality."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 41: SIDE PANEL — CALLBACK EVENT LOGGING
+    // ============================================================================
+    {
+      id: "US-RST-064",
+      title: "Log and Track On-Call Callback Events with Pay Calculations",
+      actors: ["Location Manager", "Team Leader"],
+      description: "As a Location Manager, I want to log callback events for on-call staff including call times, work duration, and travel, so that pay calculations comply with award provisions for minimum engagement and penalty rates.",
+      acceptanceCriteria: [
+        "Can log callback type: callback, recall, emergency",
+        "Captures: call received time, arrival time, work start/end, departure time",
+        "Calculates actual worked minutes and travel time",
+        "Applies minimum engagement rules (e.g., minimum 2-hour pay)",
+        "Day type determines rate multiplier: weekday, Saturday, Sunday, public holiday",
+        "Calculated pay shown with breakdown",
+        "Approval workflow: logged → approved → paid",
+        "Multiple callbacks per on-call shift supported"
+      ],
+      businessLogic: [
+        "Minimum engagement: If actual worked < 2 hours, pay for 2 hours (award-dependent)",
+        "Rate multipliers: Weekday 1.5x, Saturday 1.75x, Sunday 2.0x, Public Holiday 2.5x",
+        "Travel time: Recorded but paid only if >30 minutes each way",
+        "Multiple callbacks: Each treated as separate engagement",
+        "Pay calculation: max(actualWorkedMinutes, minimumEngagementMinutes) × hourlyRate × rateMultiplier",
+        "Callback types: callback (standard), recall (return to centre), emergency (immediate response required)",
+        "Approval chain: Team Leader → Manager → Payroll",
+        "Status transitions: logged → approved → rejected OR logged → approved → paid"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Awards", relationship: "Award rules determine minimum engagement and rates" },
+        { module: "Timesheet", relationship: "Approved callbacks feed timesheet" },
+        { module: "Payroll", relationship: "Paid callbacks exported for payroll processing" }
+      ],
+      endToEndJourney: [
+        "1. On-call staff Tom receives callback at 10:15 PM",
+        "2. Arrives at centre at 10:45 PM",
+        "3. Works from 10:50 PM to 12:30 AM",
+        "4. Manager logs callback event next morning",
+        "5. Actual worked: 100 minutes",
+        "6. Minimum engagement: 120 minutes (2 hours) applies",
+        "7. Day type: Weekday, multiplier: 1.5x",
+        "8. Calculated pay: 2 hours × $35/hr × 1.5 = $105",
+        "9. Travel time: 30 min each way (not separately paid)",
+        "10. Submits for approval, Manager approves",
+        "11. Appears in timesheet for pay period"
+      ],
+      realWorldExample: {
+        scenario: "Weekend callback with minimum engagement applied.",
+        steps: [
+          "Saturday night callback at 2 AM",
+          "Worker responds within 30 minutes",
+          "Actual work: 45 minutes (under 2-hour minimum)",
+          "Minimum engagement: 2 hours applies",
+          "Rate: Saturday night = 1.75x multiplier",
+          "Pay: 2 hours × $35 × 1.75 = $122.50",
+          "Logged, approved, and paid"
+        ],
+        outcome: "Award-compliant callback pay with full audit trail."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 42: SIDE PANEL — ALLOWANCE ELIGIBILITY
+    // ============================================================================
+    {
+      id: "US-RST-065",
+      title: "Display Shift Allowance Eligibility and Pay Estimates",
+      actors: ["Location Manager", "Payroll Administrator"],
+      description: "As a Location Manager, I want to see which allowances apply to a specific shift based on shift type and staff qualifications, so that I can verify pay accuracy and understand total shift cost.",
+      acceptanceCriteria: [
+        "Lists all possible allowances with eligibility status per shift",
+        "Eligible allowances shown with rates and estimated amounts",
+        "Ineligible allowances shown with reason for ineligibility",
+        "Allowance types: On-Call, On-Call Recall, Sleepover, Sleepover Disturbed, Broken Shift, First Aid, Higher Duties, Vehicle, NQA Leadership",
+        "Total estimated allowances calculated and displayed",
+        "Staff qualifications validated against allowance requirements",
+        "Shift validation warnings shown for missing data"
+      ],
+      businessLogic: [
+        "On-Call allowance ($15.42/day): Eligible if shift type is 'on_call'",
+        "On-Call Recall ($52.50/hr, min 2hr): Eligible if on-call with recall event",
+        "Sleepover ($69.85/occurrence): Eligible if shift type is 'sleepover'",
+        "Sleepover Disturbed ($45.50/hr, min 1hr): Eligible if sleepover with disturbance logged",
+        "Broken Shift ($18.46/occurrence): Eligible if shift has unpaid gap >1 hour",
+        "First Aid ($3.32/day): Eligible if staff holds First Aid certificate AND designated as first aider",
+        "Higher Duties ($2.50/hr): Eligible if staff working above their classification level",
+        "Vehicle ($0.96/km): Eligible if using personal vehicle with logged kilometres",
+        "NQA Leadership ($7.23/day): Eligible if staff holds ECT qualification in leadership role",
+        "Eligibility determined by: shift.specialType, staff.qualifications, shift-specific fields"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Awards", relationship: "Allowance rates from award interpretation" },
+        { module: "Shift Detail", relationship: "Embedded within shift detail panel" },
+        { module: "Payroll", relationship: "Allowance totals feed timesheet calculations" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens shift detail for Tom's on-call night shift",
+        "2. Allowance panel shows 4 potential allowances",
+        "3. ✓ On-Call Base: $15.42/day - ELIGIBLE (shift type: on_call)",
+        "4. ✓ First Aid: $3.32/day - ELIGIBLE (Tom has current First Aid cert)",
+        "5. ✗ Sleepover: $69.85 - NOT ELIGIBLE (shift type is on_call, not sleepover)",
+        "6. ✗ Vehicle: $0.96/km - NOT ELIGIBLE (no travel kilometres logged)",
+        "7. Estimated total allowances: $18.74",
+        "8. Total shift cost: Base pay $280 + Allowances $18.74 = $298.74"
+      ],
+      realWorldExample: {
+        scenario: "Payroll review verifying allowance calculations for the week.",
+        steps: [
+          "Payroll opens each on-call and sleepover shift",
+          "Verifies allowance eligibility matches award rules",
+          "Catches one shift where First Aid allowance incorrectly excluded",
+          "Staff did hold valid certification, system updated",
+          "All allowances verified before timesheet approval"
+        ],
+        outcome: "Transparent allowance eligibility prevents pay errors."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 43: SIDE PANEL — LABOUR COST FORECASTING
+    // ============================================================================
+    {
+      id: "US-RST-066",
+      title: "Forecast Labour Costs with Multi-Week Projections",
+      actors: ["Location Manager", "Finance Director"],
+      description: "As a Location Manager, I want to see labour cost forecasts for upcoming weeks based on current roster patterns, so that I can anticipate budget requirements and identify cost-saving opportunities.",
+      acceptanceCriteria: [
+        "Forecast period: 2, 4, or 8 weeks selectable",
+        "Weekly breakdown showing projected cost per week",
+        "Budget variance per week (over/under budget)",
+        "Cost trend line chart across forecast period",
+        "Key metrics: Total projected cost, average weekly cost, highest/lowest week",
+        "Risk flags for weeks projected to exceed budget",
+        "Drill-down into individual week cost breakdown",
+        "Recommendations for cost optimisation"
+      ],
+      businessLogic: [
+        "Base forecast: Extrapolate current week's roster pattern to future weeks",
+        "Cost projection: Apply current staff rates to projected shifts",
+        "Overtime projection: Based on staff contracted hours vs projected schedule",
+        "Budget variance: projectedCost - weeklyBudget per week",
+        "Risk flags: Weeks exceeding budget by >10% flagged as warning, >20% as critical",
+        "Forecast confidence: Decreases 5% per week beyond current roster",
+        "Seasonal adjustments: Apply holiday and event multipliers to future weeks",
+        "Recommendations: Identify shifts where casual staff could replace overtime"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Budget", relationship: "Weekly budget targets for variance calculation" },
+        { module: "Awards", relationship: "Award rates used for cost projection" },
+        { module: "Demand Forecasting", relationship: "Demand forecasts influence staffing levels" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Labour Cost Forecasting panel",
+        "2. Selects 4-week forecast period",
+        "3. Week 1: $12,400 (within budget $12,500)",
+        "4. Week 2: $13,100 (⚠️ over budget by 5%, public holiday)",
+        "5. Week 3: $11,800 (under budget, lower demand week)",
+        "6. Week 4: $12,600 (slightly over, school holidays starting)",
+        "7. Recommendation: 'Week 2 overtime ($800) could be covered by 2 casual shifts ($520)'",
+        "8. Manager adjusts Week 2 roster based on recommendation",
+        "9. Updated forecast: Week 2 now $12,720 (within tolerance)"
+      ],
+      realWorldExample: {
+        scenario: "Quarterly budget planning using labour cost forecasts.",
+        steps: [
+          "Manager generates 8-week forecast",
+          "Identifies 2 weeks exceeding budget (holidays)",
+          "Plans ahead with agency bookings at lower tier rates",
+          "Adjusts staffing for low-demand weeks",
+          "Presents forecast to finance for budget approval",
+          "Quarterly spend projected within 3% of budget"
+        ],
+        outcome: "Forward-looking cost management prevents budget overruns."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 44: SIDE PANEL — SHIFT COVERAGE SUGGESTIONS
+    // ============================================================================
+    {
+      id: "US-RST-067",
+      title: "Suggest Replacement Staff for Absent Employee's Shift",
+      actors: ["Location Manager", "System"],
+      description: "As a Location Manager, I want the system to automatically suggest the best replacement candidates when a staff member is marked absent, so that I can quickly fill the coverage gap.",
+      acceptanceCriteria: [
+        "Triggered when staff marked as absent on a shift",
+        "Shows ranked list of replacement candidates with suitability score",
+        "Score considers: availability, qualifications, cost, current hours, proximity",
+        "Each candidate shows: name, score, reasons for/against, estimated cost",
+        "Can assign replacement with one click",
+        "Can skip coverage (leave shift unfilled)",
+        "Warnings for candidates with potential issues (overtime risk, partial availability)"
+      ],
+      businessLogic: [
+        "Candidate scoring: Σ(availability × 30, qualifications × 25, cost × 20, fairness × 15, proximity × 10)",
+        "Availability: 100 if fully available at shift time, 0 if unavailable/on leave",
+        "Qualifications: Match percentage against shift's required qualifications",
+        "Cost: Inverse of hourly rate relative to average (cheaper = higher score)",
+        "Fairness: Inverse of weekly hours (less worked = higher score for balance)",
+        "Proximity: Based on staff's preferred centres matching shift centre",
+        "Exclusions: Staff on leave, already working overlapping shift, fatigue >80",
+        "Minimum candidates: If <3 internal candidates, suggest agency broadcast",
+        "Estimated cost: shiftDuration × staffHourlyRate (including potential overtime)"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Shift Detail", relationship: "Coverage modal triggered from absent marking" },
+        { module: "Auto-Assign", relationship: "Same scoring algorithm as auto-assign" },
+        { module: "Agency", relationship: "Fallback to agency when no internal candidates" }
+      ],
+      endToEndJourney: [
+        "1. Emma calls in sick at 6 AM for her 7AM-3PM shift",
+        "2. Manager opens shift detail, marks Emma as absent",
+        "3. Coverage Suggestion modal appears automatically",
+        "4. Ranked candidates: Tom (85, available, qualified), Sarah (72, available, overtime risk), David (61, partial availability)",
+        "5. Tom's details: Available 6AM-6PM, holds all qualifications, 32/38 hrs this week, $35/hr, estimated cost $245",
+        "6. Manager clicks 'Assign Tom'",
+        "7. Tom receives notification: 'You've been assigned to Room A, 7AM-3PM today'",
+        "8. Shift reassigned, coverage gap filled"
+      ],
+      realWorldExample: {
+        scenario: "Last-minute sick call with limited replacement options.",
+        steps: [
+          "6 AM sick call, shift starts at 7 AM",
+          "System suggests 4 candidates instantly",
+          "Top candidate Tom is available and qualified",
+          "Manager assigns Tom with one click",
+          "Tom receives push notification immediately",
+          "Coverage maintained with zero gap time"
+        ],
+        outcome: "Automated suggestions enable 5-minute coverage decisions."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 45: SIDE PANEL — BULK SERIES EDIT
+    // ============================================================================
+    {
+      id: "US-RST-068",
+      title: "Bulk Edit Future Instances of a Recurring Shift Series",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to edit specific attributes across all future instances of a recurring shift series, so that I can update patterns without recreating them individually.",
+      acceptanceCriteria: [
+        "Identifies all shifts in the recurring series by recurrence group ID",
+        "Shows series info: pattern type, total instances, date range",
+        "Can selectively update: times, room, staff, break duration",
+        "Toggle switches control which fields will be updated",
+        "Preview shows count of shifts that will be modified",
+        "Changes apply only to future instances (past shifts untouched)",
+        "Conflict detection runs on proposed changes before applying"
+      ],
+      businessLogic: [
+        "Series identification: All shifts sharing the same recurrence_group_id",
+        "Future filter: Only modify shifts with date ≥ today",
+        "Selective update: Only toggled fields are modified in each shift",
+        "Time change: Updates startTime and endTime for all future instances",
+        "Room change: Updates roomId for all future instances",
+        "Staff change: Updates staffId for all future instances",
+        "Break change: Updates breakMinutes for all future instances",
+        "Conflict re-check: Validates no new overlaps or availability violations",
+        "Audit: Each modified shift gets history entry with 'bulk_series_edit' action"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Recurring Shifts", relationship: "Edits the series pattern and instances" },
+        { module: "Conflict Detection", relationship: "Re-validates after changes" },
+        { module: "Audit", relationship: "Bulk edit logged with all affected shifts" }
+      ],
+      endToEndJourney: [
+        "1. Manager discovers Tom's recurring Tuesday shift needs a room change",
+        "2. Opens shift, clicks 'Edit Series'",
+        "3. Bulk Series Edit panel shows: 12 future instances in this series",
+        "4. Toggles 'Update Room' ON, selects Room B",
+        "5. Leaves time and staff toggles OFF (no change needed)",
+        "6. Preview: '12 shifts will have room changed to Room B'",
+        "7. Confirms changes",
+        "8. All 12 future Tuesday shifts updated to Room B",
+        "9. Past instances remain in original room (Room A)"
+      ],
+      realWorldExample: {
+        scenario: "Staff member's shift times changing due to new contract hours.",
+        steps: [
+          "Tom's new contract starts next month: 8AM instead of 7AM",
+          "Manager opens Tom's weekly pattern",
+          "Toggles time change ON: 8:00-16:00 instead of 7:00-15:00",
+          "24 future instances updated across 3 months",
+          "Tom's past shifts remain unchanged for payroll accuracy"
+        ],
+        outcome: "Pattern-wide changes applied efficiently with future-only scope."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 46: SIDE PANEL — AGENCY NOTIFICATION TEMPLATES
+    // ============================================================================
+    {
+      id: "US-RST-069",
+      title: "Manage Agency Communication Notification Templates",
+      actors: ["System Administrator", "Location Manager"],
+      description: "As a System Administrator, I want to create and manage notification templates for agency communications (shift broadcasts, confirmations, reminders), so that all agency messaging is consistent and professional.",
+      acceptanceCriteria: [
+        "Can create templates for: broadcast, confirmation, reminder, cancellation",
+        "Templates support dynamic variables: {{staffName}}, {{shiftDate}}, {{startTime}}, etc.",
+        "Can preview rendered template with sample data",
+        "Templates scoped per organisation with optional centre override",
+        "Can set active/inactive status per template",
+        "Default templates provided for each notification type"
+      ],
+      businessLogic: [
+        "Template variables: {{staffName}}, {{shiftDate}}, {{startTime}}, {{endTime}}, {{centreName}}, {{roomName}}, {{urgency}}, {{deadline}}, {{qualifications}}",
+        "Template types: broadcast (shift available), confirmation (worker accepted), reminder (shift tomorrow), cancellation (shift cancelled)",
+        "Rendering: Variables replaced at send time with actual values",
+        "Fallback: If custom template not found, use organisation default",
+        "Character limit: 500 characters for SMS, unlimited for email",
+        "Templates versioned: Editing creates new version, old version archived"
+      ],
+      priority: "low",
+      relatedModules: [
+        { module: "Send to Agency", relationship: "Templates used when broadcasting shifts" },
+        { module: "Notifications", relationship: "Template engine shared with internal notifications" }
+      ],
+      endToEndJourney: [
+        "1. Admin opens Agency Notification Templates panel",
+        "2. Views existing templates: 4 defaults",
+        "3. Edits 'Broadcast' template to include centre-specific info",
+        "4. Adds variable: {{centreName}} and {{urgency}}",
+        "5. Previews: 'URGENT: Shift available at Sunshine Centre, Mon 7AM-3PM'",
+        "6. Saves updated template",
+        "7. Next agency broadcast uses the customised template"
+      ],
+      realWorldExample: {
+        scenario: "Customising agency notifications for professional branding.",
+        steps: [
+          "Organisation updates broadcast template with logo and branding",
+          "Adds specific instructions for agency workers",
+          "Includes centre address and parking info",
+          "All future broadcasts use professional template",
+          "Agency feedback: 'Much clearer communication'"
+        ],
+        outcome: "Professional and consistent agency communications."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 47: SIDE PANEL — AVAILABILITY CALENDAR
+    // ============================================================================
+    {
+      id: "US-RST-070",
+      title: "View and Edit Staff Availability via Calendar Interface",
+      actors: ["Staff Member", "Location Manager"],
+      description: "As a Location Manager, I want to view and edit a staff member's availability on a visual calendar showing daily availability patterns, leave periods, and shift commitments, so that I have complete visibility when making scheduling decisions.",
+      acceptanceCriteria: [
+        "Calendar view shows availability per day for selected staff member",
+        "Colour coding: available (green), partially available (amber), unavailable (grey), on leave (red)",
+        "Can edit availability directly from calendar view",
+        "Shows existing shifts overlaid on availability",
+        "Supports Week A/B toggle for alternating patterns",
+        "Can create temporary availability exceptions for specific date ranges"
+      ],
+      businessLogic: [
+        "Calendar data source: staff.availability[] and staff.timeOff[]",
+        "Day colour: Determined by availability.available + time restrictions",
+        "Fully available: available=true, no time restrictions",
+        "Partially available: available=true, with startTime/endTime restrictions",
+        "Unavailable: available=false for the dayOfWeek",
+        "On leave: Approved timeOff record covering the date",
+        "Shift overlay: Existing shifts shown as blocks on the calendar",
+        "Edit capability: Manager can modify availability, creates pending approval if staff-initiated"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Staff Availability", relationship: "Calendar is visual interface for availability data" },
+        { module: "Leave Management", relationship: "Leave shown on same calendar" },
+        { module: "Roster", relationship: "Shifts displayed alongside availability" }
+      ],
+      endToEndJourney: [
+        "1. Manager selects staff member Tom from roster",
+        "2. Opens Availability Calendar view",
+        "3. Calendar shows: Mon-Wed green, Thu amber (9AM-2PM only), Fri-Sat grey, Sun red (Annual Leave)",
+        "4. Manager needs Tom for Thursday afternoon",
+        "5. Checks calendar: Tom only available until 2PM",
+        "6. Decides to schedule Tom 9AM-2PM on Thursday",
+        "7. Or clicks Thursday to request availability extension",
+        "8. Tom receives notification to approve/reject availability change"
+      ],
+      realWorldExample: {
+        scenario: "Reviewing team availability for upcoming school holiday period.",
+        steps: [
+          "Manager opens availability calendar for each team member",
+          "Identifies: 3 staff fully available, 2 on leave, 3 partial",
+          "Visual overview helps plan coverage instantly",
+          "Reaches out to part-time staff about additional hours",
+          "Coverage plan created based on calendar insights"
+        ],
+        outcome: "Calendar interface provides instant team availability overview."
+      }
+    }
 
 export const rosterSRS: ModuleSRS = {
   moduleName: "Roster & Workforce Scheduling",
