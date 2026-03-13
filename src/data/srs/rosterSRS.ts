@@ -53,7 +53,7 @@ export interface ModuleSRS {
   tableSpecs: TableSpec[];
   integrations: { system: string; type: string; description: string }[];
   businessRules: { id: string; rule: string; rationale: string }[];
-    },
+}
 
     // ============================================================================
     // SECTION 19: SIDE PANEL — SHIFT DETAIL & EDITING
