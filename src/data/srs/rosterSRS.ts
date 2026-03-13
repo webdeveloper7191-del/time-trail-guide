@@ -3519,6 +3519,342 @@ export const rosterSRS: ModuleSRS = {
         ],
         outcome: "Structured agency management optimises cost and quality."
       }
+    },
+
+    // ============================================================================
+    // SECTION 42: SIDE PANEL — SHIFT TEMPLATE MANAGER
+    // ============================================================================
+    {
+      id: "US-RST-065",
+      title: "Manage Reusable Shift Templates with Allowance Configurations",
+      actors: ["Roster Manager", "System Administrator"],
+      description: "As a Roster Manager, I want to create, edit, and manage reusable shift templates that define standard shift patterns including times, break durations, shift types, qualifications, and allowance configurations so that I can quickly apply consistent shift definitions across the roster.",
+      acceptanceCriteria: [
+        "View all shift templates (default + custom) in a unified list",
+        "Create new custom templates with name, start/end time, break minutes, colour, and shift type",
+        "Edit existing templates inline with all configurable fields",
+        "Delete custom templates; default templates reset to original values instead of deletion",
+        "Configure shift type-specific settings (on-call, sleepover, broken shift)",
+        "Attach required qualifications, minimum classification, and preferred role",
+        "Select applicable allowances from predefined and custom allowance types",
+        "Create new custom allowance types inline during template configuration",
+        "Configure remote location flag and default travel kilometres",
+        "Save all template changes in a single batch operation"
+      ],
+      businessLogic: [
+        "Default templates are system-provided and cannot be permanently deleted — delete action resets to original",
+        "Custom template IDs are prefixed with 'custom-' followed by timestamp for uniqueness",
+        "Template change detection: JSON deep comparison between current and original default template state",
+        "Shift type determines which sub-settings are saved: shiftType='on_call' → onCallSettings, 'sleepover' → sleepoverSettings, 'broken' → brokenShiftSettings",
+        "Non-matching shift type sub-settings are stripped on save (e.g., onCallSettings cleared if shiftType is 'regular')",
+        "Custom allowances created during template editing are session-scoped and available to all templates in the current session",
+        "Batch save: All template additions, edits, and deletions are committed together on 'Save Changes'",
+        "Template merge logic on open: custom templates override defaults with matching IDs; unmatched defaults are included"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Roster Grid", relationship: "Templates used when creating new shifts" },
+        { module: "Bulk Assignment", relationship: "Templates define shift patterns for bulk operations" },
+        { module: "Award Interpretation", relationship: "Allowance and classification settings feed into pay calculations" },
+        { module: "Apply Template", relationship: "Shift templates are referenced when applying roster templates" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Shift Template Manager from roster toolbar",
+        "2. Reviews existing default templates (Morning, Afternoon, Night, etc.)",
+        "3. Clicks 'Add Template' to create a custom 'Split Shift' template",
+        "4. Sets shift type to 'broken', configures break between segments",
+        "5. Adds required qualification 'First Aid' and selects 'Broken Shift Allowance'",
+        "6. Edits an existing 'Morning' default template to change break from 30 to 45 minutes",
+        "7. Clicks 'Save Changes' to persist all modifications"
+      ],
+      realWorldExample: {
+        scenario: "Childcare centre standardising shift patterns across multiple rooms.",
+        steps: [
+          "Create 'Early Educator' template: 6:30–14:30, 30min break, requires Diploma",
+          "Create 'Late Educator' template: 10:00–18:00, 30min break, requires Cert III",
+          "Create 'Split Educator' template: broken shift 7:00–10:00 + 15:00–18:00, broken shift allowance",
+          "All room coordinators use these templates when building weekly rosters"
+        ],
+        outcome: "Consistent shift definitions reduce errors and ensure correct allowance calculations across the organisation."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 43: SIDE PANEL — SAVE ROSTER TEMPLATE
+    // ============================================================================
+    {
+      id: "US-RST-066",
+      title: "Save Current Roster Week as Reusable Template",
+      actors: ["Roster Manager", "Location Manager"],
+      description: "As a Roster Manager, I want to save the current week's shift pattern as a named template so that I can reapply it to future weeks without manually recreating each shift.",
+      acceptanceCriteria: [
+        "Provide template name (required) and description (optional)",
+        "Select which rooms to include in the template via checkbox selection",
+        "Switch between locations to capture shifts from different centres",
+        "Toggle option to include staff role preferences in the template",
+        "Display summary showing total shifts, days, and rooms included",
+        "Template saved only contains shift patterns (times, rooms, days) — personal staff assignments are stripped",
+        "Disable save when no name provided or no relevant shifts exist"
+      ],
+      businessLogic: [
+        "Template shift extraction: Filters shifts by active centre ID, selected room IDs, and current week dates",
+        "Day of week mapping: Each shift's date is converted to dayOfWeek (0-6) for pattern reuse across any week",
+        "Template ID generation: 'ts-{timestamp}-{random9chars}' for each template shift entry",
+        "Personal data stripping: staffId and staff-specific data are excluded from template shifts",
+        "Room selection defaults to all rooms in the active centre",
+        "Switching location resets room selection to empty (user must re-select rooms for new location)",
+        "Grouped shift count: Shows per-room shift count to help user understand template coverage",
+        "Save triggers onSave callback with template data excluding id, createdAt, updatedAt (generated server-side)"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Apply Template", relationship: "Saved templates are consumed by the Apply Template flow" },
+        { module: "Roster Grid", relationship: "Source shifts come from the current roster grid state" },
+        { module: "Location Management", relationship: "Templates are scoped to a specific centre" }
+      ],
+      endToEndJourney: [
+        "1. Manager finalises a good roster week with optimal coverage",
+        "2. Opens 'Save as Template' from the roster toolbar",
+        "3. Names the template 'Standard Week — Main Centre'",
+        "4. Selects all rooms except the admin office",
+        "5. Reviews summary: 35 shifts across 5 rooms over 5 days",
+        "6. Clicks 'Save Template' — template stored for future reuse"
+      ],
+      realWorldExample: {
+        scenario: "Aged care facility saving their optimised fortnightly roster.",
+        steps: [
+          "Week 1 roster covers 4 wings with 28 shifts across 7 days",
+          "Manager saves as 'Fortnight A — Standard'",
+          "Next fortnight, applies template instead of rebuilding from scratch",
+          "Only needs to adjust for leave and availability changes"
+        ],
+        outcome: "Roster creation time reduced from 2 hours to 15 minutes per fortnight."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 44: SIDE PANEL — APPLY ROSTER TEMPLATE
+    // ============================================================================
+    {
+      id: "US-RST-067",
+      title: "Apply Saved Roster Template to Current Week",
+      actors: ["Roster Manager", "Location Manager"],
+      description: "As a Roster Manager, I want to apply a previously saved roster template to the current week so that I can quickly populate shifts based on proven patterns while controlling which shifts are added.",
+      acceptanceCriteria: [
+        "Select from available saved roster templates via dropdown",
+        "Preview all template shifts mapped to current week dates before applying",
+        "Toggle 'Skip existing shifts' to avoid overwriting existing open shifts",
+        "Select/deselect individual shifts from the preview table",
+        "Show count of shifts to add vs shifts to skip",
+        "Applied shifts are created as open/unassigned (draft status, isOpenShift=true)",
+        "Support switching between locations before applying",
+        "Disable apply when no template selected or no shifts to add"
+      ],
+      businessLogic: [
+        "Template-to-week mapping: Template dayOfWeek values mapped to actual dates in the current ISO week (Monday start)",
+        "Duplicate detection (skip existing): Matches on centreId + roomId + date + startTime + endTime + truly unassigned (no staffId)",
+        "A shift is 'truly open' only if staffId is empty — prevents false positive matching on assigned shifts",
+        "Match result classification: Each template shift gets action 'add' (new) or 'skip' (duplicate exists)",
+        "Selective apply: If user selects specific shifts, only selected 'add' shifts are created",
+        "If no specific selection made (empty set), all 'add' shifts are applied",
+        "Generated shifts: staffId='', status='draft', isOpenShift=true, notes from template preserved",
+        "Template shift notes are carried over; staff assignments are NOT carried over"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Save Roster Template", relationship: "Consumes templates created by Save flow" },
+        { module: "Roster Grid", relationship: "New shifts appear in the roster grid after apply" },
+        { module: "Auto-Assign", relationship: "Open shifts from template can be auto-assigned to available staff" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens 'Apply Template' from roster toolbar",
+        "2. Selects 'Standard Week — Main Centre' template",
+        "3. Preview shows 35 shifts: 30 to add, 5 to skip (duplicates)",
+        "4. Deselects 2 shifts for rooms that are closed this week",
+        "5. Clicks 'Apply 28 Shifts' — open shifts populate the grid",
+        "6. Runs Auto-Assign to fill open shifts with available staff"
+      ],
+      realWorldExample: {
+        scenario: "Hospital ward applying standard weekday template after public holiday week.",
+        steps: [
+          "Template has 42 shifts across 6 wards",
+          "3 existing shifts from prior partial planning are detected and skipped",
+          "Ward C is under renovation — manager deselects its 7 shifts",
+          "32 open shifts applied, then auto-assigned based on availability"
+        ],
+        outcome: "Full ward coverage restored in under 5 minutes using template + auto-assign."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 45: SIDE PANEL — POST-PLACEMENT RATING
+    // ============================================================================
+    {
+      id: "US-RST-068",
+      title: "Rate Agency and Worker After Shift Completion",
+      actors: ["Location Manager", "Shift Supervisor"],
+      description: "As a Location Manager, I want to rate both the staffing agency and the individual worker after an agency placement is completed so that I can track quality, inform future agency selection, and build a reliable worker pool.",
+      acceptanceCriteria: [
+        "Display placement summary (agency, worker, centre, date, time, role)",
+        "Require both agency rating (1-5 stars) and worker rating (1-5 stars)",
+        "Provide optional text feedback for both agency and worker",
+        "Offer detailed category ratings: Response Time, Candidate Quality, Communication, Professionalism, Compliance",
+        "Quick action checkboxes: 'Would hire agency again' and 'Would request this worker'",
+        "Issue reporting with mandatory description when flagged",
+        "Option to mark agency as Preferred (rating ≥4) or Blacklisted (issues reported)",
+        "Form validation: Cannot submit without both ratings; issues require description",
+        "Form resets on close for clean re-entry"
+      ],
+      businessLogic: [
+        "Rating scale: 1=Poor, 2=Fair, 3=Good, 4=Very Good, 5=Excellent",
+        "Category defaults: Unfilled category ratings default to the overall agency rating on submit",
+        "Preference promotion: 'Mark as Preferred' option only appears when agencyRating ≥ 4",
+        "Preference demotion: 'Blacklist' option only appears when hadIssues is true",
+        "Preference update calls setAgencyPreference() with centre-scoped status and audit reason",
+        "Rating submission calls submitRating() which stores the complete PlacementRating record",
+        "Submit validation: (!agencyRating || !workerRating) → blocked; (hadIssues && !issueDescription) → blocked",
+        "Business rule BR-RST-024: Ratings must be submitted within 24 hours of shift completion",
+        "Rating data feeds into agency performance dashboards and future broadcast prioritisation"
+      ],
+      priority: "medium",
+      relatedModules: [
+        { module: "Agency Performance Dashboard", relationship: "Aggregated ratings displayed in performance metrics" },
+        { module: "Centre Agency Preferences", relationship: "Preferred/blacklisted status updated based on ratings" },
+        { module: "Send to Agency", relationship: "Agency ranking in future broadcasts influenced by historical ratings" },
+        { module: "Agency Response Tracker", relationship: "Rating completes the placement lifecycle" }
+      ],
+      endToEndJourney: [
+        "1. Shift ends — supervisor clicks 'Rate Placement' on completed agency shift",
+        "2. Reviews placement details: StaffCo Agency, Jane D., Nursery Room, 7:00-15:00",
+        "3. Rates agency 4/5, worker 5/5",
+        "4. Expands detailed categories: Response Time 3/5, everything else 4/5",
+        "5. Checks 'Would hire agency again' and 'Would request this worker'",
+        "6. Checks 'Mark as Preferred' for the agency",
+        "7. Submits — rating stored, agency preference updated"
+      ],
+      realWorldExample: {
+        scenario: "Childcare centre tracking agency quality after a relief educator placement.",
+        steps: [
+          "Worker arrived on time, had all qualifications, interacted well with children",
+          "Agency was slow to respond (3/5) but candidate quality was excellent (5/5)",
+          "Overall agency rating: 4/5 → Marked as Preferred",
+          "Worker added to 'request again' list for future shifts"
+        ],
+        outcome: "Quality data drives better agency selection, reducing no-shows by 40% over a quarter."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 46: SIDE PANEL — AGENCY NOTIFICATION TEMPLATES
+    // ============================================================================
+    {
+      id: "US-RST-069",
+      title: "Manage Agency Notification Message Templates",
+      actors: ["System Administrator", "Roster Manager"],
+      description: "As a System Administrator, I want to create and manage notification templates for different agency communication events across multiple channels (email, SMS, push, webhook) so that agency communications are consistent, professional, and contain all required information.",
+      acceptanceCriteria: [
+        "View templates grouped by event type (Shift Broadcast, Urgent Alert, Filled, Cancelled, etc.)",
+        "Each template supports multiple channels: Email, SMS, Push Notification, Webhook",
+        "Edit template subject line and body content with variable placeholders",
+        "Preview rendered template with sample variable substitution",
+        "Enable/disable individual templates without deleting",
+        "Create new custom templates for any event type and channel",
+        "Duplicate existing templates as starting point for new ones",
+        "View available template variables per event type with descriptions",
+        "Templates support 9 event types: shift_broadcast, shift_urgent, shift_escalated, shift_filled, shift_cancelled, candidate_accepted, candidate_rejected, timesheet_reminder, compliance_alert"
+      ],
+      businessLogic: [
+        "Variable substitution: Placeholders like {{agency_name}}, {{shift_date}}, {{centre_name}} replaced at send time",
+        "Event-specific variables: Each event type has a defined set of available variables (eventTypeVariables mapping)",
+        "Channel constraints: SMS templates limited to 160 characters for single segment; email supports HTML",
+        "Template inheritance: Default system templates provided; custom templates override per event+channel",
+        "Disabled templates: Event still fires but skips the disabled channel — at least one channel must remain active per event",
+        "Template validation: Subject required for email; body required for all channels; variables must be valid",
+        "Webhook templates: Body is JSON format with variable interpolation for API integrations",
+        "Template versioning: Changes are tracked with updated_at timestamp for audit"
+      ],
+      priority: "low",
+      relatedModules: [
+        { module: "Send to Agency", relationship: "Templates rendered and sent during agency broadcasts" },
+        { module: "Agency Response Tracker", relationship: "Notification status tracked through response lifecycle" },
+        { module: "Auto-Escalation", relationship: "Escalation events trigger corresponding notification templates" }
+      ],
+      endToEndJourney: [
+        "1. Admin opens Agency Notification Templates from settings",
+        "2. Expands 'Shift Broadcast' event group — sees Email and SMS templates",
+        "3. Edits SMS template to include centre address: '{{centre_name}} at {{centre_address}}'",
+        "4. Previews with sample data — verifies message renders correctly",
+        "5. Creates new Push Notification template for urgent shifts",
+        "6. Disables webhook template for cancelled shifts (not integrated yet)",
+        "7. Saves — all future broadcasts use updated templates"
+      ],
+      realWorldExample: {
+        scenario: "Healthcare organisation customising agency communications for compliance.",
+        steps: [
+          "Email template updated to include mandatory compliance fields: ABN, insurance expiry",
+          "SMS kept brief: 'Urgent: {{role}} needed at {{centre_name}} on {{shift_date}} {{shift_time}}. Reply YES to accept.'",
+          "Webhook template configured for integration with agency's API endpoint",
+          "Compliance alert template includes specific regulation references"
+        ],
+        outcome: "Standardised communications reduce miscommunication incidents by 60% and ensure regulatory compliance."
+      }
+    },
+
+    // ============================================================================
+    // SECTION 47: SIDE PANEL — AVAILABILITY CALENDAR
+    // ============================================================================
+    {
+      id: "US-RST-070",
+      title: "View Weekly Staff Availability Calendar",
+      actors: ["Roster Manager", "Location Manager"],
+      description: "As a Roster Manager, I want to view a weekly availability calendar showing all staff members' availability and leave status across the week so that I can make informed rostering decisions at a glance.",
+      acceptanceCriteria: [
+        "Display 7-day grid (Monday–Sunday) with all staff members as rows",
+        "Show availability status per day: Available (with time range), Unavailable, or On Leave",
+        "Filter staff by location using centre selector dropdown",
+        "Show staff avatar with initials, name, and role label",
+        "Available cells show check icon and optional time range (e.g., 9:00-17:00)",
+        "Leave cells show 'Leave' chip with amber styling",
+        "Unavailable cells show X icon with muted styling",
+        "Visual legend explaining Available, Unavailable, and On Leave indicators",
+        "Sticky header row for day names and dates while scrolling"
+      ],
+      businessLogic: [
+        "Week calculation: Starts from Monday (weekStartsOn: 1) of the current date's week",
+        "Availability mapping: Staff availability uses dayOfWeek 0=Sunday, grid uses 0=Monday — conversion: gridDay 6 → avail 0, else gridDay + 1",
+        "Leave detection: Checks approved timeOff records where shift date falls within startDate–endDate range (inclusive)",
+        "Leave overrides availability: If staff is on approved leave for a date, shown as 'Leave' regardless of availability setting",
+        "Location filtering: Matches staff by defaultCentreId OR preferredCentres array containing selected location",
+        "Staff count shown per location in the filter dropdown for quick reference",
+        "Scrollable content area: Height calculated as viewport minus header/footer (calc(100vh - 300px))",
+        "All staff shown when 'All Locations' selected (no filtering applied)"
+      ],
+      priority: "low",
+      relatedModules: [
+        { module: "Roster Grid", relationship: "Availability data informs shift assignment decisions" },
+        { module: "Auto-Assign", relationship: "Same availability data used by auto-assignment algorithm" },
+        { module: "Time Off Management", relationship: "Approved leave displayed as unavailable dates" },
+        { module: "Staff Management", relationship: "Staff profiles provide availability and location preferences" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Availability Calendar while planning next week's roster",
+        "2. Sees overview: 15 staff, colour-coded availability across 7 days",
+        "3. Filters to 'Main Centre' — 10 staff shown",
+        "4. Identifies Tuesday gap: only 3 of 8 required staff available",
+        "5. Notes Sarah is on leave Wednesday–Friday",
+        "6. Returns to roster grid to fill gaps with available staff or agency"
+      ],
+      realWorldExample: {
+        scenario: "Retail store manager planning coverage for a busy holiday week.",
+        steps: [
+          "Opens availability calendar for the week of Easter",
+          "Filters to flagship store — 12 staff listed",
+          "Friday: 4 on leave, 2 unavailable — only 6 available for peak trading",
+          "Saturday: Full availability — 11 of 12 available",
+          "Manager identifies Friday as critical gap, initiates agency request for 3 relief staff"
+        ],
+        outcome: "Proactive gap identification prevents understaffing during peak periods."
+      }
     }
   ],
 
