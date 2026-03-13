@@ -34,14 +34,11 @@ export function CentreSelector({
         <SelectContent>
           {centres.map(centre => (
             <SelectItem key={centre.id} value={centre.id}>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                <div className="flex flex-col">
-                  <span>{centre.name}</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {centre.rooms.length} rooms · {centre.operatingHours.start}–{centre.operatingHours.end}
-                  </span>
-                </div>
+              <div className="flex flex-col">
+                <span>{centre.name}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {centre.rooms.length} rooms · {centre.operatingHours.start}–{centre.operatingHours.end}
+                </span>
               </div>
             </SelectItem>
           ))}
