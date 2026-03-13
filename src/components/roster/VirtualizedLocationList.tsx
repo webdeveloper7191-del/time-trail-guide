@@ -86,14 +86,12 @@ export function VirtualizedLocationList({
                   isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-accent'
                 )}
               >
-                {isAllLocationsView && (
-                  <div className={cn(
-                    'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0',
-                    isActive ? 'bg-primary border-primary' : 'border-border'
-                  )}>
-                    {isActive && <Check className="h-3 w-3 text-primary-foreground" />}
-                  </div>
-                )}
+                <div className={cn(
+                  'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0',
+                  isActive ? 'bg-primary border-primary' : 'border-border'
+                )}>
+                  {isActive && <Check className="h-3 w-3 text-primary-foreground" />}
+                </div>
                 <MapPin className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
                 <span className="truncate flex-1 text-left">{centre.name}</span>
                 {openCount > 0 && (
