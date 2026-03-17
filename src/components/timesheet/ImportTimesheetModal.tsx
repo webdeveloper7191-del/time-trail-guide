@@ -87,6 +87,7 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
     return json.map((row: any) => ({
       employeeName: row['Employee Name'] || row['Name'] || row['employee'] || '',
       employeeEmail: row['Email'] || row['Employee Email'] || '',
+      payrollId: row['Payroll ID'] || row['Payroll'] || row['Employee ID'] || '',
       department: row['Department'] || row['Dept'] || '',
       position: row['Position'] || row['Role'] || '',
       location: row['Location'] || row['Centre'] || row['Center'] || '',
