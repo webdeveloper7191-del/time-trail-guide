@@ -331,6 +331,8 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
                     <thead className="bg-muted">
                       <tr>
                         <th className="p-2 text-left">Name</th>
+                        <th className="p-2 text-left">Email</th>
+                        <th className="p-2 text-left">Payroll ID</th>
                         <th className="p-2 text-left">Date</th>
                         <th className="p-2 text-left">In</th>
                         <th className="p-2 text-left">Out</th>
@@ -341,6 +343,8 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
                       {preview.rows.slice(0, 5).map((row, i) => (
                         <tr key={i} className="border-t">
                           <td className="p-2">{row.employeeName}</td>
+                          <td className="p-2 text-muted-foreground">{row.employeeEmail}</td>
+                          <td className="p-2 text-muted-foreground">{row.payrollId || '—'}</td>
                           <td className="p-2">{row.date}</td>
                           <td className="p-2">{row.clockIn}</td>
                           <td className="p-2">{row.clockOut}</td>
