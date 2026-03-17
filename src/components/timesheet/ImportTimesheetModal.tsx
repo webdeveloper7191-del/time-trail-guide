@@ -21,6 +21,7 @@ interface ImportTimesheetModalProps {
 interface ParsedRow {
   employeeName: string;
   employeeEmail: string;
+  payrollId: string;
   department: string;
   position: string;
   location: string;
