@@ -21,6 +21,7 @@ interface ImportTimesheetModalProps {
 interface ParsedRow {
   employeeName: string;
   employeeEmail: string;
+  payrollId: string;
   department: string;
   position: string;
   location: string;
@@ -64,6 +65,7 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
       return {
         employeeName: row.employeename || row.name || row.employee || '',
         employeeEmail: row.employeeemail || row.email || '',
+        payrollId: row.payrollid || row.payroll || row.employeeid || '',
         department: row.department || row.dept || '',
         position: row.position || row.role || '',
         location: row.location || row.centre || row.center || '',
@@ -85,6 +87,7 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
     return json.map((row: any) => ({
       employeeName: row['Employee Name'] || row['Name'] || row['employee'] || '',
       employeeEmail: row['Email'] || row['Employee Email'] || '',
+      payrollId: row['Payroll ID'] || row['Payroll'] || row['Employee ID'] || '',
       department: row['Department'] || row['Dept'] || '',
       position: row['Position'] || row['Role'] || '',
       location: row['Location'] || row['Centre'] || row['Center'] || '',
@@ -142,7 +145,7 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
     // Group rows by employee + week
     const grouped = new Map<string, ParsedRow[]>();
     preview.rows.forEach(row => {
-      const key = `${row.employeeName}-${row.employeeEmail}`;
+      const key = `${row.payrollId || row.employeeName}-${row.employeeEmail}`;
       if (!grouped.has(key)) grouped.set(key, []);
       grouped.get(key)!.push(row);
     });
@@ -218,9 +221,10 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
   };
 
   const downloadTemplate = () => {
-    const headers = 'Employee Name,Email,Department,Position,Location,Date,Clock In,Clock Out,Break Start,Break End,Notes';
-    const sample = 'John Smith,john@company.com,Engineering,Developer,Downtown Office,2024-01-08,09:00,17:00,12:00,12:30,';
-    const blob = new Blob([headers + '\n' + sample], { type: 'text/csv' });
+    const headers = 'Employee Name,Email,Payroll ID,Department,Position,Location,Date,Clock In,Clock Out,Break Start,Break End,Notes';
+    const sample1 = 'John Smith,john@company.com,PAY001,Engineering,Developer,Downtown Office,2024-01-08,09:00,17:00,12:00,12:30,';
+    const sample2 = 'John Smith,john@company.com,PAY001,Engineering,Developer,Downtown Office,2024-01-09,08:30,16:30,12:00,12:30,Day 2';
+    const blob = new Blob([headers + '\n' + sample1 + '\n' + sample2], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -327,6 +331,8 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
                     <thead className="bg-muted">
                       <tr>
                         <th className="p-2 text-left">Name</th>
+                        <th className="p-2 text-left">Email</th>
+                        <th className="p-2 text-left">Payroll ID</th>
                         <th className="p-2 text-left">Date</th>
                         <th className="p-2 text-left">In</th>
                         <th className="p-2 text-left">Out</th>
@@ -337,6 +343,8 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
                       {preview.rows.slice(0, 5).map((row, i) => (
                         <tr key={i} className="border-t">
                           <td className="p-2">{row.employeeName}</td>
+                          <td className="p-2 text-muted-foreground">{row.employeeEmail}</td>
+                          <td className="p-2 text-muted-foreground">{row.payrollId || '—'}</td>
                           <td className="p-2">{row.date}</td>
                           <td className="p-2">{row.clockIn}</td>
                           <td className="p-2">{row.clockOut}</td>
