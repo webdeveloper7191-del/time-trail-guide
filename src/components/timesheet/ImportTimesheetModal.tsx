@@ -145,7 +145,7 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
     // Group rows by employee + week
     const grouped = new Map<string, ParsedRow[]>();
     preview.rows.forEach(row => {
-      const key = `${row.employeeName}-${row.employeeEmail}`;
+      const key = `${row.payrollId || row.employeeName}-${row.employeeEmail}`;
       if (!grouped.has(key)) grouped.set(key, []);
       grouped.get(key)!.push(row);
     });
