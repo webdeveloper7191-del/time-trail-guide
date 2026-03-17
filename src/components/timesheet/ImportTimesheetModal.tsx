@@ -221,9 +221,10 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
   };
 
   const downloadTemplate = () => {
-    const headers = 'Employee Name,Email,Department,Position,Location,Date,Clock In,Clock Out,Break Start,Break End,Notes';
-    const sample = 'John Smith,john@company.com,Engineering,Developer,Downtown Office,2024-01-08,09:00,17:00,12:00,12:30,';
-    const blob = new Blob([headers + '\n' + sample], { type: 'text/csv' });
+    const headers = 'Employee Name,Email,Payroll ID,Department,Position,Location,Date,Clock In,Clock Out,Break Start,Break End,Notes';
+    const sample1 = 'John Smith,john@company.com,PAY001,Engineering,Developer,Downtown Office,2024-01-08,09:00,17:00,12:00,12:30,';
+    const sample2 = 'John Smith,john@company.com,PAY001,Engineering,Developer,Downtown Office,2024-01-09,08:30,16:30,12:00,12:30,Day 2';
+    const blob = new Blob([headers + '\n' + sample1 + '\n' + sample2], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
