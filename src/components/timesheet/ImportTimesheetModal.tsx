@@ -65,6 +65,7 @@ export function ImportTimesheetModal({ open, onClose, onImport }: ImportTimeshee
       return {
         employeeName: row.employeename || row.name || row.employee || '',
         employeeEmail: row.employeeemail || row.email || '',
+        payrollId: row.payrollid || row.payroll || row.employeeid || '',
         department: row.department || row.dept || '',
         position: row.position || row.role || '',
         location: row.location || row.centre || row.center || '',
