@@ -2493,6 +2493,7 @@ export default function RosterScheduler() {
           onSwapStaff={handleSwapStaff}
           onCopyShift={handleCopyShift}
           onLogCallback={handleDetailPanelLogCallback}
+          onCallbackStatusChange={handleCallbackStatusChange}
         />
       )}
 
