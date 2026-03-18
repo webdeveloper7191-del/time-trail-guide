@@ -2469,6 +2469,7 @@ export default function RosterScheduler() {
         staff={allStaff}
         dates={dates}
         centreId={selectedCentreId}
+        callbackEvents={callbackEvents}
       />
 
       {selectedShift && (
