@@ -2584,7 +2584,7 @@ function StaffShiftCard({
           <Badge variant="outline" className="text-[7px] px-1 py-0 h-3 mt-0.5 bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-700">
             {callbackEvents.length} CB
           </Badge>
-        )
+        )}
             </div>
           </div>
         </TooltipTrigger>
