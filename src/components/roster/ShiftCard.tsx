@@ -68,6 +68,7 @@ export function ShiftCard({
   onCopy,
   onSwap,
   onShiftTypeChange,
+  onLogCallback,
   isCompact = false,
 }: ShiftCardProps) {
   const [isDragging, setIsDragging] = useState(false);
