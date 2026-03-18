@@ -204,7 +204,6 @@ export function StaffTimelineGrid({
     // Detect rest violation and notify
     const violation = detectRestViolation(event, shifts);
     if (violation) {
-      const { toast } = require('sonner');
       toast.warning(
         `⚠️ Rest period violation: ${event.staffName} has only ${violation.gapHours}h rest before next shift at ${violation.nextShiftStartTime} on ${violation.nextShiftDate}. Minimum 10h required.`,
         { duration: 8000 }
