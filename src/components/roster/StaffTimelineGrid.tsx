@@ -2191,6 +2191,7 @@ export function StaffTimelineGrid({
         parentShift={callbackShiftContext?.shift}
         staff={callbackShiftContext?.staff}
         defaultType={callbackShiftContext?.type || 'callback'}
+        onCallbackLogged={handleCallbackLogged}
       />
     </div>
   );
