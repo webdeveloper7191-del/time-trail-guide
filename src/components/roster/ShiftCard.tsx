@@ -53,6 +53,8 @@ interface ShiftCardProps {
   onSwap?: (shift: Shift) => void;
   onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
+  onLogSleepover?: (shift: Shift) => void;
+  onLogSplitShift?: (shift: Shift) => void;
   isCompact?: boolean;
 }
 
