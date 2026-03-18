@@ -331,6 +331,48 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
           </>
         )}
 
+        {/* Sleepover cost summary */}
+        {sleepoverSummary.totalEvents > 0 && (
+          <>
+            <div className="h-4 w-px bg-border mx-2" />
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <Moon className="h-3 w-3 text-purple-600" />
+              <span className="text-muted-foreground font-medium">{sleepoverSummary.totalEvents}</span>
+              <span className="text-muted-foreground">Sleepovers</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <DollarSign className="h-3 w-3 text-emerald-600" />
+              <span className="font-semibold text-foreground">${sleepoverSummary.totalCost.toFixed(0)}</span>
+            </div>
+            {sleepoverSummary.pendingCount > 0 && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-purple-300 text-purple-700 bg-purple-50 dark:bg-purple-500/10">
+                {sleepoverSummary.pendingCount} pending
+              </Badge>
+            )}
+          </>
+        )}
+
+        {/* Split shift cost summary */}
+        {splitShiftSummary.totalEvents > 0 && (
+          <>
+            <div className="h-4 w-px bg-border mx-2" />
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <Zap className="h-3 w-3 text-orange-600" />
+              <span className="text-muted-foreground font-medium">{splitShiftSummary.totalEvents}</span>
+              <span className="text-muted-foreground">Split Shifts</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <DollarSign className="h-3 w-3 text-emerald-600" />
+              <span className="font-semibold text-foreground">${splitShiftSummary.totalCost.toFixed(0)}</span>
+            </div>
+            {splitShiftSummary.pendingCount > 0 && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-orange-300 text-orange-700 bg-orange-50 dark:bg-orange-500/10">
+                {splitShiftSummary.pendingCount} pending
+              </Badge>
+            )}
+          </>
+        )}
+
         {/* Divider */}
         <div className="h-4 w-px bg-border mx-2" />
         

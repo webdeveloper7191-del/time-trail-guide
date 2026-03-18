@@ -72,7 +72,8 @@ import { PostPlacementRatingModal } from '@/components/roster/PostPlacementRatin
 import { AgencyPerformanceDashboard } from '@/components/roster/AgencyPerformanceDashboard';
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
 import { LogCallbackSheet } from '@/components/roster/LogCallbackSheet';
-
+import { LogSleepoverSheet } from '@/components/roster/LogSleepoverSheet';
+import { LogSplitShiftSheet } from '@/components/roster/LogSplitShiftSheet';
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
