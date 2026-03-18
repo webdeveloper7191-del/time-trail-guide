@@ -242,7 +242,17 @@ export const rosterSRS: ModuleSRS = {
     { id: "FR-RST-038", category: "Demand Forecasting", requirement: "System shall adjust demand forecasts based on external factors (weather, holidays)", priority: "Low" },
     // Agency Integration
     { id: "FR-RST-039", category: "Agency Integration", requirement: "System shall broadcast unfilled shifts to configured agency partners", priority: "Medium" },
-    { id: "FR-RST-040", category: "Agency Integration", requirement: "System shall track agency worker placements and ratings", priority: "Medium" }
+    { id: "FR-RST-040", category: "Agency Integration", requirement: "System shall track agency worker placements and ratings", priority: "Medium" },
+    // Shift Types & Pay Calculation
+    { id: "FR-RST-041", category: "Shift Types", requirement: "System shall support shift types: regular, on_call, callback, recall, emergency, sleepover with distinct pay calculation rules per type", priority: "Critical" },
+    { id: "FR-RST-042", category: "Shift Types", requirement: "System shall calculate regular shift pay with base rate, penalty rates (evening/weekend/PH), casual loading, and tiered overtime", priority: "Critical" },
+    { id: "FR-RST-043", category: "Shift Types", requirement: "System shall calculate on-call standby allowance as flat-rate or per-hour with weekend and public holiday multipliers", priority: "High" },
+    { id: "FR-RST-044", category: "Shift Types", requirement: "System shall calculate callback pay with minimum engagement guarantee stacked on top of standby allowance", priority: "High" },
+    { id: "FR-RST-045", category: "Shift Types", requirement: "System shall calculate recall pay at premium multiplier with travel allowance and minimum 4-hour engagement", priority: "High" },
+    { id: "FR-RST-046", category: "Shift Types", requirement: "System shall calculate emergency pay at highest multiplier tier with no stacking exclusions and good-faith payment for turned-away responders", priority: "Critical" },
+    { id: "FR-RST-047", category: "Shift Types", requirement: "System shall calculate sleepover pay as flat allowance with per-disturbance minimum engagement and automatic conversion to active hours when thresholds are exceeded", priority: "High" },
+    { id: "FR-RST-048", category: "Shift Types", requirement: "System shall enforce rest period requirements (minimum 10h) after callback, recall, emergency, and converted sleepover shifts", priority: "High" },
+    { id: "FR-RST-049", category: "Shift Types", requirement: "System shall auto-generate timesheet entries for all shift types with correct pay classification and line-item breakdown", priority: "Critical" }
   ],
 
   nonFunctionalRequirements: [
@@ -3855,7 +3865,426 @@ export const rosterSRS: ModuleSRS = {
         ],
         outcome: "Proactive gap identification prevents understaffing during peak periods."
       }
-    }
+    },
+
+    // ============================================================================
+    // SECTION 14: SHIFT TYPES — PAY CALCULATION & ROSTERING INTEGRATION
+    // ============================================================================
+
+    // --- US-RST-071: Regular Shift ---
+    {
+      id: "US-RST-071",
+      title: "Regular Shift — Standard Rostering and Pay Calculation",
+      actors: ["Location Manager", "Roster Manager", "Payroll Administrator"],
+      description: "As a Location Manager, I want to roster staff for regular shifts with accurate pay calculations that automatically apply base rates, penalty rates, overtime, and award loadings, so that staff are paid correctly according to their employment agreement and applicable award.",
+      acceptanceCriteria: [
+        "Regular shift can be created with start time, end time, break duration, room/department, and staff assignment",
+        "Pay is calculated as: (End Time − Start Time − Break Minutes) × Base Hourly Rate",
+        "Evening penalty rate (1.25×) auto-applies for hours worked after 18:00 on weekdays",
+        "Saturday penalty rate (1.5×) applies for all hours on Saturday shifts",
+        "Sunday penalty rate (2.0×) applies for all hours on Sunday shifts",
+        "Public holiday penalty rate (2.5×) applies when shift date matches a gazetted public holiday",
+        "Casual loading (25%) is added when staff employment type is 'casual'",
+        "Daily overtime triggers at >7.6 hours (standard) or >10 hours (12-hour roster pattern)",
+        "Weekly overtime triggers at >38 hours cumulative across all shifts in the pay week",
+        "Overtime Tier 1 (first 2 hours): 1.5× base rate; Tier 2 (remaining): 2.0× base rate",
+        "Shift cost breakdown visible in roster grid tooltip and shift detail panel",
+        "Timesheet entry auto-generated from clock in/out matched to scheduled shift",
+        "Variance flagged if actual clock differs from scheduled time by >15 minutes"
+      ],
+      businessLogic: [
+        "Net hours = (endTime − startTime − breakMinutes) / 60",
+        "Break deduction: Unpaid break of 30min required for shifts ≥5 hours; 60min for shifts ≥8 hours (award-configurable)",
+        "Penalty rate stacking: Only the highest applicable penalty rate applies (no double-dipping). Weekend + Evening → Weekend rate prevails",
+        "Public holiday rate always takes priority over all other penalty rates",
+        "Overtime calculation order: Daily threshold checked first, then weekly accumulation. Hours already counted as daily OT are excluded from weekly OT trigger",
+        "Split-shift gap: If >2 hours unpaid gap between split portions, each portion assessed independently for break requirements",
+        "Cost allocation: Shift cost attributed to the department/room the shift is assigned to for budget tracking",
+        "Rounding: Final pay rounded to nearest cent (2 decimal places). Hours rounded to nearest 0.1",
+        "Timesheet matching: Clock-in matched to nearest scheduled shift within ±2 hour window. Unmatched clocks flagged as anomalies",
+        "Award classification rate: If staff has award classification set, base rate is sourced from award pay table rather than manual hourly rate"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Award Interpreter", relationship: "Provides base rates, penalty multipliers, and overtime thresholds from configured award" },
+        { module: "Timesheet", relationship: "Approved shifts flow to timesheet as clock entries for payroll processing" },
+        { module: "Cost Tracking", relationship: "Shift cost contributes to daily/weekly/monthly budget tracking" },
+        { module: "Compliance", relationship: "Shift duration and break compliance validated against award rules" },
+        { module: "Fatigue Management", relationship: "Regular shift hours count toward consecutive-day and weekly-hour fatigue thresholds" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens roster grid for Monday 15 March",
+        "2. Drags shift template '9am–5pm Standard' onto Room 1 for staff member Sarah",
+        "3. System auto-populates: Start 09:00, End 17:00, Break 30min",
+        "4. Tooltip shows: 7.5h net × $32.50/h = $243.75 (ordinary pay)",
+        "5. Manager duplicates shift to Saturday — system recalculates: 7.5h × $32.50 × 1.5 = $365.63",
+        "6. Manager publishes roster — Sarah receives notification",
+        "7. On Monday, Sarah clocks in at 08:55, clocks out at 17:08",
+        "8. Timesheet shows: Scheduled 7.5h, Actual 7.72h, Variance +0.22h (within tolerance)",
+        "9. Payroll admin approves timesheet — pay exported at scheduled hours (7.5h)"
+      ],
+      realWorldExample: {
+        scenario: "A childcare centre educator works a standard weekday shift plus an extra Saturday shift during a busy enrolment period.",
+        steps: [
+          "Emma (Level 3 Educator, $32.50/h, permanent part-time) is rostered Mon–Wed 8:00–16:30 with 30min break",
+          "Monday: 8.0h net × $32.50 = $260.00 ordinary pay. Daily OT: 8.0 − 7.6 = 0.4h × $32.50 × 1.5 = $19.50",
+          "Tuesday: Same calculation = $260.00 + $19.50 OT",
+          "Wednesday: Same calculation = $260.00 + $19.50 OT",
+          "Manager asks Emma to work Saturday 9:00–15:00 (5.5h net after 30min break)",
+          "Saturday: 5.5h × $32.50 × 1.5 (Saturday penalty) = $268.13. No daily OT (under 7.6h threshold)",
+          "Weekly total: 29.5h regular + 1.2h daily OT = 30.7h. Under 38h, so no weekly OT triggered",
+          "Total pay: $780.00 ordinary + $58.50 daily OT + $268.13 Saturday = $1,106.63"
+        ],
+        outcome: "Accurate pay calculated automatically with penalty rates and overtime, eliminating manual pay calculations and reducing payroll errors."
+      }
+    },
+
+    // --- US-RST-072: On-Call (Standby) Shift ---
+    {
+      id: "US-RST-072",
+      title: "On-Call Standby Shift — Rostering and Standby Allowance Calculation",
+      actors: ["Location Manager", "Roster Manager", "Staff Member", "Payroll Administrator"],
+      description: "As a Location Manager, I want to roster staff as on-call (standby) for specific periods so they are available to respond if needed, and automatically calculate the correct standby allowance based on the applicable award configuration.",
+      acceptanceCriteria: [
+        "On-call shift type available in shift creation with distinct visual styling (indigo theme)",
+        "On-call shifts appear in dedicated On-Call Lane in the roster grid",
+        "Primary and backup on-call assignments supported with escalation order (1 = primary, 2+ = backup)",
+        "Standby allowance calculated as flat rate per shift OR hourly rate × on-call period duration",
+        "Weekend standby rate automatically applied for Saturday/Sunday on-call periods",
+        "Public holiday standby multiplier (e.g., 2×) applied when on-call falls on gazetted public holiday",
+        "Staff member cannot be rostered for regular shift AND on-call during overlapping hours",
+        "On-call notification sent to staff with expected availability window and escalation position",
+        "Timesheet auto-generates standby allowance entry even if staff is not called",
+        "On-call hours do NOT count toward weekly overtime threshold (standby is not active work)",
+        "On-call status indicator shows 'Active Now' for current on-call staff on dashboard"
+      ],
+      businessLogic: [
+        "Standby rate types: 'per_shift' = flat amount regardless of duration; 'per_hour' = rate × period hours",
+        "Standby period duration: Calculated from on-call start to end time. Overnight spans (e.g., 18:00–06:00) = 12 hours",
+        "Weekend rate: Separate configurable rate for Saturday 00:00 – Sunday 23:59. Falls back to standard rate if not configured",
+        "Public holiday multiplier: standbyRate × publicHolidayMultiplier (e.g., $25/shift × 2.0 = $50/shift)",
+        "Mutual exclusion: System prevents scheduling a regular shift and on-call shift for same staff where time periods overlap",
+        "Escalation chain: Primary (order 1) contacted first. If no response within escalationTimeoutMinutes, system escalates to order 2, then 3",
+        "Maximum on-call frequency: Configurable limit (e.g., no more than 3 on-call periods per fortnight) — warning shown if exceeded",
+        "On-call does not count as 'worked hours' for fatigue management unless a callback occurs",
+        "Timesheet entry type: 'standby_allowance' — separate line item from regular hours in pay summary"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "On-Call Overlay", relationship: "Visual management of weekly standby assignments with drag-and-drop" },
+        { module: "Escalation Chain", relationship: "Defines contact order and timeout thresholds for callback events" },
+        { module: "Callback Management", relationship: "On-call shift is the prerequisite for callback/recall events" },
+        { module: "Award Configuration", relationship: "Standby rates, weekend rates, and PH multipliers sourced from award config" },
+        { module: "Timesheet", relationship: "Standby allowance auto-created as separate pay line item" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens On-Call Overlay for week of 15–21 March",
+        "2. Assigns James (Team Leader) as Primary on-call for Monday 18:00 – Tuesday 06:00",
+        "3. Assigns Lisa (Senior Staff) as Backup (escalation order 2) for same period",
+        "4. System calculates: Standby = $25.00 flat rate per shift (Children's Services Award config)",
+        "5. Roster published — James sees 'On-Call: Primary' badge on his schedule",
+        "6. Monday night passes without incident — no callback required",
+        "7. At end of period, timesheet auto-generates: James — Standby Allowance $25.00",
+        "8. Lisa's timesheet also shows: Standby Allowance $25.00 (backup also receives standby pay)",
+        "9. Payroll admin approves both entries — exported as allowance line items"
+      ],
+      realWorldExample: {
+        scenario: "A residential care facility needs overnight on-call coverage. Staff receive standby pay for being available, with higher rates on weekends.",
+        steps: [
+          "Facility rostering rules: On-call coverage required 7 nights/week, 20:00–06:00 (10 hours)",
+          "Award config: Weeknight standby = $30/shift (flat), Weekend standby = $45/shift (flat), PH multiplier = 2×",
+          "Week roster: Mon–Fri nights assigned to rotating staff (5 × $30 = $150 total standby cost)",
+          "Saturday night: Assigned to David — $45 weekend standby rate",
+          "Sunday night (Easter Monday eve, public holiday): Assigned to Maria — $30 × 2.0 PH multiplier = $60",
+          "Weekly standby cost: $150 + $45 + $60 = $255 for 7-night coverage",
+          "No callbacks occurred — only standby allowances paid. Active work hours = 0"
+        ],
+        outcome: "Predictable standby costs calculated automatically per award rules. Staff compensated fairly for availability without manual calculations."
+      }
+    },
+
+    // --- US-RST-073: Callback Shift ---
+    {
+      id: "US-RST-073",
+      title: "Callback Shift — On-Call Staff Called to Work with Minimum Engagement",
+      actors: ["Location Manager", "Staff Member", "Payroll Administrator"],
+      description: "As a Location Manager, I want to log a callback event when on-call staff are called in to work, so that they receive both their standby allowance and callback pay with guaranteed minimum engagement hours.",
+      acceptanceCriteria: [
+        "Callback can be initiated from an existing on-call assignment via 'Log Callback' action",
+        "Callback event captures: start time, end time, reason, and outcome",
+        "Minimum engagement guarantee: Staff paid for minimum hours (e.g., 3h) even if actual work is shorter",
+        "Callback rate: Base hourly rate × callback multiplier (e.g., 1.5× for weeknight, 2× for weekend)",
+        "Callback pay STACKS with standby allowance (staff receives both)",
+        "Multiple callbacks in same on-call period: Each attracts separate minimum engagement unless configured to aggregate",
+        "Callback history logged in Callback Event Log with cost, duration, and reason",
+        "Timesheet auto-generates callback entry with actual vs paid hours clearly shown",
+        "Rest period rule: If callback exceeds configured threshold (e.g., 2h active work), minimum 10h rest before next regular shift",
+        "Next regular shift flagged if rest period is violated — attracts overtime rate for entire shift"
+      ],
+      businessLogic: [
+        "Callback pay = max(actual_duration_hours, minimum_engagement_hours) × base_rate × callback_multiplier",
+        "Example: Called at 22:00, finished at 22:45 (0.75h actual). Minimum engagement = 3h. Paid hours = 3h × $32.50 × 1.5 = $146.25",
+        "Multiple callback handling modes (configurable): 'separate' = each callback gets own minimum; 'aggregate' = total actual time vs single minimum; 'highest' = highest single callback duration used",
+        "Callback multiplier varies by time: Weeknight = 1.5×, Saturday = 1.75×, Sunday = 2.0×, Public Holiday = 2.5×",
+        "Travel time: If travel allowance configured, adds flat amount or per-km rate to callback pay",
+        "Rest period trigger: If total callback active time > restPeriodThresholdMinutes (e.g., 120min), rest period enforced",
+        "Rest period enforcement: System checks gap between callback end and next scheduled shift. If gap < minimumRestHours (e.g., 10h), next shift either: (a) auto-rescheduled to after rest period, or (b) flagged for manager review with OT rate warning",
+        "Callback hours DO count toward weekly overtime threshold (they are active work)",
+        "Standby allowance continues regardless — callback pay is additional to standby",
+        "Cost attribution: Callback cost allocated to the department that triggered the callback"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "On-Call Management", relationship: "Callback originates from an active on-call assignment" },
+        { module: "Callback Event Log", relationship: "Historical record of all callback events with costs and outcomes" },
+        { module: "Fatigue Management", relationship: "Callback duration affects rest period requirements and fatigue scoring" },
+        { module: "Timesheet", relationship: "Callback entry created with minimum engagement hours and callback rate" },
+        { module: "Award Configuration", relationship: "Minimum engagement hours, callback multipliers, and rest thresholds from award config" }
+      ],
+      endToEndJourney: [
+        "1. James is on-call Monday night (18:00–06:00), standby allowance = $25.00",
+        "2. At 22:15, a child welfare concern requires immediate attention",
+        "3. Manager opens On-Call panel → clicks 'Log Callback' on James's assignment",
+        "4. Records: Start 22:15, End 23:00 (45 minutes actual), Reason: 'Child welfare check'",
+        "5. System calculates: Actual 0.75h < Minimum 3h → Paid hours = 3h",
+        "6. Callback pay: 3h × $32.50 × 1.5 (weeknight) = $146.25",
+        "7. Total pay for on-call period: $25.00 (standby) + $146.25 (callback) = $171.25",
+        "8. System checks rest period: Callback ended 23:00, next shift Tuesday 07:00 = 8h gap < 10h minimum",
+        "9. Warning raised: 'Rest period violation — Tuesday shift will attract overtime rate if not rescheduled'",
+        "10. Manager reschedules James's Tuesday start to 09:00 (10h gap). Warning cleared",
+        "11. Timesheet shows two line items: Standby $25.00 + Callback 3h @ $48.75/h = $146.25"
+      ],
+      realWorldExample: {
+        scenario: "An aged care facility's on-call nurse is called twice during a Saturday night on-call period to attend to residents.",
+        steps: [
+          "Nurse Priya is primary on-call Saturday 20:00–Sunday 06:00. Weekend standby = $45.00",
+          "Callback 1: Called at 21:30 for a resident fall. Attends 21:30–22:15 (0.75h). Minimum engagement = 3h",
+          "Callback 1 pay: 3h × $38.00 × 1.75 (Saturday multiplier) = $199.50",
+          "Callback 2: Called at 02:00 for medication emergency. Attends 02:00–03:30 (1.5h). Minimum engagement = 3h",
+          "Multiple callback mode = 'separate' → Each callback gets own minimum engagement",
+          "Callback 2 pay: 3h × $38.00 × 2.0 (Sunday multiplier, after midnight) = $228.00",
+          "Total actual work: 2.25h. Total paid work: 6h (2 × 3h minimum)",
+          "Total on-call pay: $45.00 (standby) + $199.50 (callback 1) + $228.00 (callback 2) = $472.50",
+          "Rest period: Last callback ended 03:30. Sunday shift scheduled 07:00 (3.5h gap) — VIOLATION",
+          "Manager replaces Priya on Sunday morning shift with available staff. Priya's next shift moved to Sunday 14:00"
+        ],
+        outcome: "Correct minimum engagement applied per callback. Rest period violation detected and resolved automatically. Total cost accurately reflects award-compliant pay for dual callbacks."
+      }
+    },
+
+    // --- US-RST-074: Recall Shift ---
+    {
+      id: "US-RST-074",
+      title: "Recall Shift — Urgent Off-Duty Staff Recall with Premium Pay",
+      actors: ["Location Manager", "Area Manager", "Staff Member", "Payroll Administrator"],
+      description: "As a Location Manager, I want to recall off-duty staff (not currently on-call) for urgent coverage needs, with appropriate premium pay rates and travel allowances, so that staffing gaps can be filled quickly while fairly compensating staff for the disruption.",
+      acceptanceCriteria: [
+        "Recall can be initiated for any staff member not currently working or on approved leave",
+        "Recall uses escalation chain: contacts staff in priority order based on proximity, qualifications, and seniority",
+        "Recall rate is higher than callback rate (e.g., 2.0× vs 1.5×) to compensate for greater disruption",
+        "Minimum engagement guarantee applies (typically 4h for recall vs 3h for callback)",
+        "Travel time allowance automatically added: flat rate OR actual travel time paid at base rate",
+        "Travel distance allowance: Per-kilometre rate if staff lives beyond minimum threshold (e.g., >10km)",
+        "Rest period enforced: Minimum 10h rest before next regular shift after recall",
+        "Recall acceptance is voluntary — staff can decline without penalty (system escalates to next person)",
+        "Declined recalls logged for reporting but do not affect staff performance records",
+        "Accepted recall generates immediate timesheet entry with recall classification",
+        "If recall results in staff exceeding weekly overtime threshold, entire recall paid at OT rate"
+      ],
+      businessLogic: [
+        "Recall pay = max(actual_hours, minimum_engagement) × base_rate × recall_multiplier",
+        "Recall multiplier by day: Weekday = 2.0×, Saturday = 2.0×, Sunday = 2.5×, Public Holiday = 3.0×",
+        "Minimum engagement for recall = 4 hours (higher than callback to reflect greater disruption)",
+        "Travel allowance types: 'flat' = fixed amount per recall (e.g., $25); 'per_km' = rate × distance from home to site; 'time_based' = estimated travel minutes paid at base rate",
+        "Travel time counts toward worked hours if time_based mode is used",
+        "Recall vs Callback distinction: Callback = staff was already on-call (expecting possible call). Recall = staff was off-duty (not expecting to work). Different pay rates reflect this",
+        "Escalation logic: System ranks available staff by: (1) proximity to site, (2) matching qualifications, (3) fewest recent recalls (fairness), (4) seniority. Manager can override order",
+        "Recall cooldown: Staff who worked a recall cannot be recalled again within 48h unless they consent",
+        "Weekly hour cap: If recall would push staff over 50h/week, system requires Area Manager approval",
+        "Fatigue impact: Recall adds disruption penalty (+15 points) to fatigue score regardless of duration",
+        "Cost attribution: Recall costs allocated to requesting department with 'unplanned' budget category"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Escalation Chain", relationship: "Determines contact priority for recall requests" },
+        { module: "Fatigue Management", relationship: "Recall disruption adds penalty to fatigue score" },
+        { module: "Budget Tracking", relationship: "Recall costs tracked as unplanned expenditure" },
+        { module: "Timesheet", relationship: "Recall entry with travel allowance and minimum engagement" },
+        { module: "Staff Management", relationship: "Staff home location used for travel distance calculation" }
+      ],
+      endToEndJourney: [
+        "1. Wednesday 14:00 — two staff call in sick at Downtown Centre. Afternoon shift critically understaffed",
+        "2. Manager opens Recall panel → system shows available off-duty staff ranked by proximity",
+        "3. Top candidate: Tom (3.2km away, qualified, last recall 2 weeks ago) — Manager clicks 'Recall'",
+        "4. Tom receives SMS: 'Urgent recall requested — Downtown Centre 14:30–18:30. Accept or Decline?'",
+        "5. Tom accepts — status changes to 'Recall Accepted'. Estimated arrival 14:25",
+        "6. Tom clocks in at 14:28. Works until 18:30 (4.03h actual)",
+        "7. Pay calculation: max(4.03h, 4h minimum) × $30.00 × 2.0 recall rate = $241.80",
+        "8. Travel allowance added: $25.00 flat rate",
+        "9. Total recall pay: $241.80 + $25.00 = $266.80",
+        "10. Tom's weekly hours: 32h (regular) + 4.03h (recall) = 36.03h — under 38h threshold, no weekly OT",
+        "11. Rest period check: Recall ended 18:30, Thursday shift starts 07:00 = 12.5h gap ✓ (meets 10h minimum)",
+        "12. Timesheet entry auto-created: Recall 4.03h @ $60.00/h + Travel $25.00 = $266.80"
+      ],
+      realWorldExample: {
+        scenario: "A hospital ward has a critical staff shortage on a Sunday morning when two nurses call in sick simultaneously.",
+        steps: [
+          "Ward Manager initiates recall at 06:30 Sunday. 2 nurses needed urgently for 07:00–15:00 shift",
+          "Escalation system contacts: (1) Nurse Chen — 2.1km away, accepted at 06:35, ETA 06:50",
+          "                             (2) Nurse Kumar — 5.8km away, declined (family commitment)",
+          "                             (3) Nurse O'Brien — 7.3km away, accepted at 06:42, ETA 07:05",
+          "Nurse Chen: Works 06:55–15:00 (8.08h). Recall pay: 8.08h × $42.00 × 2.5 (Sunday) = $848.40 + $25 travel = $873.40",
+          "Nurse O'Brien: Works 07:10–15:00 (7.33h). Recall pay: 7.33h × $38.00 × 2.5 (Sunday) = $696.35 + $25 travel = $721.35",
+          "Nurse Kumar: Decline logged — no penalty. System notes for reporting: 'Family commitment'",
+          "Total unplanned cost: $873.40 + $721.35 = $1,594.75 — tagged as 'unplanned recall' in budget",
+          "Rest period: Both nurses have Monday 07:00 shifts. Chen finished 15:00 Sun → 16h gap ✓. O'Brien finished 15:00 → 16h gap ✓"
+        ],
+        outcome: "Critical gap filled within 15 minutes through automated escalation. Fair compensation at Sunday recall rates. Budget impact tracked as unplanned expenditure for variance reporting."
+      }
+    },
+
+    // --- US-RST-075: Emergency Shift ---
+    {
+      id: "US-RST-075",
+      title: "Emergency Shift — Critical Staffing Response with Maximum Pay Rates",
+      actors: ["Location Manager", "Area Manager", "Staff Member", "Payroll Administrator"],
+      description: "As a Location Manager, I want to activate an emergency staffing response that contacts all available staff simultaneously with the highest pay rates and no stacking exclusions, so that life-safety or regulatory-critical situations are resolved as quickly as possible.",
+      acceptanceCriteria: [
+        "Emergency shift can be activated via 'Emergency Staffing' action with incident type and description",
+        "Emergency bypasses normal escalation — ALL available qualified staff contacted simultaneously via SMS + push notification",
+        "Emergency rate: Highest multiplier tier (e.g., 2.5× weekday, 3.0× weekend, 3.5× public holiday)",
+        "Emergency minimum engagement is highest tier (e.g., 4h) regardless of actual work duration",
+        "Emergency pay has no exclusion rules — always paid on top of any other applicable allowance",
+        "Emergency shifts flagged with red indicator in roster grid and timesheet",
+        "Manager MUST provide incident notes and approval code for audit compliance",
+        "Area Manager auto-notified when emergency is activated",
+        "All respondents receive emergency pay (even if turned away after arriving) — good-faith payment",
+        "Emergency shifts require post-incident review within 24h with documented root cause",
+        "Emergency cost tracked separately in budget with 'emergency' category for pattern analysis"
+      ],
+      businessLogic: [
+        "Emergency pay = max(actual_hours, 4h minimum) × base_rate × emergency_multiplier",
+        "Emergency multipliers: Weekday = 2.5×, Saturday = 2.75×, Sunday = 3.0×, Public Holiday = 3.5×",
+        "No stacking exclusion: Emergency pay is always additive. If staff was already on-call + callback, emergency premium adds on top",
+        "Simultaneous contact: System sends to all available staff matching minimum qualification level. No sequential escalation delay",
+        "First-responder bonus: Optional configurable bonus for the first N staff who accept (e.g., +$50 for first 2 responders)",
+        "Good-faith payment: Staff who travel to site but are no longer needed receive minimum engagement pay + travel allowance",
+        "Incident classification: 'safety_critical' (regulatory minimum breached), 'medical_emergency', 'natural_disaster', 'security_incident', 'other'",
+        "Post-incident review: System creates mandatory review task assigned to Area Manager, due within 24h",
+        "Pattern detection: If >3 emergencies in 30 days for same location, system generates 'systemic staffing issue' alert to Area Manager",
+        "Audit trail: Emergency activation logged with: initiator, time, incident type, all staff contacted, responses, costs, and resolution",
+        "Emergency hours count toward weekly OT but not toward fatigue consecutive-day limits (exceptional circumstance)"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Notifications", relationship: "Mass SMS/push notification to all available staff" },
+        { module: "Incident Management", relationship: "Emergency creates linked incident record for review" },
+        { module: "Budget Tracking", relationship: "Emergency costs tracked in separate budget category" },
+        { module: "Compliance", relationship: "Emergency may be triggered by ratio breach — linked to compliance event" },
+        { module: "Fatigue Management", relationship: "Emergency shifts exempt from consecutive-day limits but contribute to fatigue score" }
+      ],
+      endToEndJourney: [
+        "1. Friday 10:00 — Fire alarm at childcare centre. Evacuation required. 2 educators injured, cannot continue",
+        "2. Manager activates Emergency Staffing: Type 'safety_critical', Notes: 'Fire evacuation — 2 staff injured, below ratios'",
+        "3. System contacts ALL 14 available qualified educators simultaneously",
+        "4. Within 8 minutes: 5 staff accept — Sarah (2min away), Tom (10min), Lisa (15min), Jake (20min), Mia (25min)",
+        "5. Sarah arrives first — receives first-responder bonus ($50)",
+        "6. Tom and Lisa arrive — ratios restored. Jake and Mia contacted: 'Thank you, coverage restored — no need to attend'",
+        "7. Jake already en route (5min away) — arrives and is turned away. Receives good-faith payment: 4h × $30 × 2.5 = $300 + $25 travel",
+        "8. Mia hadn't left yet — acknowledges cancellation, no pay",
+        "9. Area Manager auto-notified. Post-incident review task created, due Saturday 10:00",
+        "10. Cost breakdown: Sarah 6h emergency = $450 + $50 bonus; Tom 5.5h = $412.50; Lisa 5.5h = $412.50; Jake good-faith = $325",
+        "11. Total emergency cost: $1,650.00 — tracked as 'Emergency: Safety Critical' in budget",
+        "12. Pattern check: First emergency this month — no systemic alert triggered"
+      ],
+      realWorldExample: {
+        scenario: "A residential aged care facility experiences a gastro outbreak requiring immediate isolation staffing on a public holiday.",
+        steps: [
+          "Easter Monday 06:00 — 4 night-shift staff report gastro symptoms and cannot continue. 12 residents need isolation care",
+          "Facility Manager activates Emergency: Type 'medical_emergency', requiring 4 replacement carers with infection control training",
+          "System mass-contacts 22 qualified staff. Public Holiday emergency multiplier = 3.5×",
+          "6 staff accept within 12 minutes. First 4 assigned to isolation duties. 2 placed on standby",
+          "Staff work 06:30–14:30 (8h actual). Pay per person: 8h × $35.00 × 3.5 = $980.00 + $25 travel = $1,005.00",
+          "2 standby staff: Good-faith payment of 4h minimum × $35.00 × 3.5 = $490.00 each (they travelled in)",
+          "Total emergency cost: (4 × $1,005) + (2 × $515) = $5,050.00",
+          "Post-incident review identifies: Night shift staffing buffer insufficient — recommendation to add 1 permanent night-shift position",
+          "Pattern analysis: 2nd emergency in 60 days — Area Manager receives 'elevated risk' notification"
+        ],
+        outcome: "Life-safety situation resolved within 12 minutes. Public holiday emergency rates correctly applied. Post-incident review drives systemic improvement to prevent recurrence."
+      }
+    },
+
+    // --- US-RST-076: Sleepover Shift ---
+    {
+      id: "US-RST-076",
+      title: "Sleepover Shift — Overnight On-Premises Duty with Disturbance Escalation",
+      actors: ["Location Manager", "Staff Member", "Payroll Administrator"],
+      description: "As a Location Manager, I want to roster staff for overnight sleepover shifts where they remain on premises but are not actively working, receiving a flat sleepover allowance with automatic escalation to active duty rates if disturbed beyond configurable thresholds.",
+      acceptanceCriteria: [
+        "Sleepover shift type available with overnight time span (e.g., 22:00–06:00)",
+        "Sleepover flat-rate allowance paid per night (award-configured, e.g., $50–$80)",
+        "If staff is disturbed (called to work during sleepover), disturbance logged with start/end time",
+        "Each disturbance attracts minimum engagement pay (e.g., 1h per disturbance at penalty rate)",
+        "Disturbance rate: Base rate × sleepover disturbance multiplier (e.g., 1.5× weeknight, 2.0× weekend)",
+        "Conversion threshold: If disturbances exceed configurable limit (e.g., >2 disturbances OR >cumulative 2h active), entire sleepover period converts to active hours at overtime rate",
+        "Upon conversion, sleepover allowance is replaced by active hours calculation (no double-payment)",
+        "Sleepover shifts shown with distinct moon/bed icon in roster grid",
+        "Timesheet shows: flat allowance (undisturbed) OR itemised disturbances OR converted active hours",
+        "Sleepover hours do NOT count as worked hours unless conversion threshold is met",
+        "Post-conversion, rest period rules apply (minimum 10h before next shift)"
+      ],
+      businessLogic: [
+        "Undisturbed sleepover: Pay = flat sleepover allowance (e.g., $65.00 per night). No other pay components",
+        "Disturbance pay (below threshold): Sleepover allowance + Σ(max(disturbance_duration, 1h) × base_rate × disturbance_multiplier)",
+        "Conversion threshold (configurable): disturbance_count > maxDisturbances (default 2) OR cumulative_disturbance_minutes > maxDisturbanceMinutes (default 120)",
+        "Post-conversion pay: Entire sleepover period calculated as active hours × base_rate × overtime_multiplier (2.0×). Sleepover allowance is voided (not stacked)",
+        "Example undisturbed: Staff sleeps 22:00–06:00. Pay = $65.00 flat",
+        "Example 1 disturbance: Staff called at 01:00 for 20min. Pay = $65.00 + (1h minimum × $32.50 × 1.5) = $65.00 + $48.75 = $113.75",
+        "Example conversion: Staff disturbed at 23:00 (45min), 01:30 (50min), 04:00 (30min) = 3 disturbances, 125min total → CONVERTS",
+        "Conversion pay: 8h (22:00–06:00) × $32.50 × 2.0 = $520.00 (replaces $65 allowance + disturbance pay)",
+        "Weekend sleepover: Higher flat rate may apply (e.g., $85/night). Disturbance multiplier increases to 2.0×",
+        "Public holiday sleepover: Flat rate × PH multiplier (e.g., $65 × 2.5 = $162.50). Conversion rate = 2.5× base",
+        "Sleepover facilities: System can flag if sleepover room/bed is available at the location (informational)",
+        "Consecutive sleepovers: Maximum configurable limit (e.g., 3 consecutive nights). 4th night triggers warning"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Award Configuration", relationship: "Sleepover allowance, disturbance multipliers, and conversion thresholds from award config" },
+        { module: "Timesheet", relationship: "Sleepover entries show flat allowance, disturbance detail, or conversion calculation" },
+        { module: "Fatigue Management", relationship: "Disturbed sleepovers add to fatigue score. Converted sleepovers trigger rest period requirements" },
+        { module: "Roster Grid", relationship: "Sleepover shifts displayed with distinct visual (moon icon) spanning overnight columns" },
+        { module: "Cost Tracking", relationship: "Sleepover costs tracked separately — undisturbed vs disturbed vs converted for trend analysis" }
+      ],
+      endToEndJourney: [
+        "1. Manager rosters Maria for sleepover at Group Home A: Tuesday 22:00 – Wednesday 06:00",
+        "2. Roster grid shows sleepover shift with moon icon spanning overnight",
+        "3. Shift tooltip: 'Sleepover — $65.00 flat allowance. Disturbance threshold: 2 events or 2h cumulative'",
+        "4. Tuesday night: Maria is disturbed once at 02:30 for a resident needing assistance (25 minutes)",
+        "5. Maria logs disturbance via mobile app: Start 02:30, End 02:55, Reason: 'Resident assistance'",
+        "6. System calculates: 1 disturbance, 25min actual → 1h minimum engagement applies",
+        "7. Pay: $65.00 (sleepover) + 1h × $30.00 × 1.5 (disturbance) = $65.00 + $45.00 = $110.00",
+        "8. Below conversion threshold (1 disturbance < 2 max). Sleepover classification retained",
+        "9. Timesheet shows: Sleepover Allowance $65.00 + Disturbance 1h @ $45.00/h = $110.00",
+        "10. Sleepover hours NOT counted as worked hours — Maria's regular Wed shift at 14:00 is unaffected"
+      ],
+      realWorldExample: {
+        scenario: "A disability support worker does a sleepover shift at a supported independent living house and is disturbed multiple times, triggering conversion to active hours.",
+        steps: [
+          "Support worker Tran rostered for Friday sleepover 21:00–07:00 (10h). Flat allowance = $72.00. Base rate = $34.00/h",
+          "Disturbance 1: 23:15–23:50 (35min) — participant needs medication assistance",
+          "Disturbance 2: 01:30–02:20 (50min) — participant experiencing anxiety, requires support",
+          "Disturbance 3: 04:45–05:10 (25min) — early morning personal care assistance",
+          "System checks: 3 disturbances > 2 max threshold AND 110min cumulative > 120min? No (110 < 120). But count threshold breached (3 > 2)",
+          "CONVERSION TRIGGERED: Entire 10h period converts to active hours",
+          "Conversion pay: 10h × $34.00 × 2.0 (overnight OT rate) = $680.00",
+          "Sleepover allowance ($72.00) VOIDED — replaced by conversion pay",
+          "Comparison: Without conversion: $72 + 3 × (1h × $34 × 1.5) = $72 + $153 = $225. With conversion: $680 (staff is better compensated)",
+          "Rest period: Shift ended 07:00 Saturday. Next shift cannot start before 17:00 Saturday (10h rest)",
+          "Manager adjusts Tran's Saturday shift from 14:00 to 17:00. System clears rest violation warning"
+        ],
+        outcome: "Automatic conversion protects staff from being underpaid during heavily disrupted sleepovers. The 3× higher pay ($680 vs $225) correctly reflects that the worker effectively worked all night. Rest period enforcement prevents fatigue-related incidents."
+      }
+    },
   ],
 
   // ============================================================================
@@ -4784,6 +5213,17 @@ export const rosterSRS: ModuleSRS = {
     { id: "BR-RST-022", rule: "Expired background checks result in immediate block from all shift assignments", rationale: "Child/client safety is non-negotiable" },
     { id: "BR-RST-023", rule: "Maximum weekly hours including overtime cannot exceed 50 hours without director approval", rationale: "OH&S and burnout prevention" },
     { id: "BR-RST-024", rule: "Agency worker ratings must be submitted within 24 hours of shift completion", rationale: "Ensures timely and accurate feedback" },
-    { id: "BR-RST-025", rule: "Trainee/student placements are supernumerary and do not count toward ratios", rationale: "Regulatory compliance for training programs" }
+    { id: "BR-RST-025", rule: "Trainee/student placements are supernumerary and do not count toward ratios", rationale: "Regulatory compliance for training programs" },
+    // Shift Type Business Rules
+    { id: "BR-RST-026", rule: "Only the highest applicable penalty rate applies to regular shifts — no double-stacking of weekend + evening penalties", rationale: "Award compliance — most favourable single penalty" },
+    { id: "BR-RST-027", rule: "On-call standby hours do not count toward weekly overtime threshold unless a callback/recall occurs", rationale: "Standby is availability, not active work" },
+    { id: "BR-RST-028", rule: "Callback pay always stacks with standby allowance — staff receive both", rationale: "Award requirement — standby compensates availability, callback compensates work" },
+    { id: "BR-RST-029", rule: "Recall minimum engagement (4h) is higher than callback minimum (3h) to reflect greater disruption to off-duty staff", rationale: "Fair compensation principle for unplanned disruption" },
+    { id: "BR-RST-030", rule: "Emergency pay has no stacking exclusions — always paid additively regardless of other active allowances", rationale: "Life-safety situations require maximum incentive for rapid response" },
+    { id: "BR-RST-031", rule: "Sleepover conversion to active hours voids the flat allowance — no double-payment of allowance plus active hours", rationale: "Prevents overpayment while ensuring fair conversion" },
+    { id: "BR-RST-032", rule: "Sleepover disturbance conversion threshold can be triggered by count OR cumulative duration — whichever is reached first", rationale: "Protects staff from multiple short disturbances that cumulatively constitute active work" },
+    { id: "BR-RST-033", rule: "Staff recalled from off-duty may decline without penalty — system escalates to next available person", rationale: "Voluntary recall principle — staff not on-call have no obligation to accept" },
+    { id: "BR-RST-034", rule: "Emergency shift pattern detection: >3 emergencies in 30 days triggers systemic staffing review alert", rationale: "Emergencies should be exceptional — recurring emergencies indicate structural understaffing" },
+    { id: "BR-RST-035", rule: "After callback/recall/emergency exceeding rest threshold, next regular shift attracts overtime rate if rest period is not met", rationale: "Fatigue management — inadequate rest between work periods requires premium compensation" }
   ]
 };
