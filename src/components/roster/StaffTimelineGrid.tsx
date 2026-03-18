@@ -2548,6 +2548,43 @@ function StaffShiftCard({
             Covered by {allStaff?.find(s => s.id === shift.replacementStaffId)?.name?.split(' ')[0] || 'Staff'}
           </Badge>
         )}
+        {/* Inline callback indicators for on-call/recall shifts */}
+        {callbackEvents.length > 0 && !isCompact && (
+          <div className="mt-1 space-y-0.5">
+            {callbackEvents.slice(0, 2).map((ev) => {
+              const typeColors = {
+                callback: { bg: 'bg-amber-500/15', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-400/40', dot: 'bg-amber-500' },
+                recall: { bg: 'bg-orange-500/15', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-400/40', dot: 'bg-orange-500' },
+                emergency: { bg: 'bg-destructive/15', text: 'text-destructive', border: 'border-destructive/40', dot: 'bg-destructive' },
+              };
+              const colors = typeColors[ev.callbackType] || typeColors.callback;
+              return (
+                <div key={ev.id} className={cn("flex items-center gap-1 rounded px-1 py-0.5 border", colors.bg, colors.border)}>
+                  <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", colors.dot)} />
+                  <span className={cn("text-[8px] font-semibold truncate", colors.text)}>
+                    {ev.callbackType === 'emergency' ? 'EMRG' : ev.callbackType === 'recall' ? 'RCL' : 'CB'}
+                  </span>
+                  <Badge variant="outline" className="text-[7px] px-0.5 py-0 h-3 ml-auto shrink-0 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-700">
+                    ${ev.calculatedPay.toFixed(0)}
+                  </Badge>
+                  {(ev as any).restViolation && (
+                    <div className="bg-destructive text-destructive-foreground rounded-full p-0.5">
+                      <Timer className="h-2 w-2" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {callbackEvents.length > 2 && (
+              <span className="text-[8px] text-muted-foreground pl-1">+{callbackEvents.length - 2} more</span>
+            )}
+          </div>
+        )}
+        {callbackEvents.length > 0 && isCompact && (
+          <Badge variant="outline" className="text-[7px] px-1 py-0 h-3 mt-0.5 bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-700">
+            {callbackEvents.length} CB
+          </Badge>
+        )
             </div>
           </div>
         </TooltipTrigger>
