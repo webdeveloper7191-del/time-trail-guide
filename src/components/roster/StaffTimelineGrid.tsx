@@ -167,6 +167,8 @@ export function StaffTimelineGrid({
   onEmptyShiftClick,
   onDeleteEmptyShift,
   onSendToAgency,
+  callbackEvents: externalCallbackEvents = [],
+  onCallbackLogged,
 }: StaffTimelineGridProps) {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
@@ -178,8 +180,6 @@ export function StaffTimelineGrid({
   const [staffSearch, setStaffSearch] = useState('');
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
   const [colorPalette, setColorPalette] = useState<ColorPalette>('ocean');
-  // Use compact charts for all multi-day views (workweek, week, fortnight, month)
-  // Only day view gets the expanded chart (but day view uses DayTimelineView component)
   const isCompact = viewMode !== 'day';
   const isMonthView = viewMode === 'month';
   
@@ -187,11 +187,30 @@ export function StaffTimelineGrid({
   const [callbackSheetOpen, setCallbackSheetOpen] = useState(false);
   const [callbackShiftContext, setCallbackShiftContext] = useState<{ shift: Shift; staff?: StaffMember; type: 'callback' | 'recall' | 'emergency' } | null>(null);
   
+  // Annotate callback events with rest violations
+  const annotatedCallbackEvents = useMemo(
+    () => annotateRestViolations(externalCallbackEvents, shifts),
+    [externalCallbackEvents, shifts]
+  );
+  
   const handleLogCallback = useCallback((shift: Shift, type: 'callback' | 'recall' | 'emergency') => {
     const staffMember = staff.find(s => s.id === shift.staffId);
     setCallbackShiftContext({ shift, staff: staffMember, type });
     setCallbackSheetOpen(true);
   }, [staff]);
+  
+  const handleCallbackLogged = useCallback((event: CallbackEvent) => {
+    // Detect rest violation and notify
+    const violation = detectRestViolation(event, shifts);
+    if (violation) {
+      const { toast } = require('sonner');
+      toast.warning(
+        `⚠️ Rest period violation: ${event.staffName} has only ${violation.gapHours}h rest before next shift at ${violation.nextShiftStartTime} on ${violation.nextShiftDate}. Minimum 10h required.`,
+        { duration: 8000 }
+      );
+    }
+    onCallbackLogged?.(event);
+  }, [shifts, onCallbackLogged]);
   
   // Column width classes - consistent fixed widths on mobile/tablet for ALL views (like fortnight/month)
   // Desktop (xl 1280px+): fluid for day/workweek/week, fixed for fortnight/month
