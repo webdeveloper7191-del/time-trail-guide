@@ -950,7 +950,15 @@ export function StaffTimelineGrid({
                           );
                         })()}
 
-                        {/* Empty Shifts row - left side */}
+                        {/* Callbacks Lane - left side */}
+                        {annotatedCallbackEvents.filter(e => e.centreId === centre.id).length > 0 && (
+                          <CallbackLane
+                            events={annotatedCallbackEvents.filter(e => e.centreId === centre.id)}
+                            dates={dates}
+                            columnWidthClass={columnWidthClass}
+                            side="left"
+                          />
+                        )}
                         {(() => {
                           const roomEmptyShifts = emptyShifts.filter(es => es.roomId === room.id && es.centreId === centre.id);
                           if (roomEmptyShifts.length === 0) return null;
