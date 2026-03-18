@@ -133,7 +133,7 @@ export function LogCallbackSheet({
         workStartTime: '',
         workEndTime: '',
         dayType: autoDay as CallbackEvent['dayType'],
-        baseRate: staff?.payRate?.toString() || '35.00',
+        baseRate: '35.00',
         reason: '',
         reasonCustom: '',
         notes: '',
