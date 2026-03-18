@@ -60,7 +60,7 @@ import {
 import { StaffAvailabilityOverlay } from './StaffAvailabilityOverlay';
 import { shiftStatusColors, shiftTypeConfig, getShiftTypeConfig, openShiftColors, specialIndicatorConfig } from '@/lib/rosterColors';
 import { LogCallbackSheet } from './LogCallbackSheet';
-import { CallbackLane } from './CallbackLane';
+
 import { CallbackEvent } from './CallbackEventLoggingPanel';
 import { detectRestViolation, annotateRestViolations } from '@/lib/restViolationDetection';
 import { toast } from 'sonner';
