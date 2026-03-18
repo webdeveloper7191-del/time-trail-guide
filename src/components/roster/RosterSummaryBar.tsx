@@ -39,9 +39,10 @@ interface RosterSummaryBarProps {
   staff: StaffMember[];
   dates: Date[];
   centreId: string;
+  callbackEvents?: CallbackEvent[];
 }
 
-export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }: RosterSummaryBarProps) {
+export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [] }: RosterSummaryBarProps) {
   const [showFullLegend, setShowFullLegend] = useState(false);
   const [showColorTokens, setShowColorTokens] = useState(false);
   

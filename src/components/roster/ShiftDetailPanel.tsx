@@ -1192,6 +1192,43 @@ export function ShiftDetailPanel({
                         {event.notes && (
                           <p className="text-[11px] text-muted-foreground">{event.notes}</p>
                         )}
+
+                        {/* Approve / Reject actions */}
+                        {event.status === 'logged' && onCallbackStatusChange && (
+                          <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10"
+                              onClick={() => onCallbackStatusChange(event.id, 'approved')}
+                            >
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[11px] flex-1 border-destructive/50 text-destructive hover:bg-destructive/10"
+                              onClick={() => onCallbackStatusChange(event.id, 'rejected')}
+                            >
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                        {event.status === 'approved' && onCallbackStatusChange && (
+                          <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10"
+                              onClick={() => onCallbackStatusChange(event.id, 'paid')}
+                            >
+                              <DollarSign className="h-3 w-3 mr-1" />
+                              Mark as Paid
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
