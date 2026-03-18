@@ -301,6 +301,25 @@ export function ShiftCard({
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
                 
+                {/* Log Callback / Emergency - only for on-call shifts */}
+                {onLogCallback && (shift.shiftType === 'on_call' || shift.shiftType === 'recall') && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onLogCallback(shift, 'callback')}>
+                      <PhoneCall className="h-4 w-4 mr-2 text-amber-600" />
+                      Log Callback
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onLogCallback(shift, 'emergency')}>
+                      <AlertCircle className="h-4 w-4 mr-2 text-red-600" />
+                      Log Emergency Callback
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onLogCallback(shift, 'recall')}>
+                      <Zap className="h-4 w-4 mr-2 text-orange-600" />
+                      Log Recall
+                    </DropdownMenuItem>
+                  </>
+                )}
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive"
