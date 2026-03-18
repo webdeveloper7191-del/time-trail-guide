@@ -5213,6 +5213,17 @@ export const rosterSRS: ModuleSRS = {
     { id: "BR-RST-022", rule: "Expired background checks result in immediate block from all shift assignments", rationale: "Child/client safety is non-negotiable" },
     { id: "BR-RST-023", rule: "Maximum weekly hours including overtime cannot exceed 50 hours without director approval", rationale: "OH&S and burnout prevention" },
     { id: "BR-RST-024", rule: "Agency worker ratings must be submitted within 24 hours of shift completion", rationale: "Ensures timely and accurate feedback" },
-    { id: "BR-RST-025", rule: "Trainee/student placements are supernumerary and do not count toward ratios", rationale: "Regulatory compliance for training programs" }
+    { id: "BR-RST-025", rule: "Trainee/student placements are supernumerary and do not count toward ratios", rationale: "Regulatory compliance for training programs" },
+    // Shift Type Business Rules
+    { id: "BR-RST-026", rule: "Only the highest applicable penalty rate applies to regular shifts — no double-stacking of weekend + evening penalties", rationale: "Award compliance — most favourable single penalty" },
+    { id: "BR-RST-027", rule: "On-call standby hours do not count toward weekly overtime threshold unless a callback/recall occurs", rationale: "Standby is availability, not active work" },
+    { id: "BR-RST-028", rule: "Callback pay always stacks with standby allowance — staff receive both", rationale: "Award requirement — standby compensates availability, callback compensates work" },
+    { id: "BR-RST-029", rule: "Recall minimum engagement (4h) is higher than callback minimum (3h) to reflect greater disruption to off-duty staff", rationale: "Fair compensation principle for unplanned disruption" },
+    { id: "BR-RST-030", rule: "Emergency pay has no stacking exclusions — always paid additively regardless of other active allowances", rationale: "Life-safety situations require maximum incentive for rapid response" },
+    { id: "BR-RST-031", rule: "Sleepover conversion to active hours voids the flat allowance — no double-payment of allowance plus active hours", rationale: "Prevents overpayment while ensuring fair conversion" },
+    { id: "BR-RST-032", rule: "Sleepover disturbance conversion threshold can be triggered by count OR cumulative duration — whichever is reached first", rationale: "Protects staff from multiple short disturbances that cumulatively constitute active work" },
+    { id: "BR-RST-033", rule: "Staff recalled from off-duty may decline without penalty — system escalates to next available person", rationale: "Voluntary recall principle — staff not on-call have no obligation to accept" },
+    { id: "BR-RST-034", rule: "Emergency shift pattern detection: >3 emergencies in 30 days triggers systemic staffing review alert", rationale: "Emergencies should be exceptional — recurring emergencies indicate structural understaffing" },
+    { id: "BR-RST-035", rule: "After callback/recall/emergency exceeding rest threshold, next regular shift attracts overtime rate if rest period is not met", rationale: "Fatigue management — inadequate rest between work periods requires premium compensation" }
   ]
 };
