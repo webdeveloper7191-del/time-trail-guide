@@ -98,6 +98,8 @@ export function ShiftDetailPanel({
   complianceFlags,
   existingShifts = [],
   callbackEvents = [],
+  sleepoverEvents = [],
+  splitShiftEvents = [],
   onClose,
   onSave,
   onDelete,
@@ -105,7 +107,11 @@ export function ShiftDetailPanel({
   onSwapStaff,
   onCopyShift,
   onLogCallback,
+  onLogSleepover,
+  onLogSplitShift,
   onCallbackStatusChange,
+  onSleepoverStatusChange,
+  onSplitShiftStatusChange,
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
   const [showCoverageModal, setShowCoverageModal] = useState(false);
