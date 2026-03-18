@@ -1557,8 +1557,9 @@ export function StaffTimelineGrid({
                                                         onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
                                                         onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
                                                         onShiftTypeChange={onShiftTypeChange}
-                                                        onLogCallback={handleLogCallback}
-                                                        onDragStart={handleShiftDragStart}
+                                                         onLogCallback={handleLogCallback}
+                                                         callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === shift.staffId && e.workStartTime?.startsWith(shift.date))}
+                                                         onDragStart={handleShiftDragStart}
                                                         isCompact={false}
                                                         isMonthView={false}
                                                       />
