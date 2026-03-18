@@ -2107,6 +2107,7 @@ function StaffShiftCard({
   onShiftTypeChange,
   onLogCallback,
   onDragStart,
+  callbackEvents = [],
   isCompact = false,
   isMonthView = false,
 }: {
@@ -2122,6 +2123,7 @@ function StaffShiftCard({
   onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
   onDragStart: (e: React.DragEvent, shift: Shift) => void;
+  callbackEvents?: CallbackEvent[];
   isCompact?: boolean;
   isMonthView?: boolean;
 }) {
