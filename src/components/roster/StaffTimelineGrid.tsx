@@ -178,6 +178,16 @@ export function StaffTimelineGrid({
   const isCompact = viewMode !== 'day';
   const isMonthView = viewMode === 'month';
   
+  // Callback logging state
+  const [callbackSheetOpen, setCallbackSheetOpen] = useState(false);
+  const [callbackShiftContext, setCallbackShiftContext] = useState<{ shift: Shift; staff?: StaffMember; type: 'callback' | 'recall' | 'emergency' } | null>(null);
+  
+  const handleLogCallback = useCallback((shift: Shift, type: 'callback' | 'recall' | 'emergency') => {
+    const staffMember = staff.find(s => s.id === shift.staffId);
+    setCallbackShiftContext({ shift, staff: staffMember, type });
+    setCallbackSheetOpen(true);
+  }, [staff]);
+  
   // Column width classes - consistent fixed widths on mobile/tablet for ALL views (like fortnight/month)
   // Desktop (xl 1280px+): fluid for day/workweek/week, fixed for fortnight/month
   // Desktop (smaller screens <1280px): fixed widths for workweek/week to prevent border misalignment
