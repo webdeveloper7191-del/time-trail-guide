@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
+import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { Shift, StaffMember, DemandData, RosterComplianceFlag, Room, Centre, TimeOff, RecurrencePattern, RecurrenceEndType, ShiftTemplate, defaultShiftTemplates } from '@/types/roster';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
