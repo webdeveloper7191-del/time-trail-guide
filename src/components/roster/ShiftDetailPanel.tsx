@@ -29,7 +29,12 @@ import {
   FileText,
   UserPlus,
   RefreshCw,
-  Repeat
+  Repeat,
+  PhoneCall,
+  Shield,
+  Timer,
+  Car,
+  Plus,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
