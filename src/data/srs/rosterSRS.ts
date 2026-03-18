@@ -242,7 +242,17 @@ export const rosterSRS: ModuleSRS = {
     { id: "FR-RST-038", category: "Demand Forecasting", requirement: "System shall adjust demand forecasts based on external factors (weather, holidays)", priority: "Low" },
     // Agency Integration
     { id: "FR-RST-039", category: "Agency Integration", requirement: "System shall broadcast unfilled shifts to configured agency partners", priority: "Medium" },
-    { id: "FR-RST-040", category: "Agency Integration", requirement: "System shall track agency worker placements and ratings", priority: "Medium" }
+    { id: "FR-RST-040", category: "Agency Integration", requirement: "System shall track agency worker placements and ratings", priority: "Medium" },
+    // Shift Types & Pay Calculation
+    { id: "FR-RST-041", category: "Shift Types", requirement: "System shall support shift types: regular, on_call, callback, recall, emergency, sleepover with distinct pay calculation rules per type", priority: "Critical" },
+    { id: "FR-RST-042", category: "Shift Types", requirement: "System shall calculate regular shift pay with base rate, penalty rates (evening/weekend/PH), casual loading, and tiered overtime", priority: "Critical" },
+    { id: "FR-RST-043", category: "Shift Types", requirement: "System shall calculate on-call standby allowance as flat-rate or per-hour with weekend and public holiday multipliers", priority: "High" },
+    { id: "FR-RST-044", category: "Shift Types", requirement: "System shall calculate callback pay with minimum engagement guarantee stacked on top of standby allowance", priority: "High" },
+    { id: "FR-RST-045", category: "Shift Types", requirement: "System shall calculate recall pay at premium multiplier with travel allowance and minimum 4-hour engagement", priority: "High" },
+    { id: "FR-RST-046", category: "Shift Types", requirement: "System shall calculate emergency pay at highest multiplier tier with no stacking exclusions and good-faith payment for turned-away responders", priority: "Critical" },
+    { id: "FR-RST-047", category: "Shift Types", requirement: "System shall calculate sleepover pay as flat allowance with per-disturbance minimum engagement and automatic conversion to active hours when thresholds are exceeded", priority: "High" },
+    { id: "FR-RST-048", category: "Shift Types", requirement: "System shall enforce rest period requirements (minimum 10h) after callback, recall, emergency, and converted sleepover shifts", priority: "High" },
+    { id: "FR-RST-049", category: "Shift Types", requirement: "System shall auto-generate timesheet entries for all shift types with correct pay classification and line-item breakdown", priority: "Critical" }
   ],
 
   nonFunctionalRequirements: [
