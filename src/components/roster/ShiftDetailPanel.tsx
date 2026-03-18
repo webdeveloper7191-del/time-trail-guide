@@ -402,6 +402,22 @@ export function ShiftDetailPanel({
               )}
             </TabsTrigger>
           )}
+          {editedShift.shiftType === 'sleepover' && (
+            <TabsTrigger value="sleepovers" className="text-xs flex items-center gap-1">
+              <Moon className="h-3 w-3" />
+              Sleepovers
+              {shiftSleepoverEvents.length > 0 && (
+                <Badge variant="secondary" className="h-4 px-1 text-[9px] ml-0.5">{shiftSleepoverEvents.length}</Badge>
+              )}
+            </TabsTrigger>
+          )}
+          {shiftSplitShiftEvents.length > 0 && (
+            <TabsTrigger value="splitshifts" className="text-xs flex items-center gap-1">
+              <Zap className="h-3 w-3" />
+              Split Shifts
+              <Badge variant="secondary" className="h-4 px-1 text-[9px] ml-0.5">{shiftSplitShiftEvents.length}</Badge>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="demand" className="text-xs flex items-center gap-1">
             <BarChart3 className="h-3 w-3" />
             Demand
