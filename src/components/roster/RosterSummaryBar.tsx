@@ -288,6 +288,28 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
           </div>
         ))}
         
+        {/* Callback cost summary */}
+        {callbackSummary.totalEvents > 0 && (
+          <>
+            <div className="h-4 w-px bg-border mx-2" />
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <PhoneCall className="h-3 w-3 text-amber-600" />
+              <span className="text-muted-foreground font-medium">{callbackSummary.totalEvents}</span>
+              <span className="text-muted-foreground">Callbacks</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <DollarSign className="h-3 w-3 text-emerald-600" />
+              <span className="font-semibold text-foreground">${callbackSummary.totalCost.toFixed(0)}</span>
+              <span className="text-muted-foreground">spend</span>
+            </div>
+            {callbackSummary.pendingCount > 0 && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-500/10">
+                {callbackSummary.pendingCount} pending
+              </Badge>
+            )}
+          </>
+        )}
+
         {/* Divider */}
         <div className="h-4 w-px bg-border mx-2" />
         
