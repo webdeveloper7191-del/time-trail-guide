@@ -2176,6 +2176,7 @@ function StaffShiftCard({
   onCopy?: () => void;
   onSwap?: () => void;
   onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
+  onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
   onDragStart: (e: React.DragEvent, shift: Shift) => void;
   isCompact?: boolean;
   isMonthView?: boolean;
