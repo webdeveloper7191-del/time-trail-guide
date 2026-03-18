@@ -171,13 +171,21 @@ export function ShiftDetailPanel({
     unpaid_leave: 'Unpaid Leave',
   };
 
-  // Filter callback events for this specific shift
+  // Filter events for this specific shift
   const shiftCallbackEvents = useMemo(() => {
     return callbackEvents.filter(e => 
       e.staffId === editedShift.staffId && 
       e.workStartTime?.startsWith(editedShift.date)
     );
   }, [callbackEvents, editedShift.staffId, editedShift.date]);
+
+  const shiftSleepoverEvents = useMemo(() => {
+    return sleepoverEvents.filter(e => e.staffId === editedShift.staffId && e.date === editedShift.date);
+  }, [sleepoverEvents, editedShift.staffId, editedShift.date]);
+
+  const shiftSplitShiftEvents = useMemo(() => {
+    return splitShiftEvents.filter(e => e.staffId === editedShift.staffId && e.date === editedShift.date);
+  }, [splitShiftEvents, editedShift.staffId, editedShift.date]);
 
   const { getQuickEstimate, calculateCost } = useShiftCost();
 
