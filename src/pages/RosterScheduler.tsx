@@ -2462,6 +2462,10 @@ export default function RosterScheduler() {
             onRemoveCentre={(centreId) => setActiveCentreIds(prev => prev.filter(id => id !== centreId))}
             callbackEvents={callbackEvents}
             onCallbackLogged={handleCallbackLogged}
+            sleepoverEvents={sleepoverEvents}
+            onSleepoverLogged={handleSleepoverLogged}
+            splitShiftEvents={splitShiftEvents}
+            onSplitShiftLogged={handleSplitShiftLogged}
           />
         )}
 
