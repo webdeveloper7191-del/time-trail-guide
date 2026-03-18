@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Shift, OpenShift, StaffMember } from '@/types/roster';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
+import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { useMemo, useState } from 'react';
 import { 
   ChevronDown,
@@ -10,6 +11,8 @@ import {
   Clock,
   PhoneCall,
   DollarSign,
+  Moon,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -40,9 +43,11 @@ interface RosterSummaryBarProps {
   dates: Date[];
   centreId: string;
   callbackEvents?: CallbackEvent[];
+  sleepoverEvents?: SleepoverEvent[];
+  splitShiftEvents?: SplitShiftEvent[];
 }
 
-export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [] }: RosterSummaryBarProps) {
+export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [], sleepoverEvents = [], splitShiftEvents = [] }: RosterSummaryBarProps) {
   const [showFullLegend, setShowFullLegend] = useState(false);
   const [showColorTokens, setShowColorTokens] = useState(false);
   
