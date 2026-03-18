@@ -93,6 +93,13 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
     };
   }, [shifts, openShifts, staff, dates, centreId]);
 
+  const callbackSummary = useMemo(() => {
+    const totalEvents = callbackEvents.length;
+    const totalCost = callbackEvents.reduce((sum, e) => sum + e.calculatedPay, 0);
+    const pendingCount = callbackEvents.filter(e => e.status === 'logged').length;
+    return { totalEvents, totalCost, pendingCount };
+  }, [callbackEvents]);
+
   const items: SummaryItem[] = [
     { label: 'Empty', count: summary.empty, color: 'bg-background', bgColor: 'border border-border' },
     { label: 'Unpublished', count: summary.unpublished, color: shiftStatusColors.draft.legendBg, bgColor: shiftStatusColors.draft.badgeBg },
