@@ -57,12 +57,14 @@ interface ShiftDetailPanelProps {
   demandData: DemandData[];
   complianceFlags: RosterComplianceFlag[];
   existingShifts?: Shift[];
+  callbackEvents?: CallbackEvent[];
   onClose: () => void;
   onSave: (shift: Shift) => void;
   onDelete: (shiftId: string) => void;
   onDuplicate: (shift: Shift) => void;
   onSwapStaff: (shift: Shift) => void;
   onCopyShift?: (shift: Shift) => void;
+  onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
 }
 
 // Build status options from central config
