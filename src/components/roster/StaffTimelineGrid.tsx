@@ -2123,6 +2123,22 @@ export function StaffTimelineGrid({
         defaultType={callbackShiftContext?.type || 'callback'}
         onCallbackLogged={handleCallbackLogged}
       />
+      {/* Sleepover Logging Sheet */}
+      <LogSleepoverSheet
+        open={sleepoverSheetOpen}
+        onOpenChange={setSleepoverSheetOpen}
+        parentShift={sleepoverShiftContext?.shift}
+        staff={sleepoverShiftContext?.staff}
+        onSleepoverLogged={onSleepoverLogged}
+      />
+      {/* Split Shift Logging Sheet */}
+      <LogSplitShiftSheet
+        open={splitShiftSheetOpen}
+        onOpenChange={setSplitShiftSheetOpen}
+        parentShift={splitShiftContext?.shift}
+        staff={splitShiftContext?.staff}
+        onSplitShiftLogged={onSplitShiftLogged}
+      />
     </div>
   );
 }
