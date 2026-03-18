@@ -126,6 +126,8 @@ interface StaffTimelineGridProps {
   onEmptyShiftClick?: (emptyShift: EmptyShift) => void;
   onDeleteEmptyShift?: (emptyShiftId: string) => void;
   onSendToAgency?: (openShift: OpenShift) => void;
+  callbackEvents?: CallbackEvent[];
+  onCallbackLogged?: (event: CallbackEvent) => void;
 }
 
 export function StaffTimelineGrid({
