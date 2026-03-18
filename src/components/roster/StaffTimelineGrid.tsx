@@ -1530,9 +1530,10 @@ export function StaffTimelineGrid({
                                                   onCopy={onShiftCopy ? () => onShiftCopy(cellShifts[0]) : undefined}
                                                   onSwap={onShiftSwap ? () => onShiftSwap(cellShifts[0]) : undefined}
                                                   onShiftTypeChange={onShiftTypeChange}
-                                                  onLogCallback={handleLogCallback}
-                                                  onDragStart={handleShiftDragStart}
-                                                  isCompact={isCompact}
+                                                   onLogCallback={handleLogCallback}
+                                                   callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === cellShifts[0].staffId && e.workStartTime?.startsWith(cellShifts[0].date))}
+                                                   onDragStart={handleShiftDragStart}
+                                                   isCompact={isCompact}
                                                   isMonthView={isMonthView}
                                                 />
                                                 <Popover>
