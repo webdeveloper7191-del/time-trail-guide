@@ -1,12 +1,15 @@
 import { Badge } from '@/components/ui/badge';
 import { Shift, OpenShift, StaffMember } from '@/types/roster';
+import { CallbackEvent } from './CallbackEventLoggingPanel';
 import { useMemo, useState } from 'react';
 import { 
   ChevronDown,
   ChevronUp,
   Info,
   Palette,
-  Clock
+  Clock,
+  PhoneCall,
+  DollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
