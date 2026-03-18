@@ -934,6 +934,34 @@ export default function RosterScheduler() {
       breakMinutes: template?.breakMinutes ?? 30,
       status: 'draft',
       isOpenShift: false,
+      // Carry over shift type and special settings from template
+      shiftType: template?.shiftType || 'regular',
+      ...(template?.shiftType === 'on_call' && template?.onCallSettings ? {
+        onCallDetails: {
+          startTime: template.onCallSettings.defaultStartTime || template.startTime,
+          endTime: template.onCallSettings.defaultEndTime || template.endTime,
+          wasRecalled: false,
+        },
+      } : {}),
+      ...(template?.shiftType === 'sleepover' && template?.sleepoverSettings ? {
+        sleepoverDetails: {
+          bedtimeStart: template.sleepoverSettings.bedtimeStart || '22:00',
+          bedtimeEnd: template.sleepoverSettings.bedtimeEnd || '06:00',
+          wasDisturbed: false,
+        },
+      } : {}),
+      ...(template?.shiftType === 'broken' && template?.brokenShiftSettings ? {
+        brokenShiftDetails: {
+          firstShiftEnd: template.brokenShiftSettings.firstShiftEnd || '11:00',
+          secondShiftStart: template.brokenShiftSettings.secondShiftStart || '15:00',
+          unpaidGapMinutes: template.brokenShiftSettings.unpaidGapMinutes || 240,
+        },
+      } : {}),
+      ...(template?.higherDutiesClassification ? {
+        higherDuties: { classification: template.higherDutiesClassification },
+      } : {}),
+      ...(template?.isRemoteLocation ? { isRemoteLocation: true } : {}),
+      ...(template?.defaultTravelKilometres ? { travelKilometres: template.defaultTravelKilometres } : {}),
     };
 
     setShifts(prev => [...prev, newShift], `Created ${template?.name || 'custom'} shift for ${staff.name}`, 'add');
