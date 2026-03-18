@@ -351,6 +351,28 @@ export default function RosterScheduler() {
   const handleSplitShiftLogged = useCallback((event: import('@/types/shiftEvents').SplitShiftEvent) => {
     setSplitShiftEvents(prev => [event, ...prev]);
   }, []);
+
+  // State for logging sleepovers/split shifts from ShiftDetailPanel
+  const [detailPanelSleepoverShift, setDetailPanelSleepoverShift] = useState<Shift | null>(null);
+  const [detailPanelSplitShift, setDetailPanelSplitShift] = useState<Shift | null>(null);
+
+  const handleDetailPanelLogSleepover = useCallback((shift: Shift) => {
+    setDetailPanelSleepoverShift(shift);
+  }, []);
+
+  const handleDetailPanelLogSplitShift = useCallback((shift: Shift) => {
+    setDetailPanelSplitShift(shift);
+  }, []);
+
+  const handleSleepoverStatusChange = useCallback((eventId: string, newStatus: import('@/types/shiftEvents').SleepoverEvent['status']) => {
+    setSleepoverEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e));
+    toast.success(`Sleepover event ${newStatus}`);
+  }, []);
+
+  const handleSplitShiftStatusChange = useCallback((eventId: string, newStatus: import('@/types/shiftEvents').SplitShiftEvent['status']) => {
+    setSplitShiftEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e));
+    toast.success(`Split shift event ${newStatus}`);
+  }, []);
   
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
