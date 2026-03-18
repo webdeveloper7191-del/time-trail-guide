@@ -70,6 +70,10 @@ interface MultiLocationRosterViewProps {
   onAddShiftAtTime?: (staffId: string, date: string, roomId: string, startTime: string) => void;
   callbackEvents?: CallbackEvent[];
   onCallbackLogged?: (event: CallbackEvent) => void;
+  sleepoverEvents?: SleepoverEvent[];
+  onSleepoverLogged?: (event: SleepoverEvent) => void;
+  splitShiftEvents?: SplitShiftEvent[];
+  onSplitShiftLogged?: (event: SplitShiftEvent) => void;
 }
 
 export function MultiLocationRosterView({
