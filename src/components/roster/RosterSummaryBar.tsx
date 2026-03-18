@@ -1,12 +1,15 @@
 import { Badge } from '@/components/ui/badge';
 import { Shift, OpenShift, StaffMember } from '@/types/roster';
+import { CallbackEvent } from './CallbackEventLoggingPanel';
 import { useMemo, useState } from 'react';
 import { 
   ChevronDown,
   ChevronUp,
   Info,
   Palette,
-  Clock
+  Clock,
+  PhoneCall,
+  DollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -36,9 +39,10 @@ interface RosterSummaryBarProps {
   staff: StaffMember[];
   dates: Date[];
   centreId: string;
+  callbackEvents?: CallbackEvent[];
 }
 
-export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }: RosterSummaryBarProps) {
+export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [] }: RosterSummaryBarProps) {
   const [showFullLegend, setShowFullLegend] = useState(false);
   const [showColorTokens, setShowColorTokens] = useState(false);
   
@@ -88,6 +92,13 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
       unavailable,
     };
   }, [shifts, openShifts, staff, dates, centreId]);
+
+  const callbackSummary = useMemo(() => {
+    const totalEvents = callbackEvents.length;
+    const totalCost = callbackEvents.reduce((sum, e) => sum + e.calculatedPay, 0);
+    const pendingCount = callbackEvents.filter(e => e.status === 'logged').length;
+    return { totalEvents, totalCost, pendingCount };
+  }, [callbackEvents]);
 
   const items: SummaryItem[] = [
     { label: 'Empty', count: summary.empty, color: 'bg-background', bgColor: 'border border-border' },
@@ -277,6 +288,28 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId }:
           </div>
         ))}
         
+        {/* Callback cost summary */}
+        {callbackSummary.totalEvents > 0 && (
+          <>
+            <div className="h-4 w-px bg-border mx-2" />
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <PhoneCall className="h-3 w-3 text-amber-600" />
+              <span className="text-muted-foreground font-medium">{callbackSummary.totalEvents}</span>
+              <span className="text-muted-foreground">Callbacks</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <DollarSign className="h-3 w-3 text-emerald-600" />
+              <span className="font-semibold text-foreground">${callbackSummary.totalCost.toFixed(0)}</span>
+              <span className="text-muted-foreground">spend</span>
+            </div>
+            {callbackSummary.pendingCount > 0 && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-500/10">
+                {callbackSummary.pendingCount} pending
+              </Badge>
+            )}
+          </>
+        )}
+
         {/* Divider */}
         <div className="h-4 w-px bg-border mx-2" />
         

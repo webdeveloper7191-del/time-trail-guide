@@ -334,6 +334,11 @@ export default function RosterScheduler() {
     setDetailPanelCallbackShift({ shift, type });
   }, []);
   
+  const handleCallbackStatusChange = useCallback((eventId: string, newStatus: import('@/components/roster/CallbackEventLoggingPanel').CallbackEvent['status']) => {
+    setCallbackEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e));
+    toast.success(`Callback event ${newStatus}`);
+  }, []);
+  
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
   
@@ -2469,6 +2474,7 @@ export default function RosterScheduler() {
         staff={allStaff}
         dates={dates}
         centreId={selectedCentreId}
+        callbackEvents={callbackEvents}
       />
 
       {selectedShift && (
@@ -2487,6 +2493,7 @@ export default function RosterScheduler() {
           onSwapStaff={handleSwapStaff}
           onCopyShift={handleCopyShift}
           onLogCallback={handleDetailPanelLogCallback}
+          onCallbackStatusChange={handleCallbackStatusChange}
         />
       )}
 
