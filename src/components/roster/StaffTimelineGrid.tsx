@@ -2472,6 +2472,25 @@ function StaffShiftCard({
                 </DropdownMenuSub>
               </>
             )}
+
+            {/* Log Callback / Emergency - only for on-call shifts */}
+            {onLogCallback && (shift.shiftType === 'on_call' || shift.shiftType === 'recall') && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onLogCallback(shift, 'callback'); }}>
+                  <PhoneCall className="h-4 w-4 mr-2 text-amber-600" />
+                  Log Callback
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onLogCallback(shift, 'emergency'); }}>
+                  <AlertTriangle className="h-4 w-4 mr-2 text-red-600" />
+                  Log Emergency Callback
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onLogCallback(shift, 'recall'); }}>
+                  <Zap className="h-4 w-4 mr-2 text-orange-600" />
+                  Log Recall
+                </DropdownMenuItem>
+              </>
+            )}
             
             <DropdownMenuSeparator />
             <DropdownMenuItem
