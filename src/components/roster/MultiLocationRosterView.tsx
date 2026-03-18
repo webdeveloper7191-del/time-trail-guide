@@ -115,6 +115,8 @@ export function MultiLocationRosterView({
   onRemoveCentre,
   onShiftResize,
   onAddShiftAtTime,
+  callbackEvents = [],
+  onCallbackLogged,
 }: MultiLocationRosterViewProps) {
   const [collapsedCentres, setCollapsedCentres] = useState<Set<string>>(new Set());
   const MAX_EXPANDED_PANES = 6;
