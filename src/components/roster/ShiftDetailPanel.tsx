@@ -72,6 +72,7 @@ interface ShiftDetailPanelProps {
   onSwapStaff: (shift: Shift) => void;
   onCopyShift?: (shift: Shift) => void;
   onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
+  onCallbackStatusChange?: (eventId: string, newStatus: CallbackEvent['status']) => void;
 }
 
 // Build status options from central config
