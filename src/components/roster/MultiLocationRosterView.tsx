@@ -334,6 +334,10 @@ export function MultiLocationRosterView({
                     onSendToAgency={onSendToAgency}
                     callbackEvents={callbackEvents.filter(e => e.centreId === centre.id)}
                     onCallbackLogged={onCallbackLogged}
+                    sleepoverEvents={sleepoverEvents.filter(e => e.centreId === centre.id)}
+                    onSleepoverLogged={onSleepoverLogged}
+                    splitShiftEvents={splitShiftEvents.filter(e => e.centreId === centre.id)}
+                    onSplitShiftLogged={onSplitShiftLogged}
                   />
                 )}
               </div>
