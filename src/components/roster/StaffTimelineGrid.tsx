@@ -58,6 +58,7 @@ import {
 } from '@/data/mockHolidaysEvents';
 import { StaffAvailabilityOverlay } from './StaffAvailabilityOverlay';
 import { shiftStatusColors, shiftTypeConfig, getShiftTypeConfig, openShiftColors, specialIndicatorConfig } from '@/lib/rosterColors';
+import { LogCallbackSheet } from './LogCallbackSheet';
 
 // Empty shift type for unassigned shifts
 interface EmptyShift {
@@ -176,6 +177,16 @@ export function StaffTimelineGrid({
   // Only day view gets the expanded chart (but day view uses DayTimelineView component)
   const isCompact = viewMode !== 'day';
   const isMonthView = viewMode === 'month';
+  
+  // Callback logging state
+  const [callbackSheetOpen, setCallbackSheetOpen] = useState(false);
+  const [callbackShiftContext, setCallbackShiftContext] = useState<{ shift: Shift; staff?: StaffMember; type: 'callback' | 'recall' | 'emergency' } | null>(null);
+  
+  const handleLogCallback = useCallback((shift: Shift, type: 'callback' | 'recall' | 'emergency') => {
+    const staffMember = staff.find(s => s.id === shift.staffId);
+    setCallbackShiftContext({ shift, staff: staffMember, type });
+    setCallbackSheetOpen(true);
+  }, [staff]);
   
   // Column width classes - consistent fixed widths on mobile/tablet for ALL views (like fortnight/month)
   // Desktop (xl 1280px+): fluid for day/workweek/week, fixed for fortnight/month
@@ -1490,6 +1501,7 @@ export function StaffTimelineGrid({
                                                   onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
                                                   onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
                                                   onShiftTypeChange={onShiftTypeChange}
+                                                  onLogCallback={handleLogCallback}
                                                   onDragStart={handleShiftDragStart}
                                                   isCompact={isCompact}
                                                   isMonthView={isMonthView}
@@ -1509,6 +1521,7 @@ export function StaffTimelineGrid({
                                                   onCopy={onShiftCopy ? () => onShiftCopy(cellShifts[0]) : undefined}
                                                   onSwap={onShiftSwap ? () => onShiftSwap(cellShifts[0]) : undefined}
                                                   onShiftTypeChange={onShiftTypeChange}
+                                                  onLogCallback={handleLogCallback}
                                                   onDragStart={handleShiftDragStart}
                                                   isCompact={isCompact}
                                                   isMonthView={isMonthView}
@@ -1534,6 +1547,7 @@ export function StaffTimelineGrid({
                                                         onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
                                                         onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
                                                         onShiftTypeChange={onShiftTypeChange}
+                                                        onLogCallback={handleLogCallback}
                                                         onDragStart={handleShiftDragStart}
                                                         isCompact={false}
                                                         isMonthView={false}
@@ -2128,6 +2142,14 @@ export function StaffTimelineGrid({
           </div>
         </div>
       )}
+      {/* Callback Logging Sheet */}
+      <LogCallbackSheet
+        open={callbackSheetOpen}
+        onOpenChange={setCallbackSheetOpen}
+        parentShift={callbackShiftContext?.shift}
+        staff={callbackShiftContext?.staff}
+        defaultType={callbackShiftContext?.type || 'callback'}
+      />
     </div>
   );
 }
@@ -2143,6 +2165,7 @@ function StaffShiftCard({
   onCopy,
   onSwap,
   onShiftTypeChange,
+  onLogCallback,
   onDragStart,
   isCompact = false,
   isMonthView = false,
@@ -2157,6 +2180,7 @@ function StaffShiftCard({
   onCopy?: () => void;
   onSwap?: () => void;
   onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
+  onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
   onDragStart: (e: React.DragEvent, shift: Shift) => void;
   isCompact?: boolean;
   isMonthView?: boolean;
@@ -2449,6 +2473,25 @@ function StaffShiftCard({
                     </DropdownMenuRadioGroup>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
+              </>
+            )}
+
+            {/* Log Callback / Emergency - only for on-call shifts */}
+            {onLogCallback && (shift.shiftType === 'on_call' || shift.shiftType === 'recall') && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onLogCallback(shift, 'callback'); }}>
+                  <PhoneCall className="h-4 w-4 mr-2 text-amber-600" />
+                  Log Callback
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onLogCallback(shift, 'emergency'); }}>
+                  <AlertTriangle className="h-4 w-4 mr-2 text-red-600" />
+                  Log Emergency Callback
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onLogCallback(shift, 'recall'); }}>
+                  <Zap className="h-4 w-4 mr-2 text-orange-600" />
+                  Log Recall
+                </DropdownMenuItem>
               </>
             )}
             
