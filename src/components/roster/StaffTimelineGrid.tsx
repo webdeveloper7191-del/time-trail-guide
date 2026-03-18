@@ -60,8 +60,10 @@ import {
 import { StaffAvailabilityOverlay } from './StaffAvailabilityOverlay';
 import { shiftStatusColors, shiftTypeConfig, getShiftTypeConfig, openShiftColors, specialIndicatorConfig } from '@/lib/rosterColors';
 import { LogCallbackSheet } from './LogCallbackSheet';
-
+import { LogSleepoverSheet } from './LogSleepoverSheet';
+import { LogSplitShiftSheet } from './LogSplitShiftSheet';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
+import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { detectRestViolation, annotateRestViolations } from '@/lib/restViolationDetection';
 import { toast } from 'sonner';
 
@@ -130,6 +132,10 @@ interface StaffTimelineGridProps {
   onSendToAgency?: (openShift: OpenShift) => void;
   callbackEvents?: CallbackEvent[];
   onCallbackLogged?: (event: CallbackEvent) => void;
+  sleepoverEvents?: SleepoverEvent[];
+  onSleepoverLogged?: (event: SleepoverEvent) => void;
+  splitShiftEvents?: SplitShiftEvent[];
+  onSplitShiftLogged?: (event: SplitShiftEvent) => void;
 }
 
 export function StaffTimelineGrid({
@@ -171,6 +177,10 @@ export function StaffTimelineGrid({
   onSendToAgency,
   callbackEvents: externalCallbackEvents = [],
   onCallbackLogged,
+  sleepoverEvents: externalSleepoverEvents = [],
+  onSleepoverLogged,
+  splitShiftEvents: externalSplitShiftEvents = [],
+  onSplitShiftLogged,
 }: StaffTimelineGridProps) {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
@@ -189,6 +199,14 @@ export function StaffTimelineGrid({
   const [callbackSheetOpen, setCallbackSheetOpen] = useState(false);
   const [callbackShiftContext, setCallbackShiftContext] = useState<{ shift: Shift; staff?: StaffMember; type: 'callback' | 'recall' | 'emergency' } | null>(null);
   
+  // Sleepover logging state
+  const [sleepoverSheetOpen, setSleepoverSheetOpen] = useState(false);
+  const [sleepoverShiftContext, setSleepoverShiftContext] = useState<{ shift: Shift; staff?: StaffMember } | null>(null);
+  
+  // Split shift logging state
+  const [splitShiftSheetOpen, setSplitShiftSheetOpen] = useState(false);
+  const [splitShiftContext, setSplitShiftContext] = useState<{ shift: Shift; staff?: StaffMember } | null>(null);
+  
   // Annotate callback events with rest violations
   const annotatedCallbackEvents = useMemo(
     () => annotateRestViolations(externalCallbackEvents, shifts),
@@ -200,9 +218,20 @@ export function StaffTimelineGrid({
     setCallbackShiftContext({ shift, staff: staffMember, type });
     setCallbackSheetOpen(true);
   }, [staff]);
+
+  const handleLogSleepover = useCallback((shift: Shift) => {
+    const staffMember = staff.find(s => s.id === shift.staffId);
+    setSleepoverShiftContext({ shift, staff: staffMember });
+    setSleepoverSheetOpen(true);
+  }, [staff]);
+
+  const handleLogSplitShift = useCallback((shift: Shift) => {
+    const staffMember = staff.find(s => s.id === shift.staffId);
+    setSplitShiftContext({ shift, staff: staffMember });
+    setSplitShiftSheetOpen(true);
+  }, [staff]);
   
   const handleCallbackLogged = useCallback((event: CallbackEvent) => {
-    // Detect rest violation and notify
     const violation = detectRestViolation(event, shifts);
     if (violation) {
       toast.warning(
@@ -1510,7 +1539,11 @@ export function StaffTimelineGrid({
                                                   onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
                                                   onShiftTypeChange={onShiftTypeChange}
                                                    onLogCallback={handleLogCallback}
+                                                   onLogSleepover={handleLogSleepover}
+                                                   onLogSplitShift={handleLogSplitShift}
                                                    callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === shift.staffId && e.workStartTime?.startsWith(shift.date))}
+                                                   sleepoverEvents={externalSleepoverEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
+                                                   splitShiftEvents={externalSplitShiftEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
                                                    onDragStart={handleShiftDragStart}
                                                    isCompact={isCompact}
                                                   isMonthView={isMonthView}
@@ -1531,7 +1564,11 @@ export function StaffTimelineGrid({
                                                   onSwap={onShiftSwap ? () => onShiftSwap(cellShifts[0]) : undefined}
                                                   onShiftTypeChange={onShiftTypeChange}
                                                    onLogCallback={handleLogCallback}
+                                                   onLogSleepover={handleLogSleepover}
+                                                   onLogSplitShift={handleLogSplitShift}
                                                    callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === cellShifts[0].staffId && e.workStartTime?.startsWith(cellShifts[0].date))}
+                                                   sleepoverEvents={externalSleepoverEvents.filter(e => e.staffId === cellShifts[0].staffId && e.date === cellShifts[0].date)}
+                                                   splitShiftEvents={externalSplitShiftEvents.filter(e => e.staffId === cellShifts[0].staffId && e.date === cellShifts[0].date)}
                                                    onDragStart={handleShiftDragStart}
                                                    isCompact={isCompact}
                                                   isMonthView={isMonthView}
@@ -1558,7 +1595,11 @@ export function StaffTimelineGrid({
                                                         onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
                                                         onShiftTypeChange={onShiftTypeChange}
                                                          onLogCallback={handleLogCallback}
+                                                         onLogSleepover={handleLogSleepover}
+                                                         onLogSplitShift={handleLogSplitShift}
                                                          callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === shift.staffId && e.workStartTime?.startsWith(shift.date))}
+                                                         sleepoverEvents={externalSleepoverEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
+                                                         splitShiftEvents={externalSplitShiftEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
                                                          onDragStart={handleShiftDragStart}
                                                         isCompact={false}
                                                         isMonthView={false}
@@ -2094,6 +2135,22 @@ export function StaffTimelineGrid({
         defaultType={callbackShiftContext?.type || 'callback'}
         onCallbackLogged={handleCallbackLogged}
       />
+      {/* Sleepover Logging Sheet */}
+      <LogSleepoverSheet
+        open={sleepoverSheetOpen}
+        onOpenChange={setSleepoverSheetOpen}
+        parentShift={sleepoverShiftContext?.shift}
+        staff={sleepoverShiftContext?.staff}
+        onSleepoverLogged={onSleepoverLogged}
+      />
+      {/* Split Shift Logging Sheet */}
+      <LogSplitShiftSheet
+        open={splitShiftSheetOpen}
+        onOpenChange={setSplitShiftSheetOpen}
+        parentShift={splitShiftContext?.shift}
+        staff={splitShiftContext?.staff}
+        onSplitShiftLogged={onSplitShiftLogged}
+      />
     </div>
   );
 }
@@ -2110,8 +2167,12 @@ function StaffShiftCard({
   onSwap,
   onShiftTypeChange,
   onLogCallback,
+  onLogSleepover,
+  onLogSplitShift,
   onDragStart,
   callbackEvents = [],
+  sleepoverEvents = [],
+  splitShiftEvents = [],
   isCompact = false,
   isMonthView = false,
 }: {
@@ -2126,8 +2187,12 @@ function StaffShiftCard({
   onSwap?: () => void;
   onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
+  onLogSleepover?: (shift: Shift) => void;
+  onLogSplitShift?: (shift: Shift) => void;
   onDragStart: (e: React.DragEvent, shift: Shift) => void;
   callbackEvents?: CallbackEvent[];
+  sleepoverEvents?: import('@/types/shiftEvents').SleepoverEvent[];
+  splitShiftEvents?: import('@/types/shiftEvents').SplitShiftEvent[];
   isCompact?: boolean;
   isMonthView?: boolean;
 }) {
@@ -2440,6 +2505,28 @@ function StaffShiftCard({
                 </DropdownMenuItem>
               </>
             )}
+
+            {/* Log Sleepover Journal - only for sleepover shifts */}
+            {onLogSleepover && shift.shiftType === 'sleepover' && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onLogSleepover(shift); }}>
+                  <Moon className="h-4 w-4 mr-2 text-purple-600" />
+                  Log Sleepover Journal
+                </DropdownMenuItem>
+              </>
+            )}
+
+            {/* Log Split Shift Segments - only for broken shifts */}
+            {onLogSplitShift && shift.shiftType === 'broken' && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onLogSplitShift(shift); }}>
+                  <Zap className="h-4 w-4 mr-2 text-orange-600" />
+                  Log Split Shift Segments
+                </DropdownMenuItem>
+              </>
+            )}
             
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -2587,6 +2674,54 @@ function StaffShiftCard({
         {callbackEvents.length > 0 && isCompact && (
           <Badge variant="outline" className="text-[7px] px-1 py-0 h-3 mt-0.5 bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-700">
             {callbackEvents.length} CB
+          </Badge>
+        )}
+        {/* Inline sleepover indicators */}
+        {sleepoverEvents.length > 0 && !isCompact && (
+          <div className="mt-1 space-y-0.5">
+            {sleepoverEvents.slice(0, 1).map((ev) => (
+              <div key={ev.id} className={cn("flex items-center gap-1 rounded px-1 py-0.5 border", "bg-purple-500/15 border-purple-400/40")}>
+                <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-purple-500" />
+                <span className="text-[8px] font-semibold truncate text-purple-700 dark:text-purple-400">
+                  {ev.disturbances.length} dist
+                </span>
+                <Badge variant="outline" className="text-[7px] px-0.5 py-0 h-3 ml-auto shrink-0 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-700">
+                  ${ev.totalPay.toFixed(0)}
+                </Badge>
+                {ev.overtimeTriggered && (
+                  <Badge variant="destructive" className="text-[7px] px-0.5 py-0 h-3">OT</Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {sleepoverEvents.length > 0 && isCompact && (
+          <Badge variant="outline" className="text-[7px] px-1 py-0 h-3 mt-0.5 bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/50 dark:text-purple-400 dark:border-purple-700">
+            {sleepoverEvents.length} SLP
+          </Badge>
+        )}
+        {/* Inline split shift indicators */}
+        {splitShiftEvents.length > 0 && !isCompact && (
+          <div className="mt-1 space-y-0.5">
+            {splitShiftEvents.slice(0, 1).map((ev) => (
+              <div key={ev.id} className={cn("flex items-center gap-1 rounded px-1 py-0.5 border", "bg-orange-500/15 border-orange-400/40")}>
+                <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-orange-500" />
+                <span className="text-[8px] font-semibold truncate text-orange-700 dark:text-orange-400">
+                  {ev.segments.length} seg
+                </span>
+                <Badge variant="outline" className="text-[7px] px-0.5 py-0 h-3 ml-auto shrink-0 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-700">
+                  ${ev.totalPay.toFixed(0)}
+                </Badge>
+                {!ev.gapCompliant && (
+                  <Badge variant="destructive" className="text-[7px] px-0.5 py-0 h-3">GAP</Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {splitShiftEvents.length > 0 && isCompact && (
+          <Badge variant="outline" className="text-[7px] px-1 py-0 h-3 mt-0.5 bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-700">
+            {splitShiftEvents.length} SPL
           </Badge>
         )}
             </div>

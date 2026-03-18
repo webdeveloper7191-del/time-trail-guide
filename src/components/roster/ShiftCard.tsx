@@ -53,6 +53,8 @@ interface ShiftCardProps {
   onSwap?: (shift: Shift) => void;
   onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
+  onLogSleepover?: (shift: Shift) => void;
+  onLogSplitShift?: (shift: Shift) => void;
   isCompact?: boolean;
 }
 
@@ -69,6 +71,8 @@ export function ShiftCard({
   onSwap,
   onShiftTypeChange,
   onLogCallback,
+  onLogSleepover,
+  onLogSplitShift,
   isCompact = false,
 }: ShiftCardProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -316,6 +320,28 @@ export function ShiftCard({
                     <DropdownMenuItem onClick={() => onLogCallback(shift, 'recall')}>
                       <Zap className="h-4 w-4 mr-2 text-orange-600" />
                       Log Recall
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {/* Log Sleepover Journal - only for sleepover shifts */}
+                {onLogSleepover && shift.shiftType === 'sleepover' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onLogSleepover(shift)}>
+                      <Moon className="h-4 w-4 mr-2 text-purple-600" />
+                      Log Sleepover Journal
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {/* Log Split Shift Segments - only for broken shifts */}
+                {onLogSplitShift && shift.shiftType === 'broken' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onLogSplitShift(shift)}>
+                      <Zap className="h-4 w-4 mr-2 text-orange-600" />
+                      Log Split Shift Segments
                     </DropdownMenuItem>
                   </>
                 )}

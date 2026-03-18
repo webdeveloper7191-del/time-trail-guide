@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Centre, Shift, OpenShift, StaffMember, DemandData, RosterComplianceFlag, ShiftTemplate, ViewMode } from '@/types/roster';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
+import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { StaffTimelineGrid } from './StaffTimelineGrid';
 import { DayTimelineView } from './DayTimelineView';
@@ -69,6 +70,10 @@ interface MultiLocationRosterViewProps {
   onAddShiftAtTime?: (staffId: string, date: string, roomId: string, startTime: string) => void;
   callbackEvents?: CallbackEvent[];
   onCallbackLogged?: (event: CallbackEvent) => void;
+  sleepoverEvents?: SleepoverEvent[];
+  onSleepoverLogged?: (event: SleepoverEvent) => void;
+  splitShiftEvents?: SplitShiftEvent[];
+  onSplitShiftLogged?: (event: SplitShiftEvent) => void;
 }
 
 export function MultiLocationRosterView({
@@ -117,6 +122,10 @@ export function MultiLocationRosterView({
   onAddShiftAtTime,
   callbackEvents = [],
   onCallbackLogged,
+  sleepoverEvents = [],
+  onSleepoverLogged,
+  splitShiftEvents = [],
+  onSplitShiftLogged,
 }: MultiLocationRosterViewProps) {
   const [collapsedCentres, setCollapsedCentres] = useState<Set<string>>(new Set());
   const MAX_EXPANDED_PANES = 6;
@@ -325,6 +334,10 @@ export function MultiLocationRosterView({
                     onSendToAgency={onSendToAgency}
                     callbackEvents={callbackEvents.filter(e => e.centreId === centre.id)}
                     onCallbackLogged={onCallbackLogged}
+                    sleepoverEvents={sleepoverEvents.filter(e => e.centreId === centre.id)}
+                    onSleepoverLogged={onSleepoverLogged}
+                    splitShiftEvents={splitShiftEvents.filter(e => e.centreId === centre.id)}
+                    onSplitShiftLogged={onSplitShiftLogged}
                   />
                 )}
               </div>

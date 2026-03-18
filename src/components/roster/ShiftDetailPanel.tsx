@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
+import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { Shift, StaffMember, DemandData, RosterComplianceFlag, Room, Centre, TimeOff, RecurrencePattern, RecurrenceEndType, ShiftTemplate, defaultShiftTemplates } from '@/types/roster';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,6 +66,8 @@ interface ShiftDetailPanelProps {
   complianceFlags: RosterComplianceFlag[];
   existingShifts?: Shift[];
   callbackEvents?: CallbackEvent[];
+  sleepoverEvents?: SleepoverEvent[];
+  splitShiftEvents?: SplitShiftEvent[];
   onClose: () => void;
   onSave: (shift: Shift) => void;
   onDelete: (shiftId: string) => void;
@@ -72,7 +75,11 @@ interface ShiftDetailPanelProps {
   onSwapStaff: (shift: Shift) => void;
   onCopyShift?: (shift: Shift) => void;
   onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
+  onLogSleepover?: (shift: Shift) => void;
+  onLogSplitShift?: (shift: Shift) => void;
   onCallbackStatusChange?: (eventId: string, newStatus: CallbackEvent['status']) => void;
+  onSleepoverStatusChange?: (eventId: string, newStatus: SleepoverEvent['status']) => void;
+  onSplitShiftStatusChange?: (eventId: string, newStatus: SplitShiftEvent['status']) => void;
 }
 
 // Build status options from central config
@@ -91,6 +98,8 @@ export function ShiftDetailPanel({
   complianceFlags,
   existingShifts = [],
   callbackEvents = [],
+  sleepoverEvents = [],
+  splitShiftEvents = [],
   onClose,
   onSave,
   onDelete,
@@ -98,7 +107,11 @@ export function ShiftDetailPanel({
   onSwapStaff,
   onCopyShift,
   onLogCallback,
+  onLogSleepover,
+  onLogSplitShift,
   onCallbackStatusChange,
+  onSleepoverStatusChange,
+  onSplitShiftStatusChange,
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
   const [showCoverageModal, setShowCoverageModal] = useState(false);
@@ -158,13 +171,21 @@ export function ShiftDetailPanel({
     unpaid_leave: 'Unpaid Leave',
   };
 
-  // Filter callback events for this specific shift
+  // Filter events for this specific shift
   const shiftCallbackEvents = useMemo(() => {
     return callbackEvents.filter(e => 
       e.staffId === editedShift.staffId && 
       e.workStartTime?.startsWith(editedShift.date)
     );
   }, [callbackEvents, editedShift.staffId, editedShift.date]);
+
+  const shiftSleepoverEvents = useMemo(() => {
+    return sleepoverEvents.filter(e => e.staffId === editedShift.staffId && e.date === editedShift.date);
+  }, [sleepoverEvents, editedShift.staffId, editedShift.date]);
+
+  const shiftSplitShiftEvents = useMemo(() => {
+    return splitShiftEvents.filter(e => e.staffId === editedShift.staffId && e.date === editedShift.date);
+  }, [splitShiftEvents, editedShift.staffId, editedShift.date]);
 
   const { getQuickEstimate, calculateCost } = useShiftCost();
 
