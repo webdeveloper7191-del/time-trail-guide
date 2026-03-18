@@ -1501,6 +1501,7 @@ export function StaffTimelineGrid({
                                                   onCopy={onShiftCopy ? () => onShiftCopy(shift) : undefined}
                                                   onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
                                                   onShiftTypeChange={onShiftTypeChange}
+                                                  onLogCallback={handleLogCallback}
                                                   onDragStart={handleShiftDragStart}
                                                   isCompact={isCompact}
                                                   isMonthView={isMonthView}
