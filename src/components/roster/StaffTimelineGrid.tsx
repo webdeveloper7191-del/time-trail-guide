@@ -48,6 +48,7 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
+  Timer,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
