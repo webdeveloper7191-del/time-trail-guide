@@ -338,6 +338,18 @@ export default function RosterScheduler() {
     setCallbackEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e));
     toast.success(`Callback event ${newStatus}`);
   }, []);
+
+  // Sleepover and Split Shift events state
+  const [sleepoverEvents, setSleepoverEvents] = useState<import('@/types/shiftEvents').SleepoverEvent[]>([]);
+  const [splitShiftEvents, setSplitShiftEvents] = useState<import('@/types/shiftEvents').SplitShiftEvent[]>([]);
+  
+  const handleSleepoverLogged = useCallback((event: import('@/types/shiftEvents').SleepoverEvent) => {
+    setSleepoverEvents(prev => [event, ...prev]);
+  }, []);
+  
+  const handleSplitShiftLogged = useCallback((event: import('@/types/shiftEvents').SplitShiftEvent) => {
+    setSplitShiftEvents(prev => [event, ...prev]);
+  }, []);
   
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
