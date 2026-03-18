@@ -323,6 +323,8 @@ export function MultiLocationRosterView({
                     onEmptyShiftClick={onEmptyShiftClick}
                     onDeleteEmptyShift={onDeleteEmptyShift}
                     onSendToAgency={onSendToAgency}
+                    callbackEvents={callbackEvents.filter(e => e.centreId === centre.id)}
+                    onCallbackLogged={onCallbackLogged}
                   />
                 )}
               </div>
