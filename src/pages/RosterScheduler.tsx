@@ -71,6 +71,7 @@ import { CentreAgencyPreferencesPanel } from '@/components/roster/CentreAgencyPr
 import { PostPlacementRatingModal } from '@/components/roster/PostPlacementRatingModal';
 import { AgencyPerformanceDashboard } from '@/components/roster/AgencyPerformanceDashboard';
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
+import { LogCallbackSheet } from '@/components/roster/LogCallbackSheet';
 
 import { 
   TimefoldSolverConfig, 
@@ -324,6 +325,13 @@ export default function RosterScheduler() {
   
   const handleCallbackLogged = useCallback((event: import('@/components/roster/CallbackEventLoggingPanel').CallbackEvent) => {
     setCallbackEvents(prev => [event, ...prev]);
+  }, []);
+
+  // State for logging callbacks from ShiftDetailPanel
+  const [detailPanelCallbackShift, setDetailPanelCallbackShift] = useState<{ shift: Shift; type: 'callback' | 'recall' | 'emergency' } | null>(null);
+  
+  const handleDetailPanelLogCallback = useCallback((shift: Shift, type: 'callback' | 'recall' | 'emergency') => {
+    setDetailPanelCallbackShift({ shift, type });
   }, []);
   
   // Timefold Solver state
@@ -2471,14 +2479,26 @@ export default function RosterScheduler() {
           demandData={demandData}
           complianceFlags={complianceFlags}
           existingShifts={shifts}
+          callbackEvents={callbackEvents}
           onClose={() => setSelectedShift(null)}
           onSave={handleShiftSave}
           onDelete={handleShiftDelete}
           onDuplicate={handleShiftDuplicate}
           onSwapStaff={handleSwapStaff}
           onCopyShift={handleCopyShift}
+          onLogCallback={handleDetailPanelLogCallback}
         />
       )}
+
+      {/* LogCallbackSheet triggered from ShiftDetailPanel */}
+      <LogCallbackSheet
+        open={!!detailPanelCallbackShift}
+        onOpenChange={(open) => { if (!open) setDetailPanelCallbackShift(null); }}
+        parentShift={detailPanelCallbackShift?.shift || null}
+        staff={detailPanelCallbackShift ? allStaff.find(s => s.id === detailPanelCallbackShift.shift.staffId) || null : null}
+        defaultType={detailPanelCallbackShift?.type || 'callback'}
+        onCallbackLogged={handleCallbackLogged}
+      />
 
       {selectedOpenShift && (
         <OpenShiftDetailPanel

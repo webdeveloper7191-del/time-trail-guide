@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { CallbackEvent } from './CallbackEventLoggingPanel';
 import { Shift, StaffMember, DemandData, RosterComplianceFlag, Room, Centre, TimeOff, RecurrencePattern, RecurrenceEndType, ShiftTemplate, defaultShiftTemplates } from '@/types/roster';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +29,12 @@ import {
   FileText,
   UserPlus,
   RefreshCw,
-  Repeat
+  Repeat,
+  PhoneCall,
+  Shield,
+  Timer,
+  Car,
+  Plus,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -57,12 +63,14 @@ interface ShiftDetailPanelProps {
   demandData: DemandData[];
   complianceFlags: RosterComplianceFlag[];
   existingShifts?: Shift[];
+  callbackEvents?: CallbackEvent[];
   onClose: () => void;
   onSave: (shift: Shift) => void;
   onDelete: (shiftId: string) => void;
   onDuplicate: (shift: Shift) => void;
   onSwapStaff: (shift: Shift) => void;
   onCopyShift?: (shift: Shift) => void;
+  onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
 }
 
 // Build status options from central config
@@ -80,12 +88,14 @@ export function ShiftDetailPanel({
   demandData,
   complianceFlags,
   existingShifts = [],
+  callbackEvents = [],
   onClose,
   onSave,
   onDelete,
   onDuplicate,
   onSwapStaff,
   onCopyShift,
+  onLogCallback,
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
   const [showCoverageModal, setShowCoverageModal] = useState(false);
@@ -144,6 +154,14 @@ export function ShiftDetailPanel({
     personal_leave: 'Personal Leave',
     unpaid_leave: 'Unpaid Leave',
   };
+
+  // Filter callback events for this specific shift
+  const shiftCallbackEvents = useMemo(() => {
+    return callbackEvents.filter(e => 
+      e.staffId === editedShift.staffId && 
+      e.workStartTime?.startsWith(editedShift.date)
+    );
+  }, [callbackEvents, editedShift.staffId, editedShift.date]);
 
   const { getQuickEstimate, calculateCost } = useShiftCost();
 
@@ -351,6 +369,15 @@ export function ShiftDetailPanel({
             <Zap className="h-3 w-3" />
             Allowances
           </TabsTrigger>
+          {(editedShift.shiftType === 'on_call' || editedShift.shiftType === 'recall') && (
+            <TabsTrigger value="callbacks" className="text-xs flex items-center gap-1">
+              <PhoneCall className="h-3 w-3" />
+              Callbacks
+              {shiftCallbackEvents.length > 0 && (
+                <Badge variant="secondary" className="h-4 px-1 text-[9px] ml-0.5">{shiftCallbackEvents.length}</Badge>
+              )}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="demand" className="text-xs flex items-center gap-1">
             <BarChart3 className="h-3 w-3" />
             Demand
@@ -1017,6 +1044,162 @@ export function ShiftDetailPanel({
             </FormSection>
           </div>
         </TabsContent>
+
+        {/* Callbacks Tab - only for on-call/recall shifts */}
+        {(editedShift.shiftType === 'on_call' || editedShift.shiftType === 'recall') && (
+          <TabsContent value="callbacks" className="flex-1 m-0 mt-4">
+            <div className="space-y-6">
+              {/* Summary stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg border bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">{shiftCallbackEvents.length}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Total Events</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">
+                    {(shiftCallbackEvents.reduce((sum, e) => sum + e.paidMinutes, 0) / 60).toFixed(1)}h
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Total Paid</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">
+                    ${shiftCallbackEvents.reduce((sum, e) => sum + e.calculatedPay, 0).toFixed(0)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Total Cost</p>
+                </div>
+              </div>
+
+              {/* Log new callback actions */}
+              {onLogCallback && (
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Log New Event</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-auto py-2 flex flex-col items-center gap-1 border-amber-300 hover:bg-amber-500/10"
+                      onClick={() => onLogCallback(editedShift, 'callback')}
+                    >
+                      <PhoneCall className="h-4 w-4 text-amber-600" />
+                      <span className="text-[10px]">Callback</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-auto py-2 flex flex-col items-center gap-1 border-destructive/50 hover:bg-destructive/10"
+                      onClick={() => onLogCallback(editedShift, 'emergency')}
+                    >
+                      <Shield className="h-4 w-4 text-destructive" />
+                      <span className="text-[10px]">Emergency</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-auto py-2 flex flex-col items-center gap-1 border-orange-300 hover:bg-orange-500/10"
+                      onClick={() => onLogCallback(editedShift, 'recall')}
+                    >
+                      <Zap className="h-4 w-4 text-orange-600" />
+                      <span className="text-[10px]">Recall</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Logged events list */}
+              {shiftCallbackEvents.length === 0 ? (
+                <div className="text-center py-8">
+                  <PhoneCall className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No callback events logged</p>
+                  <p className="text-xs text-muted-foreground/70">Use the buttons above to log an event</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Event History</Label>
+                  {shiftCallbackEvents.map((event) => {
+                    const typeStyles = {
+                      callback: { icon: PhoneCall, color: 'text-amber-600', bg: 'bg-amber-500/10', border: 'border-amber-300', label: 'Callback' },
+                      recall: { icon: Zap, color: 'text-orange-600', bg: 'bg-orange-500/10', border: 'border-orange-300', label: 'Recall' },
+                      emergency: { icon: Shield, color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/40', label: 'Emergency' },
+                    };
+                    const style = typeStyles[event.callbackType] || typeStyles.callback;
+                    const EventIcon = style.icon;
+                    const statusColors: Record<string, string> = {
+                      logged: 'bg-blue-500/15 text-blue-700 border-blue-300',
+                      approved: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
+                      rejected: 'bg-destructive/15 text-destructive border-destructive/40',
+                      paid: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
+                    };
+
+                    return (
+                      <div key={event.id} className={cn("rounded-lg border p-3 space-y-2", style.border, style.bg)}>
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <EventIcon className={cn("h-4 w-4", style.color)} />
+                            <span className={cn("text-sm font-semibold", style.color)}>{style.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {(event as any).restViolation && (
+                              <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">
+                                <Timer className="h-2.5 w-2.5 mr-0.5" />
+                                Rest Violated
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className={cn("text-[9px]", statusColors[event.status])}>
+                              {event.status}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Time & Pay details */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>
+                              {event.workStartTime ? format(new Date(event.workStartTime), 'HH:mm') : '—'} – {event.workEndTime ? format(new Date(event.workEndTime), 'HH:mm') : '—'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <DollarSign className="h-3 w-3" />
+                            <span className="font-semibold text-foreground">${event.calculatedPay.toFixed(2)}</span>
+                            <span className="text-muted-foreground/70">({event.rateMultiplier}x)</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Timer className="h-3 w-3" />
+                            <span>{(event.paidMinutes / 60).toFixed(1)}h paid</span>
+                            {event.minimumEngagementApplied && (
+                              <Badge variant="outline" className="text-[8px] px-1 py-0 h-3 border-amber-300 text-amber-700">
+                                Min {event.minimumEngagementHours}h
+                              </Badge>
+                            )}
+                          </div>
+                          {event.travelTimeMinutes > 0 && (
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Car className="h-3 w-3" />
+                              <span>{event.travelTimeMinutes} min travel</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Reason */}
+                        {event.reason && (
+                          <p className="text-xs text-muted-foreground border-t border-border/50 pt-1.5 mt-1">
+                            <span className="font-medium text-foreground">Reason:</span> {event.reason}
+                          </p>
+                        )}
+                        {event.notes && (
+                          <p className="text-[11px] text-muted-foreground">{event.notes}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        )}
 
         {/* Demand Tab */}
         <TabsContent value="demand" className="flex-1 m-0 mt-4">
