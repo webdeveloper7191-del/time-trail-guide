@@ -933,32 +933,7 @@ export function StaffTimelineGrid({
                           </div>
                         )}
 
-                        {/* On-Call Lane - left side */}
-                        {(() => {
-                          const onCallShifts = shifts.filter(s => s.roomId === room.id && s.centreId === centre.id && s.shiftType === 'on_call');
-                          if (onCallShifts.length === 0) return null;
-                          return (
-                            <div className="h-[44px] md:h-[52px] border-b border-indigo-200/50 bg-gradient-to-r from-indigo-50/80 to-indigo-50/40 dark:from-indigo-950/30 dark:to-indigo-950/10 flex items-center gap-1.5 md:gap-2 p-1.5 md:p-2">
-                              <div className="h-7 w-7 md:h-9 md:w-9 rounded-full flex items-center justify-center bg-indigo-500/20 border-2 border-dashed border-indigo-500/50 shrink-0">
-                                <Phone className="h-3 w-3 md:h-4 md:w-4 text-indigo-600 dark:text-indigo-400" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-xs md:text-sm font-medium text-indigo-700 dark:text-indigo-300 truncate">On-Call</p>
-                                <p className="text-[9px] md:text-[10px] text-indigo-600 dark:text-indigo-400 hidden sm:block">Drop staff for standby</p>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Callbacks Lane - left side */}
-                        {annotatedCallbackEvents.filter(e => e.centreId === centre.id).length > 0 && (
-                          <CallbackLane
-                            events={annotatedCallbackEvents.filter(e => e.centreId === centre.id)}
-                            dates={dates}
-                            columnWidthClass={columnWidthClass}
-                            side="left"
-                          />
-                        )}
+                        {/* On-Call and Callback lanes removed — on-call shifts and callbacks are shown inline on staff rows */}
                         {(() => {
                           const roomEmptyShifts = emptyShifts.filter(es => es.roomId === room.id && es.centreId === centre.id);
                           if (roomEmptyShifts.length === 0) return null;
