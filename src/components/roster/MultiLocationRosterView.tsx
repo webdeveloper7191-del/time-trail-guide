@@ -122,6 +122,10 @@ export function MultiLocationRosterView({
   onAddShiftAtTime,
   callbackEvents = [],
   onCallbackLogged,
+  sleepoverEvents = [],
+  onSleepoverLogged,
+  splitShiftEvents = [],
+  onSplitShiftLogged,
 }: MultiLocationRosterViewProps) {
   const [collapsedCentres, setCollapsedCentres] = useState<Set<string>>(new Set());
   const MAX_EXPANDED_PANES = 6;
