@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Shift, OpenShift, StaffMember } from '@/types/roster';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
+import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { useMemo, useState } from 'react';
 import { 
   ChevronDown,
@@ -10,6 +11,8 @@ import {
   Clock,
   PhoneCall,
   DollarSign,
+  Moon,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -40,9 +43,11 @@ interface RosterSummaryBarProps {
   dates: Date[];
   centreId: string;
   callbackEvents?: CallbackEvent[];
+  sleepoverEvents?: SleepoverEvent[];
+  splitShiftEvents?: SplitShiftEvent[];
 }
 
-export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [] }: RosterSummaryBarProps) {
+export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [], sleepoverEvents = [], splitShiftEvents = [] }: RosterSummaryBarProps) {
   const [showFullLegend, setShowFullLegend] = useState(false);
   const [showColorTokens, setShowColorTokens] = useState(false);
   
@@ -99,6 +104,22 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
     const pendingCount = callbackEvents.filter(e => e.status === 'logged').length;
     return { totalEvents, totalCost, pendingCount };
   }, [callbackEvents]);
+
+  const sleepoverSummary = useMemo(() => {
+    const totalEvents = sleepoverEvents.length;
+    const totalCost = sleepoverEvents.reduce((sum, e) => sum + e.totalPay, 0);
+    const pendingCount = sleepoverEvents.filter(e => e.status === 'logged').length;
+    const otCount = sleepoverEvents.filter(e => e.overtimeTriggered).length;
+    return { totalEvents, totalCost, pendingCount, otCount };
+  }, [sleepoverEvents]);
+
+  const splitShiftSummary = useMemo(() => {
+    const totalEvents = splitShiftEvents.length;
+    const totalCost = splitShiftEvents.reduce((sum, e) => sum + e.totalPay, 0);
+    const pendingCount = splitShiftEvents.filter(e => e.status === 'logged').length;
+    const nonCompliant = splitShiftEvents.filter(e => !e.gapCompliant).length;
+    return { totalEvents, totalCost, pendingCount, nonCompliant };
+  }, [splitShiftEvents]);
 
   const items: SummaryItem[] = [
     { label: 'Empty', count: summary.empty, color: 'bg-background', bgColor: 'border border-border' },
@@ -305,6 +326,48 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
             {callbackSummary.pendingCount > 0 && (
               <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-500/10">
                 {callbackSummary.pendingCount} pending
+              </Badge>
+            )}
+          </>
+        )}
+
+        {/* Sleepover cost summary */}
+        {sleepoverSummary.totalEvents > 0 && (
+          <>
+            <div className="h-4 w-px bg-border mx-2" />
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <Moon className="h-3 w-3 text-purple-600" />
+              <span className="text-muted-foreground font-medium">{sleepoverSummary.totalEvents}</span>
+              <span className="text-muted-foreground">Sleepovers</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <DollarSign className="h-3 w-3 text-emerald-600" />
+              <span className="font-semibold text-foreground">${sleepoverSummary.totalCost.toFixed(0)}</span>
+            </div>
+            {sleepoverSummary.pendingCount > 0 && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-purple-300 text-purple-700 bg-purple-50 dark:bg-purple-500/10">
+                {sleepoverSummary.pendingCount} pending
+              </Badge>
+            )}
+          </>
+        )}
+
+        {/* Split shift cost summary */}
+        {splitShiftSummary.totalEvents > 0 && (
+          <>
+            <div className="h-4 w-px bg-border mx-2" />
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <Zap className="h-3 w-3 text-orange-600" />
+              <span className="text-muted-foreground font-medium">{splitShiftSummary.totalEvents}</span>
+              <span className="text-muted-foreground">Split Shifts</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <DollarSign className="h-3 w-3 text-emerald-600" />
+              <span className="font-semibold text-foreground">${splitShiftSummary.totalCost.toFixed(0)}</span>
+            </div>
+            {splitShiftSummary.pendingCount > 0 && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-orange-300 text-orange-700 bg-orange-50 dark:bg-orange-500/10">
+                {splitShiftSummary.pendingCount} pending
               </Badge>
             )}
           </>

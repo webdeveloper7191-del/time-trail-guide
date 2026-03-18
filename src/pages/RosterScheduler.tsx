@@ -72,7 +72,8 @@ import { PostPlacementRatingModal } from '@/components/roster/PostPlacementRatin
 import { AgencyPerformanceDashboard } from '@/components/roster/AgencyPerformanceDashboard';
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
 import { LogCallbackSheet } from '@/components/roster/LogCallbackSheet';
-
+import { LogSleepoverSheet } from '@/components/roster/LogSleepoverSheet';
+import { LogSplitShiftSheet } from '@/components/roster/LogSplitShiftSheet';
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
@@ -349,6 +350,28 @@ export default function RosterScheduler() {
   
   const handleSplitShiftLogged = useCallback((event: import('@/types/shiftEvents').SplitShiftEvent) => {
     setSplitShiftEvents(prev => [event, ...prev]);
+  }, []);
+
+  // State for logging sleepovers/split shifts from ShiftDetailPanel
+  const [detailPanelSleepoverShift, setDetailPanelSleepoverShift] = useState<Shift | null>(null);
+  const [detailPanelSplitShift, setDetailPanelSplitShift] = useState<Shift | null>(null);
+
+  const handleDetailPanelLogSleepover = useCallback((shift: Shift) => {
+    setDetailPanelSleepoverShift(shift);
+  }, []);
+
+  const handleDetailPanelLogSplitShift = useCallback((shift: Shift) => {
+    setDetailPanelSplitShift(shift);
+  }, []);
+
+  const handleSleepoverStatusChange = useCallback((eventId: string, newStatus: import('@/types/shiftEvents').SleepoverEvent['status']) => {
+    setSleepoverEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e));
+    toast.success(`Sleepover event ${newStatus}`);
+  }, []);
+
+  const handleSplitShiftStatusChange = useCallback((eventId: string, newStatus: import('@/types/shiftEvents').SplitShiftEvent['status']) => {
+    setSplitShiftEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e));
+    toast.success(`Split shift event ${newStatus}`);
   }, []);
   
   // Timefold Solver state
@@ -2495,6 +2518,8 @@ export default function RosterScheduler() {
         dates={dates}
         centreId={selectedCentreId}
         callbackEvents={callbackEvents}
+        sleepoverEvents={sleepoverEvents}
+        splitShiftEvents={splitShiftEvents}
       />
 
       {selectedShift && (
@@ -2506,6 +2531,8 @@ export default function RosterScheduler() {
           complianceFlags={complianceFlags}
           existingShifts={shifts}
           callbackEvents={callbackEvents}
+          sleepoverEvents={sleepoverEvents}
+          splitShiftEvents={splitShiftEvents}
           onClose={() => setSelectedShift(null)}
           onSave={handleShiftSave}
           onDelete={handleShiftDelete}
@@ -2513,7 +2540,11 @@ export default function RosterScheduler() {
           onSwapStaff={handleSwapStaff}
           onCopyShift={handleCopyShift}
           onLogCallback={handleDetailPanelLogCallback}
+          onLogSleepover={handleDetailPanelLogSleepover}
+          onLogSplitShift={handleDetailPanelLogSplitShift}
           onCallbackStatusChange={handleCallbackStatusChange}
+          onSleepoverStatusChange={handleSleepoverStatusChange}
+          onSplitShiftStatusChange={handleSplitShiftStatusChange}
         />
       )}
 
@@ -2525,6 +2556,24 @@ export default function RosterScheduler() {
         staff={detailPanelCallbackShift ? allStaff.find(s => s.id === detailPanelCallbackShift.shift.staffId) || null : null}
         defaultType={detailPanelCallbackShift?.type || 'callback'}
         onCallbackLogged={handleCallbackLogged}
+      />
+
+      {/* LogSleepoverSheet triggered from ShiftDetailPanel */}
+      <LogSleepoverSheet
+        open={!!detailPanelSleepoverShift}
+        onOpenChange={(open) => { if (!open) setDetailPanelSleepoverShift(null); }}
+        parentShift={detailPanelSleepoverShift || null}
+        staff={detailPanelSleepoverShift ? allStaff.find(s => s.id === detailPanelSleepoverShift.staffId) || null : null}
+        onSleepoverLogged={handleSleepoverLogged}
+      />
+
+      {/* LogSplitShiftSheet triggered from ShiftDetailPanel */}
+      <LogSplitShiftSheet
+        open={!!detailPanelSplitShift}
+        onOpenChange={(open) => { if (!open) setDetailPanelSplitShift(null); }}
+        parentShift={detailPanelSplitShift || null}
+        staff={detailPanelSplitShift ? allStaff.find(s => s.id === detailPanelSplitShift.staffId) || null : null}
+        onSplitShiftLogged={handleSplitShiftLogged}
       />
 
       {selectedOpenShift && (
