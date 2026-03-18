@@ -1960,6 +1960,16 @@ export function StaffTimelineGrid({
                             );
                           })()}
 
+                          {/* Callbacks Lane - right side */}
+                          {annotatedCallbackEvents.filter(e => e.centreId === centre.id).length > 0 && (
+                            <CallbackLane
+                              events={annotatedCallbackEvents.filter(e => e.centreId === centre.id)}
+                              dates={dates}
+                              columnWidthClass={columnWidthClass}
+                              side="right"
+                            />
+                          )}
+
                           {/* Empty Shifts row - right side */}
                           {(() => {
                             const roomEmptyShifts = emptyShifts.filter(es => es.roomId === room.id && es.centreId === centre.id);
