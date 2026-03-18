@@ -175,6 +175,10 @@ export function StaffTimelineGrid({
   onSendToAgency,
   callbackEvents: externalCallbackEvents = [],
   onCallbackLogged,
+  sleepoverEvents: externalSleepoverEvents = [],
+  onSleepoverLogged,
+  splitShiftEvents: externalSplitShiftEvents = [],
+  onSplitShiftLogged,
 }: StaffTimelineGridProps) {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
