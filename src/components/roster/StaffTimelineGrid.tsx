@@ -1539,7 +1539,11 @@ export function StaffTimelineGrid({
                                                   onSwap={onShiftSwap ? () => onShiftSwap(shift) : undefined}
                                                   onShiftTypeChange={onShiftTypeChange}
                                                    onLogCallback={handleLogCallback}
+                                                   onLogSleepover={handleLogSleepover}
+                                                   onLogSplitShift={handleLogSplitShift}
                                                    callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === shift.staffId && e.workStartTime?.startsWith(shift.date))}
+                                                   sleepoverEvents={externalSleepoverEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
+                                                   splitShiftEvents={externalSplitShiftEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
                                                    onDragStart={handleShiftDragStart}
                                                    isCompact={isCompact}
                                                   isMonthView={isMonthView}
