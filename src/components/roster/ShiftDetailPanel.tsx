@@ -83,12 +83,14 @@ export function ShiftDetailPanel({
   demandData,
   complianceFlags,
   existingShifts = [],
+  callbackEvents = [],
   onClose,
   onSave,
   onDelete,
   onDuplicate,
   onSwapStaff,
   onCopyShift,
+  onLogCallback,
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
   const [showCoverageModal, setShowCoverageModal] = useState(false);
