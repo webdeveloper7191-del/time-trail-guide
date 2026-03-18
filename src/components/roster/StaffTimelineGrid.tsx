@@ -58,6 +58,7 @@ import {
 } from '@/data/mockHolidaysEvents';
 import { StaffAvailabilityOverlay } from './StaffAvailabilityOverlay';
 import { shiftStatusColors, shiftTypeConfig, getShiftTypeConfig, openShiftColors, specialIndicatorConfig } from '@/lib/rosterColors';
+import { LogCallbackSheet } from './LogCallbackSheet';
 
 // Empty shift type for unassigned shifts
 interface EmptyShift {
