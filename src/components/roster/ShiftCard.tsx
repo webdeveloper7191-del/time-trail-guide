@@ -324,6 +324,28 @@ export function ShiftCard({
                   </>
                 )}
 
+                {/* Log Sleepover Journal - only for sleepover shifts */}
+                {onLogSleepover && shift.shiftType === 'sleepover' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onLogSleepover(shift)}>
+                      <Moon className="h-4 w-4 mr-2 text-purple-600" />
+                      Log Sleepover Journal
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {/* Log Split Shift Segments - only for broken shifts */}
+                {onLogSplitShift && shift.shiftType === 'broken' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onLogSplitShift(shift)}>
+                      <Zap className="h-4 w-4 mr-2 text-orange-600" />
+                      Log Split Shift Segments
+                    </DropdownMenuItem>
+                  </>
+                )}
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive"
