@@ -222,7 +222,7 @@ export function LogSleepoverSheet({
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Child Welfare Checks Performed</Label>
+                <Label>Welfare / Safety Checks Performed</Label>
                 <Input type="number" min="0" value={childWelfareChecks} onChange={e => setChildWelfareChecks(e.target.value)} />
               </div>
               <div className="space-y-2">
