@@ -2619,6 +2619,54 @@ function StaffShiftCard({
             {callbackEvents.length} CB
           </Badge>
         )}
+        {/* Inline sleepover indicators */}
+        {sleepoverEvents.length > 0 && !isCompact && (
+          <div className="mt-1 space-y-0.5">
+            {sleepoverEvents.slice(0, 1).map((ev) => (
+              <div key={ev.id} className={cn("flex items-center gap-1 rounded px-1 py-0.5 border", "bg-purple-500/15 border-purple-400/40")}>
+                <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-purple-500" />
+                <span className="text-[8px] font-semibold truncate text-purple-700 dark:text-purple-400">
+                  {ev.disturbances.length} dist
+                </span>
+                <Badge variant="outline" className="text-[7px] px-0.5 py-0 h-3 ml-auto shrink-0 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-700">
+                  ${ev.totalPay.toFixed(0)}
+                </Badge>
+                {ev.overtimeTriggered && (
+                  <Badge variant="destructive" className="text-[7px] px-0.5 py-0 h-3">OT</Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {sleepoverEvents.length > 0 && isCompact && (
+          <Badge variant="outline" className="text-[7px] px-1 py-0 h-3 mt-0.5 bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/50 dark:text-purple-400 dark:border-purple-700">
+            {sleepoverEvents.length} SLP
+          </Badge>
+        )}
+        {/* Inline split shift indicators */}
+        {splitShiftEvents.length > 0 && !isCompact && (
+          <div className="mt-1 space-y-0.5">
+            {splitShiftEvents.slice(0, 1).map((ev) => (
+              <div key={ev.id} className={cn("flex items-center gap-1 rounded px-1 py-0.5 border", "bg-orange-500/15 border-orange-400/40")}>
+                <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-orange-500" />
+                <span className="text-[8px] font-semibold truncate text-orange-700 dark:text-orange-400">
+                  {ev.segments.length} seg
+                </span>
+                <Badge variant="outline" className="text-[7px] px-0.5 py-0 h-3 ml-auto shrink-0 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-700">
+                  ${ev.totalPay.toFixed(0)}
+                </Badge>
+                {!ev.gapCompliant && (
+                  <Badge variant="destructive" className="text-[7px] px-0.5 py-0 h-3">GAP</Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {splitShiftEvents.length > 0 && isCompact && (
+          <Badge variant="outline" className="text-[7px] px-1 py-0 h-3 mt-0.5 bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-700">
+            {splitShiftEvents.length} SPL
+          </Badge>
+        )}
             </div>
           </div>
         </TooltipTrigger>
