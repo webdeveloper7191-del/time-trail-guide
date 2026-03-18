@@ -2965,7 +2965,7 @@ export default function RosterScheduler() {
         size="3xl"
         showFooter={false}
       >
-        <CallbackEventLoggingPanel />
+        <CallbackEventLoggingPanel externalEvents={callbackEvents} />
       </PrimaryOffCanvas>
 
       <PrimaryOffCanvas
