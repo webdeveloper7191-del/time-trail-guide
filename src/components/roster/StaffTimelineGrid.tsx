@@ -2162,6 +2162,7 @@ function StaffShiftCard({
   onCopy,
   onSwap,
   onShiftTypeChange,
+  onLogCallback,
   onDragStart,
   isCompact = false,
   isMonthView = false,
