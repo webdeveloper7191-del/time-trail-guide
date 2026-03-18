@@ -35,6 +35,7 @@ import {
   Timer,
   Car,
   Plus,
+  XCircle,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
