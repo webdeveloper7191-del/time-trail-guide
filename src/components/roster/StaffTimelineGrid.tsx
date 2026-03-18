@@ -199,6 +199,14 @@ export function StaffTimelineGrid({
   const [callbackSheetOpen, setCallbackSheetOpen] = useState(false);
   const [callbackShiftContext, setCallbackShiftContext] = useState<{ shift: Shift; staff?: StaffMember; type: 'callback' | 'recall' | 'emergency' } | null>(null);
   
+  // Sleepover logging state
+  const [sleepoverSheetOpen, setSleepoverSheetOpen] = useState(false);
+  const [sleepoverShiftContext, setSleepoverShiftContext] = useState<{ shift: Shift; staff?: StaffMember } | null>(null);
+  
+  // Split shift logging state
+  const [splitShiftSheetOpen, setSplitShiftSheetOpen] = useState(false);
+  const [splitShiftContext, setSplitShiftContext] = useState<{ shift: Shift; staff?: StaffMember } | null>(null);
+  
   // Annotate callback events with rest violations
   const annotatedCallbackEvents = useMemo(
     () => annotateRestViolations(externalCallbackEvents, shifts),
@@ -210,9 +218,20 @@ export function StaffTimelineGrid({
     setCallbackShiftContext({ shift, staff: staffMember, type });
     setCallbackSheetOpen(true);
   }, [staff]);
+
+  const handleLogSleepover = useCallback((shift: Shift) => {
+    const staffMember = staff.find(s => s.id === shift.staffId);
+    setSleepoverShiftContext({ shift, staff: staffMember });
+    setSleepoverSheetOpen(true);
+  }, [staff]);
+
+  const handleLogSplitShift = useCallback((shift: Shift) => {
+    const staffMember = staff.find(s => s.id === shift.staffId);
+    setSplitShiftContext({ shift, staff: staffMember });
+    setSplitShiftSheetOpen(true);
+  }, [staff]);
   
   const handleCallbackLogged = useCallback((event: CallbackEvent) => {
-    // Detect rest violation and notify
     const violation = detectRestViolation(event, shifts);
     if (violation) {
       toast.warning(
