@@ -71,6 +71,7 @@ import { CentreAgencyPreferencesPanel } from '@/components/roster/CentreAgencyPr
 import { PostPlacementRatingModal } from '@/components/roster/PostPlacementRatingModal';
 import { AgencyPerformanceDashboard } from '@/components/roster/AgencyPerformanceDashboard';
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
+import { LogCallbackSheet } from '@/components/roster/LogCallbackSheet';
 
 import { 
   TimefoldSolverConfig, 
