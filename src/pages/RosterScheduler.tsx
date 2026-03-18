@@ -326,6 +326,13 @@ export default function RosterScheduler() {
   const handleCallbackLogged = useCallback((event: import('@/components/roster/CallbackEventLoggingPanel').CallbackEvent) => {
     setCallbackEvents(prev => [event, ...prev]);
   }, []);
+
+  // State for logging callbacks from ShiftDetailPanel
+  const [detailPanelCallbackShift, setDetailPanelCallbackShift] = useState<{ shift: Shift; type: 'callback' | 'recall' | 'emergency' } | null>(null);
+  
+  const handleDetailPanelLogCallback = useCallback((shift: Shift, type: 'callback' | 'recall' | 'emergency') => {
+    setDetailPanelCallbackShift({ shift, type });
+  }, []);
   
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
