@@ -272,7 +272,7 @@ export function LogCallbackSheet({
                 return (
                   <button
                     key={type}
-                    onClick={() => setForm(p => ({ ...p, callbackType: type }))}
+                    onClick={() => setForm(p => ({ ...p, callbackType: type as 'callback' | 'recall' | 'emergency' }))}
                     className={cn(
                       "flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all text-center",
                       isSelected
