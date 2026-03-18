@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { timesheetApi } from '@/lib/api/timesheetApi';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -175,8 +175,26 @@ const dayTypeLabels: Record<CallbackEvent['dayType'], string> = {
   public_holiday: 'Public Holiday',
 };
 
-export function CallbackEventLoggingPanel() {
-  const [events, setEvents] = useState<CallbackEvent[]>(mockCallbackEvents);
+interface CallbackEventLoggingPanelProps {
+  externalEvents?: CallbackEvent[];
+}
+
+export function CallbackEventLoggingPanel({ externalEvents = [] }: CallbackEventLoggingPanelProps) {
+  const [internalEvents, setInternalEvents] = useState<CallbackEvent[]>(mockCallbackEvents);
+  
+  // Merge external events (from roster grid) with internal events, deduplicating by id
+  const events = useMemo(() => {
+    const ids = new Set(internalEvents.map(e => e.id));
+    const merged = [...internalEvents];
+    externalEvents.forEach(e => {
+      if (!ids.has(e.id)) merged.push(e);
+    });
+    return merged.sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime());
+  }, [internalEvents, externalEvents]);
+  
+  const setEvents = (updater: CallbackEvent[] | ((prev: CallbackEvent[]) => CallbackEvent[])) => {
+    setInternalEvents(updater);
+  };
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');

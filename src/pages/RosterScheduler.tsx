@@ -319,6 +319,13 @@ export default function RosterScheduler() {
     };
   }>>([]);
   
+  // Callback events state - shared between roster grid and callback log panel
+  const [callbackEvents, setCallbackEvents] = useState<import('@/components/roster/CallbackEventLoggingPanel').CallbackEvent[]>([]);
+  
+  const handleCallbackLogged = useCallback((event: import('@/components/roster/CallbackEventLoggingPanel').CallbackEvent) => {
+    setCallbackEvents(prev => [event, ...prev]);
+  }, []);
+  
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
   
@@ -2365,6 +2372,8 @@ export default function RosterScheduler() {
             onShiftResize={handleShiftResize}
             onAddShiftAtTime={handleAddShiftAtTime}
             onRemoveCentre={(centreId) => setActiveCentreIds(prev => prev.filter(id => id !== centreId))}
+            callbackEvents={callbackEvents}
+            onCallbackLogged={handleCallbackLogged}
           />
         ) : (
           <MultiLocationRosterView
@@ -2422,6 +2431,8 @@ export default function RosterScheduler() {
             onShiftResize={handleShiftResize}
             onAddShiftAtTime={handleAddShiftAtTime}
             onRemoveCentre={(centreId) => setActiveCentreIds(prev => prev.filter(id => id !== centreId))}
+            callbackEvents={callbackEvents}
+            onCallbackLogged={handleCallbackLogged}
           />
         )}
 
@@ -2954,7 +2965,7 @@ export default function RosterScheduler() {
         size="3xl"
         showFooter={false}
       >
-        <CallbackEventLoggingPanel />
+        <CallbackEventLoggingPanel externalEvents={callbackEvents} />
       </PrimaryOffCanvas>
 
       <PrimaryOffCanvas

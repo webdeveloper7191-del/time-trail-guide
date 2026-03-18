@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Centre, Shift, OpenShift, StaffMember, DemandData, RosterComplianceFlag, ShiftTemplate, ViewMode } from '@/types/roster';
+import { CallbackEvent } from './CallbackEventLoggingPanel';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { StaffTimelineGrid } from './StaffTimelineGrid';
 import { DayTimelineView } from './DayTimelineView';
@@ -66,6 +67,8 @@ interface MultiLocationRosterViewProps {
   onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
   onRemoveCentre?: (centreId: string) => void;
   onAddShiftAtTime?: (staffId: string, date: string, roomId: string, startTime: string) => void;
+  callbackEvents?: CallbackEvent[];
+  onCallbackLogged?: (event: CallbackEvent) => void;
 }
 
 export function MultiLocationRosterView({
@@ -112,6 +115,8 @@ export function MultiLocationRosterView({
   onRemoveCentre,
   onShiftResize,
   onAddShiftAtTime,
+  callbackEvents = [],
+  onCallbackLogged,
 }: MultiLocationRosterViewProps) {
   const [collapsedCentres, setCollapsedCentres] = useState<Set<string>>(new Set());
   const MAX_EXPANDED_PANES = 6;
@@ -318,6 +323,8 @@ export function MultiLocationRosterView({
                     onEmptyShiftClick={onEmptyShiftClick}
                     onDeleteEmptyShift={onDeleteEmptyShift}
                     onSendToAgency={onSendToAgency}
+                    callbackEvents={callbackEvents.filter(e => e.centreId === centre.id)}
+                    onCallbackLogged={onCallbackLogged}
                   />
                 )}
               </div>

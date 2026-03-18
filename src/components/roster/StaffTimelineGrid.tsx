@@ -59,6 +59,10 @@ import {
 import { StaffAvailabilityOverlay } from './StaffAvailabilityOverlay';
 import { shiftStatusColors, shiftTypeConfig, getShiftTypeConfig, openShiftColors, specialIndicatorConfig } from '@/lib/rosterColors';
 import { LogCallbackSheet } from './LogCallbackSheet';
+import { CallbackLane } from './CallbackLane';
+import { CallbackEvent } from './CallbackEventLoggingPanel';
+import { detectRestViolation, annotateRestViolations } from '@/lib/restViolationDetection';
+import { toast } from 'sonner';
 
 // Empty shift type for unassigned shifts
 interface EmptyShift {
@@ -123,6 +127,8 @@ interface StaffTimelineGridProps {
   onEmptyShiftClick?: (emptyShift: EmptyShift) => void;
   onDeleteEmptyShift?: (emptyShiftId: string) => void;
   onSendToAgency?: (openShift: OpenShift) => void;
+  callbackEvents?: CallbackEvent[];
+  onCallbackLogged?: (event: CallbackEvent) => void;
 }
 
 export function StaffTimelineGrid({
@@ -162,6 +168,8 @@ export function StaffTimelineGrid({
   onEmptyShiftClick,
   onDeleteEmptyShift,
   onSendToAgency,
+  callbackEvents: externalCallbackEvents = [],
+  onCallbackLogged,
 }: StaffTimelineGridProps) {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
@@ -173,8 +181,6 @@ export function StaffTimelineGrid({
   const [staffSearch, setStaffSearch] = useState('');
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
   const [colorPalette, setColorPalette] = useState<ColorPalette>('ocean');
-  // Use compact charts for all multi-day views (workweek, week, fortnight, month)
-  // Only day view gets the expanded chart (but day view uses DayTimelineView component)
   const isCompact = viewMode !== 'day';
   const isMonthView = viewMode === 'month';
   
@@ -182,11 +188,29 @@ export function StaffTimelineGrid({
   const [callbackSheetOpen, setCallbackSheetOpen] = useState(false);
   const [callbackShiftContext, setCallbackShiftContext] = useState<{ shift: Shift; staff?: StaffMember; type: 'callback' | 'recall' | 'emergency' } | null>(null);
   
+  // Annotate callback events with rest violations
+  const annotatedCallbackEvents = useMemo(
+    () => annotateRestViolations(externalCallbackEvents, shifts),
+    [externalCallbackEvents, shifts]
+  );
+  
   const handleLogCallback = useCallback((shift: Shift, type: 'callback' | 'recall' | 'emergency') => {
     const staffMember = staff.find(s => s.id === shift.staffId);
     setCallbackShiftContext({ shift, staff: staffMember, type });
     setCallbackSheetOpen(true);
   }, [staff]);
+  
+  const handleCallbackLogged = useCallback((event: CallbackEvent) => {
+    // Detect rest violation and notify
+    const violation = detectRestViolation(event, shifts);
+    if (violation) {
+      toast.warning(
+        `⚠️ Rest period violation: ${event.staffName} has only ${violation.gapHours}h rest before next shift at ${violation.nextShiftStartTime} on ${violation.nextShiftDate}. Minimum 10h required.`,
+        { duration: 8000 }
+      );
+    }
+    onCallbackLogged?.(event);
+  }, [shifts, onCallbackLogged]);
   
   // Column width classes - consistent fixed widths on mobile/tablet for ALL views (like fortnight/month)
   // Desktop (xl 1280px+): fluid for day/workweek/week, fixed for fortnight/month
@@ -926,7 +950,15 @@ export function StaffTimelineGrid({
                           );
                         })()}
 
-                        {/* Empty Shifts row - left side */}
+                        {/* Callbacks Lane - left side */}
+                        {annotatedCallbackEvents.filter(e => e.centreId === centre.id).length > 0 && (
+                          <CallbackLane
+                            events={annotatedCallbackEvents.filter(e => e.centreId === centre.id)}
+                            dates={dates}
+                            columnWidthClass={columnWidthClass}
+                            side="left"
+                          />
+                        )}
                         {(() => {
                           const roomEmptyShifts = emptyShifts.filter(es => es.roomId === room.id && es.centreId === centre.id);
                           if (roomEmptyShifts.length === 0) return null;
@@ -1928,6 +1960,16 @@ export function StaffTimelineGrid({
                             );
                           })()}
 
+                          {/* Callbacks Lane - right side */}
+                          {annotatedCallbackEvents.filter(e => e.centreId === centre.id).length > 0 && (
+                            <CallbackLane
+                              events={annotatedCallbackEvents.filter(e => e.centreId === centre.id)}
+                              dates={dates}
+                              columnWidthClass={columnWidthClass}
+                              side="right"
+                            />
+                          )}
+
                           {/* Empty Shifts row - right side */}
                           {(() => {
                             const roomEmptyShifts = emptyShifts.filter(es => es.roomId === room.id && es.centreId === centre.id);
@@ -2149,6 +2191,7 @@ export function StaffTimelineGrid({
         parentShift={callbackShiftContext?.shift}
         staff={callbackShiftContext?.staff}
         defaultType={callbackShiftContext?.type || 'callback'}
+        onCallbackLogged={handleCallbackLogged}
       />
     </div>
   );
