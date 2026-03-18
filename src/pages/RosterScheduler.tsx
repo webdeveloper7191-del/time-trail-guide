@@ -2479,14 +2479,26 @@ export default function RosterScheduler() {
           demandData={demandData}
           complianceFlags={complianceFlags}
           existingShifts={shifts}
+          callbackEvents={callbackEvents}
           onClose={() => setSelectedShift(null)}
           onSave={handleShiftSave}
           onDelete={handleShiftDelete}
           onDuplicate={handleShiftDuplicate}
           onSwapStaff={handleSwapStaff}
           onCopyShift={handleCopyShift}
+          onLogCallback={handleDetailPanelLogCallback}
         />
       )}
+
+      {/* LogCallbackSheet triggered from ShiftDetailPanel */}
+      <LogCallbackSheet
+        open={!!detailPanelCallbackShift}
+        onOpenChange={(open) => { if (!open) setDetailPanelCallbackShift(null); }}
+        parentShift={detailPanelCallbackShift?.shift || null}
+        staff={detailPanelCallbackShift ? allStaff.find(s => s.id === detailPanelCallbackShift.shift.staffId) || null : null}
+        defaultType={detailPanelCallbackShift?.type || 'callback'}
+        onCallbackLogged={handleCallbackLogged}
+      />
 
       {selectedOpenShift && (
         <OpenShiftDetailPanel
