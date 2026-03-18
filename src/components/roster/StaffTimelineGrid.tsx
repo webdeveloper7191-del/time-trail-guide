@@ -130,6 +130,10 @@ interface StaffTimelineGridProps {
   onSendToAgency?: (openShift: OpenShift) => void;
   callbackEvents?: CallbackEvent[];
   onCallbackLogged?: (event: CallbackEvent) => void;
+  sleepoverEvents?: SleepoverEvent[];
+  onSleepoverLogged?: (event: SleepoverEvent) => void;
+  splitShiftEvents?: SplitShiftEvent[];
+  onSplitShiftLogged?: (event: SplitShiftEvent) => void;
 }
 
 export function StaffTimelineGrid({
