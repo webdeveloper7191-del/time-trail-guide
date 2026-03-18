@@ -66,6 +66,8 @@ interface ShiftDetailPanelProps {
   complianceFlags: RosterComplianceFlag[];
   existingShifts?: Shift[];
   callbackEvents?: CallbackEvent[];
+  sleepoverEvents?: SleepoverEvent[];
+  splitShiftEvents?: SplitShiftEvent[];
   onClose: () => void;
   onSave: (shift: Shift) => void;
   onDelete: (shiftId: string) => void;
@@ -73,7 +75,11 @@ interface ShiftDetailPanelProps {
   onSwapStaff: (shift: Shift) => void;
   onCopyShift?: (shift: Shift) => void;
   onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
+  onLogSleepover?: (shift: Shift) => void;
+  onLogSplitShift?: (shift: Shift) => void;
   onCallbackStatusChange?: (eventId: string, newStatus: CallbackEvent['status']) => void;
+  onSleepoverStatusChange?: (eventId: string, newStatus: SleepoverEvent['status']) => void;
+  onSplitShiftStatusChange?: (eventId: string, newStatus: SplitShiftEvent['status']) => void;
 }
 
 // Build status options from central config
