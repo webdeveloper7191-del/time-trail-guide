@@ -1280,6 +1280,242 @@ export function ShiftDetailPanel({
           </TabsContent>
         )}
 
+        )}
+
+        {/* Sleepovers Tab */}
+        {editedShift.shiftType === 'sleepover' && (
+          <TabsContent value="sleepovers" className="flex-1 m-0 mt-4">
+            <div className="space-y-6">
+              {/* Summary stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg border bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">{shiftSleepoverEvents.length}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Total Journals</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">
+                    {shiftSleepoverEvents.reduce((sum, e) => sum + e.disturbances.length, 0)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Disturbances</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">
+                    ${shiftSleepoverEvents.reduce((sum, e) => sum + e.totalPay, 0).toFixed(0)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Total Cost</p>
+                </div>
+              </div>
+
+              {/* Log new sleepover */}
+              {onLogSleepover && (
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Log New Event</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-auto py-2 flex items-center gap-2 border-purple-300 hover:bg-purple-500/10"
+                    onClick={() => onLogSleepover(editedShift)}
+                  >
+                    <Moon className="h-4 w-4 text-purple-600" />
+                    <span className="text-xs">Log Sleepover Journal</span>
+                  </Button>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Event history */}
+              {shiftSleepoverEvents.length === 0 ? (
+                <div className="text-center py-8">
+                  <Moon className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No sleepover journals logged</p>
+                  <p className="text-xs text-muted-foreground/70">Use the button above to log an event</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Event History</Label>
+                  {shiftSleepoverEvents.map((event) => {
+                    const statusColors: Record<string, string> = {
+                      logged: 'bg-blue-500/15 text-blue-700 border-blue-300',
+                      approved: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
+                      rejected: 'bg-destructive/15 text-destructive border-destructive/40',
+                      paid: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
+                    };
+
+                    return (
+                      <div key={event.id} className="rounded-lg border border-purple-300 bg-purple-500/10 p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Moon className="h-4 w-4 text-purple-600" />
+                            <span className="text-sm font-semibold text-purple-600">Sleepover Journal</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {event.overtimeTriggered && (
+                              <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">
+                                OT Triggered
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className={cn("text-[9px]", statusColors[event.status])}>
+                              {event.status}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>Check-in: {event.checkInTime ? format(new Date(event.checkInTime), 'HH:mm') : '—'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>Check-out: {event.checkOutTime ? format(new Date(event.checkOutTime), 'HH:mm') : '—'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <AlertTriangle className="h-3 w-3" />
+                            <span>{event.disturbances.length} disturbance{event.disturbances.length !== 1 ? 's' : ''} ({event.totalDisturbanceMinutes}min)</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <DollarSign className="h-3 w-3" />
+                            <span className="font-semibold text-foreground">${event.totalPay.toFixed(2)}</span>
+                          </div>
+                        </div>
+
+                        {event.notes && (
+                          <p className="text-[11px] text-muted-foreground border-t border-border/50 pt-1.5">{event.notes}</p>
+                        )}
+
+                        {/* Approve / Reject */}
+                        {event.status === 'logged' && onSleepoverStatusChange && (
+                          <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
+                            <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10" onClick={() => onSleepoverStatusChange(event.id, 'approved')}>
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Approve
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-destructive/50 text-destructive hover:bg-destructive/10" onClick={() => onSleepoverStatusChange(event.id, 'rejected')}>
+                              <XCircle className="h-3 w-3 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        )}
+                        {event.status === 'approved' && onSleepoverStatusChange && (
+                          <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
+                            <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10" onClick={() => onSleepoverStatusChange(event.id, 'paid')}>
+                              <DollarSign className="h-3 w-3 mr-1" /> Mark as Paid
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        )}
+
+        {/* Split Shifts Tab */}
+        {shiftSplitShiftEvents.length > 0 && (
+          <TabsContent value="splitshifts" className="flex-1 m-0 mt-4">
+            <div className="space-y-6">
+              {/* Summary stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg border bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">{shiftSplitShiftEvents.length}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Split Events</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">
+                    {shiftSplitShiftEvents.reduce((sum, e) => sum + e.segments.length, 0)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Total Segments</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">
+                    ${shiftSplitShiftEvents.reduce((sum, e) => sum + e.totalPay, 0).toFixed(0)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Total Cost</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Event history */}
+              <div className="space-y-3">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Event History</Label>
+                {shiftSplitShiftEvents.map((event) => {
+                  const statusColors: Record<string, string> = {
+                    logged: 'bg-blue-500/15 text-blue-700 border-blue-300',
+                    approved: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
+                    rejected: 'bg-destructive/15 text-destructive border-destructive/40',
+                    paid: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
+                  };
+
+                  return (
+                    <div key={event.id} className="rounded-lg border border-orange-300 bg-orange-500/10 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-orange-600" />
+                          <span className="text-sm font-semibold text-orange-600">Split Shift</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {!event.gapCompliant && (
+                            <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">
+                              Non-compliant
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className={cn("text-[9px]", statusColors[event.status])}>
+                            {event.status}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span>{event.segments.length} segments</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Timer className="h-3 w-3" />
+                          <span>{event.gapMinutes}min gap</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Zap className="h-3 w-3" />
+                          <span>Allowance: ${event.splitShiftAllowance.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <DollarSign className="h-3 w-3" />
+                          <span className="font-semibold text-foreground">${event.totalPay.toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      {event.notes && (
+                        <p className="text-[11px] text-muted-foreground border-t border-border/50 pt-1.5">{event.notes}</p>
+                      )}
+
+                      {/* Approve / Reject */}
+                      {event.status === 'logged' && onSplitShiftStatusChange && (
+                        <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
+                          <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10" onClick={() => onSplitShiftStatusChange(event.id, 'approved')}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Approve
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-destructive/50 text-destructive hover:bg-destructive/10" onClick={() => onSplitShiftStatusChange(event.id, 'rejected')}>
+                            <XCircle className="h-3 w-3 mr-1" /> Reject
+                          </Button>
+                        </div>
+                      )}
+                      {event.status === 'approved' && onSplitShiftStatusChange && (
+                        <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
+                          <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10" onClick={() => onSplitShiftStatusChange(event.id, 'paid')}>
+                            <DollarSign className="h-3 w-3 mr-1" /> Mark as Paid
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </TabsContent>
+        )}
+
         {/* Demand Tab */}
         <TabsContent value="demand" className="flex-1 m-0 mt-4">
           <div className="space-y-6">

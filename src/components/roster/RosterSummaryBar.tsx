@@ -105,6 +105,22 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
     return { totalEvents, totalCost, pendingCount };
   }, [callbackEvents]);
 
+  const sleepoverSummary = useMemo(() => {
+    const totalEvents = sleepoverEvents.length;
+    const totalCost = sleepoverEvents.reduce((sum, e) => sum + e.totalPay, 0);
+    const pendingCount = sleepoverEvents.filter(e => e.status === 'logged').length;
+    const otCount = sleepoverEvents.filter(e => e.overtimeTriggered).length;
+    return { totalEvents, totalCost, pendingCount, otCount };
+  }, [sleepoverEvents]);
+
+  const splitShiftSummary = useMemo(() => {
+    const totalEvents = splitShiftEvents.length;
+    const totalCost = splitShiftEvents.reduce((sum, e) => sum + e.totalPay, 0);
+    const pendingCount = splitShiftEvents.filter(e => e.status === 'logged').length;
+    const nonCompliant = splitShiftEvents.filter(e => !e.gapCompliant).length;
+    return { totalEvents, totalCost, pendingCount, nonCompliant };
+  }, [splitShiftEvents]);
+
   const items: SummaryItem[] = [
     { label: 'Empty', count: summary.empty, color: 'bg-background', bgColor: 'border border-border' },
     { label: 'Unpublished', count: summary.unpublished, color: shiftStatusColors.draft.legendBg, bgColor: shiftStatusColors.draft.badgeBg },
