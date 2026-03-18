@@ -1280,8 +1280,6 @@ export function ShiftDetailPanel({
           </TabsContent>
         )}
 
-        )}
-
         {/* Sleepovers Tab */}
         {editedShift.shiftType === 'sleepover' && (
           <TabsContent value="sleepovers" className="flex-1 m-0 mt-4">
