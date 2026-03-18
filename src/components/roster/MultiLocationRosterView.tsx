@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Centre, Shift, OpenShift, StaffMember, DemandData, RosterComplianceFlag, ShiftTemplate, ViewMode } from '@/types/roster';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
+import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { StaffTimelineGrid } from './StaffTimelineGrid';
 import { DayTimelineView } from './DayTimelineView';
