@@ -2110,8 +2110,12 @@ function StaffShiftCard({
   onSwap,
   onShiftTypeChange,
   onLogCallback,
+  onLogSleepover,
+  onLogSplitShift,
   onDragStart,
   callbackEvents = [],
+  sleepoverEvents = [],
+  splitShiftEvents = [],
   isCompact = false,
   isMonthView = false,
 }: {
@@ -2126,8 +2130,12 @@ function StaffShiftCard({
   onSwap?: () => void;
   onShiftTypeChange?: (shiftId: string, shiftType: ShiftSpecialType | undefined) => void;
   onLogCallback?: (shift: Shift, type: 'callback' | 'recall' | 'emergency') => void;
+  onLogSleepover?: (shift: Shift) => void;
+  onLogSplitShift?: (shift: Shift) => void;
   onDragStart: (e: React.DragEvent, shift: Shift) => void;
   callbackEvents?: CallbackEvent[];
+  sleepoverEvents?: import('@/types/shiftEvents').SleepoverEvent[];
+  splitShiftEvents?: import('@/types/shiftEvents').SplitShiftEvent[];
   isCompact?: boolean;
   isMonthView?: boolean;
 }) {
