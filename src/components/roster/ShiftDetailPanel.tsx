@@ -98,6 +98,7 @@ export function ShiftDetailPanel({
   onSwapStaff,
   onCopyShift,
   onLogCallback,
+  onCallbackStatusChange,
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
   const [showCoverageModal, setShowCoverageModal] = useState(false);
