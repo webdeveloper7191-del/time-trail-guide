@@ -2372,6 +2372,8 @@ export default function RosterScheduler() {
             onShiftResize={handleShiftResize}
             onAddShiftAtTime={handleAddShiftAtTime}
             onRemoveCentre={(centreId) => setActiveCentreIds(prev => prev.filter(id => id !== centreId))}
+            callbackEvents={callbackEvents}
+            onCallbackLogged={handleCallbackLogged}
           />
         ) : (
           <MultiLocationRosterView
