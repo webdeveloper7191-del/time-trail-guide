@@ -2139,6 +2139,14 @@ export function StaffTimelineGrid({
           </div>
         </div>
       )}
+      {/* Callback Logging Sheet */}
+      <LogCallbackSheet
+        open={callbackSheetOpen}
+        onOpenChange={setCallbackSheetOpen}
+        parentShift={callbackShiftContext?.shift}
+        staff={callbackShiftContext?.staff}
+        defaultType={callbackShiftContext?.type || 'callback'}
+      />
     </div>
   );
 }
