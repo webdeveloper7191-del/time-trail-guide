@@ -60,8 +60,10 @@ import {
 import { StaffAvailabilityOverlay } from './StaffAvailabilityOverlay';
 import { shiftStatusColors, shiftTypeConfig, getShiftTypeConfig, openShiftColors, specialIndicatorConfig } from '@/lib/rosterColors';
 import { LogCallbackSheet } from './LogCallbackSheet';
-
+import { LogSleepoverSheet } from './LogSleepoverSheet';
+import { LogSplitShiftSheet } from './LogSplitShiftSheet';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
+import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { detectRestViolation, annotateRestViolations } from '@/lib/restViolationDetection';
 import { toast } from 'sonner';
 
