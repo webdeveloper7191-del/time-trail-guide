@@ -67,6 +67,8 @@ interface MultiLocationRosterViewProps {
   onShiftResize?: (shiftId: string, newStartTime: string, newEndTime: string) => void;
   onRemoveCentre?: (centreId: string) => void;
   onAddShiftAtTime?: (staffId: string, date: string, roomId: string, startTime: string) => void;
+  callbackEvents?: CallbackEvent[];
+  onCallbackLogged?: (event: CallbackEvent) => void;
 }
 
 export function MultiLocationRosterView({
