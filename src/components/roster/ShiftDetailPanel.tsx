@@ -361,6 +361,15 @@ export function ShiftDetailPanel({
             <Zap className="h-3 w-3" />
             Allowances
           </TabsTrigger>
+          {(editedShift.shiftType === 'on_call' || editedShift.shiftType === 'recall') && (
+            <TabsTrigger value="callbacks" className="text-xs flex items-center gap-1">
+              <PhoneCall className="h-3 w-3" />
+              Callbacks
+              {shiftCallbackEvents.length > 0 && (
+                <Badge variant="secondary" className="h-4 px-1 text-[9px] ml-0.5">{shiftCallbackEvents.length}</Badge>
+              )}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="demand" className="text-xs flex items-center gap-1">
             <BarChart3 className="h-3 w-3" />
             Demand
