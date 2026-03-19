@@ -4274,7 +4274,7 @@ export const rosterSRS: ModuleSRS = {
           "Disturbance 1: 23:15–23:50 (35min) — participant needs medication assistance",
           "Disturbance 2: 01:30–02:20 (50min) — participant experiencing anxiety, requires support",
           "Disturbance 3: 04:45–05:10 (25min) — early morning personal care assistance",
-          "System checks: 3 disturbances > 2 max threshold AND 110min cumulative > 120min? No (110 < 120). But count threshold breached (3 > 2)",
+          "System checks: 3 disturbances vs 2 max threshold → count exceeded (3 > 2). Cumulative duration 110min vs 120min → not exceeded. However, conversion uses OR logic — count threshold alone is sufficient to trigger conversion",
           "CONVERSION TRIGGERED: Entire 10h period converts to active hours",
           "Conversion pay: 10h × $34.00 × 2.0 (overnight OT rate) = $680.00",
           "Sleepover allowance ($72.00) VOIDED — replaced by conversion pay",
