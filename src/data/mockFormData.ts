@@ -1342,6 +1342,7 @@ export const childcareOpeningChecklist: FormTemplate = {
   status: 'published',
   isEnabled: true,
   isIndustryTemplate: true,
+  scope: "system" as const,
   sections: [
     { id: 'sec-facility', title: 'Facility & Environment', description: 'Check all physical spaces are safe and ready', order: 0 },
     { id: 'sec-health', title: 'Health & Safety', description: 'Verify health and safety requirements', order: 1 },
@@ -1411,6 +1412,7 @@ export const childcareDailyRoomChecklist: FormTemplate = {
   status: 'published',
   isEnabled: true,
   isIndustryTemplate: true,
+  scope: "system" as const,
   sections: [
     { id: 'sec-hygiene', title: 'Health & Hygiene', description: 'Monitor hygiene practices throughout the day', order: 0 },
     { id: 'sec-supervision', title: 'Supervision & Safety', description: 'Ensure active supervision at all times', order: 1 },
@@ -1480,6 +1482,7 @@ export const childcareClosingChecklist: FormTemplate = {
   status: 'published',
   isEnabled: true,
   isIndustryTemplate: true,
+  scope: "system" as const,
   sections: [
     { id: 'sec-children', title: 'Children & Records', description: 'Ensure all children are collected and records complete', order: 0 },
     { id: 'sec-cleaning', title: 'Cleaning & Hygiene', description: 'Complete end-of-day cleaning tasks', order: 1 },
@@ -1542,6 +1545,7 @@ export const childcareEmergencyClosureChecklist: FormTemplate = {
   status: 'published',
   isEnabled: true,
   isIndustryTemplate: true,
+  scope: "system" as const,
   sections: [
     { id: 'sec-emergency', title: 'Emergency Response', description: 'Document the emergency situation and response', order: 0 },
     { id: 'sec-signoff', title: 'Sign-Off', description: 'Complete the report', order: 1 },
@@ -1609,6 +1613,7 @@ export const childcarePlannedClosureChecklist: FormTemplate = {
   status: 'published',
   isEnabled: true,
   isIndustryTemplate: true,
+  scope: "system" as const,
   sections: [
     { id: 'sec-preparation', title: 'Closure Preparation', description: 'Ensure all stakeholders are informed', order: 0 },
     { id: 'sec-signoff', title: 'Sign-Off', description: 'Complete the checklist', order: 1 },
@@ -1658,6 +1663,7 @@ export const childcareReopeningChecklist: FormTemplate = {
   status: 'published',
   isEnabled: true,
   isIndustryTemplate: true,
+  scope: "system" as const,
   sections: [
     { id: 'sec-safety', title: 'Safety & Readiness', description: 'Verify the facility is safe and ready to reopen', order: 0 },
     { id: 'sec-signoff', title: 'Sign-Off', description: 'Authorize reopening', order: 1 },
