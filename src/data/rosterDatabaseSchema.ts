@@ -1162,7 +1162,7 @@ CREATE TABLE roster_shifts.ShiftTemplates (
     end_time TIME NOT NULL,
     break_minutes INT DEFAULT 0,
     color NVARCHAR(50),
-    shift_type NVARCHAR(50) DEFAULT 'regular',  -- 'regular', 'on_call', 'sleepover', 'broken'
+    shift_type NVARCHAR(50) DEFAULT 'regular',  -- 'regular', 'on_call', 'sleepover', 'broken', 'recall', 'emergency'
     required_qualifications NVARCHAR(MAX),      -- JSON array
     minimum_classification NVARCHAR(50),
     preferred_role NVARCHAR(50),
