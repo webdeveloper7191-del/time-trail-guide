@@ -2523,6 +2523,7 @@ export default function RosterScheduler() {
         callbackEvents={callbackEvents}
         sleepoverEvents={sleepoverEvents}
         splitShiftEvents={splitShiftEvents}
+        shiftTemplates={shiftTemplates}
       />
 
       {selectedShift && (
