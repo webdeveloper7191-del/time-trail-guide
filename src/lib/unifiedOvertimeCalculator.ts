@@ -63,6 +63,7 @@ export interface OvertimeInput {
   isNightShift?: boolean;       // If shift includes night hours
   isEveningShift?: boolean;     // If shift includes evening hours
   shiftStartHour?: number;      // For time-based loading calculation
+  rosterPatternHours?: number;  // C3 fix: 12-hour patterns use 10h threshold instead of 7.6h
 }
 
 // Detailed overtime breakdown
