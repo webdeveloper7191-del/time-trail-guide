@@ -48,15 +48,15 @@ export function getAwardDefault(
 ): number | string | undefined {
   if (shiftType === 'on_call') {
     const config = DEFAULT_ON_CALL_CONFIGS[awardType];
-    return (config as Record<string, unknown>)[field] as number | string | undefined;
+    return (config as unknown as Record<string, number | string | undefined>)[field];
   }
   if (shiftType === 'sleepover') {
     const config = DEFAULT_SLEEPOVER_CONFIGS[awardType];
-    return (config as Record<string, unknown>)[field] as number | string | undefined;
+    return (config as unknown as Record<string, number | string | undefined>)[field];
   }
   if (shiftType === 'broken') {
     const config = DEFAULT_BROKEN_SHIFT_CONFIGS[awardType];
-    return (config as Record<string, unknown>)[field] as number | string | undefined;
+    return (config as unknown as Record<string, number | string | undefined>)[field];
   }
   return undefined;
 }
