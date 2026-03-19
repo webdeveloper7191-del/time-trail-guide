@@ -54,7 +54,8 @@ export function AssignStaffDialog({ open, onOpenChange, date, existingAssignment
       callbackCount: 0,
     });
 
-    toast.success(`${selectedStaff.name} assigned as ${role} on-call for ${format(new Date(date), 'MMM d')}`);
+    const dateLabel = isValidDate ? format(parsedDate, 'MMM d') : date;
+    toast.success(`${selectedStaff.name} assigned as ${role} on-call for ${dateLabel}`);
     setSelectedStaffId('');
     onOpenChange(false);
   };
