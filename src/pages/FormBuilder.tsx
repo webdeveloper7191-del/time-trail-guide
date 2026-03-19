@@ -431,7 +431,7 @@ export default function FormBuilder() {
           onSelectTemplate={handleSelectTemplate}
           onPreviewTemplate={handlePreviewTemplate}
           onCreateNew={handleCreateNew}
-          onCreateFromSystemTemplate={handleCreateFromSystemTemplate}
+          onCreateFromSystemTemplate={(tmpl) => handleCreateFromSystemTemplate(tmpl)}
         />
       )}
 
