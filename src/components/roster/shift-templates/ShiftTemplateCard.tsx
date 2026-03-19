@@ -252,32 +252,36 @@
      <div className="p-3 rounded-lg border border-border bg-background flex items-center gap-3">
        <div className="h-5 w-5 rounded-full flex-shrink-0" style={{ backgroundColor: template.color }} />
        <div className="flex-1 min-w-0">
-         <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-           <span className="text-sm font-medium">{template.name}</span>
-           {template.shiftType && template.shiftType !== 'regular' && (
-             <Badge variant="outline" className="text-xs gap-1">
-               {shiftTypeIcons[template.shiftType]}
-               {shiftTypeLabels[template.shiftType]}
-             </Badge>
-           )}
-           {isDefault && (
-             <Badge variant={hasChanged ? "destructive" : "outline"} className="text-xs">
-               {hasChanged ? "Modified" : "Default"}
-             </Badge>
-           )}
-           {template.requiredQualifications && template.requiredQualifications.length > 0 && (
-             <Badge variant="secondary" className="text-xs gap-1">
-               <GraduationCap size={10} />
-               {template.requiredQualifications.length} qual{template.requiredQualifications.length > 1 ? 's' : ''}
-             </Badge>
-           )}
-           {template.minimumClassification && (
-             <Badge variant="secondary" className="text-xs gap-1">
-               <Award size={10} />
-               {template.minimumClassification}
-             </Badge>
-           )}
-         </div>
+          <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+            <span className="text-sm font-medium">{template.name}</span>
+            {template.shiftType && template.shiftType !== 'regular' && (
+              <Badge variant="outline" className="text-xs gap-1">
+                {shiftTypeIcons[template.shiftType]}
+                {shiftTypeLabels[template.shiftType]}
+              </Badge>
+            )}
+            {isDefault && (
+              <Badge variant={hasChanged ? "destructive" : "outline"} className="text-xs">
+                {hasChanged ? "Modified" : "Default"}
+              </Badge>
+            )}
+            {template.requiredQualifications && template.requiredQualifications.length > 0 && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <GraduationCap size={10} />
+                {template.requiredQualifications.length} qual{template.requiredQualifications.length > 1 ? 's' : ''}
+              </Badge>
+            )}
+            {template.minimumClassification && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Award size={10} />
+                {template.minimumClassification}
+              </Badge>
+            )}
+            {(() => {
+              const { aboveCount, belowCount } = getDeviationSummary(template);
+              return <ConflictBadge aboveCount={aboveCount} belowCount={belowCount} />;
+            })()}
+          </div>
          <p className="text-xs text-muted-foreground">
            {template.startTime} - {template.endTime} • {template.breakMinutes}min break
            {template.preferredRole && ` • ${roleLabels[template.preferredRole]}`}
