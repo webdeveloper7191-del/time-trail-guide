@@ -166,7 +166,7 @@ export function StaffQualificationsSection({ staff }: StaffQualificationsSection
     };
   };
 
-  // Calculate compliance stats
+  // Calculate compliance stats (C8: accounts for grace period vs immediate block)
   const activeCount = qualifications.filter(q => q.status === 'active').length;
   const expiringSoonCount = qualifications.filter(q => {
     if (!q.expiryDate) return false;
@@ -177,7 +177,8 @@ export function StaffQualificationsSection({ staff }: StaffQualificationsSection
     if (!q.expiryDate) return false;
     return isBefore(new Date(q.expiryDate), new Date());
   }).length;
-  const requiredMissing = qualifications.filter(q => q.isRequired && (q.status === 'expired' || q.status === 'pending_verification')).length;
+  const blockedCount = qualifications.filter(q => isQualificationBlocked(q)).length;
+  const requiredMissing = qualifications.filter(q => q.isRequired && isQualificationBlocked(q)).length;
 
   const complianceScore = qualifications.length > 0 
     ? Math.round(((activeCount + expiringSoonCount) / qualifications.length) * 100)
