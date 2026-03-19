@@ -27,7 +27,7 @@ import { FormSettingsDrawer } from '@/components/forms/FormSettingsDrawer';
 import { EditTemplateDetailsDrawer } from '@/components/forms/EditTemplateDetailsDrawer';
 import { CreateTemplateDrawer } from '@/components/forms/CreateTemplateDrawer';
 import { FormsListingPage } from '@/components/forms/FormsListingPage';
-import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES, AutoPopulateToken } from '@/types/forms';
+import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES, AutoPopulateToken, FormTemplateScope } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { useFormBuilderUndoRedo } from '@/hooks/useFormBuilderUndoRedo';
 import { 
