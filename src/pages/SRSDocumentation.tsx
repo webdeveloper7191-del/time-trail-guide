@@ -164,14 +164,36 @@ const SRSDocumentation = () => {
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg"><FileText className="h-6 w-6 text-primary" /></div>
-              <div>
-                <h1 className="text-xl font-bold">Software Requirements Specification</h1>
-                <p className="text-sm text-muted-foreground">Roster • Demand • Awards • Performance Modules</p>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg"><FileText className="h-6 w-6 text-primary" /></div>
+                <div>
+                  <h1 className="text-xl font-bold">Software Requirements Specification</h1>
+                  <p className="text-sm text-muted-foreground">Roster • Demand • Awards • Performance Modules</p>
+                </div>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const activeModule = modules.find(m => m.id === activeTab);
+                  if (activeModule) exportSRSToPdf(activeModule.data);
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export Current
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => exportAllSRSToPdf(modules.map(m => ({ name: m.name, data: m.data })))}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export All
+              </Button>
             </div>
           </div>
         </div>
