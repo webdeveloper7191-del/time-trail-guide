@@ -1541,7 +1541,7 @@ export function StaffTimelineGrid({
                                                    onLogCallback={handleLogCallback}
                                                    onLogSleepover={handleLogSleepover}
                                                    onLogSplitShift={handleLogSplitShift}
-                                                   callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === shift.staffId && e.workStartTime?.startsWith(shift.date))}
+                                                   callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === shift.staffId && (e.onCallShiftId === shift.id || e.workStartTime?.startsWith(shift.date)))}
                                                    sleepoverEvents={externalSleepoverEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
                                                    splitShiftEvents={externalSplitShiftEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
                                                    onDragStart={handleShiftDragStart}
