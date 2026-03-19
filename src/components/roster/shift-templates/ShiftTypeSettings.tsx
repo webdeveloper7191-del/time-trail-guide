@@ -458,45 +458,58 @@
              {/* Allowance Pay */}
              <p className="text-xs font-medium text-muted-foreground pt-2">Broken Shift Allowance</p>
              <div className="grid grid-cols-2 gap-3">
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Allowance Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.brokenShiftSettings?.allowanceRate || 18.46}
-                   onChange={(e) => onUpdate({ 
-                     brokenShiftSettings: { ...template.brokenShiftSettings, allowanceRate: parseFloat(e.target.value) || 0 } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Gap Bonus Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.brokenShiftSettings?.gapBonusRate || ''}
-                   onChange={(e) => onUpdate({ 
-                     brokenShiftSettings: { ...template.brokenShiftSettings, gapBonusRate: parseFloat(e.target.value) || undefined } 
-                   })}
-                   placeholder="Per hour over min gap"
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
-             </div>
-             <div className="grid grid-cols-2 gap-3">
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Min Gap (minutes)</Label>
-                 <Input
-                   type="number"
-                   value={template.brokenShiftSettings?.minimumGapMinutes || 60}
-                   onChange={(e) => onUpdate({ 
-                     brokenShiftSettings: { ...template.brokenShiftSettings, minimumGapMinutes: parseInt(e.target.value) || 60 } 
-                   })}
-                   min={30}
-                   max={240}
-                 />
-               </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Allowance Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.brokenShiftSettings?.allowanceRate || 18.46}
+                    onChange={(e) => onUpdate({ 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, allowanceRate: parseFloat(e.target.value) || 0 } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.allowanceRate}
+                    templateValue={template.brokenShiftSettings?.allowanceRate}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Gap Bonus Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.brokenShiftSettings?.gapBonusRate || ''}
+                    onChange={(e) => onUpdate({ 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, gapBonusRate: parseFloat(e.target.value) || undefined } 
+                    })}
+                    placeholder="Per hour over min gap"
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.gapBonusRate}
+                    templateValue={template.brokenShiftSettings?.gapBonusRate}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Min Gap (minutes)</Label>
+                  <Input
+                    type="number"
+                    value={template.brokenShiftSettings?.minimumGapMinutes || 60}
+                    onChange={(e) => onUpdate({ 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, minimumGapMinutes: parseInt(e.target.value) || 60 } 
+                    })}
+                    min={30}
+                    max={240}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.minimumGapMinutes}
+                    templateValue={template.brokenShiftSettings?.minimumGapMinutes}
+                    formatValue={(v) => `${v} min`}
+                  />
+                </div>
                <div className="space-y-1.5">
                  <Label className="text-xs text-muted-foreground">Max Gap (minutes)</Label>
                  <Input
