@@ -369,8 +369,8 @@ export function FormsListingPage({
       {/* Duplicate Modal */}
       <DuplicateTemplateModal
         open={duplicateModalOpen}
-        onOpenChange={setDuplicateModalOpen}
         template={templateToDuplicate}
+        onClose={() => setDuplicateModalOpen(false)}
         onDuplicate={handleDuplicateComplete}
       />
     </div>

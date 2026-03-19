@@ -122,6 +122,7 @@ export default function FormBuilder() {
     category: 'custom',
     version: 1,
     status: 'draft',
+    scope: 'tenant',
     sections: [
       { id: 'section-1', title: 'Section 1', order: 0 },
     ],
