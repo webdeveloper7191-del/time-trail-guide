@@ -89,10 +89,23 @@ export interface EscalationRule {
   notifyAgencies?: string[];
 }
 
-// Default escalation rules
+// Configurable agency timeout range (C5 fix: 30-60 min per US-RST-016)
+export const AGENCY_TIMEOUT_RANGE = { min: 30, max: 60 } as const;
+export const DEFAULT_AGENCY_TIMEOUT_MINUTES = 30;
+
+// Urgency definitions (C6 fix: standardized across system)
+// 'urgent' = shift within 24 hours (per US-RST-015)
+// 'critical' = shift within 12 hours (per US-RST-044)
+export const URGENCY_THRESHOLDS = {
+  standard: { minHoursBefore: 24 },  // >24h before shift
+  urgent: { minHoursBefore: 12, maxHoursBefore: 24 },  // 12-24h before shift
+  critical: { maxHoursBefore: 12 },  // <12h before shift
+} as const;
+
+// Default escalation rules (C5 fix: uses configurable timeout, not hardcoded 30min)
 export const defaultEscalationRules: EscalationRule[] = [
   {
-    triggerAfterMinutes: 30,
+    triggerAfterMinutes: DEFAULT_AGENCY_TIMEOUT_MINUTES, // Configurable 30-60 per US-RST-016
     action: 'escalate_tier',
   },
   {
