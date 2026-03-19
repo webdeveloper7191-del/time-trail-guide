@@ -571,7 +571,8 @@ class SRSPdfBuilder {
         xPos += colWidths[1];
         
         this.doc.setFont('helvetica', 'normal');
-        this.doc.setTextColor(field.mandatory ? ...COLORS.critical : ...COLORS.low);
+        const reqColor = field.mandatory ? COLORS.critical : COLORS.low;
+        this.doc.setTextColor(...reqColor);
         this.doc.text(field.mandatory ? 'Yes' : 'No', xPos, this.y);
         xPos += colWidths[2];
         
