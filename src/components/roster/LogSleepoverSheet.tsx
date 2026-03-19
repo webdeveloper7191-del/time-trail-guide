@@ -102,22 +102,52 @@ export function LogSleepoverSheet({
 
   const payCalc = useMemo(() => {
     const totalDisturbanceMinutes = disturbances.reduce((sum, d) => sum + (d.durationMinutes || 0), 0);
-    const overtimeTriggered = disturbances.length >= DISTURBANCE_COUNT_THRESHOLD ||
-      totalDisturbanceMinutes >= DISTURBANCE_DURATION_THRESHOLD_MINUTES;
+    // C4 fix: OR logic — either count OR duration threshold triggers conversion
+    const countExceeded = disturbances.length >= DISTURBANCE_COUNT_THRESHOLD;
+    const durationExceeded = totalDisturbanceMinutes >= DISTURBANCE_DURATION_THRESHOLD_MINUTES;
+    const overtimeTriggered = countExceeded || durationExceeded;
 
     const flat = parseFloat(flatRate) || DEFAULT_FLAT_RATE;
     const hourlyRate = parseFloat(baseHourlyRate) || 35;
-    const overtimeMinutes = overtimeTriggered ? totalDisturbanceMinutes : 0;
-    const overtimePay = overtimeTriggered ? (overtimeMinutes / 60) * hourlyRate * OVERTIME_MULTIPLIER : 0;
+
+    if (overtimeTriggered) {
+      // Post-conversion: entire sleepover period converts to active hours at OT rate
+      // Sleepover allowance is voided (not stacked)
+      const checkIn = checkInTime || '22:00';
+      const checkOut = checkOutTime || '06:00';
+      const [inH, inM] = checkIn.split(':').map(Number);
+      const [outH, outM] = checkOut.split(':').map(Number);
+      let totalHours = (outH + outM / 60) - (inH + inM / 60);
+      if (totalHours < 0) totalHours += 24; // overnight
+      const conversionPay = totalHours * hourlyRate * OVERTIME_MULTIPLIER;
+
+      return {
+        totalDisturbanceMinutes,
+        disturbanceCount: disturbances.length,
+        overtimeTriggered: true,
+        overtimeMinutes: totalHours * 60,
+        conversionReason: countExceeded ? `Count threshold exceeded (${disturbances.length} ≥ ${DISTURBANCE_COUNT_THRESHOLD})` : `Duration threshold exceeded (${totalDisturbanceMinutes}min ≥ ${DISTURBANCE_DURATION_THRESHOLD_MINUTES}min)`,
+        flatRate: 0, // Voided on conversion
+        overtimePay: Math.round(conversionPay * 100) / 100,
+        totalPay: Math.round(conversionPay * 100) / 100,
+      };
+    }
+
+    // Below threshold: flat allowance + per-disturbance pay
+    const disturbancePay = disturbances.reduce((sum, d) => {
+      const mins = Math.max(d.durationMinutes || 0, 60); // 1h minimum per disturbance
+      return sum + (mins / 60) * hourlyRate * 1.5; // disturbance multiplier
+    }, 0);
 
     return {
       totalDisturbanceMinutes,
       disturbanceCount: disturbances.length,
-      overtimeTriggered,
-      overtimeMinutes,
+      overtimeTriggered: false,
+      overtimeMinutes: 0,
+      conversionReason: '',
       flatRate: flat,
-      overtimePay: Math.round(overtimePay * 100) / 100,
-      totalPay: Math.round((flat + overtimePay) * 100) / 100,
+      overtimePay: Math.round(disturbancePay * 100) / 100,
+      totalPay: Math.round((flat + disturbancePay) * 100) / 100,
     };
   }, [disturbances, flatRate, baseHourlyRate]);
 

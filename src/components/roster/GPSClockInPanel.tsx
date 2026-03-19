@@ -183,7 +183,7 @@ export function GPSClockInPanel() {
       centreName: newGeofence.name || 'New Centre',
       latitude: newGeofence.latitude || 0,
       longitude: newGeofence.longitude || 0,
-      radiusMeters: newGeofence.radiusMeters || 100,
+      radiusMeters: Math.max(50, newGeofence.radiusMeters || 100),
       isActive: true,
       allowedBuffer: newGeofence.allowedBuffer || 50,
       createdAt: new Date().toISOString(),
