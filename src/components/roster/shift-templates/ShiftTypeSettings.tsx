@@ -15,6 +15,8 @@
  import { Phone, Moon, ArrowLeftRight, Clock, Zap, AlertTriangle, ChevronDown, Car, TrendingUp } from 'lucide-react';
  import { cn } from '@/lib/utils';
  import { useState } from 'react';
+ import { AwardDefaultIndicator } from './AwardDefaultIndicator';
+ import { getAwardDefaults } from '@/lib/templateAwardValidation';
  
  const shiftTypeIcons: Record<ShiftSpecialType, React.ReactNode> = {
    regular: <Clock size={14} />,
@@ -39,6 +41,8 @@
    onCreateAllowance,
  }: ShiftTypeSettingsProps) {
    const shiftType = template.shiftType || 'regular';
+   const award: AwardType = 'general';
+   const awardDefaults = getAwardDefaults(shiftType, award);
    const [onCallOpen, setOnCallOpen] = useState(true);
    const [sleepoverOpen, setSleepoverOpen] = useState(true);
    const [brokenOpen, setBrokenOpen] = useState(true);
@@ -150,16 +154,20 @@
              <p className="text-xs font-medium text-muted-foreground pt-2">Standby Pay (paid regardless of callback)</p>
              <div className="grid grid-cols-2 gap-3">
                <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Standby Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.onCallSettings?.standbyRate || 15.42}
-                   onChange={(e) => onUpdate({ 
-                     onCallSettings: { ...template.onCallSettings, standbyRate: parseFloat(e.target.value) || 0 } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
+                  <Label className="text-xs text-muted-foreground">Standby Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.onCallSettings?.standbyRate || 15.42}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, standbyRate: parseFloat(e.target.value) || 0 } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.standbyRate}
+                    templateValue={template.onCallSettings?.standbyRate}
+                  />
                </div>
                <div className="space-y-1.5">
                  <Label className="text-xs text-muted-foreground">Rate Type</Label>
@@ -179,47 +187,61 @@
                </div>
              </div>
              <div className="space-y-1.5">
-               <Label className="text-xs text-muted-foreground">Weekend Standby Rate ($)</Label>
-               <Input
-                 type="number"
-                 value={template.onCallSettings?.weekendStandbyRate || ''}
-                 onChange={(e) => onUpdate({ 
-                   onCallSettings: { ...template.onCallSettings, weekendStandbyRate: parseFloat(e.target.value) || undefined } 
-                 })}
-                 placeholder="Higher rate for Sat/Sun"
-                 min={0}
-                 step={0.01}
-               />
+                <Label className="text-xs text-muted-foreground">Weekend Standby Rate ($)</Label>
+                <Input
+                  type="number"
+                  value={template.onCallSettings?.weekendStandbyRate || ''}
+                  onChange={(e) => onUpdate({ 
+                    onCallSettings: { ...template.onCallSettings, weekendStandbyRate: parseFloat(e.target.value) || undefined } 
+                  })}
+                  placeholder="Higher rate for Sat/Sun"
+                  min={0}
+                  step={0.01}
+                />
+                <AwardDefaultIndicator
+                  awardValue={awardDefaults.weekendStandbyRate}
+                  templateValue={template.onCallSettings?.weekendStandbyRate}
+                />
              </div>
              
              {/* Callback Pay */}
              <p className="text-xs font-medium text-muted-foreground pt-2">Callback Pay (when called in)</p>
              <div className="grid grid-cols-2 gap-3">
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Minimum Hours</Label>
-                 <Input
-                   type="number"
-                   value={template.onCallSettings?.callbackMinimumHours || 2}
-                   onChange={(e) => onUpdate({ 
-                     onCallSettings: { ...template.onCallSettings, callbackMinimumHours: parseInt(e.target.value) || 2 } 
-                   })}
-                   min={1}
-                   max={8}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Rate Multiplier</Label>
-                 <Input
-                   type="number"
-                   value={template.onCallSettings?.callbackRateMultiplier || 1.5}
-                   onChange={(e) => onUpdate({ 
-                     onCallSettings: { ...template.onCallSettings, callbackRateMultiplier: parseFloat(e.target.value) || 1.5 } 
-                   })}
-                   min={1}
-                   max={3}
-                   step={0.25}
-                 />
-               </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Minimum Hours</Label>
+                  <Input
+                    type="number"
+                    value={template.onCallSettings?.callbackMinimumHours || 2}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, callbackMinimumHours: parseInt(e.target.value) || 2 } 
+                    })}
+                    min={1}
+                    max={8}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.callbackMinimumHours}
+                    templateValue={template.onCallSettings?.callbackMinimumHours}
+                    formatValue={(v) => `${v}h`}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Rate Multiplier</Label>
+                  <Input
+                    type="number"
+                    value={template.onCallSettings?.callbackRateMultiplier || 1.5}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, callbackRateMultiplier: parseFloat(e.target.value) || 1.5 } 
+                    })}
+                    min={1}
+                    max={3}
+                    step={0.25}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.callbackRateMultiplier}
+                    templateValue={template.onCallSettings?.callbackRateMultiplier}
+                    formatValue={(v) => `${v}x`}
+                  />
+                </div>
              </div>
              <div className="space-y-1.5">
                <Label className="text-xs text-muted-foreground">Public Holiday Multiplier</Label>
@@ -277,84 +299,110 @@
              {/* Flat Rate Pay */}
              <p className="text-xs font-medium text-muted-foreground pt-2">Flat Rate (paid for sleepover)</p>
              <div className="grid grid-cols-3 gap-3">
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Flat Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.flatRate || 69.85}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, flatRate: parseFloat(e.target.value) || 0 } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Weekend Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.weekendFlatRate || ''}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, weekendFlatRate: parseFloat(e.target.value) || undefined } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Public Hol Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.publicHolidayFlatRate || ''}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, publicHolidayFlatRate: parseFloat(e.target.value) || undefined } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Flat Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.flatRate || 69.85}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, flatRate: parseFloat(e.target.value) || 0 } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.flatRate}
+                    templateValue={template.sleepoverSettings?.flatRate}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Weekend Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.weekendFlatRate || ''}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, weekendFlatRate: parseFloat(e.target.value) || undefined } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.weekendFlatRate}
+                    templateValue={template.sleepoverSettings?.weekendFlatRate}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Public Hol Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.publicHolidayFlatRate || ''}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, publicHolidayFlatRate: parseFloat(e.target.value) || undefined } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.publicHolidayFlatRate}
+                    templateValue={template.sleepoverSettings?.publicHolidayFlatRate}
+                  />
+                </div>
              </div>
              
              {/* Disturbance Pay */}
              <p className="text-xs font-medium text-muted-foreground pt-2">Disturbance Pay (when sleep is interrupted)</p>
              <div className="grid grid-cols-3 gap-3">
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Hourly Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.disturbanceRatePerHour || 45.50}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, disturbanceRatePerHour: parseFloat(e.target.value) || 0 } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Min Hours</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.disturbanceMinimumHours || 1}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, disturbanceMinimumHours: parseInt(e.target.value) || 1 } 
-                   })}
-                   min={1}
-                   max={4}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Rate Multiplier</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.disturbanceRateMultiplier || 1.5}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, disturbanceRateMultiplier: parseFloat(e.target.value) || 1.5 } 
-                   })}
-                   min={1}
-                   max={3}
-                   step={0.25}
-                 />
-               </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Hourly Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.disturbanceRatePerHour || 45.50}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, disturbanceRatePerHour: parseFloat(e.target.value) || 0 } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.disturbanceRatePerHour}
+                    templateValue={template.sleepoverSettings?.disturbanceRatePerHour}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Min Hours</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.disturbanceMinimumHours || 1}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, disturbanceMinimumHours: parseInt(e.target.value) || 1 } 
+                    })}
+                    min={1}
+                    max={4}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.disturbanceMinimumHours}
+                    templateValue={template.sleepoverSettings?.disturbanceMinimumHours}
+                    formatValue={(v) => `${v}h`}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Rate Multiplier</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.disturbanceRateMultiplier || 1.5}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, disturbanceRateMultiplier: parseFloat(e.target.value) || 1.5 } 
+                    })}
+                    min={1}
+                    max={3}
+                    step={0.25}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.disturbanceRateMultiplier}
+                    templateValue={template.sleepoverSettings?.disturbanceRateMultiplier}
+                    formatValue={(v) => `${v}x`}
+                  />
+                </div>
              </div>
            </CollapsibleContent>
          </Collapsible>
@@ -410,45 +458,58 @@
              {/* Allowance Pay */}
              <p className="text-xs font-medium text-muted-foreground pt-2">Broken Shift Allowance</p>
              <div className="grid grid-cols-2 gap-3">
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Allowance Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.brokenShiftSettings?.allowanceRate || 18.46}
-                   onChange={(e) => onUpdate({ 
-                     brokenShiftSettings: { ...template.brokenShiftSettings, allowanceRate: parseFloat(e.target.value) || 0 } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Gap Bonus Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.brokenShiftSettings?.gapBonusRate || ''}
-                   onChange={(e) => onUpdate({ 
-                     brokenShiftSettings: { ...template.brokenShiftSettings, gapBonusRate: parseFloat(e.target.value) || undefined } 
-                   })}
-                   placeholder="Per hour over min gap"
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
-             </div>
-             <div className="grid grid-cols-2 gap-3">
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Min Gap (minutes)</Label>
-                 <Input
-                   type="number"
-                   value={template.brokenShiftSettings?.minimumGapMinutes || 60}
-                   onChange={(e) => onUpdate({ 
-                     brokenShiftSettings: { ...template.brokenShiftSettings, minimumGapMinutes: parseInt(e.target.value) || 60 } 
-                   })}
-                   min={30}
-                   max={240}
-                 />
-               </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Allowance Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.brokenShiftSettings?.allowanceRate || 18.46}
+                    onChange={(e) => onUpdate({ 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, allowanceRate: parseFloat(e.target.value) || 0 } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.allowanceRate}
+                    templateValue={template.brokenShiftSettings?.allowanceRate}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Gap Bonus Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.brokenShiftSettings?.gapBonusRate || ''}
+                    onChange={(e) => onUpdate({ 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, gapBonusRate: parseFloat(e.target.value) || undefined } 
+                    })}
+                    placeholder="Per hour over min gap"
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.gapBonusRate}
+                    templateValue={template.brokenShiftSettings?.gapBonusRate}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Min Gap (minutes)</Label>
+                  <Input
+                    type="number"
+                    value={template.brokenShiftSettings?.minimumGapMinutes || 60}
+                    onChange={(e) => onUpdate({ 
+                      brokenShiftSettings: { ...template.brokenShiftSettings, minimumGapMinutes: parseInt(e.target.value) || 60 } 
+                    })}
+                    min={30}
+                    max={240}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.minimumGapMinutes}
+                    templateValue={template.brokenShiftSettings?.minimumGapMinutes}
+                    formatValue={(v) => `${v} min`}
+                  />
+                </div>
                <div className="space-y-1.5">
                  <Label className="text-xs text-muted-foreground">Max Gap (minutes)</Label>
                  <Input
