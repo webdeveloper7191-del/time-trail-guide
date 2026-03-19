@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Filter, ChevronDown, Plus, FileText, MoreVertical, Eye, Edit, Copy, Trash2, Archive, Power, PowerOff, Shield, Sparkles, Wrench, AlertTriangle, ArrowLeftRight, ClipboardCheck, GraduationCap, Building2, Globe, MapPin } from 'lucide-react';
+import { Search, Filter, ChevronDown, Plus, FileText, MoreVertical, Eye, Edit, Copy, Trash2, Archive, Power, PowerOff, Shield, Sparkles, Wrench, AlertTriangle, ArrowLeftRight, ClipboardCheck, GraduationCap, Building2, Globe, MapPin, CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +54,6 @@ export function FormsListingPage({
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
   const [templateToDuplicate, setTemplateToDuplicate] = useState<FormTemplate | null>(null);
 
-  // Stats
   const stats = useMemo(() => {
     const total = templates.length;
     const system = templates.filter(t => t.scope === 'system').length;
@@ -63,11 +62,9 @@ export function FormsListingPage({
     const published = templates.filter(t => t.status === 'published').length;
     const draft = templates.filter(t => t.status === 'draft').length;
     const archived = templates.filter(t => t.status === 'archived').length;
-    const totalFields = templates.reduce((sum, t) => sum + t.fields.length, 0);
-    return { total, system, tenant, location, published, draft, archived, totalFields };
+    return { total, system, tenant, location, published, draft, archived };
   }, [templates]);
 
-  // Filtered templates
   const filteredTemplates = useMemo(() => {
     return templates.filter(t => {
       const matchesSearch = !searchQuery ||
@@ -142,66 +139,76 @@ export function FormsListingPage({
     }
   };
 
-  const tabs: { key: TabFilter; label: string; count: number; icon?: React.ReactNode }[] = [
-    { key: 'all', label: 'All Templates', count: stats.total, icon: <FileText className="h-4 w-4" /> },
-    { key: 'system', label: 'System Templates', count: stats.system, icon: <Globe className="h-4 w-4" /> },
-    { key: 'tenant', label: 'Tenant Templates', count: stats.tenant, icon: <Building2 className="h-4 w-4" /> },
-    { key: 'location', label: 'Location Templates', count: stats.location, icon: <MapPin className="h-4 w-4" /> },
-    { key: 'published', label: 'Published', count: stats.published },
-    { key: 'draft', label: 'Draft', count: stats.draft },
+  const statCards = [
+    { label: 'Total Templates', value: stats.total, sub: 'All templates', iconBg: 'bg-primary/10', iconColor: 'text-primary', icon: <FileText className="h-5 w-5" /> },
+    { label: 'System Templates', value: stats.system, sub: 'Industry standard', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', icon: <Globe className="h-5 w-5" /> },
+    { label: 'Published', value: stats.published, sub: 'Active forms', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', icon: <CheckCircle2 className="h-5 w-5" /> },
+    { label: 'Draft', value: stats.draft, sub: 'In progress', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', icon: <Edit className="h-5 w-5" /> },
+    { label: 'Tenant Templates', value: stats.tenant, sub: 'Organization wide', iconBg: 'bg-teal-100', iconColor: 'text-teal-600', icon: <Building2 className="h-5 w-5" /> },
+    { label: 'Location Templates', value: stats.location, sub: 'Site specific', iconBg: 'bg-orange-100', iconColor: 'text-orange-600', icon: <MapPin className="h-5 w-5" /> },
+  ];
+
+  const tabs: { key: TabFilter; label: string; count: number; icon?: React.ReactNode; iconColor?: string }[] = [
+    { key: 'all', label: 'All Templates', count: stats.total, icon: <FileText className="h-4 w-4" />, iconColor: 'text-primary' },
+    { key: 'system', label: 'System', count: stats.system, icon: <Globe className="h-4 w-4" />, iconColor: 'text-blue-500' },
+    { key: 'tenant', label: 'Tenant', count: stats.tenant, icon: <Building2 className="h-4 w-4" />, iconColor: 'text-emerald-500' },
+    { key: 'location', label: 'Location', count: stats.location, icon: <MapPin className="h-4 w-4" />, iconColor: 'text-amber-500' },
+    { key: 'published', label: 'Published', count: stats.published, icon: <CheckCircle2 className="h-4 w-4" />, iconColor: 'text-green-500' },
+    { key: 'draft', label: 'Draft', count: stats.draft, icon: <Edit className="h-4 w-4" />, iconColor: 'text-amber-500' },
   ];
 
   return (
     <div className="flex flex-col h-full">
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 px-6 pt-5 pb-4">
-        {[
-          { label: 'Total Templates', value: stats.total, icon: <FileText className="h-4 w-4 text-primary" /> },
-          { label: 'System Templates', value: stats.system, icon: <Globe className="h-4 w-4 text-blue-500" /> },
-          { label: 'Tenant Templates', value: stats.tenant, icon: <Building2 className="h-4 w-4 text-emerald-500" /> },
-          { label: 'Published', value: stats.published, icon: <ClipboardCheck className="h-4 w-4 text-green-500" /> },
-          { label: 'Draft', value: stats.draft, icon: <Edit className="h-4 w-4 text-amber-500" /> },
-          { label: 'Archived', value: stats.archived, icon: <Archive className="h-4 w-4 text-muted-foreground" /> },
-          { label: 'Total Fields', value: stats.totalFields, icon: <FileText className="h-4 w-4 text-violet-500" /> },
-        ].map((stat, i) => (
-          <div key={i} className="bg-background rounded-lg border border-border p-3 flex items-start justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-              <p className="text-xl font-bold text-foreground mt-0.5">{stat.value}</p>
+      {/* Stat Cards - matching reference layout */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 px-6 pt-5 pb-4">
+        {statCards.map((stat, i) => (
+          <div key={i} className="bg-background rounded-xl border border-border p-4 flex items-start justify-between">
+            <div className="flex flex-col">
+              <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.sub}</p>
             </div>
-            <div className="p-1.5 rounded-full bg-muted/50">{stat.icon}</div>
+            <div className={cn("p-2 rounded-full", stat.iconBg, stat.iconColor)}>
+              {stat.icon}
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - matching reference with icon + colored badge */}
       <div className="px-6 border-b border-border">
-        <div className="flex items-center gap-1 overflow-x-auto">
+        <div className="flex items-center gap-0.5 overflow-x-auto">
           {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
+                "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
                 activeTab === tab.key
-                  ? "border-primary text-primary"
+                  ? "border-primary text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
               )}
             >
-              {tab.icon}
+              {tab.icon && (
+                <span className={cn(activeTab === tab.key ? tab.iconColor : 'text-muted-foreground')}>
+                  {tab.icon}
+                </span>
+              )}
               {tab.label}
               <span className={cn(
-                "ml-1 text-xs px-1.5 py-0.5 rounded-full",
-                activeTab === tab.key ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                "text-xs font-semibold px-2 py-0.5 rounded-full min-w-[1.5rem] text-center",
+                activeTab === tab.key
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground"
               )}>
-                {tab.count}
+                {String(tab.count).padStart(2, '0')}
               </span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Search + Filters + Actions */}
+      {/* Search + Filters + Bulk Actions */}
       <div className="flex items-center gap-3 px-6 py-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -212,14 +219,12 @@ export function FormsListingPage({
             className="pl-9"
           />
         </div>
-        <Button variant="outline" size="sm">
-          <Filter className="h-4 w-4 mr-1" /> Filter <ChevronDown className="h-3.5 w-3.5 ml-1" />
+        <Button variant="outline" size="sm" className="gap-1.5">
+          <Filter className="h-4 w-4" /> Filter <ChevronDown className="h-3.5 w-3.5" />
         </Button>
-        {selectedIds.size > 0 && (
-          <Button variant="outline" size="sm">
-            Bulk Actions <ChevronDown className="h-3.5 w-3.5 ml-1" />
-          </Button>
-        )}
+        <Button variant="outline" size="sm" className="gap-1.5">
+          Bulk Actions <ChevronDown className="h-3.5 w-3.5" />
+        </Button>
       </div>
 
       {/* Table */}
@@ -227,22 +232,22 @@ export function FormsListingPage({
         <div className="border border-border rounded-lg bg-background">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/30">
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
                 <TableHead className="w-10">
                   <Checkbox
                     checked={filteredTemplates.length > 0 && selectedIds.size === filteredTemplates.length}
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead className="font-semibold">Template Name</TableHead>
-                <TableHead className="font-semibold">Category</TableHead>
-                <TableHead className="font-semibold">Scope</TableHead>
-                <TableHead className="font-semibold">Fields</TableHead>
-                <TableHead className="font-semibold">Version</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="font-semibold">Created By</TableHead>
-                <TableHead className="font-semibold">Updated</TableHead>
-                <TableHead className="font-semibold w-16">Actions</TableHead>
+                <TableHead className="font-semibold text-foreground">Template Name ⇅</TableHead>
+                <TableHead className="font-semibold text-foreground">Category ⇅</TableHead>
+                <TableHead className="font-semibold text-foreground">Scope ⇅</TableHead>
+                <TableHead className="font-semibold text-foreground">Fields</TableHead>
+                <TableHead className="font-semibold text-foreground">Version</TableHead>
+                <TableHead className="font-semibold text-foreground">Status ⇅</TableHead>
+                <TableHead className="font-semibold text-foreground">Created By</TableHead>
+                <TableHead className="font-semibold text-foreground">Updated</TableHead>
+                <TableHead className="font-semibold text-foreground w-16">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -366,7 +371,6 @@ export function FormsListingPage({
         </div>
       </div>
 
-      {/* Duplicate Modal */}
       <DuplicateTemplateModal
         open={duplicateModalOpen}
         template={templateToDuplicate}
