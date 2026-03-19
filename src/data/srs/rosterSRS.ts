@@ -4574,7 +4574,7 @@ export const rosterSRS: ModuleSRS = {
         { name: "paid_break_minutes", type: "INT", mandatory: true, description: "Paid break portion", defaultValue: "0" },
         { name: "calculated_hours", type: "DECIMAL(5,2)", mandatory: false, description: "Net hours (end-start-break)" },
         { name: "status", type: "NVARCHAR(50)", mandatory: true, description: "draft, published, confirmed, in_progress, completed, cancelled", defaultValue: "'draft'" },
-        { name: "shift_type", type: "NVARCHAR(50)", mandatory: true, description: "regular, on_call, sleepover, broken, training", defaultValue: "'regular'" },
+        { name: "shift_type", type: "NVARCHAR(50)", mandatory: true, description: "regular, on_call, sleepover, broken, recall, emergency (per US-RST-044 and shift type user stories US-RST-071 through US-RST-076)", defaultValue: "'regular'" },
         { name: "is_open_shift", type: "BIT", mandatory: true, description: "Whether unassigned and available for claiming", defaultValue: "0" },
         { name: "urgency_level", type: "NVARCHAR(20)", mandatory: true, description: "normal, urgent, critical", defaultValue: "'normal'" },
         { name: "is_ai_generated", type: "BIT", mandatory: true, description: "Created by AI solver", defaultValue: "0" },
