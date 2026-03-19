@@ -299,42 +299,54 @@
              {/* Flat Rate Pay */}
              <p className="text-xs font-medium text-muted-foreground pt-2">Flat Rate (paid for sleepover)</p>
              <div className="grid grid-cols-3 gap-3">
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Flat Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.flatRate || 69.85}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, flatRate: parseFloat(e.target.value) || 0 } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Weekend Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.weekendFlatRate || ''}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, weekendFlatRate: parseFloat(e.target.value) || undefined } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Public Hol Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.publicHolidayFlatRate || ''}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, publicHolidayFlatRate: parseFloat(e.target.value) || undefined } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Flat Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.flatRate || 69.85}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, flatRate: parseFloat(e.target.value) || 0 } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.flatRate}
+                    templateValue={template.sleepoverSettings?.flatRate}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Weekend Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.weekendFlatRate || ''}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, weekendFlatRate: parseFloat(e.target.value) || undefined } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.weekendFlatRate}
+                    templateValue={template.sleepoverSettings?.weekendFlatRate}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Public Hol Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.publicHolidayFlatRate || ''}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, publicHolidayFlatRate: parseFloat(e.target.value) || undefined } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.publicHolidayFlatRate}
+                    templateValue={template.sleepoverSettings?.publicHolidayFlatRate}
+                  />
+                </div>
              </div>
              
              {/* Disturbance Pay */}
