@@ -1808,6 +1808,12 @@ export function StaffTimelineGrid({
                                               <span>${costs.overtimeCost}</span>
                                             </div>
                                           )}
+                                          {costs.allowanceCost > 0 && (
+                                            <div className="flex justify-between gap-4 text-purple-600">
+                                              <span>Allowances:</span>
+                                              <span>${costs.allowanceCost}</span>
+                                            </div>
+                                          )}
                                           <div className="flex justify-between gap-4 font-medium border-t border-border pt-1">
                                             <span>Total:</span>
                                             <span>${costs.totalCost}</span>
