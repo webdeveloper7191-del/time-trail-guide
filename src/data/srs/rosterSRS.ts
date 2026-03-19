@@ -462,8 +462,8 @@ export const rosterSRS: ModuleSRS = {
         "Required qualifications: First Aid, CPR, Background Check, Certification",
         "Role-specific: Diploma, Bachelor, Trade Certificate, Food Safety",
         "Alert recipients: Staff member, their manager, HR",
-        "Grace period: 7 days after expiry before blocking",
-        "Expired background check: Immediate block from all shifts",
+        "Grace period: 7 days after expiry before blocking — EXCEPT background checks, which are exempt from grace period and result in immediate block (per BR-RST-022). Grace period applies only to clinical/professional qualifications",
+        "Expired background check: Immediate block from all shifts (no grace period — overrides the general 7-day grace rule)",
         "Qualification verification linked to regulatory body APIs where available"
       ],
       priority: "high",
