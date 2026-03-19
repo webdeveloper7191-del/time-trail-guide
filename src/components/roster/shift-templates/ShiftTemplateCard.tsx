@@ -10,6 +10,8 @@
  import { ShiftTypeSettings } from './ShiftTypeSettings';
  import { AllowanceType } from '@/types/allowances';
  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+ import { ConflictBadge } from './AwardDefaultIndicator';
+ import { getDeviationSummary } from '@/lib/templateAwardValidation';
  
  const shiftTypeIcons: Record<ShiftSpecialType, React.ReactNode> = {
    regular: <Clock size={12} />,
