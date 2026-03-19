@@ -3,7 +3,7 @@ import { Shift, OpenShift, StaffMember, ShiftTemplate, defaultShiftTemplates } f
 import { CallbackEvent } from './CallbackEventLoggingPanel';
 import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { useMemo, useState } from 'react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
 import { 
   ChevronDown,
   ChevronUp,
