@@ -25,8 +25,9 @@ import { FieldTemplatesLibrary } from '@/components/forms/FieldTemplatesLibrary'
 import { CustomTokenManager } from '@/components/forms/CustomTokenManager';
 import { FormSettingsDrawer } from '@/components/forms/FormSettingsDrawer';
 import { EditTemplateDetailsDrawer } from '@/components/forms/EditTemplateDetailsDrawer';
+import { CreateTemplateDrawer } from '@/components/forms/CreateTemplateDrawer';
 import { FormsListingPage } from '@/components/forms/FormsListingPage';
-import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES, AutoPopulateToken } from '@/types/forms';
+import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES, AutoPopulateToken, FormTemplateScope } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { useFormBuilderUndoRedo } from '@/hooks/useFormBuilderUndoRedo';
 import { 
@@ -80,6 +81,7 @@ export default function FormBuilder() {
   const [customTokens, setCustomTokens] = useState<AutoPopulateToken[]>([]);
   const [targetSubmissionId, setTargetSubmissionId] = useState<string | null>(null);
   const [targetTaskId, setTargetTaskId] = useState<string | null>(null);
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
 
   const handleNavigateToSubmission = (submissionId: string) => {
     setTargetSubmissionId(submissionId);
@@ -165,18 +167,42 @@ export default function FormBuilder() {
   };
 
   const handleCreateNew = () => {
-    const newTemplate = createNewTemplate();
+    setShowCreateDrawer(true);
+  };
+
+  const handleCreateFromScratch = (config: { name: string; description: string; category: string; scope: FormTemplateScope; locationId?: string; locationName?: string }) => {
+    const newTemplate: FormTemplate = {
+      id: `template-${Date.now()}`,
+      name: config.name,
+      description: config.description,
+      category: config.category,
+      version: 1,
+      status: 'draft',
+      scope: config.scope,
+      locationId: config.locationId,
+      locationName: config.locationName,
+      sections: [{ id: 'section-1', title: 'Section 1', order: 0 }],
+      fields: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'current-user',
+      createdByName: 'Current User',
+    };
+    setTemplates(prev => [newTemplate, ...prev]);
     setTemplate(newTemplate);
     setViewMode('builder');
     setSelectedFieldId(null);
+    toast.success(`Template "${config.name}" created`);
   };
 
-  const handleCreateFromSystemTemplate = (systemTemplate: FormTemplate) => {
+  const handleCreateFromSystemTemplate = (systemTemplate: FormTemplate, config?: { name: string; scope: FormTemplateScope; locationId?: string; locationName?: string }) => {
     const newTemplate: FormTemplate = {
       ...systemTemplate,
       id: `template-${Date.now()}`,
-      name: `${systemTemplate.name} (Custom)`,
-      scope: 'tenant',
+      name: config?.name || `${systemTemplate.name} (Custom)`,
+      scope: config?.scope || 'tenant',
+      locationId: config?.locationId,
+      locationName: config?.locationName,
       status: 'draft',
       isIndustryTemplate: false,
       duplicatedFrom: systemTemplate.id,
@@ -190,7 +216,7 @@ export default function FormBuilder() {
     setTemplate(newTemplate);
     setViewMode('builder');
     setSelectedFieldId(null);
-    toast.success(`Created tenant form from system template "${systemTemplate.name}"`);
+    toast.success(`Created form from system template "${systemTemplate.name}"`);
   };
 
   const handleSaveTemplate = () => {
@@ -405,7 +431,7 @@ export default function FormBuilder() {
           onSelectTemplate={handleSelectTemplate}
           onPreviewTemplate={handlePreviewTemplate}
           onCreateNew={handleCreateNew}
-          onCreateFromSystemTemplate={handleCreateFromSystemTemplate}
+          onCreateFromSystemTemplate={(tmpl) => handleCreateFromSystemTemplate(tmpl)}
         />
       )}
 
@@ -616,6 +642,16 @@ export default function FormBuilder() {
           }}
         />
       )}
+
+      {/* Create Template Drawer */}
+      <CreateTemplateDrawer
+        open={showCreateDrawer}
+        onClose={() => setShowCreateDrawer(false)}
+        systemTemplates={templates.filter(t => t.scope === 'system')}
+        onCreateFromScratch={handleCreateFromScratch}
+        onCreateFromSystemTemplate={(tmpl, config) => handleCreateFromSystemTemplate(tmpl, config)}
+        onPreviewTemplate={handlePreviewTemplate}
+      />
     </div>
   );
 }
