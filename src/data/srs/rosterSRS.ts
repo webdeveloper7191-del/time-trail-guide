@@ -1038,7 +1038,7 @@ export const rosterSRS: ModuleSRS = {
         "If unfilled, auto-escalates to agency (if configured)"
       ],
       businessLogic: [
-        "Urgent flag: Within 24 hours of shift start",
+        "Urgency levels: 'urgent' = shift within 24 hours of start; 'critical' = shift within 12 hours of start (aligned with US-RST-044). Alert system (US-RST-045) uses these same thresholds for coverage gap severity",
         "Broadcast channels: Push notification, SMS (optional), email",
         "Response window: First 30 minutes priority to internal staff",
         "Auto-escalation: After 1 hour without response, escalate to agencies",
