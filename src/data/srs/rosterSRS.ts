@@ -4236,7 +4236,7 @@ export const rosterSRS: ModuleSRS = {
       businessLogic: [
         "Undisturbed sleepover: Pay = flat sleepover allowance (e.g., $65.00 per night). No other pay components",
         "Disturbance pay (below threshold): Sleepover allowance + Σ(max(disturbance_duration, 1h) × base_rate × disturbance_multiplier)",
-        "Conversion threshold (configurable): disturbance_count > maxDisturbances (default 2) OR cumulative_disturbance_minutes > maxDisturbanceMinutes (default 120)",
+        "Conversion threshold (configurable): disturbance_count > maxDisturbances (default 2) OR cumulative_disturbance_minutes > maxDisturbanceMinutes (default 120). Whichever threshold is reached first triggers conversion — they are independent checks evaluated after each disturbance event",
         "Post-conversion pay: Entire sleepover period calculated as active hours × base_rate × overtime_multiplier (2.0×). Sleepover allowance is voided (not stacked)",
         "Example undisturbed: Staff sleeps 22:00–06:00. Pay = $65.00 flat",
         "Example 1 disturbance: Staff called at 01:00 for 20min. Pay = $65.00 + (1h minimum × $32.50 × 1.5) = $65.00 + $48.75 = $113.75",
