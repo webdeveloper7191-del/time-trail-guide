@@ -16,6 +16,7 @@ import { demandSRS } from '@/data/srs/demandSRS';
 
 const SRSDocumentation = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('roster');
   const [expandedStories, setExpandedStories] = useState<string[]>([]);
 
   const toggleStory = (id: string) => {
