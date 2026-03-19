@@ -2329,13 +2329,16 @@ function StaffShiftCard({
                   : undefined,
               }}
             >
-              {/* Left accent bar */}
-              <div className={cn(
-                "absolute left-0 top-0 bottom-0 w-0.5",
-                shift.isAbsent
-                  ? "bg-destructive"
-                  : (shiftTypeInfo ? shiftTypeInfo.bgColor.replace('/20', '') : style.accent)
-              )} />
+              {/* Left accent bar - template color > shift type > status */}
+              <div 
+                className={cn(
+                  "absolute left-0 top-0 bottom-0 w-0.5",
+                  shift.isAbsent
+                    ? "bg-destructive"
+                    : !shift.templateColor && (shiftTypeInfo ? shiftTypeInfo.bgColor.replace('/20', '') : style.accent)
+                )}
+                style={!shift.isAbsent && shift.templateColor ? { backgroundColor: shift.templateColor } : undefined}
+              />
               
               {/* Absent indicator */}
               {shift.isAbsent && (
@@ -2388,13 +2391,16 @@ function StaffShiftCard({
                 : undefined,
             }}
           >
-      {/* Left accent bar - colored by shift type if special */}
-      <div className={cn(
-        "absolute left-0 top-0 bottom-0 w-1",
-        shift.isAbsent
-          ? "bg-destructive"
-          : (shiftTypeInfo ? shiftTypeInfo.bgColor.replace('/20', '') : style.accent)
-      )} />
+      {/* Left accent bar - template color > shift type > status */}
+      <div 
+        className={cn(
+          "absolute left-0 top-0 bottom-0 w-1",
+          shift.isAbsent
+            ? "bg-destructive"
+            : !shift.templateColor && (shiftTypeInfo ? shiftTypeInfo.bgColor.replace('/20', '') : style.accent)
+        )}
+        style={!shift.isAbsent && shift.templateColor ? { backgroundColor: shift.templateColor } : undefined}
+      />
 
       {/* Top-left indicators */}
       <div className="absolute top-1 left-2.5 flex items-center gap-1">

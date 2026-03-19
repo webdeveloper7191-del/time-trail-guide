@@ -1,8 +1,9 @@
 import { Badge } from '@/components/ui/badge';
-import { Shift, OpenShift, StaffMember } from '@/types/roster';
+import { Shift, OpenShift, StaffMember, ShiftTemplate, defaultShiftTemplates } from '@/types/roster';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
 import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { useMemo, useState } from 'react';
+
 import { 
   ChevronDown,
   ChevronUp,
@@ -45,11 +46,23 @@ interface RosterSummaryBarProps {
   callbackEvents?: CallbackEvent[];
   sleepoverEvents?: SleepoverEvent[];
   splitShiftEvents?: SplitShiftEvent[];
+  shiftTemplates?: ShiftTemplate[];
 }
 
-export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [], sleepoverEvents = [], splitShiftEvents = [] }: RosterSummaryBarProps) {
+export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [], sleepoverEvents = [], splitShiftEvents = [], shiftTemplates = [] }: RosterSummaryBarProps) {
   const [showFullLegend, setShowFullLegend] = useState(false);
   const [showColorTokens, setShowColorTokens] = useState(false);
+  const [legendMode, setLegendMode] = useState<'status' | 'templates'>('status');
+  
+  // Compute template usage stats
+  const templateStats = useMemo(() => {
+    const allTemplates = shiftTemplates.length > 0 ? shiftTemplates : defaultShiftTemplates;
+    const centreShifts = shifts.filter(s => s.centreId === centreId);
+    return allTemplates.map(t => ({
+      ...t,
+      count: centreShifts.filter(s => s.templateId === t.id).length,
+    }));
+  }, [shifts, centreId, shiftTemplates]);
   
   const summary = useMemo(() => {
     const centreShifts = shifts.filter(s => s.centreId === centreId);
@@ -530,28 +543,91 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
       <Collapsible open={showFullLegend} onOpenChange={setShowFullLegend}>
         <CollapsibleContent>
           <div className="bg-card border-t border-border px-4 py-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-              {legendCategories.map((category) => (
-                <div key={category.title} className="space-y-2">
-                  <h4 className="text-xs font-semibold text-foreground">{category.title}</h4>
-                  <div className="space-y-1.5">
-                    {category.items.map((item) => (
-                      <div key={item.label} className="flex items-center gap-2">
-                        <div className="shrink-0 w-4 flex items-center justify-center">
-                          {item.icon}
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-[11px] font-medium text-foreground">{item.label}</span>
-                          <span className="text-[10px] text-muted-foreground ml-1 hidden sm:inline">
-                            - {item.description}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            {/* Legend Mode Toggle */}
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-xs font-semibold text-foreground">View:</span>
+              <div className="flex rounded-md border border-border overflow-hidden">
+                <button
+                  onClick={() => setLegendMode('status')}
+                  className={cn(
+                    "px-3 py-1 text-xs font-medium transition-colors",
+                    legendMode === 'status' 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-card text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  Status View
+                </button>
+                <button
+                  onClick={() => setLegendMode('templates')}
+                  className={cn(
+                    "px-3 py-1 text-xs font-medium transition-colors border-l border-border",
+                    legendMode === 'templates' 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-card text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  Template View
+                </button>
+              </div>
             </div>
+
+            {legendMode === 'status' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                {legendCategories.map((category) => (
+                  <div key={category.title} className="space-y-2">
+                    <h4 className="text-xs font-semibold text-foreground">{category.title}</h4>
+                    <div className="space-y-1.5">
+                      {category.items.map((item) => (
+                        <div key={item.label} className="flex items-center gap-2">
+                          <div className="shrink-0 w-4 flex items-center justify-center">
+                            {item.icon}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-[11px] font-medium text-foreground">{item.label}</span>
+                            <span className="text-[10px] text-muted-foreground ml-1 hidden sm:inline">
+                              - {item.description}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-[11px] text-muted-foreground">
+                  Template colors appear as the left accent stripe on shift cards. The background still reflects shift status.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                  {templateStats.map((t) => (
+                    <div key={t.id} className="flex items-center gap-2 p-2 rounded-md border border-border bg-muted/30">
+                      <div 
+                        className="h-8 w-1.5 rounded-full shrink-0" 
+                        style={{ backgroundColor: t.color }} 
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-medium text-foreground truncate">{t.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {t.startTime} - {t.endTime}
+                        </p>
+                        {t.count > 0 && (
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 mt-0.5">
+                            {t.count} shift{t.count !== 1 ? 's' : ''}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {templateStats.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    No shift templates configured. Create templates to see their colors here.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </CollapsibleContent>
       </Collapsible>
