@@ -989,6 +989,9 @@ export default function RosterScheduler() {
       breakMinutes: template?.breakMinutes ?? 30,
       status: 'draft',
       isOpenShift: false,
+      // Template tracking
+      templateId: template?.id,
+      templateColor: template?.color,
       // Carry over shift type and special settings from template
       shiftType: template?.shiftType || 'regular',
       ...(template?.shiftType === 'on_call' && template?.onCallSettings ? {

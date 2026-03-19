@@ -248,6 +248,10 @@ export interface Shift {
   // Special shift flags for allowance calculation
   shiftType?: ShiftSpecialType;
   
+  // Template tracking - preserves color and identity from shift template
+  templateId?: string;
+  templateColor?: string; // HSL color from the shift template
+  
   // On-call specific fields
   onCallDetails?: {
     startTime: string;       // On-call period start
