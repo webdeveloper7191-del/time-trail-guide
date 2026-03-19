@@ -514,7 +514,7 @@ export function StaffTimelineGrid({
   // Calculate costs for a staff member using context-aware calculator
   const calculateStaffCosts = useCallback((staffId: string) => {
     const member = staff.find(s => s.id === staffId);
-    if (!member) return { regularCost: 0, overtimeCost: 0, penaltyCost: 0, totalCost: 0, totalHours: 0 };
+    if (!member) return { regularCost: 0, overtimeCost: 0, penaltyCost: 0, allowanceCost: 0, totalCost: 0, totalHours: 0 };
 
     // Use the context-aware cost calculator with custom rules and rate overrides
     return calculateContextAwareCosts(shifts, member, centre.id);
