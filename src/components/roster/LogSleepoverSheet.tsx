@@ -58,11 +58,12 @@ const actionOptions = [
   'Other',
 ];
 
-// Award thresholds for overtime conversion
-const DISTURBANCE_COUNT_THRESHOLD = 3;
-const DISTURBANCE_DURATION_THRESHOLD_MINUTES = 60;
-const DEFAULT_FLAT_RATE = 75.00;
-const OVERTIME_MULTIPLIER = 1.5;
+// Award thresholds for overtime conversion (per US-RST-076)
+// Conversion triggers when EITHER threshold is met (OR logic, not AND)
+const DISTURBANCE_COUNT_THRESHOLD = 3; // >2 disturbances triggers conversion
+const DISTURBANCE_DURATION_THRESHOLD_MINUTES = 120; // >120 cumulative minutes triggers conversion
+const DEFAULT_FLAT_RATE = 65.00; // Per SRS flat sleepover allowance
+const OVERTIME_MULTIPLIER = 2.0; // Post-conversion overnight OT rate
 
 export function LogSleepoverSheet({
   open,
