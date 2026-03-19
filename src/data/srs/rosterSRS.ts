@@ -1197,7 +1197,7 @@ export const rosterSRS: ModuleSRS = {
         "GPS accuracy must be ≤50 meters for valid location check",
         "Distance calculated using Haversine formula from location coordinates",
         "Within geofence radius + buffer = 'valid', outside = 'warning'",
-        "Clock time rounded to nearest minute for payroll",
+        "Clock time recorded to nearest minute for audit trail (raw event). Payroll rounding (nearest 15 min) applied only during timesheet generation in US-RST-020 — the raw clock event is always preserved",
         "Early clock-in (>15 min before shift) flagged for review",
         "Device info and IP captured for audit trail"
       ],
