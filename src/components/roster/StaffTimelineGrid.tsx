@@ -2278,7 +2278,7 @@ function StaffShiftCard({
         {shiftTypeInfo && (
           <div className={cn("flex items-center gap-2 px-2 py-1 rounded", shiftTypeInfo.bgColor)}>
             <shiftTypeInfo.icon className={cn("h-4 w-4", shiftTypeInfo.color)} />
-            <span className="text-sm text-white">{shiftTypeInfo.label} Shift</span>
+            <span className={cn("text-sm font-medium", shiftTypeInfo.color)}>{shiftTypeInfo.label} Shift</span>
           </div>
         )}
       </div>
