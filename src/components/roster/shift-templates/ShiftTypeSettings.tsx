@@ -154,16 +154,20 @@
              <p className="text-xs font-medium text-muted-foreground pt-2">Standby Pay (paid regardless of callback)</p>
              <div className="grid grid-cols-2 gap-3">
                <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Standby Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.onCallSettings?.standbyRate || 15.42}
-                   onChange={(e) => onUpdate({ 
-                     onCallSettings: { ...template.onCallSettings, standbyRate: parseFloat(e.target.value) || 0 } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
+                  <Label className="text-xs text-muted-foreground">Standby Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.onCallSettings?.standbyRate || 15.42}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, standbyRate: parseFloat(e.target.value) || 0 } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.standbyRate}
+                    templateValue={template.onCallSettings?.standbyRate}
+                  />
                </div>
                <div className="space-y-1.5">
                  <Label className="text-xs text-muted-foreground">Rate Type</Label>
