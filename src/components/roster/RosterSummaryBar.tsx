@@ -49,9 +49,20 @@ interface RosterSummaryBarProps {
   shiftTemplates?: ShiftTemplate[];
 }
 
-export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [], sleepoverEvents = [], splitShiftEvents = [] }: RosterSummaryBarProps) {
+export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [], sleepoverEvents = [], splitShiftEvents = [], shiftTemplates = [] }: RosterSummaryBarProps) {
   const [showFullLegend, setShowFullLegend] = useState(false);
   const [showColorTokens, setShowColorTokens] = useState(false);
+  const [legendMode, setLegendMode] = useState<'status' | 'templates'>('status');
+  
+  // Compute template usage stats
+  const templateStats = useMemo(() => {
+    const allTemplates = shiftTemplates.length > 0 ? shiftTemplates : defaultShiftTemplates;
+    const centreShifts = shifts.filter(s => s.centreId === centreId);
+    return allTemplates.map(t => ({
+      ...t,
+      count: centreShifts.filter(s => s.templateId === t.id).length,
+    }));
+  }, [shifts, centreId, shiftTemplates]);
   
   const summary = useMemo(() => {
     const centreShifts = shifts.filter(s => s.centreId === centreId);
