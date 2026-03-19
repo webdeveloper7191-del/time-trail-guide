@@ -2611,8 +2611,8 @@ export const rosterSRS: ModuleSRS = {
       businessLogic: [
         "Budget alert (critical): Triggered when totalCost ≥ 100% of weeklyBudget",
         "Budget alert (warning): Triggered when totalCost ≥ 90% of weeklyBudget",
-        "Overtime alert: Staff working >38 hours/week or >10 hours/day flagged",
-        "Coverage gap: Unfilled shifts within 48 hours = warning, within 24 hours = critical",
+        "Overtime alert: Staff working >38 hours/week or exceeding daily threshold (>7.6h standard / >10h 12-hour pattern per US-RST-071) flagged",
+        "Coverage gap: Unfilled shifts within 48 hours = warning, within 24 hours = urgent, within 12 hours = critical (aligned with US-RST-015 and US-RST-044 urgency definitions)",
         "Compliance: Ratio breaches or at-risk periods generate alerts",
         "Qualification expiry: Staff qualifications expiring within 30 days",
         "Recurring pattern: Series ending within 14 days generates warning",
