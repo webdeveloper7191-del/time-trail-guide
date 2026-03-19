@@ -352,43 +352,57 @@
              {/* Disturbance Pay */}
              <p className="text-xs font-medium text-muted-foreground pt-2">Disturbance Pay (when sleep is interrupted)</p>
              <div className="grid grid-cols-3 gap-3">
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Hourly Rate ($)</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.disturbanceRatePerHour || 45.50}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, disturbanceRatePerHour: parseFloat(e.target.value) || 0 } 
-                   })}
-                   min={0}
-                   step={0.01}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Min Hours</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.disturbanceMinimumHours || 1}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, disturbanceMinimumHours: parseInt(e.target.value) || 1 } 
-                   })}
-                   min={1}
-                   max={4}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Rate Multiplier</Label>
-                 <Input
-                   type="number"
-                   value={template.sleepoverSettings?.disturbanceRateMultiplier || 1.5}
-                   onChange={(e) => onUpdate({ 
-                     sleepoverSettings: { ...template.sleepoverSettings, disturbanceRateMultiplier: parseFloat(e.target.value) || 1.5 } 
-                   })}
-                   min={1}
-                   max={3}
-                   step={0.25}
-                 />
-               </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Hourly Rate ($)</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.disturbanceRatePerHour || 45.50}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, disturbanceRatePerHour: parseFloat(e.target.value) || 0 } 
+                    })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.disturbanceRatePerHour}
+                    templateValue={template.sleepoverSettings?.disturbanceRatePerHour}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Min Hours</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.disturbanceMinimumHours || 1}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, disturbanceMinimumHours: parseInt(e.target.value) || 1 } 
+                    })}
+                    min={1}
+                    max={4}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.disturbanceMinimumHours}
+                    templateValue={template.sleepoverSettings?.disturbanceMinimumHours}
+                    formatValue={(v) => `${v}h`}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Rate Multiplier</Label>
+                  <Input
+                    type="number"
+                    value={template.sleepoverSettings?.disturbanceRateMultiplier || 1.5}
+                    onChange={(e) => onUpdate({ 
+                      sleepoverSettings: { ...template.sleepoverSettings, disturbanceRateMultiplier: parseFloat(e.target.value) || 1.5 } 
+                    })}
+                    min={1}
+                    max={3}
+                    step={0.25}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.disturbanceRateMultiplier}
+                    templateValue={template.sleepoverSettings?.disturbanceRateMultiplier}
+                    formatValue={(v) => `${v}x`}
+                  />
+                </div>
              </div>
            </CollapsibleContent>
          </Collapsible>
