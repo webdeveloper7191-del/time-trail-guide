@@ -152,6 +152,7 @@ export function useShiftCost(): UseShiftCostResult {
     let regularCost = 0;
     let overtimeCost = 0;
     let penaltyCost = 0;
+    let allowanceCost = 0;
     
     memberShifts.forEach(shift => {
       try {
@@ -159,6 +160,7 @@ export function useShiftCost(): UseShiftCostResult {
         totalHours += breakdown.netHours;
         regularCost += breakdown.ordinaryPay;
         overtimeCost += breakdown.overtimePay;
+        allowanceCost += breakdown.totalAllowances;
         // Calculate penalty cost from evening, saturday, sunday, and public holiday pay
         penaltyCost += breakdown.eveningPay + breakdown.saturdayPay + 
                       breakdown.sundayPay + breakdown.publicHolidayPay - 
@@ -174,11 +176,13 @@ export function useShiftCost(): UseShiftCostResult {
       }
     });
     
+    const total = regularCost + overtimeCost + Math.max(0, penaltyCost) + allowanceCost;
     return {
       regularCost: Math.round(regularCost * 100) / 100,
       overtimeCost: Math.round(overtimeCost * 100) / 100,
       penaltyCost: Math.round(Math.max(0, penaltyCost) * 100) / 100,
-      totalCost: Math.round((regularCost + overtimeCost + Math.max(0, penaltyCost)) * 100) / 100,
+      allowanceCost: Math.round(allowanceCost * 100) / 100,
+      totalCost: Math.round(total * 100) / 100,
       totalHours: Math.round(totalHours * 10) / 10,
     };
   }, [calculateCost]);
