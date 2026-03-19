@@ -535,13 +535,15 @@ export function GPSClockInPanel() {
               <Label>Radius (meters) *</Label>
               <Input
                 type="number"
+                min={50}
                 value={newGeofence.radiusMeters}
-                onChange={e =>
-                  setNewGeofence(prev => ({ ...prev, radiusMeters: parseInt(e.target.value) }))
-                }
+                onChange={e => {
+                  const val = parseInt(e.target.value);
+                  setNewGeofence(prev => ({ ...prev, radiusMeters: Math.max(50, isNaN(val) ? 50 : val) }));
+                }}
               />
               <p className="text-xs text-muted-foreground">
-                Staff must be within this distance
+                Minimum 50m per US-RST-003 (GPS drift allowance)
               </p>
             </div>
             <div className="space-y-2">
