@@ -3885,7 +3885,7 @@ export const rosterSRS: ModuleSRS = {
         "Sunday penalty rate (2.0×) applies for all hours on Sunday shifts",
         "Public holiday penalty rate (2.5×) applies when shift date matches a gazetted public holiday",
         "Casual loading (25%) is added when staff employment type is 'casual'",
-        "Daily overtime triggers at >7.6 hours (standard) or >10 hours (12-hour roster pattern)",
+        "Daily overtime triggers at >7.6 hours (standard roster pattern) or >10 hours (12-hour roster pattern). The applicable threshold is determined by the shift's roster_pattern_type field on the roster template. Timesheet generation (US-RST-020) must read this field to select the correct threshold",
         "Weekly overtime triggers at >38 hours cumulative across all shifts in the pay week",
         "Overtime Tier 1 (first 2 hours): 1.5× base rate; Tier 2 (remaining): 2.0× base rate",
         "Shift cost breakdown visible in roster grid tooltip and shift detail panel",
