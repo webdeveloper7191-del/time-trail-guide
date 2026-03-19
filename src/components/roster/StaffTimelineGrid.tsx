@@ -1794,6 +1794,11 @@ export function StaffTimelineGrid({
                                               +${costs.overtimeCost} OT
                                             </Badge>
                                           )}
+                                          {costs.allowanceCost > 0 && (
+                                            <Badge variant="outline" className="text-[7px] md:text-[8px] px-0.5 md:px-1 py-0 h-3 md:h-3.5 border-purple-500 text-purple-600 mt-0.5">
+                                              +${costs.allowanceCost} Allow
+                                            </Badge>
+                                          )}
                                         </div>
                                       </TooltipTrigger>
                                       <TooltipContent>
