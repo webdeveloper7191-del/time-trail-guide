@@ -46,6 +46,7 @@ interface RosterSummaryBarProps {
   callbackEvents?: CallbackEvent[];
   sleepoverEvents?: SleepoverEvent[];
   splitShiftEvents?: SplitShiftEvent[];
+  shiftTemplates?: ShiftTemplate[];
 }
 
 export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, callbackEvents = [], sleepoverEvents = [], splitShiftEvents = [] }: RosterSummaryBarProps) {
