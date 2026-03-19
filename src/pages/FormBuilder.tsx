@@ -81,6 +81,7 @@ export default function FormBuilder() {
   const [customTokens, setCustomTokens] = useState<AutoPopulateToken[]>([]);
   const [targetSubmissionId, setTargetSubmissionId] = useState<string | null>(null);
   const [targetTaskId, setTargetTaskId] = useState<string | null>(null);
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
 
   const handleNavigateToSubmission = (submissionId: string) => {
     setTargetSubmissionId(submissionId);
