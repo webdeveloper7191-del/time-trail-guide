@@ -1,8 +1,9 @@
 import { Badge } from '@/components/ui/badge';
-import { Shift, OpenShift, StaffMember } from '@/types/roster';
+import { Shift, OpenShift, StaffMember, ShiftTemplate, defaultShiftTemplates } from '@/types/roster';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
 import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
 import { useMemo, useState } from 'react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { 
   ChevronDown,
   ChevronUp,
