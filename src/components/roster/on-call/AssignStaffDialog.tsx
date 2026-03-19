@@ -59,6 +59,9 @@ export function AssignStaffDialog({ open, onOpenChange, date, existingAssignment
     onOpenChange(false);
   };
 
+  const parsedDate = date ? new Date(date) : null;
+  const isValidDate = parsedDate && !isNaN(parsedDate.getTime());
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -68,7 +71,7 @@ export function AssignStaffDialog({ open, onOpenChange, date, existingAssignment
             Assign On-Call Staff
           </DialogTitle>
           <DialogDescription>
-            {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+            {isValidDate ? format(parsedDate, 'EEEE, MMMM d, yyyy') : date || 'Select a date'}
           </DialogDescription>
         </DialogHeader>
 
