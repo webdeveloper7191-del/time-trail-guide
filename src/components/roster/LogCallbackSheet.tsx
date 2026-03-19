@@ -127,11 +127,25 @@ export function LogCallbackSheet({
       const dayOfWeek = now.getDay();
       const autoDay = dayOfWeek === 0 ? 'sunday' : dayOfWeek === 6 ? 'saturday' : 'weekday';
       
+      // Pre-fill work times using the parent shift's date so filters match
+      const shiftDate = parentShift?.date || format(now, 'yyyy-MM-dd');
+      const defaultWorkStart = parentShift 
+        ? `${shiftDate}T${parentShift.endTime || '17:00'}` 
+        : nowStr;
+      const defaultWorkEnd = parentShift
+        ? `${shiftDate}T${(() => {
+            // Default end = start + 1 hour
+            const [h, m] = (parentShift.endTime || '17:00').split(':').map(Number);
+            const endH = Math.min(h + 1, 23);
+            return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+          })()}`
+        : nowStr;
+      
       setForm({
         callbackType: defaultType,
         callReceivedAt: nowStr,
-        workStartTime: '',
-        workEndTime: '',
+        workStartTime: defaultWorkStart,
+        workEndTime: defaultWorkEnd,
         dayType: autoDay as CallbackEvent['dayType'],
         baseRate: '35.00',
         reason: '',
@@ -145,7 +159,7 @@ export function LogCallbackSheet({
         restPeriodCheck: true,
       });
     }
-  }, [open, defaultType, staff, nowStr]);
+  }, [open, defaultType, staff, parentShift]);
 
   const typeConfig = callbackTypeConfig[form.callbackType as keyof typeof callbackTypeConfig];
   const TypeIcon = typeConfig.icon;

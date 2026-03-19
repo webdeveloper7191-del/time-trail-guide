@@ -1541,7 +1541,7 @@ export function StaffTimelineGrid({
                                                    onLogCallback={handleLogCallback}
                                                    onLogSleepover={handleLogSleepover}
                                                    onLogSplitShift={handleLogSplitShift}
-                                                   callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === shift.staffId && e.workStartTime?.startsWith(shift.date))}
+                                                   callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === shift.staffId && (e.onCallShiftId === shift.id || e.workStartTime?.startsWith(shift.date)))}
                                                    sleepoverEvents={externalSleepoverEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
                                                    splitShiftEvents={externalSplitShiftEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
                                                    onDragStart={handleShiftDragStart}
@@ -1566,7 +1566,7 @@ export function StaffTimelineGrid({
                                                    onLogCallback={handleLogCallback}
                                                    onLogSleepover={handleLogSleepover}
                                                    onLogSplitShift={handleLogSplitShift}
-                                                   callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === cellShifts[0].staffId && e.workStartTime?.startsWith(cellShifts[0].date))}
+                                                   callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === cellShifts[0].staffId && (e.onCallShiftId === cellShifts[0].id || e.workStartTime?.startsWith(cellShifts[0].date)))}
                                                    sleepoverEvents={externalSleepoverEvents.filter(e => e.staffId === cellShifts[0].staffId && e.date === cellShifts[0].date)}
                                                    splitShiftEvents={externalSplitShiftEvents.filter(e => e.staffId === cellShifts[0].staffId && e.date === cellShifts[0].date)}
                                                    onDragStart={handleShiftDragStart}
@@ -1597,7 +1597,7 @@ export function StaffTimelineGrid({
                                                          onLogCallback={handleLogCallback}
                                                          onLogSleepover={handleLogSleepover}
                                                          onLogSplitShift={handleLogSplitShift}
-                                                         callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === shift.staffId && e.workStartTime?.startsWith(shift.date))}
+                                                         callbackEvents={annotatedCallbackEvents.filter(e => e.staffId === shift.staffId && (e.onCallShiftId === shift.id || e.workStartTime?.startsWith(shift.date)))}
                                                          sleepoverEvents={externalSleepoverEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
                                                          splitShiftEvents={externalSplitShiftEvents.filter(e => e.staffId === shift.staffId && e.date === shift.date)}
                                                          onDragStart={handleShiftDragStart}

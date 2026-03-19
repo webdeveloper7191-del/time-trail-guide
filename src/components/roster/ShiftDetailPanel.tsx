@@ -177,9 +177,9 @@ export function ShiftDetailPanel({
   const shiftCallbackEvents = useMemo(() => {
     return callbackEvents.filter(e => 
       e.staffId === editedShift.staffId && 
-      e.workStartTime?.startsWith(editedShift.date)
+      (e.onCallShiftId === editedShift.id || e.workStartTime?.startsWith(editedShift.date))
     );
-  }, [callbackEvents, editedShift.staffId, editedShift.date]);
+  }, [callbackEvents, editedShift.staffId, editedShift.date, editedShift.id]);
 
   const shiftSleepoverEvents = useMemo(() => {
     return sleepoverEvents.filter(e => e.staffId === editedShift.staffId && e.date === editedShift.date);
