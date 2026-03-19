@@ -198,6 +198,9 @@ export interface FormSection {
   conditionalLogic?: ConditionalLogic[];
 }
 
+// Multi-tenant scope levels
+export type FormTemplateScope = 'system' | 'tenant' | 'location';
+
 export interface FormTemplate {
   id: string;
   name: string;
@@ -207,6 +210,14 @@ export interface FormTemplate {
   status: 'draft' | 'published' | 'archived';
   isEnabled?: boolean; // Whether template is active for assignments
   isIndustryTemplate?: boolean; // Read-only industry template
+  /** Multi-tenant scope: system (admin-created, read-only at tenant), tenant, or location */
+  scope: FormTemplateScope;
+  /** Tenant ID - null for system-level templates */
+  tenantId?: string;
+  /** Location ID - only for location-scoped templates */
+  locationId?: string;
+  /** Location name for display */
+  locationName?: string;
   sections: FormSection[];
   fields: FormField[];
   groups?: FieldGroup[]; // Optional field groups for row grouping
@@ -233,6 +244,7 @@ export interface FormTemplate {
   updatedAt: string;
   publishedAt?: string;
   createdBy?: string;
+  createdByName?: string;
   duplicatedFrom?: string; // Original template ID if duplicated
 }
 
