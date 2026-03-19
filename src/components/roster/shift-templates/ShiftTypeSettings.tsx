@@ -41,6 +41,8 @@
    onCreateAllowance,
  }: ShiftTypeSettingsProps) {
    const shiftType = template.shiftType || 'regular';
+   const award: AwardType = 'general';
+   const awardDefaults = getAwardDefaults(shiftType, award);
    const [onCallOpen, setOnCallOpen] = useState(true);
    const [sleepoverOpen, setSleepoverOpen] = useState(true);
    const [brokenOpen, setBrokenOpen] = useState(true);
