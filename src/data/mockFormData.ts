@@ -11,6 +11,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 2,
     status: 'published',
+    scope: "tenant" as const,
     sections: [
       { id: 'section-1', title: 'Safety Checks', description: 'Verify all safety equipment and procedures', order: 0 },
       { id: 'section-2', title: 'Cleaning Verification', description: 'Confirm cleaning has been completed', order: 1 },
@@ -53,6 +54,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T14:30:00Z',
     publishedAt: '2024-01-20T15:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-2',
@@ -61,6 +63,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'incident',
     version: 1,
     status: 'published',
+    scope: "tenant" as const,
     sections: [
       { id: 'section-1', title: 'Incident Details', order: 0 },
       { id: 'section-2', title: 'People Involved', order: 1 },
@@ -101,6 +104,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-10T10:00:00Z',
     publishedAt: '2024-01-10T11:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-3',
@@ -109,6 +113,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'maintenance',
     version: 1,
     status: 'published',
+    scope: "tenant" as const,
     sections: [
       { id: 'section-1', title: 'Equipment Identification', order: 0 },
       { id: 'section-2', title: 'Inspection Items', order: 1 },
@@ -153,6 +158,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-12T08:00:00Z',
     publishedAt: '2024-01-12T09:00:00Z',
     createdBy: 'user-2',
+    createdByName: 'John Smith',
   },
   {
     id: 'template-4',
@@ -161,6 +167,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'handover',
     version: 1,
     status: 'published',
+    scope: "tenant" as const,
     sections: [
       { id: 'section-1', title: 'Shift Information', order: 0 },
       { id: 'section-2', title: 'Handover Notes', order: 1 },
@@ -184,6 +191,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-08T12:00:00Z',
     publishedAt: '2024-01-08T13:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-5',
@@ -192,6 +200,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'cleaning',
     version: 1,
     status: 'draft',
+    scope: "tenant" as const,
     sections: [
       { id: 'section-1', title: 'Cleaning Details', order: 0 },
     ],
@@ -223,6 +232,7 @@ export const mockFormTemplates: FormTemplate[] = [
     createdAt: '2024-01-18T14:00:00Z',
     updatedAt: '2024-01-18T14:00:00Z',
     createdBy: 'user-2',
+    createdByName: 'John Smith',
   },
 
   // ============================================
@@ -235,6 +245,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Child Information', order: 0, description: 'Record child attendance details' },
       { id: 'section-2', title: 'Sign In/Out', order: 1 },
@@ -270,6 +281,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-childcare-2',
@@ -278,6 +290,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Change Details', order: 0 },
     ],
@@ -302,6 +315,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-childcare-3',
@@ -310,6 +324,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Rest Period Details', order: 0 },
       { id: 'section-2', title: 'Monitoring Checks', order: 1, description: 'Record checks every 10 minutes' },
@@ -342,6 +357,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-childcare-4',
@@ -350,6 +366,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Medication Details', order: 0 },
       { id: 'section-2', title: 'Administration', order: 1 },
@@ -385,6 +402,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
 
   // ============================================
@@ -397,6 +415,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Resident Information', order: 0 },
       { id: 'section-2', title: 'Personal Care', order: 1 },
@@ -451,6 +470,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-agedcare-2',
@@ -459,6 +479,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'inspection',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Resident Details', order: 0 },
       { id: 'section-2', title: 'Skin Inspection', order: 1 },
@@ -508,6 +529,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-agedcare-3',
@@ -516,6 +538,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Resident Details', order: 0 },
       { id: 'section-2', title: 'Risk Factors', order: 1 },
@@ -560,6 +583,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
 
   // ============================================
@@ -572,6 +596,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'handover',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Identify', order: 0 },
       { id: 'section-2', title: 'Situation', order: 1 },
@@ -614,6 +639,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-hospital-2',
@@ -622,6 +648,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Patient Verification', order: 0 },
       { id: 'section-2', title: 'Medication Administration', order: 1 },
@@ -665,6 +692,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-hospital-3',
@@ -673,6 +701,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Sign In (Before Induction)', order: 0 },
       { id: 'section-2', title: 'Time Out (Before Incision)', order: 1 },
@@ -711,6 +740,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
 
   // ============================================
@@ -723,6 +753,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Security & Safety', order: 0 },
       { id: 'section-2', title: 'Store Presentation', order: 1 },
@@ -753,6 +784,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-retail-2',
@@ -761,6 +793,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Store Shutdown', order: 0 },
       { id: 'section-2', title: 'Cash Reconciliation', order: 1 },
@@ -791,6 +824,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-retail-3',
@@ -799,6 +833,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'inspection',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Delivery Details', order: 0 },
       { id: 'section-2', title: 'Stock Verification', order: 1 },
@@ -828,6 +863,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
 
   // ============================================
@@ -840,6 +876,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'cleaning',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Site Details', order: 0 },
       { id: 'section-2', title: 'Cleaning Tasks', order: 1 },
@@ -886,6 +923,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-cleaning-2',
@@ -894,6 +932,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'cleaning',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Cleaning Details', order: 0 },
     ],
@@ -926,6 +965,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-maintenance-1',
@@ -934,6 +974,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'maintenance',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Asset Information', order: 0 },
       { id: 'section-2', title: 'Inspection Items', order: 1 },
@@ -987,6 +1028,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
 
   // ============================================
@@ -999,6 +1041,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Temperature Checks', order: 0 },
       { id: 'section-2', title: 'Corrective Actions', order: 1 },
@@ -1031,6 +1074,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-hospitality-2',
@@ -1039,6 +1083,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'cleaning',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Equipment Shutdown', order: 0 },
       { id: 'section-2', title: 'Cleaning', order: 1 },
@@ -1068,6 +1113,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
 
   // ============================================
@@ -1080,6 +1126,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'training',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Personal Details', order: 0 },
       { id: 'section-2', title: 'Safety Acknowledgments', order: 1 },
@@ -1111,6 +1158,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
   {
     id: 'template-construction-2',
@@ -1119,6 +1167,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'safety',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Meeting Details', order: 0 },
       { id: 'section-2', title: 'Topics Covered', order: 1 },
@@ -1155,6 +1204,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
 
   // ============================================
@@ -1167,6 +1217,7 @@ export const mockFormTemplates: FormTemplate[] = [
     category: 'inspection',
     version: 1,
     status: 'published',
+    scope: "system" as const,
     sections: [
       { id: 'section-1', title: 'Patrol Details', order: 0 },
       { id: 'section-2', title: 'Checkpoints', order: 1 },
@@ -1203,6 +1254,7 @@ export const mockFormTemplates: FormTemplate[] = [
     updatedAt: '2024-01-20T09:00:00Z',
     publishedAt: '2024-01-20T10:00:00Z',
     createdBy: 'user-1',
+    createdByName: 'System Admin',
   },
 ];
 
