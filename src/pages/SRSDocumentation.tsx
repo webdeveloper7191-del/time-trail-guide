@@ -200,7 +200,7 @@ const SRSDocumentation = () => {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="roster" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-4">
             {modules.map(m => (
               <TabsTrigger key={m.id} value={m.id} className="flex items-center gap-2">{m.icon}{m.name}</TabsTrigger>
