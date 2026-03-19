@@ -642,6 +642,16 @@ export default function FormBuilder() {
           }}
         />
       )}
+
+      {/* Create Template Drawer */}
+      <CreateTemplateDrawer
+        open={showCreateDrawer}
+        onClose={() => setShowCreateDrawer(false)}
+        systemTemplates={templates.filter(t => t.scope === 'system')}
+        onCreateFromScratch={handleCreateFromScratch}
+        onCreateFromSystemTemplate={(tmpl, config) => handleCreateFromSystemTemplate(tmpl, config)}
+        onPreviewTemplate={handlePreviewTemplate}
+      />
     </div>
   );
 }
