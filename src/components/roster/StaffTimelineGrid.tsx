@@ -1780,7 +1780,7 @@ export function StaffTimelineGrid({
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className="text-center">
+                                        <div className="text-center space-y-0.5">
                                           <div className={cn(
                                             "text-[11px] md:text-sm font-semibold",
                                             costs.overtimeCost > 0 && "text-amber-600",
@@ -1789,15 +1789,19 @@ export function StaffTimelineGrid({
                                             ${costs.totalCost}
                                           </div>
                                           <div className="text-[9px] md:text-[10px] text-muted-foreground">{costs.totalHours}h</div>
-                                          {costs.overtimeCost > 0 && (
-                                            <Badge variant="outline" className="text-[7px] md:text-[8px] px-0.5 md:px-1 py-0 h-3 md:h-3.5 border-amber-500 text-amber-600 mt-0.5">
-                                              +${costs.overtimeCost} OT
-                                            </Badge>
-                                          )}
-                                          {costs.allowanceCost > 0 && (
-                                            <Badge variant="outline" className="text-[7px] md:text-[8px] px-0.5 md:px-1 py-0 h-3 md:h-3.5 border-purple-500 text-purple-600 mt-0.5">
-                                              +${costs.allowanceCost} Allow
-                                            </Badge>
+                                          {(costs.overtimeCost > 0 || costs.allowanceCost > 0) && (
+                                            <div className="flex flex-wrap justify-center gap-0.5 mt-0.5">
+                                              {costs.overtimeCost > 0 && (
+                                                <span className="text-[7px] md:text-[8px] text-amber-600 font-medium">
+                                                  +OT
+                                                </span>
+                                              )}
+                                              {costs.allowanceCost > 0 && (
+                                                <span className="text-[7px] md:text-[8px] text-purple-600 font-medium">
+                                                  +Allow
+                                                </span>
+                                              )}
+                                            </div>
                                           )}
                                         </div>
                                       </TooltipTrigger>
