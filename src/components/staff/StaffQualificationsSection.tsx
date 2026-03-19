@@ -21,6 +21,10 @@ import { format, differenceInDays, isBefore, addMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { AddQualificationSheet } from './AddQualificationSheet';
 
+// C8 fix: Background check types excluded from grace period (immediate block on expiry)
+const BACKGROUND_CHECK_TYPES = ['working_with_children', 'police_check', 'background_check', 'wwcc'];
+const GRACE_PERIOD_DAYS = 7;
+
 export interface Qualification {
   id: string;
   name: string;
@@ -31,7 +35,23 @@ export interface Qualification {
   documentUrl?: string;
   status: 'active' | 'expired' | 'expiring_soon' | 'pending_verification';
   isRequired: boolean;
+  isBackgroundCheck?: boolean; // C8: Flag for background check qualifications
   notes?: string;
+}
+
+// C8 fix: Check if qualification is in grace period or immediately blocked
+export function isQualificationBlocked(qual: Qualification): boolean {
+  if (!qual.expiryDate) return false;
+  const daysExpired = differenceInDays(new Date(), new Date(qual.expiryDate));
+  if (daysExpired <= 0) return false; // Not expired
+  
+  // Background checks: immediate block, no grace period (per BR-RST-022)
+  const isBackgroundCheck = qual.isBackgroundCheck || 
+    BACKGROUND_CHECK_TYPES.some(t => qual.name.toLowerCase().includes(t.replace(/_/g, ' ')));
+  if (isBackgroundCheck) return true;
+  
+  // Other qualifications: 7-day grace period (per US-RST-004)
+  return daysExpired > GRACE_PERIOD_DAYS;
 }
 
 // Mock qualifications data

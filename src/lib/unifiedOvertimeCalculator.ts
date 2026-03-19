@@ -134,8 +134,12 @@ export function calculateDailyOvertime(
   const casualLoadingAmount = isCasual ? baseHourlyRate * (casualLoading / 100) : 0;
   const effectiveBaseRate = baseHourlyRate + casualLoadingAmount;
   
-  // Use configured thresholds if available, otherwise fall back to jurisdiction
-  const overtimeThreshold = dailyRule?.dailyThreshold ?? jurisdiction.overtimeThresholdDaily;
+  // C3 fix: Use 10h threshold for 12-hour roster patterns, 7.6h for standard
+  const is12HourPattern = input.rosterPatternHours && input.rosterPatternHours >= 12;
+  const defaultDailyThreshold = is12HourPattern ? 10 : jurisdiction.overtimeThresholdDaily;
+  
+  // Use configured thresholds if available, otherwise fall back to pattern-aware default
+  const overtimeThreshold = dailyRule?.dailyThreshold ?? defaultDailyThreshold;
   const overtimeMultiplier = dailyRule?.overtimeMultiplier ?? jurisdiction.overtimeMultiplier;
   const doubleTimeThreshold = dailyRule?.doubleTimeThreshold ?? jurisdiction.doubleTimeThreshold ?? overtimeThreshold + 2;
   const doubleTimeMultiplier = dailyRule?.doubleTimeMultiplier ?? jurisdiction.doubleTimeMultiplier ?? 2;
