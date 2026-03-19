@@ -54,10 +54,14 @@ export function AssignStaffDialog({ open, onOpenChange, date, existingAssignment
       callbackCount: 0,
     });
 
-    toast.success(`${selectedStaff.name} assigned as ${role} on-call for ${format(new Date(date), 'MMM d')}`);
+    const dateLabel = isValidDate ? format(parsedDate, 'MMM d') : date;
+    toast.success(`${selectedStaff.name} assigned as ${role} on-call for ${dateLabel}`);
     setSelectedStaffId('');
     onOpenChange(false);
   };
+
+  const parsedDate = date ? new Date(date) : null;
+  const isValidDate = parsedDate && !isNaN(parsedDate.getTime());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -68,7 +72,7 @@ export function AssignStaffDialog({ open, onOpenChange, date, existingAssignment
             Assign On-Call Staff
           </DialogTitle>
           <DialogDescription>
-            {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+            {isValidDate ? format(parsedDate, 'EEEE, MMMM d, yyyy') : date || 'Select a date'}
           </DialogDescription>
         </DialogHeader>
 
