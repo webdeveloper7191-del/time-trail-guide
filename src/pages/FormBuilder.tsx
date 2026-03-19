@@ -167,18 +167,42 @@ export default function FormBuilder() {
   };
 
   const handleCreateNew = () => {
-    const newTemplate = createNewTemplate();
+    setShowCreateDrawer(true);
+  };
+
+  const handleCreateFromScratch = (config: { name: string; description: string; category: string; scope: FormTemplateScope; locationId?: string; locationName?: string }) => {
+    const newTemplate: FormTemplate = {
+      id: `template-${Date.now()}`,
+      name: config.name,
+      description: config.description,
+      category: config.category,
+      version: 1,
+      status: 'draft',
+      scope: config.scope,
+      locationId: config.locationId,
+      locationName: config.locationName,
+      sections: [{ id: 'section-1', title: 'Section 1', order: 0 }],
+      fields: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'current-user',
+      createdByName: 'Current User',
+    };
+    setTemplates(prev => [newTemplate, ...prev]);
     setTemplate(newTemplate);
     setViewMode('builder');
     setSelectedFieldId(null);
+    toast.success(`Template "${config.name}" created`);
   };
 
-  const handleCreateFromSystemTemplate = (systemTemplate: FormTemplate) => {
+  const handleCreateFromSystemTemplate = (systemTemplate: FormTemplate, config?: { name: string; scope: FormTemplateScope; locationId?: string; locationName?: string }) => {
     const newTemplate: FormTemplate = {
       ...systemTemplate,
       id: `template-${Date.now()}`,
-      name: `${systemTemplate.name} (Custom)`,
-      scope: 'tenant',
+      name: config?.name || `${systemTemplate.name} (Custom)`,
+      scope: config?.scope || 'tenant',
+      locationId: config?.locationId,
+      locationName: config?.locationName,
       status: 'draft',
       isIndustryTemplate: false,
       duplicatedFrom: systemTemplate.id,
@@ -192,7 +216,7 @@ export default function FormBuilder() {
     setTemplate(newTemplate);
     setViewMode('builder');
     setSelectedFieldId(null);
-    toast.success(`Created tenant form from system template "${systemTemplate.name}"`);
+    toast.success(`Created form from system template "${systemTemplate.name}"`);
   };
 
   const handleSaveTemplate = () => {
