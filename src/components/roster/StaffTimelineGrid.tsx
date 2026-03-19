@@ -514,7 +514,7 @@ export function StaffTimelineGrid({
   // Calculate costs for a staff member using context-aware calculator
   const calculateStaffCosts = useCallback((staffId: string) => {
     const member = staff.find(s => s.id === staffId);
-    if (!member) return { regularCost: 0, overtimeCost: 0, penaltyCost: 0, totalCost: 0, totalHours: 0 };
+    if (!member) return { regularCost: 0, overtimeCost: 0, penaltyCost: 0, allowanceCost: 0, totalCost: 0, totalHours: 0 };
 
     // Use the context-aware cost calculator with custom rules and rate overrides
     return calculateContextAwareCosts(shifts, member, centre.id);
@@ -1794,6 +1794,11 @@ export function StaffTimelineGrid({
                                               +${costs.overtimeCost} OT
                                             </Badge>
                                           )}
+                                          {costs.allowanceCost > 0 && (
+                                            <Badge variant="outline" className="text-[7px] md:text-[8px] px-0.5 md:px-1 py-0 h-3 md:h-3.5 border-purple-500 text-purple-600 mt-0.5">
+                                              +${costs.allowanceCost} Allow
+                                            </Badge>
+                                          )}
                                         </div>
                                       </TooltipTrigger>
                                       <TooltipContent>
@@ -1806,6 +1811,12 @@ export function StaffTimelineGrid({
                                             <div className="flex justify-between gap-4 text-amber-600">
                                               <span>Overtime:</span>
                                               <span>${costs.overtimeCost}</span>
+                                            </div>
+                                          )}
+                                          {costs.allowanceCost > 0 && (
+                                            <div className="flex justify-between gap-4 text-purple-600">
+                                              <span>Allowances:</span>
+                                              <span>${costs.allowanceCost}</span>
                                             </div>
                                           )}
                                           <div className="flex justify-between gap-4 font-medium border-t border-border pt-1">
