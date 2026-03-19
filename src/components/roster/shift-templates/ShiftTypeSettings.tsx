@@ -207,31 +207,41 @@
              {/* Callback Pay */}
              <p className="text-xs font-medium text-muted-foreground pt-2">Callback Pay (when called in)</p>
              <div className="grid grid-cols-2 gap-3">
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Minimum Hours</Label>
-                 <Input
-                   type="number"
-                   value={template.onCallSettings?.callbackMinimumHours || 2}
-                   onChange={(e) => onUpdate({ 
-                     onCallSettings: { ...template.onCallSettings, callbackMinimumHours: parseInt(e.target.value) || 2 } 
-                   })}
-                   min={1}
-                   max={8}
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <Label className="text-xs text-muted-foreground">Rate Multiplier</Label>
-                 <Input
-                   type="number"
-                   value={template.onCallSettings?.callbackRateMultiplier || 1.5}
-                   onChange={(e) => onUpdate({ 
-                     onCallSettings: { ...template.onCallSettings, callbackRateMultiplier: parseFloat(e.target.value) || 1.5 } 
-                   })}
-                   min={1}
-                   max={3}
-                   step={0.25}
-                 />
-               </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Minimum Hours</Label>
+                  <Input
+                    type="number"
+                    value={template.onCallSettings?.callbackMinimumHours || 2}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, callbackMinimumHours: parseInt(e.target.value) || 2 } 
+                    })}
+                    min={1}
+                    max={8}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.callbackMinimumHours}
+                    templateValue={template.onCallSettings?.callbackMinimumHours}
+                    formatValue={(v) => `${v}h`}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Rate Multiplier</Label>
+                  <Input
+                    type="number"
+                    value={template.onCallSettings?.callbackRateMultiplier || 1.5}
+                    onChange={(e) => onUpdate({ 
+                      onCallSettings: { ...template.onCallSettings, callbackRateMultiplier: parseFloat(e.target.value) || 1.5 } 
+                    })}
+                    min={1}
+                    max={3}
+                    step={0.25}
+                  />
+                  <AwardDefaultIndicator
+                    awardValue={awardDefaults.callbackRateMultiplier}
+                    templateValue={template.onCallSettings?.callbackRateMultiplier}
+                    formatValue={(v) => `${v}x`}
+                  />
+                </div>
              </div>
              <div className="space-y-1.5">
                <Label className="text-xs text-muted-foreground">Public Holiday Multiplier</Label>
