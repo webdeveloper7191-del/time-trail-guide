@@ -1299,8 +1299,8 @@ export const rosterSRS: ModuleSRS = {
         "Clock matching: Within 2 hours of shift start/end",
         "Unmatched clocks: Flag for manual review",
         "Break deduction: Based on recorded breaks or scheduled duration",
-        "Overtime trigger: >7.6 hours/day or >38 hours/week",
-        "Rounding: Clock times rounded to nearest 15 min for pay"
+        "Overtime trigger (standard roster): >7.6 hours/day or >38 hours/week. For 12-hour roster patterns (as defined in US-RST-071), daily threshold shifts to >10 hours/day — the applicable threshold is determined by the shift's roster pattern type",
+        "Rounding: Raw clock events (recorded to nearest minute per US-RST-018) are rounded to nearest 15 minutes for payroll calculation. The original minute-level timestamp is preserved in the audit trail for compliance"
       ],
       priority: "critical",
       relatedModules: [
