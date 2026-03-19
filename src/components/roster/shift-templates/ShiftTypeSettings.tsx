@@ -187,17 +187,21 @@
                </div>
              </div>
              <div className="space-y-1.5">
-               <Label className="text-xs text-muted-foreground">Weekend Standby Rate ($)</Label>
-               <Input
-                 type="number"
-                 value={template.onCallSettings?.weekendStandbyRate || ''}
-                 onChange={(e) => onUpdate({ 
-                   onCallSettings: { ...template.onCallSettings, weekendStandbyRate: parseFloat(e.target.value) || undefined } 
-                 })}
-                 placeholder="Higher rate for Sat/Sun"
-                 min={0}
-                 step={0.01}
-               />
+                <Label className="text-xs text-muted-foreground">Weekend Standby Rate ($)</Label>
+                <Input
+                  type="number"
+                  value={template.onCallSettings?.weekendStandbyRate || ''}
+                  onChange={(e) => onUpdate({ 
+                    onCallSettings: { ...template.onCallSettings, weekendStandbyRate: parseFloat(e.target.value) || undefined } 
+                  })}
+                  placeholder="Higher rate for Sat/Sun"
+                  min={0}
+                  step={0.01}
+                />
+                <AwardDefaultIndicator
+                  awardValue={awardDefaults.weekendStandbyRate}
+                  templateValue={template.onCallSettings?.weekendStandbyRate}
+                />
              </div>
              
              {/* Callback Pay */}
