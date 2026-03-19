@@ -565,8 +565,9 @@ export const rosterSRS: ModuleSRS = {
       ],
       businessLogic: [
         "Anchor date determines Week A start",
-        "Week number calculated: (targetDate - anchorDate) / 7 % 2",
-        "Week A = even result, Week B = odd result",
+        "Week number calculated: Math.floor((targetDate - anchorDate) / 7) % 2. Calculation uses date-only comparison (midnight-aligned) to avoid timezone drift",
+        "Week A = even result (0), Week B = odd result (1)",
+        "Day-of-week alignment: Database stores dayOfWeek as 0=Sunday (JS Date convention). Grid display uses 0=Monday (ISO convention). Conversion formula: gridIndex 6 → DB 0, else gridIndex + 1. The alternating week formula must use DB day values, and the grid must apply the offset before display (see US-RST-070 availability mapping)",
         "Fortnightly recurrence can align with Week A/B",
         "Conflicts flagged when shift assigned outside pattern availability",
         "Pattern changes require 2 weeks notice by default"
