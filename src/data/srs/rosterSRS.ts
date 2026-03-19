@@ -294,7 +294,7 @@ export const rosterSRS: ModuleSRS = {
       businessLogic: [
         "Location code must be unique within tenant",
         "GPS coordinates required for geofencing feature",
-        "Default geofence radius: 100 meters, configurable up to 500m",
+        "Default geofence radius: 100 meters, configurable 50m–500m (minimum 50m enforced per US-RST-003 to account for GPS drift)",
         "Industry types: healthcare, aged_care, childcare, hospitality, retail, manufacturing, logistics",
         "Ratio requirements cascade to all departments unless overridden",
         "Operating hours determine valid clock-in windows"
