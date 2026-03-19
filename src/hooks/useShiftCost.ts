@@ -47,6 +47,7 @@ export interface UseShiftCostResult {
     regularCost: number;
     overtimeCost: number;
     penaltyCost: number;
+    allowanceCost: number;
     totalCost: number;
     totalHours: number;
   };
