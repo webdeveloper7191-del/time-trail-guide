@@ -15,6 +15,8 @@
  import { Phone, Moon, ArrowLeftRight, Clock, Zap, AlertTriangle, ChevronDown, Car, TrendingUp } from 'lucide-react';
  import { cn } from '@/lib/utils';
  import { useState } from 'react';
+ import { AwardDefaultIndicator } from './AwardDefaultIndicator';
+ import { getAwardDefaults } from '@/lib/templateAwardValidation';
  
  const shiftTypeIcons: Record<ShiftSpecialType, React.ReactNode> = {
    regular: <Clock size={14} />,
