@@ -57,8 +57,8 @@ export interface ModuleSRS {
 
 export const rosterSRS: ModuleSRS = {
   moduleName: "Roster & Workforce Scheduling",
-  version: "2.0.0",
-  lastUpdated: "2026-01-30",
+  version: "2.1.0",
+  lastUpdated: "2026-03-19",
   overview: `The Roster & Workforce Scheduling module provides comprehensive workforce management capabilities across all industries. It enables managers to create, manage, and optimize staff schedules while ensuring compliance with industry-specific regulations, fatigue management requirements, and applicable employment awards. The system supports multi-location operations, agency staff integration, GPS-validated time and attendance, and AI-powered schedule optimization.`,
   
   objectives: [
@@ -294,7 +294,7 @@ export const rosterSRS: ModuleSRS = {
       businessLogic: [
         "Location code must be unique within tenant",
         "GPS coordinates required for geofencing feature",
-        "Default geofence radius: 100 meters, configurable up to 500m",
+        "Default geofence radius: 100 meters, configurable 50m–500m (minimum 50m enforced per US-RST-003 to account for GPS drift)",
         "Industry types: healthcare, aged_care, childcare, hospitality, retail, manufacturing, logistics",
         "Ratio requirements cascade to all departments unless overridden",
         "Operating hours determine valid clock-in windows"
@@ -462,8 +462,8 @@ export const rosterSRS: ModuleSRS = {
         "Required qualifications: First Aid, CPR, Background Check, Certification",
         "Role-specific: Diploma, Bachelor, Trade Certificate, Food Safety",
         "Alert recipients: Staff member, their manager, HR",
-        "Grace period: 7 days after expiry before blocking",
-        "Expired background check: Immediate block from all shifts",
+        "Grace period: 7 days after expiry before blocking — EXCEPT background checks, which are exempt from grace period and result in immediate block (per BR-RST-022). Grace period applies only to clinical/professional qualifications",
+        "Expired background check: Immediate block from all shifts (no grace period — overrides the general 7-day grace rule)",
         "Qualification verification linked to regulatory body APIs where available"
       ],
       priority: "high",
@@ -565,8 +565,9 @@ export const rosterSRS: ModuleSRS = {
       ],
       businessLogic: [
         "Anchor date determines Week A start",
-        "Week number calculated: (targetDate - anchorDate) / 7 % 2",
-        "Week A = even result, Week B = odd result",
+        "Week number calculated: Math.floor((targetDate - anchorDate) / 7) % 2. Calculation uses date-only comparison (midnight-aligned) to avoid timezone drift",
+        "Week A = even result (0), Week B = odd result (1)",
+        "Day-of-week alignment: Database stores dayOfWeek as 0=Sunday (JS Date convention). Grid display uses 0=Monday (ISO convention). Conversion formula: gridIndex 6 → DB 0, else gridIndex + 1. The alternating week formula must use DB day values, and the grid must apply the offset before display (see US-RST-070 availability mapping)",
         "Fortnightly recurrence can align with Week A/B",
         "Conflicts flagged when shift assigned outside pattern availability",
         "Pattern changes require 2 weeks notice by default"
@@ -1038,7 +1039,7 @@ export const rosterSRS: ModuleSRS = {
         "If unfilled, auto-escalates to agency (if configured)"
       ],
       businessLogic: [
-        "Urgent flag: Within 24 hours of shift start",
+        "Urgency levels: 'urgent' = shift within 24 hours of start; 'critical' = shift within 12 hours of start (aligned with US-RST-044). Alert system (US-RST-045) uses these same thresholds for coverage gap severity",
         "Broadcast channels: Push notification, SMS (optional), email",
         "Response window: First 30 minutes priority to internal staff",
         "Auto-escalation: After 1 hour without response, escalate to agencies",
@@ -1197,7 +1198,7 @@ export const rosterSRS: ModuleSRS = {
         "GPS accuracy must be ≤50 meters for valid location check",
         "Distance calculated using Haversine formula from location coordinates",
         "Within geofence radius + buffer = 'valid', outside = 'warning'",
-        "Clock time rounded to nearest minute for payroll",
+        "Clock time recorded to nearest minute for audit trail (raw event). Payroll rounding (nearest 15 min) applied only during timesheet generation in US-RST-020 — the raw clock event is always preserved",
         "Early clock-in (>15 min before shift) flagged for review",
         "Device info and IP captured for audit trail"
       ],
@@ -1299,8 +1300,8 @@ export const rosterSRS: ModuleSRS = {
         "Clock matching: Within 2 hours of shift start/end",
         "Unmatched clocks: Flag for manual review",
         "Break deduction: Based on recorded breaks or scheduled duration",
-        "Overtime trigger: >7.6 hours/day or >38 hours/week",
-        "Rounding: Clock times rounded to nearest 15 min for pay"
+        "Overtime trigger (standard roster): >7.6 hours/day or >38 hours/week. For 12-hour roster patterns (as defined in US-RST-071), daily threshold shifts to >10 hours/day — the applicable threshold is determined by the shift's roster pattern type",
+        "Rounding: Raw clock events (recorded to nearest minute per US-RST-018) are rounded to nearest 15 minutes for payroll calculation. The original minute-level timestamp is preserved in the audit trail for compliance"
       ],
       priority: "critical",
       relatedModules: [
@@ -2556,8 +2557,8 @@ export const rosterSRS: ModuleSRS = {
         "Open shift = shift with is_open_shift=true and staff_id=null",
         "Qualification matching: Staff must hold ALL required qualifications to be eligible",
         "Classification hierarchy: Staff classification must be ≥ minimumClassification",
-        "Urgency 'urgent': Shift within 24 hours, triggers immediate broadcast",
-        "Urgency 'critical': Shift within 12 hours, escalates to agency if unfilled after 30 min",
+        "Urgency 'urgent': Shift within 24 hours, triggers immediate broadcast (aligned with US-RST-015)",
+        "Urgency 'critical': Shift within 12 hours, escalates to agency if unfilled after configurable timeout (30–60 min per US-RST-016)",
         "Shift type 'on_call': Adds on-call allowance fields (base rate, recall provisions)",
         "Shift type 'sleepover': Adds sleepover allowance and disturbance tracking",
         "Shift type 'broken': Adds broken shift allowance when unpaid gap >1 hour",
@@ -2611,8 +2612,8 @@ export const rosterSRS: ModuleSRS = {
       businessLogic: [
         "Budget alert (critical): Triggered when totalCost ≥ 100% of weeklyBudget",
         "Budget alert (warning): Triggered when totalCost ≥ 90% of weeklyBudget",
-        "Overtime alert: Staff working >38 hours/week or >10 hours/day flagged",
-        "Coverage gap: Unfilled shifts within 48 hours = warning, within 24 hours = critical",
+        "Overtime alert: Staff working >38 hours/week or exceeding daily threshold (>7.6h standard / >10h 12-hour pattern per US-RST-071) flagged",
+        "Coverage gap: Unfilled shifts within 48 hours = warning, within 24 hours = urgent, within 12 hours = critical (aligned with US-RST-015 and US-RST-044 urgency definitions)",
         "Compliance: Ratio breaches or at-risk periods generate alerts",
         "Qualification expiry: Staff qualifications expiring within 30 days",
         "Recurring pattern: Series ending within 14 days generates warning",
@@ -3885,7 +3886,7 @@ export const rosterSRS: ModuleSRS = {
         "Sunday penalty rate (2.0×) applies for all hours on Sunday shifts",
         "Public holiday penalty rate (2.5×) applies when shift date matches a gazetted public holiday",
         "Casual loading (25%) is added when staff employment type is 'casual'",
-        "Daily overtime triggers at >7.6 hours (standard) or >10 hours (12-hour roster pattern)",
+        "Daily overtime triggers at >7.6 hours (standard roster pattern) or >10 hours (12-hour roster pattern). The applicable threshold is determined by the shift's roster_pattern_type field on the roster template. Timesheet generation (US-RST-020) must read this field to select the correct threshold",
         "Weekly overtime triggers at >38 hours cumulative across all shifts in the pay week",
         "Overtime Tier 1 (first 2 hours): 1.5× base rate; Tier 2 (remaining): 2.0× base rate",
         "Shift cost breakdown visible in roster grid tooltip and shift detail panel",
@@ -4236,7 +4237,7 @@ export const rosterSRS: ModuleSRS = {
       businessLogic: [
         "Undisturbed sleepover: Pay = flat sleepover allowance (e.g., $65.00 per night). No other pay components",
         "Disturbance pay (below threshold): Sleepover allowance + Σ(max(disturbance_duration, 1h) × base_rate × disturbance_multiplier)",
-        "Conversion threshold (configurable): disturbance_count > maxDisturbances (default 2) OR cumulative_disturbance_minutes > maxDisturbanceMinutes (default 120)",
+        "Conversion threshold (configurable): disturbance_count > maxDisturbances (default 2) OR cumulative_disturbance_minutes > maxDisturbanceMinutes (default 120). Whichever threshold is reached first triggers conversion — they are independent checks evaluated after each disturbance event",
         "Post-conversion pay: Entire sleepover period calculated as active hours × base_rate × overtime_multiplier (2.0×). Sleepover allowance is voided (not stacked)",
         "Example undisturbed: Staff sleeps 22:00–06:00. Pay = $65.00 flat",
         "Example 1 disturbance: Staff called at 01:00 for 20min. Pay = $65.00 + (1h minimum × $32.50 × 1.5) = $65.00 + $48.75 = $113.75",
@@ -4274,7 +4275,7 @@ export const rosterSRS: ModuleSRS = {
           "Disturbance 1: 23:15–23:50 (35min) — participant needs medication assistance",
           "Disturbance 2: 01:30–02:20 (50min) — participant experiencing anxiety, requires support",
           "Disturbance 3: 04:45–05:10 (25min) — early morning personal care assistance",
-          "System checks: 3 disturbances > 2 max threshold AND 110min cumulative > 120min? No (110 < 120). But count threshold breached (3 > 2)",
+          "System checks: 3 disturbances vs 2 max threshold → count exceeded (3 > 2). Cumulative duration 110min vs 120min → not exceeded. However, conversion uses OR logic — count threshold alone is sufficient to trigger conversion",
           "CONVERSION TRIGGERED: Entire 10h period converts to active hours",
           "Conversion pay: 10h × $34.00 × 2.0 (overnight OT rate) = $680.00",
           "Sleepover allowance ($72.00) VOIDED — replaced by conversion pay",
@@ -4574,7 +4575,7 @@ export const rosterSRS: ModuleSRS = {
         { name: "paid_break_minutes", type: "INT", mandatory: true, description: "Paid break portion", defaultValue: "0" },
         { name: "calculated_hours", type: "DECIMAL(5,2)", mandatory: false, description: "Net hours (end-start-break)" },
         { name: "status", type: "NVARCHAR(50)", mandatory: true, description: "draft, published, confirmed, in_progress, completed, cancelled", defaultValue: "'draft'" },
-        { name: "shift_type", type: "NVARCHAR(50)", mandatory: true, description: "regular, on_call, sleepover, broken, training", defaultValue: "'regular'" },
+        { name: "shift_type", type: "NVARCHAR(50)", mandatory: true, description: "regular, on_call, sleepover, broken, recall, emergency (per US-RST-044 and shift type user stories US-RST-071 through US-RST-076)", defaultValue: "'regular'" },
         { name: "is_open_shift", type: "BIT", mandatory: true, description: "Whether unassigned and available for claiming", defaultValue: "0" },
         { name: "urgency_level", type: "NVARCHAR(20)", mandatory: true, description: "normal, urgent, critical", defaultValue: "'normal'" },
         { name: "is_ai_generated", type: "BIT", mandatory: true, description: "Created by AI solver", defaultValue: "0" },
@@ -5203,7 +5204,7 @@ export const rosterSRS: ModuleSRS = {
     { id: "BR-RST-012", rule: "Expiring recurring series must trigger notifications 14 days before end date", rationale: "Prevents unexpected schedule gaps" },
     { id: "BR-RST-013", rule: "Fatigue score above 80 requires immediate manager intervention", rationale: "OH&S compliance and duty of care" },
     { id: "BR-RST-014", rule: "Cross-location conflicts are non-overridable blocking errors", rationale: "Physical impossibility of being in two places" },
-    { id: "BR-RST-015", rule: "Agency shift broadcasts must auto-escalate after 30 minutes without response", rationale: "Ensures urgent shifts get filled in time" },
+    { id: "BR-RST-015", rule: "Agency shift broadcasts must auto-escalate after the configured internal broadcast timeout (30–60 minutes, as defined in US-RST-016) without response", rationale: "Ensures urgent shifts get filled in time while respecting location-configurable timeout" },
     { id: "BR-RST-016", rule: "Ratio compliance validation must run before any shift create/edit/delete", rationale: "Proactive breach prevention" },
     { id: "BR-RST-017", rule: "Leave accruals must be calculated per hour worked, not per shift", rationale: "Accurate pro-rata entitlements for part-time staff" },
     { id: "BR-RST-018", rule: "All shift modifications must be logged with user, timestamp, and before/after values", rationale: "Complete audit trail for compliance" },
