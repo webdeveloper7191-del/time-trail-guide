@@ -465,28 +465,12 @@ export default function FormBuilder() {
       )}
 
       {viewMode === 'builder' && template && (
-        <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          <Box sx={{ width: 280, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <FormFieldPalette onAddField={handleAddField} />
-          </Box>
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>
-            <FormBuilderCanvas
-              template={template}
-              onTemplateChange={setTemplate}
-              selectedFieldId={selectedFieldId}
-              onFieldSelect={setSelectedFieldId}
-              onDuplicateSection={handleDuplicateSection}
-            />
-          </Box>
-          <Box sx={{ width: 320, borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <FormFieldProperties
-              template={template}
-              selectedFieldId={selectedFieldId}
-              onFieldUpdate={handleFieldUpdate}
-              onClose={() => setSelectedFieldId(null)}
-              customTokens={customTokens}
-            />
-          </Box>
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <SurveyJSCreator
+            template={template}
+            onTemplateChange={setTemplate}
+            onSave={handleSaveTemplate}
+          />
         </Box>
       )}
 
