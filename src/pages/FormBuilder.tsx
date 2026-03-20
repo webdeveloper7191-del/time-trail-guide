@@ -11,10 +11,8 @@ import {
   Tooltip,
   Chip,
 } from '@mui/material';
-import { FormBuilderCanvas } from '@/components/forms/FormBuilderCanvas';
-import { FormFieldPalette } from '@/components/forms/FormFieldPalette';
-import { FormFieldProperties } from '@/components/forms/FormFieldProperties';
-import { FormPreview } from '@/components/forms/FormPreview';
+import { SurveyJSCreator } from '@/components/forms/SurveyJSCreator';
+import { SurveyJSRenderer } from '@/components/forms/SurveyJSRenderer';
 import { FormAssignmentRules } from '@/components/forms/FormAssignmentRules';
 import { SubmissionWorkflow } from '@/components/forms/SubmissionWorkflow';
 import { FormAnalyticsDashboard } from '@/components/forms/FormAnalyticsDashboard';
@@ -298,10 +296,13 @@ export default function FormBuilder() {
   // Preview mode
   if (viewMode === 'preview' && previewTemplate) {
     return (
-      <FormPreview 
+      <SurveyJSRenderer 
         template={previewTemplate} 
         onClose={() => { setPreviewTemplate(null); setViewMode('library'); }}
-        customTokens={customTokens}
+        onComplete={(results) => {
+          console.log('Form submitted:', results);
+          toast.success('Form submitted successfully');
+        }}
       />
     );
   }
@@ -464,28 +465,12 @@ export default function FormBuilder() {
       )}
 
       {viewMode === 'builder' && template && (
-        <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          <Box sx={{ width: 280, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <FormFieldPalette onAddField={handleAddField} />
-          </Box>
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>
-            <FormBuilderCanvas
-              template={template}
-              onTemplateChange={setTemplate}
-              selectedFieldId={selectedFieldId}
-              onFieldSelect={setSelectedFieldId}
-              onDuplicateSection={handleDuplicateSection}
-            />
-          </Box>
-          <Box sx={{ width: 320, borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <FormFieldProperties
-              template={template}
-              selectedFieldId={selectedFieldId}
-              onFieldUpdate={handleFieldUpdate}
-              onClose={() => setSelectedFieldId(null)}
-              customTokens={customTokens}
-            />
-          </Box>
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <SurveyJSCreator
+            template={template}
+            onTemplateChange={setTemplate}
+            onSave={handleSaveTemplate}
+          />
         </Box>
       )}
 

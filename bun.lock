@@ -31,6 +31,10 @@
         "react-router-dom": "^6.30.1",
         "recharts": "^2.15.4",
         "sonner": "^1.7.4",
+        "survey-core": "^2.5.16",
+        "survey-creator-core": "^2.5.16",
+        "survey-creator-react": "^2.5.16",
+        "survey-react-ui": "^2.5.16",
         "tailwind-merge": "^2.6.0",
         "tailwindcss-animate": "^1.0.7",
         "vaul": "^0.9.9",
@@ -1032,6 +1036,14 @@
     "supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
 
     "supports-preserve-symlinks-flag": ["supports-preserve-symlinks-flag@1.0.0", "", {}, "sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w=="],
+
+    "survey-core": ["survey-core@2.5.16", "", {}, "sha512-uhKGdaSJE2Tfl9WemLTRFdFHxPsA6y2s3FmObV6ZA6KdKMC1aECHqlN4/8uYaQretQSdBscarlzYbOAz32kuDQ=="],
+
+    "survey-creator-core": ["survey-creator-core@2.5.16", "", { "peerDependencies": { "ace-builds": "^1.4.12", "survey-core": "2.5.16" }, "optionalPeers": ["ace-builds"] }, "sha512-+sRQm/3w8+IYZ4YY46TRQknV8FxYX0nDza/3XDeAoFCkYrbsQhpDuplOb8ThJUxUKiE9OdwojaXacGje7g1Lnw=="],
+
+    "survey-creator-react": ["survey-creator-react@2.5.16", "", { "peerDependencies": { "ace-builds": "^1.4.12", "react": "^16.5.0 || ^17.0.1 || ^18.1.0 || ^19.0.0", "react-dom": "^16.5.0 || ^17.0.1 || ^18.1.0 || ^19.0.0", "survey-core": "2.5.16", "survey-creator-core": "2.5.16", "survey-react-ui": "2.5.16" }, "optionalPeers": ["ace-builds"] }, "sha512-SQL2Kz1LbI1ihsWHEKcc7S7Q+C0TH5bJoa7vIGo4KBwfDCqbBIa5UgLnMl3j2UmCOZS35LWsSRvRQ0nUGkWJkA=="],
+
+    "survey-react-ui": ["survey-react-ui@2.5.16", "", { "peerDependencies": { "react": "^16.5.0 || ^17.0.1 || ^18.1.0 || ^19.0.0", "react-dom": "^16.5.0 || ^17.0.1 || ^18.1.0 || ^19.0.0", "survey-core": "2.5.16" } }, "sha512-+GbnNXTqNEHiuDVOe8eMtW7mCU/RsvmgorEmoGHYrxX08e61QxyY4H30E8/3JySEM4Tg9bVs/1TeHlSP8o5cKw=="],
 
     "svg-pathdata": ["svg-pathdata@6.0.3", "", {}, "sha512-qsjeeq5YjBZ5eMdFuUa4ZosMLxgr5RZ+F+Y1OrDhuOCEInRMA3x74XdBtggJcj9kOeInz0WE+LgCPDkZFlBYJw=="],
 
