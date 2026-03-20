@@ -158,7 +158,7 @@ export function FormsListingPage({
   ];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-muted/30">
       {/* Stat Cards - matching reference layout */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 px-6 pt-5 pb-4">
         {statCards.map((stat, i) => (
