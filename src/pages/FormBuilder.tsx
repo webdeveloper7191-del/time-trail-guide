@@ -296,10 +296,13 @@ export default function FormBuilder() {
   // Preview mode
   if (viewMode === 'preview' && previewTemplate) {
     return (
-      <FormPreview 
+      <SurveyJSRenderer 
         template={previewTemplate} 
         onClose={() => { setPreviewTemplate(null); setViewMode('library'); }}
-        customTokens={customTokens}
+        onComplete={(results) => {
+          console.log('Form submitted:', results);
+          toast.success('Form submitted successfully');
+        }}
       />
     );
   }
