@@ -11,10 +11,8 @@ import {
   Tooltip,
   Chip,
 } from '@mui/material';
-import { FormBuilderCanvas } from '@/components/forms/FormBuilderCanvas';
-import { FormFieldPalette } from '@/components/forms/FormFieldPalette';
-import { FormFieldProperties } from '@/components/forms/FormFieldProperties';
-import { FormPreview } from '@/components/forms/FormPreview';
+import { SurveyJSCreator } from '@/components/forms/SurveyJSCreator';
+import { SurveyJSRenderer } from '@/components/forms/SurveyJSRenderer';
 import { FormAssignmentRules } from '@/components/forms/FormAssignmentRules';
 import { SubmissionWorkflow } from '@/components/forms/SubmissionWorkflow';
 import { FormAnalyticsDashboard } from '@/components/forms/FormAnalyticsDashboard';
