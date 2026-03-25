@@ -4673,31 +4673,44 @@ export const rosterSRS: ModuleSRS = {
       fields: [
         { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
         { name: "tenant_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Multi-tenancy identifier", indexed: true },
-        { name: "name", type: "NVARCHAR(100)", mandatory: true, description: "Pattern name (e.g., 'Tom - Weekly M/W/F')" },
-        { name: "staff_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Assigned staff for pattern", foreignKey: "roster_staff.Staff.id" },
+        { name: "name", type: "NVARCHAR(100)", mandatory: true, description: "Pattern name (e.g., 'Team Morning Shift')" },
+        { name: "description", type: "NVARCHAR(500)", mandatory: false, description: "Human-readable description of the pattern" },
         { name: "location_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Location", foreignKey: "roster_core.Locations.id" },
         { name: "department_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Department", foreignKey: "roster_core.Departments.id" },
-        { name: "recurrence_type", type: "NVARCHAR(20)", mandatory: true, description: "daily, weekly, fortnightly, monthly" },
-        { name: "days_of_week", type: "NVARCHAR(20)", mandatory: false, description: "Comma-separated days: 1,2,4 (Mon,Tue,Thu)" },
-        { name: "week_pattern", type: "NVARCHAR(10)", mandatory: false, description: "For fortnightly: A, B, or AB" },
-        { name: "anchor_date", type: "DATE", mandatory: false, description: "Reference date for week A/B calculation" },
-        { name: "day_of_month", type: "INT", mandatory: false, description: "For monthly: day number (1-31)" },
+        { name: "role_id", type: "NVARCHAR(50)", mandatory: false, description: "Role type for the shift (educator, support, cleaner etc.)" },
+        { name: "recurrence_type", type: "NVARCHAR(20)", mandatory: true, description: "weekly, fortnightly, custom" },
+        { name: "days_of_week", type: "NVARCHAR(20)", mandatory: false, description: "Comma-separated day numbers: 0=Sun, 1=Mon, ..., 6=Sat" },
+        { name: "week_interval", type: "INT", mandatory: false, description: "For fortnightly/custom: interval between recurrences (2 = every 2 weeks)", defaultValue: "1" },
+        { name: "anchor_date", type: "DATE", mandatory: false, description: "Reference date for week interval calculation" },
         { name: "start_time", type: "TIME", mandatory: true, description: "Shift start time" },
         { name: "end_time", type: "TIME", mandatory: true, description: "Shift end time" },
         { name: "break_minutes", type: "INT", mandatory: true, description: "Break duration", defaultValue: "30" },
+        { name: "required_qualifications", type: "NVARCHAR(500)", mandatory: false, description: "JSON array of required qualification codes" },
         { name: "pattern_start_date", type: "DATE", mandatory: true, description: "When pattern begins" },
         { name: "pattern_end_date", type: "DATE", mandatory: false, description: "When pattern ends (null = ongoing)" },
-        { name: "occurrences_limit", type: "INT", mandatory: false, description: "Max occurrences if not using end date" },
-        { name: "generation_horizon_weeks", type: "INT", mandatory: true, description: "How far ahead to generate", defaultValue: "8" },
-        { name: "last_generated_date", type: "DATE", mandatory: false, description: "Last date shifts were generated to" },
-        { name: "is_active", type: "BIT", mandatory: true, description: "Whether pattern is active", defaultValue: "1" },
+        { name: "is_active", type: "BIT", mandatory: true, description: "Whether pattern is active (paused patterns skip generation)", defaultValue: "1" },
         { name: "created_at", type: "DATETIME2", mandatory: true, description: "Record creation timestamp", defaultValue: "GETUTCDATE()" },
+        { name: "created_by", type: "NVARCHAR(100)", mandatory: true, description: "User who created the pattern" },
         { name: "updated_at", type: "DATETIME2", mandatory: true, description: "Last update timestamp", defaultValue: "GETUTCDATE()" }
       ],
       indexes: [
         "IX_RecurrencePatterns_TenantId (tenant_id)",
-        "IX_RecurrencePatterns_StaffId (staff_id)",
         "IX_RecurrencePatterns_IsActive (is_active)"
+      ]
+    },
+    {
+      name: "RecurrencePatternStaff",
+      schema: "roster_shifts",
+      description: "Junction table linking recurring patterns to assigned staff members. Supports multi-staff patterns where one pattern can have N staff, each producing an independent series.",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "pattern_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Parent pattern", foreignKey: "roster_shifts.RecurrencePatterns.id", indexed: true },
+        { name: "staff_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Assigned staff member", foreignKey: "roster_staff.Staff.id", indexed: true },
+        { name: "assigned_at", type: "DATETIME2", mandatory: true, description: "When staff was added to pattern", defaultValue: "GETUTCDATE()" }
+      ],
+      indexes: [
+        "UQ_PatternStaff (pattern_id, staff_id) UNIQUE",
+        "IX_RecurrencePatternStaff_StaffId (staff_id)"
       ]
     },
     {
