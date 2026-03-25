@@ -272,17 +272,7 @@ export function RecurringShiftManagementPanel({
     return room?.name || 'Unknown Room';
   };
 
-  return (
-    <>
-      <PrimaryOffCanvas
-        open={open}
-        onClose={onClose}
-        title="Recurring Shift Series"
-        description="Manage and configure recurring shift patterns"
-        icon={RefreshCw}
-        size="lg"
-        showFooter={false}
-      >
+  const mainContent = (
         <div className="flex flex-col h-full">
           {/* Expiring Soon Section */}
           {expiringSeries.length > 0 && (
