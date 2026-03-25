@@ -57,7 +57,7 @@ interface RecurringShiftManagementPanelProps {
   shifts: Shift[];
   staff: StaffMember[];
   centres: Centre[];
-  onDeleteSeries: (groupId: string) => void;
+  onDeleteSeries: (groupId: string, staffId?: string) => void;
   onEditSeries: (groupId: string) => void;
   onExtendSeries: (groupId: string, newEndDate: string) => void;
   onUpdateSeries?: (groupId: string, updates: { startTime?: string; endTime?: string; daysOfWeek?: number[]; effectiveDate?: string }) => void;
@@ -145,21 +145,23 @@ export function RecurringShiftManagementPanel({
     const seriesMap = new Map<string, Shift[]>();
     const today = new Date();
     
-    // Group shifts by recurrence group ID
+    // Group shifts by recurrence group ID AND staff ID so multi-staff patterns
+    // produce separate, individually-manageable series per person.
     shifts.forEach(shift => {
       if (shift.recurring?.isRecurring && shift.recurring.recurrenceGroupId) {
-        const groupId = shift.recurring.recurrenceGroupId;
-        if (!seriesMap.has(groupId)) {
-          seriesMap.set(groupId, []);
+        const key = `${shift.recurring.recurrenceGroupId}::${shift.staffId}`;
+        if (!seriesMap.has(key)) {
+          seriesMap.set(key, []);
         }
-        seriesMap.get(groupId)!.push(shift);
+        seriesMap.get(key)!.push(shift);
       }
     });
 
     // Build series summaries
     const series: RecurringSeries[] = [];
     
-    seriesMap.forEach((seriesShifts, groupId) => {
+    seriesMap.forEach((seriesShifts, compositeKey) => {
+      const groupId = compositeKey.split('::')[0];
       // Sort by date
       const sortedShifts = seriesShifts.sort((a, b) => 
         parseISO(a.date).getTime() - parseISO(b.date).getTime()
@@ -234,8 +236,8 @@ export function RecurringShiftManagementPanel({
 
   const handleDeleteSeries = () => {
     if (selectedSeries) {
-      onDeleteSeries(selectedSeries.groupId);
-      toast.success(`Deleted ${selectedSeries.remainingShifts} upcoming shifts in series`);
+      onDeleteSeries(selectedSeries.groupId, selectedSeries.staffId);
+      toast.success(`Deleted ${selectedSeries.remainingShifts} upcoming shifts for ${selectedSeries.staffName}`);
       setShowDeleteConfirm(false);
       setSelectedSeries(null);
     }
