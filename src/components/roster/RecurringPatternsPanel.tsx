@@ -172,7 +172,7 @@ export function RecurringPatternsPanel({
     
     const defaultRoomId = centre?.rooms?.[0]?.id || 'room-1';
     const generated = generateShiftsFromPattern(pattern, new Date(), weeks, existingShifts);
-    const shifts = convertGeneratedShiftsToRosterShifts(generated, defaultRoomId);
+    const shifts = convertGeneratedShiftsToRosterShifts(generated, defaultRoomId, pattern);
     
     if (onGenerateShifts && shifts.length > 0) {
       onGenerateShifts(shifts);
