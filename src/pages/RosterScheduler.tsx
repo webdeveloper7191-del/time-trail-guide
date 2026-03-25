@@ -54,6 +54,7 @@ import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
 import { useSwipeRef } from '@/hooks/useSwipeGesture';
 import { RecurringPatternsPanel } from '@/components/roster/RecurringPatternsPanel';
 import { RecurringShiftManagementPanel } from '@/components/roster/RecurringShiftManagementPanel';
+import { UnifiedRecurringPanel } from '@/components/roster/UnifiedRecurringPanel';
 import { FatigueManagementPanel } from '@/components/roster/FatigueManagementPanel';
 import { GPSClockInPanel } from '@/components/roster/GPSClockInPanel';
 import { WeatherIntegrationPanel } from '@/components/roster/WeatherIntegrationPanel';
@@ -271,8 +272,8 @@ export default function RosterScheduler() {
   const [showAddEmptyShiftModal, setShowAddEmptyShiftModal] = useState(false);
   
   // Advanced Features panels
-  const [showRecurringPatterns, setShowRecurringPatterns] = useState(false);
-  const [showRecurringManagement, setShowRecurringManagement] = useState(false);
+  const [showUnifiedRecurring, setShowUnifiedRecurring] = useState(false);
+  const [unifiedRecurringTab, setUnifiedRecurringTab] = useState<'patterns' | 'series'>('patterns');
   const [showFatigueManagement, setShowFatigueManagement] = useState(false);
   const [showGPSClockIn, setShowGPSClockIn] = useState(false);
   const [showWeatherIntegration, setShowWeatherIntegration] = useState(false);
@@ -2157,11 +2158,8 @@ export default function RosterScheduler() {
                       </IconButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setShowRecurringPatterns(true)} icon={<Repeat size={16} />}>
-                        Recurring Patterns
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowRecurringManagement(true)} icon={<RefreshCw size={16} />}>
-                        Manage Recurring Shifts
+                      <DropdownMenuItem onClick={() => { setUnifiedRecurringTab('patterns'); setShowUnifiedRecurring(true); }} icon={<Repeat size={16} />}>
+                        Recurring Shifts
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setShowBreakScheduling(true)} icon={<Coffee size={16} />}>
                         Break Scheduling
@@ -2941,31 +2939,31 @@ export default function RosterScheduler() {
         onAssign={handleAutoAssign}
       />
 
-      {/* Advanced Features Panels - Using PrimaryOffCanvas */}
-      <PrimaryOffCanvas
-        open={showRecurringPatterns}
-        onClose={() => setShowRecurringPatterns(false)}
-        title="Recurring Shift Patterns"
-        description="Create and manage recurring shift templates"
-        icon={Repeat}
-        size="3xl"
-        showFooter={false}
-      >
-        <RecurringPatternsPanel 
-          centreId={selectedCentreId}
-          centre={selectedCentre}
-          centres={mockCentres}
-          staff={allStaff}
-          existingShifts={shifts}
-          onGenerateShifts={(newShifts) => {
-            const shiftsWithIds = newShifts.map((s, idx) => ({
-              ...s,
-              id: `shift-pattern-${Date.now()}-${idx}`,
-            }));
-            setShifts(prev => [...prev, ...shiftsWithIds], `Generated ${shiftsWithIds.length} recurring shifts`, 'bulk');
-          }}
-        />
-      </PrimaryOffCanvas>
+      {/* Unified Recurring Shifts Panel */}
+      <UnifiedRecurringPanel
+        open={showUnifiedRecurring}
+        onClose={() => setShowUnifiedRecurring(false)}
+        centreId={selectedCentreId}
+        centre={selectedCentre}
+        centres={mockCentres}
+        staff={allStaff}
+        shifts={shifts}
+        existingShifts={shifts}
+        initialTab={unifiedRecurringTab}
+        onGenerateShifts={(newShifts) => {
+          const shiftsWithIds = newShifts.map((s, idx) => ({
+            ...s,
+            id: `shift-pattern-${Date.now()}-${idx}`,
+          }));
+          setShifts(prev => [...prev, ...shiftsWithIds], `Generated ${shiftsWithIds.length} recurring shifts`, 'bulk');
+        }}
+        onDeleteSeries={(groupId) => {
+          setShifts(prev => prev.filter(s => s.recurring?.recurrenceGroupId !== groupId), 'Deleted recurring series', 'bulk');
+        }}
+        onExtendSeries={(groupId, newEndDate) => {
+          toast.success(`Series extended to ${newEndDate}`);
+        }}
+      />
 
       <PrimaryOffCanvas
         open={showBreakScheduling}
@@ -3143,24 +3141,7 @@ export default function RosterScheduler() {
         />
       )}
 
-      {/* Recurring Shift Management Panel */}
-      <RecurringShiftManagementPanel
-        open={showRecurringManagement}
-        onClose={() => setShowRecurringManagement(false)}
-        shifts={shifts}
-        staff={allStaff}
-        centres={mockCentres}
-        onDeleteSeries={(groupId) => {
-          setShifts(prev => prev.filter(s => s.recurring?.recurrenceGroupId !== groupId), 'Deleted recurring series', 'bulk');
-        }}
-        onEditSeries={(groupId) => {
-          setShowRecurringManagement(false);
-          setShowRecurringPatterns(true);
-        }}
-        onExtendSeries={(groupId, newEndDate) => {
-          toast.success(`Series extended to ${newEndDate}`);
-        }}
-      />
+      {/* Old standalone panels removed - now using UnifiedRecurringPanel */}
 
       {/* Timefold Constraint Configuration Panel */}
       <TimefoldConstraintPanel
