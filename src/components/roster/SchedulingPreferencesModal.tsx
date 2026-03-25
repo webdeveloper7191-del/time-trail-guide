@@ -137,17 +137,11 @@ export function SchedulingPreferencesModal({
       {/* Staff Selector */}
       {allStaff && allStaff.length > 1 && (
         <FormSection title="Staff Member">
-          <select
-            value={selectedStaffId}
-            onChange={(e) => setSelectedStaffId(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          >
-            {allStaff.map(s => (
-              <option key={s.id} value={s.id}>
-                {s.name}{s.role ? ` — ${s.role}` : ''}
-              </option>
-            ))}
-          </select>
+          <StaffCombobox
+            staff={allStaff}
+            selectedId={selectedStaffId}
+            onSelect={setSelectedStaffId}
+          />
         </FormSection>
       )}
 
