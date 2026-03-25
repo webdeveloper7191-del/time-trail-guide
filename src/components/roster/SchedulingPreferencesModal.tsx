@@ -18,7 +18,8 @@ import {
   Moon,
   BedDouble,
   ChevronsUpDown,
-  Check
+  Check,
+  Search
 } from 'lucide-react';
 import { StaffMember, SchedulingPreferences, Room, Centre } from '@/types/roster';
 import { cn } from '@/lib/utils';
