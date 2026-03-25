@@ -2965,8 +2965,13 @@ export default function RosterScheduler() {
           }));
           setShifts(prev => [...prev, ...shiftsWithIds], `Generated ${shiftsWithIds.length} recurring shifts`, 'bulk');
         }}
-        onDeleteSeries={(groupId) => {
-          setShifts(prev => prev.filter(s => s.recurring?.recurrenceGroupId !== groupId), 'Deleted recurring series', 'bulk');
+        onDeleteSeries={(groupId, staffId) => {
+          setShifts(prev => prev.filter(s => {
+            if (s.recurring?.recurrenceGroupId !== groupId) return true;
+            // If staffId provided, only delete shifts for that specific staff member
+            if (staffId && s.staffId !== staffId) return true;
+            return false;
+          }), 'Deleted recurring series', 'bulk');
         }}
         onExtendSeries={(groupId, newEndDate) => {
           toast.success(`Series extended to ${newEndDate}`);

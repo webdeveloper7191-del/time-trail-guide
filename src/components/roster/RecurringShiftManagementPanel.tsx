@@ -236,8 +236,8 @@ export function RecurringShiftManagementPanel({
 
   const handleDeleteSeries = () => {
     if (selectedSeries) {
-      onDeleteSeries(selectedSeries.groupId);
-      toast.success(`Deleted ${selectedSeries.remainingShifts} upcoming shifts in series`);
+      onDeleteSeries(selectedSeries.groupId, selectedSeries.staffId);
+      toast.success(`Deleted ${selectedSeries.remainingShifts} upcoming shifts for ${selectedSeries.staffName}`);
       setShowDeleteConfirm(false);
       setSelectedSeries(null);
     }
