@@ -36,14 +36,28 @@ function SearchableStaffSelector({ staff, selectedId, onSelect }: {
   const [search, setSearch] = useState('');
   const selected = staff.find(s => s.id === selectedId);
   
-  const filtered = useMemo(() => {
-    if (!search) return staff;
+  const grouped = useMemo(() => {
     const q = search.toLowerCase();
-    return staff.filter(s => 
-      s.name.toLowerCase().includes(q) || 
-      s.role?.toLowerCase().includes(q)
-    );
+    const list = search 
+      ? staff.filter(s => s.name.toLowerCase().includes(q) || s.role?.toLowerCase().includes(q))
+      : staff;
+    
+    const groups: Record<string, StaffMember[]> = {};
+    list.forEach(s => {
+      const key = s.role || 'Other';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(s);
+    });
+    return groups;
   }, [staff, search]);
+
+  const roleLabels: Record<string, string> = {
+    lead_educator: 'Lead Educators',
+    educator: 'Educators',
+    assistant: 'Assistants',
+    cook: 'Kitchen Staff',
+    admin: 'Administration',
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -57,7 +71,7 @@ function SearchableStaffSelector({ staff, selectedId, onSelect }: {
           <span className="flex items-center gap-2 truncate">
             <User className="h-4 w-4 shrink-0 text-muted-foreground" />
             {selected ? (
-              <span className="truncate">{selected.name}{selected.role ? ` — ${selected.role}` : ''}</span>
+              <span className="truncate">{selected.name}{selected.role ? ` — ${roleLabels[selected.role] || selected.role}` : ''}</span>
             ) : (
               <span className="text-muted-foreground">Select staff member...</span>
             )}
@@ -76,21 +90,27 @@ function SearchableStaffSelector({ staff, selectedId, onSelect }: {
           />
         </div>
         <div className="max-h-60 overflow-y-auto p-1">
-          {filtered.length === 0 ? (
+          {Object.keys(grouped).length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">No staff found.</p>
           ) : (
-            filtered.map(s => (
-              <div
-                key={s.id}
-                onClick={() => { onSelect(s.id); setOpen(false); setSearch(''); }}
-                className={cn(
-                  "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground",
-                  s.id === selectedId && "bg-accent"
-                )}
-              >
-                <Check className={cn("h-4 w-4 shrink-0", s.id === selectedId ? "opacity-100" : "opacity-0")} />
-                <span className="truncate">{s.name}</span>
-                {s.role && <span className="ml-auto text-xs text-muted-foreground truncate">{s.role}</span>}
+            Object.entries(grouped).map(([role, members]) => (
+              <div key={role}>
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground tracking-wide">
+                  {roleLabels[role] || role}
+                </div>
+                {members.map(s => (
+                  <div
+                    key={s.id}
+                    onClick={() => { onSelect(s.id); setOpen(false); setSearch(''); }}
+                    className={cn(
+                      "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground",
+                      s.id === selectedId && "bg-accent"
+                    )}
+                  >
+                    <Check className={cn("h-4 w-4 shrink-0", s.id === selectedId ? "opacity-100" : "opacity-0")} />
+                    <span className="truncate">{s.name}</span>
+                  </div>
+                ))}
               </div>
             ))
           )}
