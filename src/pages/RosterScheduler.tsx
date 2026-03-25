@@ -2720,8 +2720,9 @@ export default function RosterScheduler() {
           open={showPreferences}
           onClose={() => { setShowPreferences(false); setSelectedStaffForPrefs(null); }}
           staff={selectedStaffForPrefs}
-           allRooms={selectedCentre.rooms}
-           centres={mockCentres}
+          allStaff={allStaff}
+          allRooms={selectedCentre.rooms}
+          centres={mockCentres}
           onSave={handleSavePreferences}
         />
       )}

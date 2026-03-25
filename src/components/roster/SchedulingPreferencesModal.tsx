@@ -27,6 +27,7 @@ interface SchedulingPreferencesModalProps {
   open: boolean;
   onClose: () => void;
   staff: StaffMember;
+  allStaff?: StaffMember[];
   allRooms: Room[];
   centres?: Centre[];
   onSave: (staffId: string, preferences: SchedulingPreferences) => void;
@@ -48,11 +49,20 @@ const defaultPreferences: SchedulingPreferences = {
 export function SchedulingPreferencesModal({ 
   open, 
   onClose, 
-  staff, 
+  staff: initialStaff, 
+  allStaff,
   allRooms: defaultRooms,
   centres,
   onSave 
 }: SchedulingPreferencesModalProps) {
+  const [selectedStaffId, setSelectedStaffId] = useState(initialStaff.id);
+  const staff = useMemo(() => {
+    if (allStaff) {
+      return allStaff.find(s => s.id === selectedStaffId) || initialStaff;
+    }
+    return initialStaff;
+  }, [allStaff, selectedStaffId, initialStaff]);
+
   const [activeCentreId, setActiveCentreId] = useState(centres?.[0]?.id || '');
   const allRooms = useMemo(() => {
     if (centres && activeCentreId) {
@@ -65,6 +75,10 @@ export function SchedulingPreferencesModal({
     staff.schedulingPreferences || defaultPreferences
   );
   const [tabValue, setTabValue] = useState(0);
+
+  useEffect(() => {
+    setSelectedStaffId(initialStaff.id);
+  }, [initialStaff.id]);
 
   useEffect(() => {
     setPreferences(staff.schedulingPreferences || defaultPreferences);
@@ -116,6 +130,23 @@ export function SchedulingPreferencesModal({
         { label: 'Save Preferences', variant: 'primary', onClick: handleSave },
       ]}
     >
+      {/* Staff Selector */}
+      {allStaff && allStaff.length > 1 && (
+        <FormSection title="Staff Member">
+          <select
+            value={selectedStaffId}
+            onChange={(e) => setSelectedStaffId(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            {allStaff.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.name}{s.role ? ` — ${s.role}` : ''}
+              </option>
+            ))}
+          </select>
+        </FormSection>
+      )}
+
       <Tabs value={tabValue.toString()} onValueChange={(v) => setTabValue(parseInt(v))} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="0">Schedule</TabsTrigger>
