@@ -57,8 +57,8 @@ export interface ModuleSRS {
 
 export const rosterSRS: ModuleSRS = {
   moduleName: "Roster & Workforce Scheduling",
-  version: "2.1.0",
-  lastUpdated: "2026-03-19",
+  version: "2.2.0",
+  lastUpdated: "2026-03-25",
   overview: `The Roster & Workforce Scheduling module provides comprehensive workforce management capabilities across all industries. It enables managers to create, manage, and optimize staff schedules while ensuring compliance with industry-specific regulations, fatigue management requirements, and applicable employment awards. The system supports multi-location operations, agency staff integration, GPS-validated time and attendance, and AI-powered schedule optimization.`,
   
   objectives: [
@@ -201,10 +201,13 @@ export const rosterSRS: ModuleSRS = {
     { id: "FR-RST-008", category: "Shift Management", requirement: "System shall allow creation of shifts with date, time, department, and staff assignment", priority: "Critical" },
     { id: "FR-RST-009", category: "Shift Management", requirement: "System shall support shift templates for rapid shift creation", priority: "High" },
     { id: "FR-RST-010", category: "Shift Management", requirement: "System shall detect and prevent scheduling conflicts (overlapping shifts, outside availability)", priority: "Critical" },
-    // Recurring Shifts
-    { id: "FR-RST-011", category: "Recurring Shifts", requirement: "System shall support creation of recurring shift patterns (daily, weekly, fortnightly, monthly)", priority: "High" },
-    { id: "FR-RST-012", category: "Recurring Shifts", requirement: "System shall auto-generate future shifts based on recurring patterns", priority: "High" },
-    { id: "FR-RST-013", category: "Recurring Shifts", requirement: "System shall allow bulk editing of all future instances in a recurring series", priority: "Medium" },
+    // Recurring Shifts – Unified Panel (Patterns + Active Series)
+    { id: "FR-RST-011", category: "Recurring Shifts", requirement: "System shall support creation of recurring shift patterns (daily, weekly, fortnightly, monthly) via a unified Recurring Shifts panel with a Patterns tab", priority: "High" },
+    { id: "FR-RST-012", category: "Recurring Shifts", requirement: "System shall auto-generate future shifts from active patterns and display them in the Active Series tab, grouped per staff member", priority: "High" },
+    { id: "FR-RST-013", category: "Recurring Shifts", requirement: "System shall allow bulk editing of all future instances in a recurring series from the Active Series tab", priority: "Medium" },
+    { id: "FR-RST-011a", category: "Recurring Shifts", requirement: "System shall support assigning multiple staff members to a single recurring pattern, generating independent series per person", priority: "High" },
+    { id: "FR-RST-011b", category: "Recurring Shifts", requirement: "System shall replace previously generated shifts for a pattern when 'Generate All' is clicked, ensuring staff changes are reflected in Active Series", priority: "High" },
+    { id: "FR-RST-011c", category: "Recurring Shifts", requirement: "System shall allow individual deletion of a single staff member's series within a multi-staff pattern without affecting other staff in the same pattern", priority: "Medium" },
     // Open Shifts
     { id: "FR-RST-014", category: "Open Shifts", requirement: "System shall allow creation of unassigned open shifts for staff to claim", priority: "High" },
     { id: "FR-RST-015", category: "Open Shifts", requirement: "System shall filter eligible staff for open shifts based on qualifications and availability", priority: "High" },
@@ -656,59 +659,64 @@ export const rosterSRS: ModuleSRS = {
     },
     {
       id: "US-RST-008",
-      title: "Create Recurring Shift Pattern",
+      title: "Create Recurring Shift Pattern (Patterns Tab)",
       actors: ["Location Manager"],
-      description: "As a Location Manager, I want to create recurring shift patterns for staff with fixed schedules, so that their shifts are automatically generated each week without manual entry.",
+      description: "As a Location Manager, I want to create recurring shift patterns via the unified Recurring Shifts panel's Patterns tab, assigning one or multiple staff members, so that their shifts are automatically generated and appear in the Active Series tab.",
       acceptanceCriteria: [
-        "Can create pattern with days of week, times, and department",
-        "Can assign staff member to the pattern",
-        "Pattern generates future shifts automatically",
-        "Can set end date or number of occurrences",
-        "Generated shifts appear as 'AI Generated' in roster",
-        "Can edit single instance without affecting pattern",
-        "Can bulk edit all future instances in series"
+        "Can create pattern with days of week, times, role, and location",
+        "Can assign one or multiple staff members via a checkbox list grouped by role",
+        "Pattern supports weekly, fortnightly, and custom recurrence types",
+        "Can set end date or leave ongoing (no end date)",
+        "Patterns tab displays summary stats: total patterns, active count, shifts/month, and staff assigned count",
+        "Active Patterns table shows pattern name, recurrence, shift time, role, assigned staff badges, and active/paused toggle",
+        "Can edit or delete individual patterns from the table",
+        "Can pin important patterns for quick access"
       ],
       businessLogic: [
-        "Pattern types: Daily, Weekly, Fortnightly, Monthly",
-        "Weekly: Select specific days (Mon, Wed, Fri)",
-        "Fortnightly: Week 1 vs Week 2 pattern with anchor date",
-        "Auto-generation runs nightly for next 8 weeks",
-        "Pattern expiry triggers notification 14 days before",
-        "Single edit: Breaks link to pattern for that instance only",
-        "Series edit: Updates pattern definition and regenerates future shifts"
+        "Pattern types: Weekly, Fortnightly, Custom (with week interval)",
+        "Weekly: Select specific days (Mon, Wed, Fri etc.)",
+        "Fortnightly: Week interval with anchor start date for alternating calculation",
+        "Multi-staff: When N staff are assigned, generation produces N × days shifts — one per staff member per scheduled day",
+        "Pattern stores assignedStaffIds[] array; legacy assignedStaffId field supported for backward compat",
+        "Patterns can be toggled active/paused — only active patterns participate in bulk generation",
+        "Each pattern stores a shiftTemplate with startTime, endTime, roleId, centreId, breakDuration, and optional requiredQualifications"
       ],
       priority: "high",
       relatedModules: [
+        { module: "Active Series", relationship: "Generated shifts appear as individually-manageable series per staff" },
         { module: "Staff Availability", relationship: "Pattern validates against staff availability" },
         { module: "Leave", relationship: "Generated shifts skip approved leave dates" }
       ],
       endToEndJourney: [
-        "1. Location Manager Sarah hires permanent staff member Tom",
-        "2. Tom will work Monday, Tuesday, Thursday 7AM-3PM in Dept A",
-        "3. Sarah opens Roster and clicks 'Create Recurring Pattern'",
-        "4. Enters name: 'Tom - Regular Weekly'",
-        "5. Selects pattern: Weekly",
-        "6. Checks days: Monday, Tuesday, Thursday",
-        "7. Sets times: 7:00 AM to 3:00 PM",
-        "8. Selects department: Dept A",
-        "9. Assigns staff: Tom Wilson",
-        "10. Sets duration: Ongoing (no end date)",
-        "11. Sarah clicks 'Create Pattern'",
-        "12. System generates 24 shifts (8 weeks × 3 days)",
-        "13. Roster grid shows shifts with green recurring icon"
+        "1. Manager opens Recurring Shifts panel from roster toolbar",
+        "2. Lands on Patterns tab showing existing patterns with stats cards",
+        "3. Clicks '+ New Pattern' to open creation form",
+        "4. Enters name: 'Team Morning Shift'",
+        "5. Selects recurrence: Weekly",
+        "6. Checks days: Monday, Wednesday, Friday",
+        "7. Sets times: 7:00 AM to 3:00 PM with 30-min break",
+        "8. Selects role: Educator",
+        "9. Assigns staff: Emma Wilson, Sarah Chen, Michael Brown (multi-select checkboxes)",
+        "10. Leaves end date blank (ongoing)",
+        "11. Clicks 'Create Pattern' — pattern appears in Active Patterns table",
+        "12. Clicks 'Generate All (4 weeks)' button",
+        "13. System generates 36 shifts (3 staff × 3 days × 4 weeks)",
+        "14. Switches to Active Series tab — sees 3 separate entries (one per staff member)",
+        "15. Each series shows staff name, schedule, time, room, and progress"
       ],
       realWorldExample: {
-        scenario: "Tom joins the organization as a permanent part-time staff member. His contract specifies fixed days each week.",
+        scenario: "A centre needs a team of 3 educators covering Mon/Wed/Fri mornings. The manager creates a single pattern instead of 3 separate ones.",
         steps: [
-          "Sarah receives Tom's signed contract: Mon/Tue/Thu, 7AM-3PM",
-          "She opens the Roster system and clicks 'Recurring Patterns'",
-          "Creates 'Tom Wilson - PT Schedule' with Weekly recurrence",
-          "Assigns to Dept A with 30-min break",
-          "Leaves end date blank (ongoing)",
-          "System immediately creates shifts for next 8 weeks",
-          "Tom can now see his entire schedule in the staff app"
+          "Manager opens Recurring Shifts panel and clicks New Pattern",
+          "Creates 'Team Morning Shift' with Weekly recurrence on Mon/Wed/Fri",
+          "Selects all 3 educators from the grouped staff checkbox list",
+          "Clicks Create — pattern appears with 3 staff badges in Assigned To column",
+          "Clicks Generate All — 36 shifts created",
+          "Active Series tab shows Emma Wilson, Sarah Chen, Michael Brown as separate entries",
+          "Later, manager removes Michael Brown from the pattern and clicks Generate All again",
+          "System replaces old shifts — Active Series now shows only Emma and Sarah"
         ],
-        outcome: "Tom's fixed schedule is set up once and automatically maintained, saving 15 minutes per week on manual entry."
+        outcome: "Single pattern manages team scheduling. Staff changes are reflected by regenerating. Each person's series is independently manageable."
       }
     },
     {
@@ -762,51 +770,97 @@ export const rosterSRS: ModuleSRS = {
       }
     },
     {
-      id: "US-RST-010",
-      title: "Detect Expiring Recurring Shift Series (Background)",
-      actors: ["System", "Location Manager"],
-      description: "As a System, I want to automatically detect recurring shift series that are about to expire, so that managers can extend or renew patterns before they end.",
+      id: "US-RST-009a",
+      title: "Manage Active Recurring Series (Active Series Tab)",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to view and manage all active recurring shift series in a dedicated Active Series tab, where multi-staff patterns are split into individual entries per staff member, so I can independently manage each person's recurring schedule.",
       acceptanceCriteria: [
-        "System scans all recurring shift patterns nightly",
-        "Identifies series ending within 14 days (warning) or 7 days (critical)",
-        "Counts remaining occurrences for each expiring series",
-        "Generates in-app alerts for affected managers",
-        "Sends email notifications to staff and managers",
-        "Expiry notifications include pattern details and renewal options"
+        "Active Series tab shows all shifts with a recurrenceGroupId, grouped by composite key (recurrenceGroupId + staffId)",
+        "Each entry displays: staff name, recurrence pattern (e.g., Weekly · Mon, Tue, Wed), time, room, and progress (completed/total)",
+        "Multi-staff patterns show as separate entries per staff member (e.g., 3 staff = 3 entries)",
+        "Each entry shows next shift date",
+        "Expiring series (≤14 days) are visually flagged with warning indicator",
+        "Can delete a single staff member's series without affecting other staff in the same pattern",
+        "Can extend a series with additional weeks",
+        "Can edit series schedule (times, days) with effective date for changes",
+        "Can pause/resume individual series"
       ],
       businessLogic: [
-        "Background job runs daily at 2 AM",
+        "Grouping key: ${recurrenceGroupId}::${staffId} — ensures multi-staff patterns produce separate manageable entries",
+        "Staff name resolved from roster staff array by shift.staffId",
+        "Progress: completed = shifts with date < today or status = completed; remaining = total - completed",
+        "Expiry detection: if endDate exists, daysUntilEnd = differenceInDays(endDate, today); flag if ≤ 14",
+        "Delete scope: when staffId provided, only delete shifts matching both groupId AND staffId",
+        "Regeneration: 'Generate All' replaces all shifts in matching recurrenceGroupIds with fresh shifts reflecting current pattern assignments"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Patterns Tab", relationship: "Patterns define templates; Active Series shows generated instances" },
+        { module: "Roster Grid", relationship: "Series shifts appear on the grid with recurring indicator" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Recurring Shifts panel and switches to Active Series tab",
+        "2. Sees list of active series, each showing staff name, pattern, time, progress",
+        "3. Team Morning Shift pattern has 3 entries: Emma Wilson, Sarah Chen, Michael Brown",
+        "4. Manager clicks on Emma Wilson's entry — sees detail with shift count, next shift date",
+        "5. Decides to remove Michael from the team — clicks delete on his entry",
+        "6. Confirms deletion — only Michael's shifts are removed; Emma and Sarah unaffected",
+        "7. Notices Sarah's series is expiring (warning badge) — clicks extend",
+        "8. Extends by 4 weeks — new shifts generated for Sarah only",
+        "9. Returns to Patterns tab to update the pattern, removing Michael from staff list",
+        "10. Clicks Generate All — system replaces old shifts with fresh ones matching updated pattern"
+      ],
+      realWorldExample: {
+        scenario: "A team of 3 educators has a recurring morning shift. One educator leaves, another's contract is extended.",
+        steps: [
+          "Active Series shows 3 entries for the Team Morning Shift pattern",
+          "Michael Brown resigns — manager deletes his series (12 shifts removed)",
+          "Emma and Sarah's series remain unaffected with their own progress tracking",
+          "Sarah's contract extended — manager extends her series by 8 weeks",
+          "Manager updates the Pattern to remove Michael, adds replacement Alex",
+          "Generate All produces fresh shifts for Emma, Sarah, and Alex"
+        ],
+        outcome: "Team roster transition handled cleanly through independent series management without disrupting existing staff schedules."
+      }
+    },
+    {
+      id: "US-RST-010",
+      title: "Detect Expiring Recurring Shift Series",
+      actors: ["System", "Location Manager"],
+      description: "As a System, I want to automatically detect recurring shift series that are about to expire and flag them in the Active Series tab, so that managers can extend or renew patterns before they end.",
+      acceptanceCriteria: [
+        "System identifies series ending within 14 days (warning) or 7 days (critical)",
+        "Active Series tab shows expiry warning badge on affected entries",
+        "Counts remaining occurrences and days until end for each expiring series",
+        "Generates in-app alerts for affected managers",
+        "Extend option available directly from the series entry"
+      ],
+      businessLogic: [
         "Warning threshold: 14 days from last occurrence",
         "Critical threshold: 7 days from last occurrence",
-        "Notification deduplication: Don't re-notify within 3 days",
-        "Email template includes: Staff name, pattern type, end date, occurrences remaining",
-        "In-app badge shows count of expiring series"
+        "Calculated per-entry using composite key (recurrenceGroupId::staffId)",
+        "For after_occurrences end type: flag when ≤ 3 remaining",
+        "Notification deduplication: Don't re-notify within 3 days"
       ],
       priority: "medium",
       relatedModules: [
         { module: "Notifications", relationship: "Triggers email and in-app alerts" },
-        { module: "Recurring Patterns", relationship: "Scans active pattern definitions" }
+        { module: "Active Series Tab", relationship: "Visual flags on expiring entries" }
       ],
       endToEndJourney: [
-        "1. Background service runs at 2 AM daily",
-        "2. Scans all shifts with recurrence_group_id",
-        "3. Groups by series and finds last occurrence date",
-        "4. Emma's 'Mon/Wed/Fri' pattern ends in 5 days",
-        "5. System creates notification: severity 'critical'",
-        "6. Manager Sarah receives in-app alert",
-        "7. Emma receives email: 'Your recurring schedule ends soon'",
-        "8. Sarah extends the pattern for another 8 weeks",
-        "9. System generates new shift instances",
-        "10. Notification cleared from dashboard"
+        "1. Active Series tab loads and calculates daysUntilEnd for each series",
+        "2. Emma's 'Mon/Wed/Fri' series ends in 5 days — flagged as critical",
+        "3. Warning badge appears on Emma's entry with '5 days remaining'",
+        "4. Manager clicks extend on Emma's entry",
+        "5. Extends by 4 weeks — new shifts generated",
+        "6. Warning badge removed as series now extends 28+ days"
       ],
       realWorldExample: {
         scenario: "Tom's weekly pattern was set with an end date 6 days away.",
         steps: [
-          "Nightly job detects Tom's series ending in 6 days",
-          "Critical notification created",
-          "Manager receives alert with 'Extend Series' button",
-          "Manager clicks through, extends pattern indefinitely",
-          "System generates shifts for next 8 weeks"
+          "Active Series tab shows Tom's entry with critical warning badge",
+          "Manager clicks extend, selects 8 more weeks",
+          "System generates shifts and clears warning"
         ],
         outcome: "Pattern extended before disruption. Staff schedule continuity maintained."
       }
@@ -4619,31 +4673,44 @@ export const rosterSRS: ModuleSRS = {
       fields: [
         { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
         { name: "tenant_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Multi-tenancy identifier", indexed: true },
-        { name: "name", type: "NVARCHAR(100)", mandatory: true, description: "Pattern name (e.g., 'Tom - Weekly M/W/F')" },
-        { name: "staff_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Assigned staff for pattern", foreignKey: "roster_staff.Staff.id" },
+        { name: "name", type: "NVARCHAR(100)", mandatory: true, description: "Pattern name (e.g., 'Team Morning Shift')" },
+        { name: "description", type: "NVARCHAR(500)", mandatory: false, description: "Human-readable description of the pattern" },
         { name: "location_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Location", foreignKey: "roster_core.Locations.id" },
         { name: "department_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Department", foreignKey: "roster_core.Departments.id" },
-        { name: "recurrence_type", type: "NVARCHAR(20)", mandatory: true, description: "daily, weekly, fortnightly, monthly" },
-        { name: "days_of_week", type: "NVARCHAR(20)", mandatory: false, description: "Comma-separated days: 1,2,4 (Mon,Tue,Thu)" },
-        { name: "week_pattern", type: "NVARCHAR(10)", mandatory: false, description: "For fortnightly: A, B, or AB" },
-        { name: "anchor_date", type: "DATE", mandatory: false, description: "Reference date for week A/B calculation" },
-        { name: "day_of_month", type: "INT", mandatory: false, description: "For monthly: day number (1-31)" },
+        { name: "role_id", type: "NVARCHAR(50)", mandatory: false, description: "Role type for the shift (educator, support, cleaner etc.)" },
+        { name: "recurrence_type", type: "NVARCHAR(20)", mandatory: true, description: "weekly, fortnightly, custom" },
+        { name: "days_of_week", type: "NVARCHAR(20)", mandatory: false, description: "Comma-separated day numbers: 0=Sun, 1=Mon, ..., 6=Sat" },
+        { name: "week_interval", type: "INT", mandatory: false, description: "For fortnightly/custom: interval between recurrences (2 = every 2 weeks)", defaultValue: "1" },
+        { name: "anchor_date", type: "DATE", mandatory: false, description: "Reference date for week interval calculation" },
         { name: "start_time", type: "TIME", mandatory: true, description: "Shift start time" },
         { name: "end_time", type: "TIME", mandatory: true, description: "Shift end time" },
         { name: "break_minutes", type: "INT", mandatory: true, description: "Break duration", defaultValue: "30" },
+        { name: "required_qualifications", type: "NVARCHAR(500)", mandatory: false, description: "JSON array of required qualification codes" },
         { name: "pattern_start_date", type: "DATE", mandatory: true, description: "When pattern begins" },
         { name: "pattern_end_date", type: "DATE", mandatory: false, description: "When pattern ends (null = ongoing)" },
-        { name: "occurrences_limit", type: "INT", mandatory: false, description: "Max occurrences if not using end date" },
-        { name: "generation_horizon_weeks", type: "INT", mandatory: true, description: "How far ahead to generate", defaultValue: "8" },
-        { name: "last_generated_date", type: "DATE", mandatory: false, description: "Last date shifts were generated to" },
-        { name: "is_active", type: "BIT", mandatory: true, description: "Whether pattern is active", defaultValue: "1" },
+        { name: "is_active", type: "BIT", mandatory: true, description: "Whether pattern is active (paused patterns skip generation)", defaultValue: "1" },
         { name: "created_at", type: "DATETIME2", mandatory: true, description: "Record creation timestamp", defaultValue: "GETUTCDATE()" },
+        { name: "created_by", type: "NVARCHAR(100)", mandatory: true, description: "User who created the pattern" },
         { name: "updated_at", type: "DATETIME2", mandatory: true, description: "Last update timestamp", defaultValue: "GETUTCDATE()" }
       ],
       indexes: [
         "IX_RecurrencePatterns_TenantId (tenant_id)",
-        "IX_RecurrencePatterns_StaffId (staff_id)",
         "IX_RecurrencePatterns_IsActive (is_active)"
+      ]
+    },
+    {
+      name: "RecurrencePatternStaff",
+      schema: "roster_shifts",
+      description: "Junction table linking recurring patterns to assigned staff members. Supports multi-staff patterns where one pattern can have N staff, each producing an independent series.",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "pattern_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Parent pattern", foreignKey: "roster_shifts.RecurrencePatterns.id", indexed: true },
+        { name: "staff_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Assigned staff member", foreignKey: "roster_staff.Staff.id", indexed: true },
+        { name: "assigned_at", type: "DATETIME2", mandatory: true, description: "When staff was added to pattern", defaultValue: "GETUTCDATE()" }
+      ],
+      indexes: [
+        "UQ_PatternStaff (pattern_id, staff_id) UNIQUE",
+        "IX_RecurrencePatternStaff_StaffId (staff_id)"
       ]
     },
     {
@@ -5200,8 +5267,10 @@ export const rosterSRS: ModuleSRS = {
     { id: "BR-RST-008", rule: "Agency staff must have verified qualifications before assignment", rationale: "Regulatory compliance and quality assurance" },
     { id: "BR-RST-009", rule: "Break scheduling must maintain minimum staffing ratios at all times", rationale: "Continuous regulatory compliance" },
     { id: "BR-RST-010", rule: "Shift swaps require same or higher qualification level", rationale: "Maintains service quality and compliance" },
-    { id: "BR-RST-011", rule: "Recurring shift patterns must generate shifts at least 8 weeks in advance", rationale: "Ensures staff visibility into future schedules" },
-    { id: "BR-RST-012", rule: "Expiring recurring series must trigger notifications 14 days before end date", rationale: "Prevents unexpected schedule gaps" },
+    { id: "BR-RST-011", rule: "Recurring shift patterns support multi-staff assignment; generation produces N independent series (one per staff member) sharing a recurrenceGroupId but keyed by staffId", rationale: "Enables team scheduling from single pattern while preserving individual series management" },
+    { id: "BR-RST-011a", rule: "'Generate All' replaces all previously generated shifts for matching recurrenceGroupIds before creating fresh shifts — ensuring pattern edits (staff changes, schedule changes) are reflected", rationale: "Prevents stale shifts from persisting after pattern modification" },
+    { id: "BR-RST-011b", rule: "Active Series groups shifts by composite key (recurrenceGroupId::staffId), allowing per-staff deletion without affecting other staff in the same pattern", rationale: "Independent series management for team patterns" },
+    { id: "BR-RST-012", rule: "Expiring recurring series must be flagged in the Active Series tab when ≤14 days remain", rationale: "Prevents unexpected schedule gaps" },
     { id: "BR-RST-013", rule: "Fatigue score above 80 requires immediate manager intervention", rationale: "OH&S compliance and duty of care" },
     { id: "BR-RST-014", rule: "Cross-location conflicts are non-overridable blocking errors", rationale: "Physical impossibility of being in two places" },
     { id: "BR-RST-015", rule: "Agency shift broadcasts must auto-escalate after the configured internal broadcast timeout (30–60 minutes, as defined in US-RST-016) without response", rationale: "Ensures urgent shifts get filled in time while respecting location-configurable timeout" },
