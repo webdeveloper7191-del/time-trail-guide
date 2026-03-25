@@ -127,6 +127,8 @@ export function RecurringPatternsPanel({
       daysOfWeek: newPattern.daysOfWeek,
       weekInterval: newPattern.weekInterval,
       shiftTemplate: newPattern.shiftTemplate!,
+      assignedStaffId: newPattern.assignedStaffId,
+      assignedStaffName: newPattern.assignedStaffName,
       isActive: true,
       createdAt: new Date().toISOString(),
       createdBy: 'admin',
