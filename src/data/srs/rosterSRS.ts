@@ -770,51 +770,97 @@ export const rosterSRS: ModuleSRS = {
       }
     },
     {
-      id: "US-RST-010",
-      title: "Detect Expiring Recurring Shift Series (Background)",
-      actors: ["System", "Location Manager"],
-      description: "As a System, I want to automatically detect recurring shift series that are about to expire, so that managers can extend or renew patterns before they end.",
+      id: "US-RST-009a",
+      title: "Manage Active Recurring Series (Active Series Tab)",
+      actors: ["Location Manager"],
+      description: "As a Location Manager, I want to view and manage all active recurring shift series in a dedicated Active Series tab, where multi-staff patterns are split into individual entries per staff member, so I can independently manage each person's recurring schedule.",
       acceptanceCriteria: [
-        "System scans all recurring shift patterns nightly",
-        "Identifies series ending within 14 days (warning) or 7 days (critical)",
-        "Counts remaining occurrences for each expiring series",
-        "Generates in-app alerts for affected managers",
-        "Sends email notifications to staff and managers",
-        "Expiry notifications include pattern details and renewal options"
+        "Active Series tab shows all shifts with a recurrenceGroupId, grouped by composite key (recurrenceGroupId + staffId)",
+        "Each entry displays: staff name, recurrence pattern (e.g., Weekly · Mon, Tue, Wed), time, room, and progress (completed/total)",
+        "Multi-staff patterns show as separate entries per staff member (e.g., 3 staff = 3 entries)",
+        "Each entry shows next shift date",
+        "Expiring series (≤14 days) are visually flagged with warning indicator",
+        "Can delete a single staff member's series without affecting other staff in the same pattern",
+        "Can extend a series with additional weeks",
+        "Can edit series schedule (times, days) with effective date for changes",
+        "Can pause/resume individual series"
       ],
       businessLogic: [
-        "Background job runs daily at 2 AM",
+        "Grouping key: ${recurrenceGroupId}::${staffId} — ensures multi-staff patterns produce separate manageable entries",
+        "Staff name resolved from roster staff array by shift.staffId",
+        "Progress: completed = shifts with date < today or status = completed; remaining = total - completed",
+        "Expiry detection: if endDate exists, daysUntilEnd = differenceInDays(endDate, today); flag if ≤ 14",
+        "Delete scope: when staffId provided, only delete shifts matching both groupId AND staffId",
+        "Regeneration: 'Generate All' replaces all shifts in matching recurrenceGroupIds with fresh shifts reflecting current pattern assignments"
+      ],
+      priority: "high",
+      relatedModules: [
+        { module: "Patterns Tab", relationship: "Patterns define templates; Active Series shows generated instances" },
+        { module: "Roster Grid", relationship: "Series shifts appear on the grid with recurring indicator" }
+      ],
+      endToEndJourney: [
+        "1. Manager opens Recurring Shifts panel and switches to Active Series tab",
+        "2. Sees list of active series, each showing staff name, pattern, time, progress",
+        "3. Team Morning Shift pattern has 3 entries: Emma Wilson, Sarah Chen, Michael Brown",
+        "4. Manager clicks on Emma Wilson's entry — sees detail with shift count, next shift date",
+        "5. Decides to remove Michael from the team — clicks delete on his entry",
+        "6. Confirms deletion — only Michael's shifts are removed; Emma and Sarah unaffected",
+        "7. Notices Sarah's series is expiring (warning badge) — clicks extend",
+        "8. Extends by 4 weeks — new shifts generated for Sarah only",
+        "9. Returns to Patterns tab to update the pattern, removing Michael from staff list",
+        "10. Clicks Generate All — system replaces old shifts with fresh ones matching updated pattern"
+      ],
+      realWorldExample: {
+        scenario: "A team of 3 educators has a recurring morning shift. One educator leaves, another's contract is extended.",
+        steps: [
+          "Active Series shows 3 entries for the Team Morning Shift pattern",
+          "Michael Brown resigns — manager deletes his series (12 shifts removed)",
+          "Emma and Sarah's series remain unaffected with their own progress tracking",
+          "Sarah's contract extended — manager extends her series by 8 weeks",
+          "Manager updates the Pattern to remove Michael, adds replacement Alex",
+          "Generate All produces fresh shifts for Emma, Sarah, and Alex"
+        ],
+        outcome: "Team roster transition handled cleanly through independent series management without disrupting existing staff schedules."
+      }
+    },
+    {
+      id: "US-RST-010",
+      title: "Detect Expiring Recurring Shift Series",
+      actors: ["System", "Location Manager"],
+      description: "As a System, I want to automatically detect recurring shift series that are about to expire and flag them in the Active Series tab, so that managers can extend or renew patterns before they end.",
+      acceptanceCriteria: [
+        "System identifies series ending within 14 days (warning) or 7 days (critical)",
+        "Active Series tab shows expiry warning badge on affected entries",
+        "Counts remaining occurrences and days until end for each expiring series",
+        "Generates in-app alerts for affected managers",
+        "Extend option available directly from the series entry"
+      ],
+      businessLogic: [
         "Warning threshold: 14 days from last occurrence",
         "Critical threshold: 7 days from last occurrence",
-        "Notification deduplication: Don't re-notify within 3 days",
-        "Email template includes: Staff name, pattern type, end date, occurrences remaining",
-        "In-app badge shows count of expiring series"
+        "Calculated per-entry using composite key (recurrenceGroupId::staffId)",
+        "For after_occurrences end type: flag when ≤ 3 remaining",
+        "Notification deduplication: Don't re-notify within 3 days"
       ],
       priority: "medium",
       relatedModules: [
         { module: "Notifications", relationship: "Triggers email and in-app alerts" },
-        { module: "Recurring Patterns", relationship: "Scans active pattern definitions" }
+        { module: "Active Series Tab", relationship: "Visual flags on expiring entries" }
       ],
       endToEndJourney: [
-        "1. Background service runs at 2 AM daily",
-        "2. Scans all shifts with recurrence_group_id",
-        "3. Groups by series and finds last occurrence date",
-        "4. Emma's 'Mon/Wed/Fri' pattern ends in 5 days",
-        "5. System creates notification: severity 'critical'",
-        "6. Manager Sarah receives in-app alert",
-        "7. Emma receives email: 'Your recurring schedule ends soon'",
-        "8. Sarah extends the pattern for another 8 weeks",
-        "9. System generates new shift instances",
-        "10. Notification cleared from dashboard"
+        "1. Active Series tab loads and calculates daysUntilEnd for each series",
+        "2. Emma's 'Mon/Wed/Fri' series ends in 5 days — flagged as critical",
+        "3. Warning badge appears on Emma's entry with '5 days remaining'",
+        "4. Manager clicks extend on Emma's entry",
+        "5. Extends by 4 weeks — new shifts generated",
+        "6. Warning badge removed as series now extends 28+ days"
       ],
       realWorldExample: {
         scenario: "Tom's weekly pattern was set with an end date 6 days away.",
         steps: [
-          "Nightly job detects Tom's series ending in 6 days",
-          "Critical notification created",
-          "Manager receives alert with 'Extend Series' button",
-          "Manager clicks through, extends pattern indefinitely",
-          "System generates shifts for next 8 weeks"
+          "Active Series tab shows Tom's entry with critical warning badge",
+          "Manager clicks extend, selects 8 more weeks",
+          "System generates shifts and clears warning"
         ],
         outcome: "Pattern extended before disruption. Staff schedule continuity maintained."
       }
