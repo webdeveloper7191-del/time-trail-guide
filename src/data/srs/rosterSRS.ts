@@ -201,10 +201,13 @@ export const rosterSRS: ModuleSRS = {
     { id: "FR-RST-008", category: "Shift Management", requirement: "System shall allow creation of shifts with date, time, department, and staff assignment", priority: "Critical" },
     { id: "FR-RST-009", category: "Shift Management", requirement: "System shall support shift templates for rapid shift creation", priority: "High" },
     { id: "FR-RST-010", category: "Shift Management", requirement: "System shall detect and prevent scheduling conflicts (overlapping shifts, outside availability)", priority: "Critical" },
-    // Recurring Shifts
-    { id: "FR-RST-011", category: "Recurring Shifts", requirement: "System shall support creation of recurring shift patterns (daily, weekly, fortnightly, monthly)", priority: "High" },
-    { id: "FR-RST-012", category: "Recurring Shifts", requirement: "System shall auto-generate future shifts based on recurring patterns", priority: "High" },
-    { id: "FR-RST-013", category: "Recurring Shifts", requirement: "System shall allow bulk editing of all future instances in a recurring series", priority: "Medium" },
+    // Recurring Shifts – Unified Panel (Patterns + Active Series)
+    { id: "FR-RST-011", category: "Recurring Shifts", requirement: "System shall support creation of recurring shift patterns (daily, weekly, fortnightly, monthly) via a unified Recurring Shifts panel with a Patterns tab", priority: "High" },
+    { id: "FR-RST-012", category: "Recurring Shifts", requirement: "System shall auto-generate future shifts from active patterns and display them in the Active Series tab, grouped per staff member", priority: "High" },
+    { id: "FR-RST-013", category: "Recurring Shifts", requirement: "System shall allow bulk editing of all future instances in a recurring series from the Active Series tab", priority: "Medium" },
+    { id: "FR-RST-011a", category: "Recurring Shifts", requirement: "System shall support assigning multiple staff members to a single recurring pattern, generating independent series per person", priority: "High" },
+    { id: "FR-RST-011b", category: "Recurring Shifts", requirement: "System shall replace previously generated shifts for a pattern when 'Generate All' is clicked, ensuring staff changes are reflected in Active Series", priority: "High" },
+    { id: "FR-RST-011c", category: "Recurring Shifts", requirement: "System shall allow individual deletion of a single staff member's series within a multi-staff pattern without affecting other staff in the same pattern", priority: "Medium" },
     // Open Shifts
     { id: "FR-RST-014", category: "Open Shifts", requirement: "System shall allow creation of unassigned open shifts for staff to claim", priority: "High" },
     { id: "FR-RST-015", category: "Open Shifts", requirement: "System shall filter eligible staff for open shifts based on qualifications and availability", priority: "High" },
@@ -656,59 +659,64 @@ export const rosterSRS: ModuleSRS = {
     },
     {
       id: "US-RST-008",
-      title: "Create Recurring Shift Pattern",
+      title: "Create Recurring Shift Pattern (Patterns Tab)",
       actors: ["Location Manager"],
-      description: "As a Location Manager, I want to create recurring shift patterns for staff with fixed schedules, so that their shifts are automatically generated each week without manual entry.",
+      description: "As a Location Manager, I want to create recurring shift patterns via the unified Recurring Shifts panel's Patterns tab, assigning one or multiple staff members, so that their shifts are automatically generated and appear in the Active Series tab.",
       acceptanceCriteria: [
-        "Can create pattern with days of week, times, and department",
-        "Can assign staff member to the pattern",
-        "Pattern generates future shifts automatically",
-        "Can set end date or number of occurrences",
-        "Generated shifts appear as 'AI Generated' in roster",
-        "Can edit single instance without affecting pattern",
-        "Can bulk edit all future instances in series"
+        "Can create pattern with days of week, times, role, and location",
+        "Can assign one or multiple staff members via a checkbox list grouped by role",
+        "Pattern supports weekly, fortnightly, and custom recurrence types",
+        "Can set end date or leave ongoing (no end date)",
+        "Patterns tab displays summary stats: total patterns, active count, shifts/month, and staff assigned count",
+        "Active Patterns table shows pattern name, recurrence, shift time, role, assigned staff badges, and active/paused toggle",
+        "Can edit or delete individual patterns from the table",
+        "Can pin important patterns for quick access"
       ],
       businessLogic: [
-        "Pattern types: Daily, Weekly, Fortnightly, Monthly",
-        "Weekly: Select specific days (Mon, Wed, Fri)",
-        "Fortnightly: Week 1 vs Week 2 pattern with anchor date",
-        "Auto-generation runs nightly for next 8 weeks",
-        "Pattern expiry triggers notification 14 days before",
-        "Single edit: Breaks link to pattern for that instance only",
-        "Series edit: Updates pattern definition and regenerates future shifts"
+        "Pattern types: Weekly, Fortnightly, Custom (with week interval)",
+        "Weekly: Select specific days (Mon, Wed, Fri etc.)",
+        "Fortnightly: Week interval with anchor start date for alternating calculation",
+        "Multi-staff: When N staff are assigned, generation produces N × days shifts — one per staff member per scheduled day",
+        "Pattern stores assignedStaffIds[] array; legacy assignedStaffId field supported for backward compat",
+        "Patterns can be toggled active/paused — only active patterns participate in bulk generation",
+        "Each pattern stores a shiftTemplate with startTime, endTime, roleId, centreId, breakDuration, and optional requiredQualifications"
       ],
       priority: "high",
       relatedModules: [
+        { module: "Active Series", relationship: "Generated shifts appear as individually-manageable series per staff" },
         { module: "Staff Availability", relationship: "Pattern validates against staff availability" },
         { module: "Leave", relationship: "Generated shifts skip approved leave dates" }
       ],
       endToEndJourney: [
-        "1. Location Manager Sarah hires permanent staff member Tom",
-        "2. Tom will work Monday, Tuesday, Thursday 7AM-3PM in Dept A",
-        "3. Sarah opens Roster and clicks 'Create Recurring Pattern'",
-        "4. Enters name: 'Tom - Regular Weekly'",
-        "5. Selects pattern: Weekly",
-        "6. Checks days: Monday, Tuesday, Thursday",
-        "7. Sets times: 7:00 AM to 3:00 PM",
-        "8. Selects department: Dept A",
-        "9. Assigns staff: Tom Wilson",
-        "10. Sets duration: Ongoing (no end date)",
-        "11. Sarah clicks 'Create Pattern'",
-        "12. System generates 24 shifts (8 weeks × 3 days)",
-        "13. Roster grid shows shifts with green recurring icon"
+        "1. Manager opens Recurring Shifts panel from roster toolbar",
+        "2. Lands on Patterns tab showing existing patterns with stats cards",
+        "3. Clicks '+ New Pattern' to open creation form",
+        "4. Enters name: 'Team Morning Shift'",
+        "5. Selects recurrence: Weekly",
+        "6. Checks days: Monday, Wednesday, Friday",
+        "7. Sets times: 7:00 AM to 3:00 PM with 30-min break",
+        "8. Selects role: Educator",
+        "9. Assigns staff: Emma Wilson, Sarah Chen, Michael Brown (multi-select checkboxes)",
+        "10. Leaves end date blank (ongoing)",
+        "11. Clicks 'Create Pattern' — pattern appears in Active Patterns table",
+        "12. Clicks 'Generate All (4 weeks)' button",
+        "13. System generates 36 shifts (3 staff × 3 days × 4 weeks)",
+        "14. Switches to Active Series tab — sees 3 separate entries (one per staff member)",
+        "15. Each series shows staff name, schedule, time, room, and progress"
       ],
       realWorldExample: {
-        scenario: "Tom joins the organization as a permanent part-time staff member. His contract specifies fixed days each week.",
+        scenario: "A centre needs a team of 3 educators covering Mon/Wed/Fri mornings. The manager creates a single pattern instead of 3 separate ones.",
         steps: [
-          "Sarah receives Tom's signed contract: Mon/Tue/Thu, 7AM-3PM",
-          "She opens the Roster system and clicks 'Recurring Patterns'",
-          "Creates 'Tom Wilson - PT Schedule' with Weekly recurrence",
-          "Assigns to Dept A with 30-min break",
-          "Leaves end date blank (ongoing)",
-          "System immediately creates shifts for next 8 weeks",
-          "Tom can now see his entire schedule in the staff app"
+          "Manager opens Recurring Shifts panel and clicks New Pattern",
+          "Creates 'Team Morning Shift' with Weekly recurrence on Mon/Wed/Fri",
+          "Selects all 3 educators from the grouped staff checkbox list",
+          "Clicks Create — pattern appears with 3 staff badges in Assigned To column",
+          "Clicks Generate All — 36 shifts created",
+          "Active Series tab shows Emma Wilson, Sarah Chen, Michael Brown as separate entries",
+          "Later, manager removes Michael Brown from the pattern and clicks Generate All again",
+          "System replaces old shifts — Active Series now shows only Emma and Sarah"
         ],
-        outcome: "Tom's fixed schedule is set up once and automatically maintained, saving 15 minutes per week on manual entry."
+        outcome: "Single pattern manages team scheduling. Staff changes are reflected by regenerating. Each person's series is independently manageable."
       }
     },
     {
