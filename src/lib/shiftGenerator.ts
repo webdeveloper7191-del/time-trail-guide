@@ -1,4 +1,4 @@
-import { Shift, StaffMember, Room } from '@/types/roster';
+import { Shift, StaffMember, Room, RecurrencePattern as RosterRecurrencePattern } from '@/types/roster';
 import { RecurringShiftPattern } from '@/types/advancedRoster';
 import { format, addDays, addWeeks, parseISO, getDay, startOfWeek, eachDayOfInterval } from 'date-fns';
 
