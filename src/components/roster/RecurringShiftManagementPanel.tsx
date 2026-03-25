@@ -62,6 +62,8 @@ interface RecurringShiftManagementPanelProps {
   onExtendSeries: (groupId: string, newEndDate: string) => void;
   onUpdateSeries?: (groupId: string, updates: { startTime?: string; endTime?: string; daysOfWeek?: number[]; effectiveDate?: string }) => void;
   onPauseSeries?: (groupId: string) => void;
+  /** When true, renders content without its own PrimaryOffCanvas wrapper (for embedding in unified panel) */
+  embedded?: boolean;
 }
 
 export function RecurringShiftManagementPanel({
@@ -75,6 +77,7 @@ export function RecurringShiftManagementPanel({
   onExtendSeries,
   onUpdateSeries,
   onPauseSeries,
+  embedded = false,
 }: RecurringShiftManagementPanelProps) {
   const [selectedSeries, setSelectedSeries] = useState<RecurringSeries | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
