@@ -3143,24 +3143,7 @@ export default function RosterScheduler() {
         />
       )}
 
-      {/* Recurring Shift Management Panel */}
-      <RecurringShiftManagementPanel
-        open={showRecurringManagement}
-        onClose={() => setShowRecurringManagement(false)}
-        shifts={shifts}
-        staff={allStaff}
-        centres={mockCentres}
-        onDeleteSeries={(groupId) => {
-          setShifts(prev => prev.filter(s => s.recurring?.recurrenceGroupId !== groupId), 'Deleted recurring series', 'bulk');
-        }}
-        onEditSeries={(groupId) => {
-          setShowRecurringManagement(false);
-          setShowRecurringPatterns(true);
-        }}
-        onExtendSeries={(groupId, newEndDate) => {
-          toast.success(`Series extended to ${newEndDate}`);
-        }}
-      />
+      {/* Old standalone panels removed - now using UnifiedRecurringPanel */}
 
       {/* Timefold Constraint Configuration Panel */}
       <TimefoldConstraintPanel
