@@ -18,7 +18,7 @@ interface UnifiedRecurringPanelProps {
   shifts: Shift[];
   existingShifts: Shift[];
   onGenerateShifts: (shifts: Omit<Shift, 'id'>[]) => void;
-  onDeleteSeries: (groupId: string) => void;
+  onDeleteSeries: (groupId: string, staffId?: string) => void;
   onExtendSeries: (groupId: string, newEndDate: string) => void;
   initialTab?: TabId;
 }
