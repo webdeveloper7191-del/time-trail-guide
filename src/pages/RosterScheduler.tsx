@@ -272,8 +272,6 @@ export default function RosterScheduler() {
   const [showAddEmptyShiftModal, setShowAddEmptyShiftModal] = useState(false);
   
   // Advanced Features panels
-  const [showRecurringPatterns, setShowRecurringPatterns] = useState(false);
-  const [showRecurringManagement, setShowRecurringManagement] = useState(false);
   const [showUnifiedRecurring, setShowUnifiedRecurring] = useState(false);
   const [unifiedRecurringTab, setUnifiedRecurringTab] = useState<'patterns' | 'series'>('patterns');
   const [showFatigueManagement, setShowFatigueManagement] = useState(false);
