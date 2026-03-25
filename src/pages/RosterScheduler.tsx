@@ -2160,11 +2160,8 @@ export default function RosterScheduler() {
                       </IconButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setShowRecurringPatterns(true)} icon={<Repeat size={16} />}>
-                        Recurring Patterns
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowRecurringManagement(true)} icon={<RefreshCw size={16} />}>
-                        Manage Recurring Shifts
+                      <DropdownMenuItem onClick={() => { setUnifiedRecurringTab('patterns'); setShowUnifiedRecurring(true); }} icon={<Repeat size={16} />}>
+                        Recurring Shifts
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setShowBreakScheduling(true)} icon={<Coffee size={16} />}>
                         Break Scheduling
