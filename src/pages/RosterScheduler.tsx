@@ -274,6 +274,8 @@ export default function RosterScheduler() {
   // Advanced Features panels
   const [showRecurringPatterns, setShowRecurringPatterns] = useState(false);
   const [showRecurringManagement, setShowRecurringManagement] = useState(false);
+  const [showUnifiedRecurring, setShowUnifiedRecurring] = useState(false);
+  const [unifiedRecurringTab, setUnifiedRecurringTab] = useState<'patterns' | 'series'>('patterns');
   const [showFatigueManagement, setShowFatigueManagement] = useState(false);
   const [showGPSClockIn, setShowGPSClockIn] = useState(false);
   const [showWeatherIntegration, setShowWeatherIntegration] = useState(false);
