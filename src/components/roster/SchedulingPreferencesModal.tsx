@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { 
   User, 
   Clock, 
@@ -15,7 +17,9 @@ import {
   Ban,
   Sun,
   Moon,
-  BedDouble
+  BedDouble,
+  ChevronsUpDown,
+  Check
 } from 'lucide-react';
 import { StaffMember, SchedulingPreferences, Room, Centre } from '@/types/roster';
 import { cn } from '@/lib/utils';
