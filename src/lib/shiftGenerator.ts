@@ -105,14 +105,16 @@ export function generateBulkShiftsFromPatterns(
   existingShifts: Shift[],
   defaultRoomId: string
 ): { shifts: Omit<Shift, 'id'>[]; summary: { patternId: string; patternName: string; count: number }[] } {
-  const allGeneratedShifts: GeneratedShift[] = [];
+  const allShifts: Omit<Shift, 'id'>[] = [];
   const summary: { patternId: string; patternName: string; count: number }[] = [];
   
   patterns
     .filter(p => p.isActive)
     .forEach(pattern => {
       const generated = generateShiftsFromPattern(pattern, startDate, weeksToGenerate, existingShifts);
-      allGeneratedShifts.push(...generated);
+      // Convert per-pattern so each gets its own recurrenceGroupId
+      const shifts = convertGeneratedShiftsToRosterShifts(generated, defaultRoomId, pattern);
+      allShifts.push(...shifts);
       summary.push({
         patternId: pattern.id,
         patternName: pattern.name,
@@ -120,7 +122,5 @@ export function generateBulkShiftsFromPatterns(
       });
     });
   
-  const shifts = convertGeneratedShiftsToRosterShifts(allGeneratedShifts, defaultRoomId);
-  
-  return { shifts, summary };
+  return { shifts: allShifts, summary };
 }
