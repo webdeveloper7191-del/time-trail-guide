@@ -24,6 +24,9 @@ export interface RecurringShiftPattern {
   };
   assignedStaffId?: string;
   assignedStaffName?: string;
+  /** Multiple staff members for team-based patterns */
+  assignedStaffIds?: string[];
+  assignedStaffNames?: string[];
   isActive: boolean;
   createdAt: string;
   createdBy: string;

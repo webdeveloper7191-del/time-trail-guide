@@ -388,7 +388,15 @@ export function RecurringPatternsPanel({
                     <Badge className="bg-secondary text-secondary-foreground border-0">{pattern.shiftTemplate.roleName}</Badge>
                   </TableCell>
                   <TableCell>
-                    {pattern.assignedStaffName ? (
+                    {(pattern.assignedStaffIds?.length || 0) > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {pattern.assignedStaffNames?.map((name, i) => (
+                          <Badge key={i} variant="outline" className="text-xs border-border">
+                            {name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : pattern.assignedStaffName ? (
                       <span className="text-foreground">{pattern.assignedStaffName}</span>
                     ) : (
                       <span className="text-muted-foreground">Unassigned</span>
