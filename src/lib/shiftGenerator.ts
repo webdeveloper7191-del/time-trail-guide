@@ -70,8 +70,12 @@ export function generateShiftsFromPattern(
 
 export function convertGeneratedShiftsToRosterShifts(
   generatedShifts: GeneratedShift[],
-  defaultRoomId: string
+  defaultRoomId: string,
+  pattern?: RecurringShiftPattern
 ): Omit<Shift, 'id'>[] {
+  // Generate a unique group ID for this batch so all shifts are linked as a series
+  const recurrenceGroupId = `rg-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+
   return generatedShifts.map(gs => ({
     staffId: gs.staffId || '',
     centreId: gs.centreId,
@@ -83,6 +87,14 @@ export function convertGeneratedShiftsToRosterShifts(
     status: 'draft' as const,
     isOpenShift: !gs.staffId,
     notes: `Generated from pattern: ${gs.patternName}`,
+    recurring: {
+      isRecurring: true,
+      pattern: pattern?.pattern || 'weekly',
+      daysOfWeek: pattern?.daysOfWeek,
+      endType: pattern?.endDate ? 'on_date' as const : 'never' as const,
+      endDate: pattern?.endDate,
+      recurrenceGroupId,
+    },
   }));
 }
 
