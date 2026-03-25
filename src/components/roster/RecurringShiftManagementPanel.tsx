@@ -273,166 +273,168 @@ export function RecurringShiftManagementPanel({
   };
 
   const mainContent = (
-        <div className="flex flex-col h-full">
-          {/* Expiring Soon Section */}
-          {expiringSeries.length > 0 && (
-            <div className="p-4 bg-amber-500/5 border border-amber-500/30 rounded-lg mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                  {expiringSeries.length} series ending soon
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {expiringSeries.slice(0, 3).map(series => (
-                  <Button
-                    key={series.groupId}
-                    variant="outline"
-                    size="sm"
-                      className="h-7 text-xs bg-background border-amber-500/50"
-                    onClick={() => setSelectedSeries(series)}
-                  >
-                    {series.staffName}
-                    <Badge variant="secondary" className="ml-1 text-[10px] h-4">
-                      {series.daysUntilEnd !== null ? `${series.daysUntilEnd}d` : `${series.remainingShifts} left`}
-                    </Badge>
-                  </Button>
-                ))}
-              </div>
+    <div className="flex flex-col h-full">
+      {/* Expiring Soon Section */}
+      {expiringSeries.length > 0 && (
+        <div className="p-4 bg-amber-500/5 border border-amber-500/30 rounded-lg mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+              {expiringSeries.length} series ending soon
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {expiringSeries.slice(0, 3).map(series => (
+              <Button
+                key={series.groupId}
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs bg-background border-amber-500/50"
+                onClick={() => setSelectedSeries(series)}
+              >
+                {series.staffName}
+                <Badge variant="secondary" className="ml-1 text-[10px] h-4">
+                  {series.daysUntilEnd !== null ? `${series.daysUntilEnd}d` : `${series.remainingShifts} left`}
+                </Badge>
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <ScrollArea className="flex-1 -mx-4 sm:-mx-6 px-4 sm:px-6">
+        <div className="space-y-3">
+          {recurringSeries.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground bg-background rounded-lg border">
+              <RefreshCw className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No recurring shift series configured</p>
+              <p className="text-xs mt-1">Create shifts with recurring patterns to see them here</p>
             </div>
-          )}
-
-          {/* Main Content */}
-          <ScrollArea className="flex-1 -mx-4 sm:-mx-6 px-4 sm:px-6">
-            <div className="space-y-3">
-              {recurringSeries.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground bg-background rounded-lg border">
-                  <RefreshCw className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No recurring shift series configured</p>
-                  <p className="text-xs mt-1">Create shifts with recurring patterns to see them here</p>
-                </div>
-              ) : (
-                recurringSeries.map(series => (
-                  <div
-                    key={series.groupId}
-                    className={cn(
-                      "p-4 rounded-lg border transition-all cursor-pointer bg-background",
-                      "hover:border-primary/50 hover:shadow-sm",
-                      series.isExpiringSoon && "border-amber-500/50",
-                      selectedSeries?.groupId === series.groupId && "border-primary ring-1 ring-primary"
-                    )}
-                    onClick={() => setSelectedSeries(series)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <RefreshCw className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{series.staffName}</span>
-                            {series.isExpiringSoon && (
-                              <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px]">
-                                <Bell className="h-2.5 w-2.5 mr-0.5" />
-                                Ending Soon
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            {getPatternLabel(series.pattern)} • {getDayLabels(series.daysOfWeek)}
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
-                      <div>
-                        <span className="text-muted-foreground">Time</span>
-                        <div className="font-medium flex items-center gap-1 mt-0.5">
-                          <Clock className="h-3 w-3" />
-                          {series.startTime} - {series.endTime}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Room</span>
-                        <div className="font-medium flex items-center gap-1 mt-0.5">
-                          <MapPin className="h-3 w-3" />
-                          {getRoomName(series.centreId, series.roomId)}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Progress</span>
-                        <div className="font-medium flex items-center gap-1 mt-0.5">
-                          <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                          {series.completedShifts}/{series.totalShifts}
-                        </div>
-                      </div>
-                    </div>
-
-                    {series.nextShiftDate && (
-                      <div className="mt-3 pt-3 border-t flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Next shift:</span>
-                        <span className="font-medium">
-                          {format(parseISO(series.nextShiftDate), 'EEE, MMM d')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-
-          {/* Selected Series Actions */}
-          {selectedSeries && (
-            <div className="mt-4 p-4 bg-background border rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium">{selectedSeries.staffName}'s Series</span>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedSeries(null)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleOpenEditModal}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit Series
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowExtendModal(true)}
-                >
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Extend
-                </Button>
-                {onPauseSeries && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPauseSeries(selectedSeries.groupId)}
-                  >
-                    <Pause className="h-4 w-4 mr-1" />
-                    Pause
-                  </Button>
+          ) : (
+            recurringSeries.map(series => (
+              <div
+                key={series.groupId}
+                className={cn(
+                  "p-4 rounded-lg border transition-all cursor-pointer bg-background",
+                  "hover:border-primary/50 hover:shadow-sm",
+                  series.isExpiringSoon && "border-amber-500/50",
+                  selectedSeries?.groupId === series.groupId && "border-primary ring-1 ring-primary"
                 )}
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setShowDeleteConfirm(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Cancel Series
-                </Button>
+                onClick={() => setSelectedSeries(series)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <RefreshCw className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{series.staffName}</span>
+                        {series.isExpiringSoon && (
+                          <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px]">
+                            <Bell className="h-2.5 w-2.5 mr-0.5" />
+                            Ending Soon
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {getPatternLabel(series.pattern)} • {getDayLabels(series.daysOfWeek)}
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Time</span>
+                    <div className="font-medium flex items-center gap-1 mt-0.5">
+                      <Clock className="h-3 w-3" />
+                      {series.startTime} - {series.endTime}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Room</span>
+                    <div className="font-medium flex items-center gap-1 mt-0.5">
+                      <MapPin className="h-3 w-3" />
+                      {getRoomName(series.centreId, series.roomId)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Progress</span>
+                    <div className="font-medium flex items-center gap-1 mt-0.5">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                      {series.completedShifts}/{series.totalShifts}
+                    </div>
+                  </div>
+                </div>
+
+                {series.nextShiftDate && (
+                  <div className="mt-3 pt-3 border-t flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Next shift:</span>
+                    <span className="font-medium">
+                      {format(parseISO(series.nextShiftDate), 'EEE, MMM d')}
+                    </span>
+                  </div>
+                )}
               </div>
-            </div>
+            ))
           )}
         </div>
-      </PrimaryOffCanvas>
+      </ScrollArea>
+
+      {/* Selected Series Actions */}
+      {selectedSeries && (
+        <div className="mt-4 p-4 bg-background border rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium">{selectedSeries.staffName}'s Series</span>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedSeries(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" size="sm" onClick={handleOpenEditModal}>
+              <Edit className="h-4 w-4 mr-1" />
+              Edit Series
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowExtendModal(true)}>
+              <Calendar className="h-4 w-4 mr-1" />
+              Extend
+            </Button>
+            {onPauseSeries && (
+              <Button variant="outline" size="sm" onClick={() => onPauseSeries(selectedSeries.groupId)}>
+                <Pause className="h-4 w-4 mr-1" />
+                Pause
+              </Button>
+            )}
+            <Button variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              Cancel Series
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {embedded ? (
+        mainContent
+      ) : (
+        <PrimaryOffCanvas
+          open={open}
+          onClose={onClose}
+          title="Recurring Shift Series"
+          description="Manage and configure recurring shift patterns"
+          icon={RefreshCw}
+          size="lg"
+          showFooter={false}
+        >
+          {mainContent}
+        </PrimaryOffCanvas>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
@@ -483,7 +485,6 @@ export function RecurringShiftManagementPanel({
         ]}
       >
         <div className="space-y-5">
-          {/* Current End Date */}
           <div className="bg-background rounded-lg border p-4">
             <p className="text-sm text-muted-foreground mb-1">Current series ends on</p>
             <p className="text-base font-semibold text-foreground">
@@ -492,8 +493,6 @@ export function RecurringShiftManagementPanel({
                 : 'N/A'}
             </p>
           </div>
-
-          {/* Extend By Selection */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-foreground">Extend by:</label>
             <div className="grid grid-cols-4 gap-2">
@@ -510,8 +509,6 @@ export function RecurringShiftManagementPanel({
               ))}
             </div>
           </div>
-
-          {/* New End Date Preview */}
           {selectedSeries?.lastShiftDate && (
             <div className="bg-primary/5 border border-primary rounded-lg p-4">
               <p className="text-sm text-muted-foreground mb-1">New end date</p>
@@ -542,7 +539,6 @@ export function RecurringShiftManagementPanel({
         ]}
       >
         <div className="space-y-6">
-          {/* Series Summary */}
           <div className="bg-background rounded-lg border p-4">
             <div className="flex items-center gap-3 mb-3">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -556,8 +552,6 @@ export function RecurringShiftManagementPanel({
               </div>
             </div>
           </div>
-
-          {/* Shift Times */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-primary">Shift Times</label>
             <div className="grid grid-cols-2 gap-4">
@@ -581,8 +575,6 @@ export function RecurringShiftManagementPanel({
               </div>
             </div>
           </div>
-
-          {/* Effective From Date */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-primary">Changes Effective From</label>
             <div className="space-y-2">
@@ -621,7 +613,6 @@ export function RecurringShiftManagementPanel({
                 <button
                   type="button"
                   onClick={() => {
-                    // Next month
                     const nextMonth = new Date();
                     nextMonth.setMonth(nextMonth.getMonth() + 1);
                     nextMonth.setDate(1);
@@ -639,8 +630,6 @@ export function RecurringShiftManagementPanel({
               </p>
             )}
           </div>
-
-          {/* Days of Week */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-primary">Days of Week</label>
             <div className="flex flex-wrap gap-2">
@@ -661,8 +650,6 @@ export function RecurringShiftManagementPanel({
               ))}
             </div>
           </div>
-
-          {/* Room/Location */}
           <div className="bg-muted/30 rounded-lg border p-4">
             <div className="flex items-center gap-2 mb-2">
               <MapPin className="h-4 w-4 text-primary" />
@@ -672,8 +659,6 @@ export function RecurringShiftManagementPanel({
               {selectedSeries ? getRoomName(selectedSeries.centreId, selectedSeries.roomId) : 'Unknown'}
             </p>
           </div>
-
-          {/* Info Note */}
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
             <div className="flex items-start gap-2">
               <Calendar className="h-4 w-4 text-amber-600 mt-0.5" />
