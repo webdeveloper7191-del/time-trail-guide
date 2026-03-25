@@ -130,6 +130,23 @@ export function SchedulingPreferencesModal({
         { label: 'Save Preferences', variant: 'primary', onClick: handleSave },
       ]}
     >
+      {/* Staff Selector */}
+      {allStaff && allStaff.length > 1 && (
+        <FormSection title="Staff Member">
+          <select
+            value={selectedStaffId}
+            onChange={(e) => setSelectedStaffId(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            {allStaff.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.name}{s.role ? ` — ${s.role}` : ''}
+              </option>
+            ))}
+          </select>
+        </FormSection>
+      )}
+
       <Tabs value={tabValue.toString()} onValueChange={(v) => setTabValue(parseInt(v))} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="0">Schedule</TabsTrigger>
