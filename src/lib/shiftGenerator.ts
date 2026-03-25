@@ -1,4 +1,4 @@
-import { Shift, StaffMember, Room } from '@/types/roster';
+import { Shift, StaffMember, Room, RecurrencePattern as RosterRecurrencePattern } from '@/types/roster';
 import { RecurringShiftPattern } from '@/types/advancedRoster';
 import { format, addDays, addWeeks, parseISO, getDay, startOfWeek, eachDayOfInterval } from 'date-fns';
 
@@ -70,8 +70,12 @@ export function generateShiftsFromPattern(
 
 export function convertGeneratedShiftsToRosterShifts(
   generatedShifts: GeneratedShift[],
-  defaultRoomId: string
+  defaultRoomId: string,
+  pattern?: RecurringShiftPattern
 ): Omit<Shift, 'id'>[] {
+  // Generate a unique group ID for this batch so all shifts are linked as a series
+  const recurrenceGroupId = `rg-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+
   return generatedShifts.map(gs => ({
     staffId: gs.staffId || '',
     centreId: gs.centreId,
@@ -83,6 +87,14 @@ export function convertGeneratedShiftsToRosterShifts(
     status: 'draft' as const,
     isOpenShift: !gs.staffId,
     notes: `Generated from pattern: ${gs.patternName}`,
+    recurring: {
+      isRecurring: true,
+      pattern: (pattern?.pattern === 'custom' ? 'weekly' : pattern?.pattern || 'weekly') as RosterRecurrencePattern,
+      daysOfWeek: pattern?.daysOfWeek,
+      endType: pattern?.endDate ? 'on_date' as const : 'never' as const,
+      endDate: pattern?.endDate,
+      recurrenceGroupId,
+    },
   }));
 }
 
@@ -93,14 +105,16 @@ export function generateBulkShiftsFromPatterns(
   existingShifts: Shift[],
   defaultRoomId: string
 ): { shifts: Omit<Shift, 'id'>[]; summary: { patternId: string; patternName: string; count: number }[] } {
-  const allGeneratedShifts: GeneratedShift[] = [];
+  const allShifts: Omit<Shift, 'id'>[] = [];
   const summary: { patternId: string; patternName: string; count: number }[] = [];
   
   patterns
     .filter(p => p.isActive)
     .forEach(pattern => {
       const generated = generateShiftsFromPattern(pattern, startDate, weeksToGenerate, existingShifts);
-      allGeneratedShifts.push(...generated);
+      // Convert per-pattern so each gets its own recurrenceGroupId
+      const shifts = convertGeneratedShiftsToRosterShifts(generated, defaultRoomId, pattern);
+      allShifts.push(...shifts);
       summary.push({
         patternId: pattern.id,
         patternName: pattern.name,
@@ -108,7 +122,5 @@ export function generateBulkShiftsFromPatterns(
       });
     });
   
-  const shifts = convertGeneratedShiftsToRosterShifts(allGeneratedShifts, defaultRoomId);
-  
-  return { shifts, summary };
+  return { shifts: allShifts, summary };
 }
