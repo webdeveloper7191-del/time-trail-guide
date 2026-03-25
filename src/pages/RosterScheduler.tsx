@@ -2963,7 +2963,17 @@ export default function RosterScheduler() {
             ...s,
             id: `shift-pattern-${Date.now()}-${idx}`,
           }));
-          setShifts(prev => [...prev, ...shiftsWithIds], `Generated ${shiftsWithIds.length} recurring shifts`, 'bulk');
+          // Collect all recurrenceGroupIds from the new batch
+          const newGroupIds = new Set(
+            shiftsWithIds
+              .map(s => s.recurring?.recurrenceGroupId)
+              .filter(Boolean)
+          );
+          // Remove old shifts belonging to the same pattern groups, then add fresh ones
+          setShifts(prev => [
+            ...prev.filter(s => !s.recurring?.recurrenceGroupId || !newGroupIds.has(s.recurring.recurrenceGroupId)),
+            ...shiftsWithIds,
+          ], `Generated ${shiftsWithIds.length} recurring shifts`, 'bulk');
         }}
         onDeleteSeries={(groupId, staffId) => {
           setShifts(prev => prev.filter(s => {
