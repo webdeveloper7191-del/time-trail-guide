@@ -827,33 +827,62 @@ export function RecurringPatternsPanel({
             </FormSection>
 
             <FormSection title="Staff Assignment">
-              <FormField label="Assign Staff (optional)">
-               <Select
-                 value={selectedPattern.assignedStaffId || '_unassigned'}
-                 onValueChange={v => {
-                   if (v === '_unassigned') {
-                     setSelectedPattern({ ...selectedPattern, assignedStaffId: undefined, assignedStaffName: undefined });
-                   } else {
-                     const s = staff.find(st => st.id === v);
-                     setSelectedPattern({ ...selectedPattern, assignedStaffId: v, assignedStaffName: s?.name || '' });
-                   }
-                 }}
-               >
-                 <SelectTrigger>
-                   <SelectValue placeholder="Leave unassigned (open shift)" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="_unassigned">Unassigned (Open Shift)</SelectItem>
-                   {staff.map(s => (
-                     <SelectItem key={s.id} value={s.id}>
-                       <span className="flex items-center gap-2">
-                         <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color || '#9ca3af' }} />
-                         {s.name} <span className="text-muted-foreground">· {s.role}</span>
-                       </span>
-                     </SelectItem>
-                   ))}
-                 </SelectContent>
-               </Select>
+              <FormField label="Assign Staff (select multiple for team shifts)">
+               <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-2">
+                 {staff.map(s => {
+                   const ids = selectedPattern.assignedStaffIds || (selectedPattern.assignedStaffId ? [selectedPattern.assignedStaffId] : []);
+                   const isSelected = ids.includes(s.id);
+                   return (
+                     <label
+                       key={s.id}
+                       className={cn(
+                         'flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors',
+                         isSelected ? 'bg-primary/10' : 'hover:bg-muted/50'
+                       )}
+                     >
+                       <Checkbox
+                         checked={isSelected}
+                         onCheckedChange={(checked) => {
+                           const currentIds = selectedPattern.assignedStaffIds || (selectedPattern.assignedStaffId ? [selectedPattern.assignedStaffId] : []);
+                           const currentNames = selectedPattern.assignedStaffNames || (selectedPattern.assignedStaffName ? [selectedPattern.assignedStaffName] : []);
+                           if (checked) {
+                             const newIds = [...currentIds, s.id];
+                             const newNames = [...currentNames, s.name];
+                             setSelectedPattern({
+                               ...selectedPattern,
+                               assignedStaffIds: newIds,
+                               assignedStaffNames: newNames,
+                               assignedStaffId: newIds[0],
+                               assignedStaffName: newNames[0],
+                             });
+                           } else {
+                             const idx = currentIds.indexOf(s.id);
+                             const newIds = currentIds.filter(id => id !== s.id);
+                             const newNames = currentNames.filter((_, i) => i !== idx);
+                             setSelectedPattern({
+                               ...selectedPattern,
+                               assignedStaffIds: newIds,
+                               assignedStaffNames: newNames,
+                               assignedStaffId: newIds[0],
+                               assignedStaffName: newNames[0],
+                             });
+                           }
+                         }}
+                       />
+                       <span className="inline-block h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color || '#9ca3af' }} />
+                       <div className="flex-1 min-w-0">
+                         <span className="text-sm font-medium text-foreground">{s.name}</span>
+                         <span className="text-xs text-muted-foreground ml-2">{s.role}</span>
+                       </div>
+                     </label>
+                   );
+                 })}
+               </div>
+               {((selectedPattern.assignedStaffIds?.length || 0) > 0) && (
+                 <p className="text-xs text-muted-foreground mt-1">
+                   {selectedPattern.assignedStaffIds!.length} staff selected
+                 </p>
+               )}
               </FormField>
             </FormSection>
 
