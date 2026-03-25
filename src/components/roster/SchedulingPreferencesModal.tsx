@@ -49,11 +49,20 @@ const defaultPreferences: SchedulingPreferences = {
 export function SchedulingPreferencesModal({ 
   open, 
   onClose, 
-  staff, 
+  staff: initialStaff, 
+  allStaff,
   allRooms: defaultRooms,
   centres,
   onSave 
 }: SchedulingPreferencesModalProps) {
+  const [selectedStaffId, setSelectedStaffId] = useState(initialStaff.id);
+  const staff = useMemo(() => {
+    if (allStaff) {
+      return allStaff.find(s => s.id === selectedStaffId) || initialStaff;
+    }
+    return initialStaff;
+  }, [allStaff, selectedStaffId, initialStaff]);
+
   const [activeCentreId, setActiveCentreId] = useState(centres?.[0]?.id || '');
   const allRooms = useMemo(() => {
     if (centres && activeCentreId) {
@@ -66,6 +75,10 @@ export function SchedulingPreferencesModal({
     staff.schedulingPreferences || defaultPreferences
   );
   const [tabValue, setTabValue] = useState(0);
+
+  useEffect(() => {
+    setSelectedStaffId(initialStaff.id);
+  }, [initialStaff.id]);
 
   useEffect(() => {
     setPreferences(staff.schedulingPreferences || defaultPreferences);
