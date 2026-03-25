@@ -2765,6 +2765,13 @@ export default function RosterScheduler() {
         shifts={shifts}
         isOpen={showStaffProfile}
         onClose={() => { setShowStaffProfile(false); setSelectedStaffForProfile(null); }}
+        allRooms={selectedCentre.rooms}
+        centres={mockCentres}
+        onSavePreferences={handleSavePreferences}
+        onSaveAvailability={(staffId, availability) => {
+          setStaffList(prev => prev.map(s => s.id === staffId ? { ...s, availability } : s));
+          toast.success('Availability updated');
+        }}
       />
 
       <WeeklySummaryDashboard
