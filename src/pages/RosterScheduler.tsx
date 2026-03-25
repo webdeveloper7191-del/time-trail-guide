@@ -2941,31 +2941,31 @@ export default function RosterScheduler() {
         onAssign={handleAutoAssign}
       />
 
-      {/* Advanced Features Panels - Using PrimaryOffCanvas */}
-      <PrimaryOffCanvas
-        open={showRecurringPatterns}
-        onClose={() => setShowRecurringPatterns(false)}
-        title="Recurring Shift Patterns"
-        description="Create and manage recurring shift templates"
-        icon={Repeat}
-        size="3xl"
-        showFooter={false}
-      >
-        <RecurringPatternsPanel 
-          centreId={selectedCentreId}
-          centre={selectedCentre}
-          centres={mockCentres}
-          staff={allStaff}
-          existingShifts={shifts}
-          onGenerateShifts={(newShifts) => {
-            const shiftsWithIds = newShifts.map((s, idx) => ({
-              ...s,
-              id: `shift-pattern-${Date.now()}-${idx}`,
-            }));
-            setShifts(prev => [...prev, ...shiftsWithIds], `Generated ${shiftsWithIds.length} recurring shifts`, 'bulk');
-          }}
-        />
-      </PrimaryOffCanvas>
+      {/* Unified Recurring Shifts Panel */}
+      <UnifiedRecurringPanel
+        open={showUnifiedRecurring}
+        onClose={() => setShowUnifiedRecurring(false)}
+        centreId={selectedCentreId}
+        centre={selectedCentre}
+        centres={mockCentres}
+        staff={allStaff}
+        shifts={shifts}
+        existingShifts={shifts}
+        initialTab={unifiedRecurringTab}
+        onGenerateShifts={(newShifts) => {
+          const shiftsWithIds = newShifts.map((s, idx) => ({
+            ...s,
+            id: `shift-pattern-${Date.now()}-${idx}`,
+          }));
+          setShifts(prev => [...prev, ...shiftsWithIds], `Generated ${shiftsWithIds.length} recurring shifts`, 'bulk');
+        }}
+        onDeleteSeries={(groupId) => {
+          setShifts(prev => prev.filter(s => s.recurring?.recurrenceGroupId !== groupId), 'Deleted recurring series', 'bulk');
+        }}
+        onExtendSeries={(groupId, newEndDate) => {
+          toast.success(`Series extended to ${newEndDate}`);
+        }}
+      />
 
       <PrimaryOffCanvas
         open={showBreakScheduling}
