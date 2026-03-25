@@ -27,6 +27,7 @@ interface SchedulingPreferencesModalProps {
   open: boolean;
   onClose: () => void;
   staff: StaffMember;
+  allStaff?: StaffMember[];
   allRooms: Room[];
   centres?: Centre[];
   onSave: (staffId: string, preferences: SchedulingPreferences) => void;
