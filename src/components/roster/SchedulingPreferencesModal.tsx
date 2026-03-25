@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
   User, 
   Clock, 
   Calendar, 
@@ -15,13 +16,89 @@ import {
   Ban,
   Sun,
   Moon,
-  BedDouble
+  BedDouble,
+  ChevronsUpDown,
+  Check,
+  Search
 } from 'lucide-react';
 import { StaffMember, SchedulingPreferences, Room, Centre } from '@/types/roster';
 import { cn } from '@/lib/utils';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
 import { CentreSelector } from './CentreSelector';
+
+function SearchableStaffSelector({ staff, selectedId, onSelect }: { 
+  staff: StaffMember[]; 
+  selectedId: string; 
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const selected = staff.find(s => s.id === selectedId);
+  
+  const filtered = useMemo(() => {
+    if (!search) return staff;
+    const q = search.toLowerCase();
+    return staff.filter(s => 
+      s.name.toLowerCase().includes(q) || 
+      s.role?.toLowerCase().includes(q)
+    );
+  }, [staff, search]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+        >
+          <span className="flex items-center gap-2 truncate">
+            <User className="h-4 w-4 shrink-0 text-muted-foreground" />
+            {selected ? (
+              <span className="truncate">{selected.name}{selected.role ? ` — ${selected.role}` : ''}</span>
+            ) : (
+              <span className="text-muted-foreground">Select staff member...</span>
+            )}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <div className="flex items-center border-b px-3">
+          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+          <input
+            placeholder="Search staff..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex h-10 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+          />
+        </div>
+        <div className="max-h-60 overflow-y-auto p-1">
+          {filtered.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No staff found.</p>
+          ) : (
+            filtered.map(s => (
+              <div
+                key={s.id}
+                onClick={() => { onSelect(s.id); setOpen(false); setSearch(''); }}
+                className={cn(
+                  "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground",
+                  s.id === selectedId && "bg-accent"
+                )}
+              >
+                <Check className={cn("h-4 w-4 shrink-0", s.id === selectedId ? "opacity-100" : "opacity-0")} />
+                <span className="truncate">{s.name}</span>
+                {s.role && <span className="ml-auto text-xs text-muted-foreground truncate">{s.role}</span>}
+              </div>
+            ))
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 interface SchedulingPreferencesModalProps {
   open: boolean;
@@ -133,17 +210,11 @@ export function SchedulingPreferencesModal({
       {/* Staff Selector */}
       {allStaff && allStaff.length > 1 && (
         <FormSection title="Staff Member">
-          <select
-            value={selectedStaffId}
-            onChange={(e) => setSelectedStaffId(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          >
-            {allStaff.map(s => (
-              <option key={s.id} value={s.id}>
-                {s.name}{s.role ? ` — ${s.role}` : ''}
-              </option>
-            ))}
-          </select>
+          <SearchableStaffSelector
+            staff={allStaff}
+            selectedId={selectedStaffId}
+            onSelect={setSelectedStaffId}
+          />
         </FormSection>
       )}
 
