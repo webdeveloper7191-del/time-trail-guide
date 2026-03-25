@@ -57,7 +57,7 @@ interface RecurringShiftManagementPanelProps {
   shifts: Shift[];
   staff: StaffMember[];
   centres: Centre[];
-  onDeleteSeries: (groupId: string) => void;
+  onDeleteSeries: (groupId: string, staffId?: string) => void;
   onEditSeries: (groupId: string) => void;
   onExtendSeries: (groupId: string, newEndDate: string) => void;
   onUpdateSeries?: (groupId: string, updates: { startTime?: string; endTime?: string; daysOfWeek?: number[]; effectiveDate?: string }) => void;
