@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { CentreSelector } from './CentreSelector';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
  import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
@@ -117,6 +118,8 @@ export function RecurringPatternsPanel({
   };
 
   const handleCreatePattern = () => {
+    const staffIds = newPattern.assignedStaffIds || [];
+    const staffNames = newPattern.assignedStaffNames || [];
     const pattern: RecurringShiftPattern = {
       id: `pattern-${Date.now()}`,
       name: newPattern.name || 'New Pattern',
@@ -127,8 +130,10 @@ export function RecurringPatternsPanel({
       daysOfWeek: newPattern.daysOfWeek,
       weekInterval: newPattern.weekInterval,
       shiftTemplate: newPattern.shiftTemplate!,
-      assignedStaffId: newPattern.assignedStaffId,
-      assignedStaffName: newPattern.assignedStaffName,
+      assignedStaffId: staffIds[0],
+      assignedStaffName: staffNames[0],
+      assignedStaffIds: staffIds,
+      assignedStaffNames: staffNames,
       isActive: true,
       createdAt: new Date().toISOString(),
       createdBy: 'admin',
@@ -388,7 +393,15 @@ export function RecurringPatternsPanel({
                     <Badge className="bg-secondary text-secondary-foreground border-0">{pattern.shiftTemplate.roleName}</Badge>
                   </TableCell>
                   <TableCell>
-                    {pattern.assignedStaffName ? (
+                    {(pattern.assignedStaffIds?.length || 0) > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {pattern.assignedStaffNames?.map((name, i) => (
+                          <Badge key={i} variant="outline" className="text-xs border-border">
+                            {name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : pattern.assignedStaffName ? (
                       <span className="text-foreground">{pattern.assignedStaffName}</span>
                     ) : (
                       <span className="text-muted-foreground">Unassigned</span>
@@ -593,33 +606,58 @@ export function RecurringPatternsPanel({
          </FormSection>
 
          <FormSection title="Staff Assignment">
-           <FormField label="Assign Staff (optional)">
-            <Select
-              value={newPattern.assignedStaffId || '_unassigned'}
-              onValueChange={v => {
-                if (v === '_unassigned') {
-                  setNewPattern(prev => ({ ...prev, assignedStaffId: undefined, assignedStaffName: undefined }));
-                } else {
-                  const s = staff.find(st => st.id === v);
-                  setNewPattern(prev => ({ ...prev, assignedStaffId: v, assignedStaffName: s?.name || '' }));
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Leave unassigned (open shift)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_unassigned">Unassigned (Open Shift)</SelectItem>
-                {staff.map(s => (
-                  <SelectItem key={s.id} value={s.id}>
-                    <span className="flex items-center gap-2">
-                      <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color || '#9ca3af' }} />
-                      {s.name} <span className="text-muted-foreground">· {s.role}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+           <FormField label="Assign Staff (select multiple for team shifts)">
+            <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-2">
+              {staff.map(s => {
+                const isSelected = (newPattern.assignedStaffIds || []).includes(s.id);
+                return (
+                  <label
+                    key={s.id}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors',
+                      isSelected ? 'bg-primary/10' : 'hover:bg-muted/50'
+                    )}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => {
+                        const ids = newPattern.assignedStaffIds || [];
+                        const names = newPattern.assignedStaffNames || [];
+                        if (checked) {
+                          setNewPattern(prev => ({
+                            ...prev,
+                            assignedStaffIds: [...ids, s.id],
+                            assignedStaffNames: [...names, s.name],
+                            assignedStaffId: ids.length === 0 ? s.id : prev.assignedStaffId,
+                            assignedStaffName: ids.length === 0 ? s.name : prev.assignedStaffName,
+                          }));
+                        } else {
+                          const newIds = ids.filter(id => id !== s.id);
+                          const newNames = names.filter((_, i) => ids[i] !== s.id);
+                          setNewPattern(prev => ({
+                            ...prev,
+                            assignedStaffIds: newIds,
+                            assignedStaffNames: newNames,
+                            assignedStaffId: newIds[0],
+                            assignedStaffName: newNames[0],
+                          }));
+                        }
+                      }}
+                    />
+                    <span className="inline-block h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color || '#9ca3af' }} />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-foreground">{s.name}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{s.role}</span>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+            {(newPattern.assignedStaffIds?.length || 0) > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {newPattern.assignedStaffIds!.length} staff selected — one shift per staff member will be generated
+              </p>
+            )}
            </FormField>
          </FormSection>
 
@@ -789,33 +827,62 @@ export function RecurringPatternsPanel({
             </FormSection>
 
             <FormSection title="Staff Assignment">
-              <FormField label="Assign Staff (optional)">
-               <Select
-                 value={selectedPattern.assignedStaffId || '_unassigned'}
-                 onValueChange={v => {
-                   if (v === '_unassigned') {
-                     setSelectedPattern({ ...selectedPattern, assignedStaffId: undefined, assignedStaffName: undefined });
-                   } else {
-                     const s = staff.find(st => st.id === v);
-                     setSelectedPattern({ ...selectedPattern, assignedStaffId: v, assignedStaffName: s?.name || '' });
-                   }
-                 }}
-               >
-                 <SelectTrigger>
-                   <SelectValue placeholder="Leave unassigned (open shift)" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="_unassigned">Unassigned (Open Shift)</SelectItem>
-                   {staff.map(s => (
-                     <SelectItem key={s.id} value={s.id}>
-                       <span className="flex items-center gap-2">
-                         <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color || '#9ca3af' }} />
-                         {s.name} <span className="text-muted-foreground">· {s.role}</span>
-                       </span>
-                     </SelectItem>
-                   ))}
-                 </SelectContent>
-               </Select>
+              <FormField label="Assign Staff (select multiple for team shifts)">
+               <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-2">
+                 {staff.map(s => {
+                   const ids = selectedPattern.assignedStaffIds || (selectedPattern.assignedStaffId ? [selectedPattern.assignedStaffId] : []);
+                   const isSelected = ids.includes(s.id);
+                   return (
+                     <label
+                       key={s.id}
+                       className={cn(
+                         'flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors',
+                         isSelected ? 'bg-primary/10' : 'hover:bg-muted/50'
+                       )}
+                     >
+                       <Checkbox
+                         checked={isSelected}
+                         onCheckedChange={(checked) => {
+                           const currentIds = selectedPattern.assignedStaffIds || (selectedPattern.assignedStaffId ? [selectedPattern.assignedStaffId] : []);
+                           const currentNames = selectedPattern.assignedStaffNames || (selectedPattern.assignedStaffName ? [selectedPattern.assignedStaffName] : []);
+                           if (checked) {
+                             const newIds = [...currentIds, s.id];
+                             const newNames = [...currentNames, s.name];
+                             setSelectedPattern({
+                               ...selectedPattern,
+                               assignedStaffIds: newIds,
+                               assignedStaffNames: newNames,
+                               assignedStaffId: newIds[0],
+                               assignedStaffName: newNames[0],
+                             });
+                           } else {
+                             const idx = currentIds.indexOf(s.id);
+                             const newIds = currentIds.filter(id => id !== s.id);
+                             const newNames = currentNames.filter((_, i) => i !== idx);
+                             setSelectedPattern({
+                               ...selectedPattern,
+                               assignedStaffIds: newIds,
+                               assignedStaffNames: newNames,
+                               assignedStaffId: newIds[0],
+                               assignedStaffName: newNames[0],
+                             });
+                           }
+                         }}
+                       />
+                       <span className="inline-block h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color || '#9ca3af' }} />
+                       <div className="flex-1 min-w-0">
+                         <span className="text-sm font-medium text-foreground">{s.name}</span>
+                         <span className="text-xs text-muted-foreground ml-2">{s.role}</span>
+                       </div>
+                     </label>
+                   );
+                 })}
+               </div>
+               {((selectedPattern.assignedStaffIds?.length || 0) > 0) && (
+                 <p className="text-xs text-muted-foreground mt-1">
+                   {selectedPattern.assignedStaffIds!.length} staff selected
+                 </p>
+               )}
               </FormField>
             </FormSection>
 

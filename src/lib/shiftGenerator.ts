@@ -51,16 +51,25 @@ export function generateShiftsFromPattern(
     );
     
     if (!alreadyExists) {
-      generatedShifts.push({
-        date: dateStr,
-        startTime: pattern.shiftTemplate.startTime,
-        endTime: pattern.shiftTemplate.endTime,
-        roomId: '', // Will use default room
-        staffId: pattern.assignedStaffId,
-        centreId: pattern.shiftTemplate.centreId,
-        breakMinutes: pattern.shiftTemplate.breakDuration || 30,
-        patternId: pattern.id,
-        patternName: pattern.name,
+      // Support multi-staff: generate one shift per assigned staff member
+      const staffIds = pattern.assignedStaffIds?.length
+        ? pattern.assignedStaffIds
+        : pattern.assignedStaffId
+          ? [pattern.assignedStaffId]
+          : [undefined];
+
+      staffIds.forEach(sid => {
+        generatedShifts.push({
+          date: dateStr,
+          startTime: pattern.shiftTemplate.startTime,
+          endTime: pattern.shiftTemplate.endTime,
+          roomId: '',
+          staffId: sid,
+          centreId: pattern.shiftTemplate.centreId,
+          breakMinutes: pattern.shiftTemplate.breakDuration || 30,
+          patternId: pattern.id,
+          patternName: pattern.name,
+        });
       });
     }
   });
