@@ -54,6 +54,7 @@ import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
 import { useSwipeRef } from '@/hooks/useSwipeGesture';
 import { RecurringPatternsPanel } from '@/components/roster/RecurringPatternsPanel';
 import { RecurringShiftManagementPanel } from '@/components/roster/RecurringShiftManagementPanel';
+import { UnifiedRecurringPanel } from '@/components/roster/UnifiedRecurringPanel';
 import { FatigueManagementPanel } from '@/components/roster/FatigueManagementPanel';
 import { GPSClockInPanel } from '@/components/roster/GPSClockInPanel';
 import { WeatherIntegrationPanel } from '@/components/roster/WeatherIntegrationPanel';
