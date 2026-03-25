@@ -57,8 +57,8 @@ export interface ModuleSRS {
 
 export const rosterSRS: ModuleSRS = {
   moduleName: "Roster & Workforce Scheduling",
-  version: "2.1.0",
-  lastUpdated: "2026-03-19",
+  version: "2.2.0",
+  lastUpdated: "2026-03-25",
   overview: `The Roster & Workforce Scheduling module provides comprehensive workforce management capabilities across all industries. It enables managers to create, manage, and optimize staff schedules while ensuring compliance with industry-specific regulations, fatigue management requirements, and applicable employment awards. The system supports multi-location operations, agency staff integration, GPS-validated time and attendance, and AI-powered schedule optimization.`,
   
   objectives: [
