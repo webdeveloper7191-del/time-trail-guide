@@ -89,7 +89,7 @@ export function convertGeneratedShiftsToRosterShifts(
     notes: `Generated from pattern: ${gs.patternName}`,
     recurring: {
       isRecurring: true,
-      pattern: pattern?.pattern || 'weekly',
+      pattern: (pattern?.pattern === 'custom' ? 'weekly' : pattern?.pattern || 'weekly') as RosterRecurrencePattern,
       daysOfWeek: pattern?.daysOfWeek,
       endType: pattern?.endDate ? 'on_date' as const : 'never' as const,
       endDate: pattern?.endDate,
