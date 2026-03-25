@@ -117,6 +117,8 @@ export function RecurringPatternsPanel({
   };
 
   const handleCreatePattern = () => {
+    const staffIds = newPattern.assignedStaffIds || [];
+    const staffNames = newPattern.assignedStaffNames || [];
     const pattern: RecurringShiftPattern = {
       id: `pattern-${Date.now()}`,
       name: newPattern.name || 'New Pattern',
@@ -127,8 +129,10 @@ export function RecurringPatternsPanel({
       daysOfWeek: newPattern.daysOfWeek,
       weekInterval: newPattern.weekInterval,
       shiftTemplate: newPattern.shiftTemplate!,
-      assignedStaffId: newPattern.assignedStaffId,
-      assignedStaffName: newPattern.assignedStaffName,
+      assignedStaffId: staffIds[0],
+      assignedStaffName: staffNames[0],
+      assignedStaffIds: staffIds,
+      assignedStaffNames: staffNames,
       isActive: true,
       createdAt: new Date().toISOString(),
       createdBy: 'admin',
