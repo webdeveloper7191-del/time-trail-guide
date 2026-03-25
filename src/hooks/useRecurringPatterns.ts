@@ -21,7 +21,7 @@ const initialPatterns: RecurringShiftPattern[] = [
       breakDuration: 30,
     },
     assignedStaffId: 'staff-1',
-    assignedStaffName: 'Sarah Johnson',
+    assignedStaffName: 'Emma Wilson',
     isActive: true,
     createdAt: '2025-01-01T00:00:00Z',
     createdBy: 'admin',
