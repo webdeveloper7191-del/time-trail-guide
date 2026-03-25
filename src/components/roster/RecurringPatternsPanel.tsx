@@ -127,6 +127,8 @@ export function RecurringPatternsPanel({
       daysOfWeek: newPattern.daysOfWeek,
       weekInterval: newPattern.weekInterval,
       shiftTemplate: newPattern.shiftTemplate!,
+      assignedStaffId: newPattern.assignedStaffId,
+      assignedStaffName: newPattern.assignedStaffName,
       isActive: true,
       createdAt: new Date().toISOString(),
       createdBy: 'admin',
@@ -590,6 +592,37 @@ export function RecurringPatternsPanel({
            </FormField>
          </FormSection>
 
+         <FormSection title="Staff Assignment">
+           <FormField label="Assign Staff (optional)">
+            <Select
+              value={newPattern.assignedStaffId || '_unassigned'}
+              onValueChange={v => {
+                if (v === '_unassigned') {
+                  setNewPattern(prev => ({ ...prev, assignedStaffId: undefined, assignedStaffName: undefined }));
+                } else {
+                  const s = staff.find(st => st.id === v);
+                  setNewPattern(prev => ({ ...prev, assignedStaffId: v, assignedStaffName: s?.name || '' }));
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Leave unassigned (open shift)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_unassigned">Unassigned (Open Shift)</SelectItem>
+                {staff.map(s => (
+                  <SelectItem key={s.id} value={s.id}>
+                    <span className="flex items-center gap-2">
+                      <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color || '#9ca3af' }} />
+                      {s.name} <span className="text-muted-foreground">· {s.role}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+           </FormField>
+         </FormSection>
+
          <FormSection title="Pattern Duration">
            <FormRow columns={2}>
              <FormField label="Start Date">
@@ -753,7 +786,38 @@ export function RecurringPatternsPanel({
                 </SelectContent>
               </Select>
              </FormField>
-           </FormSection>
+            </FormSection>
+
+            <FormSection title="Staff Assignment">
+              <FormField label="Assign Staff (optional)">
+               <Select
+                 value={selectedPattern.assignedStaffId || '_unassigned'}
+                 onValueChange={v => {
+                   if (v === '_unassigned') {
+                     setSelectedPattern({ ...selectedPattern, assignedStaffId: undefined, assignedStaffName: undefined });
+                   } else {
+                     const s = staff.find(st => st.id === v);
+                     setSelectedPattern({ ...selectedPattern, assignedStaffId: v, assignedStaffName: s?.name || '' });
+                   }
+                 }}
+               >
+                 <SelectTrigger>
+                   <SelectValue placeholder="Leave unassigned (open shift)" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="_unassigned">Unassigned (Open Shift)</SelectItem>
+                   {staff.map(s => (
+                     <SelectItem key={s.id} value={s.id}>
+                       <span className="flex items-center gap-2">
+                         <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color || '#9ca3af' }} />
+                         {s.name} <span className="text-muted-foreground">· {s.role}</span>
+                       </span>
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+              </FormField>
+            </FormSection>
 
            <FormSection title="Pattern Duration">
              <FormRow columns={2}>
