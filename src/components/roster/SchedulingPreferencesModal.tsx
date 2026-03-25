@@ -136,7 +136,7 @@ export function SchedulingPreferencesModal({
       {/* Staff Selector */}
       {allStaff && allStaff.length > 1 && (
         <FormSection title="Staff Member">
-          <StaffCombobox
+          <SearchableStaffSelector
             staff={allStaff}
             selectedId={selectedStaffId}
             onSelect={setSelectedStaffId}
