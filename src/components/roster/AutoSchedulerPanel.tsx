@@ -183,8 +183,7 @@ export function AutoSchedulerPanel({
     <PrimaryOffCanvas
       open={open}
       onClose={onClose}
-      title="Auto-Scheduler"
-      subtitle="Generate shifts from demand data using constraint-aware scheduling"
+      title="Auto-Scheduler — Generate shifts from demand"
       icon={Sparkles}
       width="xl"
       actions={actions}
