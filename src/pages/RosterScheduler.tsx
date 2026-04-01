@@ -2041,6 +2041,17 @@ export default function RosterScheduler() {
                 Auto-Assign ({emptyShifts.filter(s => s.centreId === selectedCentreId).length})
               </Button>
             )}
+            
+            {/* Auto-Scheduler Button */}
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={() => setShowAutoScheduler(true)}
+              startIcon={<Wand2 size={16} />}
+            >
+              Auto-Schedule
+            </Button>
 
             {/* Dropdown Menus Group */}
             <Stack 
