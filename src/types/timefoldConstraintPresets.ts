@@ -129,6 +129,7 @@ const childcarePreset: TimefoldConstraintConfiguration = {
         },
       ],
     },
+    availability: { enabled: true, respectUnavailability: true, preferAvailableSlots: true, allowPreferences: true, preferenceWeight: 60 },
     priority: { enabled: true, priorityLevels: ['CRITICAL', 'HIGH', 'NORMAL', 'LOW'], higherPriorityWeight: 3 },
     pairing: { enabled: false, pairs: [] },
     travel: { enabled: false, maxTravelDistanceKm: 30, satisfiability: 'PREFERRED', minTimeBetweenShiftsIncludingTravelMinutes: 60, minimizeTravelDistance: true, maxLocationsPerPeriod: { enabled: false, period: 'WEEK', maxLocations: 2 } },
