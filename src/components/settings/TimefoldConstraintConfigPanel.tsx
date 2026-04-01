@@ -291,9 +291,47 @@ export function TimefoldConstraintConfigPanel() {
               {ec.contracts.contracts.map((contract, ci) => (
                 <Card key={contract.id} className="bg-muted/30">
                   <CardContent className="p-3 space-y-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline" className="text-xs">{contract.name}</Badge>
-                      <span className="text-[10px] text-muted-foreground">({contract.employmentType})</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={contract.name}
+                          onChange={e => updateEmployee('contracts', p => {
+                            const c = [...p.contracts]; c[ci] = { ...c[ci], name: e.target.value }; return { ...p, contracts: c };
+                          })}
+                          className="h-7 w-40 text-xs font-medium"
+                        />
+                        <Select value={contract.employmentType} onValueChange={v => updateEmployee('contracts', p => {
+                          const c = [...p.contracts]; c[ci] = { ...c[ci], employmentType: v }; return { ...p, contracts: c };
+                        })}>
+                          <SelectTrigger className="h-7 w-32 text-[10px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="full_time" className="text-xs">Full Time</SelectItem>
+                            <SelectItem value="part_time" className="text-xs">Part Time</SelectItem>
+                            <SelectItem value="casual" className="text-xs">Casual</SelectItem>
+                            <SelectItem value="agency" className="text-xs">Agency</SelectItem>
+                            <SelectItem value="contractor" className="text-xs">Contractor</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={contract.priority} onValueChange={v => updateEmployee('contracts', p => {
+                          const c = [...p.contracts]; c[ci] = { ...c[ci], priority: v as any }; return { ...p, contracts: c };
+                        })}>
+                          <SelectTrigger className="h-7 w-28 text-[10px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="CRITICAL" className="text-xs">Critical</SelectItem>
+                            <SelectItem value="HIGH" className="text-xs">High</SelectItem>
+                            <SelectItem value="NORMAL" className="text-xs">Normal</SelectItem>
+                            <SelectItem value="LOW" className="text-xs">Low</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {ec.contracts.contracts.length > 1 && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => updateEmployee('contracts', p => ({
+                            ...p, contracts: p.contracts.filter((_, i) => i !== ci),
+                          }))}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
 
                     {/* Work Limits */}
