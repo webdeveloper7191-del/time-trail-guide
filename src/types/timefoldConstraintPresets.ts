@@ -8,6 +8,8 @@ import {
   defaultConstraintConfig,
   defaultWorkLimits,
   defaultTimeOff,
+  defaultCasualWorkLimits,
+  defaultAgencyWorkLimits,
 } from './timefoldConstraintConfig';
 
 export interface IndustryPreset {
