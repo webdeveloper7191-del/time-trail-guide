@@ -4,6 +4,7 @@ import {
   UserCheck, Scale, Layers, ArrowLeftRight, DollarSign,
   TrendingUp, AlertTriangle, Award, ListChecks, UserPlus,
   Save, RotateCcw, ChevronRight, Info, Shield, Settings2,
+  Sparkles, Check,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,7 +28,7 @@ import {
   type Satisfiability,
   type Period,
 } from '@/types/timefoldConstraintConfig';
-
+import { industryPresets, IndustryPreset } from '@/types/timefoldConstraintPresets';
 const iconMap: Record<string, React.ElementType> = {
   FileText, CalendarCheck, Star, Users, MapPin, Coffee,
   UserCheck, Scale, Layers, ArrowLeftRight, DollarSign,
@@ -147,6 +148,13 @@ const ConstraintCategory = ({ iconName, label, description, enabled, onToggle, c
 export function TimefoldConstraintConfigPanel() {
   const [config, setConfig] = useState<TimefoldConstraintConfiguration>(defaultConstraintConfig);
   const [activeTab, setActiveTab] = useState('employee');
+  const [activePreset, setActivePreset] = useState<string | null>(null);
+
+  const applyPreset = (preset: IndustryPreset) => {
+    setConfig(structuredClone(preset.config));
+    setActivePreset(preset.id);
+    toast.success(`Applied ${preset.name} preset configuration`);
+  };
 
   const updateEmployee = <K extends keyof TimefoldConstraintConfiguration['employeeConstraints']>(
     key: K, updater: (prev: TimefoldConstraintConfiguration['employeeConstraints'][K]) => TimefoldConstraintConfiguration['employeeConstraints'][K]
@@ -172,6 +180,7 @@ export function TimefoldConstraintConfigPanel() {
 
   const handleReset = () => {
     setConfig(defaultConstraintConfig);
+    setActivePreset(null);
     toast.info('Configuration reset to defaults');
   };
 
@@ -213,6 +222,47 @@ export function TimefoldConstraintConfigPanel() {
             className="text-primary underline">Timefold Employee Shift Scheduling API</a>.
           Hard constraints cannot be violated. Soft constraints are penalized with configurable weights.
         </p>
+      </div>
+
+      {/* Industry Presets */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold">Industry Presets</span>
+          <span className="text-xs text-muted-foreground">— Quick-start with best-practice defaults</span>
+        </div>
+        <div className="grid grid-cols-5 gap-2">
+          {industryPresets.map(preset => (
+            <button
+              key={preset.id}
+              onClick={() => applyPreset(preset)}
+              className={cn(
+                "relative flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all hover:border-primary/50 hover:bg-primary/5",
+                activePreset === preset.id
+                  ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                  : "border-border bg-card"
+              )}
+            >
+              {activePreset === preset.id && (
+                <div className="absolute top-1 right-1">
+                  <Check className="h-3.5 w-3.5 text-primary" />
+                </div>
+              )}
+              <span className="text-xl">{preset.icon}</span>
+              <span className="text-xs font-medium">{preset.name}</span>
+              <span className="text-[10px] text-muted-foreground leading-tight line-clamp-2">{preset.description}</span>
+            </button>
+          ))}
+        </div>
+        {activePreset && (
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {industryPresets.find(p => p.id === activePreset)?.highlights.map((h, i) => (
+              <Badge key={i} variant="secondary" className="text-[10px] px-2 py-0.5">
+                <Check className="h-2.5 w-2.5 mr-1" />{h}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
