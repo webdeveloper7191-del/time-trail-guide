@@ -4,6 +4,7 @@ import {
   UserCheck, Scale, Layers, ArrowLeftRight, DollarSign,
   TrendingUp, AlertTriangle, Award, ListChecks, UserPlus,
   Save, RotateCcw, ChevronRight, Info, Shield, Settings2,
+  Sparkles, Check,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
