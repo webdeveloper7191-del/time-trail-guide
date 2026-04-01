@@ -48,6 +48,7 @@ import { ApprovalTier, BreakRule, ApprovalRule } from '@/types/compliance';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
 import { TimefoldIntegrationPanel } from '@/components/roster/TimefoldIntegrationPanel';
+import { TimefoldConstraintConfigPanel } from '@/components/settings/TimefoldConstraintConfigPanel';
 import { IntegrationManagerModal } from '@/components/settings/IntegrationManagerModal';
 import { 
   TimefoldSolverConfig, 
