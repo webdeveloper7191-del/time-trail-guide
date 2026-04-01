@@ -169,7 +169,7 @@ import {
   Star,
   RefreshCw,
 } from 'lucide-react';
-import { BarChart2, Phone, PhoneCall, Check, Search, X } from 'lucide-react';
+import { BarChart2, Phone, PhoneCall, Check, Search, X, Wand2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
