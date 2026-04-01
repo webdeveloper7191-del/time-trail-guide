@@ -280,6 +280,7 @@ export default function RosterScheduler() {
   const [showBreakScheduling, setShowBreakScheduling] = useState(false);
   const [showSkillMatrix, setShowSkillMatrix] = useState(false);
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
+  const [showAutoScheduler, setShowAutoScheduler] = useState(false);
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
   const [showCallbackLogging, setShowCallbackLogging] = useState(false);
   const [showOnCallOverlay, setShowOnCallOverlay] = useState(false);
