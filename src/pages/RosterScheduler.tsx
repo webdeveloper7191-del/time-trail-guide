@@ -2960,7 +2960,25 @@ export default function RosterScheduler() {
         onAssign={handleAutoAssign}
       />
 
-      {/* Unified Recurring Shifts Panel */}
+      {/* Auto-Scheduler Panel */}
+      <AutoSchedulerPanel
+        open={showAutoScheduler}
+        onClose={() => setShowAutoScheduler(false)}
+        centreId={selectedCentreId}
+        centre={selectedCentre}
+        staff={allStaff}
+        rooms={selectedCentre.rooms}
+        existingShifts={shifts}
+        demandData={demandAnalytics}
+        shiftTemplates={allShiftTemplates}
+        dates={dates}
+        onApplyShifts={(newShifts) => {
+          const withIds = newShifts.map((s, i) => ({ ...s, id: `auto-sched-${Date.now()}-${i}` }));
+          setShifts(prev => [...prev, ...withIds]);
+        }}
+      />
+
+
       <UnifiedRecurringPanel
         open={showUnifiedRecurring}
         onClose={() => setShowUnifiedRecurring(false)}
