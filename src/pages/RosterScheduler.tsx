@@ -36,6 +36,7 @@ import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { RosterHistoryPanel } from '@/components/roster/RosterHistoryPanel';
 import { AddEmptyShiftModal } from '@/components/roster/AddEmptyShiftModal';
 import { AutoAssignStaffModal } from '@/components/roster/AutoAssignStaffModal';
+import { AutoSchedulerPanel } from '@/components/roster/AutoSchedulerPanel';
 import { IndustryConfigurationModal } from '@/components/settings/IndustryConfigurationModal';
 import { DemandMasterSettingsModal } from '@/components/settings/DemandMasterSettingsModal';
 import { DemandDataEntryModal } from '@/components/settings/DemandDataEntryModal';
