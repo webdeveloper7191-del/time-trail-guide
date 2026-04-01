@@ -28,7 +28,7 @@ import {
   type Satisfiability,
   type Period,
 } from '@/types/timefoldConstraintConfig';
-
+import { industryPresets, IndustryPreset } from '@/types/timefoldConstraintPresets';
 const iconMap: Record<string, React.ElementType> = {
   FileText, CalendarCheck, Star, Users, MapPin, Coffee,
   UserCheck, Scale, Layers, ArrowLeftRight, DollarSign,
