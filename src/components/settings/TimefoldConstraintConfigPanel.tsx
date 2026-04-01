@@ -429,6 +429,41 @@ export function TimefoldConstraintConfigPanel() {
                   </CardContent>
                 </Card>
               ))}
+              <Button variant="outline" size="sm" className="w-full mt-2 text-xs"
+                onClick={() => updateEmployee('contracts', p => ({
+                  ...p,
+                  contracts: [...p.contracts, {
+                    id: `custom-${Date.now()}`,
+                    name: 'New Contract',
+                    priority: 'NORMAL' as const,
+                    employmentType: 'casual',
+                    workLimits: {
+                      enabled: true,
+                      minutesPerPeriod: { enabled: true, period: 'WEEK' as const, minMinutes: 0, maxMinutes: 2280, satisfiability: 'REQUIRED' as const },
+                      minutesRollingWindow: { enabled: false, windowDays: 7, satisfiability: 'PREFERRED' as const },
+                      daysPerPeriod: { enabled: true, period: 'WEEK' as const, minDays: 0, maxDays: 5, satisfiability: 'PREFERRED' as const },
+                      daysRollingWindow: { enabled: false, windowDays: 14, satisfiability: 'PREFERRED' as const },
+                      shiftsPerPeriod: { enabled: false, period: 'WEEK' as const, satisfiability: 'PREFERRED' as const },
+                      weekendLimits: { enabled: false, maxWeekendsPerPeriod: 4, period: 'MONTH' as const, maxConsecutiveWeekends: 4, maxWeekendMinutes: 1920 },
+                      consecutiveDaysWorked: { enabled: true, maxConsecutiveDays: 6, satisfiability: 'REQUIRED' as const },
+                    },
+                    timeOffRules: {
+                      enabled: true,
+                      minTimeBetweenShiftsMinutes: 600,
+                      consecutiveDaysOff: { enabled: false, minConsecutiveDaysOff: 1, period: 'WEEK' as const, satisfiability: 'PREFERRED' as const },
+                      daysOffPerPeriod: { enabled: false, period: 'WEEK' as const, minDaysOff: 1, satisfiability: 'PREFERRED' as const },
+                    },
+                    shiftPatterns: {
+                      enabled: true,
+                      minTimeBetweenShiftsMinutes: 600,
+                      shiftRotations: { enabled: false, enforceRotationPattern: false },
+                      splitShifts: { enabled: false, minGapBetweenPartsMinutes: 60, maxGapBetweenPartsMinutes: 240 },
+                      onCallShifts: { enabled: false, countAsWorkedTime: false },
+                    },
+                  } satisfies ContractRule],
+                }))}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Contract Type
+              </Button>
             </ConstraintCategory>
 
             {/* --- Availability --- */}
