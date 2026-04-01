@@ -148,6 +148,13 @@ const ConstraintCategory = ({ iconName, label, description, enabled, onToggle, c
 export function TimefoldConstraintConfigPanel() {
   const [config, setConfig] = useState<TimefoldConstraintConfiguration>(defaultConstraintConfig);
   const [activeTab, setActiveTab] = useState('employee');
+  const [activePreset, setActivePreset] = useState<string | null>(null);
+
+  const applyPreset = (preset: IndustryPreset) => {
+    setConfig(structuredClone(preset.config));
+    setActivePreset(preset.id);
+    toast.success(`Applied ${preset.name} preset configuration`);
+  };
 
   const updateEmployee = <K extends keyof TimefoldConstraintConfiguration['employeeConstraints']>(
     key: K, updater: (prev: TimefoldConstraintConfiguration['employeeConstraints'][K]) => TimefoldConstraintConfiguration['employeeConstraints'][K]
