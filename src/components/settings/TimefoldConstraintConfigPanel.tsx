@@ -180,6 +180,7 @@ export function TimefoldConstraintConfigPanel() {
 
   const handleReset = () => {
     setConfig(defaultConstraintConfig);
+    setActivePreset(null);
     toast.info('Configuration reset to defaults');
   };
 
