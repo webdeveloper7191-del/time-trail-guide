@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -15,8 +14,8 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Shift, StaffMember, Room, Centre, ShiftTemplate } from '@/types/roster';
@@ -28,7 +27,6 @@ import {
   AutoSchedulerConfig,
   SchedulerWeights,
   SchedulerResult,
-  GeneratedShiftSlot,
   DEFAULT_WEIGHTS,
 } from '@/lib/autoScheduler';
 import { format, parseISO } from 'date-fns';
@@ -52,6 +50,27 @@ const WEIGHT_PRESETS = {
   costOptimized: { label: 'Cost Optimized', weights: { availability: 25, qualifications: 15, cost: 40, fairness: 10, preference: 10 } },
   qualityFirst: { label: 'Quality First', weights: { availability: 20, qualifications: 40, cost: 10, fairness: 15, preference: 15 } },
   fairDistribution: { label: 'Fair Distribution', weights: { availability: 20, qualifications: 15, cost: 10, fairness: 45, preference: 10 } },
+};
+
+// Collapsible section component
+const Section = ({ title, icon, defaultOpen = false, children }: {
+  title: string; icon: React.ReactNode; defaultOpen?: boolean; children: React.ReactNode;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+        <div className="flex items-center gap-2">
+          {icon}
+          <span className="text-sm font-semibold">{title}</span>
+        </div>
+        <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="px-3 pb-3 pt-2">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
 };
 
 export function AutoSchedulerPanel({
@@ -104,8 +123,6 @@ export function AutoSchedulerPanel({
 
   const handleRun = () => {
     setIsRunning(true);
-    
-    // Simulate processing time for UX
     setTimeout(() => {
       try {
         const config: AutoSchedulerConfig = {
@@ -120,14 +137,7 @@ export function AutoSchedulerPanel({
           minShiftDurationMinutes: 180,
         };
         
-        const schedulerResult = runAutoScheduler(
-          filteredDemand,
-          staff,
-          rooms,
-          existingShifts,
-          config,
-        );
-        
+        const schedulerResult = runAutoScheduler(filteredDemand, staff, rooms, existingShifts, config);
         setResult(schedulerResult);
         setActiveTab('results');
         toast.success(`Generated ${schedulerResult.summary.totalShiftsGenerated} shift slots`);
@@ -154,7 +164,7 @@ export function AutoSchedulerPanel({
     actions.push({
       label: isRunning ? 'Running...' : 'Generate Shifts',
       onClick: handleRun,
-      variant: 'default' as const,
+      variant: 'primary',
       icon: isRunning ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />,
       disabled: isRunning || dates.length === 0,
     });
@@ -164,7 +174,7 @@ export function AutoSchedulerPanel({
     actions.push({
       label: `Apply ${result.summary.totalShiftsGenerated} Shifts to Roster`,
       onClick: handleApply,
-      variant: 'default' as const,
+      variant: 'primary',
       icon: <Check className="h-4 w-4" />,
     });
   }
@@ -175,7 +185,7 @@ export function AutoSchedulerPanel({
       onClose={onClose}
       title="Auto-Scheduler"
       subtitle="Generate shifts from demand data using constraint-aware scheduling"
-      icon={<Sparkles className="h-5 w-5" />}
+      icon={Sparkles}
       width="xl"
       actions={actions}
     >
@@ -194,9 +204,9 @@ export function AutoSchedulerPanel({
         </TabsList>
 
         {/* ==================== CONFIGURE TAB ==================== */}
-        <TabsContent value="configure" className="space-y-4">
+        <TabsContent value="configure" className="space-y-3">
           {/* Demand Summary */}
-          <FormSection title="Demand Overview" icon={<BarChart3 className="h-4 w-4" />} defaultOpen>
+          <Section title="Demand Overview" icon={<BarChart3 className="h-4 w-4 text-primary" />} defaultOpen>
             <div className="grid grid-cols-4 gap-2">
               <Card className="bg-muted/30">
                 <CardContent className="p-3 text-center">
@@ -212,7 +222,7 @@ export function AutoSchedulerPanel({
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="p-3 text-center">
-                  <div className={cn("text-lg font-bold", demandSummary.gap > 0 ? "text-destructive" : "text-green-600")}>
+                  <div className={cn("text-lg font-bold", demandSummary.gap > 0 ? "text-destructive" : "text-primary")}>
                     {demandSummary.gap}
                   </div>
                   <div className="text-[10px] text-muted-foreground">Staffing Gap</div>
@@ -220,7 +230,7 @@ export function AutoSchedulerPanel({
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="p-3 text-center">
-                  <div className={cn("text-lg font-bold", demandSummary.nonCompliant > 0 ? "text-amber-500" : "text-green-600")}>
+                  <div className={cn("text-lg font-bold", demandSummary.nonCompliant > 0 ? "text-destructive" : "text-primary")}>
                     {demandSummary.nonCompliant}
                   </div>
                   <div className="text-[10px] text-muted-foreground">Non-Compliant</div>
@@ -234,10 +244,10 @@ export function AutoSchedulerPanel({
                 Scheduling {dates.length} days for {centre.name} ({rooms.length} areas) • {dateRange.start && format(parseISO(dateRange.start), 'dd MMM')} – {dateRange.end && format(parseISO(dateRange.end), 'dd MMM')}
               </span>
             </div>
-          </FormSection>
+          </Section>
 
           {/* Room Selection */}
-          <FormSection title="Area Selection" icon={<Building2 className="h-4 w-4" />} defaultOpen>
+          <Section title="Area Selection" icon={<Building2 className="h-4 w-4 text-primary" />} defaultOpen>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-xs">Select areas to schedule</Label>
@@ -269,10 +279,10 @@ export function AutoSchedulerPanel({
                 ))}
               </div>
             </div>
-          </FormSection>
+          </Section>
 
           {/* Assignment Options */}
-          <FormSection title="Scheduling Options" icon={<Users className="h-4 w-4" />} defaultOpen>
+          <Section title="Scheduling Options" icon={<Users className="h-4 w-4 text-primary" />} defaultOpen>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -282,11 +292,11 @@ export function AutoSchedulerPanel({
                 <Switch checked={assignStaff} onCheckedChange={setAssignStaff} />
               </div>
             </div>
-          </FormSection>
+          </Section>
 
           {/* Optimization Weights */}
           {assignStaff && (
-            <FormSection title="Optimization Weights" icon={<Scale className="h-4 w-4" />} defaultOpen>
+            <Section title="Optimization Weights" icon={<Scale className="h-4 w-4 text-primary" />} defaultOpen>
               <div className="space-y-3">
                 <div className="flex gap-1.5 flex-wrap">
                   {Object.entries(WEIGHT_PRESETS).map(([key, preset]) => (
@@ -332,50 +342,50 @@ export function AutoSchedulerPanel({
                   );
                 })}
               </div>
-            </FormSection>
+            </Section>
           )}
 
           {/* Constraint Summary */}
-          <FormSection title="Active Constraints" icon={<AlertTriangle className="h-4 w-4" />}>
+          <Section title="Active Constraints" icon={<AlertTriangle className="h-4 w-4 text-primary" />}>
             <div className="space-y-1.5">
               {constraints.employeeConstraints.contracts.enabled && (
                 <div className="flex items-center gap-2 text-xs">
-                  <Check className="h-3 w-3 text-green-500" />
+                  <Check className="h-3 w-3 text-primary" />
                   <span>Work limits: max {Math.max(...constraints.employeeConstraints.contracts.contracts.map(c => c.workLimits.minutesPerPeriod.maxMinutes || 2400)) / 60}h/week</span>
                 </div>
               )}
               {constraints.employeeConstraints.contracts.enabled && (
                 <div className="flex items-center gap-2 text-xs">
-                  <Check className="h-3 w-3 text-green-500" />
+                  <Check className="h-3 w-3 text-primary" />
                   <span>Min rest: {Math.max(...constraints.employeeConstraints.contracts.contracts.map(c => c.timeOffRules.minTimeBetweenShiftsMinutes)) / 60}h between shifts</span>
                 </div>
               )}
               {constraints.employeeConstraints.availability.enabled && (
                 <div className="flex items-center gap-2 text-xs">
-                  <Check className="h-3 w-3 text-green-500" />
+                  <Check className="h-3 w-3 text-primary" />
                   <span>Respect availability & unavailability</span>
                 </div>
               )}
               {constraints.employeeConstraints.fairness.enabled && (
                 <div className="flex items-center gap-2 text-xs">
-                  <Check className="h-3 w-3 text-green-500" />
+                  <Check className="h-3 w-3 text-primary" />
                   <span>Balance workload across staff</span>
                 </div>
               )}
               {constraints.shiftConstraints.skills.enabled && (
                 <div className="flex items-center gap-2 text-xs">
-                  <Check className="h-3 w-3 text-green-500" />
+                  <Check className="h-3 w-3 text-primary" />
                   <span>Skills enforcement: {constraints.shiftConstraints.skills.requiredSkillsEnforced ? 'Hard' : 'Soft'}</span>
                 </div>
               )}
               {constraints.shiftConstraints.costManagement.enabled && (
                 <div className="flex items-center gap-2 text-xs">
-                  <Check className="h-3 w-3 text-green-500" />
+                  <Check className="h-3 w-3 text-primary" />
                   <span>Cost optimization active</span>
                 </div>
               )}
             </div>
-          </FormSection>
+          </Section>
         </TabsContent>
 
         {/* ==================== RESULTS TAB ==================== */}
@@ -390,9 +400,9 @@ export function AutoSchedulerPanel({
                     <div className="text-[10px] text-muted-foreground">Shifts Generated</div>
                   </CardContent>
                 </Card>
-                <Card className={cn("border", result.summary.unfilledShifts > 0 ? "bg-amber-500/5 border-amber-500/20" : "bg-green-500/5 border-green-500/20")}>
+                <Card className="bg-muted/30">
                   <CardContent className="p-3 text-center">
-                    <div className={cn("text-2xl font-bold", result.summary.unfilledShifts > 0 ? "text-amber-500" : "text-green-600")}>
+                    <div className="text-2xl font-bold text-foreground">
                       {assignStaff ? result.summary.totalStaffAssigned : '—'}
                     </div>
                     <div className="text-[10px] text-muted-foreground">{assignStaff ? 'Staff Assigned' : 'Empty Shifts'}</div>
@@ -424,7 +434,7 @@ export function AutoSchedulerPanel({
               )}
 
               {/* Room Coverage */}
-              <FormSection title="Area Coverage" icon={<Building2 className="h-4 w-4" />} defaultOpen>
+              <Section title="Area Coverage" icon={<Building2 className="h-4 w-4 text-primary" />} defaultOpen>
                 <div className="space-y-2">
                   {result.summary.roomCoverage.map(rc => (
                     <div key={rc.roomId} className="flex items-center gap-3">
@@ -436,10 +446,10 @@ export function AutoSchedulerPanel({
                     </div>
                   ))}
                 </div>
-              </FormSection>
+              </Section>
 
               {/* Date Breakdown */}
-              <FormSection title="Daily Breakdown" icon={<CalendarDays className="h-4 w-4" />} defaultOpen>
+              <Section title="Daily Breakdown" icon={<CalendarDays className="h-4 w-4 text-primary" />} defaultOpen>
                 <div className="space-y-1">
                   {result.summary.dateBreakdown.map(db => (
                     <div key={db.date} className="flex items-center justify-between py-1 px-2 rounded-md hover:bg-muted/50">
@@ -455,15 +465,15 @@ export function AutoSchedulerPanel({
                     </div>
                   ))}
                 </div>
-              </FormSection>
+              </Section>
 
               {/* Constraint Violations */}
               {result.constraintViolations.length > 0 && (
-                <FormSection title="Constraint Violations" icon={<AlertTriangle className="h-4 w-4 text-amber-500" />} defaultOpen>
+                <Section title="Constraint Violations" icon={<AlertTriangle className="h-4 w-4 text-destructive" />} defaultOpen>
                   <div className="space-y-1.5">
                     {result.constraintViolations.map((v, i) => (
-                      <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-amber-500/5 border border-amber-500/10">
-                        <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 shrink-0" />
+                      <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-destructive/5 border border-destructive/10">
+                        <AlertTriangle className="h-3 w-3 text-destructive mt-0.5 shrink-0" />
                         <div>
                           <div className="text-xs font-medium">{v.constraint}</div>
                           <div className="text-[10px] text-muted-foreground">{v.message}</div>
@@ -474,7 +484,7 @@ export function AutoSchedulerPanel({
                       </div>
                     ))}
                   </div>
-                </FormSection>
+                </Section>
               )}
             </>
           )}
@@ -527,7 +537,7 @@ export function AutoSchedulerPanel({
                     
                     {shift.assignedStaffName ? (
                       <div className="flex items-center gap-1 shrink-0">
-                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                        <CheckCircle2 className="h-3 w-3 text-primary" />
                         <span className="text-[10px] font-medium">{shift.assignedStaffName}</span>
                         {shift.assignmentScore !== undefined && (
                           <Badge variant="outline" className="text-[10px] px-1">{shift.assignmentScore}%</Badge>
