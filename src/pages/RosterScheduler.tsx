@@ -36,6 +36,7 @@ import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { RosterHistoryPanel } from '@/components/roster/RosterHistoryPanel';
 import { AddEmptyShiftModal } from '@/components/roster/AddEmptyShiftModal';
 import { AutoAssignStaffModal } from '@/components/roster/AutoAssignStaffModal';
+import { AutoSchedulerPanel } from '@/components/roster/AutoSchedulerPanel';
 import { IndustryConfigurationModal } from '@/components/settings/IndustryConfigurationModal';
 import { DemandMasterSettingsModal } from '@/components/settings/DemandMasterSettingsModal';
 import { DemandDataEntryModal } from '@/components/settings/DemandDataEntryModal';
@@ -168,7 +169,7 @@ import {
   Star,
   RefreshCw,
 } from 'lucide-react';
-import { BarChart2, Phone, PhoneCall, Check, Search, X } from 'lucide-react';
+import { BarChart2, Phone, PhoneCall, Check, Search, X, Wand2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -280,6 +281,7 @@ export default function RosterScheduler() {
   const [showBreakScheduling, setShowBreakScheduling] = useState(false);
   const [showSkillMatrix, setShowSkillMatrix] = useState(false);
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
+  const [showAutoScheduler, setShowAutoScheduler] = useState(false);
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
   const [showCallbackLogging, setShowCallbackLogging] = useState(false);
   const [showOnCallOverlay, setShowOnCallOverlay] = useState(false);
@@ -2039,6 +2041,17 @@ export default function RosterScheduler() {
                 Auto-Assign ({emptyShifts.filter(s => s.centreId === selectedCentreId).length})
               </Button>
             )}
+            
+            {/* Auto-Scheduler Button */}
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={() => setShowAutoScheduler(true)}
+              startIcon={<Wand2 size={16} />}
+            >
+              Auto-Schedule
+            </Button>
 
             {/* Dropdown Menus Group */}
             <Stack 
@@ -2947,7 +2960,25 @@ export default function RosterScheduler() {
         onAssign={handleAutoAssign}
       />
 
-      {/* Unified Recurring Shifts Panel */}
+      {/* Auto-Scheduler Panel */}
+      <AutoSchedulerPanel
+        open={showAutoScheduler}
+        onClose={() => setShowAutoScheduler(false)}
+        centreId={selectedCentreId}
+        centre={selectedCentre}
+        staff={allStaff}
+        rooms={selectedCentre.rooms}
+        existingShifts={shifts}
+        demandData={demandAnalytics}
+        shiftTemplates={allShiftTemplates}
+        dates={dates.map(d => typeof d === 'string' ? d : format(d, 'yyyy-MM-dd'))}
+        onApplyShifts={(newShifts) => {
+          const withIds = newShifts.map((s, i) => ({ ...s, id: `auto-sched-${Date.now()}-${i}` }));
+          setShifts(prev => [...prev, ...withIds]);
+        }}
+      />
+
+
       <UnifiedRecurringPanel
         open={showUnifiedRecurring}
         onClose={() => setShowUnifiedRecurring(false)}
