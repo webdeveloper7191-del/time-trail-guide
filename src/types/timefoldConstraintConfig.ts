@@ -348,25 +348,112 @@ export const defaultTimeOff: TimeOffConfig = {
   daysOffPerPeriod: { enabled: true, period: 'WEEK', minDaysOff: 2, satisfiability: 'PREFERRED' },
 };
 
+export const defaultCasualWorkLimits: WorkLimitConfig = {
+  enabled: true,
+  minutesPerPeriod: { enabled: true, period: 'WEEK', minMinutes: 0, maxMinutes: 2280, satisfiability: 'REQUIRED' },
+  minutesRollingWindow: { enabled: false, windowDays: 7, satisfiability: 'PREFERRED' },
+  daysPerPeriod: { enabled: true, period: 'WEEK', minDays: 0, maxDays: 5, satisfiability: 'PREFERRED' },
+  daysRollingWindow: { enabled: false, windowDays: 14, satisfiability: 'PREFERRED' },
+  shiftsPerPeriod: { enabled: false, period: 'WEEK', satisfiability: 'PREFERRED' },
+  weekendLimits: { enabled: false, maxWeekendsPerPeriod: 4, period: 'MONTH', maxConsecutiveWeekends: 4, maxWeekendMinutes: 1920 },
+  consecutiveDaysWorked: { enabled: true, maxConsecutiveDays: 6, satisfiability: 'REQUIRED' },
+};
+
+export const defaultAgencyWorkLimits: WorkLimitConfig = {
+  enabled: true,
+  minutesPerPeriod: { enabled: true, period: 'WEEK', minMinutes: 0, maxMinutes: 2400, satisfiability: 'PREFERRED' },
+  minutesRollingWindow: { enabled: false, windowDays: 7, satisfiability: 'PREFERRED' },
+  daysPerPeriod: { enabled: true, period: 'WEEK', minDays: 0, maxDays: 6, satisfiability: 'PREFERRED' },
+  daysRollingWindow: { enabled: false, windowDays: 14, satisfiability: 'PREFERRED' },
+  shiftsPerPeriod: { enabled: false, period: 'WEEK', satisfiability: 'PREFERRED' },
+  weekendLimits: { enabled: false, maxWeekendsPerPeriod: 4, period: 'MONTH', maxConsecutiveWeekends: 4, maxWeekendMinutes: 1920 },
+  consecutiveDaysWorked: { enabled: true, maxConsecutiveDays: 6, satisfiability: 'PREFERRED' },
+};
+
+export const defaultCasualContract: ContractRule = {
+  id: 'default-casual',
+  name: 'Casual',
+  priority: 'LOW',
+  employmentType: 'casual',
+  workLimits: defaultCasualWorkLimits,
+  timeOffRules: {
+    enabled: true,
+    minTimeBetweenShiftsMinutes: 480, // 8 hours
+    consecutiveDaysOff: { enabled: false, minConsecutiveDaysOff: 1, period: 'WEEK', satisfiability: 'PREFERRED' },
+    daysOffPerPeriod: { enabled: false, period: 'WEEK', minDaysOff: 1, satisfiability: 'PREFERRED' },
+  },
+  shiftPatterns: {
+    enabled: true,
+    minTimeBetweenShiftsMinutes: 480,
+    shiftRotations: { enabled: false, enforceRotationPattern: false },
+    splitShifts: { enabled: true, minGapBetweenPartsMinutes: 60, maxGapBetweenPartsMinutes: 240 },
+    onCallShifts: { enabled: false, countAsWorkedTime: false },
+  },
+};
+
+export const defaultAgencyContract: ContractRule = {
+  id: 'default-agency',
+  name: 'Agency / Third Party',
+  priority: 'LOW',
+  employmentType: 'agency',
+  workLimits: defaultAgencyWorkLimits,
+  timeOffRules: {
+    enabled: true,
+    minTimeBetweenShiftsMinutes: 600, // 10 hours
+    consecutiveDaysOff: { enabled: false, minConsecutiveDaysOff: 1, period: 'WEEK', satisfiability: 'PREFERRED' },
+    daysOffPerPeriod: { enabled: false, period: 'WEEK', minDaysOff: 1, satisfiability: 'PREFERRED' },
+  },
+  shiftPatterns: {
+    enabled: true,
+    minTimeBetweenShiftsMinutes: 600,
+    shiftRotations: { enabled: false, enforceRotationPattern: false },
+    splitShifts: { enabled: false, minGapBetweenPartsMinutes: 60, maxGapBetweenPartsMinutes: 240 },
+    onCallShifts: { enabled: true, countAsWorkedTime: false },
+  },
+};
+
 export const defaultConstraintConfig: TimefoldConstraintConfiguration = {
   employeeConstraints: {
     contracts: {
       enabled: true,
-      contracts: [{
-        id: 'default-ft',
-        name: 'Full Time',
-        priority: 'NORMAL',
-        employmentType: 'full_time',
-        workLimits: defaultWorkLimits,
-        timeOffRules: defaultTimeOff,
-        shiftPatterns: {
-          enabled: true,
-          minTimeBetweenShiftsMinutes: 600,
-          shiftRotations: { enabled: false, enforceRotationPattern: false },
-          splitShifts: { enabled: false, minGapBetweenPartsMinutes: 60, maxGapBetweenPartsMinutes: 240 },
-          onCallShifts: { enabled: false, countAsWorkedTime: false },
+      contracts: [
+        {
+          id: 'default-ft',
+          name: 'Full Time',
+          priority: 'NORMAL',
+          employmentType: 'full_time',
+          workLimits: defaultWorkLimits,
+          timeOffRules: defaultTimeOff,
+          shiftPatterns: {
+            enabled: true,
+            minTimeBetweenShiftsMinutes: 600,
+            shiftRotations: { enabled: false, enforceRotationPattern: false },
+            splitShifts: { enabled: false, minGapBetweenPartsMinutes: 60, maxGapBetweenPartsMinutes: 240 },
+            onCallShifts: { enabled: false, countAsWorkedTime: false },
+          },
         },
-      }],
+        {
+          id: 'default-pt',
+          name: 'Part Time',
+          priority: 'NORMAL',
+          employmentType: 'part_time',
+          workLimits: {
+            ...defaultWorkLimits,
+            minutesPerPeriod: { enabled: true, period: 'WEEK', minMinutes: 0, maxMinutes: 1520, satisfiability: 'REQUIRED' },
+            daysPerPeriod: { enabled: true, period: 'WEEK', minDays: 0, maxDays: 4, satisfiability: 'REQUIRED' },
+          },
+          timeOffRules: defaultTimeOff,
+          shiftPatterns: {
+            enabled: true,
+            minTimeBetweenShiftsMinutes: 600,
+            shiftRotations: { enabled: false, enforceRotationPattern: false },
+            splitShifts: { enabled: false, minGapBetweenPartsMinutes: 60, maxGapBetweenPartsMinutes: 240 },
+            onCallShifts: { enabled: false, countAsWorkedTime: false },
+          },
+        },
+        defaultCasualContract,
+        defaultAgencyContract,
+      ],
     },
     availability: {
       enabled: true,
