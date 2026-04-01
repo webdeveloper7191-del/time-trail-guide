@@ -2971,7 +2971,7 @@ export default function RosterScheduler() {
         existingShifts={shifts}
         demandData={demandAnalytics}
         shiftTemplates={allShiftTemplates}
-        dates={dates}
+        dates={dates.map(d => typeof d === 'string' ? d : format(d, 'yyyy-MM-dd'))}
         onApplyShifts={(newShifts) => {
           const withIds = newShifts.map((s, i) => ({ ...s, id: `auto-sched-${Date.now()}-${i}` }));
           setShifts(prev => [...prev, ...withIds]);
