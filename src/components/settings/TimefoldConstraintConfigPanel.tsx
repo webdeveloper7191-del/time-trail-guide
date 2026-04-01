@@ -4,7 +4,7 @@ import {
   UserCheck, Scale, Layers, ArrowLeftRight, DollarSign,
   TrendingUp, AlertTriangle, Award, ListChecks, UserPlus,
   Save, RotateCcw, ChevronRight, Info, Shield, Settings2,
-  Sparkles, Check,
+  Sparkles, Check, Plus, Trash2, Pencil,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +28,7 @@ import {
   type Satisfiability,
   type Period,
 } from '@/types/timefoldConstraintConfig';
+import type { ContractRule } from '@/types/timefoldConstraintConfig';
 import { industryPresets, IndustryPreset } from '@/types/timefoldConstraintPresets';
 const iconMap: Record<string, React.ElementType> = {
   FileText, CalendarCheck, Star, Users, MapPin, Coffee,
@@ -290,9 +291,47 @@ export function TimefoldConstraintConfigPanel() {
               {ec.contracts.contracts.map((contract, ci) => (
                 <Card key={contract.id} className="bg-muted/30">
                   <CardContent className="p-3 space-y-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline" className="text-xs">{contract.name}</Badge>
-                      <span className="text-[10px] text-muted-foreground">({contract.employmentType})</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={contract.name}
+                          onChange={e => updateEmployee('contracts', p => {
+                            const c = [...p.contracts]; c[ci] = { ...c[ci], name: e.target.value }; return { ...p, contracts: c };
+                          })}
+                          className="h-7 w-40 text-xs font-medium"
+                        />
+                        <Select value={contract.employmentType} onValueChange={v => updateEmployee('contracts', p => {
+                          const c = [...p.contracts]; c[ci] = { ...c[ci], employmentType: v }; return { ...p, contracts: c };
+                        })}>
+                          <SelectTrigger className="h-7 w-32 text-[10px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="full_time" className="text-xs">Full Time</SelectItem>
+                            <SelectItem value="part_time" className="text-xs">Part Time</SelectItem>
+                            <SelectItem value="casual" className="text-xs">Casual</SelectItem>
+                            <SelectItem value="agency" className="text-xs">Agency</SelectItem>
+                            <SelectItem value="contractor" className="text-xs">Contractor</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={contract.priority} onValueChange={v => updateEmployee('contracts', p => {
+                          const c = [...p.contracts]; c[ci] = { ...c[ci], priority: v as any }; return { ...p, contracts: c };
+                        })}>
+                          <SelectTrigger className="h-7 w-28 text-[10px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="CRITICAL" className="text-xs">Critical</SelectItem>
+                            <SelectItem value="HIGH" className="text-xs">High</SelectItem>
+                            <SelectItem value="NORMAL" className="text-xs">Normal</SelectItem>
+                            <SelectItem value="LOW" className="text-xs">Low</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {ec.contracts.contracts.length > 1 && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => updateEmployee('contracts', p => ({
+                            ...p, contracts: p.contracts.filter((_, i) => i !== ci),
+                          }))}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
 
                     {/* Work Limits */}
@@ -390,6 +429,41 @@ export function TimefoldConstraintConfigPanel() {
                   </CardContent>
                 </Card>
               ))}
+              <Button variant="outline" size="sm" className="w-full mt-2 text-xs"
+                onClick={() => updateEmployee('contracts', p => ({
+                  ...p,
+                  contracts: [...p.contracts, {
+                    id: `custom-${Date.now()}`,
+                    name: 'New Contract',
+                    priority: 'NORMAL' as const,
+                    employmentType: 'casual',
+                    workLimits: {
+                      enabled: true,
+                      minutesPerPeriod: { enabled: true, period: 'WEEK' as const, minMinutes: 0, maxMinutes: 2280, satisfiability: 'REQUIRED' as const },
+                      minutesRollingWindow: { enabled: false, windowDays: 7, satisfiability: 'PREFERRED' as const },
+                      daysPerPeriod: { enabled: true, period: 'WEEK' as const, minDays: 0, maxDays: 5, satisfiability: 'PREFERRED' as const },
+                      daysRollingWindow: { enabled: false, windowDays: 14, satisfiability: 'PREFERRED' as const },
+                      shiftsPerPeriod: { enabled: false, period: 'WEEK' as const, satisfiability: 'PREFERRED' as const },
+                      weekendLimits: { enabled: false, maxWeekendsPerPeriod: 4, period: 'MONTH' as const, maxConsecutiveWeekends: 4, maxWeekendMinutes: 1920 },
+                      consecutiveDaysWorked: { enabled: true, maxConsecutiveDays: 6, satisfiability: 'REQUIRED' as const },
+                    },
+                    timeOffRules: {
+                      enabled: true,
+                      minTimeBetweenShiftsMinutes: 600,
+                      consecutiveDaysOff: { enabled: false, minConsecutiveDaysOff: 1, period: 'WEEK' as const, satisfiability: 'PREFERRED' as const },
+                      daysOffPerPeriod: { enabled: false, period: 'WEEK' as const, minDaysOff: 1, satisfiability: 'PREFERRED' as const },
+                    },
+                    shiftPatterns: {
+                      enabled: true,
+                      minTimeBetweenShiftsMinutes: 600,
+                      shiftRotations: { enabled: false, enforceRotationPattern: false },
+                      splitShifts: { enabled: false, minGapBetweenPartsMinutes: 60, maxGapBetweenPartsMinutes: 240 },
+                      onCallShifts: { enabled: false, countAsWorkedTime: false },
+                    },
+                  } satisfies ContractRule],
+                }))}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Contract Type
+              </Button>
             </ConstraintCategory>
 
             {/* --- Availability --- */}
