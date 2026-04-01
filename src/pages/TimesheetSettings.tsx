@@ -1302,7 +1302,28 @@ export default function TimesheetSettings() {
                   </div>
                 </button>
 
-                {/* Solver Integration */}
+                {/* Timefold Constraint Configuration */}
+                <button
+                  onClick={() => setShowConstraintConfig(true)}
+                  className="w-full text-left bg-background border border-border rounded-lg p-5 hover:border-primary/40 hover:shadow-sm transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+                      <Shield className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-sm font-semibold text-foreground">Constraint Configuration</h3>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">Timefold API</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-snug">
+                        Configure employee resource constraints and shift service constraints that map to the Timefold solver API.
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+                  </div>
+                </button>
+
                 <button
                   onClick={() => setShowTimefoldIntegration(true)}
                   className="w-full text-left bg-background border border-border rounded-lg p-5 hover:border-primary/40 hover:shadow-sm transition-all group"
