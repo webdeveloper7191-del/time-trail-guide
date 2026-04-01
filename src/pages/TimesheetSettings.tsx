@@ -271,6 +271,7 @@ export default function TimesheetSettings() {
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
   const [showTimefoldIntegration, setShowTimefoldIntegration] = useState(false);
   const [showIntegrationManager, setShowIntegrationManager] = useState(false);
+  const [showConstraintConfig, setShowConstraintConfig] = useState(false);
   const [timefoldConfig, setTimefoldConfig] = useState<TimefoldSolverConfig>(defaultSolverConfig);
 
   return (
