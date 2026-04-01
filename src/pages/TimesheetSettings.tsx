@@ -1391,6 +1391,17 @@ export default function TimesheetSettings() {
                 open={showIntegrationManager}
                 onClose={() => setShowIntegrationManager(false)}
               />
+              {showConstraintConfig && (
+                <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-start justify-center overflow-y-auto pt-8 pb-8">
+                  <div className="bg-background border border-border rounded-xl shadow-xl w-full max-w-4xl mx-4 p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <div />
+                      <Button variant="ghost" size="sm" onClick={() => setShowConstraintConfig(false)}>✕</Button>
+                    </div>
+                    <TimefoldConstraintConfigPanel />
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
