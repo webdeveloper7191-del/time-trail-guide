@@ -42,6 +42,8 @@ import { DemandMasterSettingsModal } from '@/components/settings/DemandMasterSet
 import { DemandDataEntryModal } from '@/components/settings/DemandDataEntryModal';
 import { detectShiftConflicts } from '@/lib/shiftConflictDetection';
 import { exportToPDF, exportToExcel, exportAllLocationsToPDF, exportAllLocationsToExcel } from '@/lib/rosterExport';
+import { fillOpenShiftsWithStaff, DEFAULT_WEIGHTS } from '@/lib/autoScheduler';
+import { defaultConstraintConfig } from '@/types/timefoldConstraintConfig';
 import { useUndoRedo, HistoryEntry } from '@/hooks/useUndoRedo';
 import { DemandMasterSettings } from '@/types/industryConfig';
 import { useDemand } from '@/contexts/DemandContext';
