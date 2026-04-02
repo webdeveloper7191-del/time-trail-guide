@@ -710,9 +710,6 @@ export default function RosterScheduler() {
     
     // Use setTimeout to keep UI responsive
     setTimeout(() => {
-      
-      const result = fillOpenShiftsWithStaff(
-      
       const result = fillOpenShiftsWithStaff(
         centreOpenShifts,
         allStaff,
