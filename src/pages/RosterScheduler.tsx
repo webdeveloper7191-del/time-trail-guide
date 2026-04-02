@@ -2650,6 +2650,7 @@ export default function RosterScheduler() {
         onRemovePlan={handleRemoveCombiningPlan}
       />
 
+      {selectedShift && (
         <ShiftDetailPanel
           shift={selectedShift}
           staff={allStaff}
