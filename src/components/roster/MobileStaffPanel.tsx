@@ -269,7 +269,7 @@ export function MobileStaffPanel({
               size="default"
             >
               <Sparkles className={cn("h-4 w-4", isGenerating && "animate-spin")} />
-              {isGenerating ? 'Generating...' : 'Generate AI Shifts'}
+              {isGenerating ? 'Filling...' : 'Fill Open Shifts'}
             </Button>
           </SheetHeader>
 
