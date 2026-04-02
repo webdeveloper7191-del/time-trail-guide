@@ -2624,7 +2624,32 @@ export default function RosterScheduler() {
         shiftTemplates={shiftTemplates}
       />
 
-      {selectedShift && (
+      {/* Area Combining Alerts */}
+      {combiningAlerts.length > 0 && selectedCentreId !== 'all' && (
+        <div className="px-4 pb-2">
+          <AreaCombiningAlerts
+            alerts={combiningAlerts}
+            onAccept={handleAcceptCombining}
+            onDismiss={handleDismissCombining}
+            onViewTimeline={() => setShowCombiningTimeline(true)}
+          />
+        </div>
+      )}
+
+      {/* Area Combining Timeline Panel */}
+      <AreaCombiningTimeline
+        open={showCombiningTimeline}
+        onClose={() => setShowCombiningTimeline(false)}
+        rooms={selectedCentre.rooms}
+        demandData={demandData}
+        alerts={combiningAlerts}
+        combiningPlans={combiningPlans}
+        date={format(dates[0] || currentDate, 'yyyy-MM-dd')}
+        centreId={selectedCentreId}
+        onCreatePlan={handleAcceptCombining}
+        onRemovePlan={handleRemoveCombiningPlan}
+      />
+
         <ShiftDetailPanel
           shift={selectedShift}
           staff={allStaff}
