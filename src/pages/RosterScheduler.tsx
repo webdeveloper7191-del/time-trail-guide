@@ -700,29 +700,33 @@ export default function RosterScheduler() {
     toast.success(`Published ${draftShifts.length} shifts`);
   };
 
-  const handleFillOpenShifts = async () => {
+  const [showFillDialog, setShowFillDialog] = useState(false);
+
+  const handleFillOpenShifts = () => {
     if (centreOpenShifts.length === 0) {
       toast.info('No open shifts to fill');
       return;
     }
-    
+    setShowFillDialog(true);
+  };
+
+  const executeFillOpenShifts = (weights: import('@/lib/autoScheduler').SchedulerWeights) => {
+    setShowFillDialog(false);
     setIsGenerating(true);
     toast.info('Finding best staff for open shifts...');
     
-    // Use setTimeout to keep UI responsive
     setTimeout(() => {
       const result = fillOpenShiftsWithStaff(
         centreOpenShifts,
         allStaff,
         shifts,
         defaultConstraintConfig,
-        DEFAULT_WEIGHTS,
+        weights,
       );
       
       if (result.filledShifts.length > 0) {
         setShifts(prev => [...prev, ...result.filledShifts], `Filled ${result.filledShifts.length} open shifts`, 'bulk');
         
-        // Remove filled open shifts
         const filledOsIds = new Set(
           centreOpenShifts
             .filter(os => !result.unfilledOpenShiftIds.includes(os.id))
