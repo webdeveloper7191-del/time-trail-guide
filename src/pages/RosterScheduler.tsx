@@ -79,6 +79,9 @@ import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintP
 import { LogCallbackSheet } from '@/components/roster/LogCallbackSheet';
 import { LogSleepoverSheet } from '@/components/roster/LogSleepoverSheet';
 import { LogSplitShiftSheet } from '@/components/roster/LogSplitShiftSheet';
+import { AreaCombiningAlerts } from '@/components/roster/AreaCombiningAlerts';
+import { AreaCombiningTimeline } from '@/components/roster/AreaCombiningTimeline';
+import { analyzeAreaCombining, CombineAlert, CombiningPlan, getDefaultCombiningThresholds } from '@/lib/areaCombiningEngine';
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
