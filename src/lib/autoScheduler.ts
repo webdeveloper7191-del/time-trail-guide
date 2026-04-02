@@ -638,3 +638,108 @@ export function convertToRosterShifts(
     notes: `Auto-generated from demand (${slot.demandSource})`,
   }));
 }
+
+// ============= FILL OPEN SHIFTS (ONE-CLICK) =============
+
+export interface FillOpenShiftsResult {
+  filledShifts: Shift[];
+  unfilledOpenShiftIds: string[];
+  summary: {
+    total: number;
+    filled: number;
+    unfilled: number;
+    averageScore: number;
+  };
+}
+
+/**
+ * One-click "Fill Open Shifts" action.
+ * Takes existing open shifts, scores all available staff using the same
+ * greedy heuristic engine, and returns new Shift objects assigned to best staff.
+ */
+export function fillOpenShiftsWithStaff(
+  openShifts: import('@/types/roster').OpenShift[],
+  staff: StaffMember[],
+  existingShifts: Shift[],
+  constraints: TimefoldConstraintConfiguration,
+  weights: SchedulerWeights = DEFAULT_WEIGHTS,
+): FillOpenShiftsResult {
+  const filledShifts: Shift[] = [];
+  const unfilledOpenShiftIds: string[] = [];
+  const scores: number[] = [];
+
+  // Sort open shifts by urgency (critical first)
+  const urgencyOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+  const sorted = [...openShifts].sort((a, b) => urgencyOrder[a.urgency] - urgencyOrder[b.urgency]);
+
+  // Track assignments as GeneratedShiftSlots for the scorer
+  const assignedSlots: GeneratedShiftSlot[] = [];
+
+  sorted.forEach((os) => {
+    const count = os.requiredEmployeeCount || 1;
+
+    for (let i = 0; i < count; i++) {
+      // Build a temporary GeneratedShiftSlot so we can reuse scoreStaffForShift
+      const tempSlot: GeneratedShiftSlot = {
+        id: `fill-${os.id}-${i}`,
+        centreId: os.centreId,
+        roomId: os.roomId,
+        roomName: '',
+        date: os.date,
+        startTime: os.startTime,
+        endTime: os.endTime,
+        breakMinutes: os.breakMinutes || 30,
+        requiredCount: 1,
+        demandSource: 'manual',
+        priority: os.urgency === 'critical' ? 'critical' : os.urgency === 'high' ? 'high' : 'normal',
+      };
+
+      // Score all eligible staff
+      const candidates = staff
+        .map(s => scoreStaffForShift(s, tempSlot, existingShifts, assignedSlots, staff, weights, constraints))
+        .filter(c => c.isEligible)
+        .sort((a, b) => b.totalScore - a.totalScore);
+
+      if (candidates.length > 0) {
+        const best = candidates[0];
+        
+        // Track assignment for future scoring
+        tempSlot.assignedStaffId = best.staffId;
+        tempSlot.assignedStaffName = best.staffName;
+        assignedSlots.push(tempSlot);
+
+        filledShifts.push({
+          id: `shift-fill-${Date.now()}-${os.id}-${i}`,
+          staffId: best.staffId,
+          centreId: os.centreId,
+          roomId: os.roomId,
+          date: os.date,
+          startTime: os.startTime,
+          endTime: os.endTime,
+          breakMinutes: os.breakMinutes || 30,
+          status: 'draft',
+          isOpenShift: false,
+          isAIGenerated: true,
+          aiGeneratedAt: new Date().toISOString(),
+          notes: `Auto-filled from open shift (score: ${best.totalScore})`,
+          shiftType: os.shiftType,
+          templateId: os.templateId,
+        });
+        scores.push(best.totalScore);
+      } else {
+        unfilledOpenShiftIds.push(os.id);
+      }
+    }
+  });
+
+  return {
+    filledShifts,
+    unfilledOpenShiftIds,
+    summary: {
+      total: sorted.length,
+      filled: filledShifts.length,
+      unfilled: unfilledOpenShiftIds.length,
+      averageScore: scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
+    },
+  };
+}
