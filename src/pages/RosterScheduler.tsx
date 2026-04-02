@@ -710,8 +710,8 @@ export default function RosterScheduler() {
     
     // Use setTimeout to keep UI responsive
     setTimeout(() => {
-      const { fillOpenShiftsWithStaff, DEFAULT_WEIGHTS } = require('@/lib/autoScheduler');
-      const { defaultConstraintConfig } = require('@/types/timefoldConstraintConfig');
+      
+      const result = fillOpenShiftsWithStaff(
       
       const result = fillOpenShiftsWithStaff(
         centreOpenShifts,
