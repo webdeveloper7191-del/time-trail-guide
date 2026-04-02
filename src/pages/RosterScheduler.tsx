@@ -2523,7 +2523,7 @@ export default function RosterScheduler() {
             selectedCentreId={selectedCentreId}
             centres={mockCentres}
             onDragStart={handleDragStart}
-            onGenerateAI={handleGenerateAIShifts}
+            onGenerateAI={handleFillOpenShifts}
             isGenerating={isGenerating}
             isCollapsed={isStaffPanelCollapsed}
             onToggleCollapse={() => setIsStaffPanelCollapsed(prev => !prev)}
