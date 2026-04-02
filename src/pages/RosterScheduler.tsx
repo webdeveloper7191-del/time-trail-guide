@@ -499,6 +499,72 @@ export default function RosterScheduler() {
   const criticalFlags = centreFlags.filter(f => f.severity === 'critical');
   const centreOpenShifts = openShifts.filter(os => os.centreId === selectedCentreId);
 
+  // Area combining analysis - runs whenever date/centre/demand changes
+  const analyzedCombiningAlerts = useMemo(() => {
+    if (!selectedCentre || !demandData.length) return [];
+    const dateStr = format(dates[0] || currentDate, 'yyyy-MM-dd');
+    return analyzeAreaCombining({
+      centreId: selectedCentreId,
+      date: dateStr,
+      demandData,
+      rooms: selectedCentre.rooms,
+      thresholds: combiningThresholds,
+    });
+  }, [selectedCentreId, selectedCentre, demandData, dates, currentDate, combiningThresholds]);
+
+  // Sync analyzed alerts with stateful alerts (preserve accept/dismiss status)
+  useMemo(() => {
+    setCombiningAlerts(prev => {
+      const statusMap = new Map(prev.map(a => [a.id, a.status]));
+      return analyzedCombiningAlerts.map(a => ({
+        ...a,
+        status: statusMap.get(a.id) || 'pending',
+      }));
+    });
+  }, [analyzedCombiningAlerts]);
+
+  const handleAcceptCombining = useCallback((alertId: string) => {
+    const alert = combiningAlerts.find(a => a.id === alertId);
+    if (!alert) return;
+    
+    setCombiningAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'accepted' } : a));
+    
+    const plan: CombiningPlan = {
+      id: `plan-${Date.now()}`,
+      date: alert.date,
+      centreId: alert.centreId,
+      timeBlock: alert.timeBlock,
+      status: 'active',
+      sourceRoomIds: alert.sourceRooms.map(r => r.roomId),
+      targetRoomId: alert.targetRoom?.roomId || alert.sourceRooms[0].roomId,
+      staffReassignments: [],
+      createdAt: new Date().toISOString(),
+    };
+    setCombiningPlans(prev => [...prev, plan]);
+    toast.success(`Rooms combined for ${alert.timeBlock.label} — ${alert.staffSaved} staff saved`);
+  }, [combiningAlerts]);
+
+  const handleDismissCombining = useCallback((alertId: string) => {
+    setCombiningAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'dismissed' } : a));
+    toast.info('Combining suggestion dismissed');
+  }, []);
+
+  const handleRemoveCombiningPlan = useCallback((planId: string) => {
+    const plan = combiningPlans.find(p => p.id === planId);
+    setCombiningPlans(prev => prev.filter(p => p.id !== planId));
+    if (plan) {
+      // Re-enable the corresponding alert
+      const alertId = combiningAlerts.find(
+        a => a.timeBlock.id === plan.timeBlock.id && 
+        a.sourceRooms.some(r => plan.sourceRoomIds.includes(r.roomId))
+      )?.id;
+      if (alertId) {
+        setCombiningAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'pending' } : a));
+      }
+    }
+    toast.info('Combining plan removed');
+  }, [combiningPlans, combiningAlerts]);
+
   const leaveRequests = useMemo(() => {
     const requests: (TimeOff & { staffName: string; requestedDate: string })[] = [];
     allStaff.forEach(staff => {
