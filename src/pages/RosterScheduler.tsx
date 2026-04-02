@@ -2990,6 +2990,13 @@ export default function RosterScheduler() {
         }}
       />
 
+      {/* Fill Open Shifts Confirmation Dialog */}
+      <FillOpenShiftsDialog
+        open={showFillDialog}
+        onClose={() => setShowFillDialog(false)}
+        onConfirm={executeFillOpenShifts}
+        openShifts={centreOpenShifts}
+      />
 
       <UnifiedRecurringPanel
         open={showUnifiedRecurring}
