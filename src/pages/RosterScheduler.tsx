@@ -383,6 +383,12 @@ export default function RosterScheduler() {
     toast.success(`Split shift event ${newStatus}`);
   }, []);
   
+  // Area Combining state
+  const [showCombiningTimeline, setShowCombiningTimeline] = useState(false);
+  const [combiningAlerts, setCombiningAlerts] = useState<CombineAlert[]>([]);
+  const [combiningPlans, setCombiningPlans] = useState<CombiningPlan[]>([]);
+  const [combiningThresholds] = useState(getDefaultCombiningThresholds());
+
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
   
