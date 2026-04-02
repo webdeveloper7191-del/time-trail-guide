@@ -1592,7 +1592,7 @@ export default function RosterScheduler() {
         shifts={shifts}
         selectedCentreId={selectedCentreId}
         onDragStart={handleDragStart}
-        onGenerateAI={handleGenerateAIShifts}
+        onGenerateAI={handleFillOpenShifts}
         isGenerating={isGenerating}
       />
 
