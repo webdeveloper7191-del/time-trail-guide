@@ -697,40 +697,48 @@ export default function RosterScheduler() {
     toast.success(`Published ${draftShifts.length} shifts`);
   };
 
-  const handleGenerateAIShifts = async () => {
-    setIsGenerating(true);
-    toast.info('AI is generating optimized shifts...');
+  const handleFillOpenShifts = async () => {
+    if (centreOpenShifts.length === 0) {
+      toast.info('No open shifts to fill');
+      return;
+    }
     
+    setIsGenerating(true);
+    toast.info('Finding best staff for open shifts...');
+    
+    // Use setTimeout to keep UI responsive
     setTimeout(() => {
-      const newShifts: Shift[] = [];
-      const availableStaff = allStaff.filter(s => 
-        s.currentWeeklyHours < s.maxHoursPerWeek &&
-        (s.preferredCentres.includes(selectedCentreId) || s.preferredCentres.length === 0)
+      const { fillOpenShiftsWithStaff, DEFAULT_WEIGHTS } = require('@/lib/autoScheduler');
+      const { defaultConstraintConfig } = require('@/types/timefoldConstraintConfig');
+      
+      const result = fillOpenShiftsWithStaff(
+        centreOpenShifts,
+        allStaff,
+        shifts,
+        defaultConstraintConfig,
+        DEFAULT_WEIGHTS,
       );
-
-      centreOpenShifts.forEach((openShift, idx) => {
-        const staff = availableStaff[idx % availableStaff.length];
-        if (staff) {
-          newShifts.push({
-            id: `shift-ai-${Date.now()}-${idx}`,
-            staffId: staff.id,
-            centreId: openShift.centreId,
-            roomId: openShift.roomId,
-            date: openShift.date,
-            startTime: openShift.startTime,
-            endTime: openShift.endTime,
-            breakMinutes: 30,
-            status: 'draft',
-            isOpenShift: false,
-          });
-        }
-      });
-
-      setShifts(prev => [...prev, ...newShifts], `Generated ${newShifts.length} AI shifts`, 'bulk');
-      setOpenShifts(prev => prev.filter(os => os.centreId !== selectedCentreId));
+      
+      if (result.filledShifts.length > 0) {
+        setShifts(prev => [...prev, ...result.filledShifts], `Filled ${result.filledShifts.length} open shifts`, 'bulk');
+        
+        // Remove filled open shifts
+        const filledOsIds = new Set(
+          centreOpenShifts
+            .filter(os => !result.unfilledOpenShiftIds.includes(os.id))
+            .map(os => os.id)
+        );
+        setOpenShifts(prev => prev.filter(os => !filledOsIds.has(os.id)));
+      }
+      
       setIsGenerating(false);
-      toast.success(`Generated ${newShifts.length} AI-optimized shifts`);
-    }, 2000);
+      
+      if (result.summary.unfilled > 0) {
+        toast.warning(`Filled ${result.summary.filled} shifts (${result.summary.unfilled} unfilled — no eligible staff). Avg score: ${result.summary.averageScore}`);
+      } else {
+        toast.success(`Filled all ${result.summary.filled} open shifts! Avg match score: ${result.summary.averageScore}`);
+      }
+    }, 500);
   };
 
   const handleCopyWeek = () => {
