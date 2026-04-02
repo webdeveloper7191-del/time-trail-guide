@@ -2646,7 +2646,7 @@ export default function RosterScheduler() {
         combiningPlans={combiningPlans}
         date={format(dates[0] || currentDate, 'yyyy-MM-dd')}
         centreId={selectedCentreId}
-        onCreatePlan={handleAcceptCombining}
+        onCreatePlan={(alert) => handleAcceptCombining(alert.id)}
         onRemovePlan={handleRemoveCombiningPlan}
       />
 
