@@ -81,7 +81,9 @@ import { LogSleepoverSheet } from '@/components/roster/LogSleepoverSheet';
 import { LogSplitShiftSheet } from '@/components/roster/LogSplitShiftSheet';
 import { AreaCombiningAlerts } from '@/components/roster/AreaCombiningAlerts';
 import { AreaCombiningTimeline } from '@/components/roster/AreaCombiningTimeline';
+import { StaffReassignmentPanel } from '@/components/roster/StaffReassignmentPanel';
 import { analyzeAreaCombining, CombineAlert, CombiningPlan, getDefaultCombiningThresholds } from '@/lib/areaCombiningEngine';
+import { generateReassignmentPlan, ReassignmentPlan } from '@/lib/staffReassignment';
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
