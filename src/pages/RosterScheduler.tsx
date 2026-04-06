@@ -390,7 +390,8 @@ export default function RosterScheduler() {
   const [combiningAlerts, setCombiningAlerts] = useState<CombineAlert[]>([]);
   const [combiningPlans, setCombiningPlans] = useState<CombiningPlan[]>([]);
   const [combiningThresholds] = useState(getDefaultCombiningThresholds());
-
+  const [showReassignmentPanel, setShowReassignmentPanel] = useState(false);
+  const [activeReassignmentPlan, setActiveReassignmentPlan] = useState<ReassignmentPlan | null>(null);
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
   
