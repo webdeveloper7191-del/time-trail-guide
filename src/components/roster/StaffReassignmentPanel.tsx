@@ -48,9 +48,8 @@ const roleLabels: Record<string, string> = {
 };
 
 export function StaffReassignmentPanel({ open, onClose, plan, onConfirm }: StaffReassignmentPanelProps) {
-  if (!plan) return null;
-
   const groupedByAction = useMemo(() => {
+    if (!plan) return { keep: [], move: [], release: [] };
     const groups: Record<ReassignmentAction, StaffReassignment[]> = { keep: [], move: [], release: [] };
     plan.reassignments.forEach(r => groups[r.action].push(r));
     return groups;

@@ -75,7 +75,7 @@ function scoreStaffForRoom(
   if (staff.role === 'lead_educator') { roleScore = 100; reasons.push('Lead educator — ideal for combined room'); }
   else if (staff.role === 'educator') { roleScore = 80; reasons.push('Qualified educator'); }
   else if (staff.role === 'assistant') { roleScore = 60; }
-  else if (staff.role === 'casual') { roleScore = 40; reasons.push('Casual — candidate for release'); }
+  else { roleScore = 40; reasons.push('Lower priority — candidate for release'); }
 
   // 4. Cost efficiency (15% weight) — lower cost = higher score for keeping
   const maxRate = 60;
