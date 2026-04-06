@@ -516,7 +516,7 @@ export default function RosterScheduler() {
   }, [selectedCentreId, selectedCentre, demandData, dates, currentDate, combiningThresholds]);
 
   // Sync analyzed alerts with stateful alerts (preserve accept/dismiss status)
-  useMemo(() => {
+  useEffect(() => {
     setCombiningAlerts(prev => {
       const statusMap = new Map(prev.map(a => [a.id, a.status]));
       return analyzedCombiningAlerts.map(a => ({
