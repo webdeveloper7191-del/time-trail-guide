@@ -639,7 +639,7 @@ export const generateMockDemandData = (): DemandData[] => {
       centre.rooms.forEach(room => {
         timeSlots.forEach((timeSlot, idx) => {
           // Early morning and late afternoon have much lower attendance to trigger area combining
-          const attendanceModifier = idx === 0 ? 0.35 : idx === 3 ? 0.4 : 1;
+          const attendanceModifier = idx === 0 ? 0.25 : idx === 3 ? 0.3 : 1;
           const baseBookings = Math.floor(room.capacity * 0.7 * attendanceModifier);
           const variance = Math.floor(Math.random() * 3) - 1;
           const bookedChildren = Math.max(0, Math.min(room.capacity, baseBookings + variance));
