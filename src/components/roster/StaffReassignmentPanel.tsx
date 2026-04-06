@@ -55,6 +55,8 @@ export function StaffReassignmentPanel({ open, onClose, plan, onConfirm }: Staff
     return groups;
   }, [plan]);
 
+  if (!plan) return null;
+
   return (
     <PrimaryOffCanvas open={open} onClose={onClose} title="Staff Reassignment Plan" size="lg">
       <div className="space-y-5 p-1">
