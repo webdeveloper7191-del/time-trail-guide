@@ -81,7 +81,9 @@ import { LogSleepoverSheet } from '@/components/roster/LogSleepoverSheet';
 import { LogSplitShiftSheet } from '@/components/roster/LogSplitShiftSheet';
 import { AreaCombiningAlerts } from '@/components/roster/AreaCombiningAlerts';
 import { AreaCombiningTimeline } from '@/components/roster/AreaCombiningTimeline';
+import { StaffReassignmentPanel } from '@/components/roster/StaffReassignmentPanel';
 import { analyzeAreaCombining, CombineAlert, CombiningPlan, getDefaultCombiningThresholds } from '@/lib/areaCombiningEngine';
+import { generateReassignmentPlan, ReassignmentPlan } from '@/lib/staffReassignment';
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
@@ -388,7 +390,8 @@ export default function RosterScheduler() {
   const [combiningAlerts, setCombiningAlerts] = useState<CombineAlert[]>([]);
   const [combiningPlans, setCombiningPlans] = useState<CombiningPlan[]>([]);
   const [combiningThresholds] = useState(getDefaultCombiningThresholds());
-
+  const [showReassignmentPanel, setShowReassignmentPanel] = useState(false);
+  const [activeReassignmentPlan, setActiveReassignmentPlan] = useState<ReassignmentPlan | null>(null);
   // Timefold Solver state
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
   
@@ -513,7 +516,7 @@ export default function RosterScheduler() {
   }, [selectedCentreId, selectedCentre, demandData, dates, currentDate, combiningThresholds]);
 
   // Sync analyzed alerts with stateful alerts (preserve accept/dismiss status)
-  useMemo(() => {
+  useEffect(() => {
     setCombiningAlerts(prev => {
       const statusMap = new Map(prev.map(a => [a.id, a.status]));
       return analyzedCombiningAlerts.map(a => ({
@@ -541,8 +544,16 @@ export default function RosterScheduler() {
       createdAt: new Date().toISOString(),
     };
     setCombiningPlans(prev => [...prev, plan]);
+    
+    // Generate reassignment suggestions
+    const reassignment = generateReassignmentPlan(
+      alert, plan, shifts, allStaff, selectedCentre.rooms
+    );
+    setActiveReassignmentPlan(reassignment);
+    setShowReassignmentPanel(true);
+    
     toast.success(`Rooms combined for ${alert.timeBlock.label} — ${alert.staffSaved} staff saved`);
-  }, [combiningAlerts]);
+  }, [combiningAlerts, shifts, allStaff, selectedCentre]);
 
   const handleDismissCombining = useCallback((alertId: string) => {
     setCombiningAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'dismissed' } : a));
@@ -2648,6 +2659,17 @@ export default function RosterScheduler() {
         centreId={selectedCentreId}
         onCreatePlan={(alert) => handleAcceptCombining(alert.id)}
         onRemovePlan={handleRemoveCombiningPlan}
+      />
+
+      {/* Staff Reassignment Panel */}
+      <StaffReassignmentPanel
+        open={showReassignmentPanel}
+        onClose={() => setShowReassignmentPanel(false)}
+        plan={activeReassignmentPlan}
+        onConfirm={(plan) => {
+          toast.success(`Staff reassignment confirmed for ${plan.timeBlockLabel}`);
+          setShowReassignmentPanel(false);
+        }}
       />
 
       {selectedShift && (
