@@ -2661,6 +2661,17 @@ export default function RosterScheduler() {
         onRemovePlan={handleRemoveCombiningPlan}
       />
 
+      {/* Staff Reassignment Panel */}
+      <StaffReassignmentPanel
+        open={showReassignmentPanel}
+        onClose={() => setShowReassignmentPanel(false)}
+        plan={activeReassignmentPlan}
+        onConfirm={(plan) => {
+          toast.success(`Staff reassignment confirmed for ${plan.timeBlockLabel}`);
+          setShowReassignmentPanel(false);
+        }}
+      />
+
       {selectedShift && (
         <ShiftDetailPanel
           shift={selectedShift}
