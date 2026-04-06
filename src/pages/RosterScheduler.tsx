@@ -544,8 +544,16 @@ export default function RosterScheduler() {
       createdAt: new Date().toISOString(),
     };
     setCombiningPlans(prev => [...prev, plan]);
+    
+    // Generate reassignment suggestions
+    const reassignment = generateReassignmentPlan(
+      alert, plan, shifts, allStaff, selectedCentre.rooms
+    );
+    setActiveReassignmentPlan(reassignment);
+    setShowReassignmentPanel(true);
+    
     toast.success(`Rooms combined for ${alert.timeBlock.label} — ${alert.staffSaved} staff saved`);
-  }, [combiningAlerts]);
+  }, [combiningAlerts, shifts, allStaff, selectedCentre]);
 
   const handleDismissCombining = useCallback((alertId: string) => {
     setCombiningAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'dismissed' } : a));
