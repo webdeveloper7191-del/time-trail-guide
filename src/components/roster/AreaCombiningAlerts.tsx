@@ -55,6 +55,7 @@ export function AreaCombiningAlerts({
   onAccept,
   onDismiss,
   onViewTimeline,
+  onOpenPlanner,
   className,
 }: AreaCombiningAlertsProps) {
   const [expanded, setExpanded] = useState(true);
