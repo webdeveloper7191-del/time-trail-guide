@@ -81,8 +81,9 @@ import { LogSleepoverSheet } from '@/components/roster/LogSleepoverSheet';
 import { LogSplitShiftSheet } from '@/components/roster/LogSplitShiftSheet';
 import { AreaCombiningAlerts } from '@/components/roster/AreaCombiningAlerts';
 import { AreaCombiningTimeline } from '@/components/roster/AreaCombiningTimeline';
+import { RoomCombiningPlanner, MergeGroup } from '@/components/roster/RoomCombiningPlanner';
 import { StaffReassignmentPanel } from '@/components/roster/StaffReassignmentPanel';
-import { analyzeAreaCombining, CombineAlert, CombiningPlan, getDefaultCombiningThresholds } from '@/lib/areaCombiningEngine';
+import { analyzeAreaCombining, CombineAlert, CombiningPlan, getDefaultCombiningThresholds, DEFAULT_TIME_BLOCKS } from '@/lib/areaCombiningEngine';
 import { generateReassignmentPlan, ReassignmentPlan } from '@/lib/staffReassignment';
 import { 
   TimefoldSolverConfig, 
@@ -387,6 +388,7 @@ export default function RosterScheduler() {
   
   // Area Combining state
   const [showCombiningTimeline, setShowCombiningTimeline] = useState(false);
+  const [showCombiningPlanner, setShowCombiningPlanner] = useState(false);
   const [combiningAlerts, setCombiningAlerts] = useState<CombineAlert[]>([]);
   const [combiningPlans, setCombiningPlans] = useState<CombiningPlan[]>([]);
   const [combiningThresholds] = useState(getDefaultCombiningThresholds());
@@ -2643,6 +2645,7 @@ export default function RosterScheduler() {
             onAccept={handleAcceptCombining}
             onDismiss={handleDismissCombining}
             onViewTimeline={() => setShowCombiningTimeline(true)}
+            onOpenPlanner={() => setShowCombiningPlanner(true)}
           />
         </div>
       )}
@@ -2659,6 +2662,38 @@ export default function RosterScheduler() {
         centreId={selectedCentreId}
         onCreatePlan={(alert) => handleAcceptCombining(alert.id)}
         onRemovePlan={handleRemoveCombiningPlan}
+      />
+
+      {/* Visual Room Combining Planner */}
+      <RoomCombiningPlanner
+        open={showCombiningPlanner}
+        onClose={() => setShowCombiningPlanner(false)}
+        rooms={selectedCentre.rooms}
+        demandData={demandData}
+        alerts={combiningAlerts}
+        combiningPlans={combiningPlans}
+        date={format(dates[0] || currentDate, 'yyyy-MM-dd')}
+        centreId={selectedCentreId}
+        onCreatePlan={(alert) => handleAcceptCombining(alert.id)}
+        onRemovePlan={handleRemoveCombiningPlan}
+        onSavePlans={(groups: MergeGroup[]) => {
+          // Convert merge groups to combining plans
+          const newPlans: CombiningPlan[] = groups.map(g => {
+            const block = DEFAULT_TIME_BLOCKS.find(b => b.id === g.timeBlockId) || DEFAULT_TIME_BLOCKS[0];
+            return {
+              id: g.id,
+              date: format(dates[0] || currentDate, 'yyyy-MM-dd'),
+              centreId: selectedCentreId,
+              timeBlock: block,
+              status: 'active' as const,
+              sourceRoomIds: g.roomIds,
+              targetRoomId: g.targetRoomId,
+              staffReassignments: [],
+              createdAt: new Date().toISOString(),
+            };
+          });
+          setCombiningPlans(newPlans);
+        }}
       />
 
       {/* Staff Reassignment Panel */}

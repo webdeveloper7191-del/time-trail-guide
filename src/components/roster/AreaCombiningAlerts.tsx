@@ -15,6 +15,7 @@ interface AreaCombiningAlertsProps {
   onAccept: (alertId: string) => void;
   onDismiss: (alertId: string) => void;
   onViewTimeline: () => void;
+  onOpenPlanner?: () => void;
   className?: string;
 }
 
@@ -54,6 +55,7 @@ export function AreaCombiningAlerts({
   onAccept,
   onDismiss,
   onViewTimeline,
+  onOpenPlanner,
   className,
 }: AreaCombiningAlertsProps) {
   const [expanded, setExpanded] = useState(true);
@@ -108,6 +110,17 @@ export function AreaCombiningAlerts({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {onOpenPlanner && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={(e) => { e.stopPropagation(); onOpenPlanner(); }}
+            >
+              <Combine className="h-3 w-3 mr-1" />
+              Planner
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
