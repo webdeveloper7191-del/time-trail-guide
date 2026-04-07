@@ -2663,6 +2663,38 @@ export default function RosterScheduler() {
         onRemovePlan={handleRemoveCombiningPlan}
       />
 
+      {/* Visual Room Combining Planner */}
+      <RoomCombiningPlanner
+        open={showCombiningPlanner}
+        onClose={() => setShowCombiningPlanner(false)}
+        rooms={selectedCentre.rooms}
+        demandData={demandData}
+        alerts={combiningAlerts}
+        combiningPlans={combiningPlans}
+        date={format(dates[0] || currentDate, 'yyyy-MM-dd')}
+        centreId={selectedCentreId}
+        onCreatePlan={(alert) => handleAcceptCombining(alert.id)}
+        onRemovePlan={handleRemoveCombiningPlan}
+        onSavePlans={(groups: MergeGroup[]) => {
+          // Convert merge groups to combining plans
+          const newPlans: CombiningPlan[] = groups.map(g => {
+            const block = DEFAULT_TIME_BLOCKS.find(b => b.id === g.timeBlockId) || DEFAULT_TIME_BLOCKS[0];
+            return {
+              id: g.id,
+              date: format(dates[0] || currentDate, 'yyyy-MM-dd'),
+              centreId: selectedCentreId,
+              timeBlock: block,
+              status: 'active' as const,
+              sourceRoomIds: g.roomIds,
+              targetRoomId: g.targetRoomId,
+              staffReassignments: [],
+              createdAt: new Date().toISOString(),
+            };
+          });
+          setCombiningPlans(newPlans);
+        }}
+      />
+
       {/* Staff Reassignment Panel */}
       <StaffReassignmentPanel
         open={showReassignmentPanel}
