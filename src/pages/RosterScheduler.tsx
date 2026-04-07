@@ -388,6 +388,7 @@ export default function RosterScheduler() {
   
   // Area Combining state
   const [showCombiningTimeline, setShowCombiningTimeline] = useState(false);
+  const [showCombiningPlanner, setShowCombiningPlanner] = useState(false);
   const [combiningAlerts, setCombiningAlerts] = useState<CombineAlert[]>([]);
   const [combiningPlans, setCombiningPlans] = useState<CombiningPlan[]>([]);
   const [combiningThresholds] = useState(getDefaultCombiningThresholds());
