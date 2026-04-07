@@ -2645,6 +2645,7 @@ export default function RosterScheduler() {
             onAccept={handleAcceptCombining}
             onDismiss={handleDismissCombining}
             onViewTimeline={() => setShowCombiningTimeline(true)}
+            onOpenPlanner={() => setShowCombiningPlanner(true)}
           />
         </div>
       )}
