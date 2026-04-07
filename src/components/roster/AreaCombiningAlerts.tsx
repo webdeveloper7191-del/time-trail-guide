@@ -15,6 +15,7 @@ interface AreaCombiningAlertsProps {
   onAccept: (alertId: string) => void;
   onDismiss: (alertId: string) => void;
   onViewTimeline: () => void;
+  onOpenPlanner?: () => void;
   className?: string;
 }
 
