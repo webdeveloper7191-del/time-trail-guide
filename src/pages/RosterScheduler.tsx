@@ -83,7 +83,7 @@ import { AreaCombiningAlerts } from '@/components/roster/AreaCombiningAlerts';
 import { AreaCombiningTimeline } from '@/components/roster/AreaCombiningTimeline';
 import { RoomCombiningPlanner, MergeGroup } from '@/components/roster/RoomCombiningPlanner';
 import { StaffReassignmentPanel } from '@/components/roster/StaffReassignmentPanel';
-import { analyzeAreaCombining, CombineAlert, CombiningPlan, getDefaultCombiningThresholds } from '@/lib/areaCombiningEngine';
+import { analyzeAreaCombining, CombineAlert, CombiningPlan, getDefaultCombiningThresholds, DEFAULT_TIME_BLOCKS } from '@/lib/areaCombiningEngine';
 import { generateReassignmentPlan, ReassignmentPlan } from '@/lib/staffReassignment';
 import { 
   TimefoldSolverConfig, 
