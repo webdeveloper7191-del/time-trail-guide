@@ -164,7 +164,7 @@ export function CostSavingsDashboard({ open, onClose }: CostSavingsDashboardProp
       open={open}
       onClose={onClose}
       title="Cost Savings Dashboard"
-      subtitle="Estimated savings from area combining optimizations"
+      description="Estimated savings from area combining optimizations"
       width="55rem"
     >
       <div className="space-y-4 p-1">
