@@ -60,7 +60,7 @@ export function AreaCombiningAlerts({
   onViewSavings,
   className,
 }: AreaCombiningAlertsProps) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [showDismissed, setShowDismissed] = useState(false);
 
   const pendingAlerts = useMemo(() => 
