@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Combine, AlertTriangle, ChevronDown, ChevronUp, Check, X, 
-  Users, Clock, TrendingDown, ArrowRight, Sparkles, Eye, EyeOff
+  Users, Clock, TrendingDown, ArrowRight, Sparkles, Eye, EyeOff, DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
