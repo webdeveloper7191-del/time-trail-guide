@@ -83,8 +83,9 @@ import { AreaCombiningAlerts } from '@/components/roster/AreaCombiningAlerts';
 import { AreaCombiningTimeline } from '@/components/roster/AreaCombiningTimeline';
 import { RoomCombiningPlanner, MergeGroup } from '@/components/roster/RoomCombiningPlanner';
 import { StaffReassignmentPanel } from '@/components/roster/StaffReassignmentPanel';
-import { analyzeAreaCombining, CombineAlert, CombiningPlan, getDefaultCombiningThresholds, getIndustryOptimizationDefaults, DEFAULT_TIME_BLOCKS } from '@/lib/areaCombiningEngine';
+import { analyzeAreaCombining, CombineAlert, CombiningPlan, DEFAULT_TIME_BLOCKS } from '@/lib/areaCombiningEngine';
 import { generateReassignmentPlan, ReassignmentPlan } from '@/lib/staffReassignment';
+import { getThresholdsForCentre, getOptimizationForCentre } from '@/data/locationCentreMapping';
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
@@ -391,13 +392,14 @@ export default function RosterScheduler() {
   const [showCombiningPlanner, setShowCombiningPlanner] = useState(false);
   const [combiningAlerts, setCombiningAlerts] = useState<CombineAlert[]>([]);
   const [combiningPlans, setCombiningPlans] = useState<CombiningPlan[]>([]);
-  // Load industry-specific thresholds (simulating reading from location settings)
-  const [combiningThresholds] = useState(() => {
-    // In production, this would come from the location's stored OperationalOptimization config
-    // For now, use industry defaults for the selected centre's industry type (childcare)
-    const defaults = getIndustryOptimizationDefaults('childcare');
-    return defaults.thresholds;
-  });
+  // Read combining thresholds from location settings via centre mapping
+  const combiningThresholds = useMemo(() => {
+    return getThresholdsForCentre(selectedCentreId);
+  }, [selectedCentreId]);
+  
+  const locationOptimization = useMemo(() => {
+    return getOptimizationForCentre(selectedCentreId);
+  }, [selectedCentreId]);
   const [showReassignmentPanel, setShowReassignmentPanel] = useState(false);
   const [activeReassignmentPlan, setActiveReassignmentPlan] = useState<ReassignmentPlan | null>(null);
   // Timefold Solver state
