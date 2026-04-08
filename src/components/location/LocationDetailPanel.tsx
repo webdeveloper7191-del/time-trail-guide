@@ -10,11 +10,11 @@ import { toast } from 'sonner';
  import { cn } from '@/lib/utils';
  import { locationSchema, validateForm, getFieldError, ValidationError } from '@/lib/validation/locationValidation';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { Location, Area, Department, LOCATION_STATUS_LABELS, AUSTRALIAN_STATES, AUSTRALIAN_TIMEZONES, StaffingRatio, QualificationRequirement, AreaCombiningThreshold } from '@/types/location';
+import { Location, Area, Department, LOCATION_STATUS_LABELS, AUSTRALIAN_STATES, AUSTRALIAN_TIMEZONES, StaffingRatio, QualificationRequirement, AreaCombiningThreshold, OperationalOptimization } from '@/types/location';
 import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
 import StaffingRatioEditor from './StaffingRatioEditor';
 import QualificationRequirementEditor from './QualificationRequirementEditor';
-import AreaCombiningEditor from './AreaCombiningEditor';
+import OperationalOptimizationEditor from './OperationalOptimizationEditor';
 
 interface LocationDetailPanelProps {
   open: boolean;
@@ -67,6 +67,7 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
   const [underRoofRatios, setUnderRoofRatios] = useState<StaffingRatio[]>([]);
   const [locationQualifications, setLocationQualifications] = useState<QualificationRequirement[]>([]);
   const [areaCombiningThresholds, setAreaCombiningThresholds] = useState<AreaCombiningThreshold[]>([]);
+  const [operationalOptimization, setOperationalOptimization] = useState<OperationalOptimization | undefined>(undefined);
 
    // Reset form when location changes or panel opens
    useEffect(() => {
@@ -437,11 +438,13 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
             />
           </div>
 
-          {/* Area Combining Thresholds */}
+          {/* Operational Optimization (Area Combining + Industry-specific) */}
           <div className="bg-card border border-border rounded-lg p-4">
-            <AreaCombiningEditor
+            <OperationalOptimizationEditor
+              optimization={operationalOptimization}
               thresholds={areaCombiningThresholds}
-              onUpdate={setAreaCombiningThresholds}
+              onUpdateThresholds={setAreaCombiningThresholds}
+              onUpdateOptimization={setOperationalOptimization}
               isEditing={isEditing}
               industryType={formData.industryType as any}
             />

@@ -273,10 +273,52 @@ export interface AreaCombiningThreshold {
   promptMessage?: string; // Custom message to show roster manager
 }
 
+// Industry-specific operational optimization settings
+export type OptimizationType = 
+  | 'area_combining'      // Childcare: combine rooms when attendance drops
+  | 'ward_consolidation'  // Healthcare: consolidate wards during low census
+  | 'zone_merging'        // Retail: merge zones during off-peak hours
+  | 'section_combining'   // Hospitality: combine sections during slow periods
+  | 'line_consolidation'  // Manufacturing: consolidate production lines
+  | 'queue_merging'       // Call Center: merge skill queues during low volume
+  | 'stage_combining';    // Events: merge service areas during events
+
+export interface OperationalOptimization {
+  id: string;
+  type: OptimizationType;
+  name: string;
+  description: string;
+  isEnabled: boolean;
+  
+  // Combining thresholds
+  thresholds: AreaCombiningThreshold[];
+  
+  // Time blocks when optimization is most relevant
+  peakOptimizationWindows?: {
+    label: string;
+    startTime: string;
+    endTime: string;
+    isActive: boolean;
+  }[];
+  
+  // Cost settings
+  enableCostTracking?: boolean;
+  estimatedSavingsPerCombine?: number; // dollars saved per combine event
+  
+  // Notification settings
+  notifyManagers?: boolean;
+  notifyStaff?: boolean;
+  autoApply?: boolean; // Auto-apply combining without manager approval
+  
+  // Industry-specific metadata
+  industryContext?: string;
+}
+
 export interface LocationComplianceConfig {
   underRoofRatios: UnderRoofRatio[];
   areaCombiningThresholds: AreaCombiningThreshold[];
   locationQualifications: QualificationRequirement[];
+  operationalOptimizations?: OperationalOptimization[];
 }
 
 // ============= Constants =============

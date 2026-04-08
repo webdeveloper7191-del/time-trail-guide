@@ -299,3 +299,266 @@ export function getDefaultCombiningThresholds(): AreaCombiningThreshold[] {
     },
   ];
 }
+
+// Industry-specific default optimization configurations
+export function getIndustryOptimizationDefaults(industryType: string): {
+  thresholds: AreaCombiningThreshold[];
+  optimizationWindows: { label: string; startTime: string; endTime: string; isActive: boolean }[];
+  context: string;
+} {
+  switch (industryType) {
+    case 'childcare':
+      return {
+        thresholds: [
+          {
+            id: 'cc-low-attendance',
+            name: 'Low Room Attendance',
+            description: 'Combine rooms when attendance drops below 50% — common in early morning and late afternoon',
+            triggerType: 'attendance_percentage',
+            triggerValue: 50,
+            combineOnlyWithSameCategory: true,
+            isActive: true,
+            promptMessage: 'Consider combining rooms to maintain ratios and reduce staff costs.',
+          },
+          {
+            id: 'cc-very-low',
+            name: 'Very Low Numbers',
+            description: 'Urgent: fewer than 4 children in a room',
+            triggerType: 'absolute_count',
+            triggerValue: 4,
+            combineOnlyWithSameCategory: false,
+            isActive: true,
+            promptMessage: 'Room has very few children — combine immediately to save staffing costs.',
+          },
+          {
+            id: 'cc-staff-inefficiency',
+            name: 'Staff Ratio Inefficiency',
+            description: 'When staff utilization is below 40% of capacity',
+            triggerType: 'staff_ratio',
+            triggerValue: 40,
+            combineOnlyWithSameCategory: true,
+            isActive: true,
+            promptMessage: 'Staff underutilized — consider combining rooms or releasing staff.',
+          },
+        ],
+        optimizationWindows: [
+          { label: 'Early Drop-off', startTime: '06:00', endTime: '08:30', isActive: true },
+          { label: 'Late Pick-up', startTime: '15:30', endTime: '18:30', isActive: true },
+          { label: 'After Lunch Rest', startTime: '12:30', endTime: '14:00', isActive: false },
+        ],
+        context: 'Childcare centres experience low attendance during early morning drop-off and late afternoon pick-up. Combining rooms during these windows maintains NQF ratio compliance while reducing educator requirements.',
+      };
+
+    case 'healthcare':
+      return {
+        thresholds: [
+          {
+            id: 'hc-low-census',
+            name: 'Low Census Ward',
+            description: 'Consolidate wards when patient count drops below 40% bed occupancy',
+            triggerType: 'attendance_percentage',
+            triggerValue: 40,
+            combineOnlyWithSameCategory: true,
+            isActive: true,
+            promptMessage: 'Ward census is low — consider consolidating patients to free up nursing staff.',
+          },
+          {
+            id: 'hc-critical-low',
+            name: 'Critical Low Census',
+            description: 'Ward has fewer than 3 patients',
+            triggerType: 'absolute_count',
+            triggerValue: 3,
+            combineOnlyWithSameCategory: false,
+            isActive: true,
+            promptMessage: 'Critical low census — consolidate ward immediately and float nurses to high-acuity areas.',
+          },
+          {
+            id: 'hc-nurse-ratio',
+            name: 'Nurse Float Trigger',
+            description: 'When nurse-to-patient ratio efficiency drops below 50%',
+            triggerType: 'staff_ratio',
+            triggerValue: 50,
+            combineOnlyWithSameCategory: true,
+            isActive: true,
+            promptMessage: 'Nursing staff underutilized — float excess nurses to short-staffed wards.',
+          },
+        ],
+        optimizationWindows: [
+          { label: 'Night Shift (Low Census)', startTime: '22:00', endTime: '06:00', isActive: true },
+          { label: 'Weekend Reduced', startTime: '06:00', endTime: '18:00', isActive: true },
+          { label: 'Post-Discharge Window', startTime: '10:00', endTime: '14:00', isActive: false },
+        ],
+        context: 'Hospitals experience census fluctuations overnight and on weekends. Ward consolidation during low-census periods allows nurse floating to high-acuity areas while maintaining AHPRA staffing standards.',
+      };
+
+    case 'retail':
+      return {
+        thresholds: [
+          {
+            id: 'rt-low-traffic',
+            name: 'Low Foot Traffic',
+            description: 'Merge zones when customer count drops below 30% of peak capacity',
+            triggerType: 'attendance_percentage',
+            triggerValue: 30,
+            combineOnlyWithSameCategory: false,
+            isActive: true,
+            promptMessage: 'Low customer traffic — consider merging zones and reassigning floor staff.',
+          },
+          {
+            id: 'rt-register-consolidation',
+            name: 'Register Consolidation',
+            description: 'Close registers when fewer than 5 customers in checkout queue zone',
+            triggerType: 'absolute_count',
+            triggerValue: 5,
+            combineOnlyWithSameCategory: false,
+            isActive: true,
+            promptMessage: 'Low checkout traffic — consolidate registers and move staff to restocking.',
+          },
+        ],
+        optimizationWindows: [
+          { label: 'Morning Opening', startTime: '09:00', endTime: '11:00', isActive: true },
+          { label: 'Mid-Afternoon Lull', startTime: '14:00', endTime: '16:00', isActive: true },
+          { label: 'Evening Wind-down', startTime: '19:00', endTime: '21:00', isActive: true },
+        ],
+        context: 'Retail stores see traffic patterns with distinct peaks (lunch, after work) and lulls. Zone merging during quiet periods lets you reassign floor staff to restocking, online order fulfillment, or customer service.',
+      };
+
+    case 'hospitality':
+      return {
+        thresholds: [
+          {
+            id: 'hs-section-low',
+            name: 'Low Section Covers',
+            description: 'Combine sections when seated covers drop below 40% of section capacity',
+            triggerType: 'attendance_percentage',
+            triggerValue: 40,
+            combineOnlyWithSameCategory: true,
+            isActive: true,
+            promptMessage: 'Section has low covers — combine with adjacent section to reduce floor staff.',
+          },
+          {
+            id: 'hs-very-low-covers',
+            name: 'Very Low Covers',
+            description: 'Fewer than 6 covers in a section',
+            triggerType: 'absolute_count',
+            triggerValue: 6,
+            combineOnlyWithSameCategory: false,
+            isActive: true,
+            promptMessage: 'Very few seated covers — merge sections immediately.',
+          },
+        ],
+        optimizationWindows: [
+          { label: 'Between Lunch & Dinner', startTime: '14:30', endTime: '17:30', isActive: true },
+          { label: 'Late Evening', startTime: '21:00', endTime: '23:00', isActive: true },
+          { label: 'Early Opening', startTime: '06:00', endTime: '08:00', isActive: false },
+        ],
+        context: 'Restaurants and hotels experience distinct service peaks. Between lunch and dinner service, sections can be combined to reduce floor staff. Kitchen stations can also be consolidated during quiet periods.',
+      };
+
+    case 'call_center':
+      return {
+        thresholds: [
+          {
+            id: 'cc-queue-low',
+            name: 'Low Queue Volume',
+            description: 'Merge skill queues when call volume drops below 30% of agent capacity',
+            triggerType: 'attendance_percentage',
+            triggerValue: 30,
+            combineOnlyWithSameCategory: false,
+            isActive: true,
+            promptMessage: 'Queue volume is low — consider merging skill groups or releasing agents.',
+          },
+          {
+            id: 'cc-idle-agents',
+            name: 'Idle Agent Threshold',
+            description: 'When agent utilization drops below 40%',
+            triggerType: 'staff_ratio',
+            triggerValue: 40,
+            combineOnlyWithSameCategory: false,
+            isActive: true,
+            promptMessage: 'Agents underutilized — merge queues or schedule training/breaks.',
+          },
+        ],
+        optimizationWindows: [
+          { label: 'Early Morning', startTime: '06:00', endTime: '09:00', isActive: true },
+          { label: 'Late Night', startTime: '21:00', endTime: '06:00', isActive: true },
+          { label: 'Weekend Off-Peak', startTime: '12:00', endTime: '18:00', isActive: false },
+        ],
+        context: 'Call centres experience volume fluctuations throughout the day. During low-volume periods, skill queues can be merged so fewer agents handle multiple skill groups, with excess agents released or assigned to training.',
+      };
+
+    case 'manufacturing':
+      return {
+        thresholds: [
+          {
+            id: 'mf-line-low',
+            name: 'Low Line Output',
+            description: 'Consolidate lines when production output drops below 50% capacity',
+            triggerType: 'attendance_percentage',
+            triggerValue: 50,
+            combineOnlyWithSameCategory: true,
+            isActive: true,
+            promptMessage: 'Production line underperforming — consider consolidating to fewer lines.',
+          },
+          {
+            id: 'mf-staff-excess',
+            name: 'Excess Line Staff',
+            description: 'When line staffing exceeds 150% of required for current output',
+            triggerType: 'staff_ratio',
+            triggerValue: 60,
+            combineOnlyWithSameCategory: true,
+            isActive: true,
+            promptMessage: 'Line is overstaffed for current output — redistribute workers or consolidate.',
+          },
+        ],
+        optimizationWindows: [
+          { label: 'Shift Changeover', startTime: '06:00', endTime: '07:00', isActive: true },
+          { label: 'Maintenance Window', startTime: '14:00', endTime: '15:00', isActive: false },
+          { label: 'Night Reduced', startTime: '22:00', endTime: '06:00', isActive: true },
+        ],
+        context: 'Manufacturing facilities can consolidate production lines during low-demand periods or maintenance windows, redistributing operators to active lines or cross-training tasks.',
+      };
+
+    case 'events':
+      return {
+        thresholds: [
+          {
+            id: 'ev-area-low',
+            name: 'Low Area Attendance',
+            description: 'Merge service areas when guest count drops below 35% of area capacity',
+            triggerType: 'attendance_percentage',
+            triggerValue: 35,
+            combineOnlyWithSameCategory: false,
+            isActive: true,
+            promptMessage: 'Guest area is under-attended — merge with adjacent area to reduce staff.',
+          },
+          {
+            id: 'ev-staff-ratio',
+            name: 'Staff Over-allocation',
+            description: 'When staff-to-guest ratio is underutilized below 40%',
+            triggerType: 'staff_ratio',
+            triggerValue: 40,
+            combineOnlyWithSameCategory: false,
+            isActive: true,
+            promptMessage: 'Staff over-allocated for current guest count — release or reassign.',
+          },
+        ],
+        optimizationWindows: [
+          { label: 'Pre-Event Setup', startTime: '06:00', endTime: '10:00', isActive: false },
+          { label: 'Between Sessions', startTime: '12:00', endTime: '13:00', isActive: true },
+          { label: 'Post-Event Wind-down', startTime: '22:00', endTime: '02:00', isActive: true },
+        ],
+        context: 'Events have distinct phases (setup, peak, wind-down). During gaps between sessions or post-event, service areas can be merged to reduce active staff while maintaining guest experience quality.',
+      };
+
+    default:
+      return {
+        thresholds: getDefaultCombiningThresholds(),
+        optimizationWindows: [
+          { label: 'Morning', startTime: '06:00', endTime: '09:00', isActive: true },
+          { label: 'Afternoon', startTime: '15:00', endTime: '18:00', isActive: true },
+        ],
+        context: 'Configure area combining thresholds based on your operational patterns.',
+      };
+  }
+}
