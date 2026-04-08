@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Combine, AlertTriangle, ChevronDown, ChevronUp, Check, X, 
-  Users, Clock, TrendingDown, ArrowRight, Sparkles, Eye, EyeOff
+  Users, Clock, TrendingDown, ArrowRight, Sparkles, Eye, EyeOff, DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ interface AreaCombiningAlertsProps {
   onDismiss: (alertId: string) => void;
   onViewTimeline: () => void;
   onOpenPlanner?: () => void;
+  onViewSavings?: () => void;
   className?: string;
 }
 
@@ -56,6 +57,7 @@ export function AreaCombiningAlerts({
   onDismiss,
   onViewTimeline,
   onOpenPlanner,
+  onViewSavings,
   className,
 }: AreaCombiningAlertsProps) {
   const [expanded, setExpanded] = useState(true);
@@ -110,6 +112,17 @@ export function AreaCombiningAlerts({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {onViewSavings && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={(e) => { e.stopPropagation(); onViewSavings(); }}
+            >
+              <DollarSign className="h-3 w-3 mr-1" />
+              Savings
+            </Button>
+          )}
           {onOpenPlanner && (
             <Button
               variant="outline"

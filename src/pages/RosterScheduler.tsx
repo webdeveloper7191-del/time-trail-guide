@@ -86,6 +86,7 @@ import { StaffReassignmentPanel } from '@/components/roster/StaffReassignmentPan
 import { analyzeAreaCombining, CombineAlert, CombiningPlan, DEFAULT_TIME_BLOCKS } from '@/lib/areaCombiningEngine';
 import { generateReassignmentPlan, ReassignmentPlan } from '@/lib/staffReassignment';
 import { getThresholdsForCentre, getOptimizationForCentre } from '@/data/locationCentreMapping';
+import { CostSavingsDashboard } from '@/components/roster/CostSavingsDashboard';
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
@@ -300,6 +301,7 @@ export default function RosterScheduler() {
   const [showNotificationTemplates, setShowNotificationTemplates] = useState(false);
   const [showAgencyPreferences, setShowAgencyPreferences] = useState(false);
   const [showAgencyDashboard, setShowAgencyDashboard] = useState(false);
+  const [showCostSavings, setShowCostSavings] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [placementToRate, setPlacementToRate] = useState<{
     id: string;
@@ -2654,6 +2656,7 @@ export default function RosterScheduler() {
             onDismiss={handleDismissCombining}
             onViewTimeline={() => setShowCombiningTimeline(true)}
             onOpenPlanner={() => setShowCombiningPlanner(true)}
+            onViewSavings={() => setShowCostSavings(true)}
           />
         </div>
       )}
@@ -3363,6 +3366,12 @@ export default function RosterScheduler() {
         open={showAgencyDashboard}
         onClose={() => setShowAgencyDashboard(false)}
         centreId={selectedCentreId}
+      />
+
+      {/* Cost Savings Dashboard */}
+      <CostSavingsDashboard
+        open={showCostSavings}
+        onClose={() => setShowCostSavings(false)}
       />
 
       {/* Post-Placement Rating Modal */}
