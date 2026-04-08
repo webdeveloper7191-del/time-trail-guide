@@ -86,6 +86,7 @@ import { StaffReassignmentPanel } from '@/components/roster/StaffReassignmentPan
 import { analyzeAreaCombining, CombineAlert, CombiningPlan, DEFAULT_TIME_BLOCKS } from '@/lib/areaCombiningEngine';
 import { generateReassignmentPlan, ReassignmentPlan } from '@/lib/staffReassignment';
 import { getThresholdsForCentre, getOptimizationForCentre } from '@/data/locationCentreMapping';
+import { CostSavingsDashboard } from '@/components/roster/CostSavingsDashboard';
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
