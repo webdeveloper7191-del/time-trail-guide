@@ -301,6 +301,7 @@ export default function RosterScheduler() {
   const [showNotificationTemplates, setShowNotificationTemplates] = useState(false);
   const [showAgencyPreferences, setShowAgencyPreferences] = useState(false);
   const [showAgencyDashboard, setShowAgencyDashboard] = useState(false);
+  const [showCostSavings, setShowCostSavings] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [placementToRate, setPlacementToRate] = useState<{
     id: string;
