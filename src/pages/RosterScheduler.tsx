@@ -2656,6 +2656,7 @@ export default function RosterScheduler() {
             onDismiss={handleDismissCombining}
             onViewTimeline={() => setShowCombiningTimeline(true)}
             onOpenPlanner={() => setShowCombiningPlanner(true)}
+            onViewSavings={() => setShowCostSavings(true)}
           />
         </div>
       )}
@@ -3365,6 +3366,12 @@ export default function RosterScheduler() {
         open={showAgencyDashboard}
         onClose={() => setShowAgencyDashboard(false)}
         centreId={selectedCentreId}
+      />
+
+      {/* Cost Savings Dashboard */}
+      <CostSavingsDashboard
+        open={showCostSavings}
+        onClose={() => setShowCostSavings(false)}
       />
 
       {/* Post-Placement Rating Modal */}
