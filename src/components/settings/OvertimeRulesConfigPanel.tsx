@@ -949,6 +949,33 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
                       step={0.5}
                     />
                   </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <Label className="text-sm font-medium">Daily OT Hour Cap</Label>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Max OT hours/day:</span>
+                      <span className="font-medium">{formData.maxDailyOTHours ?? 'No cap'} hours</span>
+                    </div>
+                    <Slider
+                      value={[formData.maxDailyOTHours ?? MAX_DAILY_OT_HOURS]}
+                      onValueChange={([v]) => setFormData(prev => ({ ...prev, maxDailyOTHours: v }))}
+                      min={1}
+                      max={MAX_DAILY_OT_HOURS}
+                      step={0.5}
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>1 hour</span>
+                      <span>{MAX_DAILY_OT_HOURS} hours (max)</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      OT hours beyond this cap will be flagged for compliance review
+                    </p>
+                  </div>
                 </div>
               )}
 
