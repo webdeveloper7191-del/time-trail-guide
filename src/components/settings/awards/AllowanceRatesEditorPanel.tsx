@@ -562,13 +562,13 @@ export function AllowanceRatesEditorPanel() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Category</Label>
+                  <Label>Allowance Type *</Label>
                   <Select 
                     value={newAllowance.category} 
                     onValueChange={(v) => setNewAllowance(prev => ({ ...prev, category: v as AllowanceCategoryType }))}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select allowance type" />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
@@ -584,15 +584,18 @@ export function AllowanceRatesEditorPanel() {
                       })}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    The type of allowance determines trigger rules
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Payment Type</Label>
+                  <Label>Pay Rate Type *</Label>
                   <Select 
                     value={newAllowance.type} 
                     onValueChange={(v) => setNewAllowance(prev => ({ ...prev, type: v as CustomAllowance['type'] }))}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select pay rate type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="per_hour">Per Hour</SelectItem>
@@ -603,6 +606,9 @@ export function AllowanceRatesEditorPanel() {
                       <SelectItem value="one_off">One-Off</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    How the allowance amount is calculated
+                  </p>
                 </div>
               </div>
 
