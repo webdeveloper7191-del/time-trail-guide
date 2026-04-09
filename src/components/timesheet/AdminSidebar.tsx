@@ -29,6 +29,7 @@ const navItems = [
   { icon: Target, label: 'Performance', to: '/performance' },
   { icon: Sparkles, label: 'Recognition', to: '/recognition' },
   { icon: Briefcase, label: 'Recruitment', to: '/recruitment' },
+  { icon: UserCircle, label: 'Employee Portal', to: '/employee-portal' },
   { icon: Settings, label: 'Settings', to: '/settings' },
 ];
 
