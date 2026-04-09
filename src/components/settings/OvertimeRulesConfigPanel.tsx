@@ -1107,9 +1107,14 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
 
               {/* Multipliers */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  <Label className="text-base font-medium">Rate Multipliers</Label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <Label className="text-base font-medium">Rate Multipliers</Label>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    Max: {(formData.category === 'penalty' || formData.category === 'special') ? MAX_PENALTY_MULTIPLIER : MAX_OT_MULTIPLIER}x
+                  </Badge>
                 </div>
 
                 <div className="space-y-3">
@@ -1121,12 +1126,12 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
                     value={[formData.overtimeMultiplier * 100]}
                     onValueChange={([v]) => setFormData(prev => ({ ...prev, overtimeMultiplier: v / 100 }))}
                     min={100}
-                    max={300}
+                    max={((formData.category === 'penalty' || formData.category === 'special') ? MAX_PENALTY_MULTIPLIER : MAX_OT_MULTIPLIER) * 100}
                     step={5}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>1x (100%)</span>
-                    <span>3x (300%)</span>
+                    <span>{(formData.category === 'penalty' || formData.category === 'special') ? MAX_PENALTY_MULTIPLIER : MAX_OT_MULTIPLIER}x (cap)</span>
                   </div>
                 </div>
 
