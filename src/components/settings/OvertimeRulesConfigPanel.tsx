@@ -25,6 +25,12 @@ import {
 } from '@/lib/unifiedOvertimeCalculator';
 
 // Overtime rule type definition
+// Maximum caps for validation
+const MAX_OT_MULTIPLIER = 3.0;
+const MAX_PENALTY_MULTIPLIER = 3.5;
+const MAX_DAILY_OT_HOURS = 16;
+const MAX_WEEKLY_OT_HOURS = 60;
+
 export interface OvertimeRuleConfig {
   id: string;
   name: string;
@@ -36,6 +42,10 @@ export interface OvertimeRuleConfig {
   // Thresholds
   dailyThreshold?: number;
   weeklyThreshold?: number;
+  
+  // Caps
+  maxDailyOTHours?: number;
+  maxWeeklyOTHours?: number;
   
   // Multipliers (as decimals, e.g., 1.5 for time-and-a-half)
   overtimeMultiplier: number;
@@ -193,6 +203,8 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
     applicableDays: [] as string[],
     timeRangeStart: '',
     timeRangeEnd: '',
+    maxDailyOTHours: 4 as number | undefined,
+    maxWeeklyOTHours: 20 as number | undefined,
   });
 
   const resetForm = () => {
@@ -209,6 +221,8 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
       applicableDays: [],
       timeRangeStart: '',
       timeRangeEnd: '',
+      maxDailyOTHours: 4,
+      maxWeeklyOTHours: 20,
     });
     setEditingRule(null);
   };
@@ -229,6 +243,8 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
         applicableDays: rule.applicableDays || [],
         timeRangeStart: rule.timeRange?.start || '',
         timeRangeEnd: rule.timeRange?.end || '',
+        maxDailyOTHours: rule.maxDailyOTHours || 4,
+        maxWeeklyOTHours: rule.maxWeeklyOTHours || 20,
       });
     } else {
       resetForm();
@@ -244,6 +260,17 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
   const handleSave = () => {
     if (!formData.name) {
       toast.error('Please enter a rule name');
+      return;
+    }
+
+    // Validate multiplier caps
+    if (formData.overtimeMultiplier > MAX_OT_MULTIPLIER) {
+      toast.error(`OT multiplier cannot exceed ${MAX_OT_MULTIPLIER}x`);
+      return;
+    }
+    if ((formData.category === 'penalty' || formData.category === 'special') && 
+        formData.overtimeMultiplier > MAX_PENALTY_MULTIPLIER) {
+      toast.error(`Penalty multiplier cannot exceed ${MAX_PENALTY_MULTIPLIER}x`);
       return;
     }
 
@@ -265,6 +292,8 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
       timeRange: formData.timeRangeStart && formData.timeRangeEnd 
         ? { start: formData.timeRangeStart, end: formData.timeRangeEnd } 
         : undefined,
+      maxDailyOTHours: formData.category === 'daily' ? formData.maxDailyOTHours : undefined,
+      maxWeeklyOTHours: formData.category === 'weekly' ? formData.maxWeeklyOTHours : undefined,
       createdAt: editingRule?.createdAt || now,
       updatedAt: now,
     };
@@ -920,6 +949,33 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
                       step={0.5}
                     />
                   </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <Label className="text-sm font-medium">Daily OT Hour Cap</Label>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Max OT hours/day:</span>
+                      <span className="font-medium">{formData.maxDailyOTHours ?? 'No cap'} hours</span>
+                    </div>
+                    <Slider
+                      value={[formData.maxDailyOTHours ?? MAX_DAILY_OT_HOURS]}
+                      onValueChange={([v]) => setFormData(prev => ({ ...prev, maxDailyOTHours: v }))}
+                      min={1}
+                      max={MAX_DAILY_OT_HOURS}
+                      step={0.5}
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>1 hour</span>
+                      <span>{MAX_DAILY_OT_HOURS} hours (max)</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      OT hours beyond this cap will be flagged for compliance review
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -954,6 +1010,33 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
                         Australian NES standard is 38 hours per week for full-time employees.
                       </p>
                     </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <Label className="text-sm font-medium">Weekly OT Hour Cap</Label>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Max OT hours/week:</span>
+                      <span className="font-medium">{formData.maxWeeklyOTHours ?? 'No cap'} hours</span>
+                    </div>
+                    <Slider
+                      value={[formData.maxWeeklyOTHours ?? MAX_WEEKLY_OT_HOURS]}
+                      onValueChange={([v]) => setFormData(prev => ({ ...prev, maxWeeklyOTHours: v }))}
+                      min={2}
+                      max={MAX_WEEKLY_OT_HOURS}
+                      step={1}
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>2 hours</span>
+                      <span>{MAX_WEEKLY_OT_HOURS} hours (max)</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      OT hours beyond this cap will be flagged for compliance review
+                    </p>
                   </div>
                 </div>
               )}
@@ -1024,9 +1107,14 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
 
               {/* Multipliers */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  <Label className="text-base font-medium">Rate Multipliers</Label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <Label className="text-base font-medium">Rate Multipliers</Label>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    Max: {(formData.category === 'penalty' || formData.category === 'special') ? MAX_PENALTY_MULTIPLIER : MAX_OT_MULTIPLIER}x
+                  </Badge>
                 </div>
 
                 <div className="space-y-3">
@@ -1038,12 +1126,12 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
                     value={[formData.overtimeMultiplier * 100]}
                     onValueChange={([v]) => setFormData(prev => ({ ...prev, overtimeMultiplier: v / 100 }))}
                     min={100}
-                    max={300}
+                    max={((formData.category === 'penalty' || formData.category === 'special') ? MAX_PENALTY_MULTIPLIER : MAX_OT_MULTIPLIER) * 100}
                     step={5}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>1x (100%)</span>
-                    <span>3x (300%)</span>
+                    <span>{(formData.category === 'penalty' || formData.category === 'special') ? MAX_PENALTY_MULTIPLIER : MAX_OT_MULTIPLIER}x (cap)</span>
                   </div>
                 </div>
 
@@ -1113,10 +1201,26 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
                     </>
                   )}
                   {(formData.category === 'penalty' || formData.category === 'special') && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Rate adjustment:</span>
-                      <span className="text-primary">+{formData.penaltyLoading}% loading</span>
-                    </div>
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Base multiplier:</span>
+                        <span className="text-amber-600">{formData.overtimeMultiplier}x</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Penalty loading:</span>
+                        <span className="text-primary">+{formData.penaltyLoading}%</span>
+                      </div>
+                      <Separator className="my-1" />
+                      <div className="flex justify-between font-medium">
+                        <span className="text-muted-foreground">Effective rate:</span>
+                        <span className="text-primary">
+                          {(formData.overtimeMultiplier * (1 + formData.penaltyLoading / 100)).toFixed(2)}x
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Formula: {formData.overtimeMultiplier}x × (1 + {formData.penaltyLoading}%) = {(formData.overtimeMultiplier * (1 + formData.penaltyLoading / 100)).toFixed(2)}x
+                      </p>
+                    </>
                   )}
                 </div>
               </div>
