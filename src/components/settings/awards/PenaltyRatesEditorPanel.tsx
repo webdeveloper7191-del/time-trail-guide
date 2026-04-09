@@ -357,6 +357,43 @@ export function PenaltyRatesEditorPanel() {
               </Select>
             </div>
 
+            {/* Existing Penalty Rule Selector (for overrides) */}
+            {newRate.awardId && !editingRate && (() => {
+              const existingRulesForAward = penaltyRates.filter(
+                r => r.awardId === newRate.awardId && r.type === newRate.type && !r.isCustom
+              );
+              return existingRulesForAward.length > 0 ? (
+                <div className="space-y-2">
+                  <Label>Override Existing Rule</Label>
+                  <Select
+                    onValueChange={(v) => {
+                      const rule = penaltyRates.find(r => r.id === v);
+                      if (rule) {
+                        setNewRate(prev => ({
+                          ...prev,
+                          customPercentage: rule.basePercentage.toString(),
+                        }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a rule to override (optional)" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      {existingRulesForAward.map(rule => (
+                        <SelectItem key={rule.id} value={rule.id}>
+                          {penaltyTypeConfig[rule.type].label} — {rule.basePercentage}% (Award Default)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Select an existing rule to create a custom override for it
+                  </p>
+                </div>
+              ) : null;
+            })()}
+
             {newRate.awardId && (
               <div className="p-4 rounded-lg bg-muted/50">
                 <div className="flex items-center justify-between text-sm">
@@ -379,6 +416,13 @@ export function PenaltyRatesEditorPanel() {
                   value={newRate.customPercentage}
                   onChange={(e) => setNewRate(prev => ({ ...prev, customPercentage: e.target.value }))}
                 />
+                {newRate.customPercentage && newRate.awardId && (
+                  <p className="text-xs text-muted-foreground">
+                    {parseFloat(newRate.customPercentage) > 350 && (
+                      <span className="text-destructive font-medium">⚠ Rate exceeds 350% cap — please verify</span>
+                    )}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Effective From</Label>
