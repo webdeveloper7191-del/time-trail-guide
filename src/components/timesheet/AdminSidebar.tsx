@@ -13,6 +13,7 @@ import {
   Briefcase,
   ClipboardList,
   MapPin,
+  UserCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ const navItems = [
   { icon: Target, label: 'Performance', to: '/performance' },
   { icon: Sparkles, label: 'Recognition', to: '/recognition' },
   { icon: Briefcase, label: 'Recruitment', to: '/recruitment' },
+  { icon: UserCircle, label: 'Employee Portal', to: '/employee-portal' },
   { icon: Settings, label: 'Settings', to: '/settings' },
 ];
 
