@@ -25,6 +25,12 @@ import {
 } from '@/lib/unifiedOvertimeCalculator';
 
 // Overtime rule type definition
+// Maximum caps for validation
+const MAX_OT_MULTIPLIER = 3.0;
+const MAX_PENALTY_MULTIPLIER = 3.5;
+const MAX_DAILY_OT_HOURS = 16;
+const MAX_WEEKLY_OT_HOURS = 60;
+
 export interface OvertimeRuleConfig {
   id: string;
   name: string;
@@ -36,6 +42,10 @@ export interface OvertimeRuleConfig {
   // Thresholds
   dailyThreshold?: number;
   weeklyThreshold?: number;
+  
+  // Caps
+  maxDailyOTHours?: number;
+  maxWeeklyOTHours?: number;
   
   // Multipliers (as decimals, e.g., 1.5 for time-and-a-half)
   overtimeMultiplier: number;
@@ -193,6 +203,8 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
     applicableDays: [] as string[],
     timeRangeStart: '',
     timeRangeEnd: '',
+    maxDailyOTHours: 4 as number | undefined,
+    maxWeeklyOTHours: 20 as number | undefined,
   });
 
   const resetForm = () => {
@@ -209,6 +221,8 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
       applicableDays: [],
       timeRangeStart: '',
       timeRangeEnd: '',
+      maxDailyOTHours: 4,
+      maxWeeklyOTHours: 20,
     });
     setEditingRule(null);
   };
@@ -1113,10 +1127,26 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
                     </>
                   )}
                   {(formData.category === 'penalty' || formData.category === 'special') && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Rate adjustment:</span>
-                      <span className="text-primary">+{formData.penaltyLoading}% loading</span>
-                    </div>
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Base multiplier:</span>
+                        <span className="text-amber-600">{formData.overtimeMultiplier}x</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Penalty loading:</span>
+                        <span className="text-primary">+{formData.penaltyLoading}%</span>
+                      </div>
+                      <Separator className="my-1" />
+                      <div className="flex justify-between font-medium">
+                        <span className="text-muted-foreground">Effective rate:</span>
+                        <span className="text-primary">
+                          {(formData.overtimeMultiplier * (1 + formData.penaltyLoading / 100)).toFixed(2)}x
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Formula: {formData.overtimeMultiplier}x × (1 + {formData.penaltyLoading}%) = {(formData.overtimeMultiplier * (1 + formData.penaltyLoading / 100)).toFixed(2)}x
+                      </p>
+                    </>
                   )}
                 </div>
               </div>
