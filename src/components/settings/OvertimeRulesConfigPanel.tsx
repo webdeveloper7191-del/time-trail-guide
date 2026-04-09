@@ -243,6 +243,8 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
         applicableDays: rule.applicableDays || [],
         timeRangeStart: rule.timeRange?.start || '',
         timeRangeEnd: rule.timeRange?.end || '',
+        maxDailyOTHours: rule.maxDailyOTHours || 4,
+        maxWeeklyOTHours: rule.maxWeeklyOTHours || 20,
       });
     } else {
       resetForm();
@@ -258,6 +260,17 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
   const handleSave = () => {
     if (!formData.name) {
       toast.error('Please enter a rule name');
+      return;
+    }
+
+    // Validate multiplier caps
+    if (formData.overtimeMultiplier > MAX_OT_MULTIPLIER) {
+      toast.error(`OT multiplier cannot exceed ${MAX_OT_MULTIPLIER}x`);
+      return;
+    }
+    if ((formData.category === 'penalty' || formData.category === 'special') && 
+        formData.overtimeMultiplier > MAX_PENALTY_MULTIPLIER) {
+      toast.error(`Penalty multiplier cannot exceed ${MAX_PENALTY_MULTIPLIER}x`);
       return;
     }
 
@@ -279,6 +292,8 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
       timeRange: formData.timeRangeStart && formData.timeRangeEnd 
         ? { start: formData.timeRangeStart, end: formData.timeRangeEnd } 
         : undefined,
+      maxDailyOTHours: formData.category === 'daily' ? formData.maxDailyOTHours : undefined,
+      maxWeeklyOTHours: formData.category === 'weekly' ? formData.maxWeeklyOTHours : undefined,
       createdAt: editingRule?.createdAt || now,
       updatedAt: now,
     };
