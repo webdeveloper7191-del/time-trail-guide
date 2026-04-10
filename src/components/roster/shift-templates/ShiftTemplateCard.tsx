@@ -5,7 +5,7 @@
  import { Input } from '@/components/ui/input';
  import { Label } from '@/components/ui/label';
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
- import { Clock, Edit2, Trash2, Check, X, GraduationCap, Award, RotateCcw, Phone, Moon, ArrowLeftRight, Zap, AlertTriangle } from 'lucide-react';
+ import { Clock, Edit2, Trash2, Check, X, GraduationCap, Award, Phone, Moon, ArrowLeftRight, Zap, AlertTriangle } from 'lucide-react';
  import { cn } from '@/lib/utils';
  import { ShiftTypeSettings } from './ShiftTypeSettings';
  import { AllowanceType } from '@/types/allowances';
