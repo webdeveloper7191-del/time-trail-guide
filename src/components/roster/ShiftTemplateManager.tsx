@@ -91,16 +91,9 @@
      ));
    };
  
-   const handleDelete = (id: string) => {
-     if (isDefaultTemplate(id)) {
-       const original = defaultShiftTemplates.find(t => t.id === id);
-       if (original) {
-         setTemplates(prev => prev.map(t => t.id === id ? { ...original } : t));
-       }
-     } else {
-       setTemplates(prev => prev.filter(t => t.id !== id));
-     }
-   };
+    const handleDelete = (id: string) => {
+      setTemplates(prev => prev.filter(t => t.id !== id));
+    };
  
    const handleSave = () => {
      onSave(templates);
