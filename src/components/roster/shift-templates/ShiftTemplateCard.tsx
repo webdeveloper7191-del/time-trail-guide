@@ -295,27 +295,9 @@
        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
          <Edit2 size={14} />
        </Button>
-        {isDefault ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-muted-foreground" 
-                  disabled
-                >
-                  <Trash2 size={14} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Default templates cannot be deleted</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}>
-            <Trash2 size={14} />
-          </Button>
-        )}
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}>
+          <Trash2 size={14} />
+        </Button>
      </div>
    );
  }
