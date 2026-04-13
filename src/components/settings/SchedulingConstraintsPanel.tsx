@@ -4,7 +4,7 @@ import {
   Scale, Target, Save, RotateCcw, Info, Sparkles, Check,
   Search, Building2, Globe, ChevronDown, ExternalLink,
   CircleDot, CircleOff, Filter, FileText, HelpCircle,
-  Plus, Trash2, GitBranch,
+  Plus, Trash2, GitBranch, Zap,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
