@@ -772,6 +772,7 @@ export function SchedulingConstraintsPanel() {
         else if (field === 'satisfiability') setting.satisfiability = value;
         else if (field === 'weight') setting.weight = value;
         else if (field === 'priority') setting.priority = value;
+        else if (field === 'conditionalRules') setting.conditionalRules = value;
         else if (field.startsWith('param.')) {
           const paramKey = field.slice(6);
           setting.parameters = { ...setting.parameters, [paramKey]: value };
