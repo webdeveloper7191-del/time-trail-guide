@@ -52,7 +52,107 @@ const categoryOrder: ConstraintCategory[] = [
   'compliance', 'cost_optimization', 'fairness_preferences', 'operational_quality',
 ];
 
-// ============= Help Text Constants =============
+// ============= Conditional Rule Presets =============
+
+const RULE_PRESETS: { id: string; label: string; emoji: string; description: string; factory: () => Omit<ConditionalRule, 'id'> }[] = [
+  {
+    id: 'weekend',
+    label: 'Weekend Override',
+    emoji: '📅',
+    description: 'Different settings for Saturday & Sunday shifts',
+    factory: () => ({
+      label: 'Weekend Override',
+      enabled: true,
+      conditions: [{ id: `cond-${Date.now()}`, field: 'dayOfWeek', values: ['sat', 'sun'] }],
+      enforcement: 'SOFT',
+      priority: 3,
+      weight: 70,
+      parameterOverrides: {},
+    }),
+  },
+  {
+    id: 'night',
+    label: 'Night Shift Rules',
+    emoji: '🌙',
+    description: 'Adjusted constraints for evening & night shifts',
+    factory: () => ({
+      label: 'Night Shift Rules',
+      enabled: true,
+      conditions: [{ id: `cond-${Date.now()}`, field: 'timeOfDay', values: ['evening', 'night'] }],
+      enforcement: 'HARD',
+      priority: 2,
+      weight: 80,
+      parameterOverrides: {},
+    }),
+  },
+  {
+    id: 'casual',
+    label: 'Casual Staff Flexibility',
+    emoji: '👤',
+    description: 'Relaxed rules for casual & agency employees',
+    factory: () => ({
+      label: 'Casual Staff Flexibility',
+      enabled: true,
+      conditions: [{ id: `cond-${Date.now()}`, field: 'employmentType', values: ['casual', 'agency'] }],
+      enforcement: 'SOFT',
+      satisfiability: 'PREFERRED',
+      priority: 7,
+      weight: 40,
+      parameterOverrides: {},
+    }),
+  },
+  {
+    id: 'public-holiday',
+    label: 'Public Holiday Rules',
+    emoji: '🎉',
+    description: 'Stricter or different enforcement on public holidays',
+    factory: () => ({
+      label: 'Public Holiday Rules',
+      enabled: true,
+      conditions: [{ id: `cond-${Date.now()}`, field: 'publicHoliday', values: ['true'] }],
+      enforcement: 'HARD',
+      priority: 1,
+      weight: 90,
+      parameterOverrides: {},
+    }),
+  },
+  {
+    id: 'weekday-ft',
+    label: 'Weekday Full-Time',
+    emoji: '💼',
+    description: 'Standard weekday rules for full-time & part-time staff',
+    factory: () => ({
+      label: 'Weekday Full-Time',
+      enabled: true,
+      conditions: [
+        { id: `cond-${Date.now()}-1`, field: 'dayOfWeek', values: ['mon', 'tue', 'wed', 'thu', 'fri'] },
+        { id: `cond-${Date.now()}-2`, field: 'employmentType', values: ['full-time', 'part-time'] },
+      ],
+      enforcement: 'HARD',
+      priority: 2,
+      weight: 60,
+      parameterOverrides: {},
+    }),
+  },
+  {
+    id: 'emergency',
+    label: 'Emergency Shift Override',
+    emoji: '🚨',
+    description: 'Relaxed constraints for emergency & callback shifts',
+    factory: () => ({
+      label: 'Emergency Shift Override',
+      enabled: true,
+      conditions: [{ id: `cond-${Date.now()}`, field: 'shiftType', values: ['emergency', 'callback', 'recall'] }],
+      enforcement: 'SOFT',
+      satisfiability: 'PREFERRED',
+      priority: 8,
+      weight: 30,
+      parameterOverrides: {},
+    }),
+  },
+];
+
+
 
 const HELP_TEXT = {
   enforcement: {
