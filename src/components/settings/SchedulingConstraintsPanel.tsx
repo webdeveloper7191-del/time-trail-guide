@@ -518,6 +518,7 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
   onConditionalRulesChange: (rules: ConditionalRule[]) => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const [showPresetMenu, setShowPresetMenu] = useState(false);
   const isActive = enforcement !== 'OFF';
   const hasParams = definition.parameters.length > 0;
   const canExpand = isActive && (hasParams || enforcement === 'SOFT');
