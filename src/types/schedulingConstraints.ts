@@ -730,6 +730,7 @@ export function createDefaultConstraintsConfig(): SchedulingConstraintsConfig {
       priority: def.defaultEnforcement === 'HARD' ? 1 : 5,
       parameters: params,
       locationOverrides: {},
+      conditionalRules: [],
     };
   });
 
