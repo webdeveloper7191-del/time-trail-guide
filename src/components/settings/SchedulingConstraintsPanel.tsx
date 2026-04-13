@@ -460,6 +460,12 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
                 {satisfiability}
               </Badge>
             )}
+            {conditionalRules.length > 0 && (
+              <Badge variant="outline" className="text-[9px] px-1 border-primary/30 text-primary">
+                <GitBranch className="h-2.5 w-2.5 mr-0.5" />
+                {conditionalRules.filter(r => r.enabled).length} rule{conditionalRules.filter(r => r.enabled).length !== 1 ? 's' : ''}
+              </Badge>
+            )}
           </div>
           <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
             {definition.description}
