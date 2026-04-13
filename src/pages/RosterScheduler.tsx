@@ -75,7 +75,7 @@ import { AgencyNotificationTemplates } from '@/components/roster/AgencyNotificat
 import { CentreAgencyPreferencesPanel } from '@/components/roster/CentreAgencyPreferencesPanel';
 import { PostPlacementRatingModal } from '@/components/roster/PostPlacementRatingModal';
 import { AgencyPerformanceDashboard } from '@/components/roster/AgencyPerformanceDashboard';
-import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
+import { SchedulingConstraintsSidePanel } from '@/components/roster/SchedulingConstraintsSidePanel';
 import { LogCallbackSheet } from '@/components/roster/LogCallbackSheet';
 import { LogSleepoverSheet } from '@/components/roster/LogSleepoverSheet';
 import { LogSplitShiftSheet } from '@/components/roster/LogSplitShiftSheet';
@@ -3391,86 +3391,10 @@ export default function RosterScheduler() {
 
       {/* Old standalone panels removed - now using UnifiedRecurringPanel */}
 
-      {/* Timefold Constraint Configuration Panel */}
-      <TimefoldConstraintPanel
+      {/* Scheduling Constraints Side Panel */}
+      <SchedulingConstraintsSidePanel
         open={showTimefoldPanel}
         onClose={() => setShowTimefoldPanel(false)}
-        config={timefoldConfig}
-        onConfigChange={setTimefoldConfig}
-        lastSolution={lastTimefoldSolution}
-        onSolve={async () => {
-          setIsSolvingTimefold(true);
-          toast.info('Running Timefold Solver...');
-          try {
-            const shiftEntities: ShiftPlanningEntity[] = centreOpenShifts.map(os => ({
-              id: os.id,
-              shiftId: os.id,
-              date: os.date,
-              startTime: os.startTime,
-              endTime: os.endTime,
-              roomId: os.roomId,
-              centreId: os.centreId,
-              requiredQualifications: os.requiredQualifications || [],
-              minimumClassification: os.minimumClassification,
-              preferredRole: os.preferredRole,
-            }));
-            const staffEntities: StaffPlanningEntity[] = allStaff.map(s => ({
-              id: s.id,
-              name: s.name,
-              role: s.role,
-              employmentType: s.employmentType,
-              isAgency: !!s.agency,
-              hourlyRate: s.hourlyRate,
-              maxHoursPerWeek: s.maxHoursPerWeek,
-              currentHoursAssigned: s.currentWeeklyHours,
-              qualifications: s.qualifications.map(q => q.type),
-              availability: s.availability,
-              preferredCentres: s.preferredCentres,
-              defaultCentreId: s.defaultCentreId,
-              willingToWorkMultipleLocations: s.willingToWorkMultipleLocations,
-              leavesDates: s.timeOff?.filter(t => t.status === 'approved').map(t => t.startDate) || [],
-            }));
-            const solution = await solveWithTimefold(timefoldConfig, shiftEntities, staffEntities);
-            setLastTimefoldSolution(solution);
-            
-            const aiGeneratedTimestamp = new Date().toISOString();
-            const newShifts: Shift[] = solution.assignments.map((a, idx) => {
-              const openShift = centreOpenShifts.find(os => os.id === a.shiftId)!;
-              return {
-                id: `shift-timefold-${Date.now()}-${idx}`,
-                staffId: a.staffId,
-                centreId: openShift.centreId,
-                roomId: openShift.roomId,
-                date: openShift.date,
-                startTime: openShift.startTime,
-                endTime: openShift.endTime,
-                breakMinutes: 30,
-                status: 'draft',
-                isOpenShift: false,
-                isAIGenerated: true,
-                aiGeneratedAt: aiGeneratedTimestamp,
-              };
-            });
-            setShifts(prev => [...prev, ...newShifts], `Timefold assigned ${newShifts.length} shifts`, 'bulk');
-            setOpenShifts(prev => prev.filter(os => !solution.assignments.some(a => a.shiftId === os.id)));
-            
-            // Show work saved metrics in the toast
-            const metrics = solution.workSavedMetrics;
-            toast.success(
-              `AI assigned ${solution.assignments.length} shifts! Saved ~${metrics.timeSavedMinutes} min of manual work (${metrics.efficiencyPercentage}% faster)`,
-              { duration: 5000 }
-            );
-            
-            if (solution.unassignedShifts.length > 0) {
-              toast.warning(`${solution.unassignedShifts.length} shifts could not be assigned`);
-            }
-          } catch (err) {
-            toast.error('Solver failed');
-          } finally {
-            setIsSolvingTimefold(false);
-          }
-        }}
-        isSolving={isSolvingTimefold}
       />
 
       
