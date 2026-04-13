@@ -47,6 +47,55 @@ const categoryOrder: ConstraintCategory[] = [
   'compliance', 'cost_optimization', 'fairness_preferences', 'operational_quality',
 ];
 
+// ============= Help Text Constants =============
+
+const HELP_TEXT = {
+  enforcement: {
+    title: 'Enforcement Level',
+    description: 'Controls how strictly the solver treats this constraint.',
+    options: {
+      HARD: 'The solver will NEVER violate this rule. If it cannot be satisfied, the schedule is considered infeasible. Use for legal/safety requirements.',
+      SOFT: 'The solver will TRY to satisfy this rule but may violate it if needed. Violations incur a penalty based on weight & priority.',
+      OFF: 'This constraint is completely disabled and ignored by the solver.',
+    },
+  },
+  satisfiability: {
+    title: 'Satisfiability',
+    description: 'Determines whether the solver must satisfy this rule or just prefer it.',
+    options: {
+      REQUIRED: 'Must be satisfied — treated as a hard blocker. The solver will not produce a solution that violates this.',
+      PREFERRED: 'Should be satisfied — the solver will try its best but can break this rule, applying a penalty weighted by priority.',
+    },
+  },
+  priority: {
+    title: 'Priority (1–10)',
+    description: 'Sets the relative importance when multiple soft constraints conflict. Lower number = higher priority. The multiplier shows how much the penalty is amplified.',
+    scale: '1–2 = Critical (10× penalty), 3–4 = High (7×), 5–6 = Medium (5×), 7–8 = Low (3×), 9–10 = Minimal (1×)',
+  },
+  weight: {
+    title: 'Weight (1–100)',
+    description: 'Fine-tunes the penalty score within the same priority level. Higher weight = larger penalty for violations. Two constraints at the same priority but different weights will have proportionally different penalties.',
+    example: 'E.g., Weight 80 at Priority 3 produces a bigger penalty than Weight 20 at Priority 3.',
+  },
+};
+
+// ============= Help Tooltip Wrapper =============
+
+const HelpTooltip = ({ title, description, extra }: { title: string; description: string; extra?: string }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <button type="button" className="inline-flex p-0.5 rounded hover:bg-muted">
+        <Info className="h-3 w-3 text-muted-foreground" />
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="top" className="max-w-[300px]">
+      <p className="text-xs font-semibold mb-0.5">{title}</p>
+      <p className="text-[11px] text-muted-foreground">{description}</p>
+      {extra && <p className="text-[10px] text-muted-foreground/80 mt-1 italic">{extra}</p>}
+    </TooltipContent>
+  </Tooltip>
+);
+
 // ============= Enforcement Selector =============
 
 const EnforcementSelector = ({ value, onChange }: {
@@ -55,22 +104,28 @@ const EnforcementSelector = ({ value, onChange }: {
 }) => (
   <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
     {(['HARD', 'SOFT', 'OFF'] as const).map(opt => (
-      <button
-        key={opt}
-        onClick={() => onChange(opt)}
-        className={cn(
-          "px-2.5 py-1 text-[10px] font-medium rounded transition-all",
-          value === opt
-            ? opt === 'HARD'
-              ? "bg-red-500 text-white shadow-sm"
-              : opt === 'SOFT'
-                ? "bg-amber-500 text-white shadow-sm"
-                : "bg-background text-muted-foreground shadow-sm border"
-            : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        {opt === 'HARD' ? '🔴 Hard' : opt === 'SOFT' ? '🟡 Soft' : '⚪ Off'}
-      </button>
+      <Tooltip key={opt}>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => onChange(opt)}
+            className={cn(
+              "px-2.5 py-1 text-[10px] font-medium rounded transition-all",
+              value === opt
+                ? opt === 'HARD'
+                  ? "bg-red-500 text-white shadow-sm"
+                  : opt === 'SOFT'
+                    ? "bg-amber-500 text-white shadow-sm"
+                    : "bg-background text-muted-foreground shadow-sm border"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {opt === 'HARD' ? '🔴 Hard' : opt === 'SOFT' ? '🟡 Soft' : '⚪ Off'}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[250px]">
+          <p className="text-[11px]">{HELP_TEXT.enforcement.options[opt]}</p>
+        </TooltipContent>
+      </Tooltip>
     ))}
   </div>
 );
@@ -82,28 +137,28 @@ const SatisfiabilitySelector = ({ value, onChange }: {
   onChange: (v: Satisfiability) => void;
 }) => (
   <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
-    <button
-      onClick={() => onChange('REQUIRED')}
-      className={cn(
-        "px-2 py-0.5 text-[10px] font-medium rounded transition-all",
-        value === 'REQUIRED'
-          ? "bg-red-500 text-white shadow-sm"
-          : "text-muted-foreground hover:text-foreground"
-      )}
-    >
-      Required
-    </button>
-    <button
-      onClick={() => onChange('PREFERRED')}
-      className={cn(
-        "px-2 py-0.5 text-[10px] font-medium rounded transition-all",
-        value === 'PREFERRED'
-          ? "bg-amber-500 text-white shadow-sm"
-          : "text-muted-foreground hover:text-foreground"
-      )}
-    >
-      Preferred
-    </button>
+    {(['REQUIRED', 'PREFERRED'] as const).map(opt => (
+      <Tooltip key={opt}>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => onChange(opt)}
+            className={cn(
+              "px-2 py-0.5 text-[10px] font-medium rounded transition-all",
+              value === opt
+                ? opt === 'REQUIRED'
+                  ? "bg-red-500 text-white shadow-sm"
+                  : "bg-amber-500 text-white shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {opt === 'REQUIRED' ? 'Required' : 'Preferred'}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[250px]">
+          <p className="text-[11px]">{HELP_TEXT.satisfiability.options[opt]}</p>
+        </TooltipContent>
+      </Tooltip>
+    ))}
   </div>
 );
 
