@@ -49,6 +49,7 @@ import { AwardsConfigurationTab } from '@/components/settings/AwardsConfiguratio
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
 import { TimefoldIntegrationPanel } from '@/components/roster/TimefoldIntegrationPanel';
 import { TimefoldConstraintConfigPanel } from '@/components/settings/TimefoldConstraintConfigPanel';
+import { SchedulingConstraintsPanel } from '@/components/settings/SchedulingConstraintsPanel';
 import { IntegrationManagerModal } from '@/components/settings/IntegrationManagerModal';
 import { 
   TimefoldSolverConfig, 
