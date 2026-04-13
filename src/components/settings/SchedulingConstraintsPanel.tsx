@@ -3,7 +3,7 @@ import {
   Users, UserCheck, Clock, Calendar, Shield, DollarSign,
   Scale, Target, Save, RotateCcw, Info, Sparkles, Check,
   Search, Building2, Globe, ChevronDown, ExternalLink,
-  CircleDot, CircleOff, Filter, FileText,
+  CircleDot, CircleOff, Filter, FileText, HelpCircle,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,6 +47,55 @@ const categoryOrder: ConstraintCategory[] = [
   'compliance', 'cost_optimization', 'fairness_preferences', 'operational_quality',
 ];
 
+// ============= Help Text Constants =============
+
+const HELP_TEXT = {
+  enforcement: {
+    title: 'Enforcement Level',
+    description: 'Controls how strictly the solver treats this constraint.',
+    options: {
+      HARD: 'The solver will NEVER violate this rule. If it cannot be satisfied, the schedule is considered infeasible. Use for legal/safety requirements.',
+      SOFT: 'The solver will TRY to satisfy this rule but may violate it if needed. Violations incur a penalty based on weight & priority.',
+      OFF: 'This constraint is completely disabled and ignored by the solver.',
+    },
+  },
+  satisfiability: {
+    title: 'Satisfiability',
+    description: 'Determines whether the solver must satisfy this rule or just prefer it.',
+    options: {
+      REQUIRED: 'Must be satisfied — treated as a hard blocker. The solver will not produce a solution that violates this.',
+      PREFERRED: 'Should be satisfied — the solver will try its best but can break this rule, applying a penalty weighted by priority.',
+    },
+  },
+  priority: {
+    title: 'Priority (1–10)',
+    description: 'Sets the relative importance when multiple soft constraints conflict. Lower number = higher priority. The multiplier shows how much the penalty is amplified.',
+    scale: '1–2 = Critical (10× penalty), 3–4 = High (7×), 5–6 = Medium (5×), 7–8 = Low (3×), 9–10 = Minimal (1×)',
+  },
+  weight: {
+    title: 'Weight (1–100)',
+    description: 'Fine-tunes the penalty score within the same priority level. Higher weight = larger penalty for violations. Two constraints at the same priority but different weights will have proportionally different penalties.',
+    example: 'E.g., Weight 80 at Priority 3 produces a bigger penalty than Weight 20 at Priority 3.',
+  },
+};
+
+// ============= Help Tooltip Wrapper =============
+
+const HelpTooltip = ({ title, description, extra }: { title: string; description: string; extra?: string }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <button type="button" className="inline-flex p-0.5 rounded hover:bg-muted">
+        <Info className="h-3 w-3 text-muted-foreground" />
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="top" className="max-w-[300px]">
+      <p className="text-xs font-semibold mb-0.5">{title}</p>
+      <p className="text-[11px] text-muted-foreground">{description}</p>
+      {extra && <p className="text-[10px] text-muted-foreground/80 mt-1 italic">{extra}</p>}
+    </TooltipContent>
+  </Tooltip>
+);
+
 // ============= Enforcement Selector =============
 
 const EnforcementSelector = ({ value, onChange }: {
@@ -55,22 +104,28 @@ const EnforcementSelector = ({ value, onChange }: {
 }) => (
   <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
     {(['HARD', 'SOFT', 'OFF'] as const).map(opt => (
-      <button
-        key={opt}
-        onClick={() => onChange(opt)}
-        className={cn(
-          "px-2.5 py-1 text-[10px] font-medium rounded transition-all",
-          value === opt
-            ? opt === 'HARD'
-              ? "bg-red-500 text-white shadow-sm"
-              : opt === 'SOFT'
-                ? "bg-amber-500 text-white shadow-sm"
-                : "bg-background text-muted-foreground shadow-sm border"
-            : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        {opt === 'HARD' ? '🔴 Hard' : opt === 'SOFT' ? '🟡 Soft' : '⚪ Off'}
-      </button>
+      <Tooltip key={opt}>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => onChange(opt)}
+            className={cn(
+              "px-2.5 py-1 text-[10px] font-medium rounded transition-all",
+              value === opt
+                ? opt === 'HARD'
+                  ? "bg-red-500 text-white shadow-sm"
+                  : opt === 'SOFT'
+                    ? "bg-amber-500 text-white shadow-sm"
+                    : "bg-background text-muted-foreground shadow-sm border"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {opt === 'HARD' ? '🔴 Hard' : opt === 'SOFT' ? '🟡 Soft' : '⚪ Off'}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[250px]">
+          <p className="text-[11px]">{HELP_TEXT.enforcement.options[opt]}</p>
+        </TooltipContent>
+      </Tooltip>
     ))}
   </div>
 );
@@ -82,28 +137,28 @@ const SatisfiabilitySelector = ({ value, onChange }: {
   onChange: (v: Satisfiability) => void;
 }) => (
   <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
-    <button
-      onClick={() => onChange('REQUIRED')}
-      className={cn(
-        "px-2 py-0.5 text-[10px] font-medium rounded transition-all",
-        value === 'REQUIRED'
-          ? "bg-red-500 text-white shadow-sm"
-          : "text-muted-foreground hover:text-foreground"
-      )}
-    >
-      Required
-    </button>
-    <button
-      onClick={() => onChange('PREFERRED')}
-      className={cn(
-        "px-2 py-0.5 text-[10px] font-medium rounded transition-all",
-        value === 'PREFERRED'
-          ? "bg-amber-500 text-white shadow-sm"
-          : "text-muted-foreground hover:text-foreground"
-      )}
-    >
-      Preferred
-    </button>
+    {(['REQUIRED', 'PREFERRED'] as const).map(opt => (
+      <Tooltip key={opt}>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => onChange(opt)}
+            className={cn(
+              "px-2 py-0.5 text-[10px] font-medium rounded transition-all",
+              value === opt
+                ? opt === 'REQUIRED'
+                  ? "bg-red-500 text-white shadow-sm"
+                  : "bg-amber-500 text-white shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {opt === 'REQUIRED' ? 'Required' : 'Preferred'}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[250px]">
+          <p className="text-[11px]">{HELP_TEXT.satisfiability.options[opt]}</p>
+        </TooltipContent>
+      </Tooltip>
+    ))}
   </div>
 );
 
@@ -196,12 +251,18 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
           {/* Satisfiability + Priority + Weight Row */}
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Satisfiability:</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Satisfiability:</Label>
+                <HelpTooltip title={HELP_TEXT.satisfiability.title} description={HELP_TEXT.satisfiability.description} />
+              </div>
               <SatisfiabilitySelector value={satisfiability} onChange={onSatisfiabilityChange} />
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Priority:</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Priority:</Label>
+                <HelpTooltip title={HELP_TEXT.priority.title} description={HELP_TEXT.priority.description} extra={HELP_TEXT.priority.scale} />
+              </div>
               <Select value={String(priority)} onValueChange={v => onPriorityChange(Number(v))}>
                 <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -216,7 +277,10 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
 
             {/* Weight slider */}
             <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-              <Label className="text-xs text-muted-foreground whitespace-nowrap">Weight:</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Weight:</Label>
+                <HelpTooltip title={HELP_TEXT.weight.title} description={HELP_TEXT.weight.description} extra={HELP_TEXT.weight.example} />
+              </div>
               <Slider value={[weight]} onValueChange={([v]) => onWeightChange(v)} min={1} max={100} step={1} className="flex-1" />
               <span className="text-xs font-mono font-medium w-6 text-right">{weight}</span>
             </div>
@@ -481,6 +545,8 @@ export function SchedulingConstraintsPanel() {
 
   const contractCount = contractConfig.employeeConstraints.contracts.contracts.length;
 
+  const [showHelp, setShowHelp] = useState(false);
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -495,6 +561,9 @@ export function SchedulingConstraintsPanel() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setShowHelp(!showHelp)} className={cn(showHelp && "bg-muted")}>
+            <HelpCircle className="h-3.5 w-3.5 mr-1" /> How it works
+          </Button>
           <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
           </Button>
@@ -503,6 +572,51 @@ export function SchedulingConstraintsPanel() {
           </Button>
         </div>
       </div>
+
+      {/* Help Guide */}
+      {showHelp && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <HelpCircle className="h-4 w-4 text-primary" />
+              Understanding Constraint Configuration
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium">🔴 Hard / 🟡 Soft / ⚪ Off — Enforcement</p>
+                <p className="text-[11px] text-muted-foreground">
+                  <strong>Hard</strong> constraints must never be violated — the solver treats them as absolute rules (e.g., legal requirements).
+                  <strong> Soft</strong> constraints are best-effort — the solver tries to satisfy them but can break them if needed, applying a penalty.
+                  <strong> Off</strong> disables the constraint entirely.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium">Required vs Preferred — Satisfiability</p>
+                <p className="text-[11px] text-muted-foreground">
+                  <strong>Required</strong> means the rule acts as a hard blocker — it must be satisfied.
+                  <strong> Preferred</strong> means the solver will try but can break it, using priority & weight to determine the penalty cost.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium">Priority (1–10) — Relative Importance</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Determines which soft constraints the solver prioritises when it can't satisfy all of them. Lower number = higher importance.
+                  Priority 1–2 applies a <strong>10× penalty multiplier</strong>, 3–4 = 7×, 5–6 = 5×, 7–8 = 3×, 9–10 = 1×.
+                  A priority-1 constraint will almost always be satisfied before a priority-10 one.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium">Weight (1–100) — Fine-Tuning</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Within the same priority level, weight controls how much penalty a violation costs. A constraint with weight 80 costs 4× more than one with weight 20
+                  at the same priority. Use weight to fine-tune between constraints of equal importance.
+                  <br /><strong>Formula:</strong> Penalty = Weight × Priority Multiplier × Violation Count.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Bar */}
       <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border text-xs">
