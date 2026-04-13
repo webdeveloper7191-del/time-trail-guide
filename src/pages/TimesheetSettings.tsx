@@ -1303,27 +1303,23 @@ export default function TimesheetSettings() {
                   </div>
                 </button>
 
-                {/* Timefold Constraint Configuration */}
-                <button
-                  onClick={() => setShowConstraintConfig(true)}
-                  className="w-full text-left bg-background border border-border rounded-lg p-5 hover:border-primary/40 hover:shadow-sm transition-all group"
-                >
+                {/* Constraint Configuration - moved to Roster */}
+                <div className="w-full text-left bg-muted/30 border border-border rounded-lg p-5">
                   <div className="flex items-center gap-4">
-                    <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                      <Shield className="h-5 w-5 text-primary" />
+                    <div className="h-11 w-11 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Shield className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <h3 className="text-sm font-semibold text-foreground">Constraint Configuration</h3>
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">Timefold API</Badge>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">Moved to Roster</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground leading-snug">
-                        Configure employee resource constraints and shift service constraints that map to the Timefold solver API.
+                        Scheduling constraints (H1-H20, S1-S20) are now configured directly from the Roster screen via the constraints button.
                       </p>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
                   </div>
-                </button>
+                </div>
 
                 <button
                   onClick={() => setShowTimefoldIntegration(true)}
@@ -1392,17 +1388,6 @@ export default function TimesheetSettings() {
                 open={showIntegrationManager}
                 onClose={() => setShowIntegrationManager(false)}
               />
-              {showConstraintConfig && (
-                <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-start justify-center overflow-y-auto pt-8 pb-8">
-                  <div className="bg-background border border-border rounded-xl shadow-xl w-full max-w-5xl mx-4 p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div />
-                      <Button variant="ghost" size="sm" onClick={() => setShowConstraintConfig(false)}>✕</Button>
-                    </div>
-                    <SchedulingConstraintsPanel />
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
