@@ -578,7 +578,55 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
             </>
           )}
 
-          {/* Timefold docs link */}
+          {/* Conditional Rules */}
+          <Separator />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <GitBranch className="h-3.5 w-3.5 text-primary" />
+                <Label className="text-xs font-semibold text-foreground">Conditional Rules</Label>
+                <HelpTooltip
+                  title="Conditional Rules"
+                  description="Add rules that override this constraint's settings when specific conditions are met (e.g., different max hours on weekends or for casual staff)."
+                  extra="Conditions use AND logic — all conditions in a rule must match. Multiple rules are evaluated top-down; first matching rule wins."
+                />
+                {conditionalRules.length > 0 && (
+                  <Badge variant="secondary" className="text-[9px] px-1.5">
+                    {conditionalRules.length} rule{conditionalRules.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+              <button
+                onClick={() => onConditionalRulesChange([...conditionalRules, {
+                  id: `rule-${Date.now()}`,
+                  label: `Rule ${conditionalRules.length + 1}`,
+                  enabled: true,
+                  conditions: [],
+                  parameterOverrides: {},
+                }])}
+                className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+              >
+                <Plus className="h-3 w-3" /> Add rule
+              </button>
+            </div>
+            {conditionalRules.length === 0 && (
+              <p className="text-[10px] text-muted-foreground italic pl-5">
+                No conditional rules — this constraint applies uniformly. Add a rule to vary by day, shift type, or employment type.
+              </p>
+            )}
+            <div className="space-y-2">
+              {conditionalRules.map(rule => (
+                <ConditionalRuleCard
+                  key={rule.id}
+                  rule={rule}
+                  definition={definition}
+                  onUpdate={updated => onConditionalRulesChange(conditionalRules.map(r => r.id === rule.id ? updated : r))}
+                  onRemove={() => onConditionalRulesChange(conditionalRules.filter(r => r.id !== rule.id))}
+                />
+              ))}
+            </div>
+          </div>
+
           {definition.timefoldMapping && (
             <a
               href={`https://docs.timefold.ai/employee-shift-scheduling/latest/${definition.timefoldMapping}`}
