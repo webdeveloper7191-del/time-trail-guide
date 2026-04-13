@@ -518,6 +518,7 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
   onConditionalRulesChange: (rules: ConditionalRule[]) => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const [showPresetMenu, setShowPresetMenu] = useState(false);
   const isActive = enforcement !== 'OFF';
   const hasParams = definition.parameters.length > 0;
   const canExpand = isActive && (hasParams || enforcement === 'SOFT');
@@ -702,45 +703,53 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
                   </Badge>
                 )}
               </div>
-              <div className="relative group/presets">
-                <button className="flex items-center gap-1 text-[11px] text-primary hover:underline peer">
+              <div className="relative">
+                <button
+                  onClick={() => setShowPresetMenu(!showPresetMenu)}
+                  className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+                >
                   <Plus className="h-3 w-3" /> Add rule ▾
                 </button>
-                <div className="hidden group-hover/presets:block absolute right-0 top-full mt-1 z-50 w-72 bg-popover border rounded-lg shadow-lg p-1.5">
-                  <button
-                    onClick={() => onConditionalRulesChange([...conditionalRules, {
-                      id: `rule-${Date.now()}`,
-                      label: `Rule ${conditionalRules.length + 1}`,
-                      enabled: true,
-                      conditions: [],
-                      parameterOverrides: {},
-                    }])}
-                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-muted text-left transition-colors"
-                  >
-                    <span className="text-sm">✏️</span>
-                    <div>
-                      <p className="text-xs font-medium">Blank Rule</p>
-                      <p className="text-[10px] text-muted-foreground">Start from scratch with no conditions</p>
+                {showPresetMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowPresetMenu(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-50 w-72 bg-popover border rounded-lg shadow-lg p-1.5 max-h-[320px] overflow-y-auto">
+                      <button
+                        onClick={() => { onConditionalRulesChange([...conditionalRules, {
+                          id: `rule-${Date.now()}`,
+                          label: `Rule ${conditionalRules.length + 1}`,
+                          enabled: true,
+                          conditions: [],
+                          parameterOverrides: {},
+                        }]); setShowPresetMenu(false); }}
+                        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-muted text-left transition-colors"
+                      >
+                        <span className="text-sm">✏️</span>
+                        <div>
+                          <p className="text-xs font-medium">Blank Rule</p>
+                          <p className="text-[10px] text-muted-foreground">Start from scratch with no conditions</p>
+                        </div>
+                      </button>
+                      <Separator className="my-1" />
+                      <p className="px-2.5 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <Zap className="h-3 w-3" /> Quick Presets
+                      </p>
+                      {RULE_PRESETS.map(preset => (
+                        <button
+                          key={preset.id}
+                          onClick={() => { onConditionalRulesChange([...conditionalRules, { id: `rule-${Date.now()}-${preset.id}`, ...preset.factory() }]); setShowPresetMenu(false); }}
+                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
+                        >
+                          <span className="text-sm">{preset.emoji}</span>
+                          <div>
+                            <p className="text-xs font-medium">{preset.label}</p>
+                            <p className="text-[10px] text-muted-foreground">{preset.description}</p>
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  </button>
-                  <Separator className="my-1" />
-                  <p className="px-2.5 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                    <Zap className="h-3 w-3" /> Quick Presets
-                  </p>
-                  {RULE_PRESETS.map(preset => (
-                    <button
-                      key={preset.id}
-                      onClick={() => onConditionalRulesChange([...conditionalRules, { id: `rule-${Date.now()}-${preset.id}`, ...preset.factory() }])}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
-                    >
-                      <span className="text-sm">{preset.emoji}</span>
-                      <div>
-                        <p className="text-xs font-medium">{preset.label}</p>
-                        <p className="text-[10px] text-muted-foreground">{preset.description}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                  </>
+                )}
               </div>
             </div>
             {conditionalRules.length === 0 && (
@@ -985,17 +994,8 @@ export function SchedulingConstraintsPanel() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Stats Bar */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold tracking-tight flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            Scheduling Constraints
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Full constraint configuration — contracts, H1-H20 hard constraints, S1-S20 soft constraints, all with configurable values
-          </p>
-        </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={() => setShowHelp(!showHelp)} className={cn(showHelp && "bg-muted")}>
             <HelpCircle className="h-3.5 w-3.5 mr-1" /> How it works
