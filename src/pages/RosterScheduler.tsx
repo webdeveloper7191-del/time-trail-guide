@@ -90,10 +90,6 @@ import { CostSavingsDashboard } from '@/components/roster/CostSavingsDashboard';
 import { 
   TimefoldSolverConfig, 
   defaultSolverConfig, 
-  solveWithTimefold,
-  ShiftPlanningEntity,
-  StaffPlanningEntity,
-  TimefoldSolution,
 } from '@/lib/timefoldSolver';
 import { SeriesActionBar } from '@/components/roster/SeriesActionBar';
 import { BulkSeriesEditModal } from '@/components/roster/BulkSeriesEditModal';
@@ -408,8 +404,6 @@ export default function RosterScheduler() {
   const [showTimefoldPanel, setShowTimefoldPanel] = useState(false);
   
   const [timefoldConfig, setTimefoldConfig] = useState<TimefoldSolverConfig>(defaultSolverConfig);
-  const [isSolvingTimefold, setIsSolvingTimefold] = useState(false);
-  const [lastTimefoldSolution, setLastTimefoldSolution] = useState<TimefoldSolution | null>(null);
   
   // Shift copy state
   const [showCopyModal, setShowCopyModal] = useState(false);
