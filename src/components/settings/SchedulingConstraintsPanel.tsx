@@ -4,7 +4,7 @@ import {
   Scale, Target, Save, RotateCcw, Info, Sparkles, Check,
   Search, Building2, Globe, ChevronDown, ExternalLink,
   CircleDot, CircleOff, Filter, FileText, HelpCircle,
-  Plus, Trash2, GitBranch,
+  Plus, Trash2, GitBranch, Zap,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -52,7 +52,107 @@ const categoryOrder: ConstraintCategory[] = [
   'compliance', 'cost_optimization', 'fairness_preferences', 'operational_quality',
 ];
 
-// ============= Help Text Constants =============
+// ============= Conditional Rule Presets =============
+
+const RULE_PRESETS: { id: string; label: string; emoji: string; description: string; factory: () => Omit<ConditionalRule, 'id'> }[] = [
+  {
+    id: 'weekend',
+    label: 'Weekend Override',
+    emoji: '📅',
+    description: 'Different settings for Saturday & Sunday shifts',
+    factory: () => ({
+      label: 'Weekend Override',
+      enabled: true,
+      conditions: [{ id: `cond-${Date.now()}`, field: 'dayOfWeek', values: ['sat', 'sun'] }],
+      enforcement: 'SOFT',
+      priority: 3,
+      weight: 70,
+      parameterOverrides: {},
+    }),
+  },
+  {
+    id: 'night',
+    label: 'Night Shift Rules',
+    emoji: '🌙',
+    description: 'Adjusted constraints for evening & night shifts',
+    factory: () => ({
+      label: 'Night Shift Rules',
+      enabled: true,
+      conditions: [{ id: `cond-${Date.now()}`, field: 'timeOfDay', values: ['evening', 'night'] }],
+      enforcement: 'HARD',
+      priority: 2,
+      weight: 80,
+      parameterOverrides: {},
+    }),
+  },
+  {
+    id: 'casual',
+    label: 'Casual Staff Flexibility',
+    emoji: '👤',
+    description: 'Relaxed rules for casual & agency employees',
+    factory: () => ({
+      label: 'Casual Staff Flexibility',
+      enabled: true,
+      conditions: [{ id: `cond-${Date.now()}`, field: 'employmentType', values: ['casual', 'agency'] }],
+      enforcement: 'SOFT',
+      satisfiability: 'PREFERRED',
+      priority: 7,
+      weight: 40,
+      parameterOverrides: {},
+    }),
+  },
+  {
+    id: 'public-holiday',
+    label: 'Public Holiday Rules',
+    emoji: '🎉',
+    description: 'Stricter or different enforcement on public holidays',
+    factory: () => ({
+      label: 'Public Holiday Rules',
+      enabled: true,
+      conditions: [{ id: `cond-${Date.now()}`, field: 'publicHoliday', values: ['true'] }],
+      enforcement: 'HARD',
+      priority: 1,
+      weight: 90,
+      parameterOverrides: {},
+    }),
+  },
+  {
+    id: 'weekday-ft',
+    label: 'Weekday Full-Time',
+    emoji: '💼',
+    description: 'Standard weekday rules for full-time & part-time staff',
+    factory: () => ({
+      label: 'Weekday Full-Time',
+      enabled: true,
+      conditions: [
+        { id: `cond-${Date.now()}-1`, field: 'dayOfWeek', values: ['mon', 'tue', 'wed', 'thu', 'fri'] },
+        { id: `cond-${Date.now()}-2`, field: 'employmentType', values: ['full-time', 'part-time'] },
+      ],
+      enforcement: 'HARD',
+      priority: 2,
+      weight: 60,
+      parameterOverrides: {},
+    }),
+  },
+  {
+    id: 'emergency',
+    label: 'Emergency Shift Override',
+    emoji: '🚨',
+    description: 'Relaxed constraints for emergency & callback shifts',
+    factory: () => ({
+      label: 'Emergency Shift Override',
+      enabled: true,
+      conditions: [{ id: `cond-${Date.now()}`, field: 'shiftType', values: ['emergency', 'callback', 'recall'] }],
+      enforcement: 'SOFT',
+      satisfiability: 'PREFERRED',
+      priority: 8,
+      weight: 30,
+      parameterOverrides: {},
+    }),
+  },
+];
+
+
 
 const HELP_TEXT = {
   enforcement: {
@@ -602,23 +702,64 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
                   </Badge>
                 )}
               </div>
-              <button
-                onClick={() => onConditionalRulesChange([...conditionalRules, {
-                  id: `rule-${Date.now()}`,
-                  label: `Rule ${conditionalRules.length + 1}`,
-                  enabled: true,
-                  conditions: [],
-                  parameterOverrides: {},
-                }])}
-                className="flex items-center gap-1 text-[11px] text-primary hover:underline"
-              >
-                <Plus className="h-3 w-3" /> Add rule
-              </button>
+              <div className="relative group/presets">
+                <button className="flex items-center gap-1 text-[11px] text-primary hover:underline peer">
+                  <Plus className="h-3 w-3" /> Add rule ▾
+                </button>
+                <div className="hidden group-hover/presets:block absolute right-0 top-full mt-1 z-50 w-72 bg-popover border rounded-lg shadow-lg p-1.5">
+                  <button
+                    onClick={() => onConditionalRulesChange([...conditionalRules, {
+                      id: `rule-${Date.now()}`,
+                      label: `Rule ${conditionalRules.length + 1}`,
+                      enabled: true,
+                      conditions: [],
+                      parameterOverrides: {},
+                    }])}
+                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-muted text-left transition-colors"
+                  >
+                    <span className="text-sm">✏️</span>
+                    <div>
+                      <p className="text-xs font-medium">Blank Rule</p>
+                      <p className="text-[10px] text-muted-foreground">Start from scratch with no conditions</p>
+                    </div>
+                  </button>
+                  <Separator className="my-1" />
+                  <p className="px-2.5 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                    <Zap className="h-3 w-3" /> Quick Presets
+                  </p>
+                  {RULE_PRESETS.map(preset => (
+                    <button
+                      key={preset.id}
+                      onClick={() => onConditionalRulesChange([...conditionalRules, { id: `rule-${Date.now()}-${preset.id}`, ...preset.factory() }])}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
+                    >
+                      <span className="text-sm">{preset.emoji}</span>
+                      <div>
+                        <p className="text-xs font-medium">{preset.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{preset.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             {conditionalRules.length === 0 && (
-              <p className="text-[10px] text-muted-foreground italic pl-5">
-                No conditional rules — this constraint applies uniformly. Add a rule to vary by day, shift type, or employment type.
-              </p>
+              <div className="flex items-center gap-3 pl-5 py-2">
+                <p className="text-[10px] text-muted-foreground italic">
+                  No conditional rules — this constraint applies uniformly.
+                </p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {RULE_PRESETS.slice(0, 3).map(preset => (
+                    <button
+                      key={preset.id}
+                      onClick={() => onConditionalRulesChange([...conditionalRules, { id: `rule-${Date.now()}-${preset.id}`, ...preset.factory() }])}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-full border border-primary/20 text-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <span>{preset.emoji}</span> {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
             <div className="space-y-2">
               {conditionalRules.map(rule => (
