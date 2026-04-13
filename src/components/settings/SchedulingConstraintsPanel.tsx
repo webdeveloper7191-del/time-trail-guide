@@ -3,7 +3,7 @@ import {
   Users, UserCheck, Clock, Calendar, Shield, DollarSign,
   Scale, Target, Save, RotateCcw, Info, Sparkles, Check,
   Search, Building2, Globe, ChevronDown, ExternalLink,
-  CircleDot, CircleOff, Filter, FileText,
+  CircleDot, CircleOff, Filter, FileText, HelpCircle,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -545,6 +545,8 @@ export function SchedulingConstraintsPanel() {
 
   const contractCount = contractConfig.employeeConstraints.contracts.contracts.length;
 
+  const [showHelp, setShowHelp] = useState(false);
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -559,6 +561,9 @@ export function SchedulingConstraintsPanel() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setShowHelp(!showHelp)} className={cn(showHelp && "bg-muted")}>
+            <HelpCircle className="h-3.5 w-3.5 mr-1" /> How it works
+          </Button>
           <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
           </Button>
@@ -567,6 +572,51 @@ export function SchedulingConstraintsPanel() {
           </Button>
         </div>
       </div>
+
+      {/* Help Guide */}
+      {showHelp && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <HelpCircle className="h-4 w-4 text-primary" />
+              Understanding Constraint Configuration
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium">🔴 Hard / 🟡 Soft / ⚪ Off — Enforcement</p>
+                <p className="text-[11px] text-muted-foreground">
+                  <strong>Hard</strong> constraints must never be violated — the solver treats them as absolute rules (e.g., legal requirements).
+                  <strong> Soft</strong> constraints are best-effort — the solver tries to satisfy them but can break them if needed, applying a penalty.
+                  <strong> Off</strong> disables the constraint entirely.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium">Required vs Preferred — Satisfiability</p>
+                <p className="text-[11px] text-muted-foreground">
+                  <strong>Required</strong> means the rule acts as a hard blocker — it must be satisfied.
+                  <strong> Preferred</strong> means the solver will try but can break it, using priority & weight to determine the penalty cost.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium">Priority (1–10) — Relative Importance</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Determines which soft constraints the solver prioritises when it can't satisfy all of them. Lower number = higher importance.
+                  Priority 1–2 applies a <strong>10× penalty multiplier</strong>, 3–4 = 7×, 5–6 = 5×, 7–8 = 3×, 9–10 = 1×.
+                  A priority-1 constraint will almost always be satisfied before a priority-10 one.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium">Weight (1–100) — Fine-Tuning</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Within the same priority level, weight controls how much penalty a violation costs. A constraint with weight 80 costs 4× more than one with weight 20
+                  at the same priority. Use weight to fine-tune between constraints of equal importance.
+                  <br /><strong>Formula:</strong> Penalty = Weight × Priority Multiplier × Violation Count.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Bar */}
       <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border text-xs">
