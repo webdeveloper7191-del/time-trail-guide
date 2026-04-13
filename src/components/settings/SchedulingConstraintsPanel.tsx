@@ -712,6 +712,7 @@ const CategorySection = ({ category, config, isLocationScope, onUpdate }: {
               weight={effective.weight}
               priority={effective.priority}
               parameters={effective.parameters}
+              conditionalRules={setting.conditionalRules || []}
               isLocationScope={isLocationScope}
               hasOverride={hasOverride}
               onEnforcementChange={v => onUpdate(def.id, 'enforcement', v)}
@@ -719,6 +720,7 @@ const CategorySection = ({ category, config, isLocationScope, onUpdate }: {
               onWeightChange={v => onUpdate(def.id, 'weight', v)}
               onPriorityChange={v => onUpdate(def.id, 'priority', v)}
               onParameterChange={(key, val) => onUpdate(def.id, `param.${key}`, val)}
+              onConditionalRulesChange={rules => onUpdate(def.id, 'conditionalRules', rules)}
             />
           );
         })}
@@ -1104,12 +1106,14 @@ export function SchedulingConstraintsPanel() {
                           return (
                             <ConstraintRow key={def.id} definition={def} enforcement={effective.enforcement}
                               satisfiability={effective.satisfiability} weight={effective.weight} priority={effective.priority}
-                              parameters={effective.parameters} isLocationScope={isLocationScope} hasOverride={hasOverride}
+                              parameters={effective.parameters} conditionalRules={setting.conditionalRules || []}
+                              isLocationScope={isLocationScope} hasOverride={hasOverride}
                               onEnforcementChange={v => handleUpdate(def.id, 'enforcement', v)}
                               onSatisfiabilityChange={v => handleUpdate(def.id, 'satisfiability', v)}
                               onWeightChange={v => handleUpdate(def.id, 'weight', v)}
                               onPriorityChange={v => handleUpdate(def.id, 'priority', v)}
                               onParameterChange={(k, val) => handleUpdate(def.id, `param.${k}`, val)}
+                              onConditionalRulesChange={rules => handleUpdate(def.id, 'conditionalRules', rules)}
                             />
                           );
                         })}
@@ -1149,12 +1153,14 @@ export function SchedulingConstraintsPanel() {
                           return (
                             <ConstraintRow key={def.id} definition={def} enforcement={effective.enforcement}
                               satisfiability={effective.satisfiability} weight={effective.weight} priority={effective.priority}
-                              parameters={effective.parameters} isLocationScope={isLocationScope} hasOverride={hasOverride}
+                              parameters={effective.parameters} conditionalRules={setting.conditionalRules || []}
+                              isLocationScope={isLocationScope} hasOverride={hasOverride}
                               onEnforcementChange={v => handleUpdate(def.id, 'enforcement', v)}
                               onSatisfiabilityChange={v => handleUpdate(def.id, 'satisfiability', v)}
                               onWeightChange={v => handleUpdate(def.id, 'weight', v)}
                               onPriorityChange={v => handleUpdate(def.id, 'priority', v)}
                               onParameterChange={(k, val) => handleUpdate(def.id, `param.${k}`, val)}
+                              onConditionalRulesChange={rules => handleUpdate(def.id, 'conditionalRules', rules)}
                             />
                           );
                         })}
