@@ -474,7 +474,7 @@ export function UnscheduledStaffPanel({
               </Button>
             </TooltipTrigger>
             <TooltipContent side="left">
-              <p>Configure Timefold Constraints</p>
+              <p>Scheduling Constraints</p>
             </TooltipContent>
           </Tooltip>
         </div>
