@@ -702,23 +702,64 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
                   </Badge>
                 )}
               </div>
-              <button
-                onClick={() => onConditionalRulesChange([...conditionalRules, {
-                  id: `rule-${Date.now()}`,
-                  label: `Rule ${conditionalRules.length + 1}`,
-                  enabled: true,
-                  conditions: [],
-                  parameterOverrides: {},
-                }])}
-                className="flex items-center gap-1 text-[11px] text-primary hover:underline"
-              >
-                <Plus className="h-3 w-3" /> Add rule
-              </button>
+              <div className="relative group/presets">
+                <button className="flex items-center gap-1 text-[11px] text-primary hover:underline peer">
+                  <Plus className="h-3 w-3" /> Add rule ▾
+                </button>
+                <div className="hidden group-hover/presets:block absolute right-0 top-full mt-1 z-50 w-72 bg-popover border rounded-lg shadow-lg p-1.5">
+                  <button
+                    onClick={() => onConditionalRulesChange([...conditionalRules, {
+                      id: `rule-${Date.now()}`,
+                      label: `Rule ${conditionalRules.length + 1}`,
+                      enabled: true,
+                      conditions: [],
+                      parameterOverrides: {},
+                    }])}
+                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-muted text-left transition-colors"
+                  >
+                    <span className="text-sm">✏️</span>
+                    <div>
+                      <p className="text-xs font-medium">Blank Rule</p>
+                      <p className="text-[10px] text-muted-foreground">Start from scratch with no conditions</p>
+                    </div>
+                  </button>
+                  <Separator className="my-1" />
+                  <p className="px-2.5 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                    <Zap className="h-3 w-3" /> Quick Presets
+                  </p>
+                  {RULE_PRESETS.map(preset => (
+                    <button
+                      key={preset.id}
+                      onClick={() => onConditionalRulesChange([...conditionalRules, { id: `rule-${Date.now()}-${preset.id}`, ...preset.factory() }])}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
+                    >
+                      <span className="text-sm">{preset.emoji}</span>
+                      <div>
+                        <p className="text-xs font-medium">{preset.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{preset.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             {conditionalRules.length === 0 && (
-              <p className="text-[10px] text-muted-foreground italic pl-5">
-                No conditional rules — this constraint applies uniformly. Add a rule to vary by day, shift type, or employment type.
-              </p>
+              <div className="flex items-center gap-3 pl-5 py-2">
+                <p className="text-[10px] text-muted-foreground italic">
+                  No conditional rules — this constraint applies uniformly.
+                </p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {RULE_PRESETS.slice(0, 3).map(preset => (
+                    <button
+                      key={preset.id}
+                      onClick={() => onConditionalRulesChange([...conditionalRules, { id: `rule-${Date.now()}-${preset.id}`, ...preset.factory() }])}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-full border border-primary/20 text-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <span>{preset.emoji}</span> {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
             <div className="space-y-2">
               {conditionalRules.map(rule => (
