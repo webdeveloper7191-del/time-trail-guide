@@ -4,6 +4,7 @@ import {
   Scale, Target, Save, RotateCcw, Info, Sparkles, Check,
   Search, Building2, Globe, ChevronDown, ExternalLink,
   CircleDot, CircleOff, Filter, FileText, HelpCircle,
+  Plus, Trash2, GitBranch,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,8 +26,12 @@ import {
   type ConstraintEnforcement,
   type Satisfiability,
   type SchedulingConstraintsConfig,
+  type ConditionalRule,
+  type ConstraintCondition,
+  type ConditionField,
   constraintCategories,
   CONSTRAINT_DEFINITIONS,
+  CONDITION_FIELDS,
   createDefaultConstraintsConfig,
   getConstraintsByCategory,
   getEffectiveSetting,
@@ -162,15 +167,247 @@ const SatisfiabilitySelector = ({ value, onChange }: {
   </div>
 );
 
+// ============= Conditional Rule Builder =============
+
+const ConditionalRuleCard = ({ rule, definition, onUpdate, onRemove }: {
+  rule: ConditionalRule;
+  definition: ConstraintDefinition;
+  onUpdate: (rule: ConditionalRule) => void;
+  onRemove: () => void;
+}) => {
+  const [expanded, setExpanded] = useState(true);
+
+  const addCondition = () => {
+    const usedFields = rule.conditions.map(c => c.field);
+    const availableField = CONDITION_FIELDS.find(f => !usedFields.includes(f.field));
+    if (!availableField) return;
+    onUpdate({
+      ...rule,
+      conditions: [...rule.conditions, {
+        id: `cond-${Date.now()}`,
+        field: availableField.field,
+        values: [],
+      }],
+    });
+  };
+
+  const updateCondition = (condId: string, updates: Partial<ConstraintCondition>) => {
+    onUpdate({
+      ...rule,
+      conditions: rule.conditions.map(c => c.id === condId ? { ...c, ...updates } : c),
+    });
+  };
+
+  const removeCondition = (condId: string) => {
+    onUpdate({
+      ...rule,
+      conditions: rule.conditions.filter(c => c.id !== condId),
+    });
+  };
+
+  const toggleValue = (condId: string, value: string, currentValues: string[]) => {
+    const newValues = currentValues.includes(value)
+      ? currentValues.filter(v => v !== value)
+      : [...currentValues, value];
+    updateCondition(condId, { values: newValues });
+  };
+
+  return (
+    <div className={cn("border rounded-md transition-all", rule.enabled ? "border-primary/30 bg-primary/5" : "border-border/50 bg-muted/20")}>
+      <div className="flex items-center gap-2 px-3 py-2">
+        <Switch checked={rule.enabled} onCheckedChange={v => onUpdate({ ...rule, enabled: v })} />
+        <Input
+          value={rule.label}
+          onChange={e => onUpdate({ ...rule, label: e.target.value })}
+          className="h-6 text-xs font-medium border-none bg-transparent shadow-none p-0 focus-visible:ring-0"
+          placeholder="Rule name..."
+        />
+        <div className="flex-1" />
+        <Badge variant="outline" className="text-[9px] px-1.5">
+          {rule.conditions.length} condition{rule.conditions.length !== 1 ? 's' : ''}
+        </Badge>
+        <button onClick={() => setExpanded(!expanded)} className="p-0.5 hover:bg-muted rounded">
+          <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", expanded && "rotate-180")} />
+        </button>
+        <button onClick={onRemove} className="p-0.5 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive">
+          <Trash2 className="h-3 w-3" />
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="px-3 pb-3 space-y-2.5 border-t pt-2.5">
+          {/* Conditions */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">When</Label>
+              <HelpTooltip title="Conditions" description="This rule applies only when ALL conditions are met (AND logic). Add multiple conditions to narrow the scope." />
+            </div>
+            {rule.conditions.map((cond, idx) => {
+              const fieldDef = CONDITION_FIELDS.find(f => f.field === cond.field);
+              return (
+                <div key={cond.id} className="flex items-start gap-2 bg-background rounded-md p-2 border">
+                  {idx > 0 && <span className="text-[10px] font-medium text-muted-foreground mt-1">AND</span>}
+                  <Select
+                    value={cond.field}
+                    onValueChange={(v: string) => updateCondition(cond.id, { field: v as ConditionField, values: [] })}
+                  >
+                    <SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CONDITION_FIELDS.map(f => (
+                        <SelectItem key={f.field} value={f.field} className="text-xs">{f.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-[10px] text-muted-foreground mt-1.5">is</span>
+                  {fieldDef?.type === 'multi-select' && fieldDef.options && (
+                    <div className="flex flex-wrap gap-1 flex-1">
+                      {fieldDef.options.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => toggleValue(cond.id, opt.value, cond.values)}
+                          className={cn(
+                            "px-2 py-0.5 text-[10px] rounded-full border transition-all",
+                            cond.values.includes(opt.value)
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {fieldDef?.type === 'boolean' && (
+                    <div className="flex gap-1">
+                      {['true', 'false'].map(v => (
+                        <button
+                          key={v}
+                          onClick={() => updateCondition(cond.id, { values: [v] })}
+                          className={cn(
+                            "px-2.5 py-0.5 text-[10px] rounded border transition-all",
+                            cond.values[0] === v
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background text-muted-foreground border-border"
+                          )}
+                        >
+                          {v === 'true' ? 'Yes' : 'No'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={() => removeCondition(cond.id)} className="p-0.5 hover:bg-destructive/10 rounded mt-0.5">
+                    <Trash2 className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </div>
+              );
+            })}
+            {rule.conditions.length < CONDITION_FIELDS.length && (
+              <button
+                onClick={addCondition}
+                className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+              >
+                <Plus className="h-3 w-3" /> Add condition
+              </button>
+            )}
+          </div>
+
+          {/* Overrides */}
+          <Separator />
+          <div className="space-y-2">
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Then Override</Label>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">Enforcement:</Label>
+                <EnforcementSelector value={rule.enforcement || 'SOFT'} onChange={v => onUpdate({ ...rule, enforcement: v })} />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">Priority:</Label>
+                <Select value={String(rule.priority ?? 5)} onValueChange={v => onUpdate({ ...rule, priority: Number(v) })}>
+                  <SelectTrigger className="h-7 w-20 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(p => (
+                      <SelectItem key={p} value={String(p)} className="text-xs">{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+                <Label className="text-xs text-muted-foreground">Weight:</Label>
+                <Slider value={[rule.weight ?? 50]} onValueChange={([v]) => onUpdate({ ...rule, weight: v })} min={1} max={100} step={1} className="flex-1" />
+                <span className="text-xs font-mono w-6 text-right">{rule.weight ?? 50}</span>
+              </div>
+            </div>
+
+            {/* Parameter overrides */}
+            {definition.parameters.length > 0 && (
+              <div className="space-y-1.5 mt-2">
+                <Label className="text-[10px] text-muted-foreground">Parameter Overrides (leave empty to use default):</Label>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  {definition.parameters.map(param => (
+                    <div key={param.key} className="flex items-center gap-2">
+                      <Label className="text-[11px] text-muted-foreground min-w-[120px] whitespace-nowrap">{param.label}</Label>
+                      {param.type === 'number' && (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            value={rule.parameterOverrides[param.key] ?? ''}
+                            onChange={e => onUpdate({
+                              ...rule,
+                              parameterOverrides: { ...rule.parameterOverrides, [param.key]: e.target.value ? Number(e.target.value) : undefined },
+                            })}
+                            placeholder={String(param.defaultValue)}
+                            className="h-6 w-20 text-[11px]"
+                            min={param.min}
+                            max={param.max}
+                          />
+                          {param.unit && <span className="text-[9px] text-muted-foreground">{param.unit}</span>}
+                        </div>
+                      )}
+                      {param.type === 'select' && (
+                        <Select
+                          value={rule.parameterOverrides[param.key] ?? ''}
+                          onValueChange={v => onUpdate({
+                            ...rule,
+                            parameterOverrides: { ...rule.parameterOverrides, [param.key]: v || undefined },
+                          })}
+                        >
+                          <SelectTrigger className="h-6 w-36 text-[11px]"><SelectValue placeholder="Default" /></SelectTrigger>
+                          <SelectContent>
+                            {param.options?.map(o => <SelectItem key={o.value} value={o.value} className="text-[11px]">{o.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {param.type === 'boolean' && (
+                        <Switch
+                          checked={rule.parameterOverrides[param.key] ?? param.defaultValue}
+                          onCheckedChange={v => onUpdate({
+                            ...rule,
+                            parameterOverrides: { ...rule.parameterOverrides, [param.key]: v },
+                          })}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ============= Constraint Row =============
 
-const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priority, parameters, isLocationScope, hasOverride, onEnforcementChange, onSatisfiabilityChange, onWeightChange, onPriorityChange, onParameterChange }: {
+const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priority, parameters, conditionalRules, isLocationScope, hasOverride, onEnforcementChange, onSatisfiabilityChange, onWeightChange, onPriorityChange, onParameterChange, onConditionalRulesChange }: {
   definition: ConstraintDefinition;
   enforcement: ConstraintEnforcement;
   satisfiability: Satisfiability;
   weight: number;
   priority: number;
   parameters: Record<string, any>;
+  conditionalRules: ConditionalRule[];
   isLocationScope: boolean;
   hasOverride: boolean;
   onEnforcementChange: (v: ConstraintEnforcement) => void;
@@ -178,6 +415,7 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
   onWeightChange: (v: number) => void;
   onPriorityChange: (v: number) => void;
   onParameterChange: (key: string, value: any) => void;
+  onConditionalRulesChange: (rules: ConditionalRule[]) => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
   const isActive = enforcement !== 'OFF';
@@ -220,6 +458,12 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
                 satisfiability === 'REQUIRED' ? "border-red-200 text-red-600" : "border-amber-200 text-amber-600"
               )}>
                 {satisfiability}
+              </Badge>
+            )}
+            {conditionalRules.length > 0 && (
+              <Badge variant="outline" className="text-[9px] px-1 border-primary/30 text-primary">
+                <GitBranch className="h-2.5 w-2.5 mr-0.5" />
+                {conditionalRules.filter(r => r.enabled).length} rule{conditionalRules.filter(r => r.enabled).length !== 1 ? 's' : ''}
               </Badge>
             )}
           </div>
@@ -340,7 +584,55 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
             </>
           )}
 
-          {/* Timefold docs link */}
+          {/* Conditional Rules */}
+          <Separator />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <GitBranch className="h-3.5 w-3.5 text-primary" />
+                <Label className="text-xs font-semibold text-foreground">Conditional Rules</Label>
+                <HelpTooltip
+                  title="Conditional Rules"
+                  description="Add rules that override this constraint's settings when specific conditions are met (e.g., different max hours on weekends or for casual staff)."
+                  extra="Conditions use AND logic — all conditions in a rule must match. Multiple rules are evaluated top-down; first matching rule wins."
+                />
+                {conditionalRules.length > 0 && (
+                  <Badge variant="secondary" className="text-[9px] px-1.5">
+                    {conditionalRules.length} rule{conditionalRules.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+              <button
+                onClick={() => onConditionalRulesChange([...conditionalRules, {
+                  id: `rule-${Date.now()}`,
+                  label: `Rule ${conditionalRules.length + 1}`,
+                  enabled: true,
+                  conditions: [],
+                  parameterOverrides: {},
+                }])}
+                className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+              >
+                <Plus className="h-3 w-3" /> Add rule
+              </button>
+            </div>
+            {conditionalRules.length === 0 && (
+              <p className="text-[10px] text-muted-foreground italic pl-5">
+                No conditional rules — this constraint applies uniformly. Add a rule to vary by day, shift type, or employment type.
+              </p>
+            )}
+            <div className="space-y-2">
+              {conditionalRules.map(rule => (
+                <ConditionalRuleCard
+                  key={rule.id}
+                  rule={rule}
+                  definition={definition}
+                  onUpdate={updated => onConditionalRulesChange(conditionalRules.map(r => r.id === rule.id ? updated : r))}
+                  onRemove={() => onConditionalRulesChange(conditionalRules.filter(r => r.id !== rule.id))}
+                />
+              ))}
+            </div>
+          </div>
+
           {definition.timefoldMapping && (
             <a
               href={`https://docs.timefold.ai/employee-shift-scheduling/latest/${definition.timefoldMapping}`}
@@ -426,6 +718,7 @@ const CategorySection = ({ category, config, isLocationScope, onUpdate }: {
               weight={effective.weight}
               priority={effective.priority}
               parameters={effective.parameters}
+              conditionalRules={setting.conditionalRules || []}
               isLocationScope={isLocationScope}
               hasOverride={hasOverride}
               onEnforcementChange={v => onUpdate(def.id, 'enforcement', v)}
@@ -433,6 +726,7 @@ const CategorySection = ({ category, config, isLocationScope, onUpdate }: {
               onWeightChange={v => onUpdate(def.id, 'weight', v)}
               onPriorityChange={v => onUpdate(def.id, 'priority', v)}
               onParameterChange={(key, val) => onUpdate(def.id, `param.${key}`, val)}
+              onConditionalRulesChange={rules => onUpdate(def.id, 'conditionalRules', rules)}
             />
           );
         })}
@@ -484,6 +778,7 @@ export function SchedulingConstraintsPanel() {
         else if (field === 'satisfiability') setting.satisfiability = value;
         else if (field === 'weight') setting.weight = value;
         else if (field === 'priority') setting.priority = value;
+        else if (field === 'conditionalRules') setting.conditionalRules = value;
         else if (field.startsWith('param.')) {
           const paramKey = field.slice(6);
           setting.parameters = { ...setting.parameters, [paramKey]: value };
@@ -818,12 +1113,14 @@ export function SchedulingConstraintsPanel() {
                           return (
                             <ConstraintRow key={def.id} definition={def} enforcement={effective.enforcement}
                               satisfiability={effective.satisfiability} weight={effective.weight} priority={effective.priority}
-                              parameters={effective.parameters} isLocationScope={isLocationScope} hasOverride={hasOverride}
+                              parameters={effective.parameters} conditionalRules={setting.conditionalRules || []}
+                              isLocationScope={isLocationScope} hasOverride={hasOverride}
                               onEnforcementChange={v => handleUpdate(def.id, 'enforcement', v)}
                               onSatisfiabilityChange={v => handleUpdate(def.id, 'satisfiability', v)}
                               onWeightChange={v => handleUpdate(def.id, 'weight', v)}
                               onPriorityChange={v => handleUpdate(def.id, 'priority', v)}
                               onParameterChange={(k, val) => handleUpdate(def.id, `param.${k}`, val)}
+                              onConditionalRulesChange={rules => handleUpdate(def.id, 'conditionalRules', rules)}
                             />
                           );
                         })}
@@ -863,12 +1160,14 @@ export function SchedulingConstraintsPanel() {
                           return (
                             <ConstraintRow key={def.id} definition={def} enforcement={effective.enforcement}
                               satisfiability={effective.satisfiability} weight={effective.weight} priority={effective.priority}
-                              parameters={effective.parameters} isLocationScope={isLocationScope} hasOverride={hasOverride}
+                              parameters={effective.parameters} conditionalRules={setting.conditionalRules || []}
+                              isLocationScope={isLocationScope} hasOverride={hasOverride}
                               onEnforcementChange={v => handleUpdate(def.id, 'enforcement', v)}
                               onSatisfiabilityChange={v => handleUpdate(def.id, 'satisfiability', v)}
                               onWeightChange={v => handleUpdate(def.id, 'weight', v)}
                               onPriorityChange={v => handleUpdate(def.id, 'priority', v)}
                               onParameterChange={(k, val) => handleUpdate(def.id, `param.${k}`, val)}
+                              onConditionalRulesChange={rules => handleUpdate(def.id, 'conditionalRules', rules)}
                             />
                           );
                         })}

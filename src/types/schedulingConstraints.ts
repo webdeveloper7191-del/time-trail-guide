@@ -11,6 +11,92 @@ export type ConstraintEnforcement = 'HARD' | 'SOFT' | 'OFF';
 export type ConstraintScope = 'business' | 'location';
 export type Satisfiability = 'REQUIRED' | 'PREFERRED';
 
+// ============= Conditional Rules =============
+
+export type ConditionField = 'dayOfWeek' | 'shiftType' | 'employmentType' | 'timeOfDay' | 'publicHoliday';
+
+export interface ConditionOption {
+  value: string;
+  label: string;
+}
+
+export const CONDITION_FIELDS: { field: ConditionField; label: string; type: 'multi-select' | 'boolean' | 'time-range'; options?: ConditionOption[] }[] = [
+  {
+    field: 'dayOfWeek',
+    label: 'Day of Week',
+    type: 'multi-select',
+    options: [
+      { value: 'mon', label: 'Monday' },
+      { value: 'tue', label: 'Tuesday' },
+      { value: 'wed', label: 'Wednesday' },
+      { value: 'thu', label: 'Thursday' },
+      { value: 'fri', label: 'Friday' },
+      { value: 'sat', label: 'Saturday' },
+      { value: 'sun', label: 'Sunday' },
+    ],
+  },
+  {
+    field: 'shiftType',
+    label: 'Shift Type',
+    type: 'multi-select',
+    options: [
+      { value: 'regular', label: 'Regular' },
+      { value: 'on-call', label: 'On-Call / Standby' },
+      { value: 'callback', label: 'Callback' },
+      { value: 'recall', label: 'Recall' },
+      { value: 'emergency', label: 'Emergency' },
+      { value: 'sleepover', label: 'Sleepover' },
+      { value: 'broken', label: 'Broken / Split' },
+    ],
+  },
+  {
+    field: 'employmentType',
+    label: 'Employment Type',
+    type: 'multi-select',
+    options: [
+      { value: 'full-time', label: 'Full-Time' },
+      { value: 'part-time', label: 'Part-Time' },
+      { value: 'casual', label: 'Casual' },
+      { value: 'agency', label: 'Agency' },
+    ],
+  },
+  {
+    field: 'timeOfDay',
+    label: 'Time of Day',
+    type: 'multi-select',
+    options: [
+      { value: 'morning', label: 'Morning (6am–12pm)' },
+      { value: 'afternoon', label: 'Afternoon (12pm–6pm)' },
+      { value: 'evening', label: 'Evening (6pm–10pm)' },
+      { value: 'night', label: 'Night (10pm–6am)' },
+    ],
+  },
+  {
+    field: 'publicHoliday',
+    label: 'Public Holiday',
+    type: 'boolean',
+  },
+];
+
+export interface ConstraintCondition {
+  id: string;
+  field: ConditionField;
+  values: string[]; // selected values for multi-select, ['true'/'false'] for boolean
+}
+
+export interface ConditionalRule {
+  id: string;
+  label: string; // e.g., "Weekend Override", "Night Shift Rule"
+  enabled: boolean;
+  conditions: ConstraintCondition[];
+  // Override values when conditions match
+  enforcement?: ConstraintEnforcement;
+  satisfiability?: Satisfiability;
+  weight?: number;
+  priority?: number;
+  parameterOverrides: Record<string, any>;
+}
+
 export interface ConstraintSetting {
   id: string;
   enforcement: ConstraintEnforcement;
@@ -19,6 +105,7 @@ export interface ConstraintSetting {
   priority: number; // 1-10, Timefold priority multiplier (1=highest 10×, 10=lowest 1×)
   parameters: Record<string, any>;
   locationOverrides: Record<string, LocationOverride>;
+  conditionalRules: ConditionalRule[];
 }
 
 export interface LocationOverride {
@@ -643,6 +730,7 @@ export function createDefaultConstraintsConfig(): SchedulingConstraintsConfig {
       priority: def.defaultEnforcement === 'HARD' ? 1 : 5,
       parameters: params,
       locationOverrides: {},
+      conditionalRules: [],
     };
   });
 
