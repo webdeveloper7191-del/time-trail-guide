@@ -251,12 +251,18 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
           {/* Satisfiability + Priority + Weight Row */}
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Satisfiability:</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Satisfiability:</Label>
+                <HelpTooltip title={HELP_TEXT.satisfiability.title} description={HELP_TEXT.satisfiability.description} />
+              </div>
               <SatisfiabilitySelector value={satisfiability} onChange={onSatisfiabilityChange} />
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Priority:</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Priority:</Label>
+                <HelpTooltip title={HELP_TEXT.priority.title} description={HELP_TEXT.priority.description} extra={HELP_TEXT.priority.scale} />
+              </div>
               <Select value={String(priority)} onValueChange={v => onPriorityChange(Number(v))}>
                 <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -271,7 +277,10 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
 
             {/* Weight slider */}
             <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-              <Label className="text-xs text-muted-foreground whitespace-nowrap">Weight:</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Weight:</Label>
+                <HelpTooltip title={HELP_TEXT.weight.title} description={HELP_TEXT.weight.description} extra={HELP_TEXT.weight.example} />
+              </div>
               <Slider value={[weight]} onValueChange={([v]) => onWeightChange(v)} min={1} max={100} step={1} className="flex-1" />
               <span className="text-xs font-mono font-medium w-6 text-right">{weight}</span>
             </div>
