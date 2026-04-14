@@ -355,7 +355,7 @@ export function DemandShiftWizard({
     } finally {
       setIsLoading(false);
     }
-  }, [centreRooms, selectedRoomId, demandData, dates, config, useApi, centreId, autoAssignEnabled, staff]);
+  }, [centreRooms, selectedRoomId, demandData, effectiveDates, config, useApi, centreId, autoAssignEnabled, staff]);
 
   const runAutoAssignment = useCallback((envelopes: ShiftEnvelope[]) => {
     if (staff.length === 0) {
