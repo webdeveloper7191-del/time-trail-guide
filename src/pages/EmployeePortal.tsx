@@ -41,7 +41,7 @@ const currentEmployee = {
 };
 
 export function EmployeePortal() {
-  const [activeTab, setActiveTab] = useState('current');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const onboardingProgress = onboardingComplete ? 100 : 35; // Mock progress
   // Filter timesheets for current employee
