@@ -497,7 +497,89 @@ export function DemandShiftWizard({
             </p>
           </div>
 
-          {/* Room selection */}
+          {/* Config Presets */}
+          <Card className="border border-border">
+            <CardContent className="p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bookmark className="h-4 w-4 text-primary" />
+                  <Label className="text-xs font-medium">Configuration Presets</Label>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[11px]"
+                  onClick={() => setShowSavePreset(!showSavePreset)}
+                >
+                  <Save className="h-3 w-3 mr-1" />
+                  Save Current
+                </Button>
+              </div>
+
+              {/* Save new preset form */}
+              {showSavePreset && (
+                <div className="space-y-2 p-2 rounded-md bg-muted/50 border">
+                  <Input
+                    placeholder="Preset name (e.g., Monday Pattern)"
+                    value={newPresetName}
+                    onChange={e => setNewPresetName(e.target.value)}
+                    className="h-7 text-xs"
+                  />
+                  <Input
+                    placeholder="Description (optional)"
+                    value={newPresetDesc}
+                    onChange={e => setNewPresetDesc(e.target.value)}
+                    className="h-7 text-xs"
+                  />
+                  <div className="flex gap-1.5 justify-end">
+                    <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => setShowSavePreset(false)}>
+                      Cancel
+                    </Button>
+                    <Button size="sm" className="h-6 text-[10px]" onClick={handleSavePreset} disabled={!newPresetName.trim()}>
+                      Save Preset
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Preset list */}
+              <div className="grid grid-cols-2 gap-1.5 max-h-[140px] overflow-y-auto">
+                {allPresets.map(preset => (
+                  <button
+                    key={preset.id}
+                    onClick={() => handleLoadPreset(preset)}
+                    className={cn(
+                      'relative group text-left rounded-md border p-2 transition-all text-xs',
+                      activePresetId === preset.id
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                        : 'border-border hover:border-primary/30 hover:bg-muted/30'
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <FolderOpen className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="font-medium truncate">{preset.name}</span>
+                      {preset.isBuiltIn && (
+                        <Badge variant="secondary" className="h-4 text-[8px] px-1 shrink-0">Built-in</Badge>
+                      )}
+                    </div>
+                    {preset.description && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{preset.description}</p>
+                    )}
+                    {!preset.isBuiltIn && (
+                      <button
+                        onClick={e => { e.stopPropagation(); handleDeletePreset(preset.id); }}
+                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-destructive/10 transition-opacity"
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </button>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+
           <div className="space-y-2">
             <Label className="text-sm font-medium">Target Rooms</Label>
             <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
