@@ -960,6 +960,15 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
     toast.info('Configuration reset to defaults');
   };
 
+  React.useEffect(() => {
+    onReady?.({
+      handleSave,
+      handleReset,
+      showHelp,
+      toggleHelp: () => setShowHelp(prev => !prev),
+    });
+  });
+
   const applyPreset = (presetId: string) => {
     const preset = industryPresets.find(p => p.id === presetId);
     if (preset) {
