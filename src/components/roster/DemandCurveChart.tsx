@@ -39,8 +39,10 @@ export function DemandCurveChart({
   assignments,
   staff,
   onReassignShift,
+  staffScorer,
 }: DemandCurveChartProps) {
   const [reassignSearch, setReassignSearch] = useState('');
+  const [activeEnvelopeScores, setActiveEnvelopeScores] = useState<Map<string, StaffCandidateScore> | null>(null);
   const profile = useMemo(() => {
     if (selectedRoomId) return profiles.find(p => p.roomId === selectedRoomId);
     return profiles[0];
