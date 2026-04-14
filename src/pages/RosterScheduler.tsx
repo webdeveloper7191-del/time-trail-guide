@@ -1885,6 +1885,24 @@ export default function RosterScheduler() {
               </Button>
             </Tooltip>
 
+            {/* NQF Compliance Dashboard */}
+            <Tooltip content="NQF Ratio Compliance">
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={() => setShowNqfCompliance(true)}
+                startIcon={<Shield size={16} />}
+                color="warning"
+                sx={{ 
+                  minWidth: { md: 'auto', lg: 'unset' },
+                  px: { md: 1, lg: 2 },
+                  '& .MuiButton-startIcon': { mr: { md: 0, lg: 1 } }
+                }}
+              >
+                <Box component="span" sx={{ display: { md: 'none', lg: 'inline' } }}>Compliance</Box>
+              </Button>
+            </Tooltip>
+
             {/* Budget indicator - Compact on tablet */}
             <Button 
               variant="text" 
