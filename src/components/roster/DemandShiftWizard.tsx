@@ -199,6 +199,7 @@ export function DemandShiftWizard({
   const [autoAssignEnabled, setAutoAssignEnabled] = useState(false);
   const [isAutoAssigning, setIsAutoAssigning] = useState(false);
   const [assignments, setAssignments] = useState<Map<string, StaffAssignment>>(new Map());
+  const [assignmentMetrics, setAssignmentMetrics] = useState<{ estimatedCost: number; fairnessScore: number } | null>(null);
   const [assignWeightPreset, setAssignWeightPreset] = useState<string>('balanced');
   const [assignWeights, setAssignWeights] = useState<SchedulerWeights>({ ...DEFAULT_WEIGHTS });
 
@@ -368,56 +369,39 @@ export function DemandShiftWizard({
 
     setIsAutoAssigning(true);
 
-    // Simulate async processing
     setTimeout(() => {
+      // Convert envelopes to GeneratedShiftSlots for the unified assignment engine
+      const slots: GeneratedShiftSlot[] = envelopes.map(envelope => ({
+        id: envelope.id,
+        centreId: envelope.centreId,
+        roomId: envelope.roomId,
+        roomName: envelope.roomName,
+        date: envelope.date,
+        startTime: envelope.startTime,
+        endTime: envelope.endTime,
+        breakMinutes: envelope.breakMinutes,
+        requiredCount: 1,
+        demandSource: 'booking' as const,
+        priority: envelope.priority,
+      }));
+
+      // Use the unified batch assignment engine
+      const result = batchAssignStaff(slots, staff, existingShifts, assignWeights, defaultConstraintConfig);
+
+      // Convert to StaffAssignment map
       const newAssignments = new Map<string, StaffAssignment>();
-      const assignedSlots: GeneratedShiftSlot[] = [];
-
-      // Sort by priority
-      const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
-      const sorted = [...envelopes].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-
-      sorted.forEach(envelope => {
-        // Build temp slot for the scoring engine
-        const tempSlot: GeneratedShiftSlot = {
-          id: envelope.id,
-          centreId: envelope.centreId,
-          roomId: envelope.roomId,
-          roomName: envelope.roomName,
-          date: envelope.date,
-          startTime: envelope.startTime,
-          endTime: envelope.endTime,
-          breakMinutes: envelope.breakMinutes,
-          requiredCount: 1,
-          demandSource: 'booking',
-          priority: envelope.priority,
-        };
-
-        // Score all eligible staff
-        const candidates = staff
-          .map(s => scoreStaffForShift(
-            s, tempSlot, existingShifts, assignedSlots, staff, assignWeights, defaultConstraintConfig
-          ))
-          .filter(c => c.isEligible)
-          .sort((a, b) => b.totalScore - a.totalScore);
-
-        if (candidates.length > 0) {
-          const best = candidates[0];
-          tempSlot.assignedStaffId = best.staffId;
-          tempSlot.assignedStaffName = best.staffName;
-          assignedSlots.push(tempSlot);
-
-          newAssignments.set(envelope.id, {
-            envelopeId: envelope.id,
-            staffId: best.staffId,
-            staffName: best.staffName,
-            score: best.totalScore,
-            issues: best.issues,
-          });
-        }
+      result.assignments.forEach((assignment, slotId) => {
+        newAssignments.set(slotId, {
+          envelopeId: slotId,
+          staffId: assignment.staffId,
+          staffName: assignment.staffName,
+          score: assignment.score,
+          issues: assignment.issues,
+        });
       });
 
       setAssignments(newAssignments);
+      setAssignmentMetrics({ estimatedCost: result.estimatedCost, fairnessScore: result.fairnessScore });
       setIsAutoAssigning(false);
 
       const assignedCount = newAssignments.size;
