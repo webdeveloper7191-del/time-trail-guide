@@ -328,18 +328,15 @@ export function DemandShiftWizard({
       let genResult: DemandShiftGenerationResult;
 
       if (useApi) {
-        // Use mock API endpoint
-        const dateStrings = dates.map(d => typeof d === 'string' ? d : d);
         const apiResponse = await demandApi.generateShiftsFromDemand({
           centreId,
           rooms: targetRooms,
-          dates: dateStrings,
+          dates: effectiveDates,
           config,
         });
         genResult = apiResponse.data.result;
       } else {
-        // Direct engine call (existing behavior)
-        genResult = generateDemandDrivenShifts(demandData, targetRooms, dates, config);
+        genResult = generateDemandDrivenShifts(demandData, targetRooms, effectiveDates, config);
       }
 
       setResult(genResult);
