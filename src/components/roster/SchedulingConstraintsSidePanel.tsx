@@ -47,7 +47,7 @@ export function SchedulingConstraintsSidePanel({ open, onClose }: SchedulingCons
         {
           label: 'Save',
           onClick: () => panelRef?.handleSave(),
-          variant: 'default',
+          variant: 'primary',
         },
       ]}
     >
