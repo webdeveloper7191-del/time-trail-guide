@@ -142,12 +142,9 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
       setUpcomingShifts(prev => [...prev, pickedShift].sort((a, b) => a.date.getTime() - b.date.getTime()));
       setOpenShifts(prev => prev.filter(s => s.id !== shiftId));
       setPickingUpId(null);
-      toast({
-        title: 'Shift Picked Up!',
-        description: `${shift.role} on ${getDateLabel(shift.date)} (${shift.startTime} – ${shift.endTime}) added to your schedule.`,
-      });
+      toast.success(`Shift Picked Up! ${shift.role} on ${getDateLabel(shift.date)} (${shift.startTime} – ${shift.endTime}) added to your schedule.`);
     }, 600);
-  }, [openShifts, toast]);
+  }, [openShifts]);
 
   // ── Clock in/out ──
   const handleClockIn = useCallback(() => {
@@ -158,8 +155,8 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
       setClockState(prev => ({ ...prev, elapsed: prev.elapsed + 1 }));
     }, 1000);
     setClockIntervalRef(interval);
-    toast({ title: 'Clocked In', description: `Started at ${format(now, 'HH:mm')}` });
-  }, [todayShift, toast]);
+    toast.success(`Clocked In — Started at ${format(now, 'HH:mm')}`);
+  }, [todayShift]);
 
   const handleClockOut = useCallback(() => {
     if (clockInterval) clearInterval(clockInterval);
@@ -167,19 +164,19 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
     const hours = (elapsed / 3600).toFixed(1);
     setClockState({ isClockedIn: false, clockInTime: null, shiftId: null, elapsed: 0 });
     setClockIntervalRef(null);
-    toast({ title: 'Clocked Out', description: `Total time: ${hours} hours logged.` });
-  }, [clockInterval, clockState.elapsed, toast]);
+    toast.success(`Clocked Out — Total time: ${hours} hours logged.`);
+  }, [clockInterval, clockState.elapsed]);
 
   // ── Leave request ──
   const handleLeaveSubmit = useCallback(() => {
     if (!leaveForm.startDate || !leaveForm.endDate) {
-      toast({ title: 'Missing dates', description: 'Please select start and end dates.', variant: 'destructive' });
+      toast.error('Please select start and end dates.');
       return;
     }
     const start = new Date(leaveForm.startDate);
     const end = new Date(leaveForm.endDate);
     if (end < start) {
-      toast({ title: 'Invalid dates', description: 'End date must be after start date.', variant: 'destructive' });
+      toast.error('End date must be after start date.');
       return;
     }
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -198,8 +195,8 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
     setPendingLeaves(prev => [...prev, newLeave]);
     setLeaveDialogOpen(false);
     setLeaveForm({ type: 'annual_leave', startDate: '', endDate: '', notes: '' });
-    toast({ title: 'Leave Request Submitted', description: `${newLeave.type} for ${days} day(s) is pending approval.` });
-  }, [leaveForm, toast]);
+    toast.success(`Leave Request Submitted — ${newLeave.type} for ${days} day(s) is pending approval.`);
+  }, [leaveForm]);
 
   return (
     <div className="space-y-6">
