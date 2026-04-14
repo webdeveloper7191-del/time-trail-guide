@@ -212,6 +212,69 @@ export function DemandShiftWizard({
 
   const allPresets = useMemo(() => [...BUILT_IN_PRESETS, ...savedPresets], [savedPresets]);
 
+  // Date range state
+  const today = useMemo(() => new Date(), []);
+  const defaultFrom = useMemo(() => {
+    if (dates.length > 0) {
+      const d = dates[0];
+      return typeof d === 'string' ? parseISO(d) : new Date(d);
+    }
+    return startOfWeek(today, { weekStartsOn: 1 });
+  }, [dates, today]);
+  const defaultTo = useMemo(() => {
+    if (dates.length > 0) {
+      const d = dates[dates.length - 1];
+      return typeof d === 'string' ? parseISO(d) : new Date(d);
+    }
+    return endOfWeek(today, { weekStartsOn: 1 });
+  }, [dates, today]);
+
+  const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
+  const [dateTo, setDateTo] = useState<Date>(defaultTo);
+
+  // Sync defaults when wizard opens
+  useEffect(() => {
+    if (open) {
+      setDateFrom(defaultFrom);
+      setDateTo(defaultTo);
+    }
+  }, [open, defaultFrom, defaultTo]);
+
+  const effectiveDates = useMemo(() => {
+    try {
+      return eachDayOfInterval({ start: dateFrom, end: dateTo }).map(d => format(d, 'yyyy-MM-dd'));
+    } catch {
+      return dates.map(d => typeof d === 'string' ? d : format(new Date(d), 'yyyy-MM-dd'));
+    }
+  }, [dateFrom, dateTo, dates]);
+
+  const periodLabel = useMemo(() => {
+    const days = effectiveDates.length;
+    return `${format(dateFrom, 'dd MMM')} — ${format(dateTo, 'dd MMM yyyy')} (${days} day${days !== 1 ? 's' : ''})`;
+  }, [dateFrom, dateTo, effectiveDates]);
+
+  const setQuickPeriod = useCallback((key: string) => {
+    const now = new Date();
+    switch (key) {
+      case 'this-week':
+        setDateFrom(startOfWeek(now, { weekStartsOn: 1 }));
+        setDateTo(endOfWeek(now, { weekStartsOn: 1 }));
+        break;
+      case 'next-week':
+        setDateFrom(startOfWeek(addWeeks(now, 1), { weekStartsOn: 1 }));
+        setDateTo(endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 }));
+        break;
+      case 'next-2-weeks':
+        setDateFrom(startOfWeek(addWeeks(now, 1), { weekStartsOn: 1 }));
+        setDateTo(endOfWeek(addWeeks(now, 2), { weekStartsOn: 1 }));
+        break;
+      case 'this-month':
+        setDateFrom(startOfMonth(now));
+        setDateTo(endOfMonth(now));
+        break;
+    }
+  }, []);
+
   const handleLoadPreset = useCallback((preset: DemandConfigPreset) => {
     setConfig({ ...preset.config });
     setAutoAssignEnabled(preset.autoAssignEnabled);
