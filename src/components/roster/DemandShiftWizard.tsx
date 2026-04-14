@@ -557,7 +557,39 @@ export function DemandShiftWizard({
             </p>
           </div>
 
-          {/* Config Presets */}
+          {/* Demand Overview (merged from Auto-Scheduler) */}
+          <div className="grid grid-cols-4 gap-2">
+            <Card className="bg-muted/30">
+              <CardContent className="p-2.5 text-center">
+                <p className="text-lg font-bold text-foreground">{demandSummary.totalRequired}</p>
+                <p className="text-[10px] text-muted-foreground">Staff Required</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-muted/30">
+              <CardContent className="p-2.5 text-center">
+                <p className="text-lg font-bold text-foreground">{demandSummary.totalScheduled}</p>
+                <p className="text-[10px] text-muted-foreground">Already Scheduled</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-muted/30">
+              <CardContent className="p-2.5 text-center">
+                <p className={cn("text-lg font-bold", demandSummary.gap > 0 ? "text-destructive" : "text-primary")}>
+                  {demandSummary.gap}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Staffing Gap</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-muted/30">
+              <CardContent className="p-2.5 text-center">
+                <p className={cn("text-lg font-bold", demandSummary.nonCompliant > 0 ? "text-destructive" : "text-primary")}>
+                  {demandSummary.nonCompliant}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Non-Compliant</p>
+              </CardContent>
+            </Card>
+          </div>
+
+
           <Card className="border border-border">
             <CardContent className="p-3 space-y-3">
               <div className="flex items-center justify-between">
