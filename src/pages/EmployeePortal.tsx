@@ -10,27 +10,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Clock,
-  Calendar,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  TrendingUp,
-  Coffee,
-  DollarSign,
-  FileText,
-  ChevronRight,
-  User,
-  Building2,
-  Hourglass,
-  ShieldCheck,
-  ShieldAlert,
-  GraduationCap,
-  Target,
-  MessageSquare,
-  Users,
-  Sparkles,
-  ClipboardCheck,
+  Clock, Calendar, CheckCircle2, XCircle, AlertCircle,
+  TrendingUp, Coffee, DollarSign, FileText, ChevronRight,
+  User, Building2, Hourglass, ShieldCheck, ShieldAlert,
+  GraduationCap, Target, MessageSquare, Users, Sparkles,
+  ClipboardCheck, LayoutDashboard,
 } from 'lucide-react';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -44,6 +28,7 @@ import { EmployeeRecognitionPanel } from '@/components/performance/EmployeeRecog
 import { EmployeeCareerPathingPanel } from '@/components/performance/employee/EmployeeCareerPathingPanel';
 import { EmployeeOnboardingPanel } from '@/components/employee/EmployeeOnboardingPanel';
 import { OnboardingBanner } from '@/components/employee/OnboardingBanner';
+import { EmployeeDashboard } from '@/components/employee/EmployeeDashboard';
 
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
@@ -56,7 +41,7 @@ const currentEmployee = {
 };
 
 export function EmployeePortal() {
-  const [activeTab, setActiveTab] = useState('current');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const onboardingProgress = onboardingComplete ? 100 : 35; // Mock progress
   // Filter timesheets for current employee
@@ -180,6 +165,9 @@ export function EmployeePortal() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6 flex-wrap">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <LayoutDashboard className="h-4 w-4" /> Dashboard
+            </TabsTrigger>
             {!onboardingComplete && (
               <TabsTrigger value="onboarding" className="gap-2">
                 <ClipboardCheck className="h-4 w-4" /> Onboarding
@@ -210,6 +198,15 @@ export function EmployeePortal() {
               <GraduationCap className="h-4 w-4" /> Learning
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard">
+            <EmployeeDashboard
+              employee={currentEmployee}
+              onNavigate={setActiveTab}
+              onboardingProgress={onboardingProgress}
+              onboardingComplete={onboardingComplete}
+            />
+          </TabsContent>
 
           <TabsContent value="onboarding">
             <EmployeeOnboardingPanel />
