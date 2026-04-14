@@ -18,6 +18,14 @@ import {
   Clock,
   TrendingDown,
   TrendingUp,
+  Heart,
+  ShoppingCart,
+  Utensils,
+  Headphones,
+  Factory,
+  Calendar,
+  Settings,
+  ArrowRight,
 } from 'lucide-react';
 import {
   BarChart,
@@ -26,9 +34,11 @@ import {
   YAxis,
   ResponsiveContainer,
   Cell,
-  ReferenceLine,
   Tooltip as RechartsTooltip,
 } from 'recharts';
+import { IndustryType, getIndustryTemplate, IndustryTemplate } from '@/types/industryConfig';
+import { getIndustryTypeForCentre } from '@/data/locationCentreMapping';
+import { Button } from '@/components/ui/button';
 
 interface NqfComplianceDashboardProps {
   isOpen: boolean;
@@ -37,6 +47,9 @@ interface NqfComplianceDashboardProps {
   shifts: Shift[];
   demandData: DemandAnalyticsData[];
   dates: Date[];
+  centreId?: string;
+  industryOverride?: IndustryType;
+  onOpenDemandWizard?: (roomId?: string) => void;
 }
 
 interface RoomComplianceStatus {
@@ -55,18 +68,15 @@ interface RoomComplianceStatus {
   breachSlots: { time: string; required: number; scheduled: number; gap: number }[];
 }
 
-const ageGroupLabels: Record<string, string> = {
-  nursery: 'Nursery (0-2)',
-  toddler: 'Toddler (2-3)',
-  preschool: 'Preschool (3-5)',
-  kindy: 'Kindy (4-5)',
-};
-
-const ratioLabels: Record<number, string> = {
-  4: '1:4',
-  5: '1:5',
-  10: '1:10',
-  11: '1:11',
+const industryIcons: Record<IndustryType, React.ElementType> = {
+  childcare: Baby,
+  healthcare: Heart,
+  retail: ShoppingCart,
+  hospitality: Utensils,
+  call_center: Headphones,
+  manufacturing: Factory,
+  events: Calendar,
+  custom: Settings,
 };
 
 export function NqfComplianceDashboard({
@@ -76,7 +86,21 @@ export function NqfComplianceDashboard({
   shifts,
   demandData,
   dates,
+  centreId,
+  industryOverride,
+  onOpenDemandWizard,
 }: NqfComplianceDashboardProps) {
+  // Resolve industry type from centre mapping or override
+  const industryType = useMemo(() => {
+    if (industryOverride) return industryOverride;
+    if (centreId) return getIndustryTypeForCentre(centreId);
+    return 'childcare' as IndustryType;
+  }, [centreId, industryOverride]);
+
+  const template = useMemo(() => getIndustryTemplate(industryType), [industryType]);
+  const { demandConfig, staffingConfig } = template;
+  const DemandIcon = industryIcons[industryType] || Settings;
+
   const roomCompliance = useMemo(() => {
     return rooms.map((room): RoomComplianceStatus => {
       const roomDemand = demandData.filter(d => d.roomId === room.id);
@@ -91,7 +115,6 @@ export function NqfComplianceDashboard({
 
       const requiredStaff = Math.ceil(peakChildren / room.requiredRatio);
       
-      // Count unique staff scheduled for this room across all dates
       const uniqueStaffPerDay = new Map<string, Set<string>>();
       roomShifts.forEach(s => {
         if (s.staffId) {
@@ -111,7 +134,6 @@ export function NqfComplianceDashboard({
         ? Math.round((scheduledStaff / requiredStaff) * 100)
         : 100;
 
-      // Find breach slots
       const breachSlots: RoomComplianceStatus['breachSlots'] = [];
       roomDemand.forEach(d => {
         if (!d.staffRatioCompliant) {
@@ -192,14 +214,25 @@ export function NqfComplianceDashboard({
     }
   };
 
+  // Industry-aware title
+  const dashboardTitle = industryType === 'childcare'
+    ? 'NQF Ratio Compliance'
+    : `${staffingConfig.complianceLabel}`;
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-[520px] sm:max-w-[520px] overflow-y-auto">
         <SheetHeader className="pb-4 border-b">
           <SheetTitle className="flex items-center gap-2">
             <Shield size={20} className="text-primary" />
-            NQF Ratio Compliance
+            {dashboardTitle}
           </SheetTitle>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <DemandIcon size={12} />
+            <span>{template.name}</span>
+            <span>·</span>
+            <span>{demandConfig.ratioLabel}</span>
+          </div>
         </SheetHeader>
 
         <div className="space-y-5 pt-4">
@@ -252,7 +285,7 @@ export function NqfComplianceDashboard({
           <div>
             <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
               <Users size={14} />
-              Required vs Scheduled Staff
+              Required vs Scheduled {staffingConfig.roleLabelPlural}
             </h3>
             <div className="h-[160px] bg-muted/30 rounded-lg p-2">
               <ResponsiveContainer width="100%" height="100%">
@@ -279,7 +312,7 @@ export function NqfComplianceDashboard({
 
           {/* Room Cards */}
           <div>
-            <h3 className="text-sm font-semibold mb-2">Room Breakdown</h3>
+            <h3 className="text-sm font-semibold mb-2">{demandConfig.zoneLabelPlural} Breakdown</h3>
             <div className="space-y-2">
               {roomCompliance.map(room => (
                 <div
@@ -294,12 +327,12 @@ export function NqfComplianceDashboard({
                       {statusIcon(room.status)}
                       <span className="font-medium text-sm">{room.roomName}</span>
                       <span className="text-xs text-muted-foreground">
-                        {ageGroupLabels[room.ageGroup] || room.ageGroup}
+                        {room.ageGroup}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono bg-white/80 px-1.5 py-0.5 rounded">
-                        {ratioLabels[room.ratio] || `1:${room.ratio}`}
+                        1:{room.ratio}
                       </span>
                       <span className={cn('text-sm font-bold', statusColor(room.status))}>
                         {room.compliancePercent}%
@@ -309,7 +342,7 @@ export function NqfComplianceDashboard({
 
                   <div className="grid grid-cols-4 gap-2 text-xs">
                     <div className="flex items-center gap-1">
-                      <Baby size={12} className="text-muted-foreground" />
+                      <DemandIcon size={12} className="text-muted-foreground" />
                       <span>Peak: {room.peakChildren}</span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -332,22 +365,50 @@ export function NqfComplianceDashboard({
                     </div>
                   </div>
 
-                  {/* Breach Alerts */}
+                  {/* Breach Alerts with click-through */}
                   {room.breachSlots.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-red-200">
-                      <div className="flex items-center gap-1 text-xs font-semibold text-red-700 mb-1">
-                        <AlertTriangle size={12} />
-                        {room.breachSlots.length} breach slot{room.breachSlots.length > 1 ? 's' : ''} detected
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-xs font-semibold text-red-700 mb-1">
+                          <AlertTriangle size={12} />
+                          {room.breachSlots.length} breach slot{room.breachSlots.length > 1 ? 's' : ''} detected
+                        </div>
+                        {onOpenDemandWizard && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-[11px] text-red-700 hover:text-red-900 hover:bg-red-100"
+                            onClick={() => {
+                              onClose();
+                              setTimeout(() => onOpenDemandWizard(room.roomId), 300);
+                            }}
+                          >
+                            Fix with Demand Generator
+                            <ArrowRight size={10} className="ml-1" />
+                          </Button>
+                        )}
                       </div>
                       <div className="space-y-0.5 max-h-[80px] overflow-y-auto">
                         {room.breachSlots.slice(0, 5).map((slot, i) => (
-                          <div key={i} className="flex items-center justify-between text-[11px] text-red-600 bg-red-100/50 rounded px-1.5 py-0.5">
+                          <div
+                            key={i}
+                            className={cn(
+                              'flex items-center justify-between text-[11px] text-red-600 bg-red-100/50 rounded px-1.5 py-0.5',
+                              onOpenDemandWizard && 'cursor-pointer hover:bg-red-200/60 transition-colors'
+                            )}
+                            onClick={() => {
+                              if (onOpenDemandWizard) {
+                                onClose();
+                                setTimeout(() => onOpenDemandWizard(room.roomId), 300);
+                              }
+                            }}
+                          >
                             <span className="flex items-center gap-1">
                               <Clock size={10} />
                               {slot.time}
                             </span>
                             <span className="font-mono">
-                              {slot.scheduled}/{slot.required} staff (−{slot.gap})
+                              {slot.scheduled}/{slot.required} {staffingConfig.roleLabelPlural.toLowerCase()} (−{slot.gap})
                             </span>
                           </div>
                         ))}
@@ -364,17 +425,31 @@ export function NqfComplianceDashboard({
             </div>
           </div>
 
-          {/* Breach Summary */}
+          {/* Breach Summary with action button */}
           {overallStats.totalBreachSlots > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <div className="flex items-center gap-2 text-red-700 font-semibold text-sm mb-1">
                 <AlertTriangle size={16} />
                 Action Required
               </div>
-              <p className="text-xs text-red-600">
-                {overallStats.totalBreachSlots} time slot{overallStats.totalBreachSlots > 1 ? 's' : ''} across {overallStats.breached + overallStats.atRisk} room{(overallStats.breached + overallStats.atRisk) > 1 ? 's' : ''} have
-                insufficient staffing to meet NQF ratio requirements. Use the Demand Shift Generator or Auto-Scheduler to fill coverage gaps.
+              <p className="text-xs text-red-600 mb-2">
+                {overallStats.totalBreachSlots} time slot{overallStats.totalBreachSlots > 1 ? 's' : ''} across {overallStats.breached + overallStats.atRisk} {demandConfig.zoneLabelPlural.toLowerCase()} have
+                insufficient staffing to meet {staffingConfig.complianceLabel.toLowerCase()} requirements. Use the Demand Shift Generator or Auto-Scheduler to fill coverage gaps.
               </p>
+              {onOpenDemandWizard && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-red-700 border-red-300 hover:bg-red-100"
+                  onClick={() => {
+                    onClose();
+                    setTimeout(() => onOpenDemandWizard(), 300);
+                  }}
+                >
+                  <ArrowRight size={14} className="mr-1.5" />
+                  Open Demand Shift Generator
+                </Button>
+              )}
             </div>
           )}
         </div>
