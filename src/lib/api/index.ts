@@ -4,16 +4,19 @@ export * from './rosterApi';
 export * from './timesheetApi';
 export * from './staffApi';
 export * from './demandApi';
+export * from './constraintApi';
 
 // Unified API object for convenience
 import { rosterApi } from './rosterApi';
 import { timesheetApi } from './timesheetApi';
 import { staffApi } from './staffApi';
 import { demandApi } from './demandApi';
+import { constraintApi } from './constraintApi';
 
 export const api = {
   roster: rosterApi,
   timesheet: timesheetApi,
   staff: staffApi,
   demand: demandApi,
+  constraint: constraintApi,
 };
