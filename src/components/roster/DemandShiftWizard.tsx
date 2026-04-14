@@ -104,25 +104,25 @@ export function DemandShiftWizard({
 
   const stepIndex = STEPS.findIndex(s => s.key === step);
 
-  const actions = useMemo(() => {
+  const actions = useMemo((): import('@/components/ui/off-canvas/PrimaryOffCanvas').OffCanvasAction[] => {
     if (step === 'configure') {
       return [
-        { label: 'Generate Shifts', onClick: handleGenerate, variant: 'primary' as const, icon: Sparkles },
+        { label: 'Generate Shifts', onClick: handleGenerate, variant: 'primary', icon: <Sparkles className="h-4 w-4" /> },
       ];
     }
     if (step === 'preview') {
       return [
-        { label: 'Back', onClick: () => setStep('configure'), variant: 'outlined' as const, icon: ChevronLeft },
-        { label: 'Review & Confirm', onClick: () => setStep('confirm'), variant: 'primary' as const, icon: ChevronRight },
+        { label: 'Back', onClick: () => setStep('configure'), variant: 'outlined', icon: <ChevronLeft className="h-4 w-4" /> },
+        { label: 'Review & Confirm', onClick: () => setStep('confirm'), variant: 'primary', icon: <ChevronRight className="h-4 w-4" /> },
       ];
     }
     return [
-      { label: 'Back', onClick: () => setStep('preview'), variant: 'outlined' as const, icon: ChevronLeft },
+      { label: 'Back', onClick: () => setStep('preview'), variant: 'outlined', icon: <ChevronLeft className="h-4 w-4" /> },
       {
         label: `Apply ${result ? result.shiftEnvelopes.length - removedIds.size : 0} Shifts`,
         onClick: handleApply,
-        variant: 'primary' as const,
-        icon: CheckCircle2,
+        variant: 'primary',
+        icon: <CheckCircle2 className="h-4 w-4" />,
       },
     ];
   }, [step, handleGenerate, handleApply, result, removedIds]);
