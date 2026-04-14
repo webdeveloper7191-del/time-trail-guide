@@ -107,21 +107,21 @@ export function DemandShiftWizard({
   const actions = useMemo(() => {
     if (step === 'configure') {
       return [
-        { label: 'Generate Shifts', onClick: handleGenerate, variant: 'default' as const, icon: Sparkles },
+        { label: 'Generate Shifts', onClick: handleGenerate, variant: 'primary' as const, icon: Sparkles },
       ];
     }
     if (step === 'preview') {
       return [
-        { label: 'Back', onClick: () => setStep('configure'), variant: 'outline' as const, icon: ChevronLeft },
-        { label: 'Review & Confirm', onClick: () => setStep('confirm'), variant: 'default' as const, icon: ChevronRight },
+        { label: 'Back', onClick: () => setStep('configure'), variant: 'outlined' as const, icon: ChevronLeft },
+        { label: 'Review & Confirm', onClick: () => setStep('confirm'), variant: 'primary' as const, icon: ChevronRight },
       ];
     }
     return [
-      { label: 'Back', onClick: () => setStep('preview'), variant: 'outline' as const, icon: ChevronLeft },
+      { label: 'Back', onClick: () => setStep('preview'), variant: 'outlined' as const, icon: ChevronLeft },
       {
         label: `Apply ${result ? result.shiftEnvelopes.length - removedIds.size : 0} Shifts`,
         onClick: handleApply,
-        variant: 'default' as const,
+        variant: 'primary' as const,
         icon: CheckCircle2,
       },
     ];
