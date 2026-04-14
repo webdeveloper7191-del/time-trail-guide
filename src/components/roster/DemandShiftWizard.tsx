@@ -3,9 +3,11 @@ import {
   Sparkles, Settings2, Eye, CheckCircle2, Clock, Users, Baby,
   BarChart3, ChevronRight, ChevronLeft, AlertTriangle, Building2,
   Zap, TrendingUp, Info, UserCheck, Loader2, Globe,
+  Save, Bookmark, Trash2, FolderOpen,
 } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -69,11 +71,97 @@ const STEPS: { key: WizardStep; label: string; icon: React.ElementType }[] = [
 ];
 
 const WEIGHT_PRESETS = {
-  balanced: { label: 'Balanced', weights: { ...DEFAULT_WEIGHTS } },
+  balanced: { label: 'Balanced', weights: { availability: 25, qualifications: 40, cost: 5, fairness: 15, preference: 15 } },
   compliance: { label: 'Compliance First', weights: { availability: 25, qualifications: 40, cost: 5, fairness: 15, preference: 15 } },
   costOptimized: { label: 'Cost Optimized', weights: { availability: 25, qualifications: 15, cost: 40, fairness: 10, preference: 10 } },
   fairDistribution: { label: 'Fair Distribution', weights: { availability: 20, qualifications: 15, cost: 10, fairness: 45, preference: 10 } },
 };
+
+// --- Config Presets ---
+interface DemandConfigPreset {
+  id: string;
+  name: string;
+  description: string;
+  config: DemandShiftConfig;
+  autoAssignEnabled: boolean;
+  assignWeightPreset: string;
+  isBuiltIn: boolean;
+  createdAt: string;
+}
+
+const BUILT_IN_PRESETS: DemandConfigPreset[] = [
+  {
+    id: 'standard-day',
+    name: 'Standard Day',
+    description: 'Regular operating day with balanced optimization',
+    config: { ...DEFAULT_DEMAND_SHIFT_CONFIG },
+    autoAssignEnabled: false,
+    assignWeightPreset: 'balanced',
+    isBuiltIn: true,
+    createdAt: '',
+  },
+  {
+    id: 'holiday-coverage',
+    name: 'Holiday Coverage',
+    description: 'Reduced attendance expected, cost-optimized shifts',
+    config: {
+      ...DEFAULT_DEMAND_SHIFT_CONFIG,
+      attendanceRateOverride: 0.65,
+      optimizationGoal: 'cost',
+      minShiftMinutes: 300,
+      roundingStrategy: 'predicted',
+    },
+    autoAssignEnabled: true,
+    assignWeightPreset: 'costOptimized',
+    isBuiltIn: true,
+    createdAt: '',
+  },
+  {
+    id: 'peak-compliance',
+    name: 'Peak Day (Compliance)',
+    description: 'High attendance day, compliance-first with max coverage',
+    config: {
+      ...DEFAULT_DEMAND_SHIFT_CONFIG,
+      attendanceRateOverride: 0.95,
+      optimizationGoal: 'compliance',
+      overlapBufferMinutes: 30,
+      roundingStrategy: 'ceiling',
+    },
+    autoAssignEnabled: true,
+    assignWeightPreset: 'compliance',
+    isBuiltIn: true,
+    createdAt: '',
+  },
+  {
+    id: 'extended-hours',
+    name: 'Extended Hours',
+    description: 'Early open / late close with longer shifts',
+    config: {
+      ...DEFAULT_DEMAND_SHIFT_CONFIG,
+      operatingStart: '05:00',
+      operatingEnd: '20:00',
+      maxShiftMinutes: 660,
+      overlapBufferMinutes: 20,
+    },
+    autoAssignEnabled: false,
+    assignWeightPreset: 'balanced',
+    isBuiltIn: true,
+    createdAt: '',
+  },
+];
+
+const PRESETS_STORAGE_KEY = 'demand-config-presets';
+
+function loadSavedPresets(): DemandConfigPreset[] {
+  try {
+    const stored = localStorage.getItem(PRESETS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch { return []; }
+}
+
+function savePersistPresets(presets: DemandConfigPreset[]) {
+  localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
+}
 
 export function DemandShiftWizard({
   open,
@@ -111,6 +199,55 @@ export function DemandShiftWizard({
   // API loading state
   const [useApi, setUseApi] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Preset state
+  const [savedPresets, setSavedPresets] = useState<DemandConfigPreset[]>(loadSavedPresets);
+  const [showSavePreset, setShowSavePreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [newPresetDesc, setNewPresetDesc] = useState('');
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+
+  const allPresets = useMemo(() => [...BUILT_IN_PRESETS, ...savedPresets], [savedPresets]);
+
+  const handleLoadPreset = useCallback((preset: DemandConfigPreset) => {
+    setConfig({ ...preset.config });
+    setAutoAssignEnabled(preset.autoAssignEnabled);
+    setAssignWeightPreset(preset.assignWeightPreset);
+    const wp = WEIGHT_PRESETS[preset.assignWeightPreset as keyof typeof WEIGHT_PRESETS];
+    if (wp) setAssignWeights(wp.weights);
+    setActivePresetId(preset.id);
+    toast.success(`Loaded preset: ${preset.name}`);
+  }, []);
+
+  const handleSavePreset = useCallback(() => {
+    if (!newPresetName.trim()) return;
+    const preset: DemandConfigPreset = {
+      id: `custom-${Date.now()}`,
+      name: newPresetName.trim(),
+      description: newPresetDesc.trim(),
+      config: { ...config },
+      autoAssignEnabled,
+      assignWeightPreset,
+      isBuiltIn: false,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...savedPresets, preset];
+    setSavedPresets(updated);
+    savePersistPresets(updated);
+    setActivePresetId(preset.id);
+    setShowSavePreset(false);
+    setNewPresetName('');
+    setNewPresetDesc('');
+    toast.success(`Saved preset: ${preset.name}`);
+  }, [newPresetName, newPresetDesc, config, autoAssignEnabled, assignWeightPreset, savedPresets]);
+
+  const handleDeletePreset = useCallback((presetId: string) => {
+    const updated = savedPresets.filter(p => p.id !== presetId);
+    setSavedPresets(updated);
+    savePersistPresets(updated);
+    if (activePresetId === presetId) setActivePresetId(null);
+    toast.success('Preset deleted');
+  }, [savedPresets, activePresetId]);
 
   const centreRooms = useMemo(() => rooms.filter(r => r.centreId === centreId), [rooms, centreId]);
 
@@ -360,7 +497,89 @@ export function DemandShiftWizard({
             </p>
           </div>
 
-          {/* Room selection */}
+          {/* Config Presets */}
+          <Card className="border border-border">
+            <CardContent className="p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bookmark className="h-4 w-4 text-primary" />
+                  <Label className="text-xs font-medium">Configuration Presets</Label>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[11px]"
+                  onClick={() => setShowSavePreset(!showSavePreset)}
+                >
+                  <Save className="h-3 w-3 mr-1" />
+                  Save Current
+                </Button>
+              </div>
+
+              {/* Save new preset form */}
+              {showSavePreset && (
+                <div className="space-y-2 p-2 rounded-md bg-muted/50 border">
+                  <Input
+                    placeholder="Preset name (e.g., Monday Pattern)"
+                    value={newPresetName}
+                    onChange={e => setNewPresetName(e.target.value)}
+                    className="h-7 text-xs"
+                  />
+                  <Input
+                    placeholder="Description (optional)"
+                    value={newPresetDesc}
+                    onChange={e => setNewPresetDesc(e.target.value)}
+                    className="h-7 text-xs"
+                  />
+                  <div className="flex gap-1.5 justify-end">
+                    <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => setShowSavePreset(false)}>
+                      Cancel
+                    </Button>
+                    <Button size="sm" className="h-6 text-[10px]" onClick={handleSavePreset} disabled={!newPresetName.trim()}>
+                      Save Preset
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Preset list */}
+              <div className="grid grid-cols-2 gap-1.5 max-h-[140px] overflow-y-auto">
+                {allPresets.map(preset => (
+                  <button
+                    key={preset.id}
+                    onClick={() => handleLoadPreset(preset)}
+                    className={cn(
+                      'relative group text-left rounded-md border p-2 transition-all text-xs',
+                      activePresetId === preset.id
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                        : 'border-border hover:border-primary/30 hover:bg-muted/30'
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <FolderOpen className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="font-medium truncate">{preset.name}</span>
+                      {preset.isBuiltIn && (
+                        <Badge variant="secondary" className="h-4 text-[8px] px-1 shrink-0">Built-in</Badge>
+                      )}
+                    </div>
+                    {preset.description && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{preset.description}</p>
+                    )}
+                    {!preset.isBuiltIn && (
+                      <button
+                        onClick={e => { e.stopPropagation(); handleDeletePreset(preset.id); }}
+                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-destructive/10 transition-opacity"
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </button>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+
           <div className="space-y-2">
             <Label className="text-sm font-medium">Target Rooms</Label>
             <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
