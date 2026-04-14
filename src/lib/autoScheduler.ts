@@ -409,7 +409,8 @@ export function batchAssignStaff(
     return sum + (staffMember?.hourlyRate || 0) * hours;
   }, 0);
 
-  // Calculate fairness score
+  // Calculate fairness score using coefficient of variation (stddev/mean)
+  // This gives much more reasonable scores than max-min spread
   const staffHoursMap = new Map<string, number>();
   assignedSlots.forEach(s => {
     if (!s.assignedStaffId) return;
@@ -417,9 +418,16 @@ export function batchAssignStaff(
     staffHoursMap.set(s.assignedStaffId, (staffHoursMap.get(s.assignedStaffId) || 0) + hours);
   });
   const hoursValues = Array.from(staffHoursMap.values());
-  const fairnessScore = hoursValues.length > 0
-    ? Math.round(100 - (Math.max(...hoursValues) - Math.min(...hoursValues)) / (Math.max(...hoursValues) || 1) * 100)
-    : 100;
+  let fairnessScore = 100;
+  if (hoursValues.length > 1) {
+    const mean = hoursValues.reduce((a, b) => a + b, 0) / hoursValues.length;
+    if (mean > 0) {
+      const variance = hoursValues.reduce((sum, h) => sum + Math.pow(h - mean, 2), 0) / hoursValues.length;
+      const stdDev = Math.sqrt(variance);
+      const cv = stdDev / mean; // 0 = perfect fairness, 1+ = very unfair
+      fairnessScore = Math.max(0, Math.round(100 * (1 - cv)));
+    }
+  }
 
   return { assignments: assignmentMap, estimatedCost: Math.round(estimatedCost * 100) / 100, fairnessScore, constraintViolations };
 }

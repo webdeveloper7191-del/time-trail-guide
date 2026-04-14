@@ -424,6 +424,50 @@ export function DemandShiftWizard({
     }, 600);
   }, [staff, existingShifts, assignWeights]);
 
+  const handleManualReassign = useCallback((envelopeId: string, staffId: string, staffName: string) => {
+    setAssignments(prev => {
+      const next = new Map(prev);
+      if (!staffId) {
+        next.delete(envelopeId);
+      } else {
+        next.set(envelopeId, { envelopeId, staffId, staffName, score: 0, issues: [] });
+      }
+      return next;
+    });
+    if (staffId) {
+      toast.success(`Assigned ${staffName} to shift`);
+    } else {
+      toast.info('Assignment removed');
+    }
+  }, []);
+
+  // Compliance before/after calculation
+  const complianceComparison = useMemo(() => {
+    if (!result) return null;
+    
+    const roomBreaches = new Map<string, { before: number; after: number; roomName: string }>();
+    
+    centreRooms.forEach(room => {
+      const roomDemand = demandData.filter(d => d.roomId === room.id);
+      const beforeBreaches = roomDemand.filter(d => !d.staffRatioCompliant).length;
+      
+      const newShiftsForRoom = result.shiftEnvelopes.filter(e => e.roomId === room.id && !removedIds.has(e.id));
+      const coveredSlots = Math.min(beforeBreaches, newShiftsForRoom.length);
+      const afterBreaches = Math.max(0, beforeBreaches - coveredSlots);
+      
+      roomBreaches.set(room.id, { before: beforeBreaches, after: afterBreaches, roomName: room.name });
+    });
+    
+    const totalBefore = Array.from(roomBreaches.values()).reduce((s, r) => s + r.before, 0);
+    const totalAfter = Array.from(roomBreaches.values()).reduce((s, r) => s + r.after, 0);
+    const totalSlots = demandData.filter(d => centreRooms.some(r => r.id === d.roomId)).length;
+    
+    const beforePct = totalSlots > 0 ? Math.round(((totalSlots - totalBefore) / totalSlots) * 100) : 100;
+    const afterPct = totalSlots > 0 ? Math.round(((totalSlots - totalAfter) / totalSlots) * 100) : 100;
+    
+    return { beforePct, afterPct, totalBefore, totalAfter, rooms: roomBreaches };
+  }, [result, demandData, centreRooms, removedIds]);
+
   const handleApply = useCallback(() => {
     if (!result) return;
     const kept = result.shiftEnvelopes.filter(e => !removedIds.has(e.id));
@@ -1167,6 +1211,9 @@ export function DemandShiftWizard({
                     envelopes={result.shiftEnvelopes.filter(e => e.roomId === p.roomId)}
                     selectedRoomId={p.roomId}
                     height={280}
+                    assignments={assignments as any}
+                    staff={staff}
+                    onReassignShift={handleManualReassign}
                   />
                 </TabsContent>
               ))}
@@ -1197,6 +1244,63 @@ export function DemandShiftWizard({
       {/* STEP 3: Confirm */}
       {step === 'confirm' && result && (
         <div className="space-y-4">
+          {/* Compliance Before/After Comparison */}
+          {complianceComparison && complianceComparison.totalBefore > 0 && (
+            <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-emerald-500/5">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <Label className="text-xs font-medium">Compliance Impact</Label>
+                </div>
+                <div className="grid grid-cols-3 gap-2 items-center">
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-destructive">{complianceComparison.beforePct}%</p>
+                    <p className="text-[10px] text-muted-foreground">Before</p>
+                    <p className="text-[9px] text-destructive">{complianceComparison.totalBefore} breaches</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <ChevronRight className="h-5 w-5 text-primary" />
+                      <span className={cn(
+                        "text-sm font-bold",
+                        complianceComparison.afterPct > complianceComparison.beforePct ? "text-emerald-600" : "text-foreground"
+                      )}>
+                        +{complianceComparison.afterPct - complianceComparison.beforePct}%
+                      </span>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground">improvement</p>
+                  </div>
+                  <div className="text-center">
+                    <p className={cn(
+                      "text-lg font-bold",
+                      complianceComparison.afterPct >= 95 ? "text-emerald-600" : complianceComparison.afterPct >= 80 ? "text-amber-600" : "text-destructive"
+                    )}>
+                      {complianceComparison.afterPct}%
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">After</p>
+                    <p className="text-[9px] text-emerald-600">{complianceComparison.totalAfter} breaches</p>
+                  </div>
+                </div>
+                {/* Per-room breakdown */}
+                <div className="space-y-0.5 pt-1 border-t border-border/50">
+                  {Array.from(complianceComparison.rooms.entries())
+                    .filter(([, r]) => r.before > 0)
+                    .map(([roomId, r]) => (
+                      <div key={roomId} className="flex items-center justify-between text-[10px]">
+                        <span className="text-muted-foreground">{r.roomName}</span>
+                        <span>
+                          <span className="text-destructive">{r.before}</span>
+                          <span className="text-muted-foreground mx-1">→</span>
+                          <span className={r.after === 0 ? "text-emerald-600 font-medium" : "text-amber-600"}>{r.after}</span>
+                          <span className="text-muted-foreground ml-1">breaches</span>
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">
               {keptCount} of {result.shiftEnvelopes.length} shifts selected
