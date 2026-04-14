@@ -28,6 +28,7 @@ interface DemandCurveChartProps {
   assignments?: Map<string, StaffAssignmentInfo>;
   staff?: StaffMember[];
   onReassignShift?: (envelopeId: string, staffId: string, staffName: string) => void;
+  staffScorer?: (envelope: ShiftEnvelope) => Map<string, StaffCandidateScore>;
 }
 
 export function DemandCurveChart({
