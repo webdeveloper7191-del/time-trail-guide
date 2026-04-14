@@ -1,16 +1,22 @@
-import { useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import {
-  Clock, Calendar, MapPin, Users, ArrowRight, CalendarPlus,
+  Clock, Calendar, MapPin, ArrowRight, CalendarPlus,
   FileText, CheckCircle2, AlertCircle, TreePalm, Briefcase,
   ClipboardCheck, TrendingUp, Bell, Sun, Sunrise, Moon,
+  Users, LogIn, LogOut, Play, Square, Send,
 } from 'lucide-react';
-import { format, addDays, isToday, isTomorrow, parseISO } from 'date-fns';
+import { format, addDays, isToday, isTomorrow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface EmployeeDashboardProps {
   employee: { id: string; name: string; department: string; position: string; hourlyRate: number };
@@ -19,18 +25,37 @@ interface EmployeeDashboardProps {
   onboardingComplete: boolean;
 }
 
-// Mock data for dashboard widgets
-const mockUpcomingShifts = [
-  { id: '1', date: new Date(), startTime: '07:00', endTime: '15:00', location: 'Main Kitchen', role: 'Line Cook', status: 'confirmed' as const },
-  { id: '2', date: addDays(new Date(), 1), startTime: '06:00', endTime: '14:00', location: 'Main Kitchen', role: 'Line Cook', status: 'confirmed' as const },
-  { id: '3', date: addDays(new Date(), 2), startTime: '14:00', endTime: '22:00', location: 'Events Hall', role: 'Sous Chef', status: 'pending' as const },
-  { id: '4', date: addDays(new Date(), 4), startTime: '07:00', endTime: '15:00', location: 'Main Kitchen', role: 'Line Cook', status: 'confirmed' as const },
+interface ShiftItem {
+  id: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  location: string;
+  role: string;
+  status: 'confirmed' | 'pending';
+  pickedUp?: boolean;
+  premium?: boolean;
+  rate?: string;
+}
+
+interface ClockState {
+  isClockedIn: boolean;
+  clockInTime: Date | null;
+  shiftId: string | null;
+  elapsed: number; // seconds
+}
+
+const initialUpcomingShifts: ShiftItem[] = [
+  { id: '1', date: new Date(), startTime: '07:00', endTime: '15:00', location: 'Main Kitchen', role: 'Line Cook', status: 'confirmed' },
+  { id: '2', date: addDays(new Date(), 1), startTime: '06:00', endTime: '14:00', location: 'Main Kitchen', role: 'Line Cook', status: 'confirmed' },
+  { id: '3', date: addDays(new Date(), 2), startTime: '14:00', endTime: '22:00', location: 'Events Hall', role: 'Sous Chef', status: 'pending' },
+  { id: '4', date: addDays(new Date(), 4), startTime: '07:00', endTime: '15:00', location: 'Main Kitchen', role: 'Line Cook', status: 'confirmed' },
 ];
 
-const mockOpenShifts = [
-  { id: 'o1', date: addDays(new Date(), 1), startTime: '16:00', endTime: '22:00', location: 'Poolside Bar', role: 'Bartender', premium: true, rate: '+$5/hr' },
-  { id: 'o2', date: addDays(new Date(), 3), startTime: '06:00', endTime: '14:00', location: 'Main Kitchen', role: 'Prep Cook', premium: false, rate: '' },
-  { id: 'o3', date: addDays(new Date(), 5), startTime: '10:00', endTime: '18:00', location: 'Events Hall', role: 'Server', premium: true, rate: '+$3/hr' },
+const initialOpenShifts: ShiftItem[] = [
+  { id: 'o1', date: addDays(new Date(), 1), startTime: '16:00', endTime: '22:00', location: 'Poolside Bar', role: 'Bartender', status: 'confirmed', premium: true, rate: '+$5/hr' },
+  { id: 'o2', date: addDays(new Date(), 3), startTime: '06:00', endTime: '14:00', location: 'Main Kitchen', role: 'Prep Cook', status: 'confirmed', premium: false, rate: '' },
+  { id: 'o3', date: addDays(new Date(), 5), startTime: '10:00', endTime: '18:00', location: 'Events Hall', role: 'Server', status: 'confirmed', premium: true, rate: '+$3/hr' },
 ];
 
 const mockLeaveBalances = [
@@ -70,12 +95,173 @@ function getDateLabel(date: Date) {
   return format(date, 'EEE, MMM d');
 }
 
+function formatElapsed(seconds: number) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
 export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, onboardingComplete }: EmployeeDashboardProps) {
-  const nextShift = mockUpcomingShifts[0];
+  const { toast } = useToast();
+
+  // ── Shift state ──
+  const [upcomingShifts, setUpcomingShifts] = useState<ShiftItem[]>(initialUpcomingShifts);
+  const [openShifts, setOpenShifts] = useState<ShiftItem[]>(initialOpenShifts);
+  const [pickingUpId, setPickingUpId] = useState<string | null>(null);
+
+  // ── Clock-in/out state ──
+  const [clockState, setClockState] = useState<ClockState>({
+    isClockedIn: false, clockInTime: null, shiftId: null, elapsed: 0,
+  });
+  const [clockInterval, setClockIntervalRef] = useState<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Leave request dialog ──
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({ type: 'annual_leave', startDate: '', endDate: '', notes: '' });
+  const [pendingLeaves, setPendingLeaves] = useState(mockPendingLeave);
+
+  const nextShift = upcomingShifts[0];
+  const todayShift = upcomingShifts.find(s => isToday(s.date));
   const hoursProgress = (mockTimesheetSummary.currentWeekHours / mockTimesheetSummary.targetHours) * 100;
+
+  // ── Pick up open shift ──
+  const handlePickUp = useCallback((shiftId: string) => {
+    setPickingUpId(shiftId);
+    const shift = openShifts.find(s => s.id === shiftId);
+    if (!shift) return;
+
+    // Simulate API delay
+    setTimeout(() => {
+      const pickedShift: ShiftItem = {
+        ...shift,
+        id: `picked-${shift.id}`,
+        status: 'pending',
+        pickedUp: true,
+      };
+      setUpcomingShifts(prev => [...prev, pickedShift].sort((a, b) => a.date.getTime() - b.date.getTime()));
+      setOpenShifts(prev => prev.filter(s => s.id !== shiftId));
+      setPickingUpId(null);
+      toast({
+        title: 'Shift Picked Up!',
+        description: `${shift.role} on ${getDateLabel(shift.date)} (${shift.startTime} – ${shift.endTime}) added to your schedule.`,
+      });
+    }, 600);
+  }, [openShifts, toast]);
+
+  // ── Clock in/out ──
+  const handleClockIn = useCallback(() => {
+    if (!todayShift) return;
+    const now = new Date();
+    setClockState({ isClockedIn: true, clockInTime: now, shiftId: todayShift.id, elapsed: 0 });
+    const interval = setInterval(() => {
+      setClockState(prev => ({ ...prev, elapsed: prev.elapsed + 1 }));
+    }, 1000);
+    setClockIntervalRef(interval);
+    toast({ title: 'Clocked In', description: `Started at ${format(now, 'HH:mm')}` });
+  }, [todayShift, toast]);
+
+  const handleClockOut = useCallback(() => {
+    if (clockInterval) clearInterval(clockInterval);
+    const elapsed = clockState.elapsed;
+    const hours = (elapsed / 3600).toFixed(1);
+    setClockState({ isClockedIn: false, clockInTime: null, shiftId: null, elapsed: 0 });
+    setClockIntervalRef(null);
+    toast({ title: 'Clocked Out', description: `Total time: ${hours} hours logged.` });
+  }, [clockInterval, clockState.elapsed, toast]);
+
+  // ── Leave request ──
+  const handleLeaveSubmit = useCallback(() => {
+    if (!leaveForm.startDate || !leaveForm.endDate) {
+      toast({ title: 'Missing dates', description: 'Please select start and end dates.', variant: 'destructive' });
+      return;
+    }
+    const start = new Date(leaveForm.startDate);
+    const end = new Date(leaveForm.endDate);
+    if (end < start) {
+      toast({ title: 'Invalid dates', description: 'End date must be after start date.', variant: 'destructive' });
+      return;
+    }
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const typeLabels: Record<string, string> = {
+      annual_leave: 'Annual Leave', sick_leave: 'Sick Leave',
+      personal_leave: 'Personal Leave', unpaid_leave: 'Unpaid Leave',
+    };
+    const newLeave = {
+      id: `l-${Date.now()}`,
+      type: typeLabels[leaveForm.type] || leaveForm.type,
+      startDate: start,
+      endDate: end,
+      status: 'pending' as const,
+      days,
+    };
+    setPendingLeaves(prev => [...prev, newLeave]);
+    setLeaveDialogOpen(false);
+    setLeaveForm({ type: 'annual_leave', startDate: '', endDate: '', notes: '' });
+    toast({ title: 'Leave Request Submitted', description: `${newLeave.type} for ${days} day(s) is pending approval.` });
+  }, [leaveForm, toast]);
 
   return (
     <div className="space-y-6">
+      {/* Clock-In/Out Banner */}
+      {todayShift && (
+        <Card className={cn(
+          'border overflow-hidden',
+          clockState.isClockedIn
+            ? 'border-emerald-300 bg-gradient-to-r from-emerald-500/10 to-emerald-600/5'
+            : 'border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10'
+        )}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  'h-12 w-12 rounded-xl flex items-center justify-center',
+                  clockState.isClockedIn ? 'bg-emerald-500/20' : 'bg-primary/15'
+                )}>
+                  {clockState.isClockedIn ? (
+                    <Play className="h-6 w-6 text-emerald-600 fill-emerald-600" />
+                  ) : (
+                    <LogIn className="h-6 w-6 text-primary" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">
+                    {clockState.isClockedIn ? 'Currently Working' : "Today's Shift"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {todayShift.startTime} – {todayShift.endTime} • {todayShift.role} • {todayShift.location}
+                  </p>
+                  {clockState.isClockedIn && clockState.clockInTime && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Clocked in at {format(clockState.clockInTime, 'HH:mm')}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {clockState.isClockedIn && (
+                  <div className="text-right mr-2">
+                    <p className="text-2xl font-mono font-bold text-emerald-600 tabular-nums">
+                      {formatElapsed(clockState.elapsed)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">elapsed</p>
+                  </div>
+                )}
+                {clockState.isClockedIn ? (
+                  <Button onClick={handleClockOut} variant="destructive" size="sm" className="gap-2">
+                    <Square className="h-3.5 w-3.5 fill-current" /> Clock Out
+                  </Button>
+                ) : (
+                  <Button onClick={handleClockIn} size="sm" className="gap-2">
+                    <LogIn className="h-3.5 w-3.5" /> Clock In
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick Glance Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <QuickStat
@@ -89,15 +275,15 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
         <QuickStat
           icon={Calendar}
           label="Next Shift"
-          value={isToday(nextShift.date) ? 'Today' : isTomorrow(nextShift.date) ? 'Tomorrow' : format(nextShift.date, 'EEE')}
-          sub={`${nextShift.startTime} – ${nextShift.endTime}`}
+          value={nextShift ? (isToday(nextShift.date) ? 'Today' : isTomorrow(nextShift.date) ? 'Tomorrow' : format(nextShift.date, 'EEE')) : '—'}
+          sub={nextShift ? `${nextShift.startTime} – ${nextShift.endTime}` : 'No shifts'}
           accent="text-emerald-600"
           bgAccent="from-emerald-500/10 to-emerald-600/5 border-emerald-200/60"
         />
         <QuickStat
           icon={CalendarPlus}
           label="Open Shifts"
-          value={`${mockOpenShifts.length}`}
+          value={`${openShifts.length}`}
           sub="available to pick up"
           accent="text-amber-600"
           bgAccent="from-amber-500/10 to-amber-600/5 border-amber-200/60"
@@ -123,6 +309,9 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-primary" />
                   Upcoming Shifts
+                  {upcomingShifts.some(s => s.pickedUp) && (
+                    <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px]">Updated</Badge>
+                  )}
                 </CardTitle>
                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={() => onNavigate('current')}>
                   View all <ArrowRight className="h-3 w-3" />
@@ -131,21 +320,24 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-2">
-                {mockUpcomingShifts.map((shift) => {
+                {upcomingShifts.map((shift) => {
                   const Icon = getShiftIcon(shift.startTime);
                   const today = isToday(shift.date);
                   return (
                     <div
                       key={shift.id}
                       className={cn(
-                        'flex items-center gap-4 p-3.5 rounded-lg border transition-colors',
-                        today
-                          ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/10'
-                          : 'bg-muted/30 border-border/50 hover:bg-muted/50'
+                        'flex items-center gap-4 p-3.5 rounded-lg border transition-all',
+                        shift.pickedUp
+                          ? 'bg-emerald-500/5 border-emerald-300/40 ring-1 ring-emerald-200/30 animate-in fade-in slide-in-from-left-2'
+                          : today
+                            ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/10'
+                            : 'bg-muted/30 border-border/50 hover:bg-muted/50'
                       )}
                     >
                       <div className={cn(
                         'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
+                        shift.pickedUp ? 'bg-emerald-500/15 text-emerald-600' :
                         today ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
                       )}>
                         <Icon className="h-5 w-5" />
@@ -154,7 +346,10 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold">{getDateLabel(shift.date)}</span>
                           {today && <Badge className="bg-primary/15 text-primary border-0 text-[10px] px-1.5 py-0">NOW</Badge>}
-                          {shift.status === 'pending' && (
+                          {shift.pickedUp && (
+                            <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] px-1.5 py-0">Picked Up</Badge>
+                          )}
+                          {shift.status === 'pending' && !shift.pickedUp && (
                             <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] px-1.5 py-0">Pending</Badge>
                           )}
                         </div>
@@ -182,41 +377,64 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <CalendarPlus className="h-4 w-4 text-amber-600" />
                   Open Shifts
-                  <Badge className="bg-amber-100 text-amber-700 border-0 text-[10px]">{mockOpenShifts.length} available</Badge>
+                  {openShifts.length > 0 && (
+                    <Badge className="bg-amber-100 text-amber-700 border-0 text-[10px]">{openShifts.length} available</Badge>
+                  )}
                 </CardTitle>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="space-y-2">
-                {mockOpenShifts.map((shift) => (
-                  <div key={shift.id} className="flex items-center gap-4 p-3.5 rounded-lg bg-muted/30 border border-border/50 hover:border-amber-300/50 transition-colors group">
-                    <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-                      <Briefcase className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold">{getDateLabel(shift.date)}</span>
-                        {shift.premium && (
-                          <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] px-1.5 py-0">
-                            {shift.rate}
-                          </Badge>
-                        )}
+              {openShifts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
+                  <p className="text-sm font-medium">All caught up!</p>
+                  <p className="text-xs mt-1">No open shifts available right now.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {openShifts.map((shift) => (
+                    <div key={shift.id} className="flex items-center gap-4 p-3.5 rounded-lg bg-muted/30 border border-border/50 hover:border-amber-300/50 transition-colors group">
+                      <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                        <Briefcase className="h-5 w-5 text-amber-600" />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {shift.startTime} – {shift.endTime} • {shift.role}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold">{getDateLabel(shift.date)}</span>
+                          {shift.premium && (
+                            <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] px-1.5 py-0">
+                              {shift.rate}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {shift.startTime} – {shift.endTime} • {shift.role}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />{shift.location}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                          disabled={pickingUpId === shift.id}
+                          onClick={() => handlePickUp(shift.id)}
+                        >
+                          {pickingUpId === shift.id ? (
+                            <>
+                              <span className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              Picking up…
+                            </>
+                          ) : (
+                            'Pick Up'
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />{shift.location}
-                      </span>
-                      <Button size="sm" variant="outline" className="h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                        Pick Up
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -299,8 +517,8 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                   <TreePalm className="h-4 w-4 text-purple-600" />
                   Leave
                 </CardTitle>
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-                  Request
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={() => setLeaveDialogOpen(true)}>
+                  <Send className="h-3 w-3" /> Request
                 </Button>
               </div>
             </CardHeader>
@@ -327,20 +545,22 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
               ))}
 
               {/* Pending Leave Requests */}
-              {mockPendingLeave.length > 0 && (
+              {pendingLeaves.length > 0 && (
                 <div className="pt-3 border-t border-border">
                   <p className="text-xs font-medium text-muted-foreground mb-2">Pending Requests</p>
-                  {mockPendingLeave.map((req) => (
-                    <div key={req.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-amber-50 border border-amber-200/50">
-                      <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium">{req.type} • {req.days} days</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {format(req.startDate, 'MMM d')} – {format(req.endDate, 'MMM d')}
-                        </p>
+                  <div className="space-y-2">
+                    {pendingLeaves.map((req) => (
+                      <div key={req.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-amber-50 border border-amber-200/50">
+                        <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium">{req.type} • {req.days} days</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {format(req.startDate, 'MMM d')} – {format(req.endDate, 'MMM d')}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -403,6 +623,75 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
           </Card>
         </div>
       </div>
+
+      {/* Leave Request Dialog */}
+      <Dialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TreePalm className="h-5 w-5 text-purple-600" />
+              Request Leave
+            </DialogTitle>
+            <DialogDescription>Submit a new leave request for manager approval.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Leave Type</Label>
+              <Select value={leaveForm.type} onValueChange={(v) => setLeaveForm(f => ({ ...f, type: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="annual_leave">Annual Leave</SelectItem>
+                  <SelectItem value="sick_leave">Sick Leave</SelectItem>
+                  <SelectItem value="personal_leave">Personal Leave</SelectItem>
+                  <SelectItem value="unpaid_leave">Unpaid Leave</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Start Date</Label>
+                <Input
+                  type="date"
+                  value={leaveForm.startDate}
+                  onChange={(e) => setLeaveForm(f => ({ ...f, startDate: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>End Date</Label>
+                <Input
+                  type="date"
+                  value={leaveForm.endDate}
+                  onChange={(e) => setLeaveForm(f => ({ ...f, endDate: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Notes (optional)</Label>
+              <Textarea
+                placeholder="Any additional details…"
+                value={leaveForm.notes}
+                onChange={(e) => setLeaveForm(f => ({ ...f, notes: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            {/* Balance reminder */}
+            <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Balance: </span>
+                {mockLeaveBalances[0].total - mockLeaveBalances[0].used} days annual leave remaining
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLeaveDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleLeaveSubmit} className="gap-1.5">
+              <Send className="h-3.5 w-3.5" /> Submit Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
