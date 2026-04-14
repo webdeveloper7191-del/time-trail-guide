@@ -887,7 +887,18 @@ const CategorySection = ({ category, config, isLocationScope, onUpdate }: {
 
 // ============= Main Panel =============
 
-export function SchedulingConstraintsPanel() {
+export interface SchedulingConstraintsPanelRef {
+  handleSave: () => void;
+  handleReset: () => void;
+  showHelp: boolean;
+  toggleHelp: () => void;
+}
+
+interface SchedulingConstraintsPanelProps {
+  onReady?: (ref: SchedulingConstraintsPanelRef) => void;
+}
+
+export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPanelProps = {}) {
   const [constraintConfig, setConstraintConfig] = useState<SchedulingConstraintsConfig>(createDefaultConstraintsConfig);
   const [contractConfig, setContractConfig] = useState<TimefoldConstraintConfiguration>(() => ({
     ...defaultConstraintConfig,
