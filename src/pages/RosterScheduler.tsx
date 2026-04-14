@@ -255,6 +255,7 @@ export default function RosterScheduler() {
   const [showStaffProfile, setShowStaffProfile] = useState(false);
   const [showWeeklySummary, setShowWeeklySummary] = useState(false);
   const [showOptimizationReport, setShowOptimizationReport] = useState(false);
+  const [showNqfCompliance, setShowNqfCompliance] = useState(false);
   const [selectedStaffForProfile, setSelectedStaffForProfile] = useState<StaffMember | null>(null);
   const [selectedStaffForPrefs, setSelectedStaffForPrefs] = useState<StaffMember | null>(null);
   const [centreBudgets, setCentreBudgets] = useState<Record<string, number>>(defaultCentreBudgets);
