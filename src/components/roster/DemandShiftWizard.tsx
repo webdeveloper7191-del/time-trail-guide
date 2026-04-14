@@ -322,6 +322,15 @@ export function DemandShiftWizard({
 
   const centreRooms = useMemo(() => rooms.filter(r => r.centreId === centreId), [rooms, centreId]);
 
+  // Demand overview summary (from AutoSchedulerPanel)
+  const demandSummary = useMemo(() => {
+    const filtered = demandData.filter(d => d.centreId === centreId);
+    const totalRequired = filtered.reduce((sum, d) => sum + d.requiredStaff, 0);
+    const totalScheduled = filtered.reduce((sum, d) => sum + d.scheduledStaff, 0);
+    const nonCompliant = filtered.filter(d => !d.staffRatioCompliant).length;
+    return { totalRequired, totalScheduled, gap: totalRequired - totalScheduled, nonCompliant };
+  }, [demandData, centreId]);
+
   const handleGenerate = useCallback(async () => {
     const targetRooms = selectedRoomId === 'all'
       ? centreRooms
