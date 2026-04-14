@@ -198,11 +198,14 @@ export function DemandCurveChart({
           <div className="relative h-auto min-h-[32px] flex flex-wrap gap-1">
             {roomEnvelopes.map((env) => {
               const hours = Math.round((env.durationMinutes - env.breakMinutes) / 60 * 10) / 10;
-              return (
+              const assignment = assignments?.get(env.id);
+              const canReassign = !!onReassignShift && !!staff && staff.length > 0;
+
+              const blockContent = (
                 <div
-                  key={env.id}
                   className={cn(
-                    "inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border",
+                    "inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border transition-all",
+                    canReassign && "cursor-pointer hover:ring-2 hover:ring-primary/40",
                     env.priority === 'critical' && "bg-red-100 border-red-300 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300",
                     env.priority === 'high' && "bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300",
                     env.priority === 'normal' && "bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300",
@@ -212,8 +215,67 @@ export function DemandCurveChart({
                   <Clock className="h-3 w-3" />
                   {env.startTime}–{env.endTime}
                   <span className="opacity-70">({hours}h)</span>
+                  {assignment && (
+                    <span className="flex items-center gap-0.5 ml-1 text-primary">
+                      <UserCheck className="h-2.5 w-2.5" />
+                      {assignment.staffName.split(' ')[0]}
+                    </span>
+                  )}
                   {env.priority === 'critical' && <Badge variant="destructive" className="text-[8px] px-1 py-0 h-3.5">Critical</Badge>}
+                  {canReassign && <ChevronDown className="h-2.5 w-2.5 opacity-50" />}
                 </div>
+              );
+
+              if (!canReassign) return <div key={env.id}>{blockContent}</div>;
+
+              const filteredStaff = staff!.filter(s =>
+                s.name.toLowerCase().includes(reassignSearch.toLowerCase()) ||
+                s.role.toLowerCase().includes(reassignSearch.toLowerCase())
+              );
+
+              return (
+                <Popover key={env.id} onOpenChange={() => setReassignSearch('')}>
+                  <PopoverTrigger asChild>{blockContent}</PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="start">
+                    <p className="text-[10px] font-medium text-muted-foreground mb-1.5">
+                      Assign staff to {env.startTime}–{env.endTime}
+                    </p>
+                    <Input
+                      placeholder="Search staff..."
+                      value={reassignSearch}
+                      onChange={e => setReassignSearch(e.target.value)}
+                      className="h-6 text-[10px] mb-1.5"
+                    />
+                    <div className="max-h-36 overflow-y-auto space-y-0.5">
+                      {/* Unassign option */}
+                      {assignment && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start h-6 text-[10px] text-destructive hover:text-destructive"
+                          onClick={() => onReassignShift!(env.id, '', '')}
+                        >
+                          Remove assignment
+                        </Button>
+                      )}
+                      {filteredStaff.map(s => (
+                        <Button
+                          key={s.id}
+                          variant={assignment?.staffId === s.id ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="w-full justify-start h-6 text-[10px] gap-1.5"
+                          onClick={() => onReassignShift!(env.id, s.id, s.name)}
+                        >
+                          <span className="truncate">{s.name}</span>
+                          <span className="text-muted-foreground ml-auto shrink-0">${s.hourlyRate}/h</span>
+                        </Button>
+                      ))}
+                      {filteredStaff.length === 0 && (
+                        <p className="text-[10px] text-muted-foreground text-center py-2">No matching staff</p>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               );
             })}
           </div>
