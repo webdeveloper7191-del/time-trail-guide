@@ -293,6 +293,7 @@ export default function RosterScheduler() {
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
   const [showAutoScheduler, setShowAutoScheduler] = useState(false);
   const [showDemandShiftWizard, setShowDemandShiftWizard] = useState(false);
+  const [demandWizardPreSelectedRoom, setDemandWizardPreSelectedRoom] = useState<string | undefined>(undefined);
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
   const [showCallbackLogging, setShowCallbackLogging] = useState(false);
   const [showOnCallOverlay, setShowOnCallOverlay] = useState(false);
@@ -3024,6 +3025,11 @@ export default function RosterScheduler() {
         shifts={shifts}
         demandData={demandAnalytics}
         dates={dates}
+        centreId={selectedCentreId}
+        onOpenDemandWizard={(roomId) => {
+          setDemandWizardPreSelectedRoom(roomId);
+          setShowDemandShiftWizard(true);
+        }}
       />
 
       <SaveRosterTemplateModal
@@ -3198,7 +3204,10 @@ export default function RosterScheduler() {
       {/* Demand Shift Wizard */}
       <DemandShiftWizard
         open={showDemandShiftWizard}
-        onClose={() => setShowDemandShiftWizard(false)}
+        onClose={() => {
+          setShowDemandShiftWizard(false);
+          setDemandWizardPreSelectedRoom(undefined);
+        }}
         centreId={selectedCentreId}
         centre={selectedCentre}
         rooms={selectedCentre.rooms}
@@ -3206,6 +3215,7 @@ export default function RosterScheduler() {
         dates={dates.map(d => typeof d === 'string' ? d : format(d, 'yyyy-MM-dd'))}
         existingShifts={shifts}
         staff={allStaff}
+        preSelectedRoomId={demandWizardPreSelectedRoom}
         onApplyShifts={(newShifts) => {
           const withIds = newShifts.map((s, i) => ({ ...s, id: `demand-gen-${Date.now()}-${i}` }));
           setShifts(prev => [...prev, ...withIds]);

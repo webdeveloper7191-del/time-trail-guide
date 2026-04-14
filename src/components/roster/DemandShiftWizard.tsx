@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Sparkles, Settings2, Eye, CheckCircle2, Clock, Users, Baby,
   BarChart3, ChevronRight, ChevronLeft, AlertTriangle, Building2,
@@ -49,6 +49,7 @@ interface DemandShiftWizardProps {
   existingShifts: Shift[];
   staff?: StaffMember[];
   onApplyShifts: (shifts: Omit<Shift, 'id'>[]) => void;
+  preSelectedRoomId?: string;
 }
 
 type WizardStep = 'configure' | 'preview' | 'confirm';
@@ -85,9 +86,17 @@ export function DemandShiftWizard({
   existingShifts,
   staff = [],
   onApplyShifts,
+  preSelectedRoomId,
 }: DemandShiftWizardProps) {
   const [step, setStep] = useState<WizardStep>('configure');
-  const [selectedRoomId, setSelectedRoomId] = useState<string>('all');
+  const [selectedRoomId, setSelectedRoomId] = useState<string>(preSelectedRoomId || 'all');
+
+  // Sync preSelectedRoomId when wizard opens
+  useEffect(() => {
+    if (open && preSelectedRoomId) {
+      setSelectedRoomId(preSelectedRoomId);
+    }
+  }, [open, preSelectedRoomId]);
   const [config, setConfig] = useState<DemandShiftConfig>({ ...DEFAULT_DEMAND_SHIFT_CONFIG });
   const [result, setResult] = useState<DemandShiftGenerationResult | null>(null);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
