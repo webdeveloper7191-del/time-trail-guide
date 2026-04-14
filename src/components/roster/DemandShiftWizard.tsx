@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Sparkles, Settings2, Eye, CheckCircle2, Clock, Users, Baby,
   BarChart3, ChevronRight, ChevronLeft, AlertTriangle, Building2,
