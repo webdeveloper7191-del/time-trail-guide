@@ -39,6 +39,7 @@ import { AutoAssignStaffModal } from '@/components/roster/AutoAssignStaffModal';
 import { AutoSchedulerPanel } from '@/components/roster/AutoSchedulerPanel';
 import { FillOpenShiftsDialog } from '@/components/roster/FillOpenShiftsDialog';
 import { DemandShiftWizard } from '@/components/roster/DemandShiftWizard';
+import { NqfComplianceDashboard } from '@/components/roster/NqfComplianceDashboard';
 import { IndustryConfigurationModal } from '@/components/settings/IndustryConfigurationModal';
 import { DemandMasterSettingsModal } from '@/components/settings/DemandMasterSettingsModal';
 import { DemandDataEntryModal } from '@/components/settings/DemandDataEntryModal';
@@ -255,6 +256,7 @@ export default function RosterScheduler() {
   const [showStaffProfile, setShowStaffProfile] = useState(false);
   const [showWeeklySummary, setShowWeeklySummary] = useState(false);
   const [showOptimizationReport, setShowOptimizationReport] = useState(false);
+  const [showNqfCompliance, setShowNqfCompliance] = useState(false);
   const [selectedStaffForProfile, setSelectedStaffForProfile] = useState<StaffMember | null>(null);
   const [selectedStaffForPrefs, setSelectedStaffForPrefs] = useState<StaffMember | null>(null);
   const [centreBudgets, setCentreBudgets] = useState<Record<string, number>>(defaultCentreBudgets);
@@ -1883,6 +1885,24 @@ export default function RosterScheduler() {
               </Button>
             </Tooltip>
 
+            {/* NQF Compliance Dashboard */}
+            <Tooltip content="NQF Ratio Compliance">
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={() => setShowNqfCompliance(true)}
+                startIcon={<Shield size={16} />}
+                color="warning"
+                sx={{ 
+                  minWidth: { md: 'auto', lg: 'unset' },
+                  px: { md: 1, lg: 2 },
+                  '& .MuiButton-startIcon': { mr: { md: 0, lg: 1 } }
+                }}
+              >
+                <Box component="span" sx={{ display: { md: 'none', lg: 'inline' } }}>Compliance</Box>
+              </Button>
+            </Tooltip>
+
             {/* Budget indicator - Compact on tablet */}
             <Button 
               variant="text" 
@@ -2995,6 +3015,15 @@ export default function RosterScheduler() {
         absences={staffAbsences}
         isOpen={showOptimizationReport}
         onClose={() => setShowOptimizationReport(false)}
+      />
+
+      <NqfComplianceDashboard
+        isOpen={showNqfCompliance}
+        onClose={() => setShowNqfCompliance(false)}
+        rooms={selectedCentre.rooms}
+        shifts={shifts}
+        demandData={demandAnalytics}
+        dates={dates}
       />
 
       <SaveRosterTemplateModal
