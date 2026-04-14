@@ -3025,6 +3025,11 @@ export default function RosterScheduler() {
         shifts={shifts}
         demandData={demandAnalytics}
         dates={dates}
+        centreId={selectedCentreId}
+        onOpenDemandWizard={(roomId) => {
+          setDemandWizardPreSelectedRoom(roomId);
+          setShowDemandShiftWizard(true);
+        }}
       />
 
       <SaveRosterTemplateModal
