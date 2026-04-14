@@ -3204,7 +3204,10 @@ export default function RosterScheduler() {
       {/* Demand Shift Wizard */}
       <DemandShiftWizard
         open={showDemandShiftWizard}
-        onClose={() => setShowDemandShiftWizard(false)}
+        onClose={() => {
+          setShowDemandShiftWizard(false);
+          setDemandWizardPreSelectedRoom(undefined);
+        }}
         centreId={selectedCentreId}
         centre={selectedCentre}
         rooms={selectedCentre.rooms}
@@ -3212,6 +3215,7 @@ export default function RosterScheduler() {
         dates={dates.map(d => typeof d === 'string' ? d : format(d, 'yyyy-MM-dd'))}
         existingShifts={shifts}
         staff={allStaff}
+        preSelectedRoomId={demandWizardPreSelectedRoom}
         onApplyShifts={(newShifts) => {
           const withIds = newShifts.map((s, i) => ({ ...s, id: `demand-gen-${Date.now()}-${i}` }));
           setShifts(prev => [...prev, ...withIds]);
