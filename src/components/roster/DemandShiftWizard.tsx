@@ -49,6 +49,7 @@ interface DemandShiftWizardProps {
   existingShifts: Shift[];
   staff?: StaffMember[];
   onApplyShifts: (shifts: Omit<Shift, 'id'>[]) => void;
+  preSelectedRoomId?: string;
 }
 
 type WizardStep = 'configure' | 'preview' | 'confirm';
