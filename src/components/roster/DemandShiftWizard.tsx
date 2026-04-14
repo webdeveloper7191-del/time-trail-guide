@@ -1038,7 +1038,23 @@ export function DemandShiftWizard({
             </Card>
           )}
 
-          {/* Room tabs with demand charts */}
+          {/* Assignment Metrics */}
+          {autoAssignEnabled && assignmentMetrics && !isAutoAssigning && (
+            <div className="grid grid-cols-2 gap-2">
+              <Card className="bg-muted/30">
+                <CardContent className="p-3 text-center">
+                  <p className="text-lg font-bold text-foreground">${assignmentMetrics.estimatedCost.toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground">Estimated Cost</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-muted/30">
+                <CardContent className="p-3 text-center">
+                  <p className="text-lg font-bold text-foreground">{assignmentMetrics.fairnessScore}%</p>
+                  <p className="text-[10px] text-muted-foreground">Fairness Score</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
           <Tabs
             defaultValue={result.roomProfiles[0]?.roomId || 'none'}
             className="space-y-3"
