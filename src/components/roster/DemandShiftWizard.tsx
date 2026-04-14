@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { format, addDays, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isWithinInterval } from 'date-fns';
 import {
   Sparkles, Settings2, Eye, CheckCircle2, Clock, Users, Baby,
   BarChart3, ChevronRight, ChevronLeft, AlertTriangle, Building2,
   Zap, TrendingUp, Info, UserCheck, Loader2, Globe,
-  Save, Bookmark, Trash2, FolderOpen,
+  Save, Bookmark, Trash2, FolderOpen, CalendarIcon,
 } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Button } from '@/components/ui/button';
