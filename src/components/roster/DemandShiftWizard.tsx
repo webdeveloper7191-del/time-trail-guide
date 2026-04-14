@@ -71,11 +71,97 @@ const STEPS: { key: WizardStep; label: string; icon: React.ElementType }[] = [
 ];
 
 const WEIGHT_PRESETS = {
-  balanced: { label: 'Balanced', weights: { ...DEFAULT_WEIGHTS } },
+  balanced: { label: 'Balanced', weights: { availability: 25, qualifications: 40, cost: 5, fairness: 15, preference: 15 } },
   compliance: { label: 'Compliance First', weights: { availability: 25, qualifications: 40, cost: 5, fairness: 15, preference: 15 } },
   costOptimized: { label: 'Cost Optimized', weights: { availability: 25, qualifications: 15, cost: 40, fairness: 10, preference: 10 } },
   fairDistribution: { label: 'Fair Distribution', weights: { availability: 20, qualifications: 15, cost: 10, fairness: 45, preference: 10 } },
 };
+
+// --- Config Presets ---
+interface DemandConfigPreset {
+  id: string;
+  name: string;
+  description: string;
+  config: DemandShiftConfig;
+  autoAssignEnabled: boolean;
+  assignWeightPreset: string;
+  isBuiltIn: boolean;
+  createdAt: string;
+}
+
+const BUILT_IN_PRESETS: DemandConfigPreset[] = [
+  {
+    id: 'standard-day',
+    name: 'Standard Day',
+    description: 'Regular operating day with balanced optimization',
+    config: { ...DEFAULT_DEMAND_SHIFT_CONFIG },
+    autoAssignEnabled: false,
+    assignWeightPreset: 'balanced',
+    isBuiltIn: true,
+    createdAt: '',
+  },
+  {
+    id: 'holiday-coverage',
+    name: 'Holiday Coverage',
+    description: 'Reduced attendance expected, cost-optimized shifts',
+    config: {
+      ...DEFAULT_DEMAND_SHIFT_CONFIG,
+      attendanceRateOverride: 0.65,
+      optimizationGoal: 'cost',
+      minShiftMinutes: 300,
+      roundingStrategy: 'predicted',
+    },
+    autoAssignEnabled: true,
+    assignWeightPreset: 'costOptimized',
+    isBuiltIn: true,
+    createdAt: '',
+  },
+  {
+    id: 'peak-compliance',
+    name: 'Peak Day (Compliance)',
+    description: 'High attendance day, compliance-first with max coverage',
+    config: {
+      ...DEFAULT_DEMAND_SHIFT_CONFIG,
+      attendanceRateOverride: 0.95,
+      optimizationGoal: 'compliance',
+      overlapBufferMinutes: 30,
+      roundingStrategy: 'ceiling',
+    },
+    autoAssignEnabled: true,
+    assignWeightPreset: 'compliance',
+    isBuiltIn: true,
+    createdAt: '',
+  },
+  {
+    id: 'extended-hours',
+    name: 'Extended Hours',
+    description: 'Early open / late close with longer shifts',
+    config: {
+      ...DEFAULT_DEMAND_SHIFT_CONFIG,
+      operatingStart: '05:00',
+      operatingEnd: '20:00',
+      maxShiftMinutes: 660,
+      overlapBufferMinutes: 20,
+    },
+    autoAssignEnabled: false,
+    assignWeightPreset: 'balanced',
+    isBuiltIn: true,
+    createdAt: '',
+  },
+];
+
+const PRESETS_STORAGE_KEY = 'demand-config-presets';
+
+function loadSavedPresets(): DemandConfigPreset[] {
+  try {
+    const stored = localStorage.getItem(PRESETS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch { return []; }
+}
+
+function savePersistPresets(presets: DemandConfigPreset[]) {
+  localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
+}
 
 export function DemandShiftWizard({
   open,
