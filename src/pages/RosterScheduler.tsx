@@ -38,6 +38,7 @@ import { AddEmptyShiftModal } from '@/components/roster/AddEmptyShiftModal';
 import { AutoAssignStaffModal } from '@/components/roster/AutoAssignStaffModal';
 import { AutoSchedulerPanel } from '@/components/roster/AutoSchedulerPanel';
 import { FillOpenShiftsDialog } from '@/components/roster/FillOpenShiftsDialog';
+import { DemandShiftWizard } from '@/components/roster/DemandShiftWizard';
 import { IndustryConfigurationModal } from '@/components/settings/IndustryConfigurationModal';
 import { DemandMasterSettingsModal } from '@/components/settings/DemandMasterSettingsModal';
 import { DemandDataEntryModal } from '@/components/settings/DemandDataEntryModal';
@@ -289,6 +290,7 @@ export default function RosterScheduler() {
   const [showSkillMatrix, setShowSkillMatrix] = useState(false);
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
   const [showAutoScheduler, setShowAutoScheduler] = useState(false);
+  const [showDemandShiftWizard, setShowDemandShiftWizard] = useState(false);
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
   const [showCallbackLogging, setShowCallbackLogging] = useState(false);
   const [showOnCallOverlay, setShowOnCallOverlay] = useState(false);
@@ -2157,6 +2159,17 @@ export default function RosterScheduler() {
               Auto-Schedule
             </Button>
 
+            {/* Demand Shift Wizard Button */}
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              onClick={() => setShowDemandShiftWizard(true)}
+              startIcon={<BarChart3 size={16} />}
+            >
+              Generate from Demand
+            </Button>
+
             {/* Dropdown Menus Group */}
             <Stack 
               direction="row" 
@@ -3149,6 +3162,22 @@ export default function RosterScheduler() {
         dates={dates.map(d => typeof d === 'string' ? d : format(d, 'yyyy-MM-dd'))}
         onApplyShifts={(newShifts) => {
           const withIds = newShifts.map((s, i) => ({ ...s, id: `auto-sched-${Date.now()}-${i}` }));
+          setShifts(prev => [...prev, ...withIds]);
+        }}
+      />
+
+      {/* Demand Shift Wizard */}
+      <DemandShiftWizard
+        open={showDemandShiftWizard}
+        onClose={() => setShowDemandShiftWizard(false)}
+        centreId={selectedCentreId}
+        centre={selectedCentre}
+        rooms={selectedCentre.rooms}
+        demandData={demandAnalytics}
+        dates={dates.map(d => typeof d === 'string' ? d : format(d, 'yyyy-MM-dd'))}
+        existingShifts={shifts}
+        onApplyShifts={(newShifts) => {
+          const withIds = newShifts.map((s, i) => ({ ...s, id: `demand-gen-${Date.now()}-${i}` }));
           setShifts(prev => [...prev, ...withIds]);
         }}
       />
