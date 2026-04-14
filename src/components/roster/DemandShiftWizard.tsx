@@ -990,7 +990,55 @@ export function DemandShiftWizard({
             </CardContent>
           </Card>
 
-          {/* Summary */}
+          {/* Active Constraints Summary */}
+          <Card className="border border-border">
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle className="h-4 w-4 text-primary" />
+                <Label className="text-xs font-medium">Active Constraints</Label>
+              </div>
+              <div className="space-y-1">
+                {defaultConstraintConfig.employeeConstraints.contracts.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Work limits: max {Math.max(...defaultConstraintConfig.employeeConstraints.contracts.contracts.map(c => c.workLimits.minutesPerPeriod.maxMinutes || 2400)) / 60}h/week</span>
+                  </div>
+                )}
+                {defaultConstraintConfig.employeeConstraints.contracts.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Min rest: {Math.max(...defaultConstraintConfig.employeeConstraints.contracts.contracts.map(c => c.timeOffRules.minTimeBetweenShiftsMinutes)) / 60}h between shifts</span>
+                  </div>
+                )}
+                {defaultConstraintConfig.employeeConstraints.availability.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Respect availability & unavailability</span>
+                  </div>
+                )}
+                {defaultConstraintConfig.employeeConstraints.fairness.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Balance workload across staff</span>
+                  </div>
+                )}
+                {defaultConstraintConfig.shiftConstraints.skills.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Skills enforcement: {defaultConstraintConfig.shiftConstraints.skills.requiredSkillsEnforced ? 'Hard' : 'Soft'}</span>
+                  </div>
+                )}
+                {defaultConstraintConfig.shiftConstraints.costManagement.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Cost optimization active</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+
           <Card>
             <CardContent className="pt-3 pb-3">
               <div className="flex items-center gap-4 text-xs">
