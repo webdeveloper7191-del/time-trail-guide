@@ -36,7 +36,7 @@ import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { RosterHistoryPanel } from '@/components/roster/RosterHistoryPanel';
 import { AddEmptyShiftModal } from '@/components/roster/AddEmptyShiftModal';
 import { AutoAssignStaffModal } from '@/components/roster/AutoAssignStaffModal';
-import { AutoSchedulerPanel } from '@/components/roster/AutoSchedulerPanel';
+// AutoSchedulerPanel merged into DemandShiftWizard (unified engine)
 import { FillOpenShiftsDialog } from '@/components/roster/FillOpenShiftsDialog';
 import { DemandShiftWizard } from '@/components/roster/DemandShiftWizard';
 import { NqfComplianceDashboard } from '@/components/roster/NqfComplianceDashboard';
