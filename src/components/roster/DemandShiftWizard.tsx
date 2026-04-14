@@ -424,6 +424,50 @@ export function DemandShiftWizard({
     }, 600);
   }, [staff, existingShifts, assignWeights]);
 
+  const handleManualReassign = useCallback((envelopeId: string, staffId: string, staffName: string) => {
+    setAssignments(prev => {
+      const next = new Map(prev);
+      if (!staffId) {
+        next.delete(envelopeId);
+      } else {
+        next.set(envelopeId, { envelopeId, staffId, staffName, score: 0, issues: [] });
+      }
+      return next;
+    });
+    if (staffId) {
+      toast.success(`Assigned ${staffName} to shift`);
+    } else {
+      toast.info('Assignment removed');
+    }
+  }, []);
+
+  // Compliance before/after calculation
+  const complianceComparison = useMemo(() => {
+    if (!result) return null;
+    
+    const roomBreaches = new Map<string, { before: number; after: number; roomName: string }>();
+    
+    centreRooms.forEach(room => {
+      const roomDemand = demandData.filter(d => d.roomId === room.id);
+      const beforeBreaches = roomDemand.filter(d => !d.staffRatioCompliant).length;
+      
+      const newShiftsForRoom = result.shiftEnvelopes.filter(e => e.roomId === room.id && !removedIds.has(e.id));
+      const coveredSlots = Math.min(beforeBreaches, newShiftsForRoom.length);
+      const afterBreaches = Math.max(0, beforeBreaches - coveredSlots);
+      
+      roomBreaches.set(room.id, { before: beforeBreaches, after: afterBreaches, roomName: room.name });
+    });
+    
+    const totalBefore = Array.from(roomBreaches.values()).reduce((s, r) => s + r.before, 0);
+    const totalAfter = Array.from(roomBreaches.values()).reduce((s, r) => s + r.after, 0);
+    const totalSlots = demandData.filter(d => centreRooms.some(r => r.id === d.roomId)).length;
+    
+    const beforePct = totalSlots > 0 ? Math.round(((totalSlots - totalBefore) / totalSlots) * 100) : 100;
+    const afterPct = totalSlots > 0 ? Math.round(((totalSlots - totalAfter) / totalSlots) * 100) : 100;
+    
+    return { beforePct, afterPct, totalBefore, totalAfter, rooms: roomBreaches };
+  }, [result, demandData, centreRooms, removedIds]);
+
   const handleApply = useCallback(() => {
     if (!result) return;
     const kept = result.shiftEnvelopes.filter(e => !removedIds.has(e.id));
