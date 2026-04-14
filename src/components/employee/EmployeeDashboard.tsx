@@ -103,7 +103,7 @@ function formatElapsed(seconds: number) {
 }
 
 export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, onboardingComplete }: EmployeeDashboardProps) {
-  // toast from sonner - no hook needed
+  
 
   // ── Shift state ──
   const [upcomingShifts, setUpcomingShifts] = useState<ShiftItem[]>(initialUpcomingShifts);
