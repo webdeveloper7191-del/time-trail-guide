@@ -38,6 +38,7 @@ import { AddEmptyShiftModal } from '@/components/roster/AddEmptyShiftModal';
 import { AutoAssignStaffModal } from '@/components/roster/AutoAssignStaffModal';
 import { AutoSchedulerPanel } from '@/components/roster/AutoSchedulerPanel';
 import { FillOpenShiftsDialog } from '@/components/roster/FillOpenShiftsDialog';
+import { DemandShiftWizard } from '@/components/roster/DemandShiftWizard';
 import { IndustryConfigurationModal } from '@/components/settings/IndustryConfigurationModal';
 import { DemandMasterSettingsModal } from '@/components/settings/DemandMasterSettingsModal';
 import { DemandDataEntryModal } from '@/components/settings/DemandDataEntryModal';
@@ -289,6 +290,7 @@ export default function RosterScheduler() {
   const [showSkillMatrix, setShowSkillMatrix] = useState(false);
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
   const [showAutoScheduler, setShowAutoScheduler] = useState(false);
+  const [showDemandShiftWizard, setShowDemandShiftWizard] = useState(false);
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
   const [showCallbackLogging, setShowCallbackLogging] = useState(false);
   const [showOnCallOverlay, setShowOnCallOverlay] = useState(false);
