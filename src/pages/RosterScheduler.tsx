@@ -293,6 +293,7 @@ export default function RosterScheduler() {
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
   const [showAutoScheduler, setShowAutoScheduler] = useState(false);
   const [showDemandShiftWizard, setShowDemandShiftWizard] = useState(false);
+  const [demandWizardPreSelectedRoom, setDemandWizardPreSelectedRoom] = useState<string | undefined>(undefined);
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
   const [showCallbackLogging, setShowCallbackLogging] = useState(false);
   const [showOnCallOverlay, setShowOnCallOverlay] = useState(false);
