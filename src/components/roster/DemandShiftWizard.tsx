@@ -1244,6 +1244,63 @@ export function DemandShiftWizard({
       {/* STEP 3: Confirm */}
       {step === 'confirm' && result && (
         <div className="space-y-4">
+          {/* Compliance Before/After Comparison */}
+          {complianceComparison && complianceComparison.totalBefore > 0 && (
+            <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-emerald-500/5">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <Label className="text-xs font-medium">Compliance Impact</Label>
+                </div>
+                <div className="grid grid-cols-3 gap-2 items-center">
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-destructive">{complianceComparison.beforePct}%</p>
+                    <p className="text-[10px] text-muted-foreground">Before</p>
+                    <p className="text-[9px] text-destructive">{complianceComparison.totalBefore} breaches</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <ChevronRight className="h-5 w-5 text-primary" />
+                      <span className={cn(
+                        "text-sm font-bold",
+                        complianceComparison.afterPct > complianceComparison.beforePct ? "text-emerald-600" : "text-foreground"
+                      )}>
+                        +{complianceComparison.afterPct - complianceComparison.beforePct}%
+                      </span>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground">improvement</p>
+                  </div>
+                  <div className="text-center">
+                    <p className={cn(
+                      "text-lg font-bold",
+                      complianceComparison.afterPct >= 95 ? "text-emerald-600" : complianceComparison.afterPct >= 80 ? "text-amber-600" : "text-destructive"
+                    )}>
+                      {complianceComparison.afterPct}%
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">After</p>
+                    <p className="text-[9px] text-emerald-600">{complianceComparison.totalAfter} breaches</p>
+                  </div>
+                </div>
+                {/* Per-room breakdown */}
+                <div className="space-y-0.5 pt-1 border-t border-border/50">
+                  {Array.from(complianceComparison.rooms.entries())
+                    .filter(([, r]) => r.before > 0)
+                    .map(([roomId, r]) => (
+                      <div key={roomId} className="flex items-center justify-between text-[10px]">
+                        <span className="text-muted-foreground">{r.roomName}</span>
+                        <span>
+                          <span className="text-destructive">{r.before}</span>
+                          <span className="text-muted-foreground mx-1">→</span>
+                          <span className={r.after === 0 ? "text-emerald-600 font-medium" : "text-amber-600"}>{r.after}</span>
+                          <span className="text-muted-foreground ml-1">breaches</span>
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">
               {keptCount} of {result.shiftEnvelopes.length} shifts selected
