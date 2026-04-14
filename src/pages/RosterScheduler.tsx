@@ -3176,6 +3176,7 @@ export default function RosterScheduler() {
         demandData={demandAnalytics}
         dates={dates.map(d => typeof d === 'string' ? d : format(d, 'yyyy-MM-dd'))}
         existingShifts={shifts}
+        staff={allStaff}
         onApplyShifts={(newShifts) => {
           const withIds = newShifts.map((s, i) => ({ ...s, id: `demand-gen-${Date.now()}-${i}` }));
           setShifts(prev => [...prev, ...withIds]);
