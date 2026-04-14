@@ -1,7 +1,9 @@
-import React from 'react';
-import { Shield } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Shield, HelpCircle } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { SchedulingConstraintsPanel } from '@/components/settings/SchedulingConstraintsPanel';
+import { SchedulingConstraintsPanel, SchedulingConstraintsPanelRef } from '@/components/settings/SchedulingConstraintsPanel';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SchedulingConstraintsSidePanelProps {
   open: boolean;
@@ -9,6 +11,12 @@ interface SchedulingConstraintsSidePanelProps {
 }
 
 export function SchedulingConstraintsSidePanel({ open, onClose }: SchedulingConstraintsSidePanelProps) {
+  const [panelRef, setPanelRef] = useState<SchedulingConstraintsPanelRef | null>(null);
+
+  const handleReady = useCallback((ref: SchedulingConstraintsPanelRef) => {
+    setPanelRef(ref);
+  }, []);
+
   return (
     <PrimaryOffCanvas
       title="Scheduling Constraints"
@@ -18,9 +26,32 @@ export function SchedulingConstraintsSidePanel({ open, onClose }: SchedulingCons
       open={open}
       onClose={onClose}
       isBackground
-      actions={[]}
+      headerActions={
+        panelRef ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={panelRef.toggleHelp}
+            className={cn(panelRef.showHelp && "bg-muted")}
+          >
+            <HelpCircle className="h-3.5 w-3.5 mr-1" /> How it works
+          </Button>
+        ) : null
+      }
+      actions={[
+        {
+          label: 'Reset',
+          onClick: () => panelRef?.handleReset(),
+          variant: 'secondary',
+        },
+        {
+          label: 'Save',
+          onClick: () => panelRef?.handleSave(),
+          variant: 'primary',
+        },
+      ]}
     >
-      <SchedulingConstraintsPanel />
+      <SchedulingConstraintsPanel onReady={handleReady} />
     </PrimaryOffCanvas>
   );
 }

@@ -887,7 +887,18 @@ const CategorySection = ({ category, config, isLocationScope, onUpdate }: {
 
 // ============= Main Panel =============
 
-export function SchedulingConstraintsPanel() {
+export interface SchedulingConstraintsPanelRef {
+  handleSave: () => void;
+  handleReset: () => void;
+  showHelp: boolean;
+  toggleHelp: () => void;
+}
+
+interface SchedulingConstraintsPanelProps {
+  onReady?: (ref: SchedulingConstraintsPanelRef) => void;
+}
+
+export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPanelProps = {}) {
   const [constraintConfig, setConstraintConfig] = useState<SchedulingConstraintsConfig>(createDefaultConstraintsConfig);
   const [contractConfig, setContractConfig] = useState<TimefoldConstraintConfiguration>(() => ({
     ...defaultConstraintConfig,
@@ -949,6 +960,15 @@ export function SchedulingConstraintsPanel() {
     toast.info('Configuration reset to defaults');
   };
 
+  React.useEffect(() => {
+    onReady?.({
+      handleSave,
+      handleReset,
+      showHelp,
+      toggleHelp: () => setShowHelp(prev => !prev),
+    });
+  });
+
   const applyPreset = (presetId: string) => {
     const preset = industryPresets.find(p => p.id === presetId);
     if (preset) {
@@ -994,20 +1014,6 @@ export function SchedulingConstraintsPanel() {
 
   return (
     <div className="space-y-4">
-      {/* Stats Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setShowHelp(!showHelp)} className={cn(showHelp && "bg-muted")}>
-            <HelpCircle className="h-3.5 w-3.5 mr-1" /> How it works
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleReset}>
-            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
-          </Button>
-          <Button size="sm" onClick={handleSave}>
-            <Save className="h-3.5 w-3.5 mr-1" /> Save
-          </Button>
-        </div>
-      </div>
 
       {/* Help Guide */}
       {showHelp && (
