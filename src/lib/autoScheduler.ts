@@ -1,16 +1,14 @@
 /**
- * In-House Greedy Heuristic Auto-Scheduler
+ * Staff Assignment Engine
  * 
- * Generates empty shifts from demand data, then optionally assigns staff
- * using a greedy scoring algorithm that honors the Timefold constraint config.
+ * Provides constraint-aware staff scoring and assignment for shifts.
+ * Used by the unified Demand Shift Wizard and Fill Open Shifts.
  * 
- * Algorithm:
- * 1. DEMAND ANALYSIS: Read demand data per room/time-slot → calculate required staff count
- * 2. SHIFT GENERATION: Create empty shifts for each required staff position
- * 3. CONSTRAINT VALIDATION: Validate against constraint config (work limits, rest, etc.)
- * 4. STAFF SCORING: Score each available staff member per shift
- * 5. GREEDY ASSIGNMENT: Assign best-scoring staff to highest-priority shifts first
- * 6. FAIRNESS PASS: Re-balance if distribution is skewed
+ * Capabilities:
+ * 1. STAFF SCORING: Score each available staff member per shift
+ * 2. CONSTRAINT VALIDATION: Validate against constraint config (work limits, rest, etc.)
+ * 3. GREEDY ASSIGNMENT: Assign best-scoring staff to highest-priority shifts first
+ * 4. FILL OPEN SHIFTS: One-click assignment for existing open shifts
  */
 
 import { Shift, StaffMember, Room, Centre, ShiftTemplate, DayAvailability } from '@/types/roster';
@@ -19,27 +17,6 @@ import { TimefoldConstraintConfiguration, defaultConstraintConfig } from '@/type
 import { format, parseISO, getDay, differenceInMinutes, addMinutes, parse } from 'date-fns';
 
 // ============= TYPES =============
-
-export interface AutoSchedulerConfig {
-  /** Which dates to schedule */
-  dateRange: { start: string; end: string };
-  /** Centre to schedule for */
-  centreId: string;
-  /** Rooms to include (empty = all) */
-  roomIds: string[];
-  /** Whether to assign staff or just create empty shifts */
-  assignStaff: boolean;
-  /** Constraint configuration to honor */
-  constraints: TimefoldConstraintConfiguration;
-  /** Optimization weights */
-  weights: SchedulerWeights;
-  /** Shift templates to use for generating shifts */
-  shiftTemplates: ShiftTemplate[];
-  /** Operating hours fallback */
-  operatingHours: { start: string; end: string };
-  /** Minimum shift duration in minutes */
-  minShiftDurationMinutes: number;
-}
 
 export interface SchedulerWeights {
   availability: number;    // 0-100
@@ -66,7 +43,7 @@ export interface GeneratedShiftSlot {
   startTime: string;
   endTime: string;
   breakMinutes: number;
-  requiredCount: number;      // How many staff needed for this slot
+  requiredCount: number;
   demandSource: 'booking' | 'ratio' | 'template' | 'manual';
   priority: 'critical' | 'high' | 'normal' | 'low';
   // Assignment info
@@ -74,23 +51,6 @@ export interface GeneratedShiftSlot {
   assignedStaffName?: string;
   assignmentScore?: number;
   assignmentIssues?: string[];
-}
-
-export interface SchedulerResult {
-  generatedShifts: GeneratedShiftSlot[];
-  summary: SchedulerSummary;
-  constraintViolations: ConstraintViolation[];
-}
-
-export interface SchedulerSummary {
-  totalShiftsGenerated: number;
-  totalStaffAssigned: number;
-  unfilledShifts: number;
-  totalHoursScheduled: number;
-  estimatedCost: number;
-  averageFairnessScore: number;
-  roomCoverage: { roomId: string; roomName: string; covered: number; required: number }[];
-  dateBreakdown: { date: string; shifts: number; assigned: number }[];
 }
 
 export interface ConstraintViolation {
@@ -116,7 +76,7 @@ function minutesToTime(mins: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-function shiftDurationMinutes(start: string, end: string): number {
+export function shiftDurationMinutes(start: string, end: string): number {
   let s = timeToMinutes(start);
   let e = timeToMinutes(end);
   if (e <= s) e += 24 * 60; // overnight
@@ -173,7 +133,6 @@ function isStaffAvailable(staff: StaffMember, date: string, startTime: string, e
   
   if (!avail || !avail.available) return false;
   
-  // Check time windows if specified
   if (avail.startTime && avail.endTime) {
     const shiftStart = timeToMinutes(startTime);
     const shiftEnd = timeToMinutes(endTime);
@@ -183,7 +142,6 @@ function isStaffAvailable(staff: StaffMember, date: string, startTime: string, e
     if (shiftStart < availStart || shiftEnd > availEnd) return false;
   }
   
-  // Check time off
   if (staff.timeOff?.some(to => 
     to.status === 'approved' && to.startDate <= date && to.endDate >= date
   )) {
@@ -218,7 +176,7 @@ function hasShiftOverlap(
 
 function getMinRestBetweenShifts(constraints: TimefoldConstraintConfiguration): number {
   const contracts = constraints.employeeConstraints.contracts;
-  if (!contracts.enabled || contracts.contracts.length === 0) return 600; // 10h default
+  if (!contracts.enabled || contracts.contracts.length === 0) return 600;
   return Math.max(...contracts.contracts.map(c => c.timeOffRules.minTimeBetweenShiftsMinutes));
 }
 
@@ -232,111 +190,13 @@ function getMaxConsecutiveDays(constraints: TimefoldConstraintConfiguration): nu
 
 function getMaxWeeklyMinutes(constraints: TimefoldConstraintConfiguration): number {
   const contracts = constraints.employeeConstraints.contracts;
-  if (!contracts.enabled || contracts.contracts.length === 0) return 2400; // 40h default
+  if (!contracts.enabled || contracts.contracts.length === 0) return 2400;
   return Math.max(...contracts.contracts.map(c => 
     c.workLimits.minutesPerPeriod.enabled ? (c.workLimits.minutesPerPeriod.maxMinutes ?? 2400) : 2400
   ));
 }
 
-// ============= STEP 1: GENERATE SHIFTS FROM DEMAND =============
-
-export function generateShiftsFromDemand(
-  demandData: DemandAnalyticsData[],
-  rooms: Room[],
-  config: AutoSchedulerConfig,
-): GeneratedShiftSlot[] {
-  const slots: GeneratedShiftSlot[] = [];
-  
-  // Group demand by date + room
-  const groupedDemand = new Map<string, DemandAnalyticsData[]>();
-  demandData
-    .filter(d => 
-      d.centreId === config.centreId &&
-      (config.roomIds.length === 0 || config.roomIds.includes(d.roomId)) &&
-      d.date >= config.dateRange.start &&
-      d.date <= config.dateRange.end &&
-      d.requiredStaff > 0
-    )
-    .forEach(d => {
-      const key = `${d.date}::${d.roomId}`;
-      if (!groupedDemand.has(key)) groupedDemand.set(key, []);
-      groupedDemand.get(key)!.push(d);
-    });
-  
-  groupedDemand.forEach((dayDemand, key) => {
-    const [date, roomId] = key.split('::');
-    const room = rooms.find(r => r.id === roomId);
-    if (!room) return;
-    
-    // Merge adjacent time slots with same staffing need into shifts
-    const sortedSlots = dayDemand.sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
-    
-    // For each time slot, determine required staff
-    sortedSlots.forEach((demand, idx) => {
-      const [slotStart, slotEnd] = demand.timeSlot.split('-');
-      const requiredStaff = demand.requiredStaff;
-      const alreadyScheduled = demand.scheduledStaff;
-      const needed = Math.max(0, requiredStaff - alreadyScheduled);
-      
-      if (needed <= 0) return;
-      
-      // Try to merge with shift templates if available
-      const matchingTemplate = config.shiftTemplates.find(t => {
-        const tStart = timeToMinutes(t.startTime);
-        const tEnd = timeToMinutes(t.endTime);
-        const sStart = timeToMinutes(slotStart);
-        return Math.abs(tStart - sStart) <= 60; // Within 1 hour
-      });
-      
-      const shiftStart = matchingTemplate?.startTime || slotStart;
-      const shiftEnd = matchingTemplate?.endTime || slotEnd;
-      const breakMins = matchingTemplate?.breakMinutes || (shiftDurationMinutes(shiftStart, shiftEnd) >= 300 ? 30 : 0);
-      
-      // Determine priority based on compliance
-      let priority: GeneratedShiftSlot['priority'] = 'normal';
-      if (!demand.staffRatioCompliant) priority = 'critical';
-      else if (demand.utilisationPercent > 80) priority = 'high';
-      else if (demand.utilisationPercent < 50) priority = 'low';
-      
-      // Create one shift slot per required staff member
-      for (let i = 0; i < needed; i++) {
-        slots.push({
-          id: `auto-${date}-${roomId}-${slotStart.replace(':', '')}-${i}`,
-          centreId: config.centreId,
-          roomId,
-          roomName: room.name,
-          date,
-          startTime: shiftStart,
-          endTime: shiftEnd,
-          breakMinutes: breakMins,
-          requiredCount: 1,
-          demandSource: 'ratio',
-          priority,
-        });
-      }
-    });
-  });
-  
-  // Deduplicate overlapping shifts in the same room on the same day
-  // Merge shifts that cover similar time windows
-  const deduplicated = deduplicateShifts(slots);
-  
-  return deduplicated;
-}
-
-function deduplicateShifts(slots: GeneratedShiftSlot[]): GeneratedShiftSlot[] {
-  const grouped = new Map<string, GeneratedShiftSlot[]>();
-  
-  slots.forEach(s => {
-    const key = `${s.date}::${s.roomId}::${s.startTime}::${s.endTime}`;
-    if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key)!.push(s);
-  });
-  
-  return Array.from(grouped.values()).flat();
-}
-
-// ============= STEP 2: SCORE & ASSIGN STAFF =============
+// ============= STAFF SCORING ENGINE =============
 
 interface StaffCandidateScore {
   staffId: string;
@@ -376,14 +236,12 @@ export function scoreStaffForShift(
     issues.push('Not available');
   }
   
-  // Check overlap
   if (hasShiftOverlap(staff.id, shift.date, shift.startTime, shift.endTime, existingShifts, assignedShifts)) {
     availScore = 0;
     isEligible = false;
     issues.push('Shift overlap');
   }
   
-  // Check weekly hours constraint
   const weeklyHours = getStaffWeeklyHours(staff.id, shift.date, existingShifts, assignedShifts);
   const shiftHours = (shiftDurationMinutes(shift.startTime, shift.endTime) - shift.breakMinutes) / 60;
   const maxWeeklyMins = getMaxWeeklyMinutes(constraints);
@@ -399,16 +257,13 @@ export function scoreStaffForShift(
     availScore = Math.max(0, availScore - 40);
   }
   
-  // Check max hours per staff member
   if (weeklyHours + shiftHours > staff.maxHoursPerWeek) {
     issues.push(`Exceeds personal max ${staff.maxHoursPerWeek}h/week`);
     availScore = Math.max(0, availScore - 20);
   }
   
   // --- QUALIFICATION SCORE ---
-  let qualScore = 50; // Default if no requirements
-  const room = shift.roomId;
-  // Basic role matching
+  let qualScore = 50;
   if (staff.role === 'lead_educator' || staff.role === 'educator') {
     qualScore = 80;
   }
@@ -416,9 +271,7 @@ export function scoreStaffForShift(
     qualScore = 100;
   }
   
-  // Skills enforcement from constraints
   if (constraints.shiftConstraints.skills.enabled && constraints.shiftConstraints.skills.requiredSkillsEnforced) {
-    // If skills enforcement is on and staff lacks required quals, penalize hard
     const hasRequired = staff.qualifications?.some(q => !q.isExpired);
     if (!hasRequired) {
       qualScore = 20;
@@ -435,7 +288,6 @@ export function scoreStaffForShift(
     const minRate = Math.min(...allRates);
     const maxRate = Math.max(...allRates);
     const range = maxRate - minRate || 1;
-    // Higher score = lower cost (normalized)
     costScore = Math.round(100 * (1 - (staff.hourlyRate - minRate) / range));
   }
   
@@ -447,7 +299,6 @@ export function scoreStaffForShift(
     }, 0) / allStaff.length;
     
     const deviation = Math.abs(weeklyHours - avgHours);
-    // Staff with fewer hours gets higher fairness score
     if (weeklyHours < avgHours) {
       fairnessScore = Math.min(100, 50 + (avgHours - weeklyHours) * 10);
     } else {
@@ -459,7 +310,6 @@ export function scoreStaffForShift(
   let preferenceScore = 50;
   const prefs = staff.schedulingPreferences;
   if (prefs) {
-    // Check preferred rooms
     if (prefs.preferredRooms?.includes(shift.roomId)) {
       preferenceScore = 90;
     } else if (prefs.avoidRooms?.includes(shift.roomId)) {
@@ -467,7 +317,6 @@ export function scoreStaffForShift(
       issues.push('Room is in avoid list');
     }
     
-    // Check shift time preferences
     const shiftStartMins = timeToMinutes(shift.startTime);
     if (prefs.preferEarlyShifts && shiftStartMins <= 9 * 60) preferenceScore += 10;
     if (prefs.preferLateShifts && shiftStartMins >= 12 * 60) preferenceScore += 10;
@@ -503,140 +352,76 @@ export function scoreStaffForShift(
   };
 }
 
-// ============= STEP 3: MAIN SCHEDULER =============
+// ============= BATCH ASSIGNMENT ENGINE =============
 
-export function runAutoScheduler(
-  demandData: DemandAnalyticsData[],
+export interface AssignmentResult {
+  assignments: Map<string, { staffId: string; staffName: string; score: number; issues: string[] }>;
+  estimatedCost: number;
+  fairnessScore: number;
+  constraintViolations: ConstraintViolation[];
+}
+
+/**
+ * Batch assign staff to a set of shift slots using greedy scoring.
+ * Returns assignments map, estimated cost, and fairness metrics.
+ */
+export function batchAssignStaff(
+  slots: GeneratedShiftSlot[],
   staff: StaffMember[],
-  rooms: Room[],
   existingShifts: Shift[],
-  config: AutoSchedulerConfig,
-): SchedulerResult {
+  weights: SchedulerWeights,
+  constraints: TimefoldConstraintConfiguration,
+): AssignmentResult {
+  const assignmentMap = new Map<string, { staffId: string; staffName: string; score: number; issues: string[] }>();
+  const assignedSlots: GeneratedShiftSlot[] = [];
   const constraintViolations: ConstraintViolation[] = [];
-  
-  // Step 1: Generate shifts from demand
-  const generatedShifts = generateShiftsFromDemand(demandData, rooms, config);
-  
-  // Step 2: Sort shifts by priority (critical first)
+
+  // Sort by priority (critical first)
   const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
-  generatedShifts.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-  
-  // Step 3: If assigning staff, run greedy assignment
-  if (config.assignStaff && staff.length > 0) {
-    const eligibleStaff = staff.filter(s => 
-      s.employmentType !== 'casual' || true // Include all types
-    );
-    
-    generatedShifts.forEach(shift => {
-      // Score all staff for this shift
-      const scores = eligibleStaff
-        .map(s => scoreStaffForShift(
-          s, shift, existingShifts, generatedShifts, eligibleStaff, config.weights, config.constraints
-        ))
-        .filter(s => s.isEligible)
-        .sort((a, b) => b.totalScore - a.totalScore);
+  const sorted = [...slots].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+  sorted.forEach(slot => {
+    const candidates = staff
+      .map(s => scoreStaffForShift(s, slot, existingShifts, assignedSlots, staff, weights, constraints))
+      .filter(c => c.isEligible)
+      .sort((a, b) => b.totalScore - a.totalScore);
+
+    if (candidates.length > 0) {
+      const best = candidates[0];
+      const assignedSlot = { ...slot, assignedStaffId: best.staffId, assignedStaffName: best.staffName };
+      assignedSlots.push(assignedSlot);
       
-      if (scores.length > 0) {
-        const best = scores[0];
-        shift.assignedStaffId = best.staffId;
-        shift.assignedStaffName = best.staffName;
-        shift.assignmentScore = best.totalScore;
-        shift.assignmentIssues = best.issues;
-      } else {
-        shift.assignmentIssues = ['No eligible staff found'];
-      }
-    });
-  }
-  
-  // Step 4: Build summary
-  const totalHours = generatedShifts.reduce((sum, s) => 
-    sum + (shiftDurationMinutes(s.startTime, s.endTime) - s.breakMinutes) / 60, 0
-  );
-  
-  const assignedShifts = generatedShifts.filter(s => s.assignedStaffId);
-  const unfilledShifts = generatedShifts.filter(s => !s.assignedStaffId);
-  
-  // Room coverage
-  const roomCoverage = rooms
-    .filter(r => config.roomIds.length === 0 || config.roomIds.includes(r.id))
-    .map(r => {
-      const roomShifts = generatedShifts.filter(s => s.roomId === r.id);
-      return {
-        roomId: r.id,
-        roomName: r.name,
-        required: roomShifts.length,
-        covered: roomShifts.filter(s => s.assignedStaffId).length,
-      };
-    });
-  
-  // Date breakdown
-  const dateMap = new Map<string, { shifts: number; assigned: number }>();
-  generatedShifts.forEach(s => {
-    if (!dateMap.has(s.date)) dateMap.set(s.date, { shifts: 0, assigned: 0 });
-    const entry = dateMap.get(s.date)!;
-    entry.shifts++;
-    if (s.assignedStaffId) entry.assigned++;
+      assignmentMap.set(slot.id, {
+        staffId: best.staffId,
+        staffName: best.staffName,
+        score: best.totalScore,
+        issues: best.issues,
+      });
+    }
   });
-  
-  const dateBreakdown = Array.from(dateMap.entries())
-    .map(([date, data]) => ({ date, ...data }))
-    .sort((a, b) => a.date.localeCompare(b.date));
-  
-  // Estimated cost
-  const estimatedCost = assignedShifts.reduce((sum, s) => {
-    const staffMember = staff.find(st => st.id === s.assignedStaffId);
-    const hours = (shiftDurationMinutes(s.startTime, s.endTime) - s.breakMinutes) / 60;
+
+  // Calculate estimated cost
+  const estimatedCost = Array.from(assignmentMap.entries()).reduce((sum, [slotId, assignment]) => {
+    const slot = slots.find(s => s.id === slotId);
+    if (!slot) return sum;
+    const staffMember = staff.find(s => s.id === assignment.staffId);
+    const hours = (shiftDurationMinutes(slot.startTime, slot.endTime) - slot.breakMinutes) / 60;
     return sum + (staffMember?.hourlyRate || 0) * hours;
   }, 0);
-  
-  // Average fairness
+
+  // Calculate fairness score
   const staffHoursMap = new Map<string, number>();
-  assignedShifts.forEach(s => {
+  assignedSlots.forEach(s => {
     if (!s.assignedStaffId) return;
     const hours = (shiftDurationMinutes(s.startTime, s.endTime) - s.breakMinutes) / 60;
     staffHoursMap.set(s.assignedStaffId, (staffHoursMap.get(s.assignedStaffId) || 0) + hours);
   });
   const hoursValues = Array.from(staffHoursMap.values());
-  const avgFairness = hoursValues.length > 0
-    ? 100 - (Math.max(...hoursValues) - Math.min(...hoursValues)) / (Math.max(...hoursValues) || 1) * 100
+  const fairnessScore = hoursValues.length > 0
+    ? Math.round(100 - (Math.max(...hoursValues) - Math.min(...hoursValues)) / (Math.max(...hoursValues) || 1) * 100)
     : 100;
-  
-  return {
-    generatedShifts,
-    summary: {
-      totalShiftsGenerated: generatedShifts.length,
-      totalStaffAssigned: assignedShifts.length,
-      unfilledShifts: unfilledShifts.length,
-      totalHoursScheduled: Math.round(totalHours * 10) / 10,
-      estimatedCost: Math.round(estimatedCost * 100) / 100,
-      averageFairnessScore: Math.round(avgFairness),
-      roomCoverage,
-      dateBreakdown,
-    },
-    constraintViolations,
-  };
-}
 
-/**
- * Convert generated shift slots to actual Shift objects for the roster
- */
-export function convertToRosterShifts(
-  slots: GeneratedShiftSlot[],
-): Omit<Shift, 'id'>[] {
-  return slots.map(slot => ({
-    staffId: slot.assignedStaffId || '',
-    centreId: slot.centreId,
-    roomId: slot.roomId,
-    date: slot.date,
-    startTime: slot.startTime,
-    endTime: slot.endTime,
-    breakMinutes: slot.breakMinutes,
-    status: 'draft' as const,
-    isOpenShift: !slot.assignedStaffId,
-    isAIGenerated: true,
-    aiGeneratedAt: new Date().toISOString(),
-    notes: `Auto-generated from demand (${slot.demandSource})`,
-  }));
+  return { assignments: assignmentMap, estimatedCost: Math.round(estimatedCost * 100) / 100, fairnessScore, constraintViolations };
 }
 
 // ============= FILL OPEN SHIFTS (ONE-CLICK) =============
@@ -668,18 +453,15 @@ export function fillOpenShiftsWithStaff(
   const unfilledOpenShiftIds: string[] = [];
   const scores: number[] = [];
 
-  // Sort open shifts by urgency (critical first)
   const urgencyOrder = { critical: 0, high: 1, medium: 2, low: 3 };
   const sorted = [...openShifts].sort((a, b) => urgencyOrder[a.urgency] - urgencyOrder[b.urgency]);
 
-  // Track assignments as GeneratedShiftSlots for the scorer
   const assignedSlots: GeneratedShiftSlot[] = [];
 
   sorted.forEach((os) => {
     const count = os.requiredEmployeeCount || 1;
 
     for (let i = 0; i < count; i++) {
-      // Build a temporary GeneratedShiftSlot so we can reuse scoreStaffForShift
       const tempSlot: GeneratedShiftSlot = {
         id: `fill-${os.id}-${i}`,
         centreId: os.centreId,
@@ -694,7 +476,6 @@ export function fillOpenShiftsWithStaff(
         priority: os.urgency === 'critical' ? 'critical' : os.urgency === 'high' ? 'high' : 'normal',
       };
 
-      // Score all eligible staff
       const candidates = staff
         .map(s => scoreStaffForShift(s, tempSlot, existingShifts, assignedSlots, staff, weights, constraints))
         .filter(c => c.isEligible)
@@ -703,7 +484,6 @@ export function fillOpenShiftsWithStaff(
       if (candidates.length > 0) {
         const best = candidates[0];
         
-        // Track assignment for future scoring
         tempSlot.assignedStaffId = best.staffId;
         tempSlot.assignedStaffName = best.staffName;
         assignedSlots.push(tempSlot);
@@ -742,4 +522,26 @@ export function fillOpenShiftsWithStaff(
       averageScore: scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
     },
   };
+}
+
+/**
+ * Convert generated shift slots to actual Shift objects for the roster
+ */
+export function convertToRosterShifts(
+  slots: GeneratedShiftSlot[],
+): Omit<Shift, 'id'>[] {
+  return slots.map(slot => ({
+    staffId: slot.assignedStaffId || '',
+    centreId: slot.centreId,
+    roomId: slot.roomId,
+    date: slot.date,
+    startTime: slot.startTime,
+    endTime: slot.endTime,
+    breakMinutes: slot.breakMinutes,
+    status: 'draft' as const,
+    isOpenShift: !slot.assignedStaffId,
+    isAIGenerated: true,
+    aiGeneratedAt: new Date().toISOString(),
+    notes: `Auto-generated from demand (${slot.demandSource})`,
+  }));
 }

@@ -36,7 +36,7 @@ import { ShiftTemplateManager } from '@/components/roster/ShiftTemplateManager';
 import { RosterHistoryPanel } from '@/components/roster/RosterHistoryPanel';
 import { AddEmptyShiftModal } from '@/components/roster/AddEmptyShiftModal';
 import { AutoAssignStaffModal } from '@/components/roster/AutoAssignStaffModal';
-import { AutoSchedulerPanel } from '@/components/roster/AutoSchedulerPanel';
+// AutoSchedulerPanel merged into DemandShiftWizard (unified engine)
 import { FillOpenShiftsDialog } from '@/components/roster/FillOpenShiftsDialog';
 import { DemandShiftWizard } from '@/components/roster/DemandShiftWizard';
 import { NqfComplianceDashboard } from '@/components/roster/NqfComplianceDashboard';
@@ -291,7 +291,7 @@ export default function RosterScheduler() {
   const [showBreakScheduling, setShowBreakScheduling] = useState(false);
   const [showSkillMatrix, setShowSkillMatrix] = useState(false);
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
-  const [showAutoScheduler, setShowAutoScheduler] = useState(false);
+  // showAutoScheduler removed — merged into DemandShiftWizard
   const [showDemandShiftWizard, setShowDemandShiftWizard] = useState(false);
   const [demandWizardPreSelectedRoom, setDemandWizardPreSelectedRoom] = useState<string | undefined>(undefined);
   const [showSendToAgencyModal, setShowSendToAgencyModal] = useState(false);
@@ -2169,26 +2169,15 @@ export default function RosterScheduler() {
               </Button>
             )}
             
-            {/* Auto-Scheduler Button */}
+            {/* Unified Demand Shift Wizard (merged Auto-Scheduler) */}
             <Button
               variant="contained"
               color="primary"
               size="small"
-              onClick={() => setShowAutoScheduler(true)}
+              onClick={() => setShowDemandShiftWizard(true)}
               startIcon={<Wand2 size={16} />}
             >
               Auto-Schedule
-            </Button>
-
-            {/* Demand Shift Wizard Button */}
-            <Button
-              variant="outlined"
-              color="primary"
-              size="small"
-              onClick={() => setShowDemandShiftWizard(true)}
-              startIcon={<BarChart3 size={16} />}
-            >
-              Generate from Demand
             </Button>
 
             {/* Dropdown Menus Group */}
@@ -3183,25 +3172,7 @@ export default function RosterScheduler() {
         onAssign={handleAutoAssign}
       />
 
-      {/* Auto-Scheduler Panel */}
-      <AutoSchedulerPanel
-        open={showAutoScheduler}
-        onClose={() => setShowAutoScheduler(false)}
-        centreId={selectedCentreId}
-        centre={selectedCentre}
-        staff={allStaff}
-        rooms={selectedCentre.rooms}
-        existingShifts={shifts}
-        demandData={demandAnalytics}
-        shiftTemplates={allShiftTemplates}
-        dates={dates.map(d => typeof d === 'string' ? d : format(d, 'yyyy-MM-dd'))}
-        onApplyShifts={(newShifts) => {
-          const withIds = newShifts.map((s, i) => ({ ...s, id: `auto-sched-${Date.now()}-${i}` }));
-          setShifts(prev => [...prev, ...withIds]);
-        }}
-      />
-
-      {/* Demand Shift Wizard */}
+      {/* Unified Demand Shift Wizard (merged Auto-Scheduler + Demand Generator) */}
       <DemandShiftWizard
         open={showDemandShiftWizard}
         onClose={() => {

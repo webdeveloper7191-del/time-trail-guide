@@ -5,6 +5,7 @@ import {
   BarChart3, ChevronRight, ChevronLeft, AlertTriangle, Building2,
   Zap, TrendingUp, Info, UserCheck, Loader2, Globe,
   Save, Bookmark, Trash2, FolderOpen, CalendarIcon,
+  DollarSign, Scale, Check, Star,
 } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Button } from '@/components/ui/button';
@@ -37,9 +38,12 @@ import { DemandCurveChart } from '@/components/roster/DemandCurveChart';
 import { demandApi } from '@/lib/api/demandApi';
 import {
   scoreStaffForShift,
+  batchAssignStaff,
   GeneratedShiftSlot,
   SchedulerWeights,
   DEFAULT_WEIGHTS,
+  shiftDurationMinutes,
+  AssignmentResult,
 } from '@/lib/autoScheduler';
 import { TimefoldConstraintConfiguration, defaultConstraintConfig } from '@/types/timefoldConstraintConfig';
 
@@ -196,6 +200,7 @@ export function DemandShiftWizard({
   const [autoAssignEnabled, setAutoAssignEnabled] = useState(false);
   const [isAutoAssigning, setIsAutoAssigning] = useState(false);
   const [assignments, setAssignments] = useState<Map<string, StaffAssignment>>(new Map());
+  const [assignmentMetrics, setAssignmentMetrics] = useState<{ estimatedCost: number; fairnessScore: number } | null>(null);
   const [assignWeightPreset, setAssignWeightPreset] = useState<string>('balanced');
   const [assignWeights, setAssignWeights] = useState<SchedulerWeights>({ ...DEFAULT_WEIGHTS });
 
@@ -317,6 +322,15 @@ export function DemandShiftWizard({
 
   const centreRooms = useMemo(() => rooms.filter(r => r.centreId === centreId), [rooms, centreId]);
 
+  // Demand overview summary (from AutoSchedulerPanel)
+  const demandSummary = useMemo(() => {
+    const filtered = demandData.filter(d => d.centreId === centreId);
+    const totalRequired = filtered.reduce((sum, d) => sum + d.requiredStaff, 0);
+    const totalScheduled = filtered.reduce((sum, d) => sum + d.scheduledStaff, 0);
+    const nonCompliant = filtered.filter(d => !d.staffRatioCompliant).length;
+    return { totalRequired, totalScheduled, gap: totalRequired - totalScheduled, nonCompliant };
+  }, [demandData, centreId]);
+
   const handleGenerate = useCallback(async () => {
     const targetRooms = selectedRoomId === 'all'
       ? centreRooms
@@ -365,56 +379,39 @@ export function DemandShiftWizard({
 
     setIsAutoAssigning(true);
 
-    // Simulate async processing
     setTimeout(() => {
+      // Convert envelopes to GeneratedShiftSlots for the unified assignment engine
+      const slots: GeneratedShiftSlot[] = envelopes.map(envelope => ({
+        id: envelope.id,
+        centreId: envelope.centreId,
+        roomId: envelope.roomId,
+        roomName: envelope.roomName,
+        date: envelope.date,
+        startTime: envelope.startTime,
+        endTime: envelope.endTime,
+        breakMinutes: envelope.breakMinutes,
+        requiredCount: 1,
+        demandSource: 'booking' as const,
+        priority: envelope.priority,
+      }));
+
+      // Use the unified batch assignment engine
+      const result = batchAssignStaff(slots, staff, existingShifts, assignWeights, defaultConstraintConfig);
+
+      // Convert to StaffAssignment map
       const newAssignments = new Map<string, StaffAssignment>();
-      const assignedSlots: GeneratedShiftSlot[] = [];
-
-      // Sort by priority
-      const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
-      const sorted = [...envelopes].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-
-      sorted.forEach(envelope => {
-        // Build temp slot for the scoring engine
-        const tempSlot: GeneratedShiftSlot = {
-          id: envelope.id,
-          centreId: envelope.centreId,
-          roomId: envelope.roomId,
-          roomName: envelope.roomName,
-          date: envelope.date,
-          startTime: envelope.startTime,
-          endTime: envelope.endTime,
-          breakMinutes: envelope.breakMinutes,
-          requiredCount: 1,
-          demandSource: 'booking',
-          priority: envelope.priority,
-        };
-
-        // Score all eligible staff
-        const candidates = staff
-          .map(s => scoreStaffForShift(
-            s, tempSlot, existingShifts, assignedSlots, staff, assignWeights, defaultConstraintConfig
-          ))
-          .filter(c => c.isEligible)
-          .sort((a, b) => b.totalScore - a.totalScore);
-
-        if (candidates.length > 0) {
-          const best = candidates[0];
-          tempSlot.assignedStaffId = best.staffId;
-          tempSlot.assignedStaffName = best.staffName;
-          assignedSlots.push(tempSlot);
-
-          newAssignments.set(envelope.id, {
-            envelopeId: envelope.id,
-            staffId: best.staffId,
-            staffName: best.staffName,
-            score: best.totalScore,
-            issues: best.issues,
-          });
-        }
+      result.assignments.forEach((assignment, slotId) => {
+        newAssignments.set(slotId, {
+          envelopeId: slotId,
+          staffId: assignment.staffId,
+          staffName: assignment.staffName,
+          score: assignment.score,
+          issues: assignment.issues,
+        });
       });
 
       setAssignments(newAssignments);
+      setAssignmentMetrics({ estimatedCost: result.estimatedCost, fairnessScore: result.fairnessScore });
       setIsAutoAssigning(false);
 
       const assignedCount = newAssignments.size;
@@ -560,7 +557,39 @@ export function DemandShiftWizard({
             </p>
           </div>
 
-          {/* Config Presets */}
+          {/* Demand Overview (merged from Auto-Scheduler) */}
+          <div className="grid grid-cols-4 gap-2">
+            <Card className="bg-muted/30">
+              <CardContent className="p-2.5 text-center">
+                <p className="text-lg font-bold text-foreground">{demandSummary.totalRequired}</p>
+                <p className="text-[10px] text-muted-foreground">Staff Required</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-muted/30">
+              <CardContent className="p-2.5 text-center">
+                <p className="text-lg font-bold text-foreground">{demandSummary.totalScheduled}</p>
+                <p className="text-[10px] text-muted-foreground">Already Scheduled</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-muted/30">
+              <CardContent className="p-2.5 text-center">
+                <p className={cn("text-lg font-bold", demandSummary.gap > 0 ? "text-destructive" : "text-primary")}>
+                  {demandSummary.gap}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Staffing Gap</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-muted/30">
+              <CardContent className="p-2.5 text-center">
+                <p className={cn("text-lg font-bold", demandSummary.nonCompliant > 0 ? "text-destructive" : "text-primary")}>
+                  {demandSummary.nonCompliant}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Non-Compliant</p>
+              </CardContent>
+            </Card>
+          </div>
+
+
           <Card className="border border-border">
             <CardContent className="p-3 space-y-3">
               <div className="flex items-center justify-between">
@@ -961,7 +990,55 @@ export function DemandShiftWizard({
             </CardContent>
           </Card>
 
-          {/* Summary */}
+          {/* Active Constraints Summary */}
+          <Card className="border border-border">
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle className="h-4 w-4 text-primary" />
+                <Label className="text-xs font-medium">Active Constraints</Label>
+              </div>
+              <div className="space-y-1">
+                {defaultConstraintConfig.employeeConstraints.contracts.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Work limits: max {Math.max(...defaultConstraintConfig.employeeConstraints.contracts.contracts.map(c => c.workLimits.minutesPerPeriod.maxMinutes || 2400)) / 60}h/week</span>
+                  </div>
+                )}
+                {defaultConstraintConfig.employeeConstraints.contracts.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Min rest: {Math.max(...defaultConstraintConfig.employeeConstraints.contracts.contracts.map(c => c.timeOffRules.minTimeBetweenShiftsMinutes)) / 60}h between shifts</span>
+                  </div>
+                )}
+                {defaultConstraintConfig.employeeConstraints.availability.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Respect availability & unavailability</span>
+                  </div>
+                )}
+                {defaultConstraintConfig.employeeConstraints.fairness.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Balance workload across staff</span>
+                  </div>
+                )}
+                {defaultConstraintConfig.shiftConstraints.skills.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Skills enforcement: {defaultConstraintConfig.shiftConstraints.skills.requiredSkillsEnforced ? 'Hard' : 'Soft'}</span>
+                  </div>
+                )}
+                {defaultConstraintConfig.shiftConstraints.costManagement.enabled && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="h-3 w-3 text-primary" />
+                    <span>Cost optimization active</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+
           <Card>
             <CardContent className="pt-3 pb-3">
               <div className="flex items-center gap-4 text-xs">
@@ -1051,7 +1128,23 @@ export function DemandShiftWizard({
             </Card>
           )}
 
-          {/* Room tabs with demand charts */}
+          {/* Assignment Metrics */}
+          {autoAssignEnabled && assignmentMetrics && !isAutoAssigning && (
+            <div className="grid grid-cols-2 gap-2">
+              <Card className="bg-muted/30">
+                <CardContent className="p-3 text-center">
+                  <p className="text-lg font-bold text-foreground">${assignmentMetrics.estimatedCost.toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground">Estimated Cost</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-muted/30">
+                <CardContent className="p-3 text-center">
+                  <p className="text-lg font-bold text-foreground">{assignmentMetrics.fairnessScore}%</p>
+                  <p className="text-[10px] text-muted-foreground">Fairness Score</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
           <Tabs
             defaultValue={result.roomProfiles[0]?.roomId || 'none'}
             className="space-y-3"
