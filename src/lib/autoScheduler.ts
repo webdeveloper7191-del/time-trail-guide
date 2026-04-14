@@ -354,7 +354,7 @@ interface StaffCandidateScore {
   hourlyRate: number;
 }
 
-function scoreStaffForShift(
+export function scoreStaffForShift(
   staff: StaffMember,
   shift: GeneratedShiftSlot,
   existingShifts: Shift[],

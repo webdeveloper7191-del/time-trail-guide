@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import {
   Sparkles, Settings2, Eye, CheckCircle2, Clock, Users, Baby,
   BarChart3, ChevronRight, ChevronLeft, AlertTriangle, Building2,
-  Zap, TrendingUp, Info,
+  Zap, TrendingUp, Info, UserCheck, Loader2, Globe,
 } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Button } from '@/components/ui/button';
@@ -16,18 +16,27 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Shift, Room, Centre } from '@/types/roster';
+import { Shift, Room, Centre, StaffMember } from '@/types/roster';
 import { DemandAnalyticsData } from '@/types/demandAnalytics';
 import {
   DemandShiftConfig,
   DEFAULT_DEMAND_SHIFT_CONFIG,
   DemandShiftGenerationResult,
+  ShiftEnvelope,
 } from '@/types/demandShiftGeneration';
 import {
   generateDemandDrivenShifts,
   convertEnvelopesToRosterShifts,
 } from '@/lib/demandShiftEngine';
 import { DemandCurveChart } from '@/components/roster/DemandCurveChart';
+import { demandApi } from '@/lib/api/demandApi';
+import {
+  scoreStaffForShift,
+  GeneratedShiftSlot,
+  SchedulerWeights,
+  DEFAULT_WEIGHTS,
+} from '@/lib/autoScheduler';
+import { TimefoldConstraintConfiguration, defaultConstraintConfig } from '@/types/timefoldConstraintConfig';
 
 interface DemandShiftWizardProps {
   open: boolean;
@@ -38,16 +47,32 @@ interface DemandShiftWizardProps {
   demandData: DemandAnalyticsData[];
   dates: string[];
   existingShifts: Shift[];
+  staff?: StaffMember[];
   onApplyShifts: (shifts: Omit<Shift, 'id'>[]) => void;
 }
 
 type WizardStep = 'configure' | 'preview' | 'confirm';
+
+interface StaffAssignment {
+  envelopeId: string;
+  staffId: string;
+  staffName: string;
+  score: number;
+  issues: string[];
+}
 
 const STEPS: { key: WizardStep; label: string; icon: React.ElementType }[] = [
   { key: 'configure', label: 'Configure', icon: Settings2 },
   { key: 'preview', label: 'Preview', icon: Eye },
   { key: 'confirm', label: 'Confirm', icon: CheckCircle2 },
 ];
+
+const WEIGHT_PRESETS = {
+  balanced: { label: 'Balanced', weights: { ...DEFAULT_WEIGHTS } },
+  compliance: { label: 'Compliance First', weights: { availability: 25, qualifications: 40, cost: 5, fairness: 15, preference: 15 } },
+  costOptimized: { label: 'Cost Optimized', weights: { availability: 25, qualifications: 15, cost: 40, fairness: 10, preference: 10 } },
+  fairDistribution: { label: 'Fair Distribution', weights: { availability: 20, qualifications: 15, cost: 10, fairness: 45, preference: 10 } },
+};
 
 export function DemandShiftWizard({
   open,
@@ -58,6 +83,7 @@ export function DemandShiftWizard({
   demandData,
   dates,
   existingShifts,
+  staff = [],
   onApplyShifts,
 }: DemandShiftWizardProps) {
   const [step, setStep] = useState<WizardStep>('configure');
@@ -66,32 +92,170 @@ export function DemandShiftWizard({
   const [result, setResult] = useState<DemandShiftGenerationResult | null>(null);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
+  // Auto-assign state
+  const [autoAssignEnabled, setAutoAssignEnabled] = useState(false);
+  const [isAutoAssigning, setIsAutoAssigning] = useState(false);
+  const [assignments, setAssignments] = useState<Map<string, StaffAssignment>>(new Map());
+  const [assignWeightPreset, setAssignWeightPreset] = useState<string>('balanced');
+  const [assignWeights, setAssignWeights] = useState<SchedulerWeights>({ ...DEFAULT_WEIGHTS });
+
+  // API loading state
+  const [useApi, setUseApi] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const centreRooms = useMemo(() => rooms.filter(r => r.centreId === centreId), [rooms, centreId]);
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     const targetRooms = selectedRoomId === 'all'
       ? centreRooms
       : centreRooms.filter(r => r.id === selectedRoomId);
 
-    const genResult = generateDemandDrivenShifts(demandData, targetRooms, dates, config);
-    setResult(genResult);
-    setRemovedIds(new Set());
-    setStep('preview');
-    toast.success(`Generated ${genResult.shiftEnvelopes.length} shift envelopes`);
-  }, [centreRooms, selectedRoomId, demandData, dates, config]);
+    setIsLoading(true);
+
+    try {
+      let genResult: DemandShiftGenerationResult;
+
+      if (useApi) {
+        // Use mock API endpoint
+        const dateStrings = dates.map(d => typeof d === 'string' ? d : d);
+        const apiResponse = await demandApi.generateShiftsFromDemand({
+          centreId,
+          rooms: targetRooms,
+          dates: dateStrings,
+          config,
+        });
+        genResult = apiResponse.data.result;
+      } else {
+        // Direct engine call (existing behavior)
+        genResult = generateDemandDrivenShifts(demandData, targetRooms, dates, config);
+      }
+
+      setResult(genResult);
+      setRemovedIds(new Set());
+      setAssignments(new Map());
+      setStep('preview');
+      toast.success(`Generated ${genResult.shiftEnvelopes.length} shift envelopes`);
+
+      // Auto-assign if enabled
+      if (autoAssignEnabled && staff.length > 0) {
+        runAutoAssignment(genResult.shiftEnvelopes);
+      }
+    } catch (err) {
+      console.error('Shift generation failed:', err);
+      toast.error('Failed to generate shifts. Check demand data.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [centreRooms, selectedRoomId, demandData, dates, config, useApi, centreId, autoAssignEnabled, staff]);
+
+  const runAutoAssignment = useCallback((envelopes: ShiftEnvelope[]) => {
+    if (staff.length === 0) {
+      toast.info('No staff available for auto-assignment');
+      return;
+    }
+
+    setIsAutoAssigning(true);
+
+    // Simulate async processing
+    setTimeout(() => {
+      const newAssignments = new Map<string, StaffAssignment>();
+      const assignedSlots: GeneratedShiftSlot[] = [];
+
+      // Sort by priority
+      const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
+      const sorted = [...envelopes].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+      sorted.forEach(envelope => {
+        // Build temp slot for the scoring engine
+        const tempSlot: GeneratedShiftSlot = {
+          id: envelope.id,
+          centreId: envelope.centreId,
+          roomId: envelope.roomId,
+          roomName: envelope.roomName,
+          date: envelope.date,
+          startTime: envelope.startTime,
+          endTime: envelope.endTime,
+          breakMinutes: envelope.breakMinutes,
+          requiredCount: 1,
+          demandSource: 'booking',
+          priority: envelope.priority,
+        };
+
+        // Score all eligible staff
+        const candidates = staff
+          .map(s => scoreStaffForShift(
+            s, tempSlot, existingShifts, assignedSlots, staff, assignWeights, defaultConstraintConfig
+          ))
+          .filter(c => c.isEligible)
+          .sort((a, b) => b.totalScore - a.totalScore);
+
+        if (candidates.length > 0) {
+          const best = candidates[0];
+          tempSlot.assignedStaffId = best.staffId;
+          tempSlot.assignedStaffName = best.staffName;
+          assignedSlots.push(tempSlot);
+
+          newAssignments.set(envelope.id, {
+            envelopeId: envelope.id,
+            staffId: best.staffId,
+            staffName: best.staffName,
+            score: best.totalScore,
+            issues: best.issues,
+          });
+        }
+      });
+
+      setAssignments(newAssignments);
+      setIsAutoAssigning(false);
+
+      const assignedCount = newAssignments.size;
+      const unassigned = envelopes.length - assignedCount;
+      if (assignedCount > 0) {
+        toast.success(`Auto-assigned ${assignedCount} shifts to staff${unassigned > 0 ? ` (${unassigned} unassigned)` : ''}`);
+      } else {
+        toast.info('No eligible staff found for auto-assignment');
+      }
+    }, 600);
+  }, [staff, existingShifts, assignWeights]);
 
   const handleApply = useCallback(() => {
     if (!result) return;
     const kept = result.shiftEnvelopes.filter(e => !removedIds.has(e.id));
-    const rosterShifts = convertEnvelopesToRosterShifts(kept);
+    const rosterShifts = convertEnvelopesToRosterShifts(kept).map(shift => {
+      const assignment = assignments.get(
+        result.shiftEnvelopes.find(e =>
+          e.roomId === shift.roomId && e.date === shift.date &&
+          e.startTime === shift.startTime && e.endTime === shift.endTime
+        )?.id || ''
+      );
+
+      if (assignment) {
+        return {
+          ...shift,
+          staffId: assignment.staffId,
+          isOpenShift: false,
+          isAIGenerated: true,
+          aiGeneratedAt: new Date().toISOString(),
+          notes: `${shift.notes} | Auto-assigned to ${assignment.staffName} (score: ${assignment.score})`,
+        };
+      }
+      return shift;
+    });
+
     onApplyShifts(rosterShifts);
-    toast.success(`Added ${rosterShifts.length} open shifts to roster`);
+    const assignedCount = rosterShifts.filter(s => s.staffId).length;
+    const openCount = rosterShifts.length - assignedCount;
+    toast.success(
+      assignedCount > 0
+        ? `Added ${rosterShifts.length} shifts (${assignedCount} assigned, ${openCount} open)`
+        : `Added ${rosterShifts.length} open shifts to roster`
+    );
     onClose();
-    // Reset
     setStep('configure');
     setResult(null);
     setRemovedIds(new Set());
-  }, [result, removedIds, onApplyShifts, onClose]);
+    setAssignments(new Map());
+  }, [result, removedIds, assignments, onApplyShifts, onClose]);
 
   const toggleRemove = (id: string) => {
     setRemovedIds(prev => {
@@ -107,7 +271,13 @@ export function DemandShiftWizard({
   const actions = useMemo((): import('@/components/ui/off-canvas/PrimaryOffCanvas').OffCanvasAction[] => {
     if (step === 'configure') {
       return [
-        { label: 'Generate Shifts', onClick: handleGenerate, variant: 'primary', icon: <Sparkles className="h-4 w-4" /> },
+        {
+          label: isLoading ? 'Generating...' : 'Generate Shifts',
+          onClick: handleGenerate,
+          variant: 'primary',
+          icon: isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />,
+          disabled: isLoading,
+        },
       ];
     }
     if (step === 'preview') {
@@ -125,9 +295,10 @@ export function DemandShiftWizard({
         icon: <CheckCircle2 className="h-4 w-4" />,
       },
     ];
-  }, [step, handleGenerate, handleApply, result, removedIds]);
+  }, [step, handleGenerate, handleApply, result, removedIds, isLoading]);
 
   const keptCount = result ? result.shiftEnvelopes.length - removedIds.size : 0;
+  const assignedCount = assignments.size;
 
   return (
     <PrimaryOffCanvas
@@ -338,7 +509,91 @@ export function DemandShiftWizard({
             )}
           </div>
 
-          {/* Summary of what will be generated */}
+          <Separator />
+
+          {/* API Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label className="text-xs font-medium">Use API Endpoint</Label>
+                <p className="text-[10px] text-muted-foreground">Route demand data through API layer</p>
+              </div>
+            </div>
+            <Switch checked={useApi} onCheckedChange={setUseApi} />
+          </div>
+
+          {/* Auto-Assign Section */}
+          <Card className={cn(
+            "border transition-all",
+            autoAssignEnabled ? "border-primary/40 bg-primary/5" : "border-border"
+          )}>
+            <CardContent className="p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-primary" />
+                  <div>
+                    <Label className="text-xs font-medium">Auto-Assign Staff</Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      Automatically assign best-matching staff to generated shifts
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={autoAssignEnabled}
+                  onCheckedChange={setAutoAssignEnabled}
+                  disabled={staff.length === 0}
+                />
+              </div>
+
+              {staff.length === 0 && (
+                <p className="text-[10px] text-amber-600 flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  No staff data available for auto-assignment
+                </p>
+              )}
+
+              {autoAssignEnabled && staff.length > 0 && (
+                <div className="space-y-2 pt-1">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Assignment Strategy</Label>
+                    <Select
+                      value={assignWeightPreset}
+                      onValueChange={key => {
+                        setAssignWeightPreset(key);
+                        const preset = WEIGHT_PRESETS[key as keyof typeof WEIGHT_PRESETS];
+                        if (preset) setAssignWeights(preset.weights);
+                      }}
+                    >
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(WEIGHT_PRESETS).map(([key, val]) => (
+                          <SelectItem key={key} value={key}>{val.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-1 text-center">
+                    {Object.entries(assignWeights).map(([key, val]) => (
+                      <div key={key} className="space-y-0.5">
+                        <p className="text-[9px] text-muted-foreground capitalize">{key}</p>
+                        <p className="text-[10px] font-semibold">{val}%</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-[10px] text-muted-foreground">
+                    {staff.length} staff member{staff.length !== 1 ? 's' : ''} available for assignment
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Summary */}
           <Card>
             <CardContent className="pt-3 pb-3">
               <div className="flex items-center gap-4 text-xs">
@@ -390,6 +645,43 @@ export function DemandShiftWizard({
               </CardContent>
             </Card>
           </div>
+
+          {/* Auto-assign summary */}
+          {autoAssignEnabled && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-xs font-medium">
+                        {isAutoAssigning ? 'Assigning staff...' : `${assignedCount} of ${result.shiftEnvelopes.length} shifts assigned`}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {isAutoAssigning
+                          ? 'Scoring staff against constraints...'
+                          : `${result.shiftEnvelopes.length - assignedCount} shifts remain open`}
+                      </p>
+                    </div>
+                  </div>
+                  {!isAutoAssigning && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => runAutoAssignment(result.shiftEnvelopes)}
+                    >
+                      <Zap className="h-3 w-3 mr-1" />
+                      Re-assign
+                    </Button>
+                  )}
+                  {isAutoAssigning && (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Room tabs with demand charts */}
           <Tabs
@@ -447,6 +739,9 @@ export function DemandShiftWizard({
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">
               {keptCount} of {result.shiftEnvelopes.length} shifts selected
+              {assignedCount > 0 && (
+                <span className="text-primary ml-1">({assignedCount} auto-assigned)</span>
+              )}
             </p>
             {removedIds.size > 0 && (
               <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setRemovedIds(new Set())}>
@@ -459,6 +754,7 @@ export function DemandShiftWizard({
             {result.shiftEnvelopes.map(env => {
               const isRemoved = removedIds.has(env.id);
               const hours = Math.round((env.durationMinutes - env.breakMinutes) / 60 * 10) / 10;
+              const assignment = assignments.get(env.id);
               return (
                 <div
                   key={env.id}
@@ -480,9 +776,21 @@ export function DemandShiftWizard({
                         {env.date} · {env.startTime}–{env.endTime} ({hours}h)
                         {env.breakMinutes > 0 && ` · ${env.breakMinutes}m break`}
                       </p>
+                      {assignment && (
+                        <p className="text-[10px] text-primary flex items-center gap-1 mt-0.5">
+                          <UserCheck className="h-2.5 w-2.5" />
+                          {assignment.staffName}
+                          <span className="text-muted-foreground">· score {assignment.score}</span>
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {assignment && (
+                      <Badge variant="outline" className="text-[9px] px-1.5 h-4 border-primary/40 text-primary">
+                        assigned
+                      </Badge>
+                    )}
                     <Badge
                       variant={env.priority === 'critical' ? 'destructive' : 'secondary'}
                       className="text-[9px] px-1.5 h-4"
