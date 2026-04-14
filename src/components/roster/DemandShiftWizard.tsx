@@ -37,9 +37,12 @@ import { DemandCurveChart } from '@/components/roster/DemandCurveChart';
 import { demandApi } from '@/lib/api/demandApi';
 import {
   scoreStaffForShift,
+  batchAssignStaff,
   GeneratedShiftSlot,
   SchedulerWeights,
   DEFAULT_WEIGHTS,
+  shiftDurationMinutes,
+  AssignmentResult,
 } from '@/lib/autoScheduler';
 import { TimefoldConstraintConfiguration, defaultConstraintConfig } from '@/types/timefoldConstraintConfig';
 
