@@ -6,13 +6,26 @@ import {
 import { RoomDemandProfile, ShiftEnvelope } from '@/types/demandShiftGeneration';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Users, Baby, Clock, TrendingUp } from 'lucide-react';
+import { Users, Baby, Clock, TrendingUp, UserCheck, ChevronDown } from 'lucide-react';
+import { StaffMember } from '@/types/roster';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
+interface StaffAssignmentInfo {
+  staffId: string;
+  staffName: string;
+  score: number;
+}
 
 interface DemandCurveChartProps {
   profiles: RoomDemandProfile[];
   envelopes: ShiftEnvelope[];
   selectedRoomId?: string;
   height?: number;
+  assignments?: Map<string, StaffAssignmentInfo>;
+  staff?: StaffMember[];
+  onReassignShift?: (envelopeId: string, staffId: string, staffName: string) => void;
 }
 
 export function DemandCurveChart({
@@ -20,7 +33,11 @@ export function DemandCurveChart({
   envelopes,
   selectedRoomId,
   height = 320,
+  assignments,
+  staff,
+  onReassignShift,
 }: DemandCurveChartProps) {
+  const [reassignSearch, setReassignSearch] = useState('');
   const profile = useMemo(() => {
     if (selectedRoomId) return profiles.find(p => p.roomId === selectedRoomId);
     return profiles[0];
