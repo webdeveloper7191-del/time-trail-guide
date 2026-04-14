@@ -1241,6 +1241,7 @@ export function DemandShiftWizard({
                     assignments={assignments as any}
                     staff={staff}
                     onReassignShift={handleManualReassign}
+                    staffScorer={handleScoreStaffForEnvelope}
                   />
                 </TabsContent>
               ))}
