@@ -3017,6 +3017,15 @@ export default function RosterScheduler() {
         onClose={() => setShowOptimizationReport(false)}
       />
 
+      <NqfComplianceDashboard
+        isOpen={showNqfCompliance}
+        onClose={() => setShowNqfCompliance(false)}
+        rooms={selectedCentre.rooms}
+        shifts={shifts}
+        demandData={demandAnalytics}
+        dates={dates}
+      />
+
       <SaveRosterTemplateModal
         open={showSaveTemplateModal}
         onClose={() => setShowSaveTemplateModal(false)}
