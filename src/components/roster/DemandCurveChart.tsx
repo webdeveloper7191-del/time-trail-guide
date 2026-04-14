@@ -8,9 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Users, Baby, Clock, TrendingUp, UserCheck, ChevronDown } from 'lucide-react';
 import { StaffMember } from '@/types/roster';
+import { StaffCandidateScore } from '@/lib/autoScheduler';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 
 interface StaffAssignmentInfo {
   staffId: string;
@@ -26,6 +28,7 @@ interface DemandCurveChartProps {
   assignments?: Map<string, StaffAssignmentInfo>;
   staff?: StaffMember[];
   onReassignShift?: (envelopeId: string, staffId: string, staffName: string) => void;
+  staffScorer?: (envelope: ShiftEnvelope) => Map<string, StaffCandidateScore>;
 }
 
 export function DemandCurveChart({
@@ -36,8 +39,10 @@ export function DemandCurveChart({
   assignments,
   staff,
   onReassignShift,
+  staffScorer,
 }: DemandCurveChartProps) {
   const [reassignSearch, setReassignSearch] = useState('');
+  const [activeEnvelopeScores, setActiveEnvelopeScores] = useState<Map<string, StaffCandidateScore> | null>(null);
   const profile = useMemo(() => {
     if (selectedRoomId) return profiles.find(p => p.roomId === selectedRoomId);
     return profiles[0];
@@ -234,9 +239,16 @@ export function DemandCurveChart({
               );
 
               return (
-                <Popover key={env.id} onOpenChange={() => setReassignSearch('')}>
+                <Popover key={env.id} onOpenChange={(open) => {
+                  setReassignSearch('');
+                  if (open && staffScorer) {
+                    setActiveEnvelopeScores(staffScorer(env));
+                  } else {
+                    setActiveEnvelopeScores(null);
+                  }
+                }}>
                   <PopoverTrigger asChild>{blockContent}</PopoverTrigger>
-                  <PopoverContent className="w-56 p-2" align="start">
+                  <PopoverContent className="w-64 p-2" align="start">
                     <p className="text-[10px] font-medium text-muted-foreground mb-1.5">
                       Assign staff to {env.startTime}–{env.endTime}
                     </p>
@@ -246,7 +258,7 @@ export function DemandCurveChart({
                       onChange={e => setReassignSearch(e.target.value)}
                       className="h-6 text-[10px] mb-1.5"
                     />
-                    <div className="max-h-36 overflow-y-auto space-y-0.5">
+                    <div className="max-h-48 overflow-y-auto space-y-0.5">
                       {/* Unassign option */}
                       {assignment && (
                         <Button
@@ -258,18 +270,61 @@ export function DemandCurveChart({
                           Remove assignment
                         </Button>
                       )}
-                      {filteredStaff.map(s => (
-                        <Button
-                          key={s.id}
-                          variant={assignment?.staffId === s.id ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="w-full justify-start h-6 text-[10px] gap-1.5"
-                          onClick={() => onReassignShift!(env.id, s.id, s.name)}
-                        >
-                          <span className="truncate">{s.name}</span>
-                          <span className="text-muted-foreground ml-auto shrink-0">${s.hourlyRate}/h</span>
-                        </Button>
-                      ))}
+                      {filteredStaff
+                        .map(s => {
+                          const score = activeEnvelopeScores?.get(s.id);
+                          return { staff: s, score };
+                        })
+                        .sort((a, b) => (b.score?.totalScore ?? 0) - (a.score?.totalScore ?? 0))
+                        .map(({ staff: s, score }) => {
+                          const scoreVal = score?.totalScore ?? 0;
+                          const isIneligible = score && !score.isEligible;
+                          return (
+                            <Button
+                              key={s.id}
+                              variant={assignment?.staffId === s.id ? 'secondary' : 'ghost'}
+                              size="sm"
+                              className={cn(
+                                "w-full justify-start h-auto py-1 px-2 text-[10px] gap-1",
+                                isIneligible && "opacity-50"
+                              )}
+                              onClick={() => onReassignShift!(env.id, s.id, s.name)}
+                            >
+                              <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
+                                <div className="flex items-center w-full gap-1">
+                                  <span className="truncate">{s.name}</span>
+                                  <span className="text-muted-foreground ml-auto shrink-0">${s.hourlyRate}/h</span>
+                                </div>
+                                {score && (
+                                  <div className="flex items-center gap-1.5 w-full">
+                                    <Progress
+                                      value={scoreVal}
+                                      className={cn(
+                                        "h-1.5 flex-1",
+                                        scoreVal >= 70 ? "[&>div]:bg-emerald-500" :
+                                        scoreVal >= 40 ? "[&>div]:bg-amber-500" :
+                                        "[&>div]:bg-destructive"
+                                      )}
+                                    />
+                                    <span className={cn(
+                                      "text-[9px] font-semibold shrink-0 w-6 text-right",
+                                      scoreVal >= 70 ? "text-emerald-600" :
+                                      scoreVal >= 40 ? "text-amber-600" :
+                                      "text-destructive"
+                                    )}>
+                                      {scoreVal}
+                                    </span>
+                                  </div>
+                                )}
+                                {score?.issues && score.issues.length > 0 && (
+                                  <span className="text-[8px] text-destructive/80 truncate w-full">
+                                    {score.issues[0]}
+                                  </span>
+                                )}
+                              </div>
+                            </Button>
+                          );
+                        })}
                       {filteredStaff.length === 0 && (
                         <p className="text-[10px] text-muted-foreground text-center py-2">No matching staff</p>
                       )}

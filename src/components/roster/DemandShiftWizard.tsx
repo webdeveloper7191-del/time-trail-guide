@@ -441,6 +441,33 @@ export function DemandShiftWizard({
     }
   }, []);
 
+  const handleScoreStaffForEnvelope = useCallback((envelope: ShiftEnvelope) => {
+    if (!staff || staff.length === 0) return new Map();
+    const tempSlot: GeneratedShiftSlot = {
+      id: envelope.id,
+      centreId: centreId,
+      roomId: envelope.roomId,
+      roomName: centreRooms.find(r => r.id === envelope.roomId)?.name || '',
+      date: envelope.date,
+      startTime: envelope.startTime,
+      endTime: envelope.endTime,
+      breakMinutes: envelope.breakMinutes,
+      requiredCount: 1,
+      demandSource: 'booking',
+      priority: envelope.priority,
+    };
+    const assignedSlots: GeneratedShiftSlot[] = Array.from(assignments.values())
+      .filter(a => a.staffId)
+      .map(a => ({ ...tempSlot, assignedStaffId: a.staffId, assignedStaffName: a.staffName }));
+    
+    const scoreMap = new Map<string, import('@/lib/autoScheduler').StaffCandidateScore>();
+    staff.forEach(s => {
+      const score = scoreStaffForShift(s, tempSlot, existingShifts, assignedSlots, staff, assignWeights, defaultConstraintConfig);
+      scoreMap.set(s.id, score);
+    });
+    return scoreMap;
+  }, [staff, centreId, centreRooms, existingShifts, assignments, assignWeights]);
+
   // Compliance before/after calculation
   const complianceComparison = useMemo(() => {
     if (!result) return null;
@@ -1214,6 +1241,7 @@ export function DemandShiftWizard({
                     assignments={assignments as any}
                     staff={staff}
                     onReassignShift={handleManualReassign}
+                    staffScorer={handleScoreStaffForEnvelope}
                   />
                 </TabsContent>
               ))}
