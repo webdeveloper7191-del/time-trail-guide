@@ -1167,6 +1167,9 @@ export function DemandShiftWizard({
                     envelopes={result.shiftEnvelopes.filter(e => e.roomId === p.roomId)}
                     selectedRoomId={p.roomId}
                     height={280}
+                    assignments={assignments as any}
+                    staff={staff}
+                    onReassignShift={handleManualReassign}
                   />
                 </TabsContent>
               ))}
