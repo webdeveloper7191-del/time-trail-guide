@@ -660,7 +660,84 @@ export function DemandShiftWizard({
             </Select>
           </div>
 
-          {/* Operating hours */}
+          {/* Generation Period */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Generation Period
+            </Label>
+            
+            {/* Quick period buttons */}
+            <div className="flex gap-1.5 flex-wrap">
+              {[
+                { key: 'this-week', label: 'This Week' },
+                { key: 'next-week', label: 'Next Week' },
+                { key: 'next-2-weeks', label: 'Next 2 Weeks' },
+                { key: 'this-month', label: 'This Month' },
+              ].map(p => (
+                <Button
+                  key={p.key}
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs px-2.5"
+                  onClick={() => setQuickPeriod(p.key)}
+                >
+                  {p.label}
+                </Button>
+              ))}
+            </div>
+
+            {/* Date range pickers */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">From</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full h-8 text-xs justify-start font-normal">
+                      <CalendarIcon className="h-3 w-3 mr-1.5" />
+                      {format(dateFrom, 'dd MMM yyyy')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={d => d && setDateFrom(d)}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">To</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full h-8 text-xs justify-start font-normal">
+                      <CalendarIcon className="h-3 w-3 mr-1.5" />
+                      {format(dateTo, 'dd MMM yyyy')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={d => d && setDateTo(d)}
+                      disabled={d => d < dateFrom}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-muted-foreground">
+              {periodLabel}
+            </p>
+          </div>
+
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Operating Start</Label>
