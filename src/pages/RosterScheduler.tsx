@@ -39,6 +39,7 @@ import { AutoAssignStaffModal } from '@/components/roster/AutoAssignStaffModal';
 import { AutoSchedulerPanel } from '@/components/roster/AutoSchedulerPanel';
 import { FillOpenShiftsDialog } from '@/components/roster/FillOpenShiftsDialog';
 import { DemandShiftWizard } from '@/components/roster/DemandShiftWizard';
+import { NqfComplianceDashboard } from '@/components/roster/NqfComplianceDashboard';
 import { IndustryConfigurationModal } from '@/components/settings/IndustryConfigurationModal';
 import { DemandMasterSettingsModal } from '@/components/settings/DemandMasterSettingsModal';
 import { DemandDataEntryModal } from '@/components/settings/DemandDataEntryModal';
