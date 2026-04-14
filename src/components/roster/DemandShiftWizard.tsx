@@ -200,6 +200,55 @@ export function DemandShiftWizard({
   const [useApi, setUseApi] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Preset state
+  const [savedPresets, setSavedPresets] = useState<DemandConfigPreset[]>(loadSavedPresets);
+  const [showSavePreset, setShowSavePreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [newPresetDesc, setNewPresetDesc] = useState('');
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+
+  const allPresets = useMemo(() => [...BUILT_IN_PRESETS, ...savedPresets], [savedPresets]);
+
+  const handleLoadPreset = useCallback((preset: DemandConfigPreset) => {
+    setConfig({ ...preset.config });
+    setAutoAssignEnabled(preset.autoAssignEnabled);
+    setAssignWeightPreset(preset.assignWeightPreset);
+    const wp = WEIGHT_PRESETS[preset.assignWeightPreset as keyof typeof WEIGHT_PRESETS];
+    if (wp) setAssignWeights(wp.weights);
+    setActivePresetId(preset.id);
+    toast.success(`Loaded preset: ${preset.name}`);
+  }, []);
+
+  const handleSavePreset = useCallback(() => {
+    if (!newPresetName.trim()) return;
+    const preset: DemandConfigPreset = {
+      id: `custom-${Date.now()}`,
+      name: newPresetName.trim(),
+      description: newPresetDesc.trim(),
+      config: { ...config },
+      autoAssignEnabled,
+      assignWeightPreset,
+      isBuiltIn: false,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...savedPresets, preset];
+    setSavedPresets(updated);
+    savePersistPresets(updated);
+    setActivePresetId(preset.id);
+    setShowSavePreset(false);
+    setNewPresetName('');
+    setNewPresetDesc('');
+    toast.success(`Saved preset: ${preset.name}`);
+  }, [newPresetName, newPresetDesc, config, autoAssignEnabled, assignWeightPreset, savedPresets]);
+
+  const handleDeletePreset = useCallback((presetId: string) => {
+    const updated = savedPresets.filter(p => p.id !== presetId);
+    setSavedPresets(updated);
+    savePersistPresets(updated);
+    if (activePresetId === presetId) setActivePresetId(null);
+    toast.success('Preset deleted');
+  }, [savedPresets, activePresetId]);
+
   const centreRooms = useMemo(() => rooms.filter(r => r.centreId === centreId), [rooms, centreId]);
 
   const handleGenerate = useCallback(async () => {
