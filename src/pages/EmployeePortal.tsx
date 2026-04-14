@@ -165,6 +165,9 @@ export function EmployeePortal() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6 flex-wrap">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <LayoutDashboard className="h-4 w-4" /> Dashboard
+            </TabsTrigger>
             {!onboardingComplete && (
               <TabsTrigger value="onboarding" className="gap-2">
                 <ClipboardCheck className="h-4 w-4" /> Onboarding
@@ -195,6 +198,15 @@ export function EmployeePortal() {
               <GraduationCap className="h-4 w-4" /> Learning
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard">
+            <EmployeeDashboard
+              employee={currentEmployee}
+              onNavigate={setActiveTab}
+              onboardingProgress={onboardingProgress}
+              onboardingComplete={onboardingComplete}
+            />
+          </TabsContent>
 
           <TabsContent value="onboarding">
             <EmployeeOnboardingPanel />
