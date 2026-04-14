@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { format, addDays, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isWithinInterval } from 'date-fns';
 import {
   Sparkles, Settings2, Eye, CheckCircle2, Clock, Users, Baby,
   BarChart3, ChevronRight, ChevronLeft, AlertTriangle, Building2,
   Zap, TrendingUp, Info, UserCheck, Loader2, Globe,
-  Save, Bookmark, Trash2, FolderOpen,
+  Save, Bookmark, Trash2, FolderOpen, CalendarIcon,
 } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Shift, Room, Centre, StaffMember } from '@/types/roster';
@@ -209,6 +212,69 @@ export function DemandShiftWizard({
 
   const allPresets = useMemo(() => [...BUILT_IN_PRESETS, ...savedPresets], [savedPresets]);
 
+  // Date range state
+  const today = useMemo(() => new Date(), []);
+  const defaultFrom = useMemo(() => {
+    if (dates.length > 0) {
+      const d = dates[0];
+      return typeof d === 'string' ? parseISO(d) : new Date(d);
+    }
+    return startOfWeek(today, { weekStartsOn: 1 });
+  }, [dates, today]);
+  const defaultTo = useMemo(() => {
+    if (dates.length > 0) {
+      const d = dates[dates.length - 1];
+      return typeof d === 'string' ? parseISO(d) : new Date(d);
+    }
+    return endOfWeek(today, { weekStartsOn: 1 });
+  }, [dates, today]);
+
+  const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
+  const [dateTo, setDateTo] = useState<Date>(defaultTo);
+
+  // Sync defaults when wizard opens
+  useEffect(() => {
+    if (open) {
+      setDateFrom(defaultFrom);
+      setDateTo(defaultTo);
+    }
+  }, [open, defaultFrom, defaultTo]);
+
+  const effectiveDates = useMemo(() => {
+    try {
+      return eachDayOfInterval({ start: dateFrom, end: dateTo }).map(d => format(d, 'yyyy-MM-dd'));
+    } catch {
+      return dates.map(d => typeof d === 'string' ? d : format(new Date(d), 'yyyy-MM-dd'));
+    }
+  }, [dateFrom, dateTo, dates]);
+
+  const periodLabel = useMemo(() => {
+    const days = effectiveDates.length;
+    return `${format(dateFrom, 'dd MMM')} — ${format(dateTo, 'dd MMM yyyy')} (${days} day${days !== 1 ? 's' : ''})`;
+  }, [dateFrom, dateTo, effectiveDates]);
+
+  const setQuickPeriod = useCallback((key: string) => {
+    const now = new Date();
+    switch (key) {
+      case 'this-week':
+        setDateFrom(startOfWeek(now, { weekStartsOn: 1 }));
+        setDateTo(endOfWeek(now, { weekStartsOn: 1 }));
+        break;
+      case 'next-week':
+        setDateFrom(startOfWeek(addWeeks(now, 1), { weekStartsOn: 1 }));
+        setDateTo(endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 }));
+        break;
+      case 'next-2-weeks':
+        setDateFrom(startOfWeek(addWeeks(now, 1), { weekStartsOn: 1 }));
+        setDateTo(endOfWeek(addWeeks(now, 2), { weekStartsOn: 1 }));
+        break;
+      case 'this-month':
+        setDateFrom(startOfMonth(now));
+        setDateTo(endOfMonth(now));
+        break;
+    }
+  }, []);
+
   const handleLoadPreset = useCallback((preset: DemandConfigPreset) => {
     setConfig({ ...preset.config });
     setAutoAssignEnabled(preset.autoAssignEnabled);
@@ -262,18 +328,15 @@ export function DemandShiftWizard({
       let genResult: DemandShiftGenerationResult;
 
       if (useApi) {
-        // Use mock API endpoint
-        const dateStrings = dates.map(d => typeof d === 'string' ? d : d);
         const apiResponse = await demandApi.generateShiftsFromDemand({
           centreId,
           rooms: targetRooms,
-          dates: dateStrings,
+          dates: effectiveDates,
           config,
         });
         genResult = apiResponse.data.result;
       } else {
-        // Direct engine call (existing behavior)
-        genResult = generateDemandDrivenShifts(demandData, targetRooms, dates, config);
+        genResult = generateDemandDrivenShifts(demandData, targetRooms, effectiveDates, config);
       }
 
       setResult(genResult);
@@ -292,7 +355,7 @@ export function DemandShiftWizard({
     } finally {
       setIsLoading(false);
     }
-  }, [centreRooms, selectedRoomId, demandData, dates, config, useApi, centreId, autoAssignEnabled, staff]);
+  }, [centreRooms, selectedRoomId, demandData, effectiveDates, config, useApi, centreId, autoAssignEnabled, staff]);
 
   const runAutoAssignment = useCallback((envelopes: ShiftEnvelope[]) => {
     if (staff.length === 0) {
@@ -597,7 +660,84 @@ export function DemandShiftWizard({
             </Select>
           </div>
 
-          {/* Operating hours */}
+          {/* Generation Period */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Generation Period
+            </Label>
+            
+            {/* Quick period buttons */}
+            <div className="flex gap-1.5 flex-wrap">
+              {[
+                { key: 'this-week', label: 'This Week' },
+                { key: 'next-week', label: 'Next Week' },
+                { key: 'next-2-weeks', label: 'Next 2 Weeks' },
+                { key: 'this-month', label: 'This Month' },
+              ].map(p => (
+                <Button
+                  key={p.key}
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs px-2.5"
+                  onClick={() => setQuickPeriod(p.key)}
+                >
+                  {p.label}
+                </Button>
+              ))}
+            </div>
+
+            {/* Date range pickers */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">From</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full h-8 text-xs justify-start font-normal">
+                      <CalendarIcon className="h-3 w-3 mr-1.5" />
+                      {format(dateFrom, 'dd MMM yyyy')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={d => d && setDateFrom(d)}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">To</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full h-8 text-xs justify-start font-normal">
+                      <CalendarIcon className="h-3 w-3 mr-1.5" />
+                      {format(dateTo, 'dd MMM yyyy')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={d => d && setDateTo(d)}
+                      disabled={d => d < dateFrom}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-muted-foreground">
+              {periodLabel}
+            </p>
+          </div>
+
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Operating Start</Label>
