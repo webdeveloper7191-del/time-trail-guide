@@ -198,7 +198,7 @@ function getMaxWeeklyMinutes(constraints: TimefoldConstraintConfiguration): numb
 
 // ============= STAFF SCORING ENGINE =============
 
-interface StaffCandidateScore {
+export interface StaffCandidateScore {
   staffId: string;
   staffName: string;
   totalScore: number;

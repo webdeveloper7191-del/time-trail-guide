@@ -8,9 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Users, Baby, Clock, TrendingUp, UserCheck, ChevronDown } from 'lucide-react';
 import { StaffMember } from '@/types/roster';
+import { StaffCandidateScore } from '@/lib/autoScheduler';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 
 interface StaffAssignmentInfo {
   staffId: string;
