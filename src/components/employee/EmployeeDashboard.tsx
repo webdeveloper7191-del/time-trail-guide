@@ -129,6 +129,15 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
   const [swapShift, setSwapShift] = useState<ShiftItem | null>(null);
   const [pendingSwaps, setPendingSwaps] = useState<{ id: string; shiftId: string; colleagueName: string; date: Date }[]>([]);
 
+  // ── Swap inbox ──
+  const [swapInboxOpen, setSwapInboxOpen] = useState(false);
+  const [swapRequests, setSwapRequests] = useState<SwapRequest[]>(() => generateMockSwapRequests(employee.name));
+  const pendingIncomingSwaps = swapRequests.filter(r => r.direction === 'incoming' && r.status === 'pending').length;
+
+  // ── Break tracking ──
+  const [isOnBreak, setIsOnBreak] = useState(false);
+  const [totalBreakSeconds, setTotalBreakSeconds] = useState(0);
+
   const nextShift = upcomingShifts[0];
   const todayShift = upcomingShifts.find(s => isToday(s.date));
 
