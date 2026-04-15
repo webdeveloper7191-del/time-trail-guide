@@ -106,7 +106,10 @@ export default function ReportsPage() {
   const filteredItems = reportItems.filter(item => {
     const matchesCategory = activeCategory === 'all' || 
       (activeCategory === 'dashboards' && item.category === 'dashboard') ||
-      (activeCategory === 'reports' && item.category === 'report');
+      (activeCategory === 'reports' && item.category === 'report') ||
+      (activeCategory === 'roster' && item.module === 'roster') ||
+      (activeCategory === 'timesheets' && item.module === 'timesheets') ||
+      (activeCategory === 'workforce' && item.module === 'workforce');
     const matchesSearch = !searchQuery || 
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
