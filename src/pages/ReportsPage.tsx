@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity } from 'lucide-react';
+import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { reportSummaryMetrics } from '@/data/mockReportData';
 
-// Report components
+// Roster report components
 import { StaffUtilisationReport } from '@/components/reports/StaffUtilisationReport';
 import { OvertimeFatigueReport } from '@/components/reports/OvertimeFatigueReport';
 import { OpenShiftFillReport } from '@/components/reports/OpenShiftFillReport';
@@ -21,7 +21,18 @@ import { RecurringPatternReport } from '@/components/reports/RecurringPatternRep
 import { MultiLocationDashboard } from '@/components/reports/MultiLocationDashboard';
 import { DemandVsActualsDashboard } from '@/components/reports/DemandVsActualsDashboard';
 
-type ReportCategory = 'all' | 'dashboards' | 'reports';
+// Timesheet report components
+import { TimesheetApprovalDashboard } from '@/components/reports/TimesheetApprovalDashboard';
+import { RealTimeAttendanceDashboard } from '@/components/reports/RealTimeAttendanceDashboard';
+import { WeeklyTimesheetReport } from '@/components/reports/WeeklyTimesheetReport';
+import { LatePunctualityReport } from '@/components/reports/LatePunctualityReport';
+import { BreakComplianceReport } from '@/components/reports/BreakComplianceReport';
+import { TimesheetExceptionReport } from '@/components/reports/TimesheetExceptionReport';
+import { ApprovalSLAReport } from '@/components/reports/ApprovalSLAReport';
+import { OvertimeByLocationReport } from '@/components/reports/OvertimeByLocationReport';
+import { AttendanceTrendReport } from '@/components/reports/AttendanceTrendReport';
+
+type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets';
 
 interface ReportItem {
   id: string;
