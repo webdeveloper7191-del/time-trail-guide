@@ -651,6 +651,54 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
             </CardContent>
           </Card>
 
+          {/* Swap Inbox */}
+          <Card className={cn(
+            'border-border/50',
+            pendingIncomingSwaps > 0 && 'border-primary/30 ring-1 ring-primary/10'
+          )}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Inbox className="h-4 w-4 text-primary" />
+                  Swap Requests
+                  {pendingIncomingSwaps > 0 && (
+                    <Badge className="bg-primary text-primary-foreground text-[10px]">{pendingIncomingSwaps}</Badge>
+                  )}
+                </CardTitle>
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={() => setSwapInboxOpen(true)}>
+                  View all <ArrowRight className="h-3 w-3" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {pendingIncomingSwaps > 0 ? (
+                <div className="space-y-2">
+                  {swapRequests
+                    .filter(r => r.direction === 'incoming' && r.status === 'pending')
+                    .slice(0, 2)
+                    .map(req => (
+                      <div key={req.id} className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                        <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-semibold text-primary shrink-0">
+                          {req.fromStaff.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium">{req.fromStaff.name}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Wants to swap {format(req.fromShift.date, 'MMM d')} shift
+                          </p>
+                        </div>
+                        <Button size="sm" className="h-6 text-[10px] px-2" onClick={() => setSwapInboxOpen(true)}>
+                          Review
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-3">No pending swap requests</p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Activity Feed */}
           <Card className="border-border/50">
             <CardHeader className="pb-3">
