@@ -213,6 +213,26 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
     toast.success(`Leave Request Submitted — ${newLeave.type} for ${days} day(s) is pending approval.`);
   }, [leaveForm]);
 
+  // ── Shift swap ──
+  const handleOpenSwap = useCallback((shift: ShiftItem) => {
+    setSwapShift(shift);
+    setSwapDialogOpen(true);
+  }, []);
+
+  const handleSwapSubmit = useCallback((fromShiftId: string, toStaffId: string, reason: string) => {
+    const colleagueNames: Record<string, string> = {
+      'col-1': 'James Wilson', 'col-2': 'Maria Garcia',
+      'col-3': 'Alex Thompson', 'col-4': 'Emily Park',
+    };
+    const shift = upcomingShifts.find(s => s.id === fromShiftId);
+    setPendingSwaps(prev => [...prev, {
+      id: `swap-${Date.now()}`,
+      shiftId: fromShiftId,
+      colleagueName: colleagueNames[toStaffId] || 'Unknown',
+      date: shift?.date || new Date(),
+    }]);
+  }, [upcomingShifts]);
+
   return (
     <div className="space-y-6">
       {/* Clock-In/Out Banner */}
