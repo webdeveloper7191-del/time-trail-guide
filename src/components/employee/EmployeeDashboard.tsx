@@ -12,12 +12,14 @@ import {
   Clock, Calendar, MapPin, ArrowRight, CalendarPlus,
   FileText, CheckCircle2, AlertCircle, TreePalm, Briefcase,
   ClipboardCheck, TrendingUp, Bell, Sun, Sunrise, Moon,
-  Users, LogIn, LogOut, Play, Square, Send, ArrowLeftRight,
+  Users, LogIn, LogOut, Play, Square, Send, ArrowLeftRight, Inbox, Coffee,
 } from 'lucide-react';
 import { format, addDays, isToday, isTomorrow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ShiftSwapRequestDialog } from './ShiftSwapRequestDialog';
+import { SwapInboxDialog, generateMockSwapRequests, type SwapRequest } from './SwapInboxDialog';
+import { BreakTracker, type BreakRecord } from './BreakTracker';
 
 interface EmployeeDashboardProps {
   employee: { id: string; name: string; department: string; position: string; hourlyRate: number };
