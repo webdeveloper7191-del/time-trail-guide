@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX, UserPlus, Award, CalendarCheck, FileCheck, Briefcase, GraduationCap, BarChart2, Gauge, LayoutGrid, Wallet, Grid3X3, ShieldAlert, Ratio, ArrowLeftRight } from 'lucide-react';
+import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX, UserPlus, Award, CalendarCheck, FileCheck, Briefcase, GraduationCap, BarChart2, Gauge, LayoutGrid, Wallet, Grid3X3, ShieldAlert, Ratio, ArrowLeftRight, Banknote, ShieldCheck, Receipt, Percent, RotateCw, FileSearch, CircleDollarSign, PhoneCall, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { reportSummaryMetrics } from '@/data/mockReportData';
 
@@ -52,14 +52,25 @@ import { ComplianceViolationReport } from '@/components/reports/ComplianceViolat
 import { StaffingRatioComplianceReport } from '@/components/reports/StaffingRatioComplianceReport';
 import { CrossLocationDeploymentReport } from '@/components/reports/CrossLocationDeploymentReport';
 
-type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets' | 'workforce' | 'locations';
+// Payroll & Awards report components
+import { PayrollCostDashboard } from '@/components/reports/PayrollCostDashboard';
+import { AwardComplianceDashboard } from '@/components/reports/AwardComplianceDashboard';
+import { PayRunSummaryReport } from '@/components/reports/PayRunSummaryReport';
+import { AllowancePenaltyReport } from '@/components/reports/AllowancePenaltyReport';
+import { RetrospectivePayReport } from '@/components/reports/RetrospectivePayReport';
+import { AwardOverrideAuditReport } from '@/components/reports/AwardOverrideAuditReport';
+import { LabourCostReport } from '@/components/reports/LabourCostReport';
+import { OnCallCostReport } from '@/components/reports/OnCallCostReport';
+import { CasualVsPermanentReport } from '@/components/reports/CasualVsPermanentReport';
+
+type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets' | 'workforce' | 'locations' | 'payroll';
 
 interface ReportItem {
   id: string;
   title: string;
   description: string;
   category: 'dashboard' | 'report';
-  module: 'roster' | 'timesheets' | 'workforce' | 'locations';
+  module: 'roster' | 'timesheets' | 'workforce' | 'locations' | 'payroll';
   icon: React.ElementType;
   tags: string[];
   component: React.ComponentType;
@@ -105,6 +116,16 @@ const reportItems: ReportItem[] = [
   { id: 'loc-violations', title: 'Compliance Violation Summary', description: 'All compliance violations by location with severity and resolution status', category: 'report', module: 'locations', icon: ShieldAlert, tags: ['compliance', 'violations', 'severity'], component: ComplianceViolationReport },
   { id: 'loc-staffing-ratio', title: 'Staffing Ratio Compliance (NQF)', description: 'Ratio checks across areas and time slots with breach identification', category: 'report', module: 'locations', icon: Ratio, tags: ['ratio', 'nqf', 'staffing', 'compliance'], component: StaffingRatioComplianceReport },
   { id: 'loc-cross-deploy', title: 'Cross-Location Deployment', description: 'Staff movement between locations with hours and deployment frequency', category: 'report', module: 'locations', icon: ArrowLeftRight, tags: ['cross-location', 'deployment', 'transfer'], component: CrossLocationDeploymentReport },
+  // Payroll & Awards
+  { id: 'pay-cost-dashboard', title: 'Payroll Cost Dashboard', description: 'Real-time labour costs with trend analysis and cost breakdown', category: 'dashboard', module: 'payroll', icon: Banknote, tags: ['payroll', 'labour', 'cost'], component: PayrollCostDashboard },
+  { id: 'pay-award-compliance', title: 'Award Compliance Dashboard', description: 'Award compliance rates, overrides, and violation tracking', category: 'dashboard', module: 'payroll', icon: ShieldCheck, tags: ['award', 'compliance', 'overrides'], component: AwardComplianceDashboard },
+  { id: 'pay-run-summary', title: 'Pay Run Summary Report', description: 'Per-staff pay breakdown with base, overtime, allowances, and super', category: 'report', module: 'payroll', icon: Receipt, tags: ['pay run', 'summary', 'gross'], component: PayRunSummaryReport },
+  { id: 'pay-allowance-penalty', title: 'Allowance & Penalty Breakdown', description: 'Detailed allowance and penalty rate charges by category and staff', category: 'report', module: 'payroll', icon: Percent, tags: ['allowance', 'penalty', 'breakdown'], component: AllowancePenaltyReport },
+  { id: 'pay-retrospective', title: 'Retrospective Pay Adjustment', description: 'Back-pay calculations from rate changes, reclassifications, and corrections', category: 'report', module: 'payroll', icon: RotateCw, tags: ['retrospective', 'back-pay', 'adjustment'], component: RetrospectivePayReport },
+  { id: 'pay-override-audit', title: 'Award Rate Override Audit', description: 'Audit trail of all award rate overrides with approval details', category: 'report', module: 'payroll', icon: FileSearch, tags: ['override', 'audit', 'award'], component: AwardOverrideAuditReport },
+  { id: 'pay-labour-cost', title: 'Labour Cost by Location/Dept', description: 'Labour cost breakdown by location, department, and role with budget variance', category: 'report', module: 'payroll', icon: CircleDollarSign, tags: ['labour', 'cost', 'budget'], component: LabourCostReport },
+  { id: 'pay-oncall', title: 'On-Call & Callback Cost', description: 'Standby, callback, and recall costs with activation rates', category: 'report', module: 'payroll', icon: PhoneCall, tags: ['on-call', 'callback', 'standby'], component: OnCallCostReport },
+  { id: 'pay-casual-perm', title: 'Casual vs Permanent Cost', description: 'Cost comparison between casual and permanent employment types', category: 'report', module: 'payroll', icon: UserCheck, tags: ['casual', 'permanent', 'comparison'], component: CasualVsPermanentReport },
 ];
 const summaryCards = [
   { label: 'Avg Utilisation', value: `${reportSummaryMetrics.avgUtilisation}%`, icon: Users, trend: '+2.3%' },
@@ -127,7 +148,8 @@ export default function ReportsPage() {
       (activeCategory === 'roster' && item.module === 'roster') ||
       (activeCategory === 'timesheets' && item.module === 'timesheets') ||
       (activeCategory === 'workforce' && item.module === 'workforce') ||
-      (activeCategory === 'locations' && item.module === 'locations');
+      (activeCategory === 'locations' && item.module === 'locations') ||
+      (activeCategory === 'payroll' && item.module === 'payroll');
     const matchesSearch = !searchQuery || 
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -213,6 +235,7 @@ export default function ReportsPage() {
                 <TabsTrigger value="timesheets" className="text-xs px-3">Timesheets</TabsTrigger>
                 <TabsTrigger value="workforce" className="text-xs px-3">Workforce</TabsTrigger>
                 <TabsTrigger value="locations" className="text-xs px-3">Locations</TabsTrigger>
+                <TabsTrigger value="payroll" className="text-xs px-3">Payroll</TabsTrigger>
               </TabsList>
             </Tabs>
             <div className="relative flex-1 max-w-xs">
