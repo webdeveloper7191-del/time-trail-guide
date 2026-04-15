@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,12 @@ import {
   Clock, Calendar, MapPin, ArrowRight, CalendarPlus,
   FileText, CheckCircle2, AlertCircle, TreePalm, Briefcase,
   ClipboardCheck, TrendingUp, Bell, Sun, Sunrise, Moon,
-  Users, LogIn, LogOut, Play, Square, Send,
+  Users, LogIn, LogOut, Play, Square, Send, ArrowLeftRight,
 } from 'lucide-react';
 import { format, addDays, isToday, isTomorrow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { ShiftSwapRequestDialog } from './ShiftSwapRequestDialog';
 
 interface EmployeeDashboardProps {
   employee: { id: string; name: string; department: string; position: string; hourlyRate: number };
@@ -121,9 +122,23 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
   const [leaveForm, setLeaveForm] = useState({ type: 'annual_leave', startDate: '', endDate: '', notes: '' });
   const [pendingLeaves, setPendingLeaves] = useState(mockPendingLeave);
 
+  // ── Shift swap dialog ──
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
+  const [swapShift, setSwapShift] = useState<ShiftItem | null>(null);
+  const [pendingSwaps, setPendingSwaps] = useState<{ id: string; shiftId: string; colleagueName: string; date: Date }[]>([]);
+
   const nextShift = upcomingShifts[0];
   const todayShift = upcomingShifts.find(s => isToday(s.date));
-  const hoursProgress = (mockTimesheetSummary.currentWeekHours / mockTimesheetSummary.targetHours) * 100;
+
+  // ── Live timesheet hours: base + clocked elapsed ──
+  const liveWeekHours = useMemo(() => {
+    const clockedHours = clockState.isClockedIn ? clockState.elapsed / 3600 : 0;
+    return Math.round((mockTimesheetSummary.currentWeekHours + clockedHours) * 10) / 10;
+  }, [clockState.isClockedIn, clockState.elapsed]);
+  const liveOvertime = useMemo(() => {
+    return Math.max(0, Math.round((liveWeekHours - mockTimesheetSummary.targetHours) * 10) / 10);
+  }, [liveWeekHours]);
+  const hoursProgress = (liveWeekHours / mockTimesheetSummary.targetHours) * 100;
 
   // ── Pick up open shift ──
   const handlePickUp = useCallback((shiftId: string) => {
@@ -198,6 +213,26 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
     toast.success(`Leave Request Submitted — ${newLeave.type} for ${days} day(s) is pending approval.`);
   }, [leaveForm]);
 
+  // ── Shift swap ──
+  const handleOpenSwap = useCallback((shift: ShiftItem) => {
+    setSwapShift(shift);
+    setSwapDialogOpen(true);
+  }, []);
+
+  const handleSwapSubmit = useCallback((fromShiftId: string, toStaffId: string, reason: string) => {
+    const colleagueNames: Record<string, string> = {
+      'col-1': 'James Wilson', 'col-2': 'Maria Garcia',
+      'col-3': 'Alex Thompson', 'col-4': 'Emily Park',
+    };
+    const shift = upcomingShifts.find(s => s.id === fromShiftId);
+    setPendingSwaps(prev => [...prev, {
+      id: `swap-${Date.now()}`,
+      shiftId: fromShiftId,
+      colleagueName: colleagueNames[toStaffId] || 'Unknown',
+      date: shift?.date || new Date(),
+    }]);
+  }, [upcomingShifts]);
+
   return (
     <div className="space-y-6">
       {/* Clock-In/Out Banner */}
@@ -264,7 +299,7 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
         <QuickStat
           icon={Clock}
           label="Hours This Week"
-          value={`${mockTimesheetSummary.currentWeekHours}h`}
+          value={`${liveWeekHours}h`}
           sub={`of ${mockTimesheetSummary.targetHours}h target`}
           accent="text-blue-600"
           bgAccent="from-blue-500/10 to-blue-600/5 border-blue-200/60"
@@ -354,11 +389,27 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                           {shift.startTime} – {shift.endTime} • {shift.role}
                         </p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          {shift.location}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            {shift.location}
+                          </div>
                         </div>
+                        {shift.status === 'confirmed' && !shift.pickedUp && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                            onClick={(e) => { e.stopPropagation(); handleOpenSwap(shift); }}
+                            title="Request swap"
+                          >
+                            <ArrowLeftRight className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {pendingSwaps.some(s => s.shiftId === shift.id) && (
+                          <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px] px-1.5 py-0">Swap Pending</Badge>
+                        )}
                       </div>
                     </div>
                   );
@@ -453,17 +504,20 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                 <div>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span className="text-muted-foreground">This week's hours</span>
-                    <span className="font-semibold">{mockTimesheetSummary.currentWeekHours}h / {mockTimesheetSummary.targetHours}h</span>
+                    <span className="font-semibold">
+                      {liveWeekHours}h / {mockTimesheetSummary.targetHours}h
+                      {clockState.isClockedIn && <span className="text-emerald-600 text-xs ml-1 animate-pulse">● LIVE</span>}
+                    </span>
                   </div>
-                  <Progress value={hoursProgress} className="h-2.5" />
+                  <Progress value={Math.min(hoursProgress, 100)} className="h-2.5" />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="text-center p-3 rounded-lg bg-muted/30">
-                    <p className="text-lg font-bold">{mockTimesheetSummary.currentWeekHours}h</p>
-                    <p className="text-[10px] text-muted-foreground">Logged</p>
+                    <p className={cn('text-lg font-bold tabular-nums', clockState.isClockedIn && 'text-emerald-600')}>{liveWeekHours}h</p>
+                    <p className="text-[10px] text-muted-foreground">{clockState.isClockedIn ? 'Live' : 'Logged'}</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/30">
-                    <p className="text-lg font-bold text-amber-600">{mockTimesheetSummary.overtimeThisWeek}h</p>
+                    <p className={cn('text-lg font-bold tabular-nums', liveOvertime > 0 ? 'text-amber-600' : '')}>{liveOvertime}h</p>
                     <p className="text-[10px] text-muted-foreground">Overtime</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/30">
@@ -689,6 +743,14 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Shift Swap Dialog */}
+      <ShiftSwapRequestDialog
+        open={swapDialogOpen}
+        onClose={() => { setSwapDialogOpen(false); setSwapShift(null); }}
+        shift={swapShift}
+        onSubmitSwap={handleSwapSubmit}
+      />
     </div>
   );
 }
