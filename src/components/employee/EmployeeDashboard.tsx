@@ -12,12 +12,14 @@ import {
   Clock, Calendar, MapPin, ArrowRight, CalendarPlus,
   FileText, CheckCircle2, AlertCircle, TreePalm, Briefcase,
   ClipboardCheck, TrendingUp, Bell, Sun, Sunrise, Moon,
-  Users, LogIn, LogOut, Play, Square, Send, ArrowLeftRight,
+  Users, LogIn, LogOut, Play, Square, Send, ArrowLeftRight, Inbox, Coffee,
 } from 'lucide-react';
 import { format, addDays, isToday, isTomorrow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ShiftSwapRequestDialog } from './ShiftSwapRequestDialog';
+import { SwapInboxDialog, generateMockSwapRequests, type SwapRequest } from './SwapInboxDialog';
+import { BreakTracker, type BreakRecord } from './BreakTracker';
 
 interface EmployeeDashboardProps {
   employee: { id: string; name: string; department: string; position: string; hourlyRate: number };
@@ -127,6 +129,15 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
   const [swapShift, setSwapShift] = useState<ShiftItem | null>(null);
   const [pendingSwaps, setPendingSwaps] = useState<{ id: string; shiftId: string; colleagueName: string; date: Date }[]>([]);
 
+  // ── Swap inbox ──
+  const [swapInboxOpen, setSwapInboxOpen] = useState(false);
+  const [swapRequests, setSwapRequests] = useState<SwapRequest[]>(() => generateMockSwapRequests(employee.name));
+  const pendingIncomingSwaps = swapRequests.filter(r => r.direction === 'incoming' && r.status === 'pending').length;
+
+  // ── Break tracking ──
+  const [isOnBreak, setIsOnBreak] = useState(false);
+  const [totalBreakSeconds, setTotalBreakSeconds] = useState(0);
+
   const nextShift = upcomingShifts[0];
   const todayShift = upcomingShifts.find(s => isToday(s.date));
 
@@ -233,6 +244,19 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
     }]);
   }, [upcomingShifts]);
 
+  // ── Swap inbox handlers ──
+  const handleSwapAccept = useCallback((requestId: string) => {
+    setSwapRequests(prev => prev.map(r =>
+      r.id === requestId ? { ...r, status: 'accepted' as const, respondedAt: new Date() } : r
+    ));
+  }, []);
+
+  const handleSwapDecline = useCallback((requestId: string) => {
+    setSwapRequests(prev => prev.map(r =>
+      r.id === requestId ? { ...r, status: 'declined' as const, respondedAt: new Date() } : r
+    ));
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Clock-In/Out Banner */}
@@ -258,7 +282,7 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                 </div>
                 <div>
                   <p className="font-semibold text-sm">
-                    {clockState.isClockedIn ? 'Currently Working' : "Today's Shift"}
+                    {isOnBreak ? 'On Break' : clockState.isClockedIn ? 'Currently Working' : "Today's Shift"}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {todayShift.startTime} – {todayShift.endTime} • {todayShift.role} • {todayShift.location}
@@ -290,6 +314,16 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                 )}
               </div>
             </div>
+            {/* Break Tracker */}
+            {clockState.isClockedIn && (
+              <div className="mt-3 pt-3 border-t border-border/30">
+                <BreakTracker
+                  isClockedIn={clockState.isClockedIn}
+                  onBreakStateChange={setIsOnBreak}
+                  onBreaksUpdate={(_breaks, totalSecs) => setTotalBreakSeconds(totalSecs)}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -617,6 +651,54 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
             </CardContent>
           </Card>
 
+          {/* Swap Inbox */}
+          <Card className={cn(
+            'border-border/50',
+            pendingIncomingSwaps > 0 && 'border-primary/30 ring-1 ring-primary/10'
+          )}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Inbox className="h-4 w-4 text-primary" />
+                  Swap Requests
+                  {pendingIncomingSwaps > 0 && (
+                    <Badge className="bg-primary text-primary-foreground text-[10px]">{pendingIncomingSwaps}</Badge>
+                  )}
+                </CardTitle>
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={() => setSwapInboxOpen(true)}>
+                  View all <ArrowRight className="h-3 w-3" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {pendingIncomingSwaps > 0 ? (
+                <div className="space-y-2">
+                  {swapRequests
+                    .filter(r => r.direction === 'incoming' && r.status === 'pending')
+                    .slice(0, 2)
+                    .map(req => (
+                      <div key={req.id} className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                        <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-semibold text-primary shrink-0">
+                          {req.fromStaff.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium">{req.fromStaff.name}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Wants to swap {format(req.fromShift.date, 'MMM d')} shift
+                          </p>
+                        </div>
+                        <Button size="sm" className="h-6 text-[10px] px-2" onClick={() => setSwapInboxOpen(true)}>
+                          Review
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-3">No pending swap requests</p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Activity Feed */}
           <Card className="border-border/50">
             <CardHeader className="pb-3">
@@ -750,6 +832,15 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
         onClose={() => { setSwapDialogOpen(false); setSwapShift(null); }}
         shift={swapShift}
         onSubmitSwap={handleSwapSubmit}
+      />
+
+      {/* Swap Inbox Dialog */}
+      <SwapInboxDialog
+        open={swapInboxOpen}
+        onClose={() => setSwapInboxOpen(false)}
+        requests={swapRequests}
+        onAccept={handleSwapAccept}
+        onDecline={handleSwapDecline}
       />
     </div>
   );
