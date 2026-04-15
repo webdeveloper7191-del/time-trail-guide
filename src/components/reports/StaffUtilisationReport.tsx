@@ -1,20 +1,74 @@
+import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { mockStaffUtilisation } from '@/data/mockReportData';
 import { cn } from '@/lib/utils';
+import { ReportFilterBar } from './ReportFilterBar';
+import { ExportColumn } from '@/lib/reportExport';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+
+const exportColumns: ExportColumn[] = [
+  { header: 'Staff', accessor: 'staffName' },
+  { header: 'Role', accessor: 'role' },
+  { header: 'Location', accessor: 'location' },
+  { header: 'Scheduled Hours', accessor: 'scheduledHours' },
+  { header: 'Capacity Hours', accessor: 'capacityHours' },
+  { header: 'Utilisation %', accessor: 'utilisationPercent' },
+  { header: 'Overtime Hours', accessor: 'overtimeHours' },
+  { header: 'Leave Hours', accessor: 'leaveHours' },
+];
+
+const locations = [...new Set(mockStaffUtilisation.map(r => r.location))];
 
 export function StaffUtilisationReport() {
-  const avgUtilisation = Math.round(mockStaffUtilisation.reduce((s, r) => s + r.utilisationPercent, 0) / mockStaffUtilisation.length);
+  const [search, setSearch] = useState('');
+  const [locationFilter, setLocationFilter] = useState('all');
+
+  const filtered = useMemo(() => mockStaffUtilisation.filter(r => {
+    const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase()) || r.role.toLowerCase().includes(search.toLowerCase());
+    const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
+    return matchesSearch && matchesLoc;
+  }), [search, locationFilter]);
+
+  const avgUtilisation = Math.round(filtered.reduce((s, r) => s + r.utilisationPercent, 0) / (filtered.length || 1));
+
+  const chartData = filtered.map(r => ({ name: r.staffName.split(' ')[0], utilisation: r.utilisationPercent, overtime: r.overtimeHours }));
 
   return (
     <div className="space-y-6">
+      <ReportFilterBar title="Staff Utilisation Report" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..."
+        locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
+        exportColumns={exportColumns} exportData={filtered} />
+
       <div className="grid grid-cols-3 gap-4">
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Average Utilisation</p><p className="text-3xl font-bold tracking-tight mt-1">{avgUtilisation}%</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Scheduled</p><p className="text-3xl font-bold tracking-tight mt-1">{mockStaffUtilisation.reduce((s, r) => s + r.scheduledHours, 0)}h</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Overtime</p><p className="text-3xl font-bold tracking-tight mt-1 text-destructive">{mockStaffUtilisation.reduce((s, r) => s + r.overtimeHours, 0)}h</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Scheduled</p><p className="text-3xl font-bold tracking-tight mt-1">{filtered.reduce((s, r) => s + r.scheduledHours, 0)}h</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Overtime</p><p className="text-3xl font-bold tracking-tight mt-1 text-destructive">{filtered.reduce((s, r) => s + r.overtimeHours, 0)}h</p></CardContent></Card>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Utilisation Distribution</CardTitle></CardHeader>
+        <CardContent>
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 110]} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))' }} />
+                <Bar dataKey="utilisation" name="Utilisation %" radius={[4, 4, 0, 0]}>
+                  {chartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.utilisation >= 95 ? 'hsl(var(--destructive))' : entry.utilisation >= 80 ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Staff Utilisation Details</CardTitle></CardHeader>
         <CardContent className="p-0">
@@ -32,7 +86,7 @@ export function StaffUtilisationReport() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockStaffUtilisation.map((r) => (
+              {filtered.map((r) => (
                 <TableRow key={r.staffId}>
                   <TableCell className="text-sm font-medium">{r.staffName}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{r.role}</TableCell>
