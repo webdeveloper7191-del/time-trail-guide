@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX } from 'lucide-react';
+import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX, UserPlus, Award, CalendarCheck, FileCheck, Briefcase, GraduationCap, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { reportSummaryMetrics } from '@/data/mockReportData';
 
@@ -32,14 +32,25 @@ import { ApprovalSLAReport } from '@/components/reports/ApprovalSLAReport';
 import { OvertimeByLocationReport } from '@/components/reports/OvertimeByLocationReport';
 import { AttendanceTrendReport } from '@/components/reports/AttendanceTrendReport';
 
-type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets';
+// Workforce report components
+import { WorkforceOverviewDashboard } from '@/components/reports/WorkforceOverviewDashboard';
+import { OnboardingPipelineDashboard } from '@/components/reports/OnboardingPipelineDashboard';
+import { HeadcountFTEReport } from '@/components/reports/HeadcountFTEReport';
+import { TurnoverRetentionReport } from '@/components/reports/TurnoverRetentionReport';
+import { OnboardingCompletionReport } from '@/components/reports/OnboardingCompletionReport';
+import { QualificationExpiryReport } from '@/components/reports/QualificationExpiryReport';
+import { AvailabilityVsScheduledReport } from '@/components/reports/AvailabilityVsScheduledReport';
+import { ContractDistributionReport } from '@/components/reports/ContractDistributionReport';
+import { SkillsMatrixReport } from '@/components/reports/SkillsMatrixReport';
+
+type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets' | 'workforce';
 
 interface ReportItem {
   id: string;
   title: string;
   description: string;
   category: 'dashboard' | 'report';
-  module: 'roster' | 'timesheets';
+  module: 'roster' | 'timesheets' | 'workforce';
   icon: React.ElementType;
   tags: string[];
   component: React.ComponentType;
@@ -67,8 +78,17 @@ const reportItems: ReportItem[] = [
   { id: 'ts-approval-sla', title: 'Approval SLA Report', description: 'Approver turnaround times and SLA compliance rates', category: 'report', module: 'timesheets', icon: Timer, tags: ['sla', 'turnaround', 'approval'], component: ApprovalSLAReport },
   { id: 'ts-overtime-location', title: 'Overtime by Location', description: 'Overtime hours and costs broken down by location and department', category: 'report', module: 'timesheets', icon: Building2, tags: ['overtime', 'location', 'department'], component: OvertimeByLocationReport },
   { id: 'ts-attendance-trend', title: 'Attendance Trend Report', description: 'Absenteeism patterns, attendance rates, and absence type breakdown', category: 'report', module: 'timesheets', icon: UserX, tags: ['attendance', 'trends', 'absenteeism'], component: AttendanceTrendReport },
+  // Workforce Management
+  { id: 'wf-overview', title: 'Workforce Overview Dashboard', description: 'Headcount, FTE, turnover rates, and contract type breakdown across locations', category: 'dashboard', module: 'workforce', icon: Users, tags: ['headcount', 'turnover', 'workforce'], component: WorkforceOverviewDashboard },
+  { id: 'wf-onboarding-pipeline', title: 'Onboarding Pipeline Dashboard', description: 'Track onboarding progress, completion rates, and overdue items', category: 'dashboard', module: 'workforce', icon: UserPlus, tags: ['onboarding', 'pipeline', 'progress'], component: OnboardingPipelineDashboard },
+  { id: 'wf-headcount-fte', title: 'Staff Headcount & FTE Report', description: 'Headcount and FTE breakdown by department, location, and contract type', category: 'report', module: 'workforce', icon: BarChart2, tags: ['headcount', 'fte', 'department'], component: HeadcountFTEReport },
+  { id: 'wf-turnover', title: 'Staff Turnover & Retention', description: 'Monthly hires, terminations, turnover rates, and retention trends', category: 'report', module: 'workforce', icon: TrendingUp, tags: ['turnover', 'retention', 'trends'], component: TurnoverRetentionReport },
+  { id: 'wf-onboarding-completion', title: 'Onboarding Completion Rate', description: 'Completion rates, average days, and overdue onboarding tasks', category: 'report', module: 'workforce', icon: FileCheck, tags: ['onboarding', 'completion', 'rate'], component: OnboardingCompletionReport },
+  { id: 'wf-qualifications', title: 'Qualification & Certification Expiry', description: 'Track qualification validity, expiring soon, and expired certifications', category: 'report', module: 'workforce', icon: Award, tags: ['qualifications', 'certifications', 'expiry'], component: QualificationExpiryReport },
+  { id: 'wf-availability', title: 'Availability vs Scheduled', description: 'Compare staff availability against scheduled hours and utilisation', category: 'report', module: 'workforce', icon: CalendarCheck, tags: ['availability', 'scheduled', 'utilisation'], component: AvailabilityVsScheduledReport },
+  { id: 'wf-contracts', title: 'Contract Type Distribution', description: 'Distribution of full-time, part-time, casual, and contractor staff', category: 'report', module: 'workforce', icon: Briefcase, tags: ['contract', 'distribution', 'employment'], component: ContractDistributionReport },
+  { id: 'wf-skills', title: 'Staff Skills Matrix', description: 'Skills coverage, proficiency levels, and certification counts per staff', category: 'report', module: 'workforce', icon: GraduationCap, tags: ['skills', 'matrix', 'certifications'], component: SkillsMatrixReport },
 ];
-
 const summaryCards = [
   { label: 'Avg Utilisation', value: `${reportSummaryMetrics.avgUtilisation}%`, icon: Users, trend: '+2.3%' },
   { label: 'Overtime Hours', value: `${reportSummaryMetrics.totalOvertimeHours}h`, icon: Clock, trend: '-4h', negative: true },
@@ -86,7 +106,10 @@ export default function ReportsPage() {
   const filteredItems = reportItems.filter(item => {
     const matchesCategory = activeCategory === 'all' || 
       (activeCategory === 'dashboards' && item.category === 'dashboard') ||
-      (activeCategory === 'reports' && item.category === 'report');
+      (activeCategory === 'reports' && item.category === 'report') ||
+      (activeCategory === 'roster' && item.module === 'roster') ||
+      (activeCategory === 'timesheets' && item.module === 'timesheets') ||
+      (activeCategory === 'workforce' && item.module === 'workforce');
     const matchesSearch = !searchQuery || 
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -168,6 +191,9 @@ export default function ReportsPage() {
                   <FileText className="h-3.5 w-3.5 mr-1.5" />
                   Reports
                 </TabsTrigger>
+                <TabsTrigger value="roster" className="text-xs px-3">Roster</TabsTrigger>
+                <TabsTrigger value="timesheets" className="text-xs px-3">Timesheets</TabsTrigger>
+                <TabsTrigger value="workforce" className="text-xs px-3">Workforce</TabsTrigger>
               </TabsList>
             </Tabs>
             <div className="relative flex-1 max-w-xs">
