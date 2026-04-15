@@ -28,7 +28,7 @@ export function TurnoverRetentionReport() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Staff Turnover & Retention" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search months..." exportData={filtered} exportColumns={exportColumns} <ReportFilterBar title="Staff Turnover & Retention" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search months..." exportData={filtered} exportColumns={exportColumns} /> />
+      <ReportFilterBar title="Staff Turnover & Retention" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search months..." exportData={filtered} exportColumns={exportColumns} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="border-border/60">
