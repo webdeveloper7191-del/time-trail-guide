@@ -54,7 +54,7 @@ export function OnboardingPipelineDashboard() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Onboarding Pipeline" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} <ReportFilterBar title="Onboarding Pipeline" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> />
+      <<ReportFilterBar title="Onboarding Pipeline" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> title="Onboarding Pipeline" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {statusSummary.map((s, i) => (

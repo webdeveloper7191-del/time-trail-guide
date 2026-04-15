@@ -42,7 +42,7 @@ export function HeadcountFTEReport() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Staff Headcount & FTE Report" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} <ReportFilterBar title="Staff Headcount & FTE Report" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> />
+      <ReportFilterBar title="Staff Headcount & FTE Report" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> title="Staff Headcount & FTE Report" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> />
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Headcount vs FTE by Department</CardTitle></CardHeader>

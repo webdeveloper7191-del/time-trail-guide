@@ -46,7 +46,7 @@ export function OnboardingCompletionReport() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Onboarding Completion Rate" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} <ReportFilterBar title="Onboarding Completion Rate" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> />
+      <<ReportFilterBar title="Onboarding Completion Rate" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> title="Onboarding Completion Rate" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> />
 
       <div className="grid grid-cols-3 gap-3">
         <Card className="border-border/60"><CardContent className="p-4"><p className="text-2xl font-bold tracking-tight">{completionRate}%</p><p className="text-xs text-muted-foreground">Completion Rate</p></CardContent></Card>
