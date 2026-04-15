@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX, UserPlus, Award, CalendarCheck, FileCheck, Briefcase, GraduationCap, BarChart2 } from 'lucide-react';
+import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX, UserPlus, Award, CalendarCheck, FileCheck, Briefcase, GraduationCap, BarChart2, Gauge, LayoutGrid, Wallet, Grid3X3, ShieldAlert, Ratio, ArrowLeftRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { reportSummaryMetrics } from '@/data/mockReportData';
 
@@ -43,14 +43,23 @@ import { AvailabilityVsScheduledReport } from '@/components/reports/Availability
 import { ContractDistributionReport } from '@/components/reports/ContractDistributionReport';
 import { SkillsMatrixReport } from '@/components/reports/SkillsMatrixReport';
 
-type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets' | 'workforce';
+// Location Management report components
+import { MultiSiteOpsDashboard } from '@/components/reports/MultiSiteOpsDashboard';
+import { CapacityUtilDashboard } from '@/components/reports/CapacityUtilDashboard';
+import { BudgetVsActualsReport } from '@/components/reports/BudgetVsActualsReport';
+import { AreaUtilReport } from '@/components/reports/AreaUtilReport';
+import { ComplianceViolationReport } from '@/components/reports/ComplianceViolationReport';
+import { StaffingRatioComplianceReport } from '@/components/reports/StaffingRatioComplianceReport';
+import { CrossLocationDeploymentReport } from '@/components/reports/CrossLocationDeploymentReport';
+
+type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets' | 'workforce' | 'locations';
 
 interface ReportItem {
   id: string;
   title: string;
   description: string;
   category: 'dashboard' | 'report';
-  module: 'roster' | 'timesheets' | 'workforce';
+  module: 'roster' | 'timesheets' | 'workforce' | 'locations';
   icon: React.ElementType;
   tags: string[];
   component: React.ComponentType;
@@ -88,6 +97,14 @@ const reportItems: ReportItem[] = [
   { id: 'wf-availability', title: 'Availability vs Scheduled', description: 'Compare staff availability against scheduled hours and utilisation', category: 'report', module: 'workforce', icon: CalendarCheck, tags: ['availability', 'scheduled', 'utilisation'], component: AvailabilityVsScheduledReport },
   { id: 'wf-contracts', title: 'Contract Type Distribution', description: 'Distribution of full-time, part-time, casual, and contractor staff', category: 'report', module: 'workforce', icon: Briefcase, tags: ['contract', 'distribution', 'employment'], component: ContractDistributionReport },
   { id: 'wf-skills', title: 'Staff Skills Matrix', description: 'Skills coverage, proficiency levels, and certification counts per staff', category: 'report', module: 'workforce', icon: GraduationCap, tags: ['skills', 'matrix', 'certifications'], component: SkillsMatrixReport },
+  // Location Management
+  { id: 'loc-multi-site', title: 'Multi-Site Operations Dashboard', description: 'Real-time operational status, compliance, and alerts across all locations', category: 'dashboard', module: 'locations', icon: LayoutGrid, tags: ['multi-site', 'operations', 'status'], component: MultiSiteOpsDashboard },
+  { id: 'loc-capacity', title: 'Capacity Utilisation Dashboard', description: 'Occupancy trends, peak usage, and capacity planning across areas', category: 'dashboard', module: 'locations', icon: Gauge, tags: ['capacity', 'utilisation', 'occupancy'], component: CapacityUtilDashboard },
+  { id: 'loc-budget', title: 'Budget vs Actuals Report', description: 'Compare budgeted vs actual spending by location and category', category: 'report', module: 'locations', icon: Wallet, tags: ['budget', 'actuals', 'variance'], component: BudgetVsActualsReport },
+  { id: 'loc-area-util', title: 'Area Utilisation Report', description: 'Individual area usage, occupancy rates, and operating hour efficiency', category: 'report', module: 'locations', icon: Grid3X3, tags: ['area', 'utilisation', 'occupancy'], component: AreaUtilReport },
+  { id: 'loc-violations', title: 'Compliance Violation Summary', description: 'All compliance violations by location with severity and resolution status', category: 'report', module: 'locations', icon: ShieldAlert, tags: ['compliance', 'violations', 'severity'], component: ComplianceViolationReport },
+  { id: 'loc-staffing-ratio', title: 'Staffing Ratio Compliance (NQF)', description: 'Ratio checks across areas and time slots with breach identification', category: 'report', module: 'locations', icon: Ratio, tags: ['ratio', 'nqf', 'staffing', 'compliance'], component: StaffingRatioComplianceReport },
+  { id: 'loc-cross-deploy', title: 'Cross-Location Deployment', description: 'Staff movement between locations with hours and deployment frequency', category: 'report', module: 'locations', icon: ArrowLeftRight, tags: ['cross-location', 'deployment', 'transfer'], component: CrossLocationDeploymentReport },
 ];
 const summaryCards = [
   { label: 'Avg Utilisation', value: `${reportSummaryMetrics.avgUtilisation}%`, icon: Users, trend: '+2.3%' },
