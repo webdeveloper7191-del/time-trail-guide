@@ -235,6 +235,7 @@ export default function ReportsPage() {
                 <TabsTrigger value="timesheets" className="text-xs px-3">Timesheets</TabsTrigger>
                 <TabsTrigger value="workforce" className="text-xs px-3">Workforce</TabsTrigger>
                 <TabsTrigger value="locations" className="text-xs px-3">Locations</TabsTrigger>
+                <TabsTrigger value="payroll" className="text-xs px-3">Payroll</TabsTrigger>
               </TabsList>
             </Tabs>
             <div className="relative flex-1 max-w-xs">
