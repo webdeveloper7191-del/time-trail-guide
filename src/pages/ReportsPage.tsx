@@ -148,7 +148,8 @@ export default function ReportsPage() {
       (activeCategory === 'roster' && item.module === 'roster') ||
       (activeCategory === 'timesheets' && item.module === 'timesheets') ||
       (activeCategory === 'workforce' && item.module === 'workforce') ||
-      (activeCategory === 'locations' && item.module === 'locations');
+      (activeCategory === 'locations' && item.module === 'locations') ||
+      (activeCategory === 'payroll' && item.module === 'payroll');
     const matchesSearch = !searchQuery || 
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
