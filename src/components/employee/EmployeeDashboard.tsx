@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,12 @@ import {
   Clock, Calendar, MapPin, ArrowRight, CalendarPlus,
   FileText, CheckCircle2, AlertCircle, TreePalm, Briefcase,
   ClipboardCheck, TrendingUp, Bell, Sun, Sunrise, Moon,
-  Users, LogIn, LogOut, Play, Square, Send,
+  Users, LogIn, LogOut, Play, Square, Send, ArrowLeftRight,
 } from 'lucide-react';
 import { format, addDays, isToday, isTomorrow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { ShiftSwapRequestDialog } from './ShiftSwapRequestDialog';
 
 interface EmployeeDashboardProps {
   employee: { id: string; name: string; department: string; position: string; hourlyRate: number };
