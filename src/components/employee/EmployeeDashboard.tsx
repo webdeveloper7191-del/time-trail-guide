@@ -122,9 +122,23 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
   const [leaveForm, setLeaveForm] = useState({ type: 'annual_leave', startDate: '', endDate: '', notes: '' });
   const [pendingLeaves, setPendingLeaves] = useState(mockPendingLeave);
 
+  // ── Shift swap dialog ──
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
+  const [swapShift, setSwapShift] = useState<ShiftItem | null>(null);
+  const [pendingSwaps, setPendingSwaps] = useState<{ id: string; shiftId: string; colleagueName: string; date: Date }[]>([]);
+
   const nextShift = upcomingShifts[0];
   const todayShift = upcomingShifts.find(s => isToday(s.date));
-  const hoursProgress = (mockTimesheetSummary.currentWeekHours / mockTimesheetSummary.targetHours) * 100;
+
+  // ── Live timesheet hours: base + clocked elapsed ──
+  const liveWeekHours = useMemo(() => {
+    const clockedHours = clockState.isClockedIn ? clockState.elapsed / 3600 : 0;
+    return Math.round((mockTimesheetSummary.currentWeekHours + clockedHours) * 10) / 10;
+  }, [clockState.isClockedIn, clockState.elapsed]);
+  const liveOvertime = useMemo(() => {
+    return Math.max(0, Math.round((liveWeekHours - mockTimesheetSummary.targetHours) * 10) / 10);
+  }, [liveWeekHours]);
+  const hoursProgress = (liveWeekHours / mockTimesheetSummary.targetHours) * 100;
 
   // ── Pick up open shift ──
   const handlePickUp = useCallback((shiftId: string) => {
