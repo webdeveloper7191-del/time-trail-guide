@@ -244,6 +244,19 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
     }]);
   }, [upcomingShifts]);
 
+  // ── Swap inbox handlers ──
+  const handleSwapAccept = useCallback((requestId: string) => {
+    setSwapRequests(prev => prev.map(r =>
+      r.id === requestId ? { ...r, status: 'accepted' as const, respondedAt: new Date() } : r
+    ));
+  }, []);
+
+  const handleSwapDecline = useCallback((requestId: string) => {
+    setSwapRequests(prev => prev.map(r =>
+      r.id === requestId ? { ...r, status: 'declined' as const, respondedAt: new Date() } : r
+    ));
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Clock-In/Out Banner */}
