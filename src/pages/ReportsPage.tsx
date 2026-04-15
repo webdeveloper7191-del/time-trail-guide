@@ -39,22 +39,34 @@ interface ReportItem {
   title: string;
   description: string;
   category: 'dashboard' | 'report';
+  module: 'roster' | 'timesheets';
   icon: React.ElementType;
   tags: string[];
   component: React.ComponentType;
 }
 
 const reportItems: ReportItem[] = [
-  { id: 'multi-location', title: 'Multi-Location Overview', description: 'Real-time staffing, compliance, and budget status across all locations', category: 'dashboard', icon: MapPin, tags: ['locations', 'compliance', 'budget'], component: MultiLocationDashboard },
-  { id: 'demand-vs-actuals', title: 'Demand vs Actuals', description: 'Compare forecasted demand against actual attendance and staffing', category: 'dashboard', icon: Activity, tags: ['demand', 'forecast', 'accuracy'], component: DemandVsActualsDashboard },
-  { id: 'staff-utilisation', title: 'Staff Utilisation Report', description: 'Hours scheduled vs capacity with utilisation percentages per staff member', category: 'report', icon: Users, tags: ['utilisation', 'hours', 'capacity'], component: StaffUtilisationReport },
-  { id: 'overtime-fatigue', title: 'Overtime & Fatigue Risk', description: 'Overtime hours, fatigue scores, and rest compliance across the workforce', category: 'report', icon: AlertTriangle, tags: ['overtime', 'fatigue', 'compliance'], component: OvertimeFatigueReport },
-  { id: 'open-shift-fill', title: 'Open Shift Fill Rate', description: 'Track how quickly and effectively open shifts are being filled', category: 'report', icon: Clock, tags: ['open shifts', 'fill rate', 'agency'], component: OpenShiftFillReport },
-  { id: 'agency-usage', title: 'Agency Usage & Cost', description: 'Agency partner performance, costs, and quality metrics', category: 'report', icon: DollarSign, tags: ['agency', 'cost', 'performance'], component: AgencyUsageReport },
-  { id: 'coverage-gap', title: 'Shift Coverage Gap Analysis', description: 'Identify time slots and areas with insufficient staff coverage', category: 'report', icon: Shield, tags: ['coverage', 'gaps', 'compliance'], component: CoverageGapReport },
-  { id: 'area-combining', title: 'Area Combining Savings', description: 'Financial impact and operational data from area combining events', category: 'report', icon: Layers, tags: ['savings', 'area combining', 'cost'], component: AreaCombiningSavingsReport },
-  { id: 'fairness', title: 'Schedule Fairness Report', description: 'Distribution equity of shifts including weekends, early, and late assignments', category: 'report', icon: Scale, tags: ['fairness', 'equity', 'distribution'], component: FairnessReport },
-  { id: 'recurring-pattern', title: 'Recurring Pattern Adherence', description: 'Track how well recurring shift patterns are being followed', category: 'report', icon: RotateCcw, tags: ['recurring', 'patterns', 'adherence'], component: RecurringPatternReport },
+  // Roster & Scheduling
+  { id: 'multi-location', title: 'Multi-Location Overview', description: 'Real-time staffing, compliance, and budget status across all locations', category: 'dashboard', module: 'roster', icon: MapPin, tags: ['locations', 'compliance', 'budget'], component: MultiLocationDashboard },
+  { id: 'demand-vs-actuals', title: 'Demand vs Actuals', description: 'Compare forecasted demand against actual attendance and staffing', category: 'dashboard', module: 'roster', icon: Activity, tags: ['demand', 'forecast', 'accuracy'], component: DemandVsActualsDashboard },
+  { id: 'staff-utilisation', title: 'Staff Utilisation Report', description: 'Hours scheduled vs capacity with utilisation percentages per staff member', category: 'report', module: 'roster', icon: Users, tags: ['utilisation', 'hours', 'capacity'], component: StaffUtilisationReport },
+  { id: 'overtime-fatigue', title: 'Overtime & Fatigue Risk', description: 'Overtime hours, fatigue scores, and rest compliance across the workforce', category: 'report', module: 'roster', icon: AlertTriangle, tags: ['overtime', 'fatigue', 'compliance'], component: OvertimeFatigueReport },
+  { id: 'open-shift-fill', title: 'Open Shift Fill Rate', description: 'Track how quickly and effectively open shifts are being filled', category: 'report', module: 'roster', icon: Clock, tags: ['open shifts', 'fill rate', 'agency'], component: OpenShiftFillReport },
+  { id: 'agency-usage', title: 'Agency Usage & Cost', description: 'Agency partner performance, costs, and quality metrics', category: 'report', module: 'roster', icon: DollarSign, tags: ['agency', 'cost', 'performance'], component: AgencyUsageReport },
+  { id: 'coverage-gap', title: 'Shift Coverage Gap Analysis', description: 'Identify time slots and areas with insufficient staff coverage', category: 'report', module: 'roster', icon: Shield, tags: ['coverage', 'gaps', 'compliance'], component: CoverageGapReport },
+  { id: 'area-combining', title: 'Area Combining Savings', description: 'Financial impact and operational data from area combining events', category: 'report', module: 'roster', icon: Layers, tags: ['savings', 'area combining', 'cost'], component: AreaCombiningSavingsReport },
+  { id: 'fairness', title: 'Schedule Fairness Report', description: 'Distribution equity of shifts including weekends, early, and late assignments', category: 'report', module: 'roster', icon: Scale, tags: ['fairness', 'equity', 'distribution'], component: FairnessReport },
+  { id: 'recurring-pattern', title: 'Recurring Pattern Adherence', description: 'Track how well recurring shift patterns are being followed', category: 'report', module: 'roster', icon: RotateCcw, tags: ['recurring', 'patterns', 'adherence'], component: RecurringPatternReport },
+  // Timesheets & Attendance
+  { id: 'ts-approval-pipeline', title: 'Approval Pipeline Dashboard', description: 'Timesheet approval queue with status tracking, SLA monitoring, and tier escalation', category: 'dashboard', module: 'timesheets', icon: CheckSquare, tags: ['approval', 'pipeline', 'timesheet'], component: TimesheetApprovalDashboard },
+  { id: 'ts-realtime-attendance', title: 'Real-Time Attendance', description: 'Live view of who is clocked in, on break, absent, or late right now', category: 'dashboard', module: 'timesheets', icon: Radio, tags: ['attendance', 'live', 'clock-in'], component: RealTimeAttendanceDashboard },
+  { id: 'ts-weekly-summary', title: 'Weekly Timesheet Summary', description: 'Aggregated hours, overtime, and approval status per staff member', category: 'report', module: 'timesheets', icon: ClipboardList, tags: ['weekly', 'summary', 'hours'], component: WeeklyTimesheetReport },
+  { id: 'ts-late-punctuality', title: 'Late Clock-In / Early Clock-Out', description: 'Track punctuality issues with late arrivals and early departures', category: 'report', module: 'timesheets', icon: AlarmClock, tags: ['late', 'punctuality', 'clock-in'], component: LatePunctualityReport },
+  { id: 'ts-break-compliance', title: 'Break Compliance Report', description: 'Monitor break duration compliance against required minimums', category: 'report', module: 'timesheets', icon: Coffee, tags: ['breaks', 'compliance', 'duration'], component: BreakComplianceReport },
+  { id: 'ts-exceptions', title: 'Timesheet Exception Report', description: 'Manual edits, manager overrides, and retroactive entries audit trail', category: 'report', module: 'timesheets', icon: FileWarning, tags: ['exceptions', 'edits', 'overrides'], component: TimesheetExceptionReport },
+  { id: 'ts-approval-sla', title: 'Approval SLA Report', description: 'Approver turnaround times and SLA compliance rates', category: 'report', module: 'timesheets', icon: Timer, tags: ['sla', 'turnaround', 'approval'], component: ApprovalSLAReport },
+  { id: 'ts-overtime-location', title: 'Overtime by Location', description: 'Overtime hours and costs broken down by location and department', category: 'report', module: 'timesheets', icon: Building2, tags: ['overtime', 'location', 'department'], component: OvertimeByLocationReport },
+  { id: 'ts-attendance-trend', title: 'Attendance Trend Report', description: 'Absenteeism patterns, attendance rates, and absence type breakdown', category: 'report', module: 'timesheets', icon: UserX, tags: ['attendance', 'trends', 'absenteeism'], component: AttendanceTrendReport },
 ];
 
 const summaryCards = [
