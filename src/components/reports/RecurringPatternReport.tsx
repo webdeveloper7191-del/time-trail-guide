@@ -6,9 +6,12 @@ import { mockRecurringPatterns, RecurringPatternRecord } from '@/data/mockReport
 import { cn } from '@/lib/utils';
 import { ReportFilterBar } from './ReportFilterBar';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { ReportHelpGuide } from './ReportHelpGuide';
+import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
+import { RefreshCw, CheckCircle2, AlertTriangle, Layers, BarChart3, Target } from 'lucide-react';
 
 const exportColumns: ExportColumn[] = [
   { header: 'Pattern', accessor: 'patternName' }, { header: 'Location', accessor: 'location' },
@@ -20,20 +23,37 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockRecurringPatterns.map(r => r.location))];
 
 const tableColumns: DataTableColumn<RecurringPatternRecord>[] = [
-  { key: 'patternName', header: 'Pattern', accessor: (r) => <span className="font-medium">{r.patternName}</span>, sortValue: (r) => r.patternName },
-  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'patternName', header: 'Pattern', accessor: (r) => (
+    <div className="flex items-center gap-2">
+      <div className={cn('w-2 h-2 rounded-full', r.adherencePercent >= 90 ? 'bg-emerald-500' : r.adherencePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} />
+      <span className="font-medium">{r.patternName}</span>
+    </div>
+  ), sortValue: (r) => r.patternName },
+  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
   { key: 'totalExpectedShifts', header: 'Expected', accessor: (r) => r.totalExpectedShifts, sortValue: (r) => r.totalExpectedShifts, align: 'right' },
-  { key: 'actualShifts', header: 'Actual', accessor: (r) => r.actualShifts, sortValue: (r) => r.actualShifts, align: 'right' },
-  { key: 'adherencePercent', header: 'Adherence', className: 'w-[140px]', sortValue: (r) => r.adherencePercent,
+  { key: 'actualShifts', header: 'Actual', accessor: (r) => (
+    <span className={cn(r.actualShifts < r.totalExpectedShifts ? 'text-destructive font-medium' : '')}>{r.actualShifts}</span>
+  ), sortValue: (r) => r.actualShifts, align: 'right' },
+  { key: 'adherencePercent', header: 'Adherence', className: 'w-[150px]', sortValue: (r) => r.adherencePercent,
     accessor: (r) => (
       <div className="flex items-center gap-2">
-        <Progress value={r.adherencePercent} className="h-2 flex-1" />
-        <span className={cn('text-xs font-medium w-8 text-right', r.adherencePercent < 80 ? 'text-destructive' : 'text-foreground')}>{r.adherencePercent}%</span>
+        <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+          <div className={cn('h-full rounded-full', r.adherencePercent >= 90 ? 'bg-emerald-500' : r.adherencePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${r.adherencePercent}%` }} />
+        </div>
+        <span className={cn('text-xs font-mono w-10 text-right', r.adherencePercent < 75 ? 'text-destructive font-bold' : '')}>{r.adherencePercent}%</span>
       </div>
     ) },
   { key: 'deviations', header: 'Deviations', align: 'right', sortValue: (r) => r.deviations,
-    accessor: (r) => r.deviations > 0 ? <Badge variant="outline" className="text-xs">{r.deviations}</Badge> : '—' },
-  { key: 'deviationReasons', header: 'Reasons', accessor: (r) => <span className="text-xs text-muted-foreground">{r.deviationReasons.join(', ') || '—'}</span>, sortValue: (r) => r.deviationReasons.join(', ') },
+    accessor: (r) => r.deviations > 0 ? (
+      <Badge variant={r.deviations > 3 ? 'destructive' : 'outline'} className="text-xs">{r.deviations}</Badge>
+    ) : <span className="text-emerald-600 text-xs">✓ None</span> },
+  { key: 'deviationReasons', header: 'Deviation Reasons', accessor: (r) => (
+    <div className="flex flex-wrap gap-1">
+      {r.deviationReasons.length > 0 ? r.deviationReasons.map((reason, i) => (
+        <Badge key={i} variant="secondary" className="text-[10px]">{reason}</Badge>
+      )) : <span className="text-muted-foreground text-xs">—</span>}
+    </div>
+  ), sortValue: (r) => r.deviationReasons.join(', ') },
 ];
 
 export function RecurringPatternReport() {
@@ -48,35 +68,150 @@ export function RecurringPatternReport() {
   }), [search, locationFilter]);
 
   const avgAdherence = Math.round(filtered.reduce((s, r) => s + r.adherencePercent, 0) / (filtered.length || 1));
-  const chartData = filtered.map(r => ({ name: r.patternName.length > 15 ? r.patternName.substring(0, 15) + '…' : r.patternName, expected: r.totalExpectedShifts, actual: r.actualShifts }));
+  const totalDeviations = filtered.reduce((s, r) => s + r.deviations, 0);
+  const perfectPatterns = filtered.filter(r => r.adherencePercent === 100).length;
+  const poorPatterns = filtered.filter(r => r.adherencePercent < 75).length;
+  const totalExpected = filtered.reduce((s, r) => s + r.totalExpectedShifts, 0);
+  const totalActual = filtered.reduce((s, r) => s + r.actualShifts, 0);
+  const missedShifts = totalExpected - totalActual;
+
+  // Deviation reason aggregation
+  const reasonBreakdown = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(r => r.deviationReasons.forEach(reason => { map[reason] = (map[reason] || 0) + 1; }));
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([reason, count]) => ({ reason, count }));
+  }, [filtered]);
+
+  const reasonPie = reasonBreakdown.map(r => ({ name: r.reason, value: r.count }));
+  const COLORS = ['hsl(var(--primary))', '#F59E0B', 'hsl(var(--destructive))', '#10B981', '#8B5CF6', '#EC4899'];
+
+  const chartData = filtered.map(r => ({
+    name: r.patternName.length > 12 ? r.patternName.substring(0, 12) + '…' : r.patternName,
+    expected: r.totalExpectedShifts,
+    actual: r.actualShifts,
+    adherence: r.adherencePercent,
+  }));
+
+  // Adherence buckets
+  const adherenceBuckets = [
+    { range: '95-100%', count: filtered.filter(r => r.adherencePercent >= 95).length, fill: '#10B981' },
+    { range: '85-94%', count: filtered.filter(r => r.adherencePercent >= 85 && r.adherencePercent < 95).length, fill: '#22C55E' },
+    { range: '75-84%', count: filtered.filter(r => r.adherencePercent >= 75 && r.adherencePercent < 85).length, fill: '#F59E0B' },
+    { range: '<75%', count: filtered.filter(r => r.adherencePercent < 75).length, fill: 'hsl(var(--destructive))' },
+  ].filter(b => b.count > 0);
+
+  const insights = useMemo(() => {
+    const result = [];
+    if (perfectPatterns > 0) result.push({ type: 'positive' as const, title: `${perfectPatterns} patterns with 100% adherence`, description: `${Math.round(perfectPatterns / filtered.length * 100)}% of recurring patterns were followed exactly as configured. These represent stable, well-managed scheduling templates.`, metric: `${perfectPatterns} of ${filtered.length} patterns` });
+    if (poorPatterns > 0) result.push({ type: 'negative' as const, title: `${poorPatterns} patterns below 75% adherence`, description: `These patterns are being significantly deviated from. Possible causes: outdated templates, frequent absences in pattern roles, or operational changes not reflected in templates.`, metric: `${missedShifts} shifts missed vs expected`, action: 'Review and update underperforming templates' });
+    if (reasonBreakdown.length > 0) result.push({ type: 'neutral' as const, title: `Top deviation reason: ${reasonBreakdown[0].reason}`, description: `"${reasonBreakdown[0].reason}" accounts for ${reasonBreakdown[0].count} deviations (${Math.round(reasonBreakdown[0].count / totalDeviations * 100)}% of all). Addressing this root cause would have the greatest impact on adherence.`, action: `Implement mitigation strategies for ${reasonBreakdown[0].reason.toLowerCase()}` });
+    if (missedShifts > 0) result.push({ type: 'action' as const, title: `${missedShifts} shifts below pattern expectations`, description: `Actual shifts fell short of recurring pattern expectations by ${missedShifts} shifts. Estimated cost impact: $${(missedShifts * 180).toLocaleString()} based on average shift value.`, metric: `${totalActual} actual vs ${totalExpected} expected` });
+    return result;
+  }, [filtered, perfectPatterns, poorPatterns, reasonBreakdown, totalDeviations, missedShifts, totalExpected, totalActual]);
 
   return (
     <div className="space-y-6">
+      <ReportHelpGuide
+        reportName="Recurring Pattern Adherence Report"
+        reportDescription="Measures how closely actual scheduling follows configured recurring shift patterns/templates. Identifies template drift, highlights patterns needing updates, and quantifies scheduling consistency."
+        purpose="To validate that recurring shift templates are being followed, identify why deviations occur, and ensure templates remain aligned with operational needs. High adherence reduces scheduling effort and improves predictability."
+        whenToUse={[
+          'After each roster period to measure template compliance',
+          'When updating or creating new recurring shift patterns',
+          'During scheduling process reviews to identify inefficiencies',
+          'When staff report inconsistent or unpredictable schedules',
+          'Before implementing auto-scheduling to verify template accuracy',
+        ]}
+        keyMetrics={[
+          { label: 'Adherence %', description: 'Percentage of expected shifts from a recurring pattern that were actually scheduled. Calculated as (actual shifts / expected shifts) × 100.', interpretation: 'Below 75% means the pattern is effectively not being followed — consider redesigning it.', goodRange: '≥90%', warningRange: '75-89%', criticalRange: '<75%' },
+          { label: 'Deviations', description: 'Count of individual instances where a pattern shift was modified, skipped, or replaced.', interpretation: 'Occasional deviations are normal (1-2 per pattern). Frequent deviations suggest the pattern is outdated.' },
+          { label: 'Pattern Coverage', description: 'Ratio of actual to expected shifts across all patterns.', interpretation: 'Below 90% indicates systemic understaffing against template expectations.' },
+        ]}
+        howToRead={[
+          { title: 'KPI Cards', content: 'Assess overall pattern health:\n• Avg Adherence: Team-wide template compliance\n• Perfect Patterns: Templates working exactly as designed\n• Poor Patterns (<75%): Templates needing urgent review\n• Missed Shifts: Gap between expected and actual' },
+          { title: 'Expected vs Actual', content: 'Side-by-side bar chart comparing what the pattern calls for (grey) vs what was actually scheduled (blue). Large gaps indicate patterns that don\'t match operational reality.' },
+          { title: 'Deviation Reasons', content: 'Pie chart showing the root causes of deviations. Concentrate improvement efforts on the top 1-2 reasons for maximum impact.' },
+          { title: 'Pattern Detail Table', content: 'Each row is a recurring pattern with its adherence metrics. Patterns are colour-coded:\n• Green dot = ≥90% adherence\n• Amber dot = 75-89%\n• Red dot = <75% — needs review\n• Deviation reasons shown as tags for quick root cause identification' },
+        ]}
+        actionableInsights={[
+          'Patterns below 75% adherence should be reviewed and either updated or retired',
+          'If the top deviation reason is "absence" related, strengthen the substitute/cover system',
+          'Compare adherence before and after template updates to validate improvements',
+          'High-adherence patterns are candidates for auto-scheduling — low human intervention needed',
+          'Track adherence trends over time to detect gradual template drift before it becomes critical',
+        ]}
+        relatedReports={['Schedule Fairness', 'Staff Utilisation', 'Coverage Gap Analysis']}
+      />
+
       <ReportFilterBar title="Recurring Pattern Adherence Report" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search pattern..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
         locations={locations} exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Avg Adherence</p><p className="text-3xl font-bold tracking-tight mt-1">{avgAdherence}%</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Deviations</p><p className="text-3xl font-bold tracking-tight mt-1 text-destructive">{filtered.reduce((s, r) => s + r.deviations, 0)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Active Patterns</p><p className="text-3xl font-bold tracking-tight mt-1">{filtered.length}</p></CardContent></Card>
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+        <StatCard label="Avg Adherence" value={`${avgAdherence}%`} icon={Target}
+          variant={avgAdherence < 75 ? 'danger' : avgAdherence < 85 ? 'warning' : 'success'} sparklineData={[82, 85, 88, 84, 87, avgAdherence]} />
+        <StatCard label="Perfect Patterns" value={perfectPatterns} icon={CheckCircle2}
+          variant="success" subtitle={`of ${filtered.length} total`} />
+        <StatCard label="Poor Patterns (<75%)" value={poorPatterns} icon={AlertTriangle}
+          variant={poorPatterns > 0 ? 'danger' : 'success'} />
+        <StatCard label="Total Deviations" value={totalDeviations} icon={RefreshCw}
+          trend={{ value: -3, label: 'vs last period', isPositiveGood: false }} />
+        <StatCard label="Active Patterns" value={filtered.length} icon={Layers} />
+        <StatCard label="Missed Shifts" value={missedShifts} icon={BarChart3}
+          variant={missedShifts > 5 ? 'warning' : 'default'} subtitle={`$${(missedShifts * 180).toLocaleString()} est. impact`} />
       </div>
 
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Expected vs Actual Shifts</CardTitle></CardHeader>
-        <CardContent><div className="h-[250px]"><ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))' }} /><Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="expected" name="Expected" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} opacity={0.4} />
-            <Bar dataKey="actual" name="Actual" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer></div></CardContent>
-      </Card>
+      <SummaryRow items={[
+        { label: 'Expected Shifts', value: totalExpected },
+        { label: 'Actual Shifts', value: totalActual },
+        { label: 'Pattern Coverage', value: `${Math.round((totalActual / (totalExpected || 1)) * 100)}%`, highlight: true },
+        { label: 'Top Deviation Reason', value: reasonBreakdown[0]?.reason || 'None' },
+      ]} />
 
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Pattern Adherence Details</CardTitle></CardHeader>
+      {insights.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {insights.map((ins, i) => <InsightCard key={i} {...ins} />)}
+        </div>
+      )}
+
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="border-border/60 col-span-2">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Expected vs Actual Shifts</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="expected" name="Expected" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} opacity={0.3} />
+                <Bar dataKey="actual" name="Actual" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Deviation Reasons</CardTitle></CardHeader>
+          <CardContent>
+            {reasonPie.length > 0 ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie data={reasonPie} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name.length > 10 ? name.substring(0, 10) + '…' : name} ${(percent * 100).toFixed(0)}%`}>
+                    {reasonPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">No deviations recorded</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border-border/60">
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Pattern Adherence Details</CardTitle></CardHeader>
         <CardContent className="p-0">
           <ReportDataTable columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
         </CardContent>
