@@ -191,6 +191,9 @@ export default function ReportsPage() {
                   <FileText className="h-3.5 w-3.5 mr-1.5" />
                   Reports
                 </TabsTrigger>
+                <TabsTrigger value="roster" className="text-xs px-3">Roster</TabsTrigger>
+                <TabsTrigger value="timesheets" className="text-xs px-3">Timesheets</TabsTrigger>
+                <TabsTrigger value="workforce" className="text-xs px-3">Workforce</TabsTrigger>
               </TabsList>
             </Tabs>
             <div className="relative flex-1 max-w-xs">
