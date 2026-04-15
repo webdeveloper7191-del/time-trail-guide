@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -7,15 +6,46 @@ import { mockApprovalSLA } from '@/data/mockTimesheetReportData';
 import { cn } from '@/lib/utils';
 import { ReportFilterBar } from './ReportFilterBar';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { ReportHelpGuide } from './ReportHelpGuide';
+import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
+import { Clock, Shield, AlertTriangle, CheckCircle2, Timer, Users } from 'lucide-react';
+
+type ApprovalSLARecord = typeof mockApprovalSLA[0];
 
 const exportColumns: ExportColumn[] = [
   { header: 'Approver', accessor: 'approverName' }, { header: 'Location', accessor: 'location' },
   { header: 'Total Approvals', accessor: 'totalApprovals' }, { header: 'Within SLA', accessor: 'withinSLA' },
   { header: 'Breached', accessor: 'breachedSLA' }, { header: 'Avg Turnaround (h)', accessor: 'avgTurnaroundHours' },
   { header: 'SLA Compliance %', accessor: 'slaCompliancePercent' }, { header: 'Tier', accessor: 'tier' },
+];
+
+const tableColumns: DataTableColumn<ApprovalSLARecord>[] = [
+  { key: 'approverName', header: 'Approver', accessor: (r) => (
+    <div className="flex items-center gap-2">
+      <div className={cn('w-2 h-2 rounded-full', r.slaCompliancePercent >= 90 ? 'bg-emerald-500' : r.slaCompliancePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} />
+      <span className="font-medium">{r.approverName}</span>
+    </div>
+  ), sortValue: (r) => r.approverName },
+  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'tier', header: 'Tier', accessor: (r) => <Badge variant="outline" className="text-[10px]">Tier {r.tier}</Badge>, sortValue: (r) => r.tier },
+  { key: 'totalApprovals', header: 'Total', accessor: (r) => r.totalApprovals, sortValue: (r) => r.totalApprovals, align: 'right' },
+  { key: 'withinSLA', header: 'Within SLA', accessor: (r) => <span className="text-emerald-600">{r.withinSLA}</span>, sortValue: (r) => r.withinSLA, align: 'right' },
+  { key: 'breachedSLA', header: 'Breached', align: 'right', sortValue: (r) => r.breachedSLA,
+    accessor: (r) => r.breachedSLA > 0 ? <span className="text-destructive font-medium">{r.breachedSLA}</span> : <span className="text-muted-foreground">0</span> },
+  { key: 'avgTurnaroundHours', header: 'Avg Turnaround', align: 'right', sortValue: (r) => r.avgTurnaroundHours,
+    accessor: (r) => <span className={cn(r.avgTurnaroundHours > 24 ? 'text-destructive font-medium' : '')}>{r.avgTurnaroundHours}h</span> },
+  { key: 'slaCompliancePercent', header: 'SLA Compliance', className: 'w-[150px]', sortValue: (r) => r.slaCompliancePercent,
+    accessor: (r) => (
+      <div className="flex items-center gap-2">
+        <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+          <div className={cn('h-full rounded-full', r.slaCompliancePercent >= 90 ? 'bg-emerald-500' : r.slaCompliancePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${r.slaCompliancePercent}%` }} />
+        </div>
+        <span className={cn('text-xs font-mono w-10 text-right', r.slaCompliancePercent < 75 ? 'text-destructive font-bold' : '')}>{r.slaCompliancePercent}%</span>
+      </div>
+    ) },
 ];
 
 export function ApprovalSLAReport() {
@@ -25,71 +55,107 @@ export function ApprovalSLAReport() {
   const filtered = mockApprovalSLA.filter(r => !search || r.approverName.toLowerCase().includes(search.toLowerCase()));
   const avgCompliance = Math.round(filtered.reduce((s, r) => s + r.slaCompliancePercent, 0) / (filtered.length || 1));
   const totalBreached = filtered.reduce((s, r) => s + r.breachedSLA, 0);
+  const totalApprovals = filtered.reduce((s, r) => s + r.totalApprovals, 0);
+  const avgTurnaround = (filtered.reduce((s, r) => s + r.avgTurnaroundHours, 0) / (filtered.length || 1)).toFixed(1);
+  const worstApprover = [...filtered].sort((a, b) => a.slaCompliancePercent - b.slaCompliancePercent)[0];
+  const bestApprover = [...filtered].sort((a, b) => b.slaCompliancePercent - a.slaCompliancePercent)[0];
 
-  const chartData = filtered.map(r => ({ name: r.approverName.split(' ')[0], withinSLA: r.withinSLA, breached: r.breachedSLA, turnaround: r.avgTurnaroundHours }));
+  const chartData = filtered.map(r => ({ name: r.approverName.split(' ')[0], withinSLA: r.withinSLA, breached: r.breachedSLA }));
+  const complianceDist = [
+    { name: 'Within SLA', value: filtered.reduce((s, r) => s + r.withinSLA, 0), fill: '#10B981' },
+    { name: 'Breached', value: totalBreached, fill: 'hsl(var(--destructive))' },
+  ];
+
+  const insights = useMemo(() => {
+    const result = [];
+    if (totalBreached > 0) result.push({ type: 'negative' as const, title: `${totalBreached} SLA breaches this period`, description: `${totalBreached} timesheets were not approved within the SLA window, potentially delaying payroll processing. Each breach increases the risk of late or incorrect pay.`, metric: `${Math.round(totalBreached / totalApprovals * 100)}% breach rate`, action: 'Implement escalation triggers for approaching SLA deadlines' });
+    if (worstApprover && worstApprover.slaCompliancePercent < 80) result.push({ type: 'action' as const, title: `Lowest compliance: ${worstApprover.approverName} at ${worstApprover.slaCompliancePercent}%`, description: `This approver's turnaround of ${worstApprover.avgTurnaroundHours}h is significantly above the SLA target. This may indicate excessive workload, lack of mobile approval access, or process confusion.`, action: 'Discuss approval workflow with this approver and offer support' });
+    if (Number(avgTurnaround) > 12) result.push({ type: 'neutral' as const, title: `Average turnaround: ${avgTurnaround}h`, description: `The average time from timesheet submission to approval is ${avgTurnaround} hours. Target is under 8 hours for same-day payroll processing readiness.`, metric: `Target: <8h` });
+    if (bestApprover && bestApprover.slaCompliancePercent >= 95) result.push({ type: 'positive' as const, title: `Best performer: ${bestApprover.approverName} at ${bestApprover.slaCompliancePercent}%`, description: `Consistently fast turnaround of ${bestApprover.avgTurnaroundHours}h. Their approval workflow could be used as a model for underperforming approvers.` });
+    return result;
+  }, [filtered, totalBreached, totalApprovals, worstApprover, bestApprover, avgTurnaround]);
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Approval SLA Report" searchValue={search} onSearchChange={setSearch}
-        searchPlaceholder="Search approver..." exportColumns={exportColumns} exportData={filtered}
-        dateRange={dateRange} onDateRangeChange={setDateRange} />
+      <ReportHelpGuide
+        reportName="Approval SLA Report"
+        reportDescription="Tracks timesheet approval turnaround times against SLA targets by approver, tier, and location. Identifies bottlenecks in the approval pipeline."
+        purpose="To ensure timely timesheet approvals for accurate payroll processing, identify slow approvers, and optimise the multi-tier approval workflow."
+        whenToUse={['Before payroll cut-off to identify pending bottlenecks', 'Monthly to review approver performance', 'When redesigning approval chains', 'During process improvement reviews']}
+        keyMetrics={[
+          { label: 'SLA Compliance %', description: 'Percentage of approvals completed within the defined SLA window (typically 24-48h).', interpretation: 'Below 90% indicates approval bottlenecks. Below 75% will consistently delay payroll.', goodRange: '≥90%', warningRange: '75-89%', criticalRange: '<75%' },
+          { label: 'Average Turnaround', description: 'Mean time from timesheet submission to final approval, measured in hours.', interpretation: 'Target <8h for same-day processing capability.', goodRange: '≤8h', warningRange: '8-24h', criticalRange: '>24h' },
+        ]}
+        howToRead={[
+          { title: 'KPI Cards', content: 'SLA health snapshot. Focus on breach count and average turnaround as leading indicators of payroll delays.' },
+          { title: 'Approval Performance Chart', content: 'Stacked bars show within-SLA (green) vs breached (red) per approver. Tall red segments identify bottleneck approvers.' },
+          { title: 'SLA Distribution', content: 'Pie chart showing overall compliance ratio. The goal is 100% green.' },
+        ]}
+        actionableInsights={['Enable mobile approval notifications to reduce turnaround time', 'Implement auto-escalation for timesheets approaching SLA deadline', 'Review tier assignments — overloaded approvers may need reassignment', 'Consider auto-approval rules for routine timesheets to reduce approval volume']}
+        relatedReports={['Weekly Timesheet Summary', 'Timesheet Exception', 'Overtime by Location']}
+      />
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Avg SLA Compliance</p><p className="text-3xl font-bold tracking-tight mt-1">{avgCompliance}%</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total SLA Breaches</p><p className="text-3xl font-bold tracking-tight mt-1 text-destructive">{totalBreached}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Avg Turnaround</p><p className="text-3xl font-bold tracking-tight mt-1">{(filtered.reduce((s, r) => s + r.avgTurnaroundHours, 0) / (filtered.length || 1)).toFixed(1)}h</p></CardContent></Card>
+      <ReportFilterBar title="Approval SLA Report" searchValue={search} onSearchChange={setSearch}
+        searchPlaceholder="Search approver..." exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+        <StatCard label="Avg SLA Compliance" value={`${avgCompliance}%`} icon={Shield}
+          variant={avgCompliance < 80 ? 'danger' : avgCompliance < 90 ? 'warning' : 'success'} sparklineData={[78, 82, 85, 88, avgCompliance]} />
+        <StatCard label="SLA Breaches" value={totalBreached} icon={AlertTriangle} variant={totalBreached > 0 ? 'danger' : 'success'} />
+        <StatCard label="Total Approvals" value={totalApprovals} icon={CheckCircle2} />
+        <StatCard label="Avg Turnaround" value={`${avgTurnaround}h`} icon={Timer}
+          variant={Number(avgTurnaround) > 24 ? 'danger' : Number(avgTurnaround) > 12 ? 'warning' : 'default'} subtitle="Target: <8h" />
+        <StatCard label="Approvers" value={filtered.length} icon={Users} />
+        <StatCard label="Fastest Approver" value={`${Math.min(...filtered.map(r => r.avgTurnaroundHours))}h`} icon={Clock} variant="success" />
       </div>
 
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">SLA Performance by Approver</CardTitle></CardHeader>
-        <CardContent>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+      <SummaryRow items={[
+        { label: 'Breach Rate', value: `${Math.round(totalBreached / (totalApprovals || 1) * 100)}%`, highlight: totalBreached > 0 },
+        { label: 'Best', value: bestApprover?.approverName.split(' ')[0] || 'N/A' },
+        { label: 'Needs Improvement', value: worstApprover?.approverName.split(' ')[0] || 'N/A', highlight: true },
+      ]} />
+
+      {insights.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {insights.map((ins, i) => <InsightCard key={i} {...ins} />)}
+        </div>
+      )}
+
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="border-border/60 col-span-2">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">SLA Performance by Approver</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))' }} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="withinSLA" name="Within SLA" fill="hsl(var(--status-approved))" radius={[4, 4, 0, 0]} stackId="a" />
-                <Bar dataKey="breached" name="Breached" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} stackId="a" />
+                <Bar dataKey="withinSLA" name="Within SLA" fill="#10B981" stackId="a" />
+                <Bar dataKey="breached" name="Breached" fill="hsl(var(--destructive))" stackId="a" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">SLA Distribution</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie data={complianceDist} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                  {complianceDist.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+                </Pie>
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Approver SLA Details</CardTitle></CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader><TableRow>
-              <TableHead className="text-xs">Approver</TableHead><TableHead className="text-xs">Location</TableHead>
-              <TableHead className="text-xs text-right">Total</TableHead><TableHead className="text-xs text-right">Within SLA</TableHead>
-              <TableHead className="text-xs text-right">Breached</TableHead><TableHead className="text-xs text-right">Avg Turnaround</TableHead>
-              <TableHead className="text-xs w-[140px]">SLA Compliance</TableHead><TableHead className="text-xs">Tier</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {filtered.map((r, i) => (
-                <TableRow key={i}>
-                  <TableCell className="text-sm font-medium">{r.approverName}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{r.location}</TableCell>
-                  <TableCell className="text-sm text-right">{r.totalApprovals}</TableCell>
-                  <TableCell className="text-sm text-right">{r.withinSLA}</TableCell>
-                  <TableCell className={cn('text-sm text-right', r.breachedSLA > 0 && 'text-destructive font-medium')}>{r.breachedSLA}</TableCell>
-                  <TableCell className="text-sm text-right">{r.avgTurnaroundHours}h</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Progress value={r.slaCompliancePercent} className="h-2 flex-1" />
-                      <span className={cn('text-xs font-medium w-8 text-right', r.slaCompliancePercent < 75 ? 'text-destructive' : 'text-foreground')}>{r.slaCompliancePercent}%</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">Tier {r.tier}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
+      <Card className="border-border/60">
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Approver SLA Details</CardTitle></CardHeader>
+        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
       </Card>
     </div>
   );
