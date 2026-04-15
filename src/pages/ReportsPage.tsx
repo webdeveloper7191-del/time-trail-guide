@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX, UserPlus, Award, CalendarCheck, FileCheck, Briefcase, GraduationCap, BarChart2, Gauge, LayoutGrid, Wallet, Grid3X3, ShieldAlert, Ratio, ArrowLeftRight } from 'lucide-react';
+import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX, UserPlus, Award, CalendarCheck, FileCheck, Briefcase, GraduationCap, BarChart2, Gauge, LayoutGrid, Wallet, Grid3X3, ShieldAlert, Ratio, ArrowLeftRight, Banknote, ShieldCheck, Receipt, Percent, RotateCw, FileSearch, CircleDollarSign, PhoneCall, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { reportSummaryMetrics } from '@/data/mockReportData';
 
@@ -52,14 +52,25 @@ import { ComplianceViolationReport } from '@/components/reports/ComplianceViolat
 import { StaffingRatioComplianceReport } from '@/components/reports/StaffingRatioComplianceReport';
 import { CrossLocationDeploymentReport } from '@/components/reports/CrossLocationDeploymentReport';
 
-type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets' | 'workforce' | 'locations';
+// Payroll & Awards report components
+import { PayrollCostDashboard } from '@/components/reports/PayrollCostDashboard';
+import { AwardComplianceDashboard } from '@/components/reports/AwardComplianceDashboard';
+import { PayRunSummaryReport } from '@/components/reports/PayRunSummaryReport';
+import { AllowancePenaltyReport } from '@/components/reports/AllowancePenaltyReport';
+import { RetrospectivePayReport } from '@/components/reports/RetrospectivePayReport';
+import { AwardOverrideAuditReport } from '@/components/reports/AwardOverrideAuditReport';
+import { LabourCostReport } from '@/components/reports/LabourCostReport';
+import { OnCallCostReport } from '@/components/reports/OnCallCostReport';
+import { CasualVsPermanentReport } from '@/components/reports/CasualVsPermanentReport';
+
+type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets' | 'workforce' | 'locations' | 'payroll';
 
 interface ReportItem {
   id: string;
   title: string;
   description: string;
   category: 'dashboard' | 'report';
-  module: 'roster' | 'timesheets' | 'workforce' | 'locations';
+  module: 'roster' | 'timesheets' | 'workforce' | 'locations' | 'payroll';
   icon: React.ElementType;
   tags: string[];
   component: React.ComponentType;
