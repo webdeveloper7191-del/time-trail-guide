@@ -299,7 +299,7 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
         <QuickStat
           icon={Clock}
           label="Hours This Week"
-          value={`${mockTimesheetSummary.currentWeekHours}h`}
+          value={`${liveWeekHours}h`}
           sub={`of ${mockTimesheetSummary.targetHours}h target`}
           accent="text-blue-600"
           bgAccent="from-blue-500/10 to-blue-600/5 border-blue-200/60"
@@ -389,11 +389,27 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                           {shift.startTime} – {shift.endTime} • {shift.role}
                         </p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          {shift.location}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            {shift.location}
+                          </div>
                         </div>
+                        {shift.status === 'confirmed' && !shift.pickedUp && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                            onClick={(e) => { e.stopPropagation(); handleOpenSwap(shift); }}
+                            title="Request swap"
+                          >
+                            <ArrowLeftRight className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {pendingSwaps.some(s => s.shiftId === shift.id) && (
+                          <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px] px-1.5 py-0">Swap Pending</Badge>
+                        )}
                       </div>
                     </div>
                   );
@@ -488,17 +504,20 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                 <div>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span className="text-muted-foreground">This week's hours</span>
-                    <span className="font-semibold">{mockTimesheetSummary.currentWeekHours}h / {mockTimesheetSummary.targetHours}h</span>
+                    <span className="font-semibold">
+                      {liveWeekHours}h / {mockTimesheetSummary.targetHours}h
+                      {clockState.isClockedIn && <span className="text-emerald-600 text-xs ml-1 animate-pulse">● LIVE</span>}
+                    </span>
                   </div>
-                  <Progress value={hoursProgress} className="h-2.5" />
+                  <Progress value={Math.min(hoursProgress, 100)} className="h-2.5" />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="text-center p-3 rounded-lg bg-muted/30">
-                    <p className="text-lg font-bold">{mockTimesheetSummary.currentWeekHours}h</p>
-                    <p className="text-[10px] text-muted-foreground">Logged</p>
+                    <p className={cn('text-lg font-bold tabular-nums', clockState.isClockedIn && 'text-emerald-600')}>{liveWeekHours}h</p>
+                    <p className="text-[10px] text-muted-foreground">{clockState.isClockedIn ? 'Live' : 'Logged'}</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/30">
-                    <p className="text-lg font-bold text-amber-600">{mockTimesheetSummary.overtimeThisWeek}h</p>
+                    <p className={cn('text-lg font-bold tabular-nums', liveOvertime > 0 ? 'text-amber-600' : '')}>{liveOvertime}h</p>
                     <p className="text-[10px] text-muted-foreground">Overtime</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/30">
@@ -724,6 +743,14 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Shift Swap Dialog */}
+      <ShiftSwapRequestDialog
+        open={swapDialogOpen}
+        onClose={() => { setSwapDialogOpen(false); setSwapShift(null); }}
+        shift={swapShift}
+        onSubmitSwap={handleSwapSubmit}
+      />
     </div>
   );
 }
