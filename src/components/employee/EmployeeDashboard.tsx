@@ -833,6 +833,15 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
         shift={swapShift}
         onSubmitSwap={handleSwapSubmit}
       />
+
+      {/* Swap Inbox Dialog */}
+      <SwapInboxDialog
+        open={swapInboxOpen}
+        onClose={() => setSwapInboxOpen(false)}
+        requests={swapRequests}
+        onAccept={handleSwapAccept}
+        onDecline={handleSwapDecline}
+      />
     </div>
   );
 }
