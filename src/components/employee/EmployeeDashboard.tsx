@@ -282,7 +282,7 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                 </div>
                 <div>
                   <p className="font-semibold text-sm">
-                    {clockState.isClockedIn ? 'Currently Working' : "Today's Shift"}
+                    {isOnBreak ? 'On Break' : clockState.isClockedIn ? 'Currently Working' : "Today's Shift"}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {todayShift.startTime} – {todayShift.endTime} • {todayShift.role} • {todayShift.location}
@@ -314,6 +314,16 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                 )}
               </div>
             </div>
+            {/* Break Tracker */}
+            {clockState.isClockedIn && (
+              <div className="mt-3 pt-3 border-t border-border/30">
+                <BreakTracker
+                  isClockedIn={clockState.isClockedIn}
+                  onBreakStateChange={setIsOnBreak}
+                  onBreaksUpdate={(_breaks, totalSecs) => setTotalBreakSeconds(totalSecs)}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
