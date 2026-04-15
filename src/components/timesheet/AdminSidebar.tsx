@@ -14,6 +14,7 @@ import {
   ClipboardList,
   MapPin,
   UserCircle,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ const navItems = [
   { icon: Calendar, label: 'Roster', to: '/roster' },
   { icon: Users, label: 'Workforce', to: '/workforce' },
   { icon: MapPin, label: 'Locations', to: '/locations' },
+  { icon: BarChart3, label: 'Reports', to: '/reports' },
   { icon: ClipboardList, label: 'Forms', to: '/forms' },
   { icon: Target, label: 'Performance', to: '/performance' },
   { icon: Sparkles, label: 'Recognition', to: '/recognition' },
