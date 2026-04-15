@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { mockApprovalSLA } from '@/data/mockTimesheetReportData';
 import { cn } from '@/lib/utils';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
@@ -18,6 +20,7 @@ const exportColumns: ExportColumn[] = [
 
 export function ApprovalSLAReport() {
   const [search, setSearch] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = mockApprovalSLA.filter(r => !search || r.approverName.toLowerCase().includes(search.toLowerCase()));
   const avgCompliance = Math.round(filtered.reduce((s, r) => s + r.slaCompliancePercent, 0) / (filtered.length || 1));
@@ -28,7 +31,8 @@ export function ApprovalSLAReport() {
   return (
     <div className="space-y-6">
       <ReportFilterBar title="Approval SLA Report" searchValue={search} onSearchChange={setSearch}
-        searchPlaceholder="Search approver..." exportColumns={exportColumns} exportData={filtered} />
+        searchPlaceholder="Search approver..." exportColumns={exportColumns} exportData={filtered}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-3 gap-4">
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Avg SLA Compliance</p><p className="text-3xl font-bold tracking-tight mt-1">{avgCompliance}%</p></CardContent></Card>

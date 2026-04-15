@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { mockHeadcountData } from '@/data/mockWorkforceReportData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
@@ -9,6 +11,7 @@ import { ExportColumn } from '@/lib/reportExport';
 export function HeadcountFTEReport() {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => {
     return mockHeadcountData.filter(r => {
@@ -42,7 +45,8 @@ export function HeadcountFTEReport() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Staff Headcount & FTE Report" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} />
+      <ReportFilterBar title="Staff Headcount & FTE Report" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Headcount vs FTE by Department</CardTitle></CardHeader>

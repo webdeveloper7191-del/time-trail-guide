@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { mockStaffUtilisation } from '@/data/mockReportData';
 import { cn } from '@/lib/utils';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -25,6 +27,7 @@ const locations = [...new Set(mockStaffUtilisation.map(r => r.location))];
 export function StaffUtilisationReport() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => mockStaffUtilisation.filter(r => {
     const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase()) || r.role.toLowerCase().includes(search.toLowerCase());
@@ -40,7 +43,8 @@ export function StaffUtilisationReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Staff Utilisation Report" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..."
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
-        exportColumns={exportColumns} exportData={filtered} />
+        exportColumns={exportColumns} exportData={filtered}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-3 gap-4">
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Average Utilisation</p><p className="text-3xl font-bold tracking-tight mt-1">{avgUtilisation}%</p></CardContent></Card>

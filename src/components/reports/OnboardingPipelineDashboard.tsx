@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { mockOnboardingData } from '@/data/mockWorkforceReportData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
@@ -20,6 +22,7 @@ const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--primary))', 'hsl(var(--chart-3
 export function OnboardingPipelineDashboard() {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => {
     return mockOnboardingData.filter(r => {
@@ -54,7 +57,8 @@ export function OnboardingPipelineDashboard() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Onboarding Pipeline" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} />
+      <ReportFilterBar title="Onboarding Pipeline" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {statusSummary.map((s, i) => (

@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { mockAreaCombiningSavings } from '@/data/mockReportData';
 import { format, parseISO } from 'date-fns';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
@@ -23,6 +25,7 @@ const locations = [...new Set(mockAreaCombiningSavings.map(r => r.location))];
 export function AreaCombiningSavingsReport() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => mockAreaCombiningSavings.filter(r => {
     const matchesSearch = !search || r.combinedAreas.toLowerCase().includes(search.toLowerCase());
@@ -43,7 +46,8 @@ export function AreaCombiningSavingsReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Area Combining Savings Report" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search areas..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
-        locations={locations} exportColumns={exportColumns} exportData={filtered} />
+        locations={locations} exportColumns={exportColumns} exportData={filtered}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-3 gap-4">
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Cost Saved</p><p className="text-3xl font-bold tracking-tight mt-1 text-emerald-600">${totalSaved}</p></CardContent></Card>

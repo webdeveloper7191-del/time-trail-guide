@@ -6,6 +6,8 @@ import { mockOpenShiftFill } from '@/data/mockReportData';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
@@ -27,6 +29,7 @@ const locations = [...new Set(mockOpenShiftFill.map(r => r.location))];
 export function OpenShiftFillReport() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => mockOpenShiftFill.filter(r => {
     const matchesSearch = !search || r.area.toLowerCase().includes(search.toLowerCase()) || r.location.toLowerCase().includes(search.toLowerCase());
@@ -61,7 +64,8 @@ export function OpenShiftFillReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Open Shift Fill Rate Report" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search area or location..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
-        locations={locations} exportColumns={exportColumns} exportData={filtered} />
+        locations={locations} exportColumns={exportColumns} exportData={filtered}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-4 gap-4">
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Open Shifts</p><p className="text-3xl font-bold tracking-tight mt-1">{totalOpen}</p></CardContent></Card>

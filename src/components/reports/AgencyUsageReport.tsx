@@ -5,6 +5,8 @@ import { Progress } from '@/components/ui/progress';
 import { mockAgencyUsage } from '@/data/mockReportData';
 import { cn } from '@/lib/utils';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
@@ -22,6 +24,7 @@ const exportColumns: ExportColumn[] = [
 
 export function AgencyUsageReport() {
   const [search, setSearch] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const filtered = mockAgencyUsage.filter(r => !search || r.agencyName.toLowerCase().includes(search.toLowerCase()));
   const totalCost = filtered.reduce((s, r) => s + r.totalCost, 0);
 
@@ -30,7 +33,8 @@ export function AgencyUsageReport() {
   return (
     <div className="space-y-6">
       <ReportFilterBar title="Agency Usage & Cost Report" searchValue={search} onSearchChange={setSearch}
-        searchPlaceholder="Search agency..." exportColumns={exportColumns} exportData={filtered} />
+        searchPlaceholder="Search agency..." exportColumns={exportColumns} exportData={filtered}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-3 gap-4">
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Agency Spend</p><p className="text-3xl font-bold tracking-tight mt-1">${totalCost.toLocaleString()}</p></CardContent></Card>

@@ -6,6 +6,8 @@ import { mockCoverageGaps } from '@/data/mockReportData';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -40,6 +42,7 @@ export function CoverageGapReport() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [severityFilter, setSeverityFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => mockCoverageGaps.filter(r => {
     const matchesSearch = !search || r.area.toLowerCase().includes(search.toLowerCase()) || r.reason.toLowerCase().includes(search.toLowerCase());
@@ -58,7 +61,8 @@ export function CoverageGapReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Coverage Gap Analysis" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search area or reason..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
-        locations={locations} exportColumns={exportColumns} exportData={filtered}>
+        locations={locations} exportColumns={exportColumns} exportData={filtered}
+        dateRange={dateRange} onDateRangeChange={setDateRange}>
         <Select value={severityFilter} onValueChange={setSeverityFilter}>
           <SelectTrigger className="w-36 h-9 text-sm"><SelectValue placeholder="All severity" /></SelectTrigger>
           <SelectContent>

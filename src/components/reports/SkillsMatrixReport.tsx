@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { mockSkillsMatrix } from '@/data/mockWorkforceReportData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
@@ -17,6 +19,7 @@ const levelColors: Record<string, string> = {
 export function SkillsMatrixReport() {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => {
     return mockSkillsMatrix.filter(r => {
@@ -44,7 +47,8 @@ export function SkillsMatrixReport() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Staff Skills Matrix" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or skills..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} />
+      <ReportFilterBar title="Staff Skills Matrix" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or skills..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Skill Coverage Across Staff</CardTitle></CardHeader>

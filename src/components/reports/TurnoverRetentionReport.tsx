@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { mockTurnoverData } from '@/data/mockWorkforceReportData';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
@@ -10,6 +12,7 @@ import { format, parseISO } from 'date-fns';
 
 export function TurnoverRetentionReport() {
   const [search, setSearch] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => {
     if (!search) return mockTurnoverData;
@@ -28,7 +31,8 @@ export function TurnoverRetentionReport() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Staff Turnover & Retention" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search months..." exportData={filtered} exportColumns={exportColumns} />
+      <ReportFilterBar title="Staff Turnover & Retention" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search months..." exportData={filtered} exportColumns={exportColumns}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="border-border/60">

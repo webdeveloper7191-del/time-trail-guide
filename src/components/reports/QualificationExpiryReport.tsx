@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { mockQualificationData } from '@/data/mockWorkforceReportData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
@@ -15,6 +17,7 @@ const COLORS = ['hsl(142, 76%, 36%)', 'hsl(45, 93%, 47%)', 'hsl(var(--destructiv
 export function QualificationExpiryReport() {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => {
     return mockQualificationData.filter(r => {
@@ -42,7 +45,8 @@ export function QualificationExpiryReport() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Qualification & Certification Expiry" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or qualifications..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} />
+      <ReportFilterBar title="Qualification & Certification Expiry" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or qualifications..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-3 gap-3">
         {statusPie.map((s, i) => (
