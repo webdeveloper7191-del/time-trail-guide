@@ -1,44 +1,46 @@
 import { useState, useMemo } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { mockOvertimeFatigue } from '@/data/mockReportData';
+import { mockOvertimeFatigue, OvertimeFatigueRecord } from '@/data/mockReportData';
 import { cn } from '@/lib/utils';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ScatterChart, Scatter, ZAxis } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-const riskColors: Record<string, string> = {
-  low: 'bg-emerald-100 text-emerald-700',
-  medium: 'bg-amber-100 text-amber-700',
-  high: 'bg-orange-100 text-orange-700',
-  critical: 'bg-red-100 text-red-700',
-};
-
-const riskFills: Record<string, string> = {
-  low: 'hsl(var(--status-approved))',
-  medium: 'hsl(var(--warning))',
-  high: 'hsl(30, 80%, 50%)',
-  critical: 'hsl(var(--destructive))',
-};
+const riskColors: Record<string, string> = { low: 'bg-emerald-100 text-emerald-700', medium: 'bg-amber-100 text-amber-700', high: 'bg-orange-100 text-orange-700', critical: 'bg-red-100 text-red-700' };
+const riskFills: Record<string, string> = { low: 'hsl(var(--status-approved))', medium: 'hsl(var(--warning))', high: 'hsl(30, 80%, 50%)', critical: 'hsl(var(--destructive))' };
 
 const exportColumns: ExportColumn[] = [
-  { header: 'Staff', accessor: 'staffName' },
-  { header: 'Location', accessor: 'location' },
-  { header: 'Weekly Hours', accessor: 'weeklyHours' },
-  { header: 'Max Hours', accessor: 'maxHours' },
-  { header: 'Overtime', accessor: 'overtimeHours' },
-  { header: 'Consec. Days', accessor: 'consecutiveDays' },
-  { header: 'Rest Hours', accessor: 'restHoursBetweenShifts' },
-  { header: 'Fatigue Score', accessor: 'fatigueScore' },
+  { header: 'Staff', accessor: 'staffName' }, { header: 'Location', accessor: 'location' },
+  { header: 'Weekly Hours', accessor: 'weeklyHours' }, { header: 'Max Hours', accessor: 'maxHours' },
+  { header: 'Overtime', accessor: 'overtimeHours' }, { header: 'Consec. Days', accessor: 'consecutiveDays' },
+  { header: 'Rest Hours', accessor: 'restHoursBetweenShifts' }, { header: 'Fatigue Score', accessor: 'fatigueScore' },
   { header: 'Risk Level', accessor: 'riskLevel' },
 ];
 
 const locations = [...new Set(mockOvertimeFatigue.map(r => r.location))];
 
+const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
+  { key: 'staffName', header: 'Staff', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'weeklyHours', header: 'Weekly Hrs', accessor: (r) => `${r.weeklyHours}h / ${r.maxHours}h`, sortValue: (r) => r.weeklyHours, align: 'right' },
+  { key: 'overtimeHours', header: 'Overtime', align: 'right', sortValue: (r) => r.overtimeHours,
+    accessor: (r) => r.overtimeHours > 0 ? <Badge variant="destructive" className="text-xs">{r.overtimeHours}h</Badge> : '—' },
+  { key: 'consecutiveDays', header: 'Consec. Days', align: 'right', sortValue: (r) => r.consecutiveDays,
+    accessor: (r) => <span className={cn(r.consecutiveDays >= 6 && 'text-destructive font-medium')}>{r.consecutiveDays}</span> },
+  { key: 'restHours', header: 'Rest Hrs', align: 'right', sortValue: (r) => r.restHoursBetweenShifts,
+    accessor: (r) => <span className={cn(r.restHoursBetweenShifts < 10 && 'text-destructive font-medium')}>{r.restHoursBetweenShifts}h</span> },
+  { key: 'fatigueScore', header: 'Fatigue Score', align: 'right', sortValue: (r) => r.fatigueScore, accessor: (r) => <span className="font-mono">{r.fatigueScore}/100</span> },
+  { key: 'riskLevel', header: 'Risk', sortValue: (r) => r.riskLevel,
+    accessor: (r) => <Badge className={cn('text-xs capitalize', riskColors[r.riskLevel])}>{r.riskLevel}</Badge> },
+];
+
 export function OvertimeFatigueReport() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => mockOvertimeFatigue.filter(r => {
     const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
@@ -53,7 +55,7 @@ export function OvertimeFatigueReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Overtime & Fatigue Risk Report" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search staff..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
-        locations={locations} exportColumns={exportColumns} exportData={filtered} />
+        locations={locations} exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-3 gap-4">
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">High/Critical Risk</p><p className="text-3xl font-bold tracking-tight mt-1 text-destructive">{criticalCount}</p></CardContent></Card>
@@ -72,9 +74,7 @@ export function OvertimeFatigueReport() {
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))' }} />
                 <Bar dataKey="fatigue" name="Fatigue Score" radius={[4, 4, 0, 0]}>
-                  {chartData.map((entry, i) => (
-                    <Cell key={i} fill={riskFills[entry.risk]} />
-                  ))}
+                  {chartData.map((entry, i) => <Cell key={i} fill={riskFills[entry.risk]} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -85,34 +85,7 @@ export function OvertimeFatigueReport() {
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Fatigue Risk Assessment</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Staff</TableHead>
-                <TableHead className="text-xs">Location</TableHead>
-                <TableHead className="text-xs text-right">Weekly Hrs</TableHead>
-                <TableHead className="text-xs text-right">Overtime</TableHead>
-                <TableHead className="text-xs text-right">Consec. Days</TableHead>
-                <TableHead className="text-xs text-right">Rest Hrs</TableHead>
-                <TableHead className="text-xs text-right">Fatigue Score</TableHead>
-                <TableHead className="text-xs">Risk</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[...filtered].sort((a, b) => b.fatigueScore - a.fatigueScore).map((r) => (
-                <TableRow key={r.staffId}>
-                  <TableCell className="text-sm font-medium">{r.staffName}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{r.location}</TableCell>
-                  <TableCell className="text-sm text-right">{r.weeklyHours}h / {r.maxHours}h</TableCell>
-                  <TableCell className="text-sm text-right">{r.overtimeHours > 0 ? <Badge variant="destructive" className="text-xs">{r.overtimeHours}h</Badge> : '—'}</TableCell>
-                  <TableCell className={cn('text-sm text-right', r.consecutiveDays >= 6 && 'text-destructive font-medium')}>{r.consecutiveDays}</TableCell>
-                  <TableCell className={cn('text-sm text-right', r.restHoursBetweenShifts < 10 && 'text-destructive font-medium')}>{r.restHoursBetweenShifts}h</TableCell>
-                  <TableCell className="text-sm text-right font-mono">{r.fatigueScore}/100</TableCell>
-                  <TableCell><Badge className={cn('text-xs capitalize', riskColors[r.riskLevel])}>{r.riskLevel}</Badge></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ReportDataTable columns={tableColumns} data={[...filtered].sort((a, b) => b.fatigueScore - a.fatigueScore)} rowKey={(r) => r.staffId} />
         </CardContent>
       </Card>
     </div>

@@ -6,6 +6,8 @@ import { mockApprovalPipeline, approvalStatusLabels } from '@/data/mockTimesheet
 import { cn } from '@/lib/utils';
 import { format, parseISO, differenceInHours } from 'date-fns';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
@@ -35,6 +37,7 @@ const locations = [...new Set(mockApprovalPipeline.map(r => r.location))];
 export function TimesheetApprovalDashboard() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => mockApprovalPipeline.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
@@ -62,7 +65,8 @@ export function TimesheetApprovalDashboard() {
     <div className="space-y-6">
       <ReportFilterBar title="Timesheet Approval Pipeline" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search staff..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
-        locations={locations} exportColumns={exportColumns} exportData={filtered} />
+        locations={locations} exportColumns={exportColumns} exportData={filtered}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-4 gap-4">
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Pending Review</p><p className="text-3xl font-bold tracking-tight mt-1 text-amber-600">{pending}</p></CardContent></Card>

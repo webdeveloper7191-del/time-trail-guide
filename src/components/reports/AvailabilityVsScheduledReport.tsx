@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { mockAvailabilityVsScheduled } from '@/data/mockWorkforceReportData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
@@ -11,6 +13,7 @@ import { ExportColumn } from '@/lib/reportExport';
 export function AvailabilityVsScheduledReport() {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => {
     return mockAvailabilityVsScheduled.filter(r => {
@@ -33,7 +36,8 @@ export function AvailabilityVsScheduledReport() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Availability vs Scheduled" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} />
+      <ReportFilterBar title="Availability vs Scheduled" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Available vs Scheduled Hours</CardTitle></CardHeader>

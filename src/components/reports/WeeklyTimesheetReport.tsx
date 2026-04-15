@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { mockWeeklyTimesheets, approvalStatusLabels } from '@/data/mockTimesheetReportData';
 import { cn } from '@/lib/utils';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
@@ -25,6 +27,7 @@ const locations = [...new Set(mockWeeklyTimesheets.map(r => r.location))];
 export function WeeklyTimesheetReport() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => mockWeeklyTimesheets.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
@@ -41,7 +44,8 @@ export function WeeklyTimesheetReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Weekly Timesheet Summary" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search staff..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
-        locations={locations} exportColumns={exportColumns} exportData={filtered} />
+        locations={locations} exportColumns={exportColumns} exportData={filtered}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-4 gap-4">
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Hours</p><p className="text-3xl font-bold tracking-tight mt-1">{totalHours}h</p></CardContent></Card>

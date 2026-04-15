@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { TrendingUp, TrendingDown, Target } from 'lucide-react';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 
@@ -23,6 +25,7 @@ const exportColumns: ExportColumn[] = [
 export function DemandVsActualsDashboard() {
   const [search, setSearch] = useState('');
   const [areaFilter, setAreaFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const areas = [...new Set(mockDemandVsActuals.map(r => r.area))];
 
@@ -57,7 +60,8 @@ export function DemandVsActualsDashboard() {
   return (
     <div className="space-y-6">
       <ReportFilterBar title="Demand vs Actuals Dashboard" searchValue={search} onSearchChange={setSearch}
-        searchPlaceholder="Search area..." exportColumns={exportColumns} exportData={filtered}>
+        searchPlaceholder="Search area..." exportColumns={exportColumns} exportData={filtered}
+        dateRange={dateRange} onDateRangeChange={setDateRange}>
         <select className="h-9 px-3 text-sm border rounded-md bg-background" value={areaFilter} onChange={e => setAreaFilter(e.target.value)}>
           <option value="all">All Areas</option>
           {areas.map(a => <option key={a} value={a}>{a}</option>)}

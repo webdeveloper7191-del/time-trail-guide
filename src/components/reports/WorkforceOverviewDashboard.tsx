@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { mockHeadcountData, mockTurnoverData, workforceSummaryMetrics } from '@/data/mockWorkforceReportData';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
@@ -13,6 +15,7 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3
 export function WorkforceOverviewDashboard() {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => {
     return mockHeadcountData.filter(r => {
@@ -65,6 +68,7 @@ export function WorkforceOverviewDashboard() {
         locations={locations}
         exportData={filtered}
         exportColumns={exportColumns}
+        dateRange={dateRange} onDateRangeChange={setDateRange}
         
       />
 

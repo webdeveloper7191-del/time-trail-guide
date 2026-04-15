@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFilterBar } from './ReportFilterBar';
+import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { DateRange } from 'react-day-picker';
 import { mockOnboardingData } from '@/data/mockWorkforceReportData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
@@ -14,6 +16,7 @@ const statusVariant: Record<string, string> = { completed: 'bg-emerald-100 text-
 export function OnboardingCompletionReport() {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filtered = useMemo(() => {
     return mockOnboardingData.filter(r => {
@@ -46,7 +49,8 @@ export function OnboardingCompletionReport() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Onboarding Completion Rate" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} />
+      <ReportFilterBar title="Onboarding Completion Rate" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
+        dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       <div className="grid grid-cols-3 gap-3">
         <Card className="border-border/60"><CardContent className="p-4"><p className="text-2xl font-bold tracking-tight">{completionRate}%</p><p className="text-xs text-muted-foreground">Completion Rate</p></CardContent></Card>
