@@ -126,7 +126,8 @@ export default function ReportsPage() {
       (activeCategory === 'reports' && item.category === 'report') ||
       (activeCategory === 'roster' && item.module === 'roster') ||
       (activeCategory === 'timesheets' && item.module === 'timesheets') ||
-      (activeCategory === 'workforce' && item.module === 'workforce');
+      (activeCategory === 'workforce' && item.module === 'workforce') ||
+      (activeCategory === 'locations' && item.module === 'locations');
     const matchesSearch = !searchQuery || 
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -211,6 +212,7 @@ export default function ReportsPage() {
                 <TabsTrigger value="roster" className="text-xs px-3">Roster</TabsTrigger>
                 <TabsTrigger value="timesheets" className="text-xs px-3">Timesheets</TabsTrigger>
                 <TabsTrigger value="workforce" className="text-xs px-3">Workforce</TabsTrigger>
+                <TabsTrigger value="locations" className="text-xs px-3">Locations</TabsTrigger>
               </TabsList>
             </Tabs>
             <div className="relative flex-1 max-w-xs">
