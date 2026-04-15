@@ -33,7 +33,7 @@ export function AvailabilityVsScheduledReport() {
 
   return (
     <div className="space-y-6">
-      <ReportFilterBar title="Availability vs Scheduled" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} exportFileName="availability-vs-scheduled" />
+      <ReportFilterBar title="Availability vs Scheduled" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} <ReportFilterBar title="Availability vs Scheduled" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> />
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Available vs Scheduled Hours</CardTitle></CardHeader>
