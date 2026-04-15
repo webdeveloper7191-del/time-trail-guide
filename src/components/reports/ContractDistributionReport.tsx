@@ -44,7 +44,7 @@ export function ContractDistributionReport() {
 
   return (
     <div className="space-y-6">
-      <<ReportFilterBar <ReportFilterBar title="Contract Type Distribution" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> />
+      <ReportFilterBar title="Contract Type Distribution" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="border-border/60">

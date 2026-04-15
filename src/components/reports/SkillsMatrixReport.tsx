@@ -44,7 +44,7 @@ export function SkillsMatrixReport() {
 
   return (
     <div className="space-y-6">
-      <<ReportFilterBar <ReportFilterBar title="Staff Skills Matrix" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or skills..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or skills..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> />
+      <ReportFilterBar title="Staff Skills Matrix" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or skills..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} />
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Skill Coverage Across Staff</CardTitle></CardHeader>

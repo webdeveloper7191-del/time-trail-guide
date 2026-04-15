@@ -42,7 +42,7 @@ export function QualificationExpiryReport() {
 
   return (
     <div className="space-y-6">
-      <<ReportFilterBar title="Qualification & Certification Expiry" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or qualifications..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> title="Qualification & Certification Expiry" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or qualifications..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} /> />
+      <ReportFilterBar title="Qualification & Certification Expiry" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or qualifications..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns} />
 
       <div className="grid grid-cols-3 gap-3">
         {statusPie.map((s, i) => (
