@@ -11,6 +11,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ExportColumn } from '@/lib/reportExport';
 import { Award, Users, Target, TrendingUp, BookOpen, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const levelColors: Record<string, string> = {
   beginner: 'bg-muted text-muted-foreground', intermediate: 'bg-blue-100 text-blue-800',
@@ -45,13 +49,32 @@ export function SkillsMatrixReport() {
   const [location, setLocation] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return mockSkillsMatrix.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.staffName.toLowerCase().includes(search.toLowerCase()) && !r.skills.some(s => s.name.toLowerCase().includes(search.toLowerCase()))) return false;
       return true;
     });
   }, [search, location]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totalSkills = filtered.reduce((s, r) => s + r.totalSkills, 0);
   const totalCerts = filtered.reduce((s, r) => s + r.certifications, 0);
@@ -80,6 +103,8 @@ export function SkillsMatrixReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Staff Skills Matrix" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff or skills..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
 
       <ReportHelpGuide
         reportName="Staff Skills Matrix Report"
@@ -137,36 +162,36 @@ export function SkillsMatrixReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Skill Coverage</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={skillCoverage} layout="vertical">
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
+              <BarChart data={skillCoverage} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={120} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} name="Staff Count" />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Proficiency Distribution</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie data={levelDistribution.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {levelDistribution.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Capability Radar</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={80}>
                 <PolarGrid stroke="hsl(var(--border))" />
                 <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
@@ -175,14 +200,14 @@ export function SkillsMatrixReport() {
                 <Radar name="Max Possible" dataKey="maxPossible" stroke="hsl(var(--muted-foreground))" fill="none" strokeDasharray="5 5" />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
               </RadarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Staff Skills Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.staffName}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.staffName}-${i}`} /></CardContent>
       </Card>
     </div>
   );

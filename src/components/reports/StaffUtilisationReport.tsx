@@ -12,6 +12,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LineChart, Line, Legend, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { Users, Clock, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const exportColumns: ExportColumn[] = [
   { header: 'Staff', accessor: 'staffName' }, { header: 'Role', accessor: 'role' },
@@ -43,6 +47,7 @@ const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <Progress value={r.utilisationPercent} className="h-2 flex-1" />
+
         <span className={cn('text-xs font-semibold w-9 text-right',
           r.utilisationPercent >= 100 ? 'text-destructive' : r.utilisationPercent >= 90 ? 'text-emerald-600' : r.utilisationPercent >= 75 ? 'text-foreground' : 'text-amber-600'
         )}>{r.utilisationPercent}%</span>
@@ -70,11 +75,30 @@ export function StaffUtilisationReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockStaffUtilisation.filter(r => {
+  const baseFiltered = useMemo(() => mockStaffUtilisation.filter(r => {
     const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase()) || r.role.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const avgUtilisation = Math.round(filtered.reduce((s, r) => s + r.utilisationPercent, 0) / (filtered.length || 1));
   const totalScheduled = filtered.reduce((s, r) => s + r.scheduledHours, 0);
@@ -155,6 +179,8 @@ export function StaffUtilisationReport() {
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         <StatCard label="Avg Utilisation" value={`${avgUtilisation}%`} icon={Target}
@@ -195,8 +221,8 @@ export function StaffUtilisationReport() {
         <Card className="border-border/60 col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Utilisation by Staff Member</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={280}>
+              <BarChart data={chartData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 110]} />
@@ -208,20 +234,20 @@ export function StaffUtilisationReport() {
                   ))}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Utilisation Distribution</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={distributionData} cx="50%" cy="50%" outerRadius={70} innerRadius={40} dataKey="value" label={({ name, value }) => `${value}`}>
+                <Pie data={distributionData} cursor="pointer" onClick={(_, index) => { const d = distributionData[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={70} innerRadius={40} dataKey="value" label={({ name, value }) => `${value}`}>
                   {distributionData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
             <div className="space-y-1 mt-2">
               {distributionData.map(d => (
                 <div key={d.name} className="flex items-center gap-2 text-[11px]">
@@ -240,7 +266,7 @@ export function StaffUtilisationReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Weekly Utilisation Trend</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
               <LineChart data={weeklyTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
@@ -250,14 +276,14 @@ export function StaffUtilisationReport() {
                 <Line type="monotone" dataKey="avgUtil" name="Avg Utilisation %" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
                 <Line type="monotone" dataKey="target" name="Target 85%" stroke="hsl(var(--destructive))" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
               </LineChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Utilisation by Location</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={locationBreakdown}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
+              <BarChart data={locationBreakdown} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="location" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
@@ -265,7 +291,7 @@ export function StaffUtilisationReport() {
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="avgUtil" name="Avg Util %" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
             <div className="mt-3 space-y-1">
               {locationBreakdown.map(lb => (
                 <div key={lb.location} className="flex items-center text-[11px] gap-2">
@@ -291,7 +317,7 @@ export function StaffUtilisationReport() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable columns={tableColumns} data={filtered} rowKey={(r) => r.staffId} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.staffId} />
         </CardContent>
       </Card>
     </div>

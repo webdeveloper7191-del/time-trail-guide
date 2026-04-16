@@ -12,6 +12,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Clock, Target, Users, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const COLORS = { internal: 'hsl(142, 76%, 36%)', agency: '#F59E0B', unfilled: 'hsl(var(--destructive))' };
 
@@ -50,6 +54,8 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
       <div className="flex items-center gap-1.5 justify-end">
         <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
           <div className={cn('h-full rounded-full', r.fillRate >= 80 ? 'bg-emerald-500' : r.fillRate >= 50 ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${r.fillRate}%` }} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
         </div>
         <span className={cn('font-semibold text-xs w-8 text-right', r.fillRate >= 80 ? 'text-emerald-600' : r.fillRate >= 50 ? 'text-amber-600' : 'text-destructive')}>{r.fillRate}%</span>
       </div>
@@ -72,12 +78,31 @@ export function OpenShiftFillReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockOpenShiftFill.filter(r => {
+  const baseFiltered = useMemo(() => mockOpenShiftFill.filter(r => {
     const matchesSearch = !search || r.area.toLowerCase().includes(search.toLowerCase()) || r.location.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     if (dateRange?.from) { const d = parseISO(r.date); if (d < dateRange.from) return false; if (dateRange.to && d > dateRange.to) return false; }
     return matchesSearch && matchesLoc;
   }), [search, locationFilter, dateRange]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totalOpen = filtered.reduce((s, r) => s + r.totalOpenShifts, 0);
   const totalFilled = filtered.reduce((s, r) => s + r.filledShifts, 0);
@@ -202,7 +227,7 @@ export function OpenShiftFillReport() {
         <Card className="border-border/60 col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Fill Rate Trend & Volume</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <AreaChart data={trendData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <defs>
                   <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
@@ -218,20 +243,20 @@ export function OpenShiftFillReport() {
                 <Area type="monotone" dataKey="fillRate" name="Fill Rate %" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#fillGrad)" dot={{ r: 3 }} />
                 <Line type="monotone" dataKey={() => 85} name="Target 85%" stroke="hsl(var(--destructive))" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Fill Source Mix</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={180}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={sourceData} cx="50%" cy="50%" outerRadius={65} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={sourceData} cursor="pointer" onClick={(_, index) => { const d = sourceData[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={65} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {sourceData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
             <div className="space-y-1.5 mt-2">
               {sourceData.map(d => (
                 <div key={d.name} className="flex items-center gap-2 text-[11px]">
@@ -248,8 +273,8 @@ export function OpenShiftFillReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Fill Rate by Area</CardTitle></CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={byArea}>
+          <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
+            <BarChart data={byArea} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="area" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
@@ -258,7 +283,7 @@ export function OpenShiftFillReport() {
               <Bar dataKey="filled" name="Filled" stackId="a" fill="hsl(142, 76%, 36%)" />
               <Bar dataKey="total" name="Total Open" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
             </BarChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer></AnimatedChartWrapper>
         </CardContent>
       </Card>
 
@@ -274,7 +299,7 @@ export function OpenShiftFillReport() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
         </CardContent>
       </Card>
     </div>

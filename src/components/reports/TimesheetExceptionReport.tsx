@@ -12,6 +12,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { FileEdit, AlertTriangle, Shield, Users, Clock, Eye } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 type TimesheetExceptionRecord = typeof mockTimesheetExceptions[0];
 
@@ -55,11 +59,30 @@ export function TimesheetExceptionReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockTimesheetExceptions.filter(r => {
+  const baseFiltered = useMemo(() => mockTimesheetExceptions.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase()) || r.editedBy.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const managerOverrides = filtered.filter(r => r.exceptionType === 'manager_override').length;
   const retroactiveEntries = filtered.filter(r => r.exceptionType === 'retroactive_entry').length;
@@ -112,6 +135,8 @@ export function TimesheetExceptionReport() {
         relatedReports={['Weekly Timesheet Summary', 'Approval SLA', 'Retrospective Pay Adjustment']}
       />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <ReportFilterBar title="Timesheet Exception Report" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search staff or editor..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
         locations={locations} exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
@@ -142,8 +167,8 @@ export function TimesheetExceptionReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Exceptions by Type</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={typeCounts}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
+              <BarChart data={typeCounts} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -152,28 +177,28 @@ export function TimesheetExceptionReport() {
                   {typeCounts.map((entry, i) => <Cell key={i} fill={typeFills[entry.type] || 'hsl(var(--primary))'} />)}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Changes by Editor</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={editorStats} layout="vertical">
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
+              <BarChart data={editorStats} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="editor" type="category" tick={{ fontSize: 11 }} width={60} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Bar dataKey="count" name="Edits" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Exception Audit Trail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
       </Card>
     </div>
   );

@@ -12,6 +12,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { Users, TrendingDown, AlertTriangle, CheckCircle2, Calendar, Heart } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 type AttendanceTrendRecord = typeof mockAttendanceTrends[0];
 
@@ -38,6 +42,8 @@ const tableColumns: DataTableColumn<AttendanceTrendRecord>[] = [
       <div className="flex items-center gap-2 justify-end">
         <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
           <div className={cn('h-full rounded-full', r.attendanceRate >= 95 ? 'bg-emerald-500' : r.attendanceRate >= 85 ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${r.attendanceRate}%` }} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
         </div>
         <span className={cn('text-xs font-mono w-10', r.attendanceRate < 85 ? 'text-destructive font-bold' : '')}>{r.attendanceRate}%</span>
       </div>
@@ -52,11 +58,30 @@ export function AttendanceTrendReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockAttendanceTrends.filter(r => {
+  const baseFiltered = useMemo(() => mockAttendanceTrends.filter(r => {
     const ms = !search || r.location.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const avgRate = Math.round(filtered.reduce((s, r) => s + r.attendanceRate, 0) / (filtered.length || 1));
   const totalAbsent = filtered.reduce((s, r) => s + r.absent, 0);
@@ -156,7 +181,7 @@ export function AttendanceTrendReport() {
         <Card className="border-border/60 col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Attendance Rate Trend</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
               <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -166,27 +191,27 @@ export function AttendanceTrendReport() {
                 <Line type="monotone" dataKey="rate" name="Attendance %" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="absent" name="Absences" stroke="hsl(var(--destructive))" strokeWidth={1.5} strokeDasharray="5 5" />
               </LineChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Absence Type Breakdown</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
               <PieChart>
-                <Pie data={absenceBreakdown} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={absenceBreakdown} cursor="pointer" onClick={(_, index) => { const d = absenceBreakdown[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {absenceBreakdown.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Daily Attendance Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
       </Card>
     </div>
   );

@@ -12,6 +12,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ExportColumn } from '@/lib/reportExport';
 import { Clock, Calendar, AlertTriangle, Target, Zap, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'];
 
@@ -30,7 +34,8 @@ const tableColumns: DataTableColumn<AvailabilityVsScheduledRecord>[] = [
   { key: 'availableHours', header: 'Available', accessor: (r) => <span className="font-mono text-xs">{r.availableHours}h</span>, sortValue: (r) => r.availableHours, align: 'right' },
   { key: 'scheduledHours', header: 'Scheduled', accessor: (r) => <span className="font-mono text-xs">{r.scheduledHours}h</span>, sortValue: (r) => r.scheduledHours, align: 'right' },
   { key: 'utilisationPct', header: 'Utilisation', className: 'w-[150px]', sortValue: (r) => r.utilisationPct,
-    accessor: (r) => <div className="flex items-center gap-2"><Progress value={Math.min(r.utilisationPct, 100)} className="h-2 flex-1" /><span className={cn('text-xs font-semibold', r.utilisationPct > 100 ? 'text-destructive' : r.utilisationPct >= 90 ? 'text-emerald-600' : r.utilisationPct >= 75 ? 'text-foreground' : 'text-amber-600')}>{r.utilisationPct}%</span></div> },
+    accessor: (r) => <div className="flex items-center gap-2"><Progress value={Math.min(r.utilisationPct, 100)} className="h-2 flex-1" />
+
   { key: 'unscheduledHours', header: 'Unused', align: 'right', sortValue: (r) => r.unscheduledHours,
     accessor: (r) => r.unscheduledHours > 0 ? <span className="text-amber-600 text-xs font-medium">{r.unscheduledHours}h</span> : <span className="text-emerald-600 text-xs">—</span> },
   { key: 'overtimeHours', header: 'OT', align: 'right', sortValue: (r) => r.overtimeHours,
@@ -42,13 +47,32 @@ export function AvailabilityVsScheduledReport() {
   const [location, setLocation] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return mockAvailabilityVsScheduled.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.staffName.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
   }, [search, location]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totalAvailable = filtered.reduce((s, r) => s + r.availableHours, 0);
   const totalScheduled = filtered.reduce((s, r) => s + r.scheduledHours, 0);
@@ -66,6 +90,8 @@ export function AvailabilityVsScheduledReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Availability vs Scheduled" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
 
       <ReportHelpGuide
         reportName="Availability vs Scheduled Report"
@@ -120,8 +146,8 @@ export function AvailabilityVsScheduledReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Available vs Scheduled Hours</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={filtered}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={280}>
+              <BarChart data={filtered} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="staffName" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -130,28 +156,28 @@ export function AvailabilityVsScheduledReport() {
                 <Bar dataKey="availableHours" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} name="Available" />
                 <Bar dataKey="scheduledHours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Scheduled" />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Hours Distribution</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie data={hoursPie.filter(h => h.value > 0)} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {hoursPie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `${v}h`} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Staff Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.staffName}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.staffName}-${i}`} /></CardContent>
       </Card>
     </div>
   );

@@ -12,6 +12,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { Clock, AlertTriangle, Users, TrendingDown, Timer, UserX } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 type LatePunctualityRecord = typeof mockLatePunctuality[0];
 const typeColors: Record<string, string> = { late_in: 'bg-amber-100 text-amber-700', early_out: 'bg-orange-100 text-orange-700', both: 'bg-red-100 text-red-700' };
@@ -30,6 +34,7 @@ const tableColumns: DataTableColumn<LatePunctualityRecord>[] = [
   { key: 'staffName', header: 'Staff', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.type === 'both' ? 'bg-red-500' : r.type === 'late_in' ? 'bg-amber-500' : 'bg-orange-500')} />
+
       <span className="font-medium">{r.staffName}</span>
     </div>
   ), sortValue: (r) => r.staffName },
@@ -54,11 +59,30 @@ export function LatePunctualityReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockLatePunctuality.filter(r => {
+  const baseFiltered = useMemo(() => mockLatePunctuality.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totalLateMinutes = filtered.reduce((s, r) => s + r.lateMinutes, 0);
   const totalEarlyMinutes = filtered.reduce((s, r) => s + r.earlyMinutes, 0);
@@ -119,6 +143,8 @@ export function LatePunctualityReport() {
         searchPlaceholder="Search staff..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
         locations={locations} exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Total Incidents" value={filtered.length} icon={AlertTriangle} sparklineData={[8, 12, 10, 15, filtered.length]} />
         <StatCard label="Late Minutes" value={`${totalLateMinutes}m`} icon={Clock} variant={totalLateMinutes > 60 ? 'warning' : 'default'} />
@@ -144,8 +170,8 @@ export function LatePunctualityReport() {
         <Card className="border-border/60 col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Incidents by Staff</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={staffAgg}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
+              <BarChart data={staffAgg} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -154,27 +180,27 @@ export function LatePunctualityReport() {
                 <Bar dataKey="lateCount" name="Late Ins" fill="#F59E0B" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="earlyCount" name="Early Outs" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Incident Type Distribution</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
               <PieChart>
-                <Pie data={typeDist} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={typeDist} cursor="pointer" onClick={(_, index) => { const d = typeDist[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {typeDist.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Punctuality Incident Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
       </Card>
     </div>
   );

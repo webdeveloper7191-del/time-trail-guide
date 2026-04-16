@@ -11,6 +11,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, PieChart, Pie, Legend, LineChart, Line } from 'recharts';
 import { AlertTriangle, Shield, Clock, Users, Heart, Activity } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const riskColors: Record<string, string> = { low: 'bg-emerald-100 text-emerald-700', medium: 'bg-amber-100 text-amber-700', high: 'bg-orange-100 text-orange-700', critical: 'bg-red-100 text-red-700' };
 const riskFills: Record<string, string> = { low: 'hsl(142, 76%, 36%)', medium: '#F59E0B', high: '#F97316', critical: 'hsl(var(--destructive))' };
@@ -37,6 +41,7 @@ const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
   { key: 'staffName', header: 'Staff Member', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.riskLevel === 'critical' ? 'bg-red-500 animate-pulse' : r.riskLevel === 'high' ? 'bg-orange-500' : r.riskLevel === 'medium' ? 'bg-amber-500' : 'bg-emerald-500')} />
+
       <span className="font-medium">{r.staffName}</span>
     </div>
   ), sortValue: (r) => r.staffName },
@@ -81,11 +86,30 @@ export function OvertimeFatigueReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockOvertimeFatigue.filter(r => {
+  const baseFiltered = useMemo(() => mockOvertimeFatigue.filter(r => {
     const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const criticalCount = filtered.filter(r => r.riskLevel === 'critical').length;
   const highCount = filtered.filter(r => r.riskLevel === 'high').length;
@@ -159,6 +183,8 @@ export function OvertimeFatigueReport() {
         searchPlaceholder="Search staff..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
         locations={locations} exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Critical Risk" value={criticalCount} icon={AlertTriangle}
@@ -194,20 +220,20 @@ export function OvertimeFatigueReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Risk Distribution</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={riskDistribution} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={riskDistribution} cursor="pointer" onClick={(_, index) => { const d = riskDistribution[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {riskDistribution.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60 col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Fatigue Score by Staff</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
               <BarChart data={filtered.map(r => ({ name: r.staffName.split(' ')[0], fatigue: r.fatigueScore, risk: r.riskLevel, overtime: r.overtimeHours }))} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -217,7 +243,7 @@ export function OvertimeFatigueReport() {
                   {filtered.map((r, i) => <Cell key={i} fill={riskFills[r.riskLevel]} />)}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
@@ -226,7 +252,7 @@ export function OvertimeFatigueReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">14-Day Rolling Fatigue Trend</CardTitle></CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
+          <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
             <LineChart data={fatigueTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="day" tick={{ fontSize: 10 }} />
@@ -237,7 +263,7 @@ export function OvertimeFatigueReport() {
               <Line type="monotone" dataKey="threshold" name="Warning (70)" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
               <Line type="monotone" dataKey="critical" name="Critical (85)" stroke="hsl(var(--destructive))" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
             </LineChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer></AnimatedChartWrapper>
         </CardContent>
       </Card>
 
@@ -253,7 +279,7 @@ export function OvertimeFatigueReport() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable columns={tableColumns} data={[...filtered].sort((a, b) => b.fatigueScore - a.fatigueScore)} rowKey={(r) => r.staffId} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={[...filtered].sort((a, b) => b.fatigueScore - a.fatigueScore)} rowKey={(r) => r.staffId} />
         </CardContent>
       </Card>
     </div>

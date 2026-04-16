@@ -12,6 +12,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar, PieChart, Pie, Cell } from 'recharts';
 import { Building2, DollarSign, Clock, Star, AlertTriangle, TrendingDown } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const exportColumns: ExportColumn[] = [
   { header: 'Agency', accessor: 'agencyName' }, { header: 'Shifts', accessor: 'shiftsProvided' },
@@ -25,6 +29,7 @@ const tableColumns: DataTableColumn<AgencyUsageRecord>[] = [
   { key: 'agencyName', header: 'Agency', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.qualityScore >= 85 ? 'bg-emerald-500' : r.qualityScore >= 70 ? 'bg-amber-500' : 'bg-red-500')} />
+
       <span className="font-medium">{r.agencyName}</span>
     </div>
   ), sortValue: (r) => r.agencyName },
@@ -57,7 +62,26 @@ const tableColumns: DataTableColumn<AgencyUsageRecord>[] = [
 export function AgencyUsageReport() {
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const filtered = mockAgencyUsage.filter(r => !search || r.agencyName.toLowerCase().includes(search.toLowerCase()));
+  const baseFiltered = mockAgencyUsage.filter(r => !search || r.agencyName.toLowerCase().includes(search.toLowerCase()));
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totalCost = filtered.reduce((s, r) => s + r.totalCost, 0);
   const totalShifts = filtered.reduce((s, r) => s + r.shiftsProvided, 0);
@@ -139,6 +163,8 @@ export function AgencyUsageReport() {
       <ReportFilterBar title="Agency Usage & Cost Report" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search agency..." exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Total Agency Spend" value={`$${(totalCost / 1000).toFixed(1)}k`} icon={DollarSign}
           trend={{ value: 5.2, label: 'vs last period' }} sparklineData={[18, 22, 19, 25, 24, 28]} />
@@ -171,21 +197,21 @@ export function AgencyUsageReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Cost Share by Agency</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={costShare} cx="50%" cy="50%" outerRadius={75} innerRadius={40} dataKey="value" label={({ name, percent }) => `${name.split(' ')[0]} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={costShare} cursor="pointer" onClick={(_, index) => { const d = costShare[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={75} innerRadius={40} dataKey="value" label={({ name, percent }) => `${name.split(' ')[0]} ${(percent * 100).toFixed(0)}%`}>
                   {costShare.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60 col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Performance Comparison</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={performanceChart} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
+              <BarChart data={performanceChart} onClick={(e: any) => { if (e?.activeLabel) applyDrill('agencyName', e.activeLabel); }} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="cost" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
@@ -196,7 +222,7 @@ export function AgencyUsageReport() {
                 <Bar yAxisId="quality" dataKey="quality" name="Quality" fill="#10B981" radius={[4, 4, 0, 0]} opacity={0.7} />
                 <Bar yAxisId="quality" dataKey="fillRate" name="Fill Rate %" fill="#F59E0B" radius={[4, 4, 0, 0]} opacity={0.5} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
@@ -204,7 +230,7 @@ export function AgencyUsageReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Agency Performance Detail</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable columns={tableColumns} data={filtered} rowKey={(r) => r.agencyName} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.agencyName} />
         </CardContent>
       </Card>
     </div>

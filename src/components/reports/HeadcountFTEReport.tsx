@@ -11,6 +11,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ExportColumn } from '@/lib/reportExport';
 import { Users, Briefcase, TrendingUp, AlertTriangle, Target, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
 
@@ -54,13 +58,32 @@ export function HeadcountFTEReport() {
   const [location, setLocation] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return mockHeadcountData.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.department.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
   }, [search, location]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totals = useMemo(() => filtered.reduce((a, r) => ({
     headcount: a.headcount + r.totalHeadcount, fte: a.fte + r.fte,
@@ -92,6 +115,8 @@ export function HeadcountFTEReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Staff Headcount & FTE Report" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
 
       <ReportHelpGuide
         reportName="Staff Headcount & FTE Report"
@@ -155,7 +180,7 @@ export function HeadcountFTEReport() {
         <Card className="border-border/60 lg:col-span-1">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Headcount Trend</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
               <LineChart data={monthlyTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
@@ -166,28 +191,28 @@ export function HeadcountFTEReport() {
                 <Line type="monotone" dataKey="fte" name="FTE" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="target" name="Target" stroke="hsl(var(--destructive))" strokeWidth={1.5} strokeDasharray="5 5" />
               </LineChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Contract Type Mix</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
               <PieChart>
-                <Pie data={contractPie} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={contractPie} cursor="pointer" onClick={(_, index) => { const d = contractPie[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {contractPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Department Profile</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
               <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={80}>
                 <PolarGrid stroke="hsl(var(--border))" />
                 <PolarAngleAxis dataKey="department" tick={{ fontSize: 10 }} />
@@ -196,7 +221,7 @@ export function HeadcountFTEReport() {
                 <Radar name="FTE" dataKey="fte" stroke="hsl(var(--chart-2))" fill="hsl(var(--chart-2))" fillOpacity={0.2} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
               </RadarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
@@ -205,8 +230,8 @@ export function HeadcountFTEReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Headcount vs FTE by Department</CardTitle></CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={byDepartment}>
+          <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
+            <BarChart data={byDepartment} onClick={(e: any) => { if (e?.activeLabel) applyDrill('department', e.activeLabel); }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="department" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
@@ -215,14 +240,14 @@ export function HeadcountFTEReport() {
               <Bar dataKey="headcount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Headcount" />
               <Bar dataKey="fte" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} name="FTE" />
             </BarChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer></AnimatedChartWrapper>
         </CardContent>
       </Card>
 
       {/* Detail Table */}
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Detailed Breakdown</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.department}-${r.location}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.department}-${r.location}-${i}`} /></CardContent>
       </Card>
     </div>
   );

@@ -11,6 +11,10 @@ import { mockBudgetVsActuals, BudgetVsActualRecord } from '@/data/mockLocationRe
 import { cn } from '@/lib/utils';
 import { DollarSign, TrendingUp, TrendingDown, PieChart as PieIcon, BarChart3, AlertTriangle, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const exportColumns: ExportColumn[] = [
   { header: 'Location', accessor: 'locationName' }, { header: 'Category', accessor: 'category' },
@@ -37,11 +41,30 @@ export function BudgetVsActualsReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockBudgetVsActuals.filter(r => {
+  const baseFiltered = useMemo(() => mockBudgetVsActuals.filter(r => {
     const matchesSearch = !search || r.locationName.toLowerCase().includes(search.toLowerCase()) || r.category.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totalBudget = filtered.reduce((s, r) => s + r.budgetAmount, 0);
   const totalActual = filtered.reduce((s, r) => s + r.actualAmount, 0);
@@ -101,6 +124,8 @@ export function BudgetVsActualsReport() {
       <ReportFilterBar title="Location Budget vs Actuals" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search..."
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
 
       <ReportHelpGuide
         reportName="Location Budget vs Actuals"
@@ -177,7 +202,7 @@ export function BudgetVsActualsReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Monthly Budget vs Actual Trend</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="budgetGrad" x1="0" y1="0" x2="0" y2="1">
@@ -197,15 +222,15 @@ export function BudgetVsActualsReport() {
                 <Area type="monotone" dataKey="budget" name="Budget" stroke="hsl(var(--primary))" fill="url(#budgetGrad)" strokeWidth={2} />
                 <Area type="monotone" dataKey="actual" name="Actual" stroke="#10B981" fill="url(#actualGrad)" strokeWidth={2} />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Budget vs Actual by Location</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={chartData}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
+              <BarChart data={chartData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v / 1000}k`} />
@@ -214,7 +239,7 @@ export function BudgetVsActualsReport() {
                 <Bar dataKey="budget" name="Budget" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="actual" name="Actual" fill="#10B981" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
@@ -223,14 +248,14 @@ export function BudgetVsActualsReport() {
         <CardHeader className="pb-2"><CardTitle className="text-sm">Spending Distribution by Category</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ResponsiveContainer width="100%" height={220}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={categoryData} cx="50%" cy="50%" outerRadius={80} innerRadius={40} dataKey="actual" label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={categoryData} cursor="pointer" onClick={(_, index) => { const d = categoryData[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={80} innerRadius={40} dataKey="actual" label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
                   {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
             <div className="space-y-2">
               {categoryData.map((cat, i) => {
                 const variance = cat.budget - cat.actual;
@@ -256,7 +281,7 @@ export function BudgetVsActualsReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Detailed Budget Line Items</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.category}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.category}-${i}`} /></CardContent>
       </Card>
     </div>
   );

@@ -12,6 +12,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ExportColumn } from '@/lib/reportExport';
 import { UserCheck, Clock, AlertTriangle, CheckCircle2, Users, Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const statusLabels: Record<string, string> = { completed: 'Completed', in_progress: 'In Progress', not_started: 'Not Started', overdue: 'Overdue' };
 const statusVariant: Record<string, string> = { completed: 'bg-emerald-100 text-emerald-800', in_progress: 'bg-blue-100 text-blue-800', not_started: 'bg-muted text-muted-foreground', overdue: 'bg-destructive/10 text-destructive' };
@@ -33,7 +37,8 @@ const tableColumns: DataTableColumn<OnboardingRecord>[] = [
     accessor: (r) => <Badge className={`text-[10px] ${statusVariant[r.status]}`}>{statusLabels[r.status]}</Badge> },
   { key: 'stepsCompleted', header: 'Steps', accessor: (r) => <span className="text-xs">{r.stepsCompleted}/{r.totalSteps}</span>, sortValue: (r) => r.stepsCompleted, align: 'right' },
   { key: 'completionPct', header: 'Progress', className: 'w-[150px]', sortValue: (r) => r.completionPct,
-    accessor: (r) => <div className="flex items-center gap-2"><Progress value={r.completionPct} className="h-2 flex-1" /><span className={cn('text-xs font-medium', r.completionPct === 100 ? 'text-emerald-600' : r.completionPct >= 50 ? 'text-foreground' : 'text-amber-600')}>{r.completionPct}%</span></div> },
+    accessor: (r) => <div className="flex items-center gap-2"><Progress value={r.completionPct} className="h-2 flex-1" />
+
   { key: 'daysInPipeline', header: 'Days', accessor: (r) => <span className={cn('text-xs font-medium', r.daysInPipeline > 21 ? 'text-destructive' : 'text-foreground')}>{r.daysInPipeline}d</span>, sortValue: (r) => r.daysInPipeline, align: 'right' },
   { key: 'startDate', header: 'Start Date', accessor: (r) => <span className="text-xs text-muted-foreground">{r.startDate}</span>, sortValue: (r) => r.startDate },
 ];
@@ -43,13 +48,32 @@ export function OnboardingCompletionReport() {
   const [location, setLocation] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return mockOnboardingData.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.staffName.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
   }, [search, location]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const completionRate = filtered.length ? Math.round((filtered.filter(r => r.status === 'completed').length / filtered.length) * 100) : 0;
   const avgDays = useMemo(() => {
@@ -71,6 +95,8 @@ export function OnboardingCompletionReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Onboarding Completion Rate" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
 
       <ReportHelpGuide
         reportName="Onboarding Completion Report"
@@ -124,21 +150,21 @@ export function OnboardingCompletionReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Status Distribution</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie data={statusPie.filter(s => s.value > 0)} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {statusPie.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Individual Progress</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <BarChart data={filtered.sort((a, b) => b.completionPct - a.completionPct)} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
@@ -148,14 +174,14 @@ export function OnboardingCompletionReport() {
                   {filtered.map((r, i) => <Cell key={i} fill={r.status === 'overdue' ? 'hsl(var(--destructive))' : r.completionPct === 100 ? 'hsl(142, 76%, 36%)' : 'hsl(var(--primary))'} />)}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Onboarding Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
       </Card>
     </div>
   );
