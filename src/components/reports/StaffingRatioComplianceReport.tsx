@@ -37,9 +37,7 @@ const tableColumns: DataTableColumn<StaffingRatioRecord>[] = [
   { key: 'requiredStaff', header: 'Req. Staff', accessor: (r) => r.requiredStaff, sortValue: (r) => r.requiredStaff, align: 'right' },
   { key: 'actualStaff', header: 'Act. Staff', accessor: (r) => r.actualStaff, sortValue: (r) => r.actualStaff, align: 'right' },
   { key: 'isCompliant', header: 'Status', align: 'center', sortValue: (r) => r.isCompliant ? 1 : 0,
-    accessor: (r) => r.isCompliant ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mx-auto" />
-
-      <DrillFilterBadge filter={drill} onClear={clearDrill} /> : <XCircle className="h-4 w-4 text-destructive mx-auto" /> },
+    accessor: (r) => r.isCompliant ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mx-auto" /> : <XCircle className="h-4 w-4 text-destructive mx-auto" /> },
 ];
 
 export function StaffingRatioComplianceReport() {
