@@ -52,9 +52,8 @@ export function AreaCombiningSavingsReport() {
   const baseFiltered = useMemo(() => filterByDateRange(mockAreaCombiningSavings.filter(r => {
     const matchesSearch = !search || r.combinedAreas.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
-    if (dateRange?.from) { const d = parseISO(r.date); if (d < dateRange.from) return false; if (dateRange.to && d > dateRange.to) return false; }
     return matchesSearch && matchesLoc;
-  }, dateRange), [search, locationFilter, dateRange]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,
