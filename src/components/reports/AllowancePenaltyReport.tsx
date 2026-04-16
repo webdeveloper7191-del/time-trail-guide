@@ -46,12 +46,17 @@ export function AllowancePenaltyReport() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [comparisonEnabled, setComparisonEnabled] = useState(false);
+  const [comparisonRange, setComparisonRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => filterByDateRange(mockAllowancePenalties.filter(r => {
+  const searchLocFilter = useMemo(() => mockAllowancePenalties.filter(r => {
     const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase()) || r.category.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
-  }), dateRange), [search, locationFilter, dateRange]);
+  }), [search, locationFilter]);
+
+  const baseFiltered = useMemo(() => filterByDateRange(searchLocFilter, dateRange), [searchLocFilter, dateRange]);
+  const comparisonData = useMemo(() => comparisonEnabled && comparisonRange?.from ? filterByDateRange(searchLocFilter, comparisonRange) : [], [searchLocFilter, comparisonEnabled, comparisonRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,
