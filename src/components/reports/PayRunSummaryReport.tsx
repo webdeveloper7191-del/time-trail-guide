@@ -164,7 +164,7 @@ export function PayRunSummaryReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Gross Pay by Location</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
-              <BarChart data={byLocation} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={byLocation} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v / 1000}k`} />

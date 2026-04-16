@@ -39,7 +39,6 @@ const tableColumns: DataTableColumn<AreaUtilRecord>[] = [
       <div className="flex items-center gap-2">
         <Progress value={r.utilisationPercent} className="h-2 flex-1" />
 
-      <DrillFilterBadge filter={drill} onClear={clearDrill} />
         <span className={cn('text-xs font-medium w-10 text-right', r.utilisationPercent >= 90 ? 'text-destructive' : r.utilisationPercent >= 75 ? 'text-amber-600' : 'text-foreground')}>{r.utilisationPercent}%</span>
       </div>
     ) },
@@ -214,7 +213,7 @@ export function AreaUtilReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Avg Utilisation by Location</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
-              <BarChart data={chartData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('areaName', e.activeLabel); }}>
+              <BarChart data={chartData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('areaName', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
@@ -229,7 +228,7 @@ export function AreaUtilReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Utilisation Distribution</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
-              <BarChart data={distBuckets} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('areaName', e.activeLabel); }}>
+              <BarChart data={distBuckets} onClick={(e: any) => { if (e?.activeLabel) applyDrill('areaName', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="range" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} />

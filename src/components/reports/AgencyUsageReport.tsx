@@ -30,7 +30,6 @@ const tableColumns: DataTableColumn<AgencyUsageRecord>[] = [
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.qualityScore >= 85 ? 'bg-emerald-500' : r.qualityScore >= 70 ? 'bg-amber-500' : 'bg-red-500')} />
 
-      <DrillFilterBadge filter={drill} onClear={clearDrill} />
       <span className="font-medium">{r.agencyName}</span>
     </div>
   ), sortValue: (r) => r.agencyName },
@@ -210,7 +209,7 @@ export function AgencyUsageReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Performance Comparison</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
-              <BarChart data={performanceChart} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('agencyName', e.activeLabel); }} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <BarChart data={performanceChart} onClick={(e: any) => { if (e?.activeLabel) applyDrill('agencyName', e.activeLabel); }} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="cost" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />

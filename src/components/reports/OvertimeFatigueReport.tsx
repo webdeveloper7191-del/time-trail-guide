@@ -42,7 +42,6 @@ const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.riskLevel === 'critical' ? 'bg-red-500 animate-pulse' : r.riskLevel === 'high' ? 'bg-orange-500' : r.riskLevel === 'medium' ? 'bg-amber-500' : 'bg-emerald-500')} />
 
-      <DrillFilterBadge filter={drill} onClear={clearDrill} />
       <span className="font-medium">{r.staffName}</span>
     </div>
   ), sortValue: (r) => r.staffName },

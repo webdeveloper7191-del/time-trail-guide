@@ -210,7 +210,7 @@ export function CrossLocationDeploymentReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Hours Sent vs Received by Location</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
-              <BarChart data={flowData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('sourceLocation', e.activeLabel); }}>
+              <BarChart data={flowData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('sourceLocation', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -227,7 +227,7 @@ export function CrossLocationDeploymentReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Net Staff Flow (Received − Sent)</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
-              <BarChart data={netFlowData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('sourceLocation', e.activeLabel); }}>
+              <BarChart data={netFlowData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('sourceLocation', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} />

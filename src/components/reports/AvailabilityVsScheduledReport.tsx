@@ -36,7 +36,6 @@ const tableColumns: DataTableColumn<AvailabilityVsScheduledRecord>[] = [
   { key: 'utilisationPct', header: 'Utilisation', className: 'w-[150px]', sortValue: (r) => r.utilisationPct,
     accessor: (r) => <div className="flex items-center gap-2"><Progress value={Math.min(r.utilisationPct, 100)} className="h-2 flex-1" />
 
-      <DrillFilterBadge filter={drill} onClear={clearDrill} /><span className={cn('text-xs font-semibold', r.utilisationPct > 100 ? 'text-destructive' : r.utilisationPct >= 90 ? 'text-emerald-600' : r.utilisationPct >= 75 ? 'text-foreground' : 'text-amber-600')}>{r.utilisationPct}%</span></div> },
   { key: 'unscheduledHours', header: 'Unused', align: 'right', sortValue: (r) => r.unscheduledHours,
     accessor: (r) => r.unscheduledHours > 0 ? <span className="text-amber-600 text-xs font-medium">{r.unscheduledHours}h</span> : <span className="text-emerald-600 text-xs">—</span> },
   { key: 'overtimeHours', header: 'OT', align: 'right', sortValue: (r) => r.overtimeHours,
@@ -146,7 +145,7 @@ export function AvailabilityVsScheduledReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Available vs Scheduled Hours</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={280}>
-              <BarChart data={filtered} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={filtered} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="staffName" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
                 <YAxis tick={{ fontSize: 11 }} />

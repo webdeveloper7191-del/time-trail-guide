@@ -34,7 +34,6 @@ const tableColumns: DataTableColumn<BreakComplianceRecord>[] = [
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.compliant ? 'bg-emerald-500' : 'bg-red-500')} />
 
-      <DrillFilterBadge filter={drill} onClear={clearDrill} />
       <span className="font-medium">{r.staffName}</span>
     </div>
   ), sortValue: (r) => r.staffName },

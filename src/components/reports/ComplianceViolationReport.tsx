@@ -254,7 +254,7 @@ export function ComplianceViolationReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Violations by Location (Stacked by Severity)</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
-              <BarChart data={byLocation} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('category', e.activeLabel); }}>
+              <BarChart data={byLocation} onClick={(e: any) => { if (e?.activeLabel) applyDrill('category', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} />

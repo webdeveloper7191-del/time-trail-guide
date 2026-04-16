@@ -168,7 +168,7 @@ export function TimesheetExceptionReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Exceptions by Type</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
-              <BarChart data={typeCounts} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={typeCounts} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -184,7 +184,7 @@ export function TimesheetExceptionReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Changes by Editor</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
-              <BarChart data={editorStats} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} layout="vertical">
+              <BarChart data={editorStats} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="editor" type="category" tick={{ fontSize: 11 }} width={60} axisLine={false} tickLine={false} />

@@ -31,7 +31,6 @@ const tableColumns: DataTableColumn<FairnessRecord>[] = [
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.fairnessScore >= 85 ? 'bg-emerald-500' : r.fairnessScore >= 70 ? 'bg-amber-500' : 'bg-red-500')} />
 
-      <DrillFilterBadge filter={drill} onClear={clearDrill} />
       <span className="font-medium">{r.staffName}</span>
     </div>
   ), sortValue: (r) => r.staffName },
@@ -217,7 +216,7 @@ export function FairnessReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Score Distribution</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
-              <BarChart data={scoreBuckets} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={scoreBuckets} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="range" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -233,7 +232,7 @@ export function FairnessReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Shift Type Distribution</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
-              <BarChart data={distributionData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={distributionData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />

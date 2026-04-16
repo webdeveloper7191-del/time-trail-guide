@@ -216,7 +216,7 @@ export function CoverageGapReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Gaps by Location</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
-              <BarChart data={gapsByLocation} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={gapsByLocation} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -233,7 +233,7 @@ export function CoverageGapReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Peak Gap Time Slots</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
-              <BarChart data={timeSlotData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} layout="vertical">
+              <BarChart data={timeSlotData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="slot" type="category" tick={{ fontSize: 9 }} width={70} axisLine={false} tickLine={false} />

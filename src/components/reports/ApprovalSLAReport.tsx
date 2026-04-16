@@ -31,7 +31,6 @@ const tableColumns: DataTableColumn<ApprovalSLARecord>[] = [
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.slaCompliancePercent >= 90 ? 'bg-emerald-500' : r.slaCompliancePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} />
 
-      <DrillFilterBadge filter={drill} onClear={clearDrill} />
       <span className="font-medium">{r.approverName}</span>
     </div>
   ), sortValue: (r) => r.approverName },
@@ -151,7 +150,7 @@ export function ApprovalSLAReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">SLA Performance by Approver</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={chartData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />

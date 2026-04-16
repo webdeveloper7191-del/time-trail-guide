@@ -48,7 +48,6 @@ const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
       <div className="flex items-center gap-2">
         <Progress value={r.utilisationPercent} className="h-2 flex-1" />
 
-      <DrillFilterBadge filter={drill} onClear={clearDrill} />
         <span className={cn('text-xs font-semibold w-9 text-right',
           r.utilisationPercent >= 100 ? 'text-destructive' : r.utilisationPercent >= 90 ? 'text-emerald-600' : r.utilisationPercent >= 75 ? 'text-foreground' : 'text-amber-600'
         )}>{r.utilisationPercent}%</span>
@@ -221,7 +220,7 @@ export function StaffUtilisationReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Utilisation by Staff Member</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <BarChart data={chartData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 110]} />
@@ -282,7 +281,7 @@ export function StaffUtilisationReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Utilisation by Location</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
-              <BarChart data={locationBreakdown} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={locationBreakdown} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="location" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />

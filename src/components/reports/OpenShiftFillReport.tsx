@@ -274,7 +274,7 @@ export function OpenShiftFillReport() {
         <CardHeader className="pb-2"><CardTitle className="text-sm">Fill Rate by Area</CardTitle></CardHeader>
         <CardContent>
           <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
-            <BarChart data={byArea} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+            <BarChart data={byArea} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="area" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />

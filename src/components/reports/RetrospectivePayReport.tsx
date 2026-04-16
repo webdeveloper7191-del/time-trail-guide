@@ -153,7 +153,7 @@ export function RetrospectivePayReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">By Adjustment Type</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
-              <BarChart data={byType} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('adjustmentType', e.activeLabel); }} layout="vertical">
+              <BarChart data={byType} onClick={(e: any) => { if (e?.activeLabel) applyDrill('adjustmentType', e.activeLabel); }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} />
