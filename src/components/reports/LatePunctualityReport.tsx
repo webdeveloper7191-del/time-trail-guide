@@ -143,6 +143,8 @@ export function LatePunctualityReport() {
         searchPlaceholder="Search staff..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
         locations={locations} exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Total Incidents" value={filtered.length} icon={AlertTriangle} sparklineData={[8, 12, 10, 15, filtered.length]} />
         <StatCard label="Late Minutes" value={`${totalLateMinutes}m`} icon={Clock} variant={totalLateMinutes > 60 ? 'warning' : 'default'} />

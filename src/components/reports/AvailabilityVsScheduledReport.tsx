@@ -91,6 +91,8 @@ export function AvailabilityVsScheduledReport() {
       <ReportFilterBar title="Availability vs Scheduled" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <ReportHelpGuide
         reportName="Availability vs Scheduled Report"
         reportDescription="Compares staff declared availability against actual scheduled hours, revealing underutilisation gaps and overwork situations."

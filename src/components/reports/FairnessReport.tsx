@@ -185,6 +185,8 @@ export function FairnessReport() {
         searchPlaceholder="Search staff..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
         locations={locations} exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Avg Fairness Score" value={`${avgScore}/100`} icon={Scale}
           variant={avgScore < 70 ? 'danger' : avgScore < 80 ? 'warning' : 'success'} sparklineData={[72, 78, 75, 82, 80, avgScore]} />

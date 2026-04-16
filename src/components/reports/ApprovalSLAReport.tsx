@@ -122,6 +122,8 @@ export function ApprovalSLAReport() {
       <ReportFilterBar title="Approval SLA Report" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search approver..." exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Avg SLA Compliance" value={`${avgCompliance}%`} icon={Shield}
           variant={avgCompliance < 80 ? 'danger' : avgCompliance < 90 ? 'warning' : 'success'} sparklineData={[78, 82, 85, 88, avgCompliance]} />

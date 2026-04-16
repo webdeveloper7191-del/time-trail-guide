@@ -96,6 +96,8 @@ export function OnboardingCompletionReport() {
       <ReportFilterBar title="Onboarding Completion Rate" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <ReportHelpGuide
         reportName="Onboarding Completion Report"
         reportDescription="Tracks the progress and efficiency of new staff onboarding across all locations, measuring completion rates, time-to-complete, and identifying bottlenecks."

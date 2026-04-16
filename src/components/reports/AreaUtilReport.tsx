@@ -144,6 +144,8 @@ export function AreaUtilReport() {
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <ReportHelpGuide
         reportName="Area Utilisation Report"
         reportDescription="Detailed analysis of space and capacity utilisation across all operational areas, tracking average and peak occupancy against total capacity to identify optimisation opportunities."

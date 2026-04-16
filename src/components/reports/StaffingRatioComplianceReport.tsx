@@ -142,6 +142,8 @@ export function StaffingRatioComplianceReport() {
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <ReportHelpGuide
         reportName="Staffing Ratio Compliance (NQF)"
         reportDescription="Real-time monitoring of staffing ratios against regulatory requirements (NQF standards) across all locations, areas, and time periods. Tracks compliance status, identifies breaches, and supports audit documentation."

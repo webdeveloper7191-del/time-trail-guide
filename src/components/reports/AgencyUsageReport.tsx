@@ -163,6 +163,8 @@ export function AgencyUsageReport() {
       <ReportFilterBar title="Agency Usage & Cost Report" searchValue={search} onSearchChange={setSearch}
         searchPlaceholder="Search agency..." exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Total Agency Spend" value={`$${(totalCost / 1000).toFixed(1)}k`} icon={DollarSign}
           trend={{ value: 5.2, label: 'vs last period' }} sparklineData={[18, 22, 19, 25, 24, 28]} />

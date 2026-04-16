@@ -171,6 +171,8 @@ export function RecurringPatternReport() {
         searchPlaceholder="Search pattern..." locationFilter={locationFilter} onLocationChange={setLocationFilter}
         locations={locations} exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Avg Adherence" value={`${avgAdherence}%`} icon={Target}
           variant={avgAdherence < 75 ? 'danger' : avgAdherence < 85 ? 'warning' : 'success'} sparklineData={[82, 85, 88, 84, 87, avgAdherence]} />
