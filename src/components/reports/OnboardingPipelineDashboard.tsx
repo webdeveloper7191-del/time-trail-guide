@@ -6,9 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ReportFilterBar } from './ReportFilterBar';
 import { ReportHelpGuide } from './ReportHelpGuide';
 import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { DateRange } from 'react-day-picker';
 import { mockOnboardingData } from '@/data/mockWorkforceReportData';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, AreaChart, Area, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
 import { Users, Clock, CheckCircle2, AlertTriangle, Target, TrendingUp, UserPlus, Timer } from 'lucide-react';
 
@@ -23,21 +24,29 @@ export function OnboardingPipelineDashboard() {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [drill, setDrill] = useState<DrillFilter | null>(null);
 
-  const filtered = useMemo(() => mockOnboardingData.filter(r => {
+  const baseFiltered = useMemo(() => mockOnboardingData.filter(r => {
     if (location !== 'all' && r.location !== location) return false;
     if (search && !r.staffName.toLowerCase().includes(search.toLowerCase()) && !r.position.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   }), [search, location]);
 
+  const filtered = useMemo(() => {
+    if (!drill) return baseFiltered;
+    if (drill.type === 'status') return baseFiltered.filter(r => statusLabels[r.status] === drill.value || r.status === drill.value);
+    if (drill.type === 'location') return baseFiltered.filter(r => r.location.startsWith(drill.value) || r.location === drill.value);
+    return baseFiltered;
+  }, [baseFiltered, drill]);
+
   const statusSummary = useMemo(() => {
     const counts = { completed: 0, in_progress: 0, not_started: 0, overdue: 0 };
     filtered.forEach(r => counts[r.status]++);
-    return Object.entries(counts).map(([name, value]) => ({ name: statusLabels[name], value }));
+    return Object.entries(counts).map(([name, value]) => ({ name: statusLabels[name], value, status: name }));
   }, [filtered]);
 
-  const avgCompletion = useMemo(() => filtered.length ? Math.round(filtered.reduce((s, r) => s + r.completionPct, 0) / filtered.length) : 0, [filtered]);
-  const avgDays = useMemo(() => filtered.length ? Math.round(filtered.reduce((s, r) => s + r.daysInPipeline, 0) / filtered.length) : 0, [filtered]);
+  const avgCompletion = filtered.length ? Math.round(filtered.reduce((s, r) => s + r.completionPct, 0) / filtered.length) : 0;
+  const avgDays = filtered.length ? Math.round(filtered.reduce((s, r) => s + r.daysInPipeline, 0) / filtered.length) : 0;
   const completedCount = filtered.filter(r => r.status === 'completed').length;
   const overdueCount = filtered.filter(r => r.status === 'overdue').length;
   const inProgressCount = filtered.filter(r => r.status === 'in_progress').length;
@@ -48,20 +57,25 @@ export function OnboardingPipelineDashboard() {
   const locations = [...new Set(mockOnboardingData.map(r => r.location))];
 
   const locationBreakdown = locations.map(loc => {
-    const items = filtered.filter(r => r.location === loc);
-    return {
-      name: loc.split(' ')[0],
-      completed: items.filter(r => r.status === 'completed').length,
-      inProgress: items.filter(r => r.status === 'in_progress').length,
-      overdue: items.filter(r => r.status === 'overdue').length,
-    };
+    const items = baseFiltered.filter(r => r.location === loc);
+    return { name: loc.split(' ')[0], fullName: loc, completed: items.filter(r => r.status === 'completed').length, inProgress: items.filter(r => r.status === 'in_progress').length, overdue: items.filter(r => r.status === 'overdue').length };
   });
 
+  const handlePieClick = (_: any, index: number) => {
+    const item = statusSummary[index];
+    if (item) setDrill({ type: 'status', value: item.status, label: item.name });
+  };
+
+  const handleLocationClick = (data: any) => {
+    if (data?.activePayload?.[0]?.payload?.fullName) {
+      setDrill({ type: 'location', value: data.activePayload[0].payload.fullName, label: 'Location' });
+    }
+  };
+
   const exportColumns: ExportColumn[] = [
-    { header: 'Staff Name', accessor: 'staffName' }, { header: 'Position', accessor: 'position' },
+    { header: 'Staff', accessor: 'staffName' }, { header: 'Position', accessor: 'position' },
     { header: 'Location', accessor: 'location' }, { header: 'Status', accessor: (r) => statusLabels[r.status] },
-    { header: 'Completion %', accessor: 'completionPct' }, { header: 'Days in Pipeline', accessor: 'daysInPipeline' },
-    { header: 'Assigned To', accessor: 'assignedTo' },
+    { header: 'Completion %', accessor: 'completionPct' }, { header: 'Days', accessor: 'daysInPipeline' },
   ];
 
   return (
@@ -69,66 +83,50 @@ export function OnboardingPipelineDashboard() {
       <ReportFilterBar title="Onboarding Pipeline" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange} />
 
-      <ReportHelpGuide
-        reportName="Onboarding Pipeline Dashboard"
-        reportDescription="Tracks new staff onboarding progress from invitation to completion, monitoring step completion, time-in-pipeline, and overdue items."
-        purpose="Ensures new hires are onboarded efficiently, identifies bottlenecks in the onboarding process, and prevents compliance gaps from incomplete documentation."
-        whenToUse={[
-          'During weekly HR reviews to monitor new hire progress', 'When following up on stalled onboarding processes',
-          'Before new staff are rostered to verify compliance documentation', 'For management reporting on hiring pipeline velocity',
-        ]}
+      <ReportHelpGuide reportName="Onboarding Pipeline Dashboard" reportDescription="Tracks onboarding progress with drill-through to status and location."
+        purpose="Monitor new hire onboarding. Click charts to drill into specific statuses or locations."
+        whenToUse={['Weekly HR reviews', 'Before rostering new staff', 'Management reporting']}
         keyMetrics={[
-          { label: 'Completion Rate', description: 'Percentage of new hires who have completed all onboarding steps', interpretation: 'Below 80% suggests process friction. Target 100% within SLA period', goodRange: '≥90%', warningRange: '70-89%', criticalRange: '<70%' },
-          { label: 'Avg Days in Pipeline', description: 'Average time from onboarding start to completion', interpretation: 'Best practice is <14 days. Above 21 days indicates process issues', goodRange: '<14 days', warningRange: '14-21 days', criticalRange: '>21 days' },
-          { label: 'Overdue Count', description: 'New hires who have exceeded the expected completion timeline', interpretation: 'Each overdue onboarding delays their rostering and increases compliance risk' },
-          { label: 'Avg Completion', description: 'Average percentage of steps completed across all active onboardings', interpretation: 'Low average with many in-progress items suggests common blocking steps' },
+          { label: 'Completion Rate', description: '% completed all steps', interpretation: 'Target 100% within SLA', goodRange: '≥90%', warningRange: '70-89%', criticalRange: '<70%' },
+          { label: 'Avg Days', description: 'Time in pipeline', interpretation: 'Best practice <14 days', goodRange: '<14', warningRange: '14-21', criticalRange: '>21' },
         ]}
-        howToRead={[
-          { title: 'KPI Cards', content: 'Eight headline metrics with variant coloring. Red overdue count = immediate HR follow-up needed.' },
-          { title: 'Pipeline Pie', content: 'Visual breakdown of onboarding statuses. Healthy pipeline: minimal overdue, growing completed segment.' },
-          { title: 'Completion Chart', content: 'Per-staff bar chart shows individual progress. Identify who needs follow-up at a glance.' },
-          { title: 'Location Breakdown', content: 'Stacked bars show onboarding health per location. Sites with high overdue counts need process review.' },
-        ]}
-        actionableInsights={[
-          'Overdue onboardings should receive immediate follow-up calls or emails',
-          'Common blocked steps indicate form or documentation issues to streamline',
-          'Locations with slower completion may need additional HR support or training',
-          'Staff cannot be rostered for compliance-sensitive roles until onboarding is 100% complete',
-        ]}
-        relatedReports={['Headcount & FTE', 'Qualification Expiry', 'Turnover & Retention', 'Contract Distribution']}
+        howToRead={[{ title: 'Drill-Through', content: 'Click pie slices to filter by status. Click location bars to filter by site. Click table rows to filter by that status.' }]}
+        actionableInsights={['Overdue onboardings need immediate follow-up', 'Staff cannot be rostered until 100% complete']}
+        relatedReports={['Headcount & FTE', 'Qualification Expiry', 'Turnover & Retention']}
       />
 
+      <DrillFilterBadge filter={drill} onClear={() => setDrill(null)} />
+
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        <StatCard label="Total Pipeline" value={filtered.length} icon={UserPlus} size="sm" />
+        <StatCard label="Pipeline" value={filtered.length} icon={UserPlus} size="sm" />
         <StatCard label="Completed" value={completedCount} icon={CheckCircle2} size="sm" variant="success" />
         <StatCard label="In Progress" value={inProgressCount} icon={TrendingUp} size="sm" />
         <StatCard label="Overdue" value={overdueCount} icon={AlertTriangle} size="sm" variant={overdueCount > 2 ? 'danger' : overdueCount > 0 ? 'warning' : 'success'} />
-        <StatCard label="Completion Rate" value={`${completionRate}%`} icon={Target} size="sm" variant={completionRate >= 90 ? 'success' : completionRate >= 70 ? 'warning' : 'danger'} />
+        <StatCard label="Completion %" value={`${completionRate}%`} icon={Target} size="sm" variant={completionRate >= 90 ? 'success' : completionRate >= 70 ? 'warning' : 'danger'} />
         <StatCard label="Avg Completion" value={`${avgCompletion}%`} icon={Users} size="sm" sparklineData={filtered.map(r => r.completionPct)} />
         <StatCard label="Avg Days" value={avgDays} icon={Timer} size="sm" variant={avgDays > 21 ? 'danger' : avgDays > 14 ? 'warning' : 'success'} />
-        <StatCard label="Steps Done" value={`${completedSteps}/${totalSteps}`} icon={Clock} size="sm" />
+        <StatCard label="Steps" value={`${completedSteps}/${totalSteps}`} icon={Clock} size="sm" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {overdueCount > 0 && <InsightCard type="negative" title={`${overdueCount} Overdue Onboarding${overdueCount > 1 ? 's' : ''}`} description={`Staff with overdue onboarding cannot be rostered for compliance-sensitive roles. Average ${avgDays} days in pipeline.`} action="Send follow-up reminders immediately" />}
-        {completionRate >= 90 && <InsightCard type="positive" title="Strong Pipeline Flow" description={`${completionRate}% completion rate. Onboarding process is running efficiently.`} />}
-        {avgDays > 14 && <InsightCard type="action" title="Slow Pipeline Velocity" description={`Average ${avgDays} days in pipeline exceeds the 14-day target. Identify and resolve common blockers.`} action="Review blocked steps and streamline forms" />}
-        {overdueCount === 0 && <InsightCard type="positive" title="No Overdue Items" description="All onboardings are within their expected timeline. Excellent HR process management." />}
+        {overdueCount > 0 && <InsightCard type="negative" title={`${overdueCount} Overdue`} description="Cannot roster until complete." action="Send reminders" />}
+        {completionRate >= 90 && <InsightCard type="positive" title="Strong Flow" description={`${completionRate}% rate.`} />}
+        {avgDays > 14 && <InsightCard type="action" title="Slow Pipeline" description={`${avgDays} days avg.`} action="Review blockers" />}
       </div>
 
       <SummaryRow items={[
         { label: 'Pipeline', value: filtered.length }, { label: 'Completed', value: completedCount, highlight: true },
-        { label: 'Overdue', value: overdueCount }, { label: 'Avg Days', value: avgDays },
-        { label: 'Steps Done', value: `${completedSteps}/${totalSteps}` },
+        { label: 'Overdue', value: overdueCount }, { label: 'Avg Days', value: avgDays }, { label: 'Steps', value: `${completedSteps}/${totalSteps}` },
       ]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="border-border/60">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Pipeline Status</CardTitle></CardHeader>
+        <Card className="border-border/60 cursor-pointer hover:border-primary/40 transition-colors">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Pipeline Status <span className="text-[10px] text-muted-foreground">(click to drill)</span></CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie data={statusSummary} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={statusSummary} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" onClick={handlePieClick} style={{ cursor: 'pointer' }}
+                  label={({ name, value }) => `${name}: ${value}`}>
                   {statusSummary.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
@@ -137,7 +135,7 @@ export function OnboardingPipelineDashboard() {
           </CardContent>
         </Card>
         <Card className="border-border/60">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Individual Completion</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Individual Completion</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={filtered} layout="vertical">
@@ -150,19 +148,19 @@ export function OnboardingPipelineDashboard() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-        <Card className="border-border/60">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">By Location</CardTitle></CardHeader>
+        <Card className="border-border/60 cursor-pointer hover:border-primary/40 transition-colors">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">By Location <span className="text-[10px] text-muted-foreground">(click to drill)</span></CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={locationBreakdown}>
+              <BarChart data={locationBreakdown} onClick={handleLocationClick}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="completed" name="Completed" stackId="a" fill="#10B981" />
-                <Bar dataKey="inProgress" name="In Progress" stackId="a" fill="hsl(var(--primary))" />
-                <Bar dataKey="overdue" name="Overdue" stackId="a" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="completed" name="Completed" stackId="a" fill="#10B981" style={{ cursor: 'pointer' }} />
+                <Bar dataKey="inProgress" name="In Progress" stackId="a" fill="hsl(var(--primary))" style={{ cursor: 'pointer' }} />
+                <Bar dataKey="overdue" name="Overdue" stackId="a" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} style={{ cursor: 'pointer' }} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -170,21 +168,18 @@ export function OnboardingPipelineDashboard() {
       </div>
 
       <Card className="border-border/60">
-        <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Onboarding Details</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Onboarding Details {drill && <Badge variant="secondary" className="ml-2 text-xs">Filtered</Badge>}</CardTitle></CardHeader>
         <CardContent>
           <Table>
             <TableHeader><TableRow>
-              <TableHead className="text-xs">Staff</TableHead>
-              <TableHead className="text-xs">Position</TableHead>
-              <TableHead className="text-xs">Location</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
-              <TableHead className="text-xs">Progress</TableHead>
-              <TableHead className="text-xs text-right">Days</TableHead>
+              <TableHead className="text-xs">Staff</TableHead><TableHead className="text-xs">Position</TableHead>
+              <TableHead className="text-xs">Location</TableHead><TableHead className="text-xs">Status</TableHead>
+              <TableHead className="text-xs">Progress</TableHead><TableHead className="text-xs text-right">Days</TableHead>
               <TableHead className="text-xs">Assigned To</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {filtered.map(r => (
-                <TableRow key={r.id}>
+                <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDrill({ type: 'status', value: r.status, label: statusLabels[r.status] })}>
                   <TableCell className="text-sm font-medium">{r.staffName}</TableCell>
                   <TableCell className="text-sm">{r.position}</TableCell>
                   <TableCell className="text-sm">{r.location}</TableCell>
