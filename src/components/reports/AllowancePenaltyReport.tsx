@@ -3,11 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ReportFilterBar } from './ReportFilterBar';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { ReportHelpGuide } from './ReportHelpGuide';
+import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { mockAllowancePenalties, AllowancePenaltyRecord } from '@/data/mockPayrollReportData';
 import { cn } from '@/lib/utils';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
+import { DollarSign, TrendingUp, AlertTriangle, Award, Banknote, FileText } from 'lucide-react';
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))'];
 
 const exportColumns: ExportColumn[] = [
   { header: 'Staff', accessor: 'staffName' }, { header: 'Location', accessor: 'location' },
@@ -24,7 +29,7 @@ const tableColumns: DataTableColumn<AllowancePenaltyRecord>[] = [
   { key: 'type', header: 'Type', sortValue: (r) => r.type,
     accessor: (r) => <Badge variant={r.type === 'penalty' ? 'destructive' : 'default'} className="text-xs">{r.type}</Badge> },
   { key: 'category', header: 'Category', accessor: (r) => r.category, sortValue: (r) => r.category },
-  { key: 'hours', header: 'Hours', accessor: (r) => r.hours > 0 ? `${r.hours}h` : '—', sortValue: (r) => r.hours, align: 'right' },
+  { key: 'hours', header: 'Hours', accessor: (r) => r.hours > 0 ? <span className="font-mono text-xs">{r.hours}h</span> : '—', sortValue: (r) => r.hours, align: 'right' },
   { key: 'rate', header: 'Rate', accessor: (r) => `$${r.rate.toFixed(2)}`, sortValue: (r) => r.rate, align: 'right' },
   { key: 'amount', header: 'Amount', accessor: (r) => <span className="font-semibold">${r.amount.toLocaleString()}</span>, sortValue: (r) => r.amount, align: 'right' },
   { key: 'date', header: 'Date', accessor: (r) => r.date, sortValue: (r) => r.date },
@@ -42,8 +47,17 @@ export function AllowancePenaltyReport() {
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
 
-  const totalAllowances = filtered.filter(r => r.type === 'allowance').reduce((s, r) => s + r.amount, 0);
-  const totalPenalties = filtered.filter(r => r.type === 'penalty').reduce((s, r) => s + r.amount, 0);
+  const allowances = filtered.filter(r => r.type === 'allowance');
+  const penalties = filtered.filter(r => r.type === 'penalty');
+  const totalAllowances = allowances.reduce((s, r) => s + r.amount, 0);
+  const totalPenalties = penalties.reduce((s, r) => s + r.amount, 0);
+  const combined = totalAllowances + totalPenalties;
+  const avgPenaltyRate = penalties.length ? (penalties.reduce((s, r) => s + r.rate, 0) / penalties.length).toFixed(2) : '0';
+  const topCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(r => { map[r.category] = (map[r.category] || 0) + r.amount; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1])[0];
+  }, [filtered]);
 
   const categories = [...new Set(filtered.map(r => r.category))];
   const chartData = categories.map(cat => ({
@@ -52,43 +66,93 @@ export function AllowancePenaltyReport() {
     penalties: filtered.filter(r => r.category === cat && r.type === 'penalty').reduce((s, r) => s + r.amount, 0),
   }));
 
+  const typePie = [{ name: 'Allowances', value: totalAllowances }, { name: 'Penalties', value: totalPenalties }];
+
   return (
     <div className="space-y-6">
       <ReportFilterBar title="Allowance & Penalty Breakdown" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search..."
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight">${totalAllowances.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Total Allowances</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight text-destructive">${totalPenalties.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Total Penalties</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight">${(totalAllowances + totalPenalties).toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Combined Total</p>
-        </CardContent></Card>
+      <ReportHelpGuide
+        reportName="Allowance & Penalty Breakdown Report"
+        reportDescription="Itemised breakdown of all allowance payments and penalty rate loadings applied during the pay period."
+        purpose="Ensures award-compliant application of allowances and penalties while tracking their cost impact on total labour expenditure."
+        whenToUse={[
+          'During pay run verification to check correct application', 'When analysing which penalty categories drive the most cost',
+          'For award compliance auditing', 'When optimising scheduling to reduce penalty rate exposure',
+        ]}
+        keyMetrics={[
+          { label: 'Total Allowances', description: 'Sum of all allowance payments (travel, meals, first aid, etc.)', interpretation: 'Should remain stable period-to-period unless staffing patterns change' },
+          { label: 'Total Penalties', description: 'Sum of all penalty rate loadings (weekend, public holiday, night)', interpretation: 'High penalty costs suggest scheduling can be optimised to reduce weekend/evening shifts' },
+          { label: 'Top Category', description: 'Highest-cost allowance or penalty category', interpretation: 'Focus cost reduction efforts on the largest category first for maximum impact' },
+        ]}
+        howToRead={[
+          { title: 'KPI Cards', content: 'Shows totals for allowances and penalties, combined cost, and the top cost category. Red indicates penalty-heavy pay runs.' },
+          { title: 'Category Breakdown', content: 'Grouped bar chart comparing allowance vs penalty amounts by category. Tallest bars show the biggest cost drivers.' },
+          { title: 'Type Distribution', content: 'Pie chart showing the split between allowances and penalties. Penalty-dominant runs suggest scheduling optimisation opportunities.' },
+          { title: 'Detail Table', content: 'Line-by-line breakdown sorted by amount. Badge colours distinguish allowances from penalties. Award references enable compliance verification.' },
+        ]}
+        actionableInsights={[
+          'If penalties exceed allowances, review shift scheduling to reduce weekend/evening allocations',
+          'Verify all allowances are award-mandated — remove any incorrectly applied allowances',
+          'Compare penalty rates against award minimums to ensure no overpayment',
+          'Track top-cost categories month-over-month for cost trend analysis',
+        ]}
+        relatedReports={['Pay Run Summary', 'Award Compliance Dashboard', 'Labour Cost by Location']}
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Total Allowances" value={`$${totalAllowances.toLocaleString()}`} icon={Award} size="sm" />
+        <StatCard label="Total Penalties" value={`$${totalPenalties.toLocaleString()}`} icon={AlertTriangle} variant={totalPenalties > totalAllowances * 2 ? 'danger' : 'default'} size="sm" />
+        <StatCard label="Combined Total" value={`$${combined.toLocaleString()}`} icon={DollarSign} size="sm" />
+        <StatCard label="Records" value={filtered.length} icon={FileText} size="sm" />
+        <StatCard label="Avg Penalty Rate" value={`$${avgPenaltyRate}/hr`} icon={Banknote} size="sm" />
+        <StatCard label="Top Category" value={topCategory?.[0] || '—'} icon={TrendingUp} subtitle={topCategory ? `$${topCategory[1].toLocaleString()}` : ''} size="sm" />
       </div>
 
-      <Card className="border-border/60">
-        <CardHeader className="pb-2"><CardTitle className="text-sm">By Category</CardTitle></CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="allowances" name="Allowances" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="penalties" name="Penalties" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {totalPenalties > totalAllowances * 2 && <InsightCard type="action" title="Penalty-Heavy Period" description={`Penalties ($${totalPenalties.toLocaleString()}) are ${Math.round(totalPenalties / totalAllowances)}x allowances. Review weekend and evening shift scheduling.`} action="Optimise shift patterns to reduce penalty exposure" />}
+        {totalPenalties <= totalAllowances && <InsightCard type="positive" title="Balanced Cost Structure" description={`Allowances ($${totalAllowances.toLocaleString()}) exceed penalties ($${totalPenalties.toLocaleString()}), indicating efficient shift scheduling.`} />}
+      </div>
+
+      <SummaryRow items={[
+        { label: 'Allowances', value: `$${totalAllowances.toLocaleString()}`, highlight: true }, { label: 'Penalties', value: `$${totalPenalties.toLocaleString()}` },
+        { label: 'Combined', value: `$${combined.toLocaleString()}` }, { label: 'Categories', value: categories.length },
+      ]} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">By Category</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="allowances" name="Allowances" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="penalties" name="Penalties" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Type Distribution</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={typePie} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {typePie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Detail</CardTitle></CardHeader>

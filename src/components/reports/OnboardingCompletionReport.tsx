@@ -2,16 +2,41 @@ import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFilterBar } from './ReportFilterBar';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { ReportHelpGuide } from './ReportHelpGuide';
+import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
 import { DateRange } from 'react-day-picker';
-import { mockOnboardingData } from '@/data/mockWorkforceReportData';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { mockOnboardingData, OnboardingRecord } from '@/data/mockWorkforceReportData';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
+import { UserCheck, Clock, AlertTriangle, CheckCircle2, Users, Timer } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const statusLabels: Record<string, string> = { completed: 'Completed', in_progress: 'In Progress', not_started: 'Not Started', overdue: 'Overdue' };
 const statusVariant: Record<string, string> = { completed: 'bg-emerald-100 text-emerald-800', in_progress: 'bg-blue-100 text-blue-800', not_started: 'bg-muted text-muted-foreground', overdue: 'bg-destructive/10 text-destructive' };
+const PIE_COLORS = ['hsl(142, 76%, 36%)', 'hsl(217, 91%, 60%)', 'hsl(var(--muted-foreground))', 'hsl(var(--destructive))'];
+
+const locations = [...new Set(mockOnboardingData.map(r => r.location))];
+
+const exportColumns: ExportColumn[] = [
+  { header: 'Staff', accessor: 'staffName' }, { header: 'Position', accessor: 'position' },
+  { header: 'Location', accessor: 'location' }, { header: 'Status', accessor: (r: any) => statusLabels[r.status] },
+  { header: 'Completion %', accessor: 'completionPct' }, { header: 'Days', accessor: 'daysInPipeline' },
+];
+
+const tableColumns: DataTableColumn<OnboardingRecord>[] = [
+  { key: 'staffName', header: 'Staff', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.position}</span></div>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
+  { key: 'assignedTo', header: 'Assigned To', accessor: (r) => <span className="text-xs text-muted-foreground">{r.assignedTo}</span>, sortValue: (r) => r.assignedTo },
+  { key: 'status', header: 'Status', sortValue: (r) => r.status,
+    accessor: (r) => <Badge className={`text-[10px] ${statusVariant[r.status]}`}>{statusLabels[r.status]}</Badge> },
+  { key: 'stepsCompleted', header: 'Steps', accessor: (r) => <span className="text-xs">{r.stepsCompleted}/{r.totalSteps}</span>, sortValue: (r) => r.stepsCompleted, align: 'right' },
+  { key: 'completionPct', header: 'Progress', className: 'w-[150px]', sortValue: (r) => r.completionPct,
+    accessor: (r) => <div className="flex items-center gap-2"><Progress value={r.completionPct} className="h-2 flex-1" /><span className={cn('text-xs font-medium', r.completionPct === 100 ? 'text-emerald-600' : r.completionPct >= 50 ? 'text-foreground' : 'text-amber-600')}>{r.completionPct}%</span></div> },
+  { key: 'daysInPipeline', header: 'Days', accessor: (r) => <span className={cn('text-xs font-medium', r.daysInPipeline > 21 ? 'text-destructive' : 'text-foreground')}>{r.daysInPipeline}d</span>, sortValue: (r) => r.daysInPipeline, align: 'right' },
+  { key: 'startDate', header: 'Start Date', accessor: (r) => <span className="text-xs text-muted-foreground">{r.startDate}</span>, sortValue: (r) => r.startDate },
+];
 
 export function OnboardingCompletionReport() {
   const [search, setSearch] = useState('');
@@ -26,25 +51,20 @@ export function OnboardingCompletionReport() {
     });
   }, [search, location]);
 
-  const completionRate = useMemo(() => {
-    if (!filtered.length) return 0;
-    return Math.round((filtered.filter(r => r.status === 'completed').length / filtered.length) * 100);
-  }, [filtered]);
-
+  const completionRate = filtered.length ? Math.round((filtered.filter(r => r.status === 'completed').length / filtered.length) * 100) : 0;
   const avgDays = useMemo(() => {
     const completed = filtered.filter(r => r.status === 'completed');
-    if (!completed.length) return 0;
-    return Math.round(completed.reduce((s, r) => s + r.daysInPipeline, 0) / completed.length);
+    return completed.length ? Math.round(completed.reduce((s, r) => s + r.daysInPipeline, 0) / completed.length) : 0;
   }, [filtered]);
+  const overdueCount = filtered.filter(r => r.status === 'overdue').length;
+  const inProgressCount = filtered.filter(r => r.status === 'in_progress').length;
+  const avgCompletion = filtered.length ? Math.round(filtered.reduce((s, r) => s + r.completionPct, 0) / filtered.length) : 0;
 
-  const locations = [...new Set(mockOnboardingData.map(r => r.location))];
-  const exportColumns: ExportColumn[] = [
-    { header: 'Staff', accessor: 'staffName' },
-    { header: 'Position', accessor: 'position' },
-    { header: 'Location', accessor: 'location' },
-    { header: 'Status', accessor: (r) => statusLabels[r.status] },
-    { header: 'Completion %', accessor: 'completionPct' },
-    { header: 'Days', accessor: 'daysInPipeline' },
+  const statusPie = [
+    { name: 'Completed', value: filtered.filter(r => r.status === 'completed').length },
+    { name: 'In Progress', value: inProgressCount },
+    { name: 'Not Started', value: filtered.filter(r => r.status === 'not_started').length },
+    { name: 'Overdue', value: overdueCount },
   ];
 
   return (
@@ -52,53 +72,90 @@ export function OnboardingCompletionReport() {
       <ReportFilterBar title="Onboarding Completion Rate" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange} />
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="border-border/60"><CardContent className="p-4"><p className="text-2xl font-bold tracking-tight">{completionRate}%</p><p className="text-xs text-muted-foreground">Completion Rate</p></CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4"><p className="text-2xl font-bold tracking-tight">{avgDays}d</p><p className="text-xs text-muted-foreground">Avg Days to Complete</p></CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4"><p className="text-2xl font-bold tracking-tight">{filtered.filter(r => r.status === 'overdue').length}</p><p className="text-xs text-muted-foreground">Overdue</p></CardContent></Card>
+      <ReportHelpGuide
+        reportName="Onboarding Completion Report"
+        reportDescription="Tracks the progress and efficiency of new staff onboarding across all locations, measuring completion rates, time-to-complete, and identifying bottlenecks."
+        purpose="Ensures all new hires complete required onboarding steps within SLA timelines, reducing compliance risk and accelerating time-to-productivity."
+        whenToUse={[
+          'Weekly HR review to track new starter progress', 'When onboarding SLA breaches are escalating',
+          'During compliance audits requiring proof of completed inductions', 'When evaluating onboarding process efficiency',
+        ]}
+        keyMetrics={[
+          { label: 'Completion Rate', description: 'Percentage of staff who finished all onboarding steps', interpretation: 'Below 80% indicates process friction or resource constraints', goodRange: '≥90%', warningRange: '70-89%', criticalRange: '<70%' },
+          { label: 'Avg Days to Complete', description: 'Average calendar days from start to full completion', interpretation: 'Industry best practice is under 14 days. Over 21 days signals bottlenecks', goodRange: '≤14 days', warningRange: '15-21 days', criticalRange: '>21 days' },
+          { label: 'Overdue Count', description: 'Staff who exceeded the expected onboarding timeline', interpretation: 'Any overdue items represent compliance risk and require immediate attention', goodRange: '0', warningRange: '1-2', criticalRange: '≥3' },
+        ]}
+        howToRead={[
+          { title: 'KPI Cards', content: 'Shows completion rate, average days, overdue count, and pipeline size. Red/amber variants flag concerning values.' },
+          { title: 'Status Distribution', content: 'Pie chart shows the proportion of staff in each onboarding stage. A healthy pipeline has most staff completed or actively in progress with minimal overdue.' },
+          { title: 'Completion Progress', content: 'Horizontal bar chart shows individual staff completion percentages. Longer bars = more complete. Red bars indicate overdue staff.' },
+          { title: 'Detail Table', content: 'Full breakdown with progress bars, step counts, and days in pipeline. Sort by days to find longest-running onboardings.' },
+        ]}
+        actionableInsights={[
+          'Contact overdue staff\'s assigned mentors immediately to unblock progress',
+          'If average days exceeds 21, audit which specific steps are causing delays',
+          'Staff at 0% who started >7 days ago may need personal outreach',
+          'Compare completion rates by location to identify best-practice sites',
+        ]}
+        relatedReports={['Headcount & FTE', 'Qualification & Certification Expiry', 'Turnover & Retention']}
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatCard label="Completion Rate" value={`${completionRate}%`} icon={CheckCircle2} variant={completionRate >= 90 ? 'success' : completionRate >= 70 ? 'warning' : 'danger'} size="sm" />
+        <StatCard label="Avg Days to Complete" value={`${avgDays}d`} icon={Timer} variant={avgDays <= 14 ? 'success' : avgDays <= 21 ? 'warning' : 'danger'} size="sm" />
+        <StatCard label="Overdue" value={overdueCount} icon={AlertTriangle} variant={overdueCount > 0 ? 'danger' : 'success'} size="sm" />
+        <StatCard label="In Progress" value={inProgressCount} icon={Clock} size="sm" />
+        <StatCard label="Avg Progress" value={`${avgCompletion}%`} icon={Users} size="sm" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {overdueCount > 0 && <InsightCard type="negative" title={`${overdueCount} Overdue Onboarding${overdueCount > 1 ? 's' : ''}`} description="Staff have exceeded the expected onboarding timeline, creating compliance risk." action="Review and escalate overdue cases immediately" />}
+        {completionRate >= 90 && <InsightCard type="positive" title="High Completion Rate" description={`${completionRate}% of new starters have fully completed onboarding. Process is running efficiently.`} />}
+        {avgDays > 14 && <InsightCard type="action" title="Slow Onboarding Pipeline" description={`Average ${avgDays} days to complete exceeds the 14-day benchmark. Audit step dependencies.`} action="Identify and remove bottleneck steps" />}
+      </div>
+
+      <SummaryRow items={[
+        { label: 'Total Pipeline', value: filtered.length }, { label: 'Completed', value: filtered.filter(r => r.status === 'completed').length, highlight: true },
+        { label: 'In Progress', value: inProgressCount }, { label: 'Overdue', value: overdueCount },
+        { label: 'Avg Completion', value: `${avgCompletion}%` },
+      ]} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Status Distribution</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={statusPie.filter(s => s.value > 0)} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {statusPie.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Individual Progress</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={filtered.sort((a, b) => b.completionPct - a.completionPct)} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
+                <YAxis type="category" dataKey="staffName" tick={{ fontSize: 10 }} width={100} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `${v}%`} />
+                <Bar dataKey="completionPct" name="Completion %" radius={[0, 4, 4, 0]}>
+                  {filtered.map((r, i) => <Cell key={i} fill={r.status === 'overdue' ? 'hsl(var(--destructive))' : r.completionPct === 100 ? 'hsl(142, 76%, 36%)' : 'hsl(var(--primary))'} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="border-border/60">
-        <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Completion by Staff</CardTitle></CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={filtered} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-              <YAxis type="category" dataKey="staffName" tick={{ fontSize: 10 }} width={100} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-              <Bar dataKey="completionPct" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} name="Completion %" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/60">
-        <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Details</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader><TableRow>
-              <TableHead className="text-xs">Staff</TableHead>
-              <TableHead className="text-xs">Position</TableHead>
-              <TableHead className="text-xs">Location</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
-              <TableHead className="text-xs">Progress</TableHead>
-              <TableHead className="text-xs text-right">Days</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {filtered.map(r => (
-                <TableRow key={r.id}>
-                  <TableCell className="text-sm font-medium">{r.staffName}</TableCell>
-                  <TableCell className="text-sm">{r.position}</TableCell>
-                  <TableCell className="text-sm">{r.location}</TableCell>
-                  <TableCell><Badge className={`text-[10px] ${statusVariant[r.status]}`}>{statusLabels[r.status]}</Badge></TableCell>
-                  <TableCell><div className="flex items-center gap-2"><Progress value={r.completionPct} className="h-2 w-20" /><span className="text-xs">{r.completionPct}%</span></div></TableCell>
-                  <TableCell className="text-sm text-right">{r.daysInPipeline}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
+        <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Onboarding Detail</CardTitle></CardHeader>
+        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
       </Card>
     </div>
   );

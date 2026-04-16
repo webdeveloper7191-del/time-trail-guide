@@ -3,10 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ReportFilterBar } from './ReportFilterBar';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { ReportHelpGuide } from './ReportHelpGuide';
+import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { mockAwardOverrides, AwardOverrideRecord } from '@/data/mockPayrollReportData';
 import { cn } from '@/lib/utils';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Shield, FileWarning, TrendingUp, AlertTriangle, Clock, DollarSign } from 'lucide-react';
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(var(--chart-3))'];
 
 const exportColumns: ExportColumn[] = [
   { header: 'Staff', accessor: 'staffName' }, { header: 'Location', accessor: 'location' },
@@ -25,10 +31,13 @@ const tableColumns: DataTableColumn<AwardOverrideRecord>[] = [
   { key: 'originalRate', header: 'Original', accessor: (r) => `$${r.originalRate.toFixed(2)}/hr`, sortValue: (r) => r.originalRate, align: 'right' },
   { key: 'overrideRate', header: 'Override', sortValue: (r) => r.overrideRate, align: 'right',
     accessor: (r) => <span className={cn('font-semibold', r.overrideRate > r.originalRate ? 'text-emerald-600' : 'text-destructive')}>${r.overrideRate.toFixed(2)}/hr</span> },
+  { key: 'variance', header: 'Variance', align: 'right', sortValue: (r) => r.overrideRate - r.originalRate,
+    accessor: (r) => { const diff = r.overrideRate - r.originalRate; return <span className={cn('text-xs font-medium', diff > 0 ? 'text-emerald-600' : 'text-destructive')}>{diff > 0 ? '+' : ''}${diff.toFixed(2)}</span>; }},
   { key: 'overrideType', header: 'Type', sortValue: (r) => r.overrideType,
     accessor: (r) => <Badge variant={r.overrideType === 'increase' ? 'default' : r.overrideType === 'decrease' ? 'destructive' : 'secondary'} className="text-xs">{r.overrideType}</Badge> },
   { key: 'approvedBy', header: 'Approved By', accessor: (r) => r.approvedBy, sortValue: (r) => r.approvedBy },
   { key: 'approvedDate', header: 'Date', accessor: (r) => r.approvedDate, sortValue: (r) => r.approvedDate },
+  { key: 'expiryDate', header: 'Expires', accessor: (r) => r.expiryDate || <span className="text-muted-foreground text-xs">Permanent</span>, sortValue: (r) => r.expiryDate || 'z' },
   { key: 'reason', header: 'Reason', accessor: (r) => <span className="text-xs text-muted-foreground">{r.reason}</span>, sortValue: (r) => r.reason },
 ];
 
@@ -43,25 +52,108 @@ export function AwardOverrideAuditReport() {
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
 
+  const increases = filtered.filter(r => r.overrideType === 'increase');
+  const decreases = filtered.filter(r => r.overrideType === 'decrease');
+  const withExpiry = filtered.filter(r => r.expiryDate);
+  const permanent = filtered.filter(r => !r.expiryDate);
+  const totalCostImpact = filtered.reduce((s, r) => s + (r.overrideRate - r.originalRate) * 38 * 52, 0);
+  const avgVariance = filtered.length ? (filtered.reduce((s, r) => s + (r.overrideRate - r.originalRate), 0) / filtered.length).toFixed(2) : '0';
+
+  const typePie = [
+    { name: 'Increase', value: increases.length }, { name: 'Decrease', value: decreases.length },
+    { name: 'Custom', value: filtered.filter(r => r.overrideType === 'custom').length },
+  ];
+
+  const byApprover = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(r => { map[r.approvedBy] = (map[r.approvedBy] || 0) + 1; });
+    return Object.entries(map).map(([name, count]) => ({ name, count }));
+  }, [filtered]);
+
   return (
     <div className="space-y-6">
       <ReportFilterBar title="Award Rate Override Audit" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search..."
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight">{filtered.length}</p>
-          <p className="text-xs text-muted-foreground">Active Overrides</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight">{filtered.filter(r => r.overrideType === 'increase').length}</p>
-          <p className="text-xs text-muted-foreground">Rate Increases</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight">{filtered.filter(r => r.expiryDate).length}</p>
-          <p className="text-xs text-muted-foreground">With Expiry</p>
-        </CardContent></Card>
+      <ReportHelpGuide
+        reportName="Award Rate Override Audit Report"
+        reportDescription="Complete audit trail of all award rate overrides, showing who approved them, when, and the financial impact."
+        purpose="Provides compliance transparency for rate overrides, ensuring all departures from standard award rates are documented, justified, and authorised."
+        whenToUse={[
+          'During Fair Work compliance audits', 'When reviewing override expiry dates',
+          'For annual override review and renewal', 'When investigating pay discrepancies',
+        ]}
+        keyMetrics={[
+          { label: 'Active Overrides', description: 'Currently effective rate overrides', interpretation: 'Each must have documented justification. Minimise where possible' },
+          { label: 'Annual Cost Impact', description: 'Estimated yearly cost of all overrides at 38hr/week', interpretation: 'Positive = above-award payments. Large totals may need budget adjustment' },
+          { label: 'Permanent vs Expiring', description: 'Overrides without vs with expiry dates', interpretation: 'Permanent overrides should be minimal — prefer time-limited overrides for flexibility' },
+        ]}
+        howToRead={[
+          { title: 'KPI Cards', content: 'Shows total overrides, split by type, cost impact estimate, and expiry status.' },
+          { title: 'Override Type Distribution', content: 'Pie chart showing increases vs decreases. Decrease overrides may indicate compliance risks and should be rare.' },
+          { title: 'By Approver', content: 'Bar chart showing which managers approved the most overrides. Concentrated approval authority may indicate governance gaps.' },
+          { title: 'Detail Table', content: 'Full audit trail with original and override rates, variance, approver, and reason. Expiry column shows permanent vs time-limited.' },
+        ]}
+        actionableInsights={[
+          'Review all permanent overrides annually — convert to time-limited where possible',
+          'Decrease overrides below award minimums may create compliance liability — verify immediately',
+          'If one approver has disproportionate overrides, review delegation of authority',
+          'Calculate total cost impact and include in annual budget planning',
+        ]}
+        relatedReports={['Award Compliance Dashboard', 'Pay Run Summary', 'Retrospective Pay Adjustments']}
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Active Overrides" value={filtered.length} icon={FileWarning} size="sm" />
+        <StatCard label="Rate Increases" value={increases.length} icon={TrendingUp} size="sm" />
+        <StatCard label="Rate Decreases" value={decreases.length} icon={AlertTriangle} variant={decreases.length > 0 ? 'warning' : 'default'} size="sm" />
+        <StatCard label="With Expiry" value={withExpiry.length} icon={Clock} size="sm" />
+        <StatCard label="Permanent" value={permanent.length} icon={Shield} variant={permanent.length > filtered.length * 0.5 ? 'warning' : 'default'} size="sm" />
+        <StatCard label="Annual Impact" value={`${totalCostImpact >= 0 ? '+' : ''}$${(totalCostImpact / 1000).toFixed(1)}k`} icon={DollarSign} variant={totalCostImpact > 50000 ? 'warning' : 'default'} size="sm" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {decreases.length > 0 && <InsightCard type="negative" title="Below-Award Overrides" description={`${decreases.length} overrides set rates below standard award. Verify these are legally compliant.`} action="Review decrease overrides with legal/HR" />}
+        {permanent.length > filtered.length * 0.5 && <InsightCard type="action" title="High Permanent Override Ratio" description={`${Math.round(permanent.length / filtered.length * 100)}% of overrides are permanent. Consider adding expiry dates for better governance.`} action="Convert permanent overrides to time-limited" />}
+        {filtered.length <= 5 && <InsightCard type="positive" title="Controlled Override Usage" description={`Only ${filtered.length} active overrides. Override governance is well-managed.`} />}
+      </div>
+
+      <SummaryRow items={[
+        { label: 'Total', value: filtered.length }, { label: 'Increases', value: increases.length, highlight: true },
+        { label: 'Decreases', value: decreases.length }, { label: 'Avg Variance', value: `$${avgVariance}/hr` },
+        { label: 'Permanent', value: permanent.length },
+      ]} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Override Type Distribution</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={typePie.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                  {typePie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Overrides by Approver</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={byApprover} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" tick={{ fontSize: 11 }} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Bar dataKey="count" name="Overrides" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="border-border/60">
