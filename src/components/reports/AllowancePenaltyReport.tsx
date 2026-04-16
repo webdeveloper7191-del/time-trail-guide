@@ -102,7 +102,9 @@ export function AllowancePenaltyReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Allowance & Penalty Breakdown" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search..."
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
-        exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
+        exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange}
+        comparisonEnabled={comparisonEnabled} onComparisonToggle={() => setComparisonEnabled(v => !v)}
+        comparisonRange={comparisonRange} onComparisonRangeChange={setComparisonRange} />
 
       <DrillFilterBadge filter={drill} onClear={clearDrill} />
 
