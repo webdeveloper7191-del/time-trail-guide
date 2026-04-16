@@ -3,11 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ReportFilterBar } from './ReportFilterBar';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { ReportHelpGuide } from './ReportHelpGuide';
+import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { mockCasualVsPermanent, CasualVsPermanentRecord } from '@/data/mockPayrollReportData';
 import { cn } from '@/lib/utils';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { DollarSign, Users, TrendingUp, AlertTriangle, Target, Banknote } from 'lucide-react';
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))'];
 
 const exportColumns: ExportColumn[] = [
   { header: 'Location', accessor: 'location' }, { header: 'Period', accessor: 'period' },
@@ -23,14 +28,16 @@ const tableColumns: DataTableColumn<CasualVsPermanentRecord>[] = [
   { key: 'period', header: 'Period', accessor: (r) => r.period, sortValue: (r) => r.period },
   { key: 'permanentHeadcount', header: 'Perm HC', accessor: (r) => r.permanentHeadcount, sortValue: (r) => r.permanentHeadcount, align: 'right' },
   { key: 'casualHeadcount', header: 'Casual HC', accessor: (r) => r.casualHeadcount, sortValue: (r) => r.casualHeadcount, align: 'right' },
-  { key: 'permanentHours', header: 'Perm Hrs', accessor: (r) => `${r.permanentHours}h`, sortValue: (r) => r.permanentHours, align: 'right' },
-  { key: 'casualHours', header: 'Casual Hrs', accessor: (r) => `${r.casualHours}h`, sortValue: (r) => r.casualHours, align: 'right' },
+  { key: 'permanentHours', header: 'Perm Hrs', accessor: (r) => <span className="font-mono text-xs">{r.permanentHours}h</span>, sortValue: (r) => r.permanentHours, align: 'right' },
+  { key: 'casualHours', header: 'Casual Hrs', accessor: (r) => <span className="font-mono text-xs">{r.casualHours}h</span>, sortValue: (r) => r.casualHours, align: 'right' },
   { key: 'permanentCost', header: 'Perm Cost', accessor: (r) => `$${(r.permanentCost / 1000).toFixed(1)}k`, sortValue: (r) => r.permanentCost, align: 'right' },
-  { key: 'casualCost', header: 'Casual Cost', accessor: (r) => `$${(r.casualCost / 1000).toFixed(1)}k`, sortValue: (r) => r.casualCost, align: 'right' },
+  { key: 'casualCost', header: 'Casual Cost', accessor: (r) => <span className="text-destructive">${(r.casualCost / 1000).toFixed(1)}k</span>, sortValue: (r) => r.casualCost, align: 'right' },
   { key: 'costPerHourPermanent', header: '$/hr Perm', accessor: (r) => `$${r.costPerHourPermanent}`, sortValue: (r) => r.costPerHourPermanent, align: 'right' },
   { key: 'costPerHourCasual', header: '$/hr Casual', sortValue: (r) => r.costPerHourCasual, align: 'right',
     accessor: (r) => <span className="text-destructive font-medium">${r.costPerHourCasual}</span> },
   { key: 'casualLoadingPercent', header: 'Loading', accessor: (r) => `${r.casualLoadingPercent}%`, sortValue: (r) => r.casualLoadingPercent, align: 'right' },
+  { key: 'premiumCost', header: 'Premium', align: 'right', sortValue: (r) => r.casualHours * (r.costPerHourCasual - r.costPerHourPermanent),
+    accessor: (r) => { const premium = r.casualHours * (r.costPerHourCasual - r.costPerHourPermanent); return <span className="text-xs text-destructive font-medium">+${premium.toLocaleString()}</span>; }},
 ];
 
 export function CasualVsPermanentReport() {
@@ -44,15 +51,23 @@ export function CasualVsPermanentReport() {
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
 
+  const totalPerm = filtered.reduce((s, r) => s + r.permanentCost, 0);
+  const totalCasual = filtered.reduce((s, r) => s + r.casualCost, 0);
+  const totalCombined = totalPerm + totalCasual;
+  const casualPercent = totalCombined > 0 ? Math.round(totalCasual / totalCombined * 100) : 0;
+  const totalCasualHrs = filtered.reduce((s, r) => s + r.casualHours, 0);
+  const avgCasualRate = filtered.length ? (filtered.reduce((s, r) => s + r.costPerHourCasual, 0) / filtered.length).toFixed(2) : '0';
+  const avgPermRate = filtered.length ? (filtered.reduce((s, r) => s + r.costPerHourPermanent, 0) / filtered.length).toFixed(2) : '0';
+  const totalPremium = filtered.reduce((s, r) => s + r.casualHours * (r.costPerHourCasual - r.costPerHourPermanent), 0);
+
   const periods = [...new Set(filtered.map(r => r.period))];
   const trendData = periods.map(p => {
     const items = filtered.filter(r => r.period === p);
-    return { period: p, permanent: items.reduce((s, r) => s + r.permanentCost, 0), casual: items.reduce((s, r) => s + r.casualCost, 0) };
+    return { period: p, permanent: items.reduce((s, r) => s + r.permanentCost, 0), casual: items.reduce((s, r) => s + r.casualCost, 0), casualPct: 0 };
   });
+  trendData.forEach(d => { d.casualPct = Math.round(d.casual / (d.permanent + d.casual) * 100); });
 
-  const totalPerm = filtered.reduce((s, r) => s + r.permanentCost, 0);
-  const totalCasual = filtered.reduce((s, r) => s + r.casualCost, 0);
-  const casualPercent = Math.round(totalCasual / (totalPerm + totalCasual) * 100);
+  const costPie = [{ name: 'Permanent', value: totalPerm }, { name: 'Casual', value: totalCasual }];
 
   return (
     <div className="space-y-6">
@@ -60,37 +75,87 @@ export function CasualVsPermanentReport() {
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight">${(totalPerm / 1000).toFixed(0)}k</p>
-          <p className="text-xs text-muted-foreground">Permanent Cost</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight text-destructive">${(totalCasual / 1000).toFixed(0)}k</p>
-          <p className="text-xs text-muted-foreground">Casual Cost</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight">{casualPercent}%</p>
-          <p className="text-xs text-muted-foreground">Casual as % of Total</p>
-        </CardContent></Card>
+      <ReportHelpGuide
+        reportName="Casual vs Permanent Cost Comparison"
+        reportDescription="Compares the total cost of casual versus permanent employment, including hourly rate premiums and loading analysis."
+        purpose="Quantifies the financial impact of casual dependency to inform strategic workforce composition decisions."
+        whenToUse={[
+          'During workforce planning to evaluate contract mix strategy', 'When building the business case for casual-to-permanent conversions',
+          'For annual budget forecasting by employment type', 'When assessing the true cost impact of casual loading',
+        ]}
+        keyMetrics={[
+          { label: 'Casual %', description: 'Casual cost as percentage of total labour', interpretation: 'Above 20% indicates over-reliance on expensive casual labour', goodRange: '<15%', warningRange: '15-25%', criticalRange: '>25%' },
+          { label: 'Rate Premium', description: 'Difference between casual and permanent hourly rates', interpretation: 'Typically 25% loading. Multiplied by total casual hours shows the cost of not converting' },
+          { label: 'Casual Loading Premium', description: 'Total additional cost from casual rates vs permanent', interpretation: 'This is the amount you could save by converting casuals to permanent contracts' },
+        ]}
+        howToRead={[
+          { title: 'KPI Cards', content: 'Shows permanent vs casual costs, the ratio, hourly rate comparison, and total premium from casual loading.' },
+          { title: 'Cost Trend', content: 'Stacked bars show permanent vs casual costs over time. Rising casual proportion indicates growing cost inefficiency.' },
+          { title: 'Cost Split Pie', content: 'Proportional view of permanent vs casual spending. Casual slice above 20% warrants conversion program.' },
+          { title: 'Detail Table', content: 'Premium column shows the per-record cost of casual loading — the savings available through conversion.' },
+        ]}
+        actionableInsights={[
+          'If casual loading premium exceeds permanent conversion costs, prioritise conversion program',
+          'Track casual % trend — rising values indicate scheduling dependency growing faster than permanent hiring',
+          'Compare locations to identify sites with the most cost-effective contract mix',
+          'Calculate the ROI of converting top-hour casuals: loading savings vs onboarding and entitlement costs',
+        ]}
+        relatedReports={['Contract Type Distribution', 'Labour Cost by Location', 'Payroll Cost Dashboard', 'Headcount & FTE']}
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Permanent Cost" value={`$${(totalPerm / 1000).toFixed(0)}k`} icon={DollarSign} size="sm" />
+        <StatCard label="Casual Cost" value={`$${(totalCasual / 1000).toFixed(0)}k`} icon={AlertTriangle} variant={casualPercent > 25 ? 'danger' : casualPercent > 15 ? 'warning' : 'default'} size="sm" />
+        <StatCard label="Casual as % Total" value={`${casualPercent}%`} icon={Target} variant={casualPercent > 25 ? 'danger' : casualPercent > 15 ? 'warning' : 'success'} size="sm" />
+        <StatCard label="Perm $/hr" value={`$${avgPermRate}`} icon={Banknote} size="sm" />
+        <StatCard label="Casual $/hr" value={`$${avgCasualRate}`} icon={TrendingUp} size="sm" />
+        <StatCard label="Loading Premium" value={`$${(totalPremium / 1000).toFixed(1)}k`} icon={Users} variant={totalPremium > 50000 ? 'danger' : 'default'} subtitle="potential savings" size="sm" />
       </div>
 
-      <Card className="border-border/60">
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Cost Trend</CardTitle></CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="period" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v / 1000}k`} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="permanent" name="Permanent" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="casual" name="Casual" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {casualPercent > 20 && <InsightCard type="action" title="High Casual Dependency" description={`${casualPercent}% of labour costs are casual. Converting top-hour casuals could save $${(totalPremium / 1000).toFixed(0)}k in loading premiums.`} action="Build casual-to-permanent conversion business case" />}
+        {casualPercent <= 15 && <InsightCard type="positive" title="Efficient Contract Mix" description={`Casual costs at ${casualPercent}% of total are within the optimal range, balancing flexibility with cost efficiency.`} />}
+        {totalPremium > 20000 && <InsightCard type="neutral" title="Conversion Opportunity" description={`$${(totalPremium / 1000).toFixed(1)}k annual premium from casual loading. Assess if conversion reduces net costs after entitlements.`} />}
+      </div>
+
+      <SummaryRow items={[
+        { label: 'Permanent', value: `$${(totalPerm / 1000).toFixed(0)}k`, highlight: true }, { label: 'Casual', value: `$${(totalCasual / 1000).toFixed(0)}k` },
+        { label: 'Casual %', value: `${casualPercent}%` }, { label: 'Rate Diff', value: `+$${(Number(avgCasualRate) - Number(avgPermRate)).toFixed(2)}/hr` },
+        { label: 'Total Premium', value: `$${(totalPremium / 1000).toFixed(1)}k` },
+      ]} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Cost Trend by Period</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="period" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v / 1000}k`} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="permanent" name="Permanent" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="casual" name="Casual" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Cost Split</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={costPie} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {costPie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Detail</CardTitle></CardHeader>

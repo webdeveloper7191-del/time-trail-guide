@@ -3,10 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ReportFilterBar } from './ReportFilterBar';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
+import { ReportHelpGuide } from './ReportHelpGuide';
+import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { mockRetrospectivePay, RetrospectivePayRecord } from '@/data/mockPayrollReportData';
 import { cn } from '@/lib/utils';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { DollarSign, Clock, AlertTriangle, CheckCircle2, FileText, TrendingUp } from 'lucide-react';
+
+const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
+  processed: 'default', approved: 'secondary', pending: 'secondary', rejected: 'destructive',
+};
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(142, 76%, 36%)', 'hsl(var(--destructive))'];
 
 const exportColumns: ExportColumn[] = [
   { header: 'Staff', accessor: 'staffName' }, { header: 'Location', accessor: 'location' },
@@ -16,10 +25,6 @@ const exportColumns: ExportColumn[] = [
 ];
 
 const locations = [...new Set(mockRetrospectivePay.map(r => r.location))];
-
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
-  processed: 'default', approved: 'secondary', pending: 'secondary', rejected: 'destructive',
-};
 
 const tableColumns: DataTableColumn<RetrospectivePayRecord>[] = [
   { key: 'staffName', header: 'Staff', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
@@ -48,6 +53,20 @@ export function RetrospectivePayReport() {
   }), [search, locationFilter]);
 
   const totalAdjustment = filtered.reduce((s, r) => s + r.difference, 0);
+  const pendingCount = filtered.filter(r => r.status === 'pending').length;
+  const processedCount = filtered.filter(r => r.status === 'processed').length;
+  const avgDifference = filtered.length ? Math.round(totalAdjustment / filtered.length) : 0;
+
+  const byType = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(r => { map[r.adjustmentType] = (map[r.adjustmentType] || 0) + r.difference; });
+    return Object.entries(map).map(([name, value]) => ({ name: name.replace(/_/g, ' '), value }));
+  }, [filtered]);
+
+  const statusPie = [
+    { name: 'Pending', value: pendingCount }, { name: 'Approved', value: filtered.filter(r => r.status === 'approved').length },
+    { name: 'Processed', value: processedCount }, { name: 'Rejected', value: filtered.filter(r => r.status === 'rejected').length },
+  ];
 
   return (
     <div className="space-y-6">
@@ -55,19 +74,84 @@ export function RetrospectivePayReport() {
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight">{filtered.length}</p>
-          <p className="text-xs text-muted-foreground">Adjustments</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight text-emerald-600">+${totalAdjustment.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Total Back-Pay</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <p className="text-2xl font-bold tracking-tight">{filtered.filter(r => r.status === 'pending').length}</p>
-          <p className="text-xs text-muted-foreground">Pending Approval</p>
-        </CardContent></Card>
+      <ReportHelpGuide
+        reportName="Retrospective Pay Adjustment Report"
+        reportDescription="Tracks all back-pay calculations and retrospective adjustments arising from rate changes, reclassifications, and correction errors."
+        purpose="Ensures accurate remediation of historical pay discrepancies while maintaining audit trail compliance."
+        whenToUse={[
+          'After award rate increases to track back-pay processing', 'During payroll audits to verify historical corrections',
+          'When staff raise pay queries about past periods', 'For financial forecasting of adjustment liabilities',
+        ]}
+        keyMetrics={[
+          { label: 'Total Back-Pay', description: 'Sum of all positive adjustments owed', interpretation: 'Large totals may indicate systemic pay calculation issues requiring process review' },
+          { label: 'Pending Approvals', description: 'Adjustments awaiting management approval', interpretation: 'Delays increase underpayment liability exposure. Target <48hr approval SLA', goodRange: '0', warningRange: '1-3', criticalRange: '>3' },
+          { label: 'Avg Adjustment', description: 'Average back-pay per affected staff member', interpretation: 'High averages suggest significant rate discrepancies were missed initially' },
+        ]}
+        howToRead={[
+          { title: 'KPI Cards', content: 'Shows total liability, pending items needing action, and average adjustment size.' },
+          { title: 'By Adjustment Type', content: 'Bar chart shows which categories of adjustments drive the most back-pay cost.' },
+          { title: 'Status Distribution', content: 'Pie chart shows processing pipeline health. Large pending/approved slices indicate bottlenecks.' },
+          { title: 'Detail Table', content: 'Sort by difference to find largest adjustments. Status badges track processing pipeline. Reasons provide audit context.' },
+        ]}
+        actionableInsights={[
+          'Process all pending adjustments within 48 hours to minimise underpayment exposure',
+          'If rate_change adjustments are common, review the rate update process for earlier detection',
+          'Track adjustment frequency — increasing trends suggest systemic calculation issues',
+          'Verify rejected adjustments have documented reasons for audit compliance',
+        ]}
+        relatedReports={['Pay Run Summary', 'Award Override Audit', 'Award Compliance Dashboard']}
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Total Back-Pay" value={`+$${totalAdjustment.toLocaleString()}`} icon={DollarSign} variant="success" size="sm" />
+        <StatCard label="Adjustments" value={filtered.length} icon={FileText} size="sm" />
+        <StatCard label="Avg Adjustment" value={`$${avgDifference.toLocaleString()}`} icon={TrendingUp} size="sm" />
+        <StatCard label="Pending" value={pendingCount} icon={Clock} variant={pendingCount > 3 ? 'danger' : pendingCount > 0 ? 'warning' : 'success'} size="sm" />
+        <StatCard label="Processed" value={processedCount} icon={CheckCircle2} variant="success" size="sm" />
+        <StatCard label="Rejected" value={filtered.filter(r => r.status === 'rejected').length} icon={AlertTriangle} variant={filtered.some(r => r.status === 'rejected') ? 'danger' : 'default'} size="sm" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {pendingCount > 0 && <InsightCard type="action" title={`${pendingCount} Pending Approval${pendingCount > 1 ? 's' : ''}`} description="Back-pay adjustments awaiting approval represent ongoing underpayment liability." action="Expedite approval within 48-hour SLA" />}
+        {processedCount === filtered.length && <InsightCard type="positive" title="All Adjustments Processed" description="Every retrospective pay adjustment has been fully processed. No outstanding liabilities." />}
+        {totalAdjustment > 1000 && <InsightCard type="neutral" title="Significant Liability" description={`$${totalAdjustment.toLocaleString()} in total adjustments. Review root causes to prevent future accumulation.`} />}
+      </div>
+
+      <SummaryRow items={[
+        { label: 'Total Back-Pay', value: `+$${totalAdjustment.toLocaleString()}`, highlight: true },
+        { label: 'Pending', value: pendingCount }, { label: 'Processed', value: processedCount },
+        { label: 'Avg Adjustment', value: `$${avgDifference}` },
+      ]} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">By Adjustment Type</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={byType} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
+                <Bar dataKey="value" name="Amount" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Status Distribution</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={statusPie.filter(s => s.value > 0)} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                  {statusPie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="border-border/60">
