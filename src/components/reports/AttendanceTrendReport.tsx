@@ -42,8 +42,6 @@ const tableColumns: DataTableColumn<AttendanceTrendRecord>[] = [
       <div className="flex items-center gap-2 justify-end">
         <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
           <div className={cn('h-full rounded-full', r.attendanceRate >= 95 ? 'bg-emerald-500' : r.attendanceRate >= 85 ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${r.attendanceRate}%` }} />
-
-      <DrillFilterBadge filter={drill} onClear={clearDrill} />
         </div>
         <span className={cn('text-xs font-mono w-10', r.attendanceRate < 85 ? 'text-destructive font-bold' : '')}>{r.attendanceRate}%</span>
       </div>

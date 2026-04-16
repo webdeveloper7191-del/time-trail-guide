@@ -34,8 +34,7 @@ const tableColumns: DataTableColumn<AvailabilityVsScheduledRecord>[] = [
   { key: 'availableHours', header: 'Available', accessor: (r) => <span className="font-mono text-xs">{r.availableHours}h</span>, sortValue: (r) => r.availableHours, align: 'right' },
   { key: 'scheduledHours', header: 'Scheduled', accessor: (r) => <span className="font-mono text-xs">{r.scheduledHours}h</span>, sortValue: (r) => r.scheduledHours, align: 'right' },
   { key: 'utilisationPct', header: 'Utilisation', className: 'w-[150px]', sortValue: (r) => r.utilisationPct,
-    accessor: (r) => <div className="flex items-center gap-2"><Progress value={Math.min(r.utilisationPct, 100)} className="h-2 flex-1" />
-
+    accessor: (r) => <div className="flex items-center gap-2"><Progress value={Math.min(r.utilisationPct, 100)} className="h-2 flex-1" /><span className="text-xs w-8 text-right">{r.utilisationPct}%</span></div> },
   { key: 'unscheduledHours', header: 'Unused', align: 'right', sortValue: (r) => r.unscheduledHours,
     accessor: (r) => r.unscheduledHours > 0 ? <span className="text-amber-600 text-xs font-medium">{r.unscheduledHours}h</span> : <span className="text-emerald-600 text-xs">—</span> },
   { key: 'overtimeHours', header: 'OT', align: 'right', sortValue: (r) => r.overtimeHours,

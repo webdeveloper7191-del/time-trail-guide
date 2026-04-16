@@ -37,8 +37,7 @@ const tableColumns: DataTableColumn<OnboardingRecord>[] = [
     accessor: (r) => <Badge className={`text-[10px] ${statusVariant[r.status]}`}>{statusLabels[r.status]}</Badge> },
   { key: 'stepsCompleted', header: 'Steps', accessor: (r) => <span className="text-xs">{r.stepsCompleted}/{r.totalSteps}</span>, sortValue: (r) => r.stepsCompleted, align: 'right' },
   { key: 'completionPct', header: 'Progress', className: 'w-[150px]', sortValue: (r) => r.completionPct,
-    accessor: (r) => <div className="flex items-center gap-2"><Progress value={r.completionPct} className="h-2 flex-1" />
-
+    accessor: (r) => <div className="flex items-center gap-2"><Progress value={r.completionPct} className="h-2 flex-1" /><span className="text-xs w-8 text-right">{r.completionPct}%</span></div> },
   { key: 'daysInPipeline', header: 'Days', accessor: (r) => <span className={cn('text-xs font-medium', r.daysInPipeline > 21 ? 'text-destructive' : 'text-foreground')}>{r.daysInPipeline}d</span>, sortValue: (r) => r.daysInPipeline, align: 'right' },
   { key: 'startDate', header: 'Start Date', accessor: (r) => <span className="text-xs text-muted-foreground">{r.startDate}</span>, sortValue: (r) => r.startDate },
 ];

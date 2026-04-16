@@ -54,8 +54,6 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
       <div className="flex items-center gap-1.5 justify-end">
         <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
           <div className={cn('h-full rounded-full', r.fillRate >= 80 ? 'bg-emerald-500' : r.fillRate >= 50 ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${r.fillRate}%` }} />
-
-      <DrillFilterBadge filter={drill} onClear={clearDrill} />
         </div>
         <span className={cn('font-semibold text-xs w-8 text-right', r.fillRate >= 80 ? 'text-emerald-600' : r.fillRate >= 50 ? 'text-amber-600' : 'text-destructive')}>{r.fillRate}%</span>
       </div>
