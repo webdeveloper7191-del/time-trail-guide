@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX, UserPlus, Award, CalendarCheck, FileCheck, Briefcase, GraduationCap, BarChart2, Gauge, LayoutGrid, Wallet, Grid3X3, ShieldAlert, Ratio, ArrowLeftRight, Banknote, ShieldCheck, Receipt, Percent, RotateCw, FileSearch, CircleDollarSign, PhoneCall, UserCheck } from 'lucide-react';
+import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield, DollarSign, Calendar, AlertTriangle, Layers, Scale, RotateCcw, MapPin, Activity, CheckSquare, Radio, ClipboardList, AlarmClock, Coffee, FileWarning, Timer, Building2, UserX, UserPlus, Award, CalendarCheck, FileCheck, Briefcase, GraduationCap, BarChart2, Gauge, LayoutGrid, Wallet, Grid3X3, ShieldAlert, Ratio, ArrowLeftRight, Banknote, ShieldCheck, Receipt, Percent, RotateCw, FileSearch, CircleDollarSign, PhoneCall, UserCheck, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { reportSummaryMetrics } from '@/data/mockReportData';
+import { useReportFavourites } from '@/hooks/useReportFavourites';
 
 // Roster report components
 import { StaffUtilisationReport } from '@/components/reports/StaffUtilisationReport';
@@ -63,7 +64,7 @@ import { LabourCostReport } from '@/components/reports/LabourCostReport';
 import { OnCallCostReport } from '@/components/reports/OnCallCostReport';
 import { CasualVsPermanentReport } from '@/components/reports/CasualVsPermanentReport';
 
-type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets' | 'workforce' | 'locations' | 'payroll';
+type ReportCategory = 'all' | 'dashboards' | 'reports' | 'roster' | 'timesheets' | 'workforce' | 'locations' | 'payroll' | 'favourites';
 
 interface ReportItem {
   id: string;
@@ -127,6 +128,7 @@ const reportItems: ReportItem[] = [
   { id: 'pay-oncall', title: 'On-Call & Callback Cost', description: 'Standby, callback, and recall costs with activation rates', category: 'report', module: 'payroll', icon: PhoneCall, tags: ['on-call', 'callback', 'standby'], component: OnCallCostReport },
   { id: 'pay-casual-perm', title: 'Casual vs Permanent Cost', description: 'Cost comparison between casual and permanent employment types', category: 'report', module: 'payroll', icon: UserCheck, tags: ['casual', 'permanent', 'comparison'], component: CasualVsPermanentReport },
 ];
+
 const summaryCards = [
   { label: 'Avg Utilisation', value: `${reportSummaryMetrics.avgUtilisation}%`, icon: Users, trend: '+2.3%' },
   { label: 'Overtime Hours', value: `${reportSummaryMetrics.totalOvertimeHours}h`, icon: Clock, trend: '-4h', negative: true },
@@ -140,8 +142,10 @@ export default function ReportsPage() {
   const [activeCategory, setActiveCategory] = useState<ReportCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  const { toggleFavourite, isFavourite, favourites } = useReportFavourites();
 
   const filteredItems = reportItems.filter(item => {
+    if (activeCategory === 'favourites') return isFavourite(item.id);
     const matchesCategory = activeCategory === 'all' || 
       (activeCategory === 'dashboards' && item.category === 'dashboard') ||
       (activeCategory === 'reports' && item.category === 'report') ||
@@ -154,6 +158,14 @@ export default function ReportsPage() {
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
+  });
+
+  // Sort: favourites first, then alphabetical
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const aFav = isFavourite(a.id) ? 0 : 1;
+    const bFav = isFavourite(b.id) ? 0 : 1;
+    if (aFav !== bFav) return aFav - bFav;
+    return a.title.localeCompare(b.title);
   });
 
   const selectedItem = reportItems.find(r => r.id === selectedReport);
@@ -174,6 +186,14 @@ export default function ReportsPage() {
                 {selectedItem.category === 'dashboard' ? 'Dashboard' : 'Report'}
               </Badge>
               <h1 className="text-lg font-semibold tracking-tight text-foreground">{selectedItem.title}</h1>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto h-8 w-8 p-0"
+                onClick={() => toggleFavourite(selectedItem.id)}
+              >
+                <Star className={cn('h-4 w-4', isFavourite(selectedItem.id) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground')} />
+              </Button>
             </div>
             <ReportComponent />
           </div>
@@ -223,6 +243,13 @@ export default function ReportsPage() {
             <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as ReportCategory)}>
               <TabsList className="h-9">
                 <TabsTrigger value="all" className="text-xs px-3">All</TabsTrigger>
+                {favourites.size > 0 && (
+                  <TabsTrigger value="favourites" className="text-xs px-3 gap-1">
+                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    Favourites
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">{favourites.size}</Badge>
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="dashboards" className="text-xs px-3">
                   <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
                   Dashboards
@@ -251,12 +278,28 @@ export default function ReportsPage() {
 
           {/* Report grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredItems.map((item) => (
+            {sortedItems.map((item) => (
               <Card
                 key={item.id}
-                className="border-border/60 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group"
+                className={cn(
+                  'border-border/60 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group relative',
+                  isFavourite(item.id) && 'ring-1 ring-amber-200/50'
+                )}
                 onClick={() => setSelectedReport(item.id)}
               >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-3 right-3 h-7 w-7 p-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => { e.stopPropagation(); toggleFavourite(item.id); }}
+                >
+                  <Star className={cn('h-3.5 w-3.5', isFavourite(item.id) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground')} />
+                </Button>
+                {isFavourite(item.id) && (
+                  <div className="absolute top-3 right-3 group-hover:opacity-0 transition-opacity">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                  </div>
+                )}
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center">
