@@ -12,6 +12,7 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Users, Clock, AlertTriangle, CheckCircle2, Coffee, UserX } from 'lucide-react';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 const statusBadgeColors: Record<string, string> = {
   clocked_in: 'bg-emerald-100 text-emerald-700', on_break: 'bg-amber-100 text-amber-700',
@@ -33,11 +34,11 @@ export function RealTimeAttendanceDashboard() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [drill, setDrill] = useState<DrillFilter | null>(null);
 
-  const baseFiltered = useMemo(() => mockRealTimeAttendance.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockRealTimeAttendance.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase()) || r.role.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
-  }), [search, locationFilter]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const filtered = useMemo(() => {
     if (!drill) return baseFiltered;

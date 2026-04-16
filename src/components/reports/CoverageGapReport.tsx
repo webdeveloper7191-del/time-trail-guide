@@ -16,6 +16,7 @@ import { AlertTriangle, Shield, MapPin, Clock, Users, TrendingUp } from 'lucide-
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const severityColors: Record<string, string> = { minor: 'bg-emerald-100 text-emerald-700', moderate: 'bg-amber-100 text-amber-700', critical: 'bg-red-100 text-red-700' };
@@ -51,13 +52,12 @@ export function CoverageGapReport() {
   const [severityFilter, setSeverityFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockCoverageGaps.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockCoverageGaps.filter(r => {
     const matchesSearch = !search || r.area.toLowerCase().includes(search.toLowerCase()) || r.reason.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     const matchesSev = severityFilter === 'all' || r.gapSeverity === severityFilter;
-    if (dateRange?.from) { const d = parseISO(r.date); if (d < dateRange.from) return false; if (dateRange.to && d > dateRange.to) return false; }
     return matchesSearch && matchesLoc && matchesSev;
-  }), [search, locationFilter, severityFilter, dateRange]);
+  }), dateRange), [search, locationFilter, severityFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

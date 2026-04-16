@@ -15,6 +15,7 @@ import { Clock, AlertTriangle, Users, TrendingDown, Timer, UserX } from 'lucide-
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 type LatePunctualityRecord = typeof mockLatePunctuality[0];
@@ -59,11 +60,11 @@ export function LatePunctualityReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockLatePunctuality.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockLatePunctuality.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
-  }), [search, locationFilter]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

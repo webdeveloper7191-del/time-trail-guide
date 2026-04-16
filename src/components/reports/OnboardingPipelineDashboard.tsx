@@ -12,6 +12,7 @@ import { mockOnboardingData } from '@/data/mockWorkforceReportData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
 import { Users, Clock, CheckCircle2, AlertTriangle, Target, TrendingUp, UserPlus, Timer } from 'lucide-react';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 const statusColors: Record<string, string> = {
   completed: 'bg-emerald-100 text-emerald-800', in_progress: 'bg-blue-100 text-blue-800',
@@ -26,11 +27,11 @@ export function OnboardingPipelineDashboard() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [drill, setDrill] = useState<DrillFilter | null>(null);
 
-  const baseFiltered = useMemo(() => mockOnboardingData.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockOnboardingData.filter(r => {
     if (location !== 'all' && r.location !== location) return false;
     if (search && !r.staffName.toLowerCase().includes(search.toLowerCase()) && !r.position.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  }), [search, location]);
+  }), dateRange), [search, location, dateRange]);
 
   const filtered = useMemo(() => {
     if (!drill) return baseFiltered;

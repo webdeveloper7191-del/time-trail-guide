@@ -14,6 +14,7 @@ import { Clock, DollarSign, AlertTriangle, MapPin, Users, TrendingUp } from 'luc
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 type OvertimeByLocationRecord = typeof mockOvertimeByLocation[0];
@@ -45,11 +46,11 @@ export function OvertimeByLocationReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockOvertimeByLocation.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockOvertimeByLocation.filter(r => {
     const ms = !search || r.department.toLowerCase().includes(search.toLowerCase()) || r.topOvertimeStaff.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
-  }), [search, locationFilter]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

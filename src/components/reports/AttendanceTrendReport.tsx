@@ -15,6 +15,7 @@ import { Users, TrendingDown, AlertTriangle, CheckCircle2, Calendar, Heart } fro
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 type AttendanceTrendRecord = typeof mockAttendanceTrends[0];
@@ -56,11 +57,11 @@ export function AttendanceTrendReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockAttendanceTrends.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockAttendanceTrends.filter(r => {
     const ms = !search || r.location.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
-  }), [search, locationFilter]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

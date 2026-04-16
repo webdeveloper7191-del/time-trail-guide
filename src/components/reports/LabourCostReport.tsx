@@ -14,6 +14,7 @@ import { DollarSign, TrendingUp, AlertTriangle, Target, Users, Banknote } from '
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const COLORS = ['hsl(var(--primary))', '#F59E0B', 'hsl(var(--destructive))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'];
@@ -50,11 +51,11 @@ export function LabourCostReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockLabourCosts.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockLabourCosts.filter(r => {
     const matchesSearch = !search || r.location.toLowerCase().includes(search.toLowerCase()) || r.department.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
-  }), [search, locationFilter]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

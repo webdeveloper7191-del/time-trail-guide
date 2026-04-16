@@ -11,6 +11,7 @@ import { mockAwardOverrides, awardComplianceTrend } from '@/data/mockPayrollRepo
 import { cn } from '@/lib/utils';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from 'recharts';
 import { Shield, CheckCircle2, AlertTriangle, FileWarning, Target, TrendingUp } from 'lucide-react';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 const exportColumns: ExportColumn[] = [
   { header: 'Month', accessor: 'month' }, { header: 'Compliance %', accessor: 'complianceRate' },

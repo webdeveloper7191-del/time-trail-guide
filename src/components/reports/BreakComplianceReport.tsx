@@ -15,6 +15,7 @@ import { Shield, AlertTriangle, Clock, CheckCircle2, Coffee, Users } from 'lucid
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 type BreakComplianceRecord = typeof mockBreakCompliance[0];
@@ -54,11 +55,11 @@ export function BreakComplianceReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockBreakCompliance.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockBreakCompliance.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
-  }), [search, locationFilter]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

@@ -17,6 +17,7 @@ import {
   PieChart, Pie, Cell, AreaChart, Area,
 } from 'recharts';
 import { AlertTriangle, CheckCircle2, MapPin, Users, Shield, Activity, DollarSign, Target } from 'lucide-react';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 const COLORS = ['hsl(var(--primary))', '#10B981', '#F59E0B', 'hsl(var(--destructive))', '#8B5CF6'];
 
@@ -53,11 +54,11 @@ export function MultiSiteOpsDashboard() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [drill, setDrill] = useState<DrillFilter | null>(null);
 
-  const baseFiltered = useMemo(() => mockMultiSiteOps.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockMultiSiteOps.filter(r => {
     const matchesSearch = !search || r.locationName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
-  }), [search, locationFilter]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const filtered = useMemo(() => {
     if (!drill) return baseFiltered;

@@ -15,6 +15,7 @@ import { Clock, Target, Users, DollarSign, TrendingUp, AlertTriangle } from 'luc
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const COLORS = { internal: 'hsl(142, 76%, 36%)', agency: '#F59E0B', unfilled: 'hsl(var(--destructive))' };
@@ -76,12 +77,11 @@ export function OpenShiftFillReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockOpenShiftFill.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockOpenShiftFill.filter(r => {
     const matchesSearch = !search || r.area.toLowerCase().includes(search.toLowerCase()) || r.location.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
-    if (dateRange?.from) { const d = parseISO(r.date); if (d < dateRange.from) return false; if (dateRange.to && d > dateRange.to) return false; }
     return matchesSearch && matchesLoc;
-  }), [search, locationFilter, dateRange]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

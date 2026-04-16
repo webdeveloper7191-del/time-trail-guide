@@ -13,6 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const exportColumns: ExportColumn[] = [
@@ -33,11 +34,11 @@ export function DemandVsActualsDashboard() {
 
   const areas = [...new Set(mockDemandVsActuals.map(r => r.area))];
 
-  const baseFiltered = useMemo(() => mockDemandVsActuals.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockDemandVsActuals.filter(r => {
     const matchesSearch = !search || r.area.toLowerCase().includes(search.toLowerCase()) || r.location.toLowerCase().includes(search.toLowerCase());
     const matchesArea = areaFilter === 'all' || r.area === areaFilter;
     return matchesSearch && matchesArea;
-  }), [search, areaFilter]);
+  }), dateRange), [search, areaFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

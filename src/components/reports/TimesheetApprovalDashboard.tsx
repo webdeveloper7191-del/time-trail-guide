@@ -12,6 +12,7 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Clock, CheckCircle2, AlertTriangle, FileWarning, Users, Target, TrendingUp, Shield } from 'lucide-react';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700', approved: 'bg-emerald-100 text-emerald-700',
@@ -33,11 +34,11 @@ export function TimesheetApprovalDashboard() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [drill, setDrill] = useState<DrillFilter | null>(null);
 
-  const baseFiltered = useMemo(() => mockApprovalPipeline.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockApprovalPipeline.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
-  }), [search, locationFilter]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const filtered = useMemo(() => {
     if (!drill) return baseFiltered;

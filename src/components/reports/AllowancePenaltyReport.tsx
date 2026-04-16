@@ -14,6 +14,8 @@ import { DollarSign, TrendingUp, AlertTriangle, Award, Banknote, FileText } from
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange, computePeriodDelta } from '@/lib/reportDateFilter';
+import { PeriodComparisonBar } from './PeriodComparisonBar';
 
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))'];
@@ -44,12 +46,17 @@ export function AllowancePenaltyReport() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [comparisonEnabled, setComparisonEnabled] = useState(false);
+  const [comparisonRange, setComparisonRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockAllowancePenalties.filter(r => {
+  const searchLocFilter = useMemo(() => mockAllowancePenalties.filter(r => {
     const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase()) || r.category.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const baseFiltered = useMemo(() => filterByDateRange(searchLocFilter, dateRange), [searchLocFilter, dateRange]);
+  const comparisonData = useMemo(() => comparisonEnabled && comparisonRange?.from ? filterByDateRange(searchLocFilter, comparisonRange) : [], [searchLocFilter, comparisonEnabled, comparisonRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,
@@ -95,7 +102,9 @@ export function AllowancePenaltyReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Allowance & Penalty Breakdown" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search..."
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
-        exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
+        exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange}
+        comparisonEnabled={comparisonEnabled} onComparisonToggle={() => setComparisonEnabled(v => !v)}
+        comparisonRange={comparisonRange} onComparisonRangeChange={setComparisonRange} />
 
       <DrillFilterBadge filter={drill} onClear={clearDrill} />
 
