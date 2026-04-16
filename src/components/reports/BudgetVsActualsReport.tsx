@@ -46,7 +46,7 @@ export function BudgetVsActualsReport() {
     const matchesSearch = !search || r.locationName.toLowerCase().includes(search.toLowerCase()) || r.category.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
-  }), dateRange)), [search, locationFilter, dateRange]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

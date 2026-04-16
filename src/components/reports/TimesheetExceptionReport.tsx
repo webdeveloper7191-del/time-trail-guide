@@ -64,7 +64,7 @@ export function TimesheetExceptionReport() {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase()) || r.editedBy.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
-  }), dateRange)), [search, locationFilter, dateRange]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

@@ -51,7 +51,7 @@ export function AllowancePenaltyReport() {
     const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase()) || r.category.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
-  }), dateRange)), [search, locationFilter, dateRange]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

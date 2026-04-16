@@ -61,7 +61,7 @@ export function AttendanceTrendReport() {
     const ms = !search || r.location.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
-  }), dateRange)), [search, locationFilter, dateRange]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

@@ -38,7 +38,7 @@ export function DemandVsActualsDashboard() {
     const matchesSearch = !search || r.area.toLowerCase().includes(search.toLowerCase()) || r.location.toLowerCase().includes(search.toLowerCase());
     const matchesArea = areaFilter === 'all' || r.area === areaFilter;
     return matchesSearch && matchesArea;
-  }), dateRange)), [search, areaFilter, dateRange]);
+  }), dateRange), [search, areaFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

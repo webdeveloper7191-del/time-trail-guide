@@ -58,7 +58,7 @@ export function MultiSiteOpsDashboard() {
     const matchesSearch = !search || r.locationName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
-  }), dateRange)), [search, locationFilter, dateRange]);
+  }), dateRange), [search, locationFilter, dateRange]);
 
   const filtered = useMemo(() => {
     if (!drill) return baseFiltered;

@@ -58,7 +58,7 @@ export function CoverageGapReport() {
     const matchesSev = severityFilter === 'all' || r.gapSeverity === severityFilter;
     if (dateRange?.from) { const d = parseISO(r.date); if (d < dateRange.from) return false; if (dateRange.to && d > dateRange.to) return false; }
     return matchesSearch && matchesLoc && matchesSev;
-  }, dateRange)), [search, locationFilter, severityFilter, dateRange]);
+  }, dateRange), [search, locationFilter, severityFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,
