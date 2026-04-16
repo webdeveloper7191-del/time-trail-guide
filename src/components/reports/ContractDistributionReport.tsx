@@ -47,10 +47,10 @@ export function ContractDistributionReport() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const baseFiltered = useMemo(() => {
-    return mockContractDistribution.filter(r => {
+    return filterByDateRange(mockContractDistribution.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.department.toLowerCase().includes(search.toLowerCase())) return false;
-      return filterByDateRange(true, dateRange);
+      return true, dateRange);
     });
   }, [search, location]);
 

@@ -31,7 +31,7 @@ export function OnboardingPipelineDashboard() {
     if (location !== 'all' && r.location !== location) return false;
     if (search && !r.staffName.toLowerCase().includes(search.toLowerCase()) && !r.position.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  }, dateRange)), [search, location, dateRange]);
+  }), dateRange)), [search, location, dateRange]);
 
   const filtered = useMemo(() => {
     if (!drill) return baseFiltered;

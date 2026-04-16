@@ -48,7 +48,7 @@ export function CapacityUtilDashboard() {
     const matchesSearch = !search || r.areaName.toLowerCase().includes(search.toLowerCase()) || r.locationName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
-  }, dateRange)), [search, locationFilter, dateRange]);
+  }), dateRange)), [search, locationFilter, dateRange]);
 
   const filtered = useMemo(() => {
     if (!drill) return baseFiltered;

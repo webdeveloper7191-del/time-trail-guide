@@ -46,7 +46,7 @@ export function ComplianceViolationReport() {
     const matchesSearch = !search || r.violationType.toLowerCase().includes(search.toLowerCase()) || r.locationName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
-  }, dateRange)), [search, locationFilter, dateRange]);
+  }), dateRange)), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

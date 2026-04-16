@@ -60,10 +60,10 @@ export function HeadcountFTEReport() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const baseFiltered = useMemo(() => {
-    return mockHeadcountData.filter(r => {
+    return filterByDateRange(mockHeadcountData.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.department.toLowerCase().includes(search.toLowerCase())) return false;
-      return filterByDateRange(true, dateRange);
+      return true, dateRange);
     });
   }, [search, location]);
 

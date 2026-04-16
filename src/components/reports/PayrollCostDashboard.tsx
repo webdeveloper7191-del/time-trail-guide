@@ -32,7 +32,7 @@ export function PayrollCostDashboard() {
     const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
-  }, dateRange)), [search, locationFilter, dateRange]);
+  }), dateRange)), [search, locationFilter, dateRange]);
 
   const filtered = useMemo(() => {
     if (!drill) return baseFiltered;

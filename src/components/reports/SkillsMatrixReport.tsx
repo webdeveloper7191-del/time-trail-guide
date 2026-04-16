@@ -51,10 +51,10 @@ export function SkillsMatrixReport() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const baseFiltered = useMemo(() => {
-    return mockSkillsMatrix.filter(r => {
+    return filterByDateRange(mockSkillsMatrix.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.staffName.toLowerCase().includes(search.toLowerCase()) && !r.skills.some(s => s.name.toLowerCase().includes(search.toLowerCase()))) return false;
-      return filterByDateRange(true, dateRange);
+      return true, dateRange);
     });
   }, [search, location]);
 

@@ -49,10 +49,10 @@ export function OnboardingCompletionReport() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const baseFiltered = useMemo(() => {
-    return mockOnboardingData.filter(r => {
+    return filterByDateRange(mockOnboardingData.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.staffName.toLowerCase().includes(search.toLowerCase())) return false;
-      return filterByDateRange(true, dateRange);
+      return true, dateRange);
     });
   }, [search, location]);
 

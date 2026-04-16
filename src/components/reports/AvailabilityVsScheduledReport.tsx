@@ -48,10 +48,10 @@ export function AvailabilityVsScheduledReport() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const baseFiltered = useMemo(() => {
-    return mockAvailabilityVsScheduled.filter(r => {
+    return filterByDateRange(mockAvailabilityVsScheduled.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.staffName.toLowerCase().includes(search.toLowerCase())) return false;
-      return filterByDateRange(true, dateRange);
+      return true, dateRange);
     });
   }, [search, location]);
 
