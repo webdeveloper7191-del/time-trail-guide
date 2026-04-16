@@ -11,6 +11,10 @@ import { mockStaffingRatios, StaffingRatioRecord } from '@/data/mockLocationRepo
 import { cn } from '@/lib/utils';
 import { ShieldCheck, ShieldAlert, Users, AlertTriangle, CheckCircle2, XCircle, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const exportColumns: ExportColumn[] = [
   { header: 'Location', accessor: 'locationName' }, { header: 'Area', accessor: 'areaName' },
@@ -33,7 +37,9 @@ const tableColumns: DataTableColumn<StaffingRatioRecord>[] = [
   { key: 'requiredStaff', header: 'Req. Staff', accessor: (r) => r.requiredStaff, sortValue: (r) => r.requiredStaff, align: 'right' },
   { key: 'actualStaff', header: 'Act. Staff', accessor: (r) => r.actualStaff, sortValue: (r) => r.actualStaff, align: 'right' },
   { key: 'isCompliant', header: 'Status', align: 'center', sortValue: (r) => r.isCompliant ? 1 : 0,
-    accessor: (r) => r.isCompliant ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mx-auto" /> : <XCircle className="h-4 w-4 text-destructive mx-auto" /> },
+    accessor: (r) => r.isCompliant ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mx-auto" />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} /> : <XCircle className="h-4 w-4 text-destructive mx-auto" /> },
 ];
 
 export function StaffingRatioComplianceReport() {
@@ -41,11 +47,30 @@ export function StaffingRatioComplianceReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockStaffingRatios.filter(r => {
+  const baseFiltered = useMemo(() => mockStaffingRatios.filter(r => {
     const matchesSearch = !search || r.areaName.toLowerCase().includes(search.toLowerCase()) || r.locationName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const complianceRate = Math.round(filtered.filter(r => r.isCompliant).length / (filtered.length || 1) * 100);
   const breachCount = filtered.filter(r => !r.isCompliant).length;
@@ -188,22 +213,22 @@ export function StaffingRatioComplianceReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Compliance Overview</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={compliancePie} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={compliancePie} cursor="pointer" onClick={(_, index) => { const d = compliancePie[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {compliancePie.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Compliance by Location</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={byLocation}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
+              <BarChart data={byLocation} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -212,15 +237,15 @@ export function StaffingRatioComplianceReport() {
                 <Bar dataKey="compliant" name="Compliant" stackId="a" fill="#10B981" />
                 <Bar dataKey="nonCompliant" name="Non-Compliant" stackId="a" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">By Category</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={byCategoryCompliance} layout="vertical">
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
+              <BarChart data={byCategoryCompliance} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 10 }} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 9 }} width={80} />
@@ -228,7 +253,7 @@ export function StaffingRatioComplianceReport() {
                 <Bar dataKey="compliant" name="Compliant" stackId="a" fill="#10B981" />
                 <Bar dataKey="breach" name="Breach" stackId="a" fill="hsl(var(--destructive))" radius={[0, 4, 4, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
@@ -236,7 +261,7 @@ export function StaffingRatioComplianceReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Compliance by Time Slot</CardTitle></CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={240}>
+          <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
             <AreaChart data={timeSlotData}>
               <defs>
                 <linearGradient id="rateGrad" x1="0" y1="0" x2="0" y2="1">
@@ -250,13 +275,13 @@ export function StaffingRatioComplianceReport() {
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               <Area type="monotone" dataKey="rate" name="Compliance %" stroke="#10B981" fill="url(#rateGrad)" strokeWidth={2} />
             </AreaChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer></AnimatedChartWrapper>
         </CardContent>
       </Card>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">All Ratio Checks — Detailed</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${r.timeSlot}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${r.timeSlot}-${i}`} /></CardContent>
       </Card>
     </div>
   );

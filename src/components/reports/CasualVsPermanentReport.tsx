@@ -11,6 +11,10 @@ import { mockCasualVsPermanent, CasualVsPermanentRecord } from '@/data/mockPayro
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { DollarSign, Users, TrendingUp, AlertTriangle, Target, Banknote } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))'];
 
@@ -45,11 +49,30 @@ export function CasualVsPermanentReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockCasualVsPermanent.filter(r => {
+  const baseFiltered = useMemo(() => mockCasualVsPermanent.filter(r => {
     const matchesSearch = !search || r.location.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totalPerm = filtered.reduce((s, r) => s + r.permanentCost, 0);
   const totalCasual = filtered.reduce((s, r) => s + r.casualCost, 0);
@@ -74,6 +97,8 @@ export function CasualVsPermanentReport() {
       <ReportFilterBar title="Casual vs Permanent Cost Comparison" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search..."
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
 
       <ReportHelpGuide
         reportName="Casual vs Permanent Cost Comparison"
@@ -128,8 +153,8 @@ export function CasualVsPermanentReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Cost Trend by Period</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={trendData}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
+              <BarChart data={trendData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="period" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v / 1000}k`} />
@@ -138,28 +163,28 @@ export function CasualVsPermanentReport() {
                 <Bar dataKey="permanent" name="Permanent" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="casual" name="Casual" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Cost Split</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie data={costPie} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={costPie} cursor="pointer" onClick={(_, index) => { const d = costPie[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {costPie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.location}-${r.period}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.location}-${r.period}-${i}`} /></CardContent>
       </Card>
     </div>
   );

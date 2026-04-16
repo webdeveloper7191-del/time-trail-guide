@@ -11,6 +11,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { Clock, Users, AlertTriangle, DollarSign, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 type WeeklyTimesheetRecord = typeof mockWeeklyTimesheets[0];
 
@@ -32,6 +36,8 @@ const tableColumns: DataTableColumn<WeeklyTimesheetRecord>[] = [
   { key: 'staffName', header: 'Staff', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.status === 'approved' || r.status === 'auto_approved' ? 'bg-emerald-500' : r.status === 'rejected' ? 'bg-red-500' : 'bg-amber-500')} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
       <span className="font-medium">{r.staffName}</span>
     </div>
   ), sortValue: (r) => r.staffName },
@@ -54,11 +60,30 @@ export function WeeklyTimesheetReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockWeeklyTimesheets.filter(r => {
+  const baseFiltered = useMemo(() => mockWeeklyTimesheets.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totalHours = filtered.reduce((s, r) => s + r.totalHours, 0);
   const totalRegular = filtered.reduce((s, r) => s + r.regularHours, 0);
@@ -138,8 +163,8 @@ export function WeeklyTimesheetReport() {
         <Card className="border-border/60 col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Hours by Staff</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
+              <BarChart data={chartData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -148,27 +173,27 @@ export function WeeklyTimesheetReport() {
                 <Bar dataKey="regular" name="Regular" fill="hsl(var(--primary))" stackId="a" />
                 <Bar dataKey="overtime" name="Overtime" fill="hsl(var(--destructive))" stackId="a" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Approval Status</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
               <PieChart>
-                <Pie data={statusDist} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={statusDist} cursor="pointer" onClick={(_, index) => { const d = statusDist[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {statusDist.map((_, i) => <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Timesheet Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
       </Card>
     </div>
   );

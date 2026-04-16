@@ -10,6 +10,10 @@ import { ReportDataTable, DataTableColumn } from './ReportDataTable';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const exportColumns: ExportColumn[] = [
   { header: 'Date', accessor: (r: any) => format(parseISO(r.date), 'dd MMM yyyy') },
@@ -29,11 +33,30 @@ export function DemandVsActualsDashboard() {
 
   const areas = [...new Set(mockDemandVsActuals.map(r => r.area))];
 
-  const filtered = useMemo(() => mockDemandVsActuals.filter(r => {
+  const baseFiltered = useMemo(() => mockDemandVsActuals.filter(r => {
     const matchesSearch = !search || r.area.toLowerCase().includes(search.toLowerCase()) || r.location.toLowerCase().includes(search.toLowerCase());
     const matchesArea = areaFilter === 'all' || r.area === areaFilter;
     return matchesSearch && matchesArea;
   }), [search, areaFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const avgDemandAccuracy = Math.round(filtered.reduce((s, r) => s + r.demandAccuracy, 0) / (filtered.length || 1));
   const avgStaffAccuracy = Math.round(filtered.reduce((s, r) => s + r.staffingAccuracy, 0) / (filtered.length || 1));
@@ -68,6 +91,8 @@ export function DemandVsActualsDashboard() {
         </select>
       </ReportFilterBar>
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <div className="grid grid-cols-4 gap-4">
         <Card><CardContent className="p-4 flex items-center gap-3"><div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center"><Target className="h-5 w-5 text-accent-foreground" /></div><div><p className="text-2xl font-bold tracking-tight">{avgDemandAccuracy}%</p><p className="text-xs text-muted-foreground">Demand Accuracy</p></div></CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-3"><div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center"><Target className="h-5 w-5 text-accent-foreground" /></div><div><p className="text-2xl font-bold tracking-tight">{avgStaffAccuracy}%</p><p className="text-xs text-muted-foreground">Staffing Accuracy</p></div></CardContent></Card>
@@ -79,7 +104,7 @@ export function DemandVsActualsDashboard() {
         <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Accuracy Trend by Day</CardTitle></CardHeader>
         <CardContent>
           <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -89,7 +114,7 @@ export function DemandVsActualsDashboard() {
                 <Line type="monotone" dataKey="demand" name="Demand Accuracy %" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="staffing" name="Staffing Accuracy %" stroke="hsl(var(--status-approved))" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </div>
         </CardContent>
       </Card>

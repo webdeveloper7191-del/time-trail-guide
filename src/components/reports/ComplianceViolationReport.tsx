@@ -11,6 +11,10 @@ import { mockComplianceViolations, ComplianceViolationRecord } from '@/data/mock
 import { cn } from '@/lib/utils';
 import { ShieldAlert, AlertTriangle, CheckCircle2, Clock, XCircle, BarChart3 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, AreaChart, Area } from 'recharts';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const exportColumns: ExportColumn[] = [
   { header: 'Location', accessor: 'locationName' }, { header: 'Area', accessor: 'areaName' },
@@ -37,11 +41,30 @@ export function ComplianceViolationReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockComplianceViolations.filter(r => {
+  const baseFiltered = useMemo(() => mockComplianceViolations.filter(r => {
     const matchesSearch = !search || r.violationType.toLowerCase().includes(search.toLowerCase()) || r.locationName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const openViolations = filtered.filter(r => r.status === 'open');
   const criticalCount = filtered.filter(r => r.severity === 'critical').length;
@@ -112,6 +135,8 @@ export function ComplianceViolationReport() {
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <ReportHelpGuide
         reportName="Compliance Violation Summary"
         reportDescription="Comprehensive tracking and analysis of all compliance violations across locations, categorised by severity, type, and resolution status. Supports regulatory reporting and continuous improvement initiatives."
@@ -176,28 +201,28 @@ export function ComplianceViolationReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">By Severity</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={bySeverity} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={bySeverity} cursor="pointer" onClick={(_, index) => { const d = bySeverity[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {bySeverity.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">By Status</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={byStatus} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={byStatus} cursor="pointer" onClick={(_, index) => { const d = byStatus[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {byStatus.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
@@ -228,8 +253,8 @@ export function ComplianceViolationReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Violations by Location (Stacked by Severity)</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={byLocation}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
+              <BarChart data={byLocation} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('category', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -239,14 +264,14 @@ export function ComplianceViolationReport() {
                 <Bar dataKey="warning" name="Warning" stackId="a" fill="#F59E0B" />
                 <Bar dataKey="info" name="Info" stackId="a" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Monthly Violation Trend</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="violGrad" x1="0" y1="0" x2="0" y2="1">
@@ -262,14 +287,14 @@ export function ComplianceViolationReport() {
                 <Area type="monotone" dataKey="violations" name="New Violations" stroke="hsl(var(--destructive))" fill="url(#violGrad)" strokeWidth={2} />
                 <Area type="monotone" dataKey="resolved" name="Resolved" stroke="#10B981" fill="transparent" strokeWidth={2} strokeDasharray="5 5" />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">All Violations — Full Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
       </Card>
     </div>
   );

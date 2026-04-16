@@ -10,6 +10,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ExportColumn } from '@/lib/reportExport';
 import { Users, Briefcase, Clock, AlertTriangle, Target, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
 
@@ -41,13 +45,32 @@ export function ContractDistributionReport() {
   const [location, setLocation] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return mockContractDistribution.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.department.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
   }, [search, location]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totals = useMemo(() => filtered.reduce((a, r) => ({
     ft: a.ft + r.fullTime, pt: a.pt + r.partTime, cas: a.cas + r.casual, con: a.con + r.contractor, total: a.total + r.totalStaff,
@@ -76,6 +99,8 @@ export function ContractDistributionReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Contract Type Distribution" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search departments..." locationFilter={location} onLocationChange={setLocation} locations={locations} exportData={filtered} exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
 
       <ReportHelpGuide
         reportName="Contract Type Distribution Report"
@@ -130,22 +155,22 @@ export function ContractDistributionReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Overall Distribution</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={pieData} cursor="pointer" onClick={(_, index) => { const d = pieData[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {pieData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Distribution by Location</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={byLocation}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
+              <BarChart data={byLocation} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="location" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -156,14 +181,14 @@ export function ContractDistributionReport() {
                 <Bar dataKey="casual" stackId="a" fill={COLORS[2]} name="Casual" />
                 <Bar dataKey="contractor" stackId="a" fill={COLORS[3]} name="Contractor" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Department Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.location}-${r.department}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.location}-${r.department}-${i}`} /></CardContent>
       </Card>
     </div>
   );

@@ -12,6 +12,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { Clock, Shield, AlertTriangle, CheckCircle2, Timer, Users } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 type ApprovalSLARecord = typeof mockApprovalSLA[0];
 
@@ -26,6 +30,8 @@ const tableColumns: DataTableColumn<ApprovalSLARecord>[] = [
   { key: 'approverName', header: 'Approver', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.slaCompliancePercent >= 90 ? 'bg-emerald-500' : r.slaCompliancePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
       <span className="font-medium">{r.approverName}</span>
     </div>
   ), sortValue: (r) => r.approverName },
@@ -52,7 +58,26 @@ export function ApprovalSLAReport() {
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = mockApprovalSLA.filter(r => !search || r.approverName.toLowerCase().includes(search.toLowerCase()));
+  const baseFiltered = mockApprovalSLA.filter(r => !search || r.approverName.toLowerCase().includes(search.toLowerCase()));
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
   const avgCompliance = Math.round(filtered.reduce((s, r) => s + r.slaCompliancePercent, 0) / (filtered.length || 1));
   const totalBreached = filtered.reduce((s, r) => s + r.breachedSLA, 0);
   const totalApprovals = filtered.reduce((s, r) => s + r.totalApprovals, 0);
@@ -125,8 +150,8 @@ export function ApprovalSLAReport() {
         <Card className="border-border/60 col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-sm">SLA Performance by Approver</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
+              <BarChart data={chartData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -135,27 +160,27 @@ export function ApprovalSLAReport() {
                 <Bar dataKey="withinSLA" name="Within SLA" fill="#10B981" stackId="a" />
                 <Bar dataKey="breached" name="Breached" fill="hsl(var(--destructive))" stackId="a" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">SLA Distribution</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
               <PieChart>
-                <Pie data={complianceDist} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={complianceDist} cursor="pointer" onClick={(_, index) => { const d = complianceDist[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {complianceDist.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Approver SLA Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
       </Card>
     </div>
   );

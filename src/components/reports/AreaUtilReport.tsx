@@ -12,6 +12,10 @@ import { mockAreaUtil, AreaUtilRecord } from '@/data/mockLocationReportData';
 import { cn } from '@/lib/utils';
 import { Building2, Users, TrendingUp, AlertTriangle, BarChart3, Gauge } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const exportColumns: ExportColumn[] = [
   { header: 'Location', accessor: 'locationName' }, { header: 'Area', accessor: 'areaName' },
@@ -34,6 +38,8 @@ const tableColumns: DataTableColumn<AreaUtilRecord>[] = [
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <Progress value={r.utilisationPercent} className="h-2 flex-1" />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
         <span className={cn('text-xs font-medium w-10 text-right', r.utilisationPercent >= 90 ? 'text-destructive' : r.utilisationPercent >= 75 ? 'text-amber-600' : 'text-foreground')}>{r.utilisationPercent}%</span>
       </div>
     ) },
@@ -46,11 +52,30 @@ export function AreaUtilReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockAreaUtil.filter(r => {
+  const baseFiltered = useMemo(() => mockAreaUtil.filter(r => {
     const matchesSearch = !search || r.areaName.toLowerCase().includes(search.toLowerCase()) || r.serviceCategory.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const activeAreas = filtered.filter(r => r.status === 'active');
   const avgUtil = Math.round(activeAreas.reduce((s, r) => s + r.utilisationPercent, 0) / (activeAreas.length || 1));
@@ -188,30 +213,30 @@ export function AreaUtilReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Avg Utilisation by Location</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={chartData}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
+              <BarChart data={chartData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('areaName', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Bar dataKey="util" name="Utilisation %" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Utilisation Distribution</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={distBuckets}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
+              <BarChart data={distBuckets} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('areaName', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="range" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Bar dataKey="count" name="Areas" fill="#10B981" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
@@ -220,21 +245,21 @@ export function AreaUtilReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Utilisation by Category</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <RadarChart data={radarData}>
                 <PolarGrid stroke="hsl(var(--border))" />
                 <PolarAngleAxis dataKey="category" tick={{ fontSize: 9 }} />
                 <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 9 }} />
                 <Radar name="Utilisation" dataKey="utilisation" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
               </RadarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Weekly Utilisation Pattern</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <AreaChart data={weeklyTrend}>
                 <defs>
                   <linearGradient id="utilGrad" x1="0" y1="0" x2="0" y2="1">
@@ -248,14 +273,14 @@ export function AreaUtilReport() {
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Area type="monotone" dataKey="util" name="Utilisation %" stroke="hsl(var(--primary))" fill="url(#utilGrad)" strokeWidth={2} />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">All Areas — Detailed Breakdown</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${i}`} /></CardContent>
       </Card>
     </div>
   );

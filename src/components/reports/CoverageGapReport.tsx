@@ -13,6 +13,10 @@ import { ExportColumn } from '@/lib/reportExport';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LineChart, Line, Legend } from 'recharts';
 import { AlertTriangle, Shield, MapPin, Clock, Users, TrendingUp } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const severityColors: Record<string, string> = { minor: 'bg-emerald-100 text-emerald-700', moderate: 'bg-amber-100 text-amber-700', critical: 'bg-red-100 text-red-700' };
 const severityFills: Record<string, string> = { minor: 'hsl(142, 76%, 36%)', moderate: '#F59E0B', critical: 'hsl(var(--destructive))' };
@@ -47,13 +51,32 @@ export function CoverageGapReport() {
   const [severityFilter, setSeverityFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockCoverageGaps.filter(r => {
+  const baseFiltered = useMemo(() => mockCoverageGaps.filter(r => {
     const matchesSearch = !search || r.area.toLowerCase().includes(search.toLowerCase()) || r.reason.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     const matchesSev = severityFilter === 'all' || r.gapSeverity === severityFilter;
     if (dateRange?.from) { const d = parseISO(r.date); if (d < dateRange.from) return false; if (dateRange.to && d > dateRange.to) return false; }
     return matchesSearch && matchesLoc && matchesSev;
   }), [search, locationFilter, severityFilter, dateRange]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totalGaps = filtered.reduce((s, r) => s + r.gap, 0);
   const criticalGaps = filtered.filter(r => r.gapSeverity === 'critical');
@@ -152,6 +175,8 @@ export function CoverageGapReport() {
         </Select>
       </ReportFilterBar>
 
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Total Staff Gaps" value={totalGaps} icon={Users} variant={totalGaps > 5 ? 'danger' : 'default'} />
         <StatCard label="Critical Gaps" value={criticalGaps.length} icon={AlertTriangle} variant={criticalGaps.length > 0 ? 'danger' : 'success'} subtitle={criticalGaps.length > 0 ? 'Immediate action' : 'No critical gaps'} />
@@ -177,21 +202,21 @@ export function CoverageGapReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Severity Distribution</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={severityDist} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={severityDist} cursor="pointer" onClick={(_, index) => { const d = severityDist[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {severityDist.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Gaps by Location</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={gapsByLocation}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
+              <BarChart data={gapsByLocation} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -201,21 +226,21 @@ export function CoverageGapReport() {
                 <Bar dataKey="moderate" name="Moderate" stackId="a" fill={severityFills.moderate} />
                 <Bar dataKey="minor" name="Minor" stackId="a" fill={severityFills.minor} radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Peak Gap Time Slots</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={timeSlotData} layout="vertical">
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
+              <BarChart data={timeSlotData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="slot" type="category" tick={{ fontSize: 9 }} width={70} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Bar dataKey="gap" name="Staff Gaps" fill="hsl(var(--destructive))" radius={[0, 4, 4, 0]} opacity={0.8} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
@@ -223,7 +248,7 @@ export function CoverageGapReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Coverage Gap Details</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
         </CardContent>
       </Card>
     </div>

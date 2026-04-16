@@ -12,6 +12,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Shield, AlertTriangle, Clock, CheckCircle2, Coffee, Users } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 type BreakComplianceRecord = typeof mockBreakCompliance[0];
 
@@ -29,6 +33,8 @@ const tableColumns: DataTableColumn<BreakComplianceRecord>[] = [
   { key: 'staffName', header: 'Staff', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.compliant ? 'bg-emerald-500' : 'bg-red-500')} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
       <span className="font-medium">{r.staffName}</span>
     </div>
   ), sortValue: (r) => r.staffName },
@@ -49,11 +55,30 @@ export function BreakComplianceReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockBreakCompliance.filter(r => {
+  const baseFiltered = useMemo(() => mockBreakCompliance.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const compliant = filtered.filter(r => r.compliant).length;
   const violations = filtered.filter(r => !r.compliant).length;
@@ -139,20 +164,20 @@ export function BreakComplianceReport() {
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Compliance Overview</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={pieData} cursor="pointer" onClick={(_, index) => { const d = pieData[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {pieData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Break Duration: Required vs Actual</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
               <BarChart data={filtered.map(r => ({ name: r.staffName.split(' ')[0], required: r.requiredBreakMinutes, actual: r.actualBreakMinutes }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -162,14 +187,14 @@ export function BreakComplianceReport() {
                 <Bar dataKey="required" name="Required" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} opacity={0.3} />
                 <Bar dataKey="actual" name="Actual" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Break Compliance Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
       </Card>
     </div>
   );

@@ -12,6 +12,10 @@ import { ExportColumn } from '@/lib/reportExport';
 import { format, parseISO } from 'date-fns';
 import { Users, TrendingDown, UserMinus, UserPlus, Target, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))'];
 
@@ -42,10 +46,29 @@ export function TurnoverRetentionReport() {
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     if (!search) return mockTurnoverData;
     return mockTurnoverData.filter(r => r.month.includes(search));
   }, [search]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const totalHires = filtered.reduce((s, r) => s + r.hires, 0);
   const totalTerms = filtered.reduce((s, r) => s + r.terminations, 0);
@@ -64,6 +87,8 @@ export function TurnoverRetentionReport() {
     <div className="space-y-6">
       <ReportFilterBar title="Staff Turnover & Retention" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search months..." exportData={filtered} exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
 
       <ReportHelpGuide
         reportName="Staff Turnover & Retention Report"
@@ -126,7 +151,7 @@ export function TurnoverRetentionReport() {
         <Card className="border-border/60 lg:col-span-1">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Hires vs Terminations</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <BarChart data={filtered.map(r => ({ ...r, label: format(parseISO(r.month + '-01'), 'MMM'), net: r.hires - r.terminations }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} />
@@ -136,14 +161,14 @@ export function TurnoverRetentionReport() {
                 <Bar dataKey="hires" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Hires" />
                 <Bar dataKey="terminations" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} name="Terminations" />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Retention Rate Trend</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <AreaChart data={filtered.map(r => ({ ...r, label: format(parseISO(r.month + '-01'), 'MMM'), target: 97 }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} />
@@ -153,21 +178,21 @@ export function TurnoverRetentionReport() {
                 <Area type="monotone" dataKey="retentionRate" name="Retention %" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.15} strokeWidth={2} />
                 <Line type="monotone" dataKey="target" name="Target" stroke="hsl(var(--destructive))" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Exit Type Analysis</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie data={exitPie} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={exitPie} cursor="pointer" onClick={(_, index) => { const d = exitPie[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {exitPie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
@@ -175,7 +200,7 @@ export function TurnoverRetentionReport() {
       {/* Detail Table */}
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Monthly Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r) => r.month} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.month} /></CardContent>
       </Card>
     </div>
   );

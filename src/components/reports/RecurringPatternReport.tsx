@@ -12,6 +12,10 @@ import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { RefreshCw, CheckCircle2, AlertTriangle, Layers, BarChart3, Target } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+
 
 const exportColumns: ExportColumn[] = [
   { header: 'Pattern', accessor: 'patternName' }, { header: 'Location', accessor: 'location' },
@@ -26,6 +30,8 @@ const tableColumns: DataTableColumn<RecurringPatternRecord>[] = [
   { key: 'patternName', header: 'Pattern', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.adherencePercent >= 90 ? 'bg-emerald-500' : r.adherencePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} />
+
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
       <span className="font-medium">{r.patternName}</span>
     </div>
   ), sortValue: (r) => r.patternName },
@@ -61,11 +67,30 @@ export function RecurringPatternReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => mockRecurringPatterns.filter(r => {
+  const baseFiltered = useMemo(() => mockRecurringPatterns.filter(r => {
     const matchesSearch = !search || r.patternName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'location' && 'location' in item) return item.location === d.value;
+      if (d.type === 'department' && 'department' in item) return item.department === d.value;
+      if (d.type === 'category' && 'category' in item) return item.category === d.value;
+      if (d.type === 'status' && 'status' in item) return item.status === d.value;
+      if (d.type === 'type' && 'type' in item) return item.type === d.value;
+      if (d.type === 'severity' && 'gapSeverity' in item) return item.gapSeverity === d.value;
+      if (d.type === 'staffName' && 'staffName' in item) return item.staffName === d.value;
+      if (d.type === 'agencyName' && 'agencyName' in item) return item.agencyName === d.value;
+      if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
+      if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
+      if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      return String((item as any)[d.type]) === d.value;
+    }
+  );
+
 
   const avgAdherence = Math.round(filtered.reduce((s, r) => s + r.adherencePercent, 0) / (filtered.length || 1));
   const totalDeviations = filtered.reduce((s, r) => s + r.deviations, 0);
@@ -178,8 +203,8 @@ export function RecurringPatternReport() {
         <Card className="border-border/60 col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Expected vs Actual Shifts</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData}>
+            <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
+              <BarChart data={chartData} cursor="pointer" onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -188,21 +213,21 @@ export function RecurringPatternReport() {
                 <Bar dataKey="expected" name="Expected" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} opacity={0.3} />
                 <Bar dataKey="actual" name="Actual" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></AnimatedChartWrapper>
           </CardContent>
         </Card>
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Deviation Reasons</CardTitle></CardHeader>
           <CardContent>
             {reasonPie.length > 0 ? (
-              <ResponsiveContainer width="100%" height={240}>
+              <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
                 <PieChart>
-                  <Pie data={reasonPie} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name.length > 10 ? name.substring(0, 10) + '…' : name} ${(percent * 100).toFixed(0)}%`}>
+                  <Pie data={reasonPie} cursor="pointer" onClick={(_, index) => { const d = reasonPie[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name.length > 10 ? name.substring(0, 10) + '…' : name} ${(percent * 100).toFixed(0)}%`}>
                     {reasonPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 </PieChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer></AnimatedChartWrapper>
             ) : (
               <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">No deviations recorded</div>
             )}
@@ -213,7 +238,7 @@ export function RecurringPatternReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Pattern Adherence Details</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
         </CardContent>
       </Card>
     </div>
