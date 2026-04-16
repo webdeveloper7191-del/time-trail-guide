@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))'];
@@ -48,7 +49,7 @@ export function TurnoverRetentionReport() {
 
   const baseFiltered = useMemo(() => {
     if (!search) return mockTurnoverData;
-    return mockTurnoverData.filter(r => r.month.includes(search));
+    return filterByDateRange(mockTurnoverData.filter(r => r.month.includes(search)), dateRange);
   }, [search]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(

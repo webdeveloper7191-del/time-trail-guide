@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const statusLabels: Record<string, string> = { completed: 'Completed', in_progress: 'In Progress', not_started: 'Not Started', overdue: 'Overdue' };
@@ -51,7 +52,7 @@ export function OnboardingCompletionReport() {
     return mockOnboardingData.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.staffName.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
+      return filterByDateRange(true, dateRange);
     });
   }, [search, location]);
 

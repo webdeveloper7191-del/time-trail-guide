@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const levelColors: Record<string, string> = {
@@ -53,7 +54,7 @@ export function SkillsMatrixReport() {
     return mockSkillsMatrix.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.staffName.toLowerCase().includes(search.toLowerCase()) && !r.skills.some(s => s.name.toLowerCase().includes(search.toLowerCase()))) return false;
-      return true;
+      return filterByDateRange(true, dateRange);
     });
   }, [search, location]);
 

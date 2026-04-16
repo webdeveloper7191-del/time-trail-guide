@@ -15,6 +15,7 @@ import { Clock, Shield, AlertTriangle, CheckCircle2, Timer, Users } from 'lucide
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 type ApprovalSLARecord = typeof mockApprovalSLA[0];

@@ -16,6 +16,7 @@ import {
   BarChart, Bar, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Line,
 } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Building2, Users, AlertTriangle, Target, BarChart3 } from 'lucide-react';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 const exportColumns: ExportColumn[] = [
   { header: 'Location', accessor: 'locationName' }, { header: 'Area', accessor: 'areaName' },
@@ -43,11 +44,11 @@ export function CapacityUtilDashboard() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [drill, setDrill] = useState<DrillFilter | null>(null);
 
-  const baseFiltered = useMemo(() => mockCapacityUtil.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockCapacityUtil.filter(r => {
     const matchesSearch = !search || r.areaName.toLowerCase().includes(search.toLowerCase()) || r.locationName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
-  }), [search, locationFilter]);
+  }, dateRange)), [search, locationFilter, dateRange]);
 
   const filtered = useMemo(() => {
     if (!drill) return baseFiltered;

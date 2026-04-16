@@ -14,6 +14,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const exportColumns: ExportColumn[] = [
@@ -41,11 +42,11 @@ export function BudgetVsActualsReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockBudgetVsActuals.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockBudgetVsActuals.filter(r => {
     const matchesSearch = !search || r.locationName.toLowerCase().includes(search.toLowerCase()) || r.category.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
-  }), [search, locationFilter]);
+  }, dateRange)), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

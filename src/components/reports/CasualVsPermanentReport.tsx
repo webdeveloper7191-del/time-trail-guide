@@ -14,6 +14,7 @@ import { DollarSign, Users, TrendingUp, AlertTriangle, Target, Banknote } from '
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))'];
@@ -49,11 +50,11 @@ export function CasualVsPermanentReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockCasualVsPermanent.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockCasualVsPermanent.filter(r => {
     const matchesSearch = !search || r.location.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
-  }), [search, locationFilter]);
+  }, dateRange)), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

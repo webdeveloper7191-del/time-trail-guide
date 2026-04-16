@@ -14,6 +14,7 @@ import { Clock, Users, AlertTriangle, DollarSign, TrendingUp, CheckCircle2 } fro
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 type WeeklyTimesheetRecord = typeof mockWeeklyTimesheets[0];
@@ -59,11 +60,11 @@ export function WeeklyTimesheetReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockWeeklyTimesheets.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockWeeklyTimesheets.filter(r => {
     const ms = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const ml = locationFilter === 'all' || r.location === locationFilter;
     return ms && ml;
-  }), [search, locationFilter]);
+  }, dateRange)), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

@@ -15,6 +15,7 @@ import { DollarSign, Clock, Users, Layers, TrendingUp, Zap } from 'lucide-react'
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const exportColumns: ExportColumn[] = [
@@ -48,12 +49,12 @@ export function AreaCombiningSavingsReport() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const baseFiltered = useMemo(() => mockAreaCombiningSavings.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockAreaCombiningSavings.filter(r => {
     const matchesSearch = !search || r.combinedAreas.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     if (dateRange?.from) { const d = parseISO(r.date); if (d < dateRange.from) return false; if (dateRange.to && d > dateRange.to) return false; }
     return matchesSearch && matchesLoc;
-  }), [search, locationFilter, dateRange]);
+  }, dateRange)), [search, locationFilter, dateRange]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
     baseFiltered,

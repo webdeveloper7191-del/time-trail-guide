@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
@@ -62,7 +63,7 @@ export function HeadcountFTEReport() {
     return mockHeadcountData.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.department.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
+      return filterByDateRange(true, dateRange);
     });
   }, [search, location]);
 
@@ -89,7 +90,7 @@ export function HeadcountFTEReport() {
     headcount: a.headcount + r.totalHeadcount, fte: a.fte + r.fte,
     ft: a.ft + r.fullTime, pt: a.pt + r.partTime, cas: a.cas + r.casual, con: a.con + r.contractor,
     hires: a.hires + r.newHires, terms: a.terms + r.terminations,
-  }), { headcount: 0, fte: 0, ft: 0, pt: 0, cas: 0, con: 0, hires: 0, terms: 0 }), [filtered]);
+  }), { headcount: 0, fte: 0, ft: 0, pt: 0, cas: 0, con: 0, hires: 0, terms: 0 }), [filtered, dateRange]);
 
   const fteRatio = totals.headcount > 0 ? (totals.fte / totals.headcount * 100).toFixed(1) : '0';
   const casualPct = totals.headcount > 0 ? Math.round((totals.cas / totals.headcount) * 100) : 0;

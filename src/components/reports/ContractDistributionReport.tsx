@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
@@ -49,7 +50,7 @@ export function ContractDistributionReport() {
     return mockContractDistribution.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.department.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
+      return filterByDateRange(true, dateRange);
     });
   }, [search, location]);
 
@@ -74,7 +75,7 @@ export function ContractDistributionReport() {
 
   const totals = useMemo(() => filtered.reduce((a, r) => ({
     ft: a.ft + r.fullTime, pt: a.pt + r.partTime, cas: a.cas + r.casual, con: a.con + r.contractor, total: a.total + r.totalStaff,
-  }), { ft: 0, pt: 0, cas: 0, con: 0, total: 0 }), [filtered]);
+  }), { ft: 0, pt: 0, cas: 0, con: 0, total: 0 }), [filtered, dateRange]);
 
   const permanentPct = totals.total > 0 ? Math.round((totals.ft + totals.pt) / totals.total * 100) : 0;
   const casualPct = totals.total > 0 ? Math.round(totals.cas / totals.total * 100) : 0;

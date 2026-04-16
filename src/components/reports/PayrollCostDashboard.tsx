@@ -11,6 +11,7 @@ import { mockPayRunRecords, payrollTrendData } from '@/data/mockPayrollReportDat
 import { cn } from '@/lib/utils';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { DollarSign, TrendingUp, AlertTriangle, Users, Target, Banknote } from 'lucide-react';
+import { filterByDateRange } from '@/lib/reportDateFilter';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', '#F59E0B', '#10B981', '#8B5CF6'];
 const COST_NAMES = ['Base Pay', 'Overtime', 'Penalties', 'Allowances', 'Super'];
@@ -27,11 +28,11 @@ export function PayrollCostDashboard() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [drill, setDrill] = useState<DrillFilter | null>(null);
 
-  const baseFiltered = useMemo(() => mockPayRunRecords.filter(r => {
+  const baseFiltered = useMemo(() => filterByDateRange(mockPayRunRecords.filter(r => {
     const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
-  }), [search, locationFilter]);
+  }, dateRange)), [search, locationFilter, dateRange]);
 
   const filtered = useMemo(() => {
     if (!drill) return baseFiltered;
