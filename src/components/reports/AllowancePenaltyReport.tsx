@@ -14,7 +14,8 @@ import { DollarSign, TrendingUp, AlertTriangle, Award, Banknote, FileText } from
 import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
-import { filterByDateRange } from '@/lib/reportDateFilter';
+import { filterByDateRange, computePeriodDelta } from '@/lib/reportDateFilter';
+import { PeriodComparisonBar } from './PeriodComparisonBar';
 
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))'];
