@@ -52,8 +52,8 @@ export function QualificationExpiryReport() {
     return filterByDateRange(mockQualificationData.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.staffName.toLowerCase().includes(search.toLowerCase()) && !r.qualification.toLowerCase().includes(search.toLowerCase())) return false;
-      return true, dateRange);
-    });
+      return true;
+    }), dateRange);
   }, [search, location]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(

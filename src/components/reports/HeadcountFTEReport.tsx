@@ -63,8 +63,8 @@ export function HeadcountFTEReport() {
     return filterByDateRange(mockHeadcountData.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.department.toLowerCase().includes(search.toLowerCase())) return false;
-      return true, dateRange);
-    });
+      return true;
+    }), dateRange);
   }, [search, location]);
 
   const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
