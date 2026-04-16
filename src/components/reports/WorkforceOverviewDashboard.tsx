@@ -3,12 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFilterBar } from './ReportFilterBar';
-import { ReportDataTable, DataTableColumn } from './ReportDataTable';
 import { DateRange } from 'react-day-picker';
-import { mockHeadcountData, mockTurnoverData, workforceSummaryMetrics } from '@/data/mockWorkforceReportData';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
+import { mockHeadcountData, mockTurnoverData } from '@/data/mockWorkforceReportData';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ExportColumn } from '@/lib/reportExport';
 import { Users, TrendingDown, UserPlus, Clock } from 'lucide-react';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
+import { useDrillFilter } from './useDrillFilter';
+import { AnimatedChartWrapper } from './AnimatedChartWrapper';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
 
@@ -17,13 +19,27 @@ export function WorkforceOverviewDashboard() {
   const [location, setLocation] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return mockHeadcountData.filter(r => {
       if (location !== 'all' && r.location !== location) return false;
       if (search && !r.department.toLowerCase().includes(search.toLowerCase()) && !r.location.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
   }, [search, location]);
+
+  const { drill, drilled: filtered, applyDrill, clearDrill, animKey } = useDrillFilter(
+    baseFiltered,
+    (item: any, d: DrillFilter) => {
+      if (d.type === 'department') return item.department === d.value;
+      if (d.type === 'contractType') {
+        if (d.value === 'Full Time') return item.fullTime > 0;
+        if (d.value === 'Part Time') return item.partTime > 0;
+        if (d.value === 'Casual') return item.casual > 0;
+        if (d.value === 'Contractor') return item.contractor > 0;
+      }
+      return String(item[d.type]) === d.value;
+    }
+  );
 
   const totals = useMemo(() => {
     return filtered.reduce((acc, r) => ({
@@ -69,94 +85,105 @@ export function WorkforceOverviewDashboard() {
         exportData={filtered}
         exportColumns={exportColumns}
         dateRange={dateRange} onDateRangeChange={setDateRange}
-        
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="border-border/60"><CardContent className="p-4">
-          <Users className="h-4 w-4 text-muted-foreground mb-2" />
-          <p className="text-2xl font-bold tracking-tight">{totals.headcount}</p>
-          <p className="text-xs text-muted-foreground">Total Headcount</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <Clock className="h-4 w-4 text-muted-foreground mb-2" />
-          <p className="text-2xl font-bold tracking-tight">{totals.fte.toFixed(1)}</p>
-          <p className="text-xs text-muted-foreground">Total FTE</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <UserPlus className="h-4 w-4 text-muted-foreground mb-2" />
-          <p className="text-2xl font-bold tracking-tight">{totals.newHires}</p>
-          <p className="text-xs text-muted-foreground">New Hires (Period)</p>
-        </CardContent></Card>
-        <Card className="border-border/60"><CardContent className="p-4">
-          <TrendingDown className="h-4 w-4 text-muted-foreground mb-2" />
-          <p className="text-2xl font-bold tracking-tight">{totals.terminations}</p>
-          <p className="text-xs text-muted-foreground">Terminations</p>
-        </CardContent></Card>
-      </div>
+      <DrillFilterBadge filter={drill} onClear={clearDrill} />
+
+      <AnimatedChartWrapper animKey={animKey}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="border-border/60"><CardContent className="p-4">
+            <Users className="h-4 w-4 text-muted-foreground mb-2" />
+            <p className="text-2xl font-bold tracking-tight">{totals.headcount}</p>
+            <p className="text-xs text-muted-foreground">Total Headcount</p>
+          </CardContent></Card>
+          <Card className="border-border/60"><CardContent className="p-4">
+            <Clock className="h-4 w-4 text-muted-foreground mb-2" />
+            <p className="text-2xl font-bold tracking-tight">{totals.fte.toFixed(1)}</p>
+            <p className="text-xs text-muted-foreground">Total FTE</p>
+          </CardContent></Card>
+          <Card className="border-border/60"><CardContent className="p-4">
+            <UserPlus className="h-4 w-4 text-muted-foreground mb-2" />
+            <p className="text-2xl font-bold tracking-tight">{totals.newHires}</p>
+            <p className="text-xs text-muted-foreground">New Hires (Period)</p>
+          </CardContent></Card>
+          <Card className="border-border/60"><CardContent className="p-4">
+            <TrendingDown className="h-4 w-4 text-muted-foreground mb-2" />
+            <p className="text-2xl font-bold tracking-tight">{totals.terminations}</p>
+            <p className="text-xs text-muted-foreground">Terminations</p>
+          </CardContent></Card>
+        </div>
+      </AnimatedChartWrapper>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Headcount Trend</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={mockTurnoverData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Line type="monotone" dataKey="headcount" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            <AnimatedChartWrapper animKey={animKey}>
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={mockTurnoverData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                  <Line type="monotone" dataKey="headcount" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </AnimatedChartWrapper>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Contract Type Breakdown</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Contract Type Breakdown <span className="text-[10px] text-muted-foreground font-normal">(click to drill)</span></CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie data={contractPie} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  {contractPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <AnimatedChartWrapper animKey={animKey}>
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie data={contractPie} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" cursor="pointer"
+                    onClick={(_, index) => { const d = contractPie[index]; if (d) applyDrill('contractType', d.name, `Contract: ${d.name}`); }}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {contractPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </AnimatedChartWrapper>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/60">
-        <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Headcount by Department & Location</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Headcount by Department & Location <span className="text-[10px] text-muted-foreground font-normal">(click row to drill)</span></CardTitle></CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Department</TableHead>
-                <TableHead className="text-xs">Location</TableHead>
-                <TableHead className="text-xs text-right">Headcount</TableHead>
-                <TableHead className="text-xs text-right">FTE</TableHead>
-                <TableHead className="text-xs text-right">New Hires</TableHead>
-                <TableHead className="text-xs text-right">Terms</TableHead>
-                <TableHead className="text-xs text-right">Turnover %</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((r, i) => (
-                <TableRow key={i}>
-                  <TableCell className="text-sm font-medium">{r.department}</TableCell>
-                  <TableCell className="text-sm">{r.location}</TableCell>
-                  <TableCell className="text-sm text-right">{r.totalHeadcount}</TableCell>
-                  <TableCell className="text-sm text-right">{r.fte}</TableCell>
-                  <TableCell className="text-sm text-right">{r.newHires}</TableCell>
-                  <TableCell className="text-sm text-right">{r.terminations}</TableCell>
-                  <TableCell className="text-sm text-right">
-                    <Badge variant={r.turnoverRate > 5 ? 'destructive' : 'secondary'} className="text-[10px]">{r.turnoverRate}%</Badge>
-                  </TableCell>
+          <AnimatedChartWrapper animKey={animKey}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Department</TableHead>
+                  <TableHead className="text-xs">Location</TableHead>
+                  <TableHead className="text-xs text-right">Headcount</TableHead>
+                  <TableHead className="text-xs text-right">FTE</TableHead>
+                  <TableHead className="text-xs text-right">New Hires</TableHead>
+                  <TableHead className="text-xs text-right">Terms</TableHead>
+                  <TableHead className="text-xs text-right">Turnover %</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((r, i) => (
+                  <TableRow key={i} className="cursor-pointer hover:bg-muted/50" onClick={() => applyDrill('department', r.department)}>
+                    <TableCell className="text-sm font-medium">{r.department}</TableCell>
+                    <TableCell className="text-sm">{r.location}</TableCell>
+                    <TableCell className="text-sm text-right">{r.totalHeadcount}</TableCell>
+                    <TableCell className="text-sm text-right">{r.fte}</TableCell>
+                    <TableCell className="text-sm text-right">{r.newHires}</TableCell>
+                    <TableCell className="text-sm text-right">{r.terminations}</TableCell>
+                    <TableCell className="text-sm text-right">
+                      <Badge variant={r.turnoverRate > 5 ? 'destructive' : 'secondary'} className="text-[10px]">{r.turnoverRate}%</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </AnimatedChartWrapper>
         </CardContent>
       </Card>
     </div>
