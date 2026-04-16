@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { ReportFilterBar } from './ReportFilterBar';
 import { ReportHelpGuide } from './ReportHelpGuide';
 import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { mockPayRunRecords, payrollTrendData } from '@/data/mockPayrollReportData';
@@ -12,25 +13,38 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { DollarSign, TrendingUp, AlertTriangle, Users, Target, Banknote } from 'lucide-react';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', '#F59E0B', '#10B981', '#8B5CF6'];
+const COST_NAMES = ['Base Pay', 'Overtime', 'Penalties', 'Allowances', 'Super'];
 
 const exportColumns: ExportColumn[] = [
   { header: 'Month', accessor: 'month' }, { header: 'Total Labour', accessor: 'totalLabour' },
-  { header: 'Overtime', accessor: 'overtime' }, { header: 'Penalties', accessor: 'penalties' },
-  { header: 'Budget', accessor: 'budget' },
+  { header: 'Overtime', accessor: 'overtime' }, { header: 'Budget', accessor: 'budget' },
 ];
-
 const locations = [...new Set(mockPayRunRecords.map(r => r.location))];
 
 export function PayrollCostDashboard() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [drill, setDrill] = useState<DrillFilter | null>(null);
 
-  const filtered = useMemo(() => mockPayRunRecords.filter(r => {
+  const baseFiltered = useMemo(() => mockPayRunRecords.filter(r => {
     const matchesSearch = !search || r.staffName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.location === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const filtered = useMemo(() => {
+    if (!drill) return baseFiltered;
+    if (drill.type === 'location') return baseFiltered.filter(r => r.location === drill.value);
+    if (drill.type === 'costType') {
+      // Filter to staff with significant amounts in that cost type
+      if (drill.value === 'Overtime') return baseFiltered.filter(r => r.overtimePay > 0);
+      if (drill.value === 'Penalties') return baseFiltered.filter(r => r.penalties > 0);
+      if (drill.value === 'Allowances') return baseFiltered.filter(r => r.allowances > 0);
+      return baseFiltered;
+    }
+    return baseFiltered;
+  }, [baseFiltered, drill]);
 
   const totalGross = filtered.reduce((s, r) => s + r.totalGross, 0);
   const totalOvertime = filtered.reduce((s, r) => s + r.overtimePay, 0);
@@ -50,59 +64,60 @@ export function PayrollCostDashboard() {
     { name: 'Super', value: totalSuper },
   ];
 
+  const locationCosts = locations.map(loc => {
+    const items = baseFiltered.filter(r => r.location === loc);
+    return { name: loc.split(' ')[0], fullName: loc, base: items.reduce((s, r) => s + r.basePay, 0), overtime: items.reduce((s, r) => s + r.overtimePay, 0), penalties: items.reduce((s, r) => s + r.penalties, 0) };
+  });
+
+  const handlePieClick = (_: any, index: number) => {
+    const item = costBreakdown[index];
+    if (item) setDrill({ type: 'costType', value: item.name, label: 'Cost Type' });
+  };
+
+  const handleBarClick = (data: any) => {
+    if (data?.activePayload?.[0]?.payload?.fullName) {
+      setDrill({ type: 'location', value: data.activePayload[0].payload.fullName, label: 'Location' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <ReportFilterBar title="Payroll Cost Dashboard" searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search staff..."
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={payrollTrendData} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
-      <ReportHelpGuide
-        reportName="Payroll Cost Dashboard"
-        reportDescription="Real-time view of total labour costs including base pay, overtime, penalties, allowances and superannuation across all locations."
-        purpose="Provides financial oversight of labour expenditure against budget targets, enabling proactive cost management and variance analysis."
-        whenToUse={[
-          'During weekly/fortnightly pay run reviews', 'When labour costs are trending above budget',
-          'For monthly P&L preparation and cost forecasting', 'When comparing cost structures across locations',
-        ]}
+      <ReportHelpGuide reportName="Payroll Cost Dashboard" reportDescription="Labour cost analytics with interactive drill-through to cost types and locations."
+        purpose="Financial oversight with click-to-drill capability for detailed cost analysis."
+        whenToUse={['Pay run reviews', 'Budget variance analysis', 'Location cost comparison']}
         keyMetrics={[
-          { label: 'Total Gross Pay', description: 'Sum of all pay components before tax deductions', interpretation: 'Compare against budget to ensure costs are within tolerance', goodRange: 'Within 5% of budget', warningRange: '5-10% over', criticalRange: '>10% over' },
-          { label: 'Overtime %', description: 'Overtime cost as proportion of total gross', interpretation: 'Should stay below 8%. Above 12% indicates scheduling inefficiency', goodRange: '<8%', warningRange: '8-12%', criticalRange: '>12%' },
-          { label: 'Budget Variance', description: 'Budget − Actual labour cost', interpretation: 'Positive = under budget (good). Negative = over budget (requires action)' },
-          { label: 'Cost per Staff', description: 'Total Gross ÷ Staff Count', interpretation: 'Rising cost-per-staff without headcount change may indicate award reclassifications or overtime creep' },
+          { label: 'Total Gross', description: 'Sum of all pay components', interpretation: 'Compare against budget', goodRange: 'Within 5%', warningRange: '5-10% over', criticalRange: '>10% over' },
+          { label: 'OT %', description: 'Overtime as % of gross', interpretation: 'Below 8% is healthy', goodRange: '<8%', warningRange: '8-12%', criticalRange: '>12%' },
         ]}
-        howToRead={[
-          { title: 'KPI Cards', content: 'Top row shows total costs, overtime percentage, budget variance and per-staff averages with trend indicators.' },
-          { title: 'Labour Cost Trend', content: 'Area chart tracks total labour against budget over time. The gap between actual and budget lines shows variance trend.' },
-          { title: 'Cost Breakdown Pie', content: 'Shows proportional split of pay components. Base Pay should dominate (>70%). High OT/penalty slices need investigation.' },
-          { title: 'Cost by Location', content: 'Stacked bars compare cost structure across locations. Inconsistent patterns reveal location-specific issues.' },
-        ]}
-        actionableInsights={[
-          'If overtime exceeds 10% of gross, review scheduling to redistribute shifts to available staff',
-          'Track cost-per-staff month-over-month to detect wage drift before budget blowouts',
-          'Compare location cost structures to identify sites with disproportionate penalty or overtime costs',
-          'Use budget variance trends to forecast year-end position and adjust hiring plans',
-        ]}
-        relatedReports={['Pay Run Summary', 'Labour Cost by Location', 'Overtime by Location', 'Casual vs Permanent Cost']}
+        howToRead={[{ title: 'Drill-Through', content: 'Click pie slices to filter by cost type (e.g. show only staff with overtime). Click location bars to filter by site. All KPIs update.' }]}
+        actionableInsights={['OT >10% — redistribute shifts', 'Compare location cost structures for anomalies']}
+        relatedReports={['Pay Run Summary', 'Labour Cost by Location', 'Overtime by Location']}
       />
 
+      <DrillFilterBadge filter={drill} onClear={() => setDrill(null)} />
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Total Gross Pay" value={`$${(totalGross / 1000).toFixed(1)}k`} icon={DollarSign} sparklineData={payrollTrendData.map(d => d.totalLabour)} size="sm" />
+        <StatCard label="Total Gross" value={`$${(totalGross / 1000).toFixed(1)}k`} icon={DollarSign} sparklineData={payrollTrendData.map(d => d.totalLabour)} size="sm" />
         <StatCard label="Overtime Cost" value={`$${(totalOvertime / 1000).toFixed(1)}k`} icon={AlertTriangle} variant={Number(otPct) > 12 ? 'danger' : Number(otPct) > 8 ? 'warning' : 'default'} size="sm" />
-        <StatCard label="OT as % of Gross" value={`${otPct}%`} icon={TrendingUp} variant={Number(otPct) > 12 ? 'danger' : Number(otPct) > 8 ? 'warning' : 'success'} size="sm" />
-        <StatCard label="Budget Variance" value={`${budgetVariance >= 0 ? '+' : '-'}$${(Math.abs(budgetVariance) / 1000).toFixed(1)}k`} icon={Target} variant={budgetVariance >= 0 ? 'success' : 'danger'} size="sm" />
-        <StatCard label="Avg Gross/Staff" value={`$${avgGrossPerStaff.toLocaleString()}`} icon={Banknote} size="sm" />
+        <StatCard label="OT % of Gross" value={`${otPct}%`} icon={TrendingUp} variant={Number(otPct) > 12 ? 'danger' : Number(otPct) > 8 ? 'warning' : 'success'} size="sm" />
+        <StatCard label="Budget Var" value={`${budgetVariance >= 0 ? '+' : '-'}$${(Math.abs(budgetVariance) / 1000).toFixed(1)}k`} icon={Target} variant={budgetVariance >= 0 ? 'success' : 'danger'} size="sm" />
+        <StatCard label="Avg/Staff" value={`$${avgGrossPerStaff.toLocaleString()}`} icon={Banknote} size="sm" />
         <StatCard label="Staff Paid" value={filtered.length} icon={Users} size="sm" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {budgetVariance >= 0 && <InsightCard type="positive" title="Under Budget" description={`Labour costs are $${(budgetVariance / 1000).toFixed(1)}k under budget this period.`} metric={`${((budgetVariance / latestBudget) * 100).toFixed(1)}% savings`} />}
-        {budgetVariance < 0 && <InsightCard type="negative" title="Over Budget" description={`Labour costs exceed budget by $${(Math.abs(budgetVariance) / 1000).toFixed(1)}k. Review overtime and agency usage.`} action="Investigate cost drivers by location" />}
-        {Number(otPct) > 10 && <InsightCard type="action" title="High Overtime Ratio" description={`Overtime represents ${otPct}% of total gross — well above the 8% benchmark.`} action="Redistribute shifts to available staff" />}
-        {Number(otPct) <= 8 && <InsightCard type="positive" title="Controlled Overtime" description={`Overtime at ${otPct}% of gross is within the 8% benchmark. Scheduling is efficient.`} />}
+        {budgetVariance >= 0 && <InsightCard type="positive" title="Under Budget" description={`$${(budgetVariance / 1000).toFixed(1)}k under.`} metric={`${((budgetVariance / latestBudget) * 100).toFixed(1)}% savings`} />}
+        {budgetVariance < 0 && <InsightCard type="negative" title="Over Budget" description={`$${(Math.abs(budgetVariance) / 1000).toFixed(1)}k over.`} action="Investigate cost drivers" />}
+        {Number(otPct) > 10 && <InsightCard type="action" title="High OT" description={`${otPct}% of gross.`} action="Redistribute shifts" />}
+        {Number(otPct) <= 8 && <InsightCard type="positive" title="Controlled OT" description={`${otPct}% within benchmark.`} />}
       </div>
 
       <SummaryRow items={[
-        { label: 'Base Pay', value: `$${(totalBase / 1000).toFixed(0)}k`, highlight: true }, { label: 'Overtime', value: `$${(totalOvertime / 1000).toFixed(1)}k` },
+        { label: 'Base', value: `$${(totalBase / 1000).toFixed(0)}k`, highlight: true }, { label: 'OT', value: `$${(totalOvertime / 1000).toFixed(1)}k` },
         { label: 'Penalties', value: `$${totalPenalties.toLocaleString()}` }, { label: 'Allowances', value: `$${totalAllowances.toLocaleString()}` },
         { label: 'Super', value: `$${(totalSuper / 1000).toFixed(1)}k` },
       ]} />
@@ -115,7 +130,7 @@ export function PayrollCostDashboard() {
               <AreaChart data={payrollTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v / 1000}k`} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${v / 1000}k`} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Area type="monotone" dataKey="totalLabour" name="Total Labour" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.1} strokeWidth={2} />
@@ -125,12 +140,13 @@ export function PayrollCostDashboard() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-        <Card className="border-border/60">
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Cost Breakdown</CardTitle></CardHeader>
+        <Card className="border-border/60 cursor-pointer hover:border-primary/40 transition-colors">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Cost Breakdown <span className="text-[10px] text-muted-foreground">(click to drill)</span></CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie data={costBreakdown} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={costBreakdown} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" onClick={handlePieClick} style={{ cursor: 'pointer' }}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {costBreakdown.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
@@ -140,22 +156,19 @@ export function PayrollCostDashboard() {
         </Card>
       </div>
 
-      <Card className="border-border/60">
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Cost by Location</CardTitle></CardHeader>
+      <Card className="border-border/60 cursor-pointer hover:border-primary/40 transition-colors">
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Cost by Location {drill && <Badge variant="secondary" className="ml-2 text-xs">Filtered</Badge>} <span className="text-[10px] text-muted-foreground">(click to drill)</span></CardTitle></CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={locations.map(loc => {
-              const items = filtered.filter(r => r.location === loc);
-              return { name: loc.split(' ')[0], base: items.reduce((s, r) => s + r.basePay, 0), overtime: items.reduce((s, r) => s + r.overtimePay, 0), penalties: items.reduce((s, r) => s + r.penalties, 0) };
-            })}>
+            <BarChart data={locationCosts} onClick={handleBarClick}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v / 1000}k`} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${v / 1000}k`} />
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="base" name="Base" stackId="a" fill="hsl(var(--primary))" />
-              <Bar dataKey="overtime" name="OT" stackId="a" fill="#F59E0B" />
-              <Bar dataKey="penalties" name="Penalties" stackId="a" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="base" name="Base" stackId="a" fill="hsl(var(--primary))" style={{ cursor: 'pointer' }} />
+              <Bar dataKey="overtime" name="OT" stackId="a" fill="#F59E0B" style={{ cursor: 'pointer' }} />
+              <Bar dataKey="penalties" name="Penalties" stackId="a" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} style={{ cursor: 'pointer' }} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

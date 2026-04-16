@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { ReportFilterBar } from './ReportFilterBar';
 import { ReportHelpGuide } from './ReportHelpGuide';
 import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
+import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
@@ -22,7 +23,6 @@ const COLORS = ['hsl(var(--primary))', '#10B981', '#F59E0B', 'hsl(var(--destruct
 const exportColumns: ExportColumn[] = [
   { header: 'Location', accessor: 'locationName' }, { header: 'Status', accessor: 'status' },
   { header: 'On Duty', accessor: 'onDuty' }, { header: 'Total Staff', accessor: 'totalStaff' },
-  { header: 'Occupancy', accessor: 'occupancy' }, { header: 'Capacity', accessor: 'capacity' },
   { header: 'Compliance %', accessor: 'complianceScore' }, { header: 'Budget Used', accessor: 'budgetUsed' },
 ];
 
@@ -41,11 +41,8 @@ const tableColumns: DataTableColumn<MultiSiteOpsData>[] = [
         <span className={cn('text-xs font-medium', r.complianceScore >= 90 ? 'text-foreground' : 'text-destructive')}>{r.complianceScore}%</span>
       </div>
     ) },
-  { key: 'budgetUsed', header: 'Budget Used', align: 'right', sortValue: (r) => r.budgetUsed,
-    accessor: (r) => {
-      const pct = Math.round((r.budgetUsed / r.budgetTotal) * 100);
-      return <span className={cn('text-xs', pct > 90 ? 'text-destructive font-medium' : '')}>{`$${(r.budgetUsed / 1000).toFixed(1)}k / $${(r.budgetTotal / 1000).toFixed(1)}k (${pct}%)`}</span>;
-    } },
+  { key: 'budgetUsed', header: 'Budget', align: 'right', sortValue: (r) => r.budgetUsed,
+    accessor: (r) => { const pct = Math.round((r.budgetUsed / r.budgetTotal) * 100); return <span className={cn('text-xs', pct > 90 ? 'text-destructive font-medium' : '')}>{`$${(r.budgetUsed / 1000).toFixed(1)}k (${pct}%)`}</span>; } },
   { key: 'alerts', header: 'Alerts', align: 'center', sortValue: (r) => r.alerts,
     accessor: (r) => r.alerts > 0 ? <Badge variant="destructive" className="text-xs">{r.alerts}</Badge> : <CheckCircle2 className="h-4 w-4 text-emerald-500 mx-auto" /> },
 ];
@@ -54,12 +51,20 @@ export function MultiSiteOpsDashboard() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [drill, setDrill] = useState<DrillFilter | null>(null);
 
-  const filtered = useMemo(() => mockMultiSiteOps.filter(r => {
+  const baseFiltered = useMemo(() => mockMultiSiteOps.filter(r => {
     const matchesSearch = !search || r.locationName.toLowerCase().includes(search.toLowerCase());
     const matchesLoc = locationFilter === 'all' || r.locationName === locationFilter;
     return matchesSearch && matchesLoc;
   }), [search, locationFilter]);
+
+  const filtered = useMemo(() => {
+    if (!drill) return baseFiltered;
+    if (drill.type === 'location') return baseFiltered.filter(r => r.locationName === drill.value);
+    if (drill.type === 'status') return baseFiltered.filter(r => r.status === drill.value);
+    return baseFiltered;
+  }, [baseFiltered, drill]);
 
   const totalOnDuty = filtered.reduce((s, r) => s + r.onDuty, 0);
   const totalStaff = filtered.reduce((s, r) => s + r.totalStaff, 0);
@@ -75,18 +80,34 @@ export function MultiSiteOpsDashboard() {
   const staffingRate = totalStaff > 0 ? Math.round((totalOnDuty / totalStaff) * 100) : 0;
 
   const statusPie = [
-    { name: 'Online', value: filtered.filter(r => r.status === 'online').length },
-    { name: 'Partial', value: filtered.filter(r => r.status === 'partial').length },
-    { name: 'Offline', value: filtered.filter(r => r.status === 'offline').length },
+    { name: 'Online', value: filtered.filter(r => r.status === 'online').length, status: 'online' },
+    { name: 'Partial', value: filtered.filter(r => r.status === 'partial').length, status: 'partial' },
+    { name: 'Offline', value: filtered.filter(r => r.status === 'offline').length, status: 'offline' },
   ].filter(s => s.value > 0);
 
   const radarData = filtered.map(r => ({
-    location: r.locationName.split(' ')[0],
-    compliance: r.complianceScore,
-    occupancy: Math.round((r.occupancy / r.capacity) * 100),
+    location: r.locationName.split(' ')[0], fullName: r.locationName,
+    compliance: r.complianceScore, occupancy: Math.round((r.occupancy / r.capacity) * 100),
     staffing: Math.round((r.onDuty / r.totalStaff) * 100),
-    budget: Math.round((1 - (r.budgetUsed / r.budgetTotal - 0.7) * 3) * 100),
   }));
+
+  const handleBarClick = (data: any) => {
+    if (data?.activePayload?.[0]?.payload) {
+      const month = data.activePayload[0].payload.month;
+      if (month) setDrill({ type: 'month', value: month, label: 'Month' });
+    }
+  };
+
+  const handlePieClick = (_: any, index: number) => {
+    const item = statusPie[index];
+    if (item) setDrill({ type: 'status', value: item.status, label: 'Status' });
+  };
+
+  const handleRadarClick = (data: any) => {
+    if (data?.activePayload?.[0]?.payload?.fullName) {
+      setDrill({ type: 'location', value: data.activePayload[0].payload.fullName, label: 'Location' });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -94,42 +115,27 @@ export function MultiSiteOpsDashboard() {
         locationFilter={locationFilter} onLocationChange={setLocationFilter} locations={locations}
         exportColumns={exportColumns} exportData={filtered} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
-      <ReportHelpGuide
-        reportName="Multi-Site Operations Dashboard"
-        reportDescription="Real-time operational command centre showing status, staffing, occupancy, compliance, and budget health for all managed locations."
-        purpose="Enables operations managers to monitor all sites simultaneously, identify issues instantly, and coordinate cross-site responses."
-        whenToUse={[
-          'As a daily morning check to ensure all sites are operational',
-          'During incident response to assess impact across sites',
-          'For executive briefings on operational status',
-          'When planning resource reallocation between locations',
-        ]}
+      <ReportHelpGuide reportName="Multi-Site Operations Dashboard" reportDescription="Real-time operational command centre for all locations."
+        purpose="Monitor all sites simultaneously with drill-through to individual locations."
+        whenToUse={['Daily morning checks', 'Incident response', 'Executive briefings']}
         keyMetrics={[
-          { label: 'Sites Online', description: 'Number of locations reporting online status', interpretation: 'All sites should be online during operating hours. Partial/offline requires investigation', goodRange: '100%', criticalRange: '<100%' },
-          { label: 'Avg Compliance', description: 'Mean compliance score across all locations', interpretation: 'Below 90% indicates systemic staffing or regulatory issues', goodRange: '≥95%', warningRange: '90-94%', criticalRange: '<90%' },
-          { label: 'Budget Utilisation', description: 'Percentage of total budget consumed', interpretation: 'Track against period progress — 75% budget at 50% period = overspend trajectory', goodRange: 'Pro-rata ±5%', criticalRange: '>10% ahead' },
-          { label: 'Active Alerts', description: 'Total unresolved alerts across all sites', interpretation: 'Each alert represents a potential compliance or safety issue', goodRange: '0', warningRange: '1-3', criticalRange: '>3' },
+          { label: 'Sites Online', description: 'Locations reporting online', interpretation: 'All should be online during hours', goodRange: '100%', criticalRange: '<100%' },
+          { label: 'Avg Compliance', description: 'Mean compliance score', interpretation: 'Below 90% = systemic issues', goodRange: '≥95%', warningRange: '90-94%', criticalRange: '<90%' },
         ]}
         howToRead={[
-          { title: 'KPI Cards', content: 'Eight headline metrics with variant coloring. Green = within target, amber = monitor, red = immediate action required.' },
-          { title: 'Radar Chart', content: 'Multi-dimensional comparison of each location across compliance, occupancy, staffing, and budget. Larger polygons = stronger performance.' },
-          { title: 'Trend Charts', content: 'Historical compliance/utilisation trend shows improvement trajectory. Violations chart tracks regulatory incident frequency.' },
-          { title: 'Location Table', content: 'Sortable detail view with inline progress bars for compliance and budget burn rate per site.' },
+          { title: 'Interactive Drill-Through', content: 'Click any chart element (pie slice, radar point, bar) to filter the entire dashboard to that selection. All KPIs, insights, and the table update. Click ✕ on the filter badge to reset.' },
         ]}
-        actionableInsights={[
-          'Sites with partial/offline status need immediate operational investigation',
-          'Locations with >90% budget burn and <75% period elapsed need cost review',
-          'Cross-reference low-compliance sites with high alert counts for root cause',
-          'Compare staffing rates to identify sites that can share resources',
-        ]}
-        relatedReports={['Multi-Location Overview', 'Compliance Violation Summary', 'Budget vs Actuals', 'Cross-Location Deployment']}
+        actionableInsights={['Partial/offline sites need investigation', 'High budget burn with low period elapsed needs cost review']}
+        relatedReports={['Multi-Location Overview', 'Compliance Violations', 'Budget vs Actuals']}
       />
+
+      <DrillFilterBadge filter={drill} onClear={() => setDrill(null)} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <StatCard label="Sites Online" value={`${onlineCount}/${filtered.length}`} icon={MapPin} size="sm" variant={onlineCount === filtered.length ? 'success' : 'warning'} />
-        <StatCard label="Staff On Duty" value={totalOnDuty} icon={Users} size="sm" sparklineData={[28, 30, 32, 29, totalOnDuty]} />
+        <StatCard label="Staff On Duty" value={totalOnDuty} icon={Users} size="sm" />
         <StatCard label="Staffing Rate" value={`${staffingRate}%`} icon={Activity} size="sm" variant={staffingRate >= 80 ? 'success' : 'warning'} />
-        <StatCard label="Occupancy" value={`${occupancyRate}%`} icon={Target} size="sm" variant={occupancyRate > 95 ? 'danger' : 'default'} />
+        <StatCard label="Occupancy" value={`${occupancyRate}%`} icon={Target} size="sm" />
         <StatCard label="Avg Compliance" value={`${avgCompliance}%`} icon={Shield} size="sm" variant={avgCompliance >= 95 ? 'success' : avgCompliance >= 90 ? 'warning' : 'danger'} sparklineData={locationTrendData.map(d => d.avgCompliance)} />
         <StatCard label="Active Alerts" value={totalAlerts} icon={AlertTriangle} size="sm" variant={totalAlerts > 3 ? 'danger' : totalAlerts > 0 ? 'warning' : 'success'} />
         <StatCard label="Budget Used" value={`${budgetPct}%`} icon={DollarSign} size="sm" variant={budgetPct > 90 ? 'danger' : 'default'} />
@@ -137,24 +143,22 @@ export function MultiSiteOpsDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {totalAlerts > 0 && <InsightCard type="negative" title={`${totalAlerts} Active Alert${totalAlerts > 1 ? 's' : ''}`} description={`Unresolved alerts across ${filtered.filter(r => r.alerts > 0).length} location(s) require immediate attention.`} action="Review alerts by location" />}
-        {avgCompliance >= 95 && <InsightCard type="positive" title="Strong Compliance" description={`All-site average of ${avgCompliance}% exceeds the 95% target benchmark.`} />}
-        {budgetPct > 85 && <InsightCard type="action" title="Budget Burn Rate High" description={`${budgetPct}% of total budget consumed. Review cost drivers at high-spend locations.`} action="Analyse cost breakdown by site" />}
-        {staffingRate >= 85 && <InsightCard type="positive" title="Healthy Staffing" description={`${staffingRate}% of total staff are on duty. Coverage is strong across sites.`} />}
+        {totalAlerts > 0 && <InsightCard type="negative" title={`${totalAlerts} Active Alerts`} description={`Across ${filtered.filter(r => r.alerts > 0).length} location(s).`} action="Review alerts" />}
+        {avgCompliance >= 95 && <InsightCard type="positive" title="Strong Compliance" description={`${avgCompliance}% exceeds target.`} />}
+        {budgetPct > 85 && <InsightCard type="action" title="High Budget Burn" description={`${budgetPct}% consumed.`} action="Review cost drivers" />}
       </div>
 
       <SummaryRow items={[
         { label: 'Locations', value: filtered.length }, { label: 'On Duty', value: totalOnDuty },
-        { label: 'Total Capacity', value: totalCapacity }, { label: 'Occupancy', value: `${occupancyRate}%`, highlight: true },
-        { label: 'Alerts', value: totalAlerts },
+        { label: 'Capacity', value: totalCapacity }, { label: 'Occupancy', value: `${occupancyRate}%`, highlight: true }, { label: 'Alerts', value: totalAlerts },
       ]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="border-border/60">
+        <Card className="border-border/60 cursor-pointer hover:border-primary/40 transition-colors">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Site Performance Radar</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
-              <RadarChart data={radarData}>
+              <RadarChart data={radarData} onClick={handleRadarClick}>
                 <PolarGrid stroke="hsl(var(--border))" />
                 <PolarAngleAxis dataKey="location" tick={{ fontSize: 10 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
@@ -166,7 +170,6 @@ export function MultiSiteOpsDashboard() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-
         <Card className="border-border/60">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Compliance & Utilisation Trend</CardTitle></CardHeader>
           <CardContent>
@@ -183,14 +186,14 @@ export function MultiSiteOpsDashboard() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-
-        <Card className="border-border/60">
+        <Card className="border-border/60 cursor-pointer hover:border-primary/40 transition-colors">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Site Status & Violations</CardTitle></CardHeader>
           <CardContent>
             <div className="mb-4">
               <ResponsiveContainer width="100%" height={120}>
                 <PieChart>
-                  <Pie data={statusPie} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                  <Pie data={statusPie} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" onClick={handlePieClick} style={{ cursor: 'pointer' }}
+                    label={({ name, value }) => `${name}: ${value}`}>
                     {statusPie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
                   </Pie>
                   <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
@@ -198,12 +201,12 @@ export function MultiSiteOpsDashboard() {
               </ResponsiveContainer>
             </div>
             <ResponsiveContainer width="100%" height={110}>
-              <BarChart data={locationTrendData}>
+              <BarChart data={locationTrendData} onClick={handleBarClick}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Bar dataKey="totalViolations" name="Violations" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="totalViolations" name="Violations" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} style={{ cursor: 'pointer' }} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -211,7 +214,7 @@ export function MultiSiteOpsDashboard() {
       </div>
 
       <Card className="border-border/60">
-        <CardHeader className="pb-2"><CardTitle className="text-sm">All Locations</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm">All Locations {drill && <Badge variant="secondary" className="ml-2 text-xs">Filtered</Badge>}</CardTitle></CardHeader>
         <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r) => r.locationId} /></CardContent>
       </Card>
     </div>
