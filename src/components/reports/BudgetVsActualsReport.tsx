@@ -27,13 +27,13 @@ const locations = [...new Set(mockBudgetVsActuals.map(r => r.locationName))];
 const COLORS = ['hsl(var(--primary))', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
 const tableColumns: DataTableColumn<BudgetVsActualRecord>[] = [
-  { key: 'locationName', header: 'Location', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
-  { key: 'category', header: 'Category', accessor: (r) => <Badge variant="outline" className="text-xs">{r.category}</Badge>, sortValue: (r) => r.category },
-  { key: 'budgetAmount', header: 'Budget', accessor: (r) => `$${r.budgetAmount.toLocaleString()}`, sortValue: (r) => r.budgetAmount, align: 'right' },
-  { key: 'actualAmount', header: 'Actual', accessor: (r) => `$${r.actualAmount.toLocaleString()}`, sortValue: (r) => r.actualAmount, align: 'right' },
-  { key: 'variance', header: 'Variance', align: 'right', sortValue: (r) => r.variance,
+  { key: 'locationName', header: 'Location', type: 'text', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
+  { key: 'category', header: 'Category', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-xs">{r.category}</Badge>, sortValue: (r) => r.category },
+  { key: 'budgetAmount', header: 'Budget', type: 'number', accessor: (r) => `$${r.budgetAmount.toLocaleString()}`, sortValue: (r) => r.budgetAmount, align: 'right' },
+  { key: 'actualAmount', header: 'Actual', type: 'number', accessor: (r) => `$${r.actualAmount.toLocaleString()}`, sortValue: (r) => r.actualAmount, align: 'right' },
+  { key: 'variance', header: 'Variance', type: 'number', align: 'right', sortValue: (r) => r.variance,
     accessor: (r) => <span className={cn('font-medium', r.variance > 0 ? 'text-emerald-600' : 'text-destructive')}>{r.variance > 0 ? '+' : ''}${r.variance.toLocaleString()}</span> },
-  { key: 'variancePercent', header: 'Var %', align: 'right', sortValue: (r) => r.variancePercent,
+  { key: 'variancePercent', header: 'Var %', type: 'number', align: 'right', sortValue: (r) => r.variancePercent,
     accessor: (r) => <Badge variant={r.variancePercent >= 0 ? 'default' : 'destructive'} className="text-xs">{r.variancePercent > 0 ? '+' : ''}{r.variancePercent}%</Badge> },
 ];
 

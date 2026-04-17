@@ -28,21 +28,21 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockFairness.map(r => r.location))];
 
 const tableColumns: DataTableColumn<FairnessRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => (
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.fairnessScore >= 85 ? 'bg-emerald-500' : r.fairnessScore >= 70 ? 'bg-amber-500' : 'bg-red-500')} />
 
       <span className="font-medium">{r.staffName}</span>
     </div>
   ), sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'totalShifts', header: 'Total', accessor: (r) => r.totalShifts, sortValue: (r) => r.totalShifts, align: 'right' },
-  { key: 'weekendShifts', header: 'Weekend', accessor: (r) => (
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'totalShifts', header: 'Total', type: 'number', accessor: (r) => r.totalShifts, sortValue: (r) => r.totalShifts, align: 'right' },
+  { key: 'weekendShifts', header: 'Weekend', type: 'text', accessor: (r) => (
     <span className={cn('text-xs', r.weekendShifts > 4 ? 'text-destructive font-medium' : '')}>{r.weekendShifts}</span>
   ), sortValue: (r) => r.weekendShifts, align: 'right' },
-  { key: 'earlyShifts', header: 'Early', accessor: (r) => r.earlyShifts, sortValue: (r) => r.earlyShifts, align: 'right' },
-  { key: 'lateShifts', header: 'Late', accessor: (r) => r.lateShifts, sortValue: (r) => r.lateShifts, align: 'right' },
-  { key: 'fairnessScore', header: 'Fairness Score', className: 'w-[150px]', sortValue: (r) => r.fairnessScore,
+  { key: 'earlyShifts', header: 'Early', type: 'text', accessor: (r) => r.earlyShifts, sortValue: (r) => r.earlyShifts, align: 'right' },
+  { key: 'lateShifts', header: 'Late', type: 'text', accessor: (r) => r.lateShifts, sortValue: (r) => r.lateShifts, align: 'right' },
+  { key: 'fairnessScore', header: 'Fairness Score', type: 'number', className: 'w-[150px]', sortValue: (r) => r.fairnessScore,
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
@@ -51,7 +51,7 @@ const tableColumns: DataTableColumn<FairnessRecord>[] = [
         <span className={cn('text-xs font-mono w-8 text-right', r.fairnessScore < 70 ? 'text-destructive font-bold' : '')}>{r.fairnessScore}</span>
       </div>
     ) },
-  { key: 'deviationFromAvg', header: 'Deviation', align: 'right', sortValue: (r) => Math.abs(r.deviationFromAvg),
+  { key: 'deviationFromAvg', header: 'Deviation', type: 'number', align: 'right', sortValue: (r) => Math.abs(r.deviationFromAvg),
     accessor: (r) => (
       <span className={cn('font-medium text-xs', Math.abs(r.deviationFromAvg) > 15 ? 'text-destructive' : Math.abs(r.deviationFromAvg) > 10 ? 'text-amber-600' : 'text-muted-foreground')}>
         {r.deviationFromAvg > 0 ? '+' : ''}{r.deviationFromAvg}%

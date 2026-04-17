@@ -29,20 +29,20 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockLabourCosts.map(r => r.location))];
 
 const tableColumns: DataTableColumn<LabourCostRecord>[] = [
-  { key: 'location', header: 'Location', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'department', header: 'Department', accessor: (r) => r.department, sortValue: (r) => r.department },
-  { key: 'headcount', header: 'HC', accessor: (r) => r.headcount, sortValue: (r) => r.headcount, align: 'right' },
-  { key: 'regularCost', header: 'Regular', accessor: (r) => `$${(r.regularCost / 1000).toFixed(1)}k`, sortValue: (r) => r.regularCost, align: 'right' },
-  { key: 'overtimeCost', header: 'OT', accessor: (r) => `$${(r.overtimeCost / 1000).toFixed(1)}k`, sortValue: (r) => r.overtimeCost, align: 'right' },
-  { key: 'allowanceCost', header: 'Allow.', accessor: (r) => `$${r.allowanceCost}`, sortValue: (r) => r.allowanceCost, align: 'right' },
-  { key: 'penaltyCost', header: 'Penalties', accessor: (r) => `$${r.penaltyCost}`, sortValue: (r) => r.penaltyCost, align: 'right' },
-  { key: 'agencyCost', header: 'Agency', sortValue: (r) => r.agencyCost, align: 'right',
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'department', header: 'Department', type: 'enum', accessor: (r) => r.department, sortValue: (r) => r.department },
+  { key: 'headcount', header: 'HC', type: 'number', accessor: (r) => r.headcount, sortValue: (r) => r.headcount, align: 'right' },
+  { key: 'regularCost', header: 'Regular', type: 'number', accessor: (r) => `$${(r.regularCost / 1000).toFixed(1)}k`, sortValue: (r) => r.regularCost, align: 'right' },
+  { key: 'overtimeCost', header: 'OT', type: 'number', accessor: (r) => `$${(r.overtimeCost / 1000).toFixed(1)}k`, sortValue: (r) => r.overtimeCost, align: 'right' },
+  { key: 'allowanceCost', header: 'Allow.', type: 'number', accessor: (r) => `$${r.allowanceCost}`, sortValue: (r) => r.allowanceCost, align: 'right' },
+  { key: 'penaltyCost', header: 'Penalties', type: 'number', accessor: (r) => `$${r.penaltyCost}`, sortValue: (r) => r.penaltyCost, align: 'right' },
+  { key: 'agencyCost', header: 'Agency', type: 'number', sortValue: (r) => r.agencyCost, align: 'right',
     accessor: (r) => r.agencyCost > 0 ? <span className="text-destructive font-medium">${(r.agencyCost / 1000).toFixed(1)}k</span> : <span className="text-muted-foreground text-xs">—</span> },
-  { key: 'totalCost', header: 'Total', accessor: (r) => <span className="font-semibold">${(r.totalCost / 1000).toFixed(1)}k</span>, sortValue: (r) => r.totalCost, align: 'right' },
-  { key: 'budgetAmount', header: 'Budget', accessor: (r) => `$${(r.budgetAmount / 1000).toFixed(1)}k`, sortValue: (r) => r.budgetAmount, align: 'right' },
-  { key: 'variance', header: 'Variance', align: 'right', sortValue: (r) => r.variance,
+  { key: 'totalCost', header: 'Total', type: 'number', accessor: (r) => <span className="font-semibold">${(r.totalCost / 1000).toFixed(1)}k</span>, sortValue: (r) => r.totalCost, align: 'right' },
+  { key: 'budgetAmount', header: 'Budget', type: 'number', accessor: (r) => `$${(r.budgetAmount / 1000).toFixed(1)}k`, sortValue: (r) => r.budgetAmount, align: 'right' },
+  { key: 'variance', header: 'Variance', type: 'number', align: 'right', sortValue: (r) => r.variance,
     accessor: (r) => <span className={cn('font-medium text-xs', r.variance >= 0 ? 'text-emerald-600' : 'text-destructive')}>{r.variance >= 0 ? '+' : ''}${r.variance}</span> },
-  { key: 'costPerHead', header: '$/Head', align: 'right', sortValue: (r) => r.headcount > 0 ? r.totalCost / r.headcount : 0,
+  { key: 'costPerHead', header: '$/Head', type: 'number', align: 'right', sortValue: (r) => r.headcount > 0 ? r.totalCost / r.headcount : 0,
     accessor: (r) => <span className="font-mono text-xs">${r.headcount > 0 ? Math.round(r.totalCost / r.headcount).toLocaleString() : '—'}</span> },
 ];
 

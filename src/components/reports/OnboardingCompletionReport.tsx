@@ -31,16 +31,16 @@ const exportColumns: ExportColumn[] = [
 ];
 
 const tableColumns: DataTableColumn<OnboardingRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.position}</span></div>, sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
-  { key: 'assignedTo', header: 'Assigned To', accessor: (r) => <span className="text-xs text-muted-foreground">{r.assignedTo}</span>, sortValue: (r) => r.assignedTo },
-  { key: 'status', header: 'Status', sortValue: (r) => r.status,
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.position}</span></div>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => r.location, sortValue: (r) => r.location },
+  { key: 'assignedTo', header: 'Assigned To', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground">{r.assignedTo}</span>, sortValue: (r) => r.assignedTo },
+  { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge className={`text-[10px] ${statusVariant[r.status]}`}>{statusLabels[r.status]}</Badge> },
-  { key: 'stepsCompleted', header: 'Steps', accessor: (r) => <span className="text-xs">{r.stepsCompleted}/{r.totalSteps}</span>, sortValue: (r) => r.stepsCompleted, align: 'right' },
-  { key: 'completionPct', header: 'Progress', className: 'w-[150px]', sortValue: (r) => r.completionPct,
+  { key: 'stepsCompleted', header: 'Steps', type: 'text', accessor: (r) => <span className="text-xs">{r.stepsCompleted}/{r.totalSteps}</span>, sortValue: (r) => r.stepsCompleted, align: 'right' },
+  { key: 'completionPct', header: 'Progress', type: 'number', className: 'w-[150px]', sortValue: (r) => r.completionPct,
     accessor: (r) => <div className="flex items-center gap-2"><Progress value={r.completionPct} className="h-2 flex-1" /><span className="text-xs w-8 text-right">{r.completionPct}%</span></div> },
-  { key: 'daysInPipeline', header: 'Days', accessor: (r) => <span className={cn('text-xs font-medium', r.daysInPipeline > 21 ? 'text-destructive' : 'text-foreground')}>{r.daysInPipeline}d</span>, sortValue: (r) => r.daysInPipeline, align: 'right' },
-  { key: 'startDate', header: 'Start Date', accessor: (r) => <span className="text-xs text-muted-foreground">{r.startDate}</span>, sortValue: (r) => r.startDate },
+  { key: 'daysInPipeline', header: 'Days', type: 'number', accessor: (r) => <span className={cn('text-xs font-medium', r.daysInPipeline > 21 ? 'text-destructive' : 'text-foreground')}>{r.daysInPipeline}d</span>, sortValue: (r) => r.daysInPipeline, align: 'right' },
+  { key: 'startDate', header: 'Start Date', type: 'date', accessor: (r) => <span className="text-xs text-muted-foreground">{r.startDate}</span>, sortValue: (r) => r.startDate },
 ];
 
 export function OnboardingCompletionReport() {

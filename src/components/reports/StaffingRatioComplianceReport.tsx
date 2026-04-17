@@ -27,17 +27,17 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockStaffingRatios.map(r => r.locationName))];
 
 const tableColumns: DataTableColumn<StaffingRatioRecord>[] = [
-  { key: 'locationName', header: 'Location', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
-  { key: 'areaName', header: 'Area', accessor: (r) => r.areaName, sortValue: (r) => r.areaName },
-  { key: 'timeSlot', header: 'Time', accessor: (r) => r.timeSlot, sortValue: (r) => r.timeSlot },
-  { key: 'serviceCategory', header: 'Category', accessor: (r) => <Badge variant="outline" className="text-xs">{r.serviceCategory}</Badge>, sortValue: (r) => r.serviceCategory },
-  { key: 'attendance', header: 'Attendance', accessor: (r) => r.attendance, sortValue: (r) => r.attendance, align: 'right' },
-  { key: 'requiredRatio', header: 'Req. Ratio', accessor: (r) => r.requiredRatio, sortValue: (r) => r.requiredRatio },
-  { key: 'actualRatio', header: 'Act. Ratio', sortValue: (r) => r.actualRatio,
+  { key: 'locationName', header: 'Location', type: 'text', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
+  { key: 'areaName', header: 'Area', type: 'text', accessor: (r) => r.areaName, sortValue: (r) => r.areaName },
+  { key: 'timeSlot', header: 'Time', type: 'text', accessor: (r) => r.timeSlot, sortValue: (r) => r.timeSlot },
+  { key: 'serviceCategory', header: 'Category', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-xs">{r.serviceCategory}</Badge>, sortValue: (r) => r.serviceCategory },
+  { key: 'attendance', header: 'Attendance', type: 'text', accessor: (r) => r.attendance, sortValue: (r) => r.attendance, align: 'right' },
+  { key: 'requiredRatio', header: 'Req. Ratio', type: 'text', accessor: (r) => r.requiredRatio, sortValue: (r) => r.requiredRatio },
+  { key: 'actualRatio', header: 'Act. Ratio', type: 'number', sortValue: (r) => r.actualRatio,
     accessor: (r) => <span className={cn('font-medium', r.isCompliant ? 'text-emerald-600' : 'text-destructive')}>{r.actualRatio}</span> },
-  { key: 'requiredStaff', header: 'Req. Staff', accessor: (r) => r.requiredStaff, sortValue: (r) => r.requiredStaff, align: 'right' },
-  { key: 'actualStaff', header: 'Act. Staff', accessor: (r) => r.actualStaff, sortValue: (r) => r.actualStaff, align: 'right' },
-  { key: 'isCompliant', header: 'Status', align: 'center', sortValue: (r) => r.isCompliant ? 1 : 0,
+  { key: 'requiredStaff', header: 'Req. Staff', type: 'text', accessor: (r) => r.requiredStaff, sortValue: (r) => r.requiredStaff, align: 'right' },
+  { key: 'actualStaff', header: 'Act. Staff', type: 'number', accessor: (r) => r.actualStaff, sortValue: (r) => r.actualStaff, align: 'right' },
+  { key: 'isCompliant', header: 'Status', type: 'enum', align: 'center', sortValue: (r) => r.isCompliant ? 1 : 0,
     accessor: (r) => r.isCompliant ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mx-auto" /> : <XCircle className="h-4 w-4 text-destructive mx-auto" /> },
 ];
 

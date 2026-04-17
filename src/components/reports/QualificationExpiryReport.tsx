@@ -32,14 +32,14 @@ const exportColumns: ExportColumn[] = [
 ];
 
 const tableColumns: DataTableColumn<QualificationRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
-  { key: 'qualification', header: 'Qualification', accessor: (r) => <span className="text-xs">{r.qualification}</span>, sortValue: (r) => r.qualification },
-  { key: 'issueDate', header: 'Issued', accessor: (r) => <span className="text-xs text-muted-foreground">{format(parseISO(r.issueDate), 'dd MMM yy')}</span>, sortValue: (r) => r.issueDate },
-  { key: 'expiryDate', header: 'Expires', accessor: (r) => <span className="text-xs">{format(parseISO(r.expiryDate), 'dd MMM yyyy')}</span>, sortValue: (r) => r.expiryDate },
-  { key: 'daysUntilExpiry', header: 'Days Left', align: 'right', sortValue: (r) => r.daysUntilExpiry,
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => r.location, sortValue: (r) => r.location },
+  { key: 'qualification', header: 'Qualification', type: 'text', accessor: (r) => <span className="text-xs">{r.qualification}</span>, sortValue: (r) => r.qualification },
+  { key: 'issueDate', header: 'Issued', type: 'date', accessor: (r) => <span className="text-xs text-muted-foreground">{format(parseISO(r.issueDate), 'dd MMM yy')}</span>, sortValue: (r) => r.issueDate },
+  { key: 'expiryDate', header: 'Expires', type: 'date', accessor: (r) => <span className="text-xs">{format(parseISO(r.expiryDate), 'dd MMM yyyy')}</span>, sortValue: (r) => r.expiryDate },
+  { key: 'daysUntilExpiry', header: 'Days Left', type: 'number', align: 'right', sortValue: (r) => r.daysUntilExpiry,
     accessor: (r) => <span className={cn('text-xs font-semibold', r.daysUntilExpiry < 0 ? 'text-destructive' : r.daysUntilExpiry < 90 ? 'text-amber-600' : 'text-emerald-600')}>{r.daysUntilExpiry < 0 ? `${Math.abs(r.daysUntilExpiry)}d overdue` : `${r.daysUntilExpiry}d`}</span> },
-  { key: 'status', header: 'Status', sortValue: (r) => r.status,
+  { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge className={`text-[10px] ${statusColors[r.status]}`}>{statusLabels[r.status]}</Badge> },
 ];
 

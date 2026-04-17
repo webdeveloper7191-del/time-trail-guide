@@ -33,17 +33,17 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockCoverageGaps.map(r => r.location))];
 
 const tableColumns: DataTableColumn<CoverageGapRecord>[] = [
-  { key: 'date', header: 'Date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
-  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'area', header: 'Area', accessor: (r) => <span className="font-medium">{r.area}</span>, sortValue: (r) => r.area },
-  { key: 'timeSlot', header: 'Time Slot', accessor: (r) => <span className="text-xs font-mono">{r.timeSlot}</span>, sortValue: (r) => r.timeSlot },
-  { key: 'requiredStaff', header: 'Required', accessor: (r) => r.requiredStaff, sortValue: (r) => r.requiredStaff, align: 'right' },
-  { key: 'scheduledStaff', header: 'Scheduled', accessor: (r) => r.scheduledStaff, sortValue: (r) => r.scheduledStaff, align: 'right' },
-  { key: 'gap', header: 'Gap', align: 'right', sortValue: (r) => r.gap,
+  { key: 'date', header: 'Date', type: 'date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'area', header: 'Area', type: 'enum', accessor: (r) => <span className="font-medium">{r.area}</span>, sortValue: (r) => r.area },
+  { key: 'timeSlot', header: 'Time Slot', type: 'text', accessor: (r) => <span className="text-xs font-mono">{r.timeSlot}</span>, sortValue: (r) => r.timeSlot },
+  { key: 'requiredStaff', header: 'Required', type: 'text', accessor: (r) => r.requiredStaff, sortValue: (r) => r.requiredStaff, align: 'right' },
+  { key: 'scheduledStaff', header: 'Scheduled', type: 'text', accessor: (r) => r.scheduledStaff, sortValue: (r) => r.scheduledStaff, align: 'right' },
+  { key: 'gap', header: 'Gap', type: 'number', align: 'right', sortValue: (r) => r.gap,
     accessor: (r) => <span className={cn('font-semibold', r.gap > 0 ? 'text-destructive' : 'text-emerald-600')}>{r.gap > 0 ? `-${r.gap}` : '✓'}</span> },
-  { key: 'gapSeverity', header: 'Severity', sortValue: (r) => ({ minor: 0, moderate: 1, critical: 2 }[r.gapSeverity]),
+  { key: 'gapSeverity', header: 'Severity', type: 'enum', sortValue: (r) => ({ minor: 0, moderate: 1, critical: 2 }[r.gapSeverity]),
     accessor: (r) => <Badge className={cn('text-xs capitalize', severityColors[r.gapSeverity])}>{r.gapSeverity}</Badge> },
-  { key: 'reason', header: 'Reason', accessor: (r) => <span className="text-xs text-muted-foreground">{r.reason || '—'}</span>, sortValue: (r) => r.reason },
+  { key: 'reason', header: 'Reason', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground">{r.reason || '—'}</span>, sortValue: (r) => r.reason },
 ];
 
 export function CoverageGapReport() {

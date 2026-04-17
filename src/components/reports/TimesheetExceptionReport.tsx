@@ -43,16 +43,16 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockTimesheetExceptions.map(r => r.location))];
 
 const tableColumns: DataTableColumn<TimesheetExceptionRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'date', header: 'Date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
-  { key: 'exceptionType', header: 'Type', sortValue: (r) => r.exceptionType,
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'date', header: 'Date', type: 'date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
+  { key: 'exceptionType', header: 'Type', type: 'enum', sortValue: (r) => r.exceptionType,
     accessor: (r) => <Badge className={cn('text-[10px]', typeColors[r.exceptionType])}>{exceptionTypeLabels[r.exceptionType]}</Badge> },
-  { key: 'field', header: 'Field', accessor: (r) => <span className="text-xs">{r.field}</span>, sortValue: (r) => r.field },
-  { key: 'originalValue', header: 'Original', accessor: (r) => <span className="text-xs text-muted-foreground line-through">{r.originalValue}</span>, sortValue: (r) => r.originalValue },
-  { key: 'newValue', header: 'New', accessor: (r) => <span className="text-xs font-medium">{r.newValue}</span>, sortValue: (r) => r.newValue },
-  { key: 'editedBy', header: 'Edited By', accessor: (r) => <span className="text-xs">{r.editedBy}</span>, sortValue: (r) => r.editedBy },
-  { key: 'reason', header: 'Reason', accessor: (r) => <span className="text-xs text-muted-foreground max-w-[200px] truncate block">{r.reason}</span>, sortValue: (r) => r.reason },
+  { key: 'field', header: 'Field', type: 'text', accessor: (r) => <span className="text-xs">{r.field}</span>, sortValue: (r) => r.field },
+  { key: 'originalValue', header: 'Original', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground line-through">{r.originalValue}</span>, sortValue: (r) => r.originalValue },
+  { key: 'newValue', header: 'New', type: 'text', accessor: (r) => <span className="text-xs font-medium">{r.newValue}</span>, sortValue: (r) => r.newValue },
+  { key: 'editedBy', header: 'Edited By', type: 'text', accessor: (r) => <span className="text-xs">{r.editedBy}</span>, sortValue: (r) => r.editedBy },
+  { key: 'reason', header: 'Reason', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground max-w-[200px] truncate block">{r.reason}</span>, sortValue: (r) => r.reason },
 ];
 
 export function TimesheetExceptionReport() {

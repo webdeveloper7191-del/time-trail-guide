@@ -29,15 +29,15 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockOvertimeByLocation.map(r => r.location))];
 
 const tableColumns: DataTableColumn<OvertimeByLocationRecord>[] = [
-  { key: 'location', header: 'Location', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'department', header: 'Department', accessor: (r) => <Badge variant="outline" className="text-[10px]">{r.department}</Badge>, sortValue: (r) => r.department },
-  { key: 'staffCount', header: 'Staff', accessor: (r) => r.staffCount, sortValue: (r) => r.staffCount, align: 'right' },
-  { key: 'totalOvertimeHours', header: 'Total OT', align: 'right', sortValue: (r) => r.totalOvertimeHours,
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'department', header: 'Department', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-[10px]">{r.department}</Badge>, sortValue: (r) => r.department },
+  { key: 'staffCount', header: 'Staff', type: 'number', accessor: (r) => r.staffCount, sortValue: (r) => r.staffCount, align: 'right' },
+  { key: 'totalOvertimeHours', header: 'Total OT', type: 'number', align: 'right', sortValue: (r) => r.totalOvertimeHours,
     accessor: (r) => <span className={cn('font-medium', r.totalOvertimeHours > 8 ? 'text-destructive' : '')}>{r.totalOvertimeHours}h</span> },
-  { key: 'avgOvertimePerStaff', header: 'Avg/Staff', accessor: (r) => `${r.avgOvertimePerStaff.toFixed(1)}h`, sortValue: (r) => r.avgOvertimePerStaff, align: 'right' },
-  { key: 'overtimeCost', header: 'OT Cost', accessor: (r) => <span className="font-semibold">${r.overtimeCost.toLocaleString()}</span>, sortValue: (r) => r.overtimeCost, align: 'right' },
-  { key: 'topOvertimeStaff', header: 'Top Contributor', accessor: (r) => <span className="text-xs text-muted-foreground">{r.topOvertimeStaff}</span>, sortValue: (r) => r.topOvertimeStaff },
-  { key: 'topOvertimeHours', header: 'Their OT', align: 'right', sortValue: (r) => r.topOvertimeHours,
+  { key: 'avgOvertimePerStaff', header: 'Avg/Staff', type: 'number', accessor: (r) => `${r.avgOvertimePerStaff.toFixed(1)}h`, sortValue: (r) => r.avgOvertimePerStaff, align: 'right' },
+  { key: 'overtimeCost', header: 'OT Cost', type: 'number', accessor: (r) => <span className="font-semibold">${r.overtimeCost.toLocaleString()}</span>, sortValue: (r) => r.overtimeCost, align: 'right' },
+  { key: 'topOvertimeStaff', header: 'Top Contributor', type: 'number', accessor: (r) => <span className="text-xs text-muted-foreground">{r.topOvertimeStaff}</span>, sortValue: (r) => r.topOvertimeStaff },
+  { key: 'topOvertimeHours', header: 'Their OT', type: 'number', align: 'right', sortValue: (r) => r.topOvertimeHours,
     accessor: (r) => r.topOvertimeHours > 0 ? <span className="text-destructive text-xs font-medium">{r.topOvertimeHours}h</span> : <span className="text-muted-foreground">—</span> },
 ];
 
