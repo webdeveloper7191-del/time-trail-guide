@@ -30,15 +30,15 @@ const exportColumns: ExportColumn[] = [
 ];
 
 const tableColumns: DataTableColumn<AvailabilityVsScheduledRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.department}</span></div>, sortValue: (r) => r.staffName },
+  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.department}</span></div>, sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
-  { key: 'availableHours', header: 'Available', accessor: (r) => <span className="font-mono text-xs">{r.availableHours}h</span>, sortValue: (r) => r.availableHours, align: 'right' },
-  { key: 'scheduledHours', header: 'Scheduled', accessor: (r) => <span className="font-mono text-xs">{r.scheduledHours}h</span>, sortValue: (r) => r.scheduledHours, align: 'right' },
-  { key: 'utilisationPct', header: 'Utilisation', className: 'w-[150px]', sortValue: (r) => r.utilisationPct,
+  { key: 'availableHours', header: 'Available', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.availableHours}h</span>, sortValue: (r) => r.availableHours, align: 'right' },
+  { key: 'scheduledHours', header: 'Scheduled', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.scheduledHours}h</span>, sortValue: (r) => r.scheduledHours, align: 'right' },
+  { key: 'utilisationPct', header: 'Utilisation', type: 'number', className: 'w-[150px]', sortValue: (r) => r.utilisationPct,
     accessor: (r) => <div className="flex items-center gap-2"><Progress value={Math.min(r.utilisationPct, 100)} className="h-2 flex-1" /><span className="text-xs w-8 text-right">{r.utilisationPct}%</span></div> },
-  { key: 'unscheduledHours', header: 'Unused', align: 'right', sortValue: (r) => r.unscheduledHours,
+  { key: 'unscheduledHours', header: 'Unused', type: 'number', align: 'right', sortValue: (r) => r.unscheduledHours,
     accessor: (r) => r.unscheduledHours > 0 ? <span className="text-amber-600 text-xs font-medium">{r.unscheduledHours}h</span> : <span className="text-emerald-600 text-xs">—</span> },
-  { key: 'overtimeHours', header: 'OT', align: 'right', sortValue: (r) => r.overtimeHours,
+  { key: 'overtimeHours', header: 'OT', type: 'number', align: 'right', sortValue: (r) => r.overtimeHours,
     accessor: (r) => r.overtimeHours > 0 ? <Badge variant="destructive" className="text-[10px]">{r.overtimeHours}h</Badge> : <span className="text-xs text-muted-foreground">—</span> },
 ];
 

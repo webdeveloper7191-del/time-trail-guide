@@ -31,7 +31,7 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockBreakCompliance.map(r => r.location))];
 
 const tableColumns: DataTableColumn<BreakComplianceRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => (
+  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.compliant ? 'bg-emerald-500' : 'bg-red-500')} />
 
@@ -39,15 +39,15 @@ const tableColumns: DataTableColumn<BreakComplianceRecord>[] = [
     </div>
   ), sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'date', header: 'Date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
+  { key: 'date', header: 'Date', type: 'date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
   { key: 'shiftDuration', header: 'Shift', accessor: (r) => `${r.shiftDuration}h`, sortValue: (r) => r.shiftDuration, align: 'right' },
-  { key: 'requiredBreakMinutes', header: 'Required', accessor: (r) => `${r.requiredBreakMinutes}m`, sortValue: (r) => r.requiredBreakMinutes, align: 'right' },
-  { key: 'actualBreakMinutes', header: 'Actual', align: 'right', sortValue: (r) => r.actualBreakMinutes,
+  { key: 'requiredBreakMinutes', header: 'Required', type: 'number', accessor: (r) => `${r.requiredBreakMinutes}m`, sortValue: (r) => r.requiredBreakMinutes, align: 'right' },
+  { key: 'actualBreakMinutes', header: 'Actual', type: 'number', align: 'right', sortValue: (r) => r.actualBreakMinutes,
     accessor: (r) => <span className={cn('font-medium', !r.compliant ? 'text-destructive' : '')}>{r.actualBreakMinutes}m</span> },
   { key: 'breakTimings', header: 'Timings', accessor: (r) => <span className="text-xs text-muted-foreground font-mono">{r.breakTimings}</span>, sortValue: (r) => r.breakTimings },
   { key: 'compliant', header: 'Status', sortValue: (r) => r.compliant ? 1 : 0,
     accessor: (r) => r.compliant ? <Badge className="text-xs bg-emerald-100 text-emerald-700">Compliant</Badge> : <Badge className="text-xs bg-red-100 text-red-700">Violation</Badge> },
-  { key: 'violation', header: 'Violation Detail', accessor: (r) => r.violation ? <span className="text-xs text-destructive">{r.violation}</span> : <span className="text-muted-foreground text-xs">—</span>, sortValue: (r) => r.violation || '' },
+  { key: 'violation', header: 'Violation Detail', type: 'number', accessor: (r) => r.violation ? <span className="text-xs text-destructive">{r.violation}</span> : <span className="text-muted-foreground text-xs">—</span>, sortValue: (r) => r.violation || '' },
 ];
 
 export function BreakComplianceReport() {

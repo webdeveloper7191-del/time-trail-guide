@@ -32,12 +32,12 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockRetrospectivePay.map(r => r.location))];
 
 const tableColumns: DataTableColumn<RetrospectivePayRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
   { key: 'adjustmentType', header: 'Type', sortValue: (r) => r.adjustmentType,
     accessor: (r) => <Badge variant="outline" className="text-xs">{r.adjustmentType.replace(/_/g, ' ')}</Badge> },
-  { key: 'originalAmount', header: 'Original', accessor: (r) => `$${r.originalAmount.toLocaleString()}`, sortValue: (r) => r.originalAmount, align: 'right' },
-  { key: 'adjustedAmount', header: 'Adjusted', accessor: (r) => `$${r.adjustedAmount.toLocaleString()}`, sortValue: (r) => r.adjustedAmount, align: 'right' },
+  { key: 'originalAmount', header: 'Original', type: 'number', accessor: (r) => `$${r.originalAmount.toLocaleString()}`, sortValue: (r) => r.originalAmount, align: 'right' },
+  { key: 'adjustedAmount', header: 'Adjusted', type: 'number', accessor: (r) => `$${r.adjustedAmount.toLocaleString()}`, sortValue: (r) => r.adjustedAmount, align: 'right' },
   { key: 'difference', header: 'Difference', align: 'right', sortValue: (r) => r.difference,
     accessor: (r) => <span className="font-semibold text-emerald-600">+${r.difference.toLocaleString()}</span> },
   { key: 'effectiveFrom', header: 'Effective', accessor: (r) => r.effectiveFrom, sortValue: (r) => r.effectiveFrom },

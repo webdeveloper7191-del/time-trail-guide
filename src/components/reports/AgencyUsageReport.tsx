@@ -34,29 +34,29 @@ const tableColumns: DataTableColumn<AgencyUsageRecord>[] = [
       <span className="font-medium">{r.agencyName}</span>
     </div>
   ), sortValue: (r) => r.agencyName },
-  { key: 'shiftsProvided', header: 'Shifts', accessor: (r) => r.shiftsProvided, sortValue: (r) => r.shiftsProvided, align: 'right' },
-  { key: 'totalHours', header: 'Hours', accessor: (r) => `${r.totalHours}h`, sortValue: (r) => r.totalHours, align: 'right' },
-  { key: 'totalCost', header: 'Total Cost', accessor: (r) => <span className="font-semibold">${r.totalCost.toLocaleString()}</span>, sortValue: (r) => r.totalCost, align: 'right' },
-  { key: 'avgHourlyRate', header: 'Avg Rate', accessor: (r) => (
+  { key: 'shiftsProvided', header: 'Shifts', type: 'number', accessor: (r) => r.shiftsProvided, sortValue: (r) => r.shiftsProvided, align: 'right' },
+  { key: 'totalHours', header: 'Hours', type: 'number', accessor: (r) => `${r.totalHours}h`, sortValue: (r) => r.totalHours, align: 'right' },
+  { key: 'totalCost', header: 'Total Cost', type: 'number', accessor: (r) => <span className="font-semibold">${r.totalCost.toLocaleString()}</span>, sortValue: (r) => r.totalCost, align: 'right' },
+  { key: 'avgHourlyRate', header: 'Avg Rate', type: 'number', accessor: (r) => (
     <span className={cn('text-xs', r.avgHourlyRate > 55 ? 'text-destructive font-medium' : '')}>${r.avgHourlyRate}/h</span>
   ), sortValue: (r) => r.avgHourlyRate, align: 'right' },
-  { key: 'fillRate', header: 'Fill Rate', className: 'w-[130px]', sortValue: (r) => r.fillRate,
+  { key: 'fillRate', header: 'Fill Rate', type: 'number', className: 'w-[130px]', sortValue: (r) => r.fillRate,
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <Progress value={r.fillRate} className="h-2 flex-1" />
         <span className={cn('text-xs font-medium w-10 text-right', r.fillRate < 70 ? 'text-destructive' : '')}>{r.fillRate}%</span>
       </div>
     ) },
-  { key: 'avgResponseTimeHours', header: 'Response', sortValue: (r) => r.avgResponseTimeHours, align: 'right',
+  { key: 'avgResponseTimeHours', header: 'Response', type: 'number', sortValue: (r) => r.avgResponseTimeHours, align: 'right',
     accessor: (r) => <span className={cn('text-xs', r.avgResponseTimeHours > 3 ? 'text-destructive font-medium' : '')}>{r.avgResponseTimeHours}h</span> },
-  { key: 'qualityScore', header: 'Quality', className: 'w-[130px]', sortValue: (r) => r.qualityScore,
+  { key: 'qualityScore', header: 'Quality', type: 'number', className: 'w-[130px]', sortValue: (r) => r.qualityScore,
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <Progress value={r.qualityScore} className={cn('h-2 flex-1')} />
         <span className={cn('text-xs font-medium w-8 text-right', r.qualityScore < 70 ? 'text-destructive' : '')}>{r.qualityScore}</span>
       </div>
     ) },
-  { key: 'cancellationRate', header: 'Cancel %', align: 'right', sortValue: (r) => r.cancellationRate,
+  { key: 'cancellationRate', header: 'Cancel %', type: 'number', align: 'right', sortValue: (r) => r.cancellationRate,
     accessor: (r) => <span className={cn(r.cancellationRate > 5 ? 'text-destructive font-medium' : 'text-muted-foreground')}>{r.cancellationRate}%</span> },
 ];
 

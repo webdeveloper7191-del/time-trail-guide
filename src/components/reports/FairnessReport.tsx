@@ -28,7 +28,7 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockFairness.map(r => r.location))];
 
 const tableColumns: DataTableColumn<FairnessRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => (
+  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.fairnessScore >= 85 ? 'bg-emerald-500' : r.fairnessScore >= 70 ? 'bg-amber-500' : 'bg-red-500')} />
 
@@ -36,13 +36,13 @@ const tableColumns: DataTableColumn<FairnessRecord>[] = [
     </div>
   ), sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'totalShifts', header: 'Total', accessor: (r) => r.totalShifts, sortValue: (r) => r.totalShifts, align: 'right' },
-  { key: 'weekendShifts', header: 'Weekend', accessor: (r) => (
+  { key: 'totalShifts', header: 'Total', type: 'number', accessor: (r) => r.totalShifts, sortValue: (r) => r.totalShifts, align: 'right' },
+  { key: 'weekendShifts', header: 'Weekend', type: 'date', accessor: (r) => (
     <span className={cn('text-xs', r.weekendShifts > 4 ? 'text-destructive font-medium' : '')}>{r.weekendShifts}</span>
   ), sortValue: (r) => r.weekendShifts, align: 'right' },
-  { key: 'earlyShifts', header: 'Early', accessor: (r) => r.earlyShifts, sortValue: (r) => r.earlyShifts, align: 'right' },
-  { key: 'lateShifts', header: 'Late', accessor: (r) => r.lateShifts, sortValue: (r) => r.lateShifts, align: 'right' },
-  { key: 'fairnessScore', header: 'Fairness Score', className: 'w-[150px]', sortValue: (r) => r.fairnessScore,
+  { key: 'earlyShifts', header: 'Early', type: 'number', accessor: (r) => r.earlyShifts, sortValue: (r) => r.earlyShifts, align: 'right' },
+  { key: 'lateShifts', header: 'Late', type: 'number', accessor: (r) => r.lateShifts, sortValue: (r) => r.lateShifts, align: 'right' },
+  { key: 'fairnessScore', header: 'Fairness Score', type: 'number', className: 'w-[150px]', sortValue: (r) => r.fairnessScore,
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">

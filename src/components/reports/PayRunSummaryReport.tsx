@@ -29,19 +29,19 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockPayRunRecords.map(r => r.location))];
 
 const tableColumns: DataTableColumn<PayRunRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.staffId}</span></div>, sortValue: (r) => r.staffName },
+  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.staffId}</span></div>, sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
   { key: 'role', header: 'Role', accessor: (r) => <Badge variant="outline" className="text-xs">{r.role}</Badge>, sortValue: (r) => r.role },
   { key: 'contractType', header: 'Contract', sortValue: (r) => r.contractType,
     accessor: (r) => <Badge variant="outline" className="text-xs">{r.contractType.replace('_', ' ')}</Badge> },
-  { key: 'regularHours', header: 'Reg Hrs', accessor: (r) => <span className="font-mono text-xs">{r.regularHours}h</span>, sortValue: (r) => r.regularHours, align: 'right' },
-  { key: 'overtimeHours', header: 'OT Hrs', sortValue: (r) => r.overtimeHours, align: 'right',
+  { key: 'regularHours', header: 'Reg Hrs', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.regularHours}h</span>, sortValue: (r) => r.regularHours, align: 'right' },
+  { key: 'overtimeHours', header: 'OT Hrs', type: 'number', sortValue: (r) => r.overtimeHours, align: 'right',
     accessor: (r) => r.overtimeHours > 0 ? <span className="text-destructive font-medium text-xs">{r.overtimeHours}h</span> : <span className="text-muted-foreground text-xs">—</span> },
-  { key: 'basePay', header: 'Base Pay', accessor: (r) => `$${r.basePay.toLocaleString()}`, sortValue: (r) => r.basePay, align: 'right' },
-  { key: 'overtimePay', header: 'OT Pay', accessor: (r) => r.overtimePay > 0 ? `$${r.overtimePay.toLocaleString()}` : '—', sortValue: (r) => r.overtimePay, align: 'right' },
-  { key: 'allowances', header: 'Allow.', accessor: (r) => r.allowances > 0 ? `$${r.allowances}` : '—', sortValue: (r) => r.allowances, align: 'right' },
-  { key: 'superannuation', header: 'Super', accessor: (r) => `$${r.superannuation.toLocaleString()}`, sortValue: (r) => r.superannuation, align: 'right' },
-  { key: 'totalGross', header: 'Total Gross', accessor: (r) => <span className="font-semibold">${r.totalGross.toLocaleString()}</span>, sortValue: (r) => r.totalGross, align: 'right' },
+  { key: 'basePay', header: 'Base Pay', type: 'number', accessor: (r) => `$${r.basePay.toLocaleString()}`, sortValue: (r) => r.basePay, align: 'right' },
+  { key: 'overtimePay', header: 'OT Pay', type: 'number', accessor: (r) => r.overtimePay > 0 ? `$${r.overtimePay.toLocaleString()}` : '—', sortValue: (r) => r.overtimePay, align: 'right' },
+  { key: 'allowances', header: 'Allow.', type: 'number', accessor: (r) => r.allowances > 0 ? `$${r.allowances}` : '—', sortValue: (r) => r.allowances, align: 'right' },
+  { key: 'superannuation', header: 'Super', type: 'number', accessor: (r) => `$${r.superannuation.toLocaleString()}`, sortValue: (r) => r.superannuation, align: 'right' },
+  { key: 'totalGross', header: 'Total Gross', type: 'number', accessor: (r) => <span className="font-semibold">${r.totalGross.toLocaleString()}</span>, sortValue: (r) => r.totalGross, align: 'right' },
 ];
 
 export function PayRunSummaryReport() {

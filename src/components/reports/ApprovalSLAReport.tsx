@@ -37,13 +37,13 @@ const tableColumns: DataTableColumn<ApprovalSLARecord>[] = [
   ), sortValue: (r) => r.approverName },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
   { key: 'tier', header: 'Tier', accessor: (r) => <Badge variant="outline" className="text-[10px]">Tier {r.tier}</Badge>, sortValue: (r) => r.tier },
-  { key: 'totalApprovals', header: 'Total', accessor: (r) => r.totalApprovals, sortValue: (r) => r.totalApprovals, align: 'right' },
-  { key: 'withinSLA', header: 'Within SLA', accessor: (r) => <span className="text-emerald-600">{r.withinSLA}</span>, sortValue: (r) => r.withinSLA, align: 'right' },
-  { key: 'breachedSLA', header: 'Breached', align: 'right', sortValue: (r) => r.breachedSLA,
+  { key: 'totalApprovals', header: 'Total', type: 'number', accessor: (r) => r.totalApprovals, sortValue: (r) => r.totalApprovals, align: 'right' },
+  { key: 'withinSLA', header: 'Within SLA', type: 'number', accessor: (r) => <span className="text-emerald-600">{r.withinSLA}</span>, sortValue: (r) => r.withinSLA, align: 'right' },
+  { key: 'breachedSLA', header: 'Breached', type: 'number', align: 'right', sortValue: (r) => r.breachedSLA,
     accessor: (r) => r.breachedSLA > 0 ? <span className="text-destructive font-medium">{r.breachedSLA}</span> : <span className="text-muted-foreground">0</span> },
-  { key: 'avgTurnaroundHours', header: 'Avg Turnaround', align: 'right', sortValue: (r) => r.avgTurnaroundHours,
+  { key: 'avgTurnaroundHours', header: 'Avg Turnaround', type: 'number', align: 'right', sortValue: (r) => r.avgTurnaroundHours,
     accessor: (r) => <span className={cn(r.avgTurnaroundHours > 24 ? 'text-destructive font-medium' : '')}>{r.avgTurnaroundHours}h</span> },
-  { key: 'slaCompliancePercent', header: 'SLA Compliance', className: 'w-[150px]', sortValue: (r) => r.slaCompliancePercent,
+  { key: 'slaCompliancePercent', header: 'SLA Compliance', type: 'number', className: 'w-[150px]', sortValue: (r) => r.slaCompliancePercent,
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">

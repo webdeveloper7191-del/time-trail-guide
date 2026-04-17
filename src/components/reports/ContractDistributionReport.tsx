@@ -30,14 +30,14 @@ const exportColumns: ExportColumn[] = [
 const tableColumns: DataTableColumn<ContractDistributionRecord>[] = [
   { key: 'location', header: 'Location', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
   { key: 'department', header: 'Department', accessor: (r) => r.department, sortValue: (r) => r.department },
-  { key: 'fullTime', header: 'Full Time', accessor: (r) => r.fullTime, sortValue: (r) => r.fullTime, align: 'right' },
-  { key: 'partTime', header: 'Part Time', accessor: (r) => r.partTime, sortValue: (r) => r.partTime, align: 'right' },
+  { key: 'fullTime', header: 'Full Time', type: 'date', accessor: (r) => r.fullTime, sortValue: (r) => r.fullTime, align: 'right' },
+  { key: 'partTime', header: 'Part Time', type: 'date', accessor: (r) => r.partTime, sortValue: (r) => r.partTime, align: 'right' },
   { key: 'casual', header: 'Casual', accessor: (r) => r.casual > 0 ? <span className="text-amber-600 font-medium">{r.casual}</span> : '—', sortValue: (r) => r.casual, align: 'right' },
   { key: 'contractor', header: 'Contractor', accessor: (r) => r.contractor > 0 ? <span className="text-blue-600">{r.contractor}</span> : '—', sortValue: (r) => r.contractor, align: 'right' },
-  { key: 'totalStaff', header: 'Total', accessor: (r) => <span className="font-semibold">{r.totalStaff}</span>, sortValue: (r) => r.totalStaff, align: 'right' },
-  { key: 'permanentPct', header: 'Perm %', align: 'right', sortValue: (r) => (r.fullTime + r.partTime) / r.totalStaff * 100,
+  { key: 'totalStaff', header: 'Total', type: 'number', accessor: (r) => <span className="font-semibold">{r.totalStaff}</span>, sortValue: (r) => r.totalStaff, align: 'right' },
+  { key: 'permanentPct', header: 'Perm %', type: 'number', align: 'right', sortValue: (r) => (r.fullTime + r.partTime) / r.totalStaff * 100,
     accessor: (r) => { const pct = Math.round((r.fullTime + r.partTime) / r.totalStaff * 100); return <span className={cn('text-xs font-medium', pct >= 80 ? 'text-emerald-600' : pct >= 60 ? 'text-foreground' : 'text-amber-600')}>{pct}%</span>; }},
-  { key: 'casualPct', header: 'Casual %', align: 'right', sortValue: (r) => r.casual / r.totalStaff * 100,
+  { key: 'casualPct', header: 'Casual %', type: 'number', align: 'right', sortValue: (r) => r.casual / r.totalStaff * 100,
     accessor: (r) => { const pct = Math.round(r.casual / r.totalStaff * 100); return <span className={cn('text-xs', pct > 20 ? 'text-destructive font-medium' : 'text-muted-foreground')}>{pct}%</span>; }},
 ];
 

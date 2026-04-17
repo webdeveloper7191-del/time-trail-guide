@@ -34,12 +34,12 @@ const exportColumns: ExportColumn[] = [
 ];
 
 const tableColumns: DataTableColumn<SkillsMatrixRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.department}</span></div>, sortValue: (r) => r.staffName },
+  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.department}</span></div>, sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
   { key: 'skills', header: 'Skills', accessor: (r) => (
     <div className="flex flex-wrap gap-1">{r.skills.map(s => <Badge key={s.name} className={`text-[10px] ${levelColors[s.level]}`}>{s.name} • {s.level}</Badge>)}</div>
   ), sortValue: (r) => r.totalSkills },
-  { key: 'totalSkills', header: 'Count', accessor: (r) => <span className="font-semibold">{r.totalSkills}</span>, sortValue: (r) => r.totalSkills, align: 'right' },
+  { key: 'totalSkills', header: 'Count', type: 'number', accessor: (r) => <span className="font-semibold">{r.totalSkills}</span>, sortValue: (r) => r.totalSkills, align: 'right' },
   { key: 'avgLevel', header: 'Avg Level', align: 'right', sortValue: (r) => r.skills.reduce((s, sk) => s + levelValue[sk.level], 0) / (r.skills.length || 1),
     accessor: (r) => { const avg = r.skills.reduce((s, sk) => s + levelValue[sk.level], 0) / (r.skills.length || 1); return <span className={cn('text-xs font-medium', avg >= 3 ? 'text-emerald-600' : avg >= 2 ? 'text-foreground' : 'text-amber-600')}>{avg.toFixed(1)}</span>; }},
   { key: 'certifications', header: 'Certs', accessor: (r) => r.certifications > 0 ? <Badge variant="outline" className="text-[10px]">{r.certifications}</Badge> : '—', sortValue: (r) => r.certifications, align: 'right' },

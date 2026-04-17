@@ -32,7 +32,7 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockLatePunctuality.map(r => r.location))];
 
 const tableColumns: DataTableColumn<LatePunctualityRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => (
+  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.type === 'both' ? 'bg-red-500' : r.type === 'late_in' ? 'bg-amber-500' : 'bg-orange-500')} />
 
@@ -40,14 +40,14 @@ const tableColumns: DataTableColumn<LatePunctualityRecord>[] = [
     </div>
   ), sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'date', header: 'Date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
+  { key: 'date', header: 'Date', type: 'date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
   { key: 'scheduledStart', header: 'Scheduled', accessor: (r) => <span className="text-xs font-mono">{r.scheduledStart}</span>, sortValue: (r) => r.scheduledStart },
-  { key: 'actualClockIn', header: 'Actual In', accessor: (r) => <span className="text-xs font-mono">{r.actualClockIn}</span>, sortValue: (r) => r.actualClockIn },
-  { key: 'lateMinutes', header: 'Late', align: 'right', sortValue: (r) => r.lateMinutes,
+  { key: 'actualClockIn', header: 'Actual In', type: 'number', accessor: (r) => <span className="text-xs font-mono">{r.actualClockIn}</span>, sortValue: (r) => r.actualClockIn },
+  { key: 'lateMinutes', header: 'Late', type: 'number', align: 'right', sortValue: (r) => r.lateMinutes,
     accessor: (r) => r.lateMinutes > 0 ? (
       <span className={cn('font-medium', r.lateMinutes > 15 ? 'text-destructive' : r.lateMinutes > 5 ? 'text-amber-600' : 'text-muted-foreground')}>+{r.lateMinutes}m</span>
     ) : <span className="text-muted-foreground">—</span> },
-  { key: 'earlyMinutes', header: 'Early Out', align: 'right', sortValue: (r) => r.earlyMinutes,
+  { key: 'earlyMinutes', header: 'Early Out', type: 'number', align: 'right', sortValue: (r) => r.earlyMinutes,
     accessor: (r) => r.earlyMinutes > 0 ? (
       <span className={cn('font-medium', r.earlyMinutes > 15 ? 'text-destructive' : 'text-orange-600')}>-{r.earlyMinutes}m</span>
     ) : <span className="text-muted-foreground">—</span> },

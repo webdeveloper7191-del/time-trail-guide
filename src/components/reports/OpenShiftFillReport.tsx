@@ -32,7 +32,7 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockOpenShiftFill.map(r => r.location))];
 
 const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
-  { key: 'date', header: 'Date', accessor: (r) => (
+  { key: 'date', header: 'Date', type: 'date', accessor: (r) => (
     <div>
       <span className="font-medium text-xs">{format(parseISO(r.date), 'dd MMM')}</span>
       <span className="block text-[10px] text-muted-foreground">{format(parseISO(r.date), 'EEEE')}</span>
@@ -40,8 +40,8 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
   ), sortValue: (r) => r.date },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
   { key: 'area', header: 'Area', accessor: (r) => <Badge variant="outline" className="text-xs">{r.area}</Badge>, sortValue: (r) => r.area },
-  { key: 'totalOpenShifts', header: 'Open', accessor: (r) => <span className="font-semibold">{r.totalOpenShifts}</span>, sortValue: (r) => r.totalOpenShifts, align: 'right' },
-  { key: 'filledShifts', header: 'Filled', accessor: (r) => r.filledShifts, sortValue: (r) => r.filledShifts, align: 'right' },
+  { key: 'totalOpenShifts', header: 'Open', type: 'number', accessor: (r) => <span className="font-semibold">{r.totalOpenShifts}</span>, sortValue: (r) => r.totalOpenShifts, align: 'right' },
+  { key: 'filledShifts', header: 'Filled', type: 'number', accessor: (r) => r.filledShifts, sortValue: (r) => r.filledShifts, align: 'right' },
   { key: 'filledByInternal', header: 'Internal', accessor: (r) => (
     <span className="text-xs">{r.filledByInternal} <span className="text-muted-foreground">({r.filledShifts > 0 ? Math.round(r.filledByInternal / r.filledShifts * 100) : 0}%)</span></span>
   ), sortValue: (r) => r.filledByInternal, align: 'right' },
@@ -50,7 +50,7 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
   ), sortValue: (r) => r.filledByAgency, align: 'right' },
   { key: 'unfilled', header: 'Unfilled', align: 'right', sortValue: (r) => r.unfilled,
     accessor: (r) => r.unfilled > 0 ? <Badge variant="destructive" className="text-xs">{r.unfilled}</Badge> : <span className="text-emerald-600 text-xs">✓</span> },
-  { key: 'fillRate', header: 'Fill Rate', align: 'right', sortValue: (r) => r.fillRate,
+  { key: 'fillRate', header: 'Fill Rate', type: 'number', align: 'right', sortValue: (r) => r.fillRate,
     accessor: (r) => (
       <div className="flex items-center gap-1.5 justify-end">
         <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">

@@ -39,7 +39,7 @@ const fatigueTrend = Array.from({ length: 14 }, (_, i) => ({
 }));
 
 const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
-  { key: 'staffName', header: 'Staff Member', accessor: (r) => (
+  { key: 'staffName', header: 'Staff Member', type: 'number', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.riskLevel === 'critical' ? 'bg-red-500 animate-pulse' : r.riskLevel === 'high' ? 'bg-orange-500' : r.riskLevel === 'medium' ? 'bg-amber-500' : 'bg-emerald-500')} />
 
@@ -47,29 +47,29 @@ const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
     </div>
   ), sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'weeklyHours', header: 'Weekly / Max', accessor: (r) => (
+  { key: 'weeklyHours', header: 'Weekly / Max', type: 'date', accessor: (r) => (
     <span className={cn('text-xs font-mono', r.weeklyHours > r.maxHours && 'text-destructive font-semibold')}>{r.weeklyHours}h / {r.maxHours}h</span>
   ), sortValue: (r) => r.weeklyHours, align: 'right' },
-  { key: 'overtimeHours', header: 'Overtime', align: 'right', sortValue: (r) => r.overtimeHours,
+  { key: 'overtimeHours', header: 'Overtime', type: 'date', align: 'right', sortValue: (r) => r.overtimeHours,
     accessor: (r) => r.overtimeHours > 0 ? (
       <div>
         <Badge variant="destructive" className="text-xs">{r.overtimeHours}h</Badge>
         <span className="block text-[10px] text-destructive mt-0.5">${(r.overtimeHours * 48).toLocaleString()} cost</span>
       </div>
     ) : <span className="text-muted-foreground text-xs">—</span> },
-  { key: 'consecutiveDays', header: 'Consec. Days', align: 'right', sortValue: (r) => r.consecutiveDays,
+  { key: 'consecutiveDays', header: 'Consec. Days', type: 'number', align: 'right', sortValue: (r) => r.consecutiveDays,
     accessor: (r) => (
       <span className={cn('text-xs', r.consecutiveDays >= 6 ? 'text-destructive font-bold' : r.consecutiveDays >= 5 ? 'text-amber-600 font-medium' : '')}>
         {r.consecutiveDays} {r.consecutiveDays >= 6 && '⚠'}
       </span>
     ) },
-  { key: 'restHours', header: 'Min Rest', align: 'right', sortValue: (r) => r.restHoursBetweenShifts,
+  { key: 'restHours', header: 'Min Rest', type: 'number', align: 'right', sortValue: (r) => r.restHoursBetweenShifts,
     accessor: (r) => (
       <span className={cn('text-xs', r.restHoursBetweenShifts < 10 ? 'text-destructive font-bold' : r.restHoursBetweenShifts < 12 ? 'text-amber-600' : 'text-emerald-600')}>
         {r.restHoursBetweenShifts}h {r.restHoursBetweenShifts < 10 && '✗'}
       </span>
     ) },
-  { key: 'fatigueScore', header: 'Fatigue Score', align: 'right', sortValue: (r) => r.fatigueScore,
+  { key: 'fatigueScore', header: 'Fatigue Score', type: 'number', align: 'right', sortValue: (r) => r.fatigueScore,
     accessor: (r) => (
       <div className="flex items-center gap-2 justify-end">
         <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">

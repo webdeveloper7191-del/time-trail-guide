@@ -28,18 +28,18 @@ const exportColumns: ExportColumn[] = [
 ];
 
 const tableColumns: DataTableColumn<TurnoverRecord>[] = [
-  { key: 'month', header: 'Month', accessor: (r) => <span className="font-medium">{format(parseISO(r.month + '-01'), 'MMM yyyy')}</span>, sortValue: (r) => r.month },
+  { key: 'month', header: 'Month', type: 'date', accessor: (r) => <span className="font-medium">{format(parseISO(r.month + '-01'), 'MMM yyyy')}</span>, sortValue: (r) => r.month },
   { key: 'hires', header: 'Hires', accessor: (r) => <Badge className="text-[10px] bg-emerald-100 text-emerald-700 hover:bg-emerald-100">+{r.hires}</Badge>, sortValue: (r) => r.hires, align: 'right' },
   { key: 'voluntaryExits', header: 'Voluntary', accessor: (r) => r.voluntaryExits > 0 ? <span className="text-amber-600">{r.voluntaryExits}</span> : '—', sortValue: (r) => r.voluntaryExits, align: 'right' },
   { key: 'involuntaryExits', header: 'Involuntary', accessor: (r) => r.involuntaryExits > 0 ? <span className="text-destructive">{r.involuntaryExits}</span> : '—', sortValue: (r) => r.involuntaryExits, align: 'right' },
-  { key: 'terminations', header: 'Total Terms', accessor: (r) => r.terminations, sortValue: (r) => r.terminations, align: 'right' },
-  { key: 'headcount', header: 'Headcount', accessor: (r) => <span className="font-semibold">{r.headcount}</span>, sortValue: (r) => r.headcount, align: 'right' },
-  { key: 'turnoverRate', header: 'Turnover %', align: 'right', sortValue: (r) => r.turnoverRate,
+  { key: 'terminations', header: 'Total Terms', type: 'number', accessor: (r) => r.terminations, sortValue: (r) => r.terminations, align: 'right' },
+  { key: 'headcount', header: 'Headcount', type: 'number', accessor: (r) => <span className="font-semibold">{r.headcount}</span>, sortValue: (r) => r.headcount, align: 'right' },
+  { key: 'turnoverRate', header: 'Turnover %', type: 'number', align: 'right', sortValue: (r) => r.turnoverRate,
     accessor: (r) => <Badge variant={r.turnoverRate > 2 ? 'destructive' : 'secondary'} className="text-[10px]">{r.turnoverRate}%</Badge> },
-  { key: 'retentionRate', header: 'Retention %', align: 'right', sortValue: (r) => r.retentionRate,
+  { key: 'retentionRate', header: 'Retention %', type: 'number', align: 'right', sortValue: (r) => r.retentionRate,
     accessor: (r) => <span className={cn('text-xs font-medium', r.retentionRate >= 98 ? 'text-emerald-600' : 'text-amber-600')}>{r.retentionRate}%</span> },
-  { key: 'avgTenureMonths', header: 'Avg Tenure', accessor: (r) => `${r.avgTenureMonths}m`, sortValue: (r) => r.avgTenureMonths, align: 'right' },
-  { key: 'netChange', header: 'Net', align: 'right', sortValue: (r) => r.hires - r.terminations,
+  { key: 'avgTenureMonths', header: 'Avg Tenure', type: 'number', accessor: (r) => `${r.avgTenureMonths}m`, sortValue: (r) => r.avgTenureMonths, align: 'right' },
+  { key: 'netChange', header: 'Net', type: 'number', align: 'right', sortValue: (r) => r.hires - r.terminations,
     accessor: (r) => { const net = r.hires - r.terminations; return <span className={cn('font-medium text-xs', net > 0 ? 'text-emerald-600' : net < 0 ? 'text-destructive' : 'text-foreground')}>{net > 0 ? '+' : ''}{net}</span>; }},
 ];
 

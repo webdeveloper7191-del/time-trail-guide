@@ -36,11 +36,11 @@ const tableColumns: DataTableColumn<RecurringPatternRecord>[] = [
     </div>
   ), sortValue: (r) => r.patternName },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'totalExpectedShifts', header: 'Expected', accessor: (r) => r.totalExpectedShifts, sortValue: (r) => r.totalExpectedShifts, align: 'right' },
-  { key: 'actualShifts', header: 'Actual', accessor: (r) => (
+  { key: 'totalExpectedShifts', header: 'Expected', type: 'number', accessor: (r) => r.totalExpectedShifts, sortValue: (r) => r.totalExpectedShifts, align: 'right' },
+  { key: 'actualShifts', header: 'Actual', type: 'number', accessor: (r) => (
     <span className={cn(r.actualShifts < r.totalExpectedShifts ? 'text-destructive font-medium' : '')}>{r.actualShifts}</span>
   ), sortValue: (r) => r.actualShifts, align: 'right' },
-  { key: 'adherencePercent', header: 'Adherence', className: 'w-[150px]', sortValue: (r) => r.adherencePercent,
+  { key: 'adherencePercent', header: 'Adherence', type: 'number', className: 'w-[150px]', sortValue: (r) => r.adherencePercent,
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">

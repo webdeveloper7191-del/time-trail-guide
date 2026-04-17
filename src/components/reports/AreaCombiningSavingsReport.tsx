@@ -28,16 +28,16 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockAreaCombiningSavings.map(r => r.location))];
 
 const tableColumns: DataTableColumn<AreaCombiningSavingsRecord>[] = [
-  { key: 'date', header: 'Date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
+  { key: 'date', header: 'Date', type: 'date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
   { key: 'combinedAreas', header: 'Combined Areas', accessor: (r) => <span className="font-medium">{r.combinedAreas}</span>, sortValue: (r) => r.combinedAreas },
-  { key: 'staffSaved', header: 'Staff Saved', accessor: (r) => (
+  { key: 'staffSaved', header: 'Staff Saved', type: 'number', accessor: (r) => (
     <Badge variant="default" className="text-xs">{r.staffSaved}</Badge>
   ), sortValue: (r) => r.staffSaved, align: 'right' },
-  { key: 'hoursSaved', header: 'Hours Saved', accessor: (r) => `${r.hoursSaved}h`, sortValue: (r) => r.hoursSaved, align: 'right' },
-  { key: 'costSaved', header: 'Cost Saved', accessor: (r) => <span className="font-semibold text-emerald-600">${r.costSaved.toLocaleString()}</span>, sortValue: (r) => r.costSaved, align: 'right' },
-  { key: 'childrenAffected', header: 'Attendees', accessor: (r) => r.childrenAffected, sortValue: (r) => r.childrenAffected, align: 'right' },
-  { key: 'durationMinutes', header: 'Duration', accessor: (r) => {
+  { key: 'hoursSaved', header: 'Hours Saved', type: 'number', accessor: (r) => `${r.hoursSaved}h`, sortValue: (r) => r.hoursSaved, align: 'right' },
+  { key: 'costSaved', header: 'Cost Saved', type: 'number', accessor: (r) => <span className="font-semibold text-emerald-600">${r.costSaved.toLocaleString()}</span>, sortValue: (r) => r.costSaved, align: 'right' },
+  { key: 'childrenAffected', header: 'Attendees', type: 'number', accessor: (r) => r.childrenAffected, sortValue: (r) => r.childrenAffected, align: 'right' },
+  { key: 'durationMinutes', header: 'Duration', type: 'number', accessor: (r) => {
     const h = Math.floor(r.durationMinutes / 60);
     const m = r.durationMinutes % 60;
     return `${h}h ${m > 0 ? `${m}m` : ''}`;

@@ -28,7 +28,7 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockStaffUtilisation.map(r => r.location))];
 
 const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
-  { key: 'staffName', header: 'Staff Member', accessor: (r) => (
+  { key: 'staffName', header: 'Staff Member', type: 'number', accessor: (r) => (
     <div>
       <span className="font-medium text-foreground">{r.staffName}</span>
       <span className="block text-[10px] text-muted-foreground">{r.staffId}</span>
@@ -36,15 +36,15 @@ const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
   ), sortValue: (r) => r.staffName },
   { key: 'role', header: 'Role', accessor: (r) => <Badge variant="outline" className="text-xs">{r.role}</Badge>, sortValue: (r) => r.role },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'scheduledHours', header: 'Scheduled', accessor: (r) => <span className="font-mono text-xs">{r.scheduledHours}h</span>, sortValue: (r) => r.scheduledHours, align: 'right' },
-  { key: 'capacityHours', header: 'Capacity', accessor: (r) => <span className="font-mono text-xs">{r.capacityHours}h</span>, sortValue: (r) => r.capacityHours, align: 'right' },
-  { key: 'gapHours', header: 'Gap', align: 'right', sortValue: (r) => r.capacityHours - r.scheduledHours,
+  { key: 'scheduledHours', header: 'Scheduled', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.scheduledHours}h</span>, sortValue: (r) => r.scheduledHours, align: 'right' },
+  { key: 'capacityHours', header: 'Capacity', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.capacityHours}h</span>, sortValue: (r) => r.capacityHours, align: 'right' },
+  { key: 'gapHours', header: 'Gap', type: 'number', align: 'right', sortValue: (r) => r.capacityHours - r.scheduledHours,
     accessor: (r) => {
       const gap = r.capacityHours - r.scheduledHours;
       return gap > 0 ? <span className="text-xs text-amber-600 font-medium">{gap}h unused</span> : <span className="text-xs text-emerald-600">—</span>;
     }
   },
-  { key: 'utilisationPercent', header: 'Utilisation', className: 'w-[160px]', sortValue: (r) => r.utilisationPercent,
+  { key: 'utilisationPercent', header: 'Utilisation', type: 'number', className: 'w-[160px]', sortValue: (r) => r.utilisationPercent,
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <Progress value={r.utilisationPercent} className="h-2 flex-1" />
@@ -55,11 +55,11 @@ const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
       </div>
     ),
   },
-  { key: 'overtimeHours', header: 'OT', align: 'right', sortValue: (r) => r.overtimeHours,
+  { key: 'overtimeHours', header: 'OT', type: 'number', align: 'right', sortValue: (r) => r.overtimeHours,
     accessor: (r) => r.overtimeHours > 0 ? <Badge variant="destructive" className="text-xs">{r.overtimeHours}h</Badge> : <span className="text-muted-foreground text-xs">—</span> },
-  { key: 'leaveHours', header: 'Leave', align: 'right', sortValue: (r) => r.leaveHours,
+  { key: 'leaveHours', header: 'Leave', type: 'number', align: 'right', sortValue: (r) => r.leaveHours,
     accessor: (r) => r.leaveHours > 0 ? <span className="text-xs text-blue-600">{r.leaveHours}h</span> : <span className="text-muted-foreground text-xs">—</span> },
-  { key: 'effectiveRate', header: 'Eff. $/hr', align: 'right', sortValue: (r) => r.scheduledHours > 0 ? Math.round(r.utilisationPercent * 0.45) : 0,
+  { key: 'effectiveRate', header: 'Eff. $/hr', type: 'number', align: 'right', sortValue: (r) => r.scheduledHours > 0 ? Math.round(r.utilisationPercent * 0.45) : 0,
     accessor: (r) => <span className="text-xs font-mono">${(r.utilisationPercent * 0.45).toFixed(2)}</span> },
 ];
 

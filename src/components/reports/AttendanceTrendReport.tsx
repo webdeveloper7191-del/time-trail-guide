@@ -30,15 +30,15 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockAttendanceTrends.map(r => r.location))];
 
 const tableColumns: DataTableColumn<AttendanceTrendRecord>[] = [
-  { key: 'date', header: 'Date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
+  { key: 'date', header: 'Date', type: 'date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'totalScheduled', header: 'Scheduled', accessor: (r) => r.totalScheduled, sortValue: (r) => r.totalScheduled, align: 'right' },
+  { key: 'totalScheduled', header: 'Scheduled', type: 'number', accessor: (r) => r.totalScheduled, sortValue: (r) => r.totalScheduled, align: 'right' },
   { key: 'present', header: 'Present', accessor: (r) => <span className="text-emerald-600">{r.present}</span>, sortValue: (r) => r.present, align: 'right' },
   { key: 'absent', header: 'Absent', align: 'right', sortValue: (r) => r.absent,
     accessor: (r) => <span className={cn(r.absent > 2 ? 'text-destructive font-medium' : 'text-muted-foreground')}>{r.absent}</span> },
   { key: 'late', header: 'Late', align: 'right', sortValue: (r) => r.late,
     accessor: (r) => <span className={cn(r.late > 1 ? 'text-amber-600' : 'text-muted-foreground')}>{r.late}</span> },
-  { key: 'attendanceRate', header: 'Rate', align: 'right', sortValue: (r) => r.attendanceRate,
+  { key: 'attendanceRate', header: 'Rate', type: 'number', align: 'right', sortValue: (r) => r.attendanceRate,
     accessor: (r) => (
       <div className="flex items-center gap-2 justify-end">
         <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">

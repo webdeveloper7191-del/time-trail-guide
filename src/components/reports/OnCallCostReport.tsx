@@ -29,18 +29,18 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockOnCallCosts.map(r => r.location))];
 
 const tableColumns: DataTableColumn<OnCallCostRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
   { key: 'type', header: 'Type', sortValue: (r) => r.type,
     accessor: (r) => <Badge variant="outline" className="text-xs">{r.type.replace(/_/g, ' ')}</Badge> },
-  { key: 'standbyHours', header: 'Standby Hrs', accessor: (r) => <span className="font-mono text-xs">{r.standbyHours}h</span>, sortValue: (r) => r.standbyHours, align: 'right' },
-  { key: 'standbyRate', header: 'Standby Rate', accessor: (r) => `$${r.standbyRate}/hr`, sortValue: (r) => r.standbyRate, align: 'right' },
-  { key: 'standbyCost', header: 'Standby $', accessor: (r) => `$${r.standbyCost.toLocaleString()}`, sortValue: (r) => r.standbyCost, align: 'right' },
-  { key: 'activatedHours', header: 'Active Hrs', accessor: (r) => r.activatedHours > 0 ? <span className="text-amber-600 font-medium text-xs">{r.activatedHours}h</span> : <span className="text-muted-foreground text-xs">—</span>, sortValue: (r) => r.activatedHours, align: 'right' },
-  { key: 'activatedCost', header: 'Active $', accessor: (r) => r.activatedCost > 0 ? `$${r.activatedCost.toLocaleString()}` : '—', sortValue: (r) => r.activatedCost, align: 'right' },
-  { key: 'totalCost', header: 'Total', accessor: (r) => <span className="font-semibold">${r.totalCost.toLocaleString()}</span>, sortValue: (r) => r.totalCost, align: 'right' },
-  { key: 'date', header: 'Date', accessor: (r) => r.date, sortValue: (r) => r.date },
-  { key: 'activationRate', header: 'Activation %', align: 'right', sortValue: (r) => r.standbyHours > 0 ? (r.activatedHours / r.standbyHours * 100) : 0,
+  { key: 'standbyHours', header: 'Standby Hrs', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.standbyHours}h</span>, sortValue: (r) => r.standbyHours, align: 'right' },
+  { key: 'standbyRate', header: 'Standby Rate', type: 'number', accessor: (r) => `$${r.standbyRate}/hr`, sortValue: (r) => r.standbyRate, align: 'right' },
+  { key: 'standbyCost', header: 'Standby $', type: 'number', accessor: (r) => `$${r.standbyCost.toLocaleString()}`, sortValue: (r) => r.standbyCost, align: 'right' },
+  { key: 'activatedHours', header: 'Active Hrs', type: 'number', accessor: (r) => r.activatedHours > 0 ? <span className="text-amber-600 font-medium text-xs">{r.activatedHours}h</span> : <span className="text-muted-foreground text-xs">—</span>, sortValue: (r) => r.activatedHours, align: 'right' },
+  { key: 'activatedCost', header: 'Active $', type: 'number', accessor: (r) => r.activatedCost > 0 ? `$${r.activatedCost.toLocaleString()}` : '—', sortValue: (r) => r.activatedCost, align: 'right' },
+  { key: 'totalCost', header: 'Total', type: 'number', accessor: (r) => <span className="font-semibold">${r.totalCost.toLocaleString()}</span>, sortValue: (r) => r.totalCost, align: 'right' },
+  { key: 'date', header: 'Date', type: 'date', accessor: (r) => r.date, sortValue: (r) => r.date },
+  { key: 'activationRate', header: 'Activation %', type: 'number', align: 'right', sortValue: (r) => r.standbyHours > 0 ? (r.activatedHours / r.standbyHours * 100) : 0,
     accessor: (r) => { const rate = r.standbyHours > 0 ? Math.round(r.activatedHours / r.standbyHours * 100) : 0; return <span className={cn('text-xs font-medium', rate > 50 ? 'text-destructive' : rate > 0 ? 'text-amber-600' : 'text-muted-foreground')}>{rate}%</span>; }},
 ];
 

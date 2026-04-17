@@ -34,7 +34,7 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockWeeklyTimesheets.map(r => r.location))];
 
 const tableColumns: DataTableColumn<WeeklyTimesheetRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => (
+  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.status === 'approved' || r.status === 'auto_approved' ? 'bg-emerald-500' : r.status === 'rejected' ? 'bg-red-500' : 'bg-amber-500')} />
 
@@ -43,12 +43,12 @@ const tableColumns: DataTableColumn<WeeklyTimesheetRecord>[] = [
   ), sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
   { key: 'department', header: 'Dept', accessor: (r) => <Badge variant="outline" className="text-[10px]">{r.department}</Badge>, sortValue: (r) => r.department },
-  { key: 'regularHours', header: 'Regular', accessor: (r) => `${r.regularHours}h`, sortValue: (r) => r.regularHours, align: 'right' },
-  { key: 'overtimeHours', header: 'OT', align: 'right', sortValue: (r) => r.overtimeHours,
+  { key: 'regularHours', header: 'Regular', type: 'number', accessor: (r) => `${r.regularHours}h`, sortValue: (r) => r.regularHours, align: 'right' },
+  { key: 'overtimeHours', header: 'OT', type: 'number', align: 'right', sortValue: (r) => r.overtimeHours,
     accessor: (r) => r.overtimeHours > 0 ? <Badge variant="destructive" className="text-xs">{r.overtimeHours}h</Badge> : <span className="text-muted-foreground">—</span> },
-  { key: 'totalHours', header: 'Total', accessor: (r) => <span className="font-semibold">{r.totalHours}h</span>, sortValue: (r) => r.totalHours, align: 'right' },
-  { key: 'breakMinutes', header: 'Break', accessor: (r) => `${r.breakMinutes}m`, sortValue: (r) => r.breakMinutes, align: 'right' },
-  { key: 'daysWorked', header: 'Days', accessor: (r) => (
+  { key: 'totalHours', header: 'Total', type: 'number', accessor: (r) => <span className="font-semibold">{r.totalHours}h</span>, sortValue: (r) => r.totalHours, align: 'right' },
+  { key: 'breakMinutes', header: 'Break', type: 'number', accessor: (r) => `${r.breakMinutes}m`, sortValue: (r) => r.breakMinutes, align: 'right' },
+  { key: 'daysWorked', header: 'Days', type: 'date', accessor: (r) => (
     <span className={cn(r.daysWorked >= 6 ? 'text-destructive font-medium' : '')}>{r.daysWorked}</span>
   ), sortValue: (r) => r.daysWorked, align: 'right' },
   { key: 'status', header: 'Status', sortValue: (r) => r.status,

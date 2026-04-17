@@ -32,10 +32,10 @@ const tableColumns: DataTableColumn<AreaUtilRecord>[] = [
   { key: 'locationName', header: 'Location', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
   { key: 'areaName', header: 'Area', accessor: (r) => r.areaName, sortValue: (r) => r.areaName },
   { key: 'serviceCategory', header: 'Category', accessor: (r) => <Badge variant="outline" className="text-xs">{r.serviceCategory}</Badge>, sortValue: (r) => r.serviceCategory },
-  { key: 'capacity', header: 'Capacity', accessor: (r) => r.capacity, sortValue: (r) => r.capacity, align: 'right' },
-  { key: 'avgOccupancy', header: 'Avg Occ.', accessor: (r) => r.avgOccupancy, sortValue: (r) => r.avgOccupancy, align: 'right' },
-  { key: 'peakOccupancy', header: 'Peak', accessor: (r) => r.peakOccupancy, sortValue: (r) => r.peakOccupancy, align: 'right' },
-  { key: 'utilisationPercent', header: 'Utilisation', className: 'w-[160px]', sortValue: (r) => r.utilisationPercent,
+  { key: 'capacity', header: 'Capacity', type: 'number', accessor: (r) => r.capacity, sortValue: (r) => r.capacity, align: 'right' },
+  { key: 'avgOccupancy', header: 'Avg Occ.', type: 'number', accessor: (r) => r.avgOccupancy, sortValue: (r) => r.avgOccupancy, align: 'right' },
+  { key: 'peakOccupancy', header: 'Peak', type: 'number', accessor: (r) => r.peakOccupancy, sortValue: (r) => r.peakOccupancy, align: 'right' },
+  { key: 'utilisationPercent', header: 'Utilisation', type: 'number', className: 'w-[160px]', sortValue: (r) => r.utilisationPercent,
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <Progress value={r.utilisationPercent} className="h-2 flex-1" />

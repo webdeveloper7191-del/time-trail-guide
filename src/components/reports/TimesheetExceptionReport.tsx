@@ -43,9 +43,9 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockTimesheetExceptions.map(r => r.location))];
 
 const tableColumns: DataTableColumn<TimesheetExceptionRecord>[] = [
-  { key: 'staffName', header: 'Staff', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
   { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'date', header: 'Date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
+  { key: 'date', header: 'Date', type: 'date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
   { key: 'exceptionType', header: 'Type', sortValue: (r) => r.exceptionType,
     accessor: (r) => <Badge className={cn('text-[10px]', typeColors[r.exceptionType])}>{exceptionTypeLabels[r.exceptionType]}</Badge> },
   { key: 'field', header: 'Field', accessor: (r) => <span className="text-xs">{r.field}</span>, sortValue: (r) => r.field },
