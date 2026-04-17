@@ -29,9 +29,9 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockOnCallCosts.map(r => r.location))];
 
 const tableColumns: DataTableColumn<OnCallCostRecord>[] = [
-  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
-  { key: 'type', header: 'Type', sortValue: (r) => r.type,
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => r.location, sortValue: (r) => r.location },
+  { key: 'type', header: 'Type', type: 'enum', sortValue: (r) => r.type,
     accessor: (r) => <Badge variant="outline" className="text-xs">{r.type.replace(/_/g, ' ')}</Badge> },
   { key: 'standbyHours', header: 'Standby Hrs', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.standbyHours}h</span>, sortValue: (r) => r.standbyHours, align: 'right' },
   { key: 'standbyRate', header: 'Standby Rate', type: 'number', accessor: (r) => `$${r.standbyRate}/hr`, sortValue: (r) => r.standbyRate, align: 'right' },

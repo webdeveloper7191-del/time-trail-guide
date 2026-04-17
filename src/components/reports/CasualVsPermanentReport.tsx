@@ -29,7 +29,7 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockCasualVsPermanent.map(r => r.location))];
 
 const tableColumns: DataTableColumn<CasualVsPermanentRecord>[] = [
-  { key: 'location', header: 'Location', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
   { key: 'period', header: 'Period', type: 'date', accessor: (r) => r.period, sortValue: (r) => r.period },
   { key: 'permanentHeadcount', header: 'Perm HC', type: 'number', accessor: (r) => r.permanentHeadcount, sortValue: (r) => r.permanentHeadcount, align: 'right' },
   { key: 'casualHeadcount', header: 'Casual HC', type: 'number', accessor: (r) => r.casualHeadcount, sortValue: (r) => r.casualHeadcount, align: 'right' },

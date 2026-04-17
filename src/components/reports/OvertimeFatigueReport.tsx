@@ -39,18 +39,18 @@ const fatigueTrend = Array.from({ length: 14 }, (_, i) => ({
 }));
 
 const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
-  { key: 'staffName', header: 'Staff Member', type: 'number', accessor: (r) => (
+  { key: 'staffName', header: 'Staff Member', type: 'text', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.riskLevel === 'critical' ? 'bg-red-500 animate-pulse' : r.riskLevel === 'high' ? 'bg-orange-500' : r.riskLevel === 'medium' ? 'bg-amber-500' : 'bg-emerald-500')} />
 
       <span className="font-medium">{r.staffName}</span>
     </div>
   ), sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'weeklyHours', header: 'Weekly / Max', type: 'date', accessor: (r) => (
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'weeklyHours', header: 'Weekly / Max', type: 'number', accessor: (r) => (
     <span className={cn('text-xs font-mono', r.weeklyHours > r.maxHours && 'text-destructive font-semibold')}>{r.weeklyHours}h / {r.maxHours}h</span>
   ), sortValue: (r) => r.weeklyHours, align: 'right' },
-  { key: 'overtimeHours', header: 'Overtime', type: 'date', align: 'right', sortValue: (r) => r.overtimeHours,
+  { key: 'overtimeHours', header: 'Overtime', type: 'number', align: 'right', sortValue: (r) => r.overtimeHours,
     accessor: (r) => r.overtimeHours > 0 ? (
       <div>
         <Badge variant="destructive" className="text-xs">{r.overtimeHours}h</Badge>
@@ -78,7 +78,7 @@ const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
         <span className="font-mono text-xs w-8 text-right">{r.fatigueScore}</span>
       </div>
     ) },
-  { key: 'riskLevel', header: 'Risk Level', sortValue: (r) => ({ low: 0, medium: 1, high: 2, critical: 3 }[r.riskLevel]),
+  { key: 'riskLevel', header: 'Risk Level', type: 'text', sortValue: (r) => ({ low: 0, medium: 1, high: 2, critical: 3 }[r.riskLevel]),
     accessor: (r) => <Badge className={cn('text-xs capitalize', riskColors[r.riskLevel])}>{r.riskLevel}</Badge> },
 ];
 

@@ -29,8 +29,8 @@ const exportColumns: ExportColumn[] = [
 ];
 
 const tableColumns: DataTableColumn<HeadcountRecord>[] = [
-  { key: 'department', header: 'Department', accessor: (r) => <span className="font-medium">{r.department}</span>, sortValue: (r) => r.department },
-  { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
+  { key: 'department', header: 'Department', type: 'enum', accessor: (r) => <span className="font-medium">{r.department}</span>, sortValue: (r) => r.department },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => r.location, sortValue: (r) => r.location },
   { key: 'totalHeadcount', header: 'Headcount', type: 'number', accessor: (r) => <span className="font-semibold">{r.totalHeadcount}</span>, sortValue: (r) => r.totalHeadcount, align: 'right' },
   { key: 'fte', header: 'FTE', type: 'number', accessor: (r) => r.fte.toFixed(1), sortValue: (r) => r.fte, align: 'right' },
   { key: 'fteRatio', header: 'FTE Ratio', type: 'number', align: 'right', sortValue: (r) => r.fte / r.totalHeadcount,
@@ -41,10 +41,10 @@ const tableColumns: DataTableColumn<HeadcountRecord>[] = [
   },
   { key: 'fullTime', header: 'Full Time', type: 'date', accessor: (r) => r.fullTime, sortValue: (r) => r.fullTime, align: 'right' },
   { key: 'partTime', header: 'Part Time', type: 'date', accessor: (r) => r.partTime, sortValue: (r) => r.partTime, align: 'right' },
-  { key: 'casual', header: 'Casual', accessor: (r) => r.casual > 0 ? <span className="text-amber-600">{r.casual}</span> : '—', sortValue: (r) => r.casual, align: 'right' },
-  { key: 'contractor', header: 'Contractor', accessor: (r) => r.contractor > 0 ? <span className="text-blue-600">{r.contractor}</span> : '—', sortValue: (r) => r.contractor, align: 'right' },
-  { key: 'newHires', header: 'New Hires', accessor: (r) => r.newHires > 0 ? <Badge className="text-[10px] bg-emerald-100 text-emerald-700 hover:bg-emerald-100">+{r.newHires}</Badge> : '—', sortValue: (r) => r.newHires, align: 'right' },
-  { key: 'terminations', header: 'Terms', accessor: (r) => r.terminations > 0 ? <Badge variant="destructive" className="text-[10px]">-{r.terminations}</Badge> : '—', sortValue: (r) => r.terminations, align: 'right' },
+  { key: 'casual', header: 'Casual', type: 'text', accessor: (r) => r.casual > 0 ? <span className="text-amber-600">{r.casual}</span> : '—', sortValue: (r) => r.casual, align: 'right' },
+  { key: 'contractor', header: 'Contractor', type: 'text', accessor: (r) => r.contractor > 0 ? <span className="text-blue-600">{r.contractor}</span> : '—', sortValue: (r) => r.contractor, align: 'right' },
+  { key: 'newHires', header: 'New Hires', type: 'text', accessor: (r) => r.newHires > 0 ? <Badge className="text-[10px] bg-emerald-100 text-emerald-700 hover:bg-emerald-100">+{r.newHires}</Badge> : '—', sortValue: (r) => r.newHires, align: 'right' },
+  { key: 'terminations', header: 'Terms', type: 'number', accessor: (r) => r.terminations > 0 ? <Badge variant="destructive" className="text-[10px]">-{r.terminations}</Badge> : '—', sortValue: (r) => r.terminations, align: 'right' },
   { key: 'turnoverRate', header: 'Turnover', type: 'number', align: 'right', sortValue: (r) => r.turnoverRate,
     accessor: (r) => r.turnoverRate > 0 ? <span className={cn('text-xs font-medium', r.turnoverRate > 5 ? 'text-destructive' : 'text-foreground')}>{r.turnoverRate}%</span> : <span className="text-emerald-600 text-xs">0%</span> },
 ];

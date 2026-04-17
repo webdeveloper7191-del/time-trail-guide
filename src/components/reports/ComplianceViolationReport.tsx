@@ -27,13 +27,13 @@ const locations = [...new Set(mockComplianceViolations.map(r => r.locationName))
 const SEVERITY_COLORS = { critical: 'hsl(var(--destructive))', warning: '#F59E0B', info: 'hsl(var(--primary))' };
 
 const tableColumns: DataTableColumn<ComplianceViolationRecord>[] = [
-  { key: 'locationName', header: 'Location', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
-  { key: 'areaName', header: 'Area', accessor: (r) => r.areaName, sortValue: (r) => r.areaName },
-  { key: 'violationType', header: 'Type', type: 'number', accessor: (r) => r.violationType, sortValue: (r) => r.violationType },
-  { key: 'severity', header: 'Severity', sortValue: (r) => r.severity === 'critical' ? 3 : r.severity === 'warning' ? 2 : 1,
+  { key: 'locationName', header: 'Location', type: 'text', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
+  { key: 'areaName', header: 'Area', type: 'text', accessor: (r) => r.areaName, sortValue: (r) => r.areaName },
+  { key: 'violationType', header: 'Type', type: 'enum', accessor: (r) => r.violationType, sortValue: (r) => r.violationType },
+  { key: 'severity', header: 'Severity', type: 'enum', sortValue: (r) => r.severity === 'critical' ? 3 : r.severity === 'warning' ? 2 : 1,
     accessor: (r) => <Badge variant={r.severity === 'critical' ? 'destructive' : 'secondary'} className="text-xs">{r.severity}</Badge> },
   { key: 'date', header: 'Date', type: 'date', accessor: (r) => r.date, sortValue: (r) => r.date },
-  { key: 'status', header: 'Status', sortValue: (r) => r.status,
+  { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge variant={r.status === 'resolved' ? 'default' : r.status === 'acknowledged' ? 'secondary' : 'destructive'} className="text-xs">{r.status}</Badge> },
 ];
 

@@ -28,14 +28,14 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockStaffUtilisation.map(r => r.location))];
 
 const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
-  { key: 'staffName', header: 'Staff Member', type: 'number', accessor: (r) => (
+  { key: 'staffName', header: 'Staff Member', type: 'text', accessor: (r) => (
     <div>
       <span className="font-medium text-foreground">{r.staffName}</span>
       <span className="block text-[10px] text-muted-foreground">{r.staffId}</span>
     </div>
   ), sortValue: (r) => r.staffName },
-  { key: 'role', header: 'Role', accessor: (r) => <Badge variant="outline" className="text-xs">{r.role}</Badge>, sortValue: (r) => r.role },
-  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'role', header: 'Role', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-xs">{r.role}</Badge>, sortValue: (r) => r.role },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
   { key: 'scheduledHours', header: 'Scheduled', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.scheduledHours}h</span>, sortValue: (r) => r.scheduledHours, align: 'right' },
   { key: 'capacityHours', header: 'Capacity', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.capacityHours}h</span>, sortValue: (r) => r.capacityHours, align: 'right' },
   { key: 'gapHours', header: 'Gap', type: 'number', align: 'right', sortValue: (r) => r.capacityHours - r.scheduledHours,

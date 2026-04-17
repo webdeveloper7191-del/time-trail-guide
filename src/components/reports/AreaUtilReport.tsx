@@ -29,9 +29,9 @@ const locations = [...new Set(mockAreaUtil.map(r => r.locationName))];
 const COLORS = ['hsl(var(--primary))', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
 const tableColumns: DataTableColumn<AreaUtilRecord>[] = [
-  { key: 'locationName', header: 'Location', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
-  { key: 'areaName', header: 'Area', accessor: (r) => r.areaName, sortValue: (r) => r.areaName },
-  { key: 'serviceCategory', header: 'Category', accessor: (r) => <Badge variant="outline" className="text-xs">{r.serviceCategory}</Badge>, sortValue: (r) => r.serviceCategory },
+  { key: 'locationName', header: 'Location', type: 'text', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
+  { key: 'areaName', header: 'Area', type: 'text', accessor: (r) => r.areaName, sortValue: (r) => r.areaName },
+  { key: 'serviceCategory', header: 'Category', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-xs">{r.serviceCategory}</Badge>, sortValue: (r) => r.serviceCategory },
   { key: 'capacity', header: 'Capacity', type: 'number', accessor: (r) => r.capacity, sortValue: (r) => r.capacity, align: 'right' },
   { key: 'avgOccupancy', header: 'Avg Occ.', type: 'number', accessor: (r) => r.avgOccupancy, sortValue: (r) => r.avgOccupancy, align: 'right' },
   { key: 'peakOccupancy', header: 'Peak', type: 'number', accessor: (r) => r.peakOccupancy, sortValue: (r) => r.peakOccupancy, align: 'right' },
@@ -43,7 +43,7 @@ const tableColumns: DataTableColumn<AreaUtilRecord>[] = [
         <span className={cn('text-xs font-medium w-10 text-right', r.utilisationPercent >= 90 ? 'text-destructive' : r.utilisationPercent >= 75 ? 'text-amber-600' : 'text-foreground')}>{r.utilisationPercent}%</span>
       </div>
     ) },
-  { key: 'status', header: 'Status', sortValue: (r) => r.status,
+  { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge variant={r.status === 'active' ? 'default' : 'secondary'} className="text-xs">{r.status}</Badge> },
 ];
 

@@ -29,8 +29,8 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockOvertimeByLocation.map(r => r.location))];
 
 const tableColumns: DataTableColumn<OvertimeByLocationRecord>[] = [
-  { key: 'location', header: 'Location', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'department', header: 'Department', accessor: (r) => <Badge variant="outline" className="text-[10px]">{r.department}</Badge>, sortValue: (r) => r.department },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'department', header: 'Department', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-[10px]">{r.department}</Badge>, sortValue: (r) => r.department },
   { key: 'staffCount', header: 'Staff', type: 'number', accessor: (r) => r.staffCount, sortValue: (r) => r.staffCount, align: 'right' },
   { key: 'totalOvertimeHours', header: 'Total OT', type: 'number', align: 'right', sortValue: (r) => r.totalOvertimeHours,
     accessor: (r) => <span className={cn('font-medium', r.totalOvertimeHours > 8 ? 'text-destructive' : '')}>{r.totalOvertimeHours}h</span> },

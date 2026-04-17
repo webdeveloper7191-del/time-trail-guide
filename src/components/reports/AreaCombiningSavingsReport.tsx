@@ -29,9 +29,9 @@ const locations = [...new Set(mockAreaCombiningSavings.map(r => r.location))];
 
 const tableColumns: DataTableColumn<AreaCombiningSavingsRecord>[] = [
   { key: 'date', header: 'Date', type: 'date', accessor: (r) => format(parseISO(r.date), 'dd MMM'), sortValue: (r) => r.date },
-  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'combinedAreas', header: 'Combined Areas', accessor: (r) => <span className="font-medium">{r.combinedAreas}</span>, sortValue: (r) => r.combinedAreas },
-  { key: 'staffSaved', header: 'Staff Saved', type: 'number', accessor: (r) => (
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'combinedAreas', header: 'Combined Areas', type: 'text', accessor: (r) => <span className="font-medium">{r.combinedAreas}</span>, sortValue: (r) => r.combinedAreas },
+  { key: 'staffSaved', header: 'Staff Saved', type: 'text', accessor: (r) => (
     <Badge variant="default" className="text-xs">{r.staffSaved}</Badge>
   ), sortValue: (r) => r.staffSaved, align: 'right' },
   { key: 'hoursSaved', header: 'Hours Saved', type: 'number', accessor: (r) => `${r.hoursSaved}h`, sortValue: (r) => r.hoursSaved, align: 'right' },

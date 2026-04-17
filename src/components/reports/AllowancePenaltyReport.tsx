@@ -30,16 +30,16 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockAllowancePenalties.map(r => r.location))];
 
 const tableColumns: DataTableColumn<AllowancePenaltyRecord>[] = [
-  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
-  { key: 'type', header: 'Type', sortValue: (r) => r.type,
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => r.location, sortValue: (r) => r.location },
+  { key: 'type', header: 'Type', type: 'enum', sortValue: (r) => r.type,
     accessor: (r) => <Badge variant={r.type === 'penalty' ? 'destructive' : 'default'} className="text-xs">{r.type}</Badge> },
-  { key: 'category', header: 'Category', accessor: (r) => r.category, sortValue: (r) => r.category },
+  { key: 'category', header: 'Category', type: 'enum', accessor: (r) => r.category, sortValue: (r) => r.category },
   { key: 'hours', header: 'Hours', type: 'number', accessor: (r) => r.hours > 0 ? <span className="font-mono text-xs">{r.hours}h</span> : '—', sortValue: (r) => r.hours, align: 'right' },
   { key: 'rate', header: 'Rate', type: 'number', accessor: (r) => `$${r.rate.toFixed(2)}`, sortValue: (r) => r.rate, align: 'right' },
   { key: 'amount', header: 'Amount', type: 'number', accessor: (r) => <span className="font-semibold">${r.amount.toLocaleString()}</span>, sortValue: (r) => r.amount, align: 'right' },
   { key: 'date', header: 'Date', type: 'date', accessor: (r) => r.date, sortValue: (r) => r.date },
-  { key: 'awardReference', header: 'Award', accessor: (r) => <span className="text-muted-foreground text-xs">{r.awardReference}</span>, sortValue: (r) => r.awardReference },
+  { key: 'awardReference', header: 'Award', type: 'text', accessor: (r) => <span className="text-muted-foreground text-xs">{r.awardReference}</span>, sortValue: (r) => r.awardReference },
 ];
 
 export function AllowancePenaltyReport() {

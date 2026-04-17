@@ -30,8 +30,8 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockMultiSiteOps.map(r => r.locationName))];
 
 const tableColumns: DataTableColumn<MultiSiteOpsData>[] = [
-  { key: 'locationName', header: 'Location', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
-  { key: 'status', header: 'Status', sortValue: (r) => r.status,
+  { key: 'locationName', header: 'Location', type: 'text', accessor: (r) => <span className="font-medium">{r.locationName}</span>, sortValue: (r) => r.locationName },
+  { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge variant={r.status === 'online' ? 'default' : r.status === 'partial' ? 'secondary' : 'destructive'} className="text-xs">{r.status}</Badge> },
   { key: 'onDuty', header: 'On Duty / Total', type: 'number', accessor: (r) => `${r.onDuty} / ${r.totalStaff}`, sortValue: (r) => r.onDuty, align: 'right' },
   { key: 'occupancy', header: 'Occupancy', type: 'number', accessor: (r) => `${r.occupancy} / ${r.capacity}`, sortValue: (r) => r.occupancy, align: 'right' },
@@ -44,7 +44,7 @@ const tableColumns: DataTableColumn<MultiSiteOpsData>[] = [
     ) },
   { key: 'budgetUsed', header: 'Budget', type: 'number', align: 'right', sortValue: (r) => r.budgetUsed,
     accessor: (r) => { const pct = Math.round((r.budgetUsed / r.budgetTotal) * 100); return <span className={cn('text-xs', pct > 90 ? 'text-destructive font-medium' : '')}>{`$${(r.budgetUsed / 1000).toFixed(1)}k (${pct}%)`}</span>; } },
-  { key: 'alerts', header: 'Alerts', align: 'center', sortValue: (r) => r.alerts,
+  { key: 'alerts', header: 'Alerts', type: 'text', align: 'center', sortValue: (r) => r.alerts,
     accessor: (r) => r.alerts > 0 ? <Badge variant="destructive" className="text-xs">{r.alerts}</Badge> : <CheckCircle2 className="h-4 w-4 text-emerald-500 mx-auto" /> },
 ];
 

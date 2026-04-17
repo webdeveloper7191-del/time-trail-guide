@@ -29,8 +29,8 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockLabourCosts.map(r => r.location))];
 
 const tableColumns: DataTableColumn<LabourCostRecord>[] = [
-  { key: 'location', header: 'Location', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'department', header: 'Department', accessor: (r) => r.department, sortValue: (r) => r.department },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="font-medium">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'department', header: 'Department', type: 'enum', accessor: (r) => r.department, sortValue: (r) => r.department },
   { key: 'headcount', header: 'HC', type: 'number', accessor: (r) => r.headcount, sortValue: (r) => r.headcount, align: 'right' },
   { key: 'regularCost', header: 'Regular', type: 'number', accessor: (r) => `$${(r.regularCost / 1000).toFixed(1)}k`, sortValue: (r) => r.regularCost, align: 'right' },
   { key: 'overtimeCost', header: 'OT', type: 'number', accessor: (r) => `$${(r.overtimeCost / 1000).toFixed(1)}k`, sortValue: (r) => r.overtimeCost, align: 'right' },

@@ -28,15 +28,15 @@ const exportColumns: ExportColumn[] = [
 ];
 
 const tableColumns: DataTableColumn<ApprovalSLARecord>[] = [
-  { key: 'approverName', header: 'Approver', accessor: (r) => (
+  { key: 'approverName', header: 'Approver', type: 'text', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.slaCompliancePercent >= 90 ? 'bg-emerald-500' : r.slaCompliancePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} />
 
       <span className="font-medium">{r.approverName}</span>
     </div>
   ), sortValue: (r) => r.approverName },
-  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'tier', header: 'Tier', accessor: (r) => <Badge variant="outline" className="text-[10px]">Tier {r.tier}</Badge>, sortValue: (r) => r.tier },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'tier', header: 'Tier', type: 'text', accessor: (r) => <Badge variant="outline" className="text-[10px]">Tier {r.tier}</Badge>, sortValue: (r) => r.tier },
   { key: 'totalApprovals', header: 'Total', type: 'number', accessor: (r) => r.totalApprovals, sortValue: (r) => r.totalApprovals, align: 'right' },
   { key: 'withinSLA', header: 'Within SLA', type: 'number', accessor: (r) => <span className="text-emerald-600">{r.withinSLA}</span>, sortValue: (r) => r.withinSLA, align: 'right' },
   { key: 'breachedSLA', header: 'Breached', type: 'number', align: 'right', sortValue: (r) => r.breachedSLA,

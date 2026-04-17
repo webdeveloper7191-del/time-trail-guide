@@ -30,8 +30,8 @@ const exportColumns: ExportColumn[] = [
 ];
 
 const tableColumns: DataTableColumn<AvailabilityVsScheduledRecord>[] = [
-  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.department}</span></div>, sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.department}</span></div>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => r.location, sortValue: (r) => r.location },
   { key: 'availableHours', header: 'Available', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.availableHours}h</span>, sortValue: (r) => r.availableHours, align: 'right' },
   { key: 'scheduledHours', header: 'Scheduled', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.scheduledHours}h</span>, sortValue: (r) => r.scheduledHours, align: 'right' },
   { key: 'utilisationPct', header: 'Utilisation', type: 'number', className: 'w-[150px]', sortValue: (r) => r.utilisationPct,

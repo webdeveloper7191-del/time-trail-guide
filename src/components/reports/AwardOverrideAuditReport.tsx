@@ -29,21 +29,21 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockAwardOverrides.map(r => r.location))];
 
 const tableColumns: DataTableColumn<AwardOverrideRecord>[] = [
-  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
-  { key: 'awardName', header: 'Award', accessor: (r) => <span className="text-xs">{r.awardName}</span>, sortValue: (r) => r.awardName },
-  { key: 'classification', header: 'Class.', accessor: (r) => <Badge variant="outline" className="text-xs">{r.classification}</Badge>, sortValue: (r) => r.classification },
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => r.location, sortValue: (r) => r.location },
+  { key: 'awardName', header: 'Award', type: 'text', accessor: (r) => <span className="text-xs">{r.awardName}</span>, sortValue: (r) => r.awardName },
+  { key: 'classification', header: 'Class.', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-xs">{r.classification}</Badge>, sortValue: (r) => r.classification },
   { key: 'originalRate', header: 'Original', type: 'number', accessor: (r) => `$${r.originalRate.toFixed(2)}/hr`, sortValue: (r) => r.originalRate, align: 'right' },
   { key: 'overrideRate', header: 'Override', type: 'number', sortValue: (r) => r.overrideRate, align: 'right',
     accessor: (r) => <span className={cn('font-semibold', r.overrideRate > r.originalRate ? 'text-emerald-600' : 'text-destructive')}>${r.overrideRate.toFixed(2)}/hr</span> },
   { key: 'variance', header: 'Variance', type: 'number', align: 'right', sortValue: (r) => r.overrideRate - r.originalRate,
     accessor: (r) => { const diff = r.overrideRate - r.originalRate; return <span className={cn('text-xs font-medium', diff > 0 ? 'text-emerald-600' : 'text-destructive')}>{diff > 0 ? '+' : ''}${diff.toFixed(2)}</span>; }},
-  { key: 'overrideType', header: 'Type', type: 'number', sortValue: (r) => r.overrideType,
+  { key: 'overrideType', header: 'Type', type: 'enum', sortValue: (r) => r.overrideType,
     accessor: (r) => <Badge variant={r.overrideType === 'increase' ? 'default' : r.overrideType === 'decrease' ? 'destructive' : 'secondary'} className="text-xs">{r.overrideType}</Badge> },
-  { key: 'approvedBy', header: 'Approved By', accessor: (r) => r.approvedBy, sortValue: (r) => r.approvedBy },
+  { key: 'approvedBy', header: 'Approved By', type: 'text', accessor: (r) => r.approvedBy, sortValue: (r) => r.approvedBy },
   { key: 'approvedDate', header: 'Date', type: 'date', accessor: (r) => r.approvedDate, sortValue: (r) => r.approvedDate },
   { key: 'expiryDate', header: 'Expires', type: 'date', accessor: (r) => r.expiryDate || <span className="text-muted-foreground text-xs">Permanent</span>, sortValue: (r) => r.expiryDate || 'z' },
-  { key: 'reason', header: 'Reason', accessor: (r) => <span className="text-xs text-muted-foreground">{r.reason}</span>, sortValue: (r) => r.reason },
+  { key: 'reason', header: 'Reason', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground">{r.reason}</span>, sortValue: (r) => r.reason },
 ];
 
 export function AwardOverrideAuditReport() {

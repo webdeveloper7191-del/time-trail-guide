@@ -28,19 +28,19 @@ const locations = [...new Set([...mockCrossLocationDeployments.map(r => r.primar
 const COLORS = ['hsl(var(--primary))', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899'];
 
 const tableColumns: DataTableColumn<CrossLocationDeployment>[] = [
-  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
-  { key: 'role', header: 'Role', accessor: (r) => <Badge variant="outline" className="text-xs">{r.role}</Badge>, sortValue: (r) => r.role },
-  { key: 'primaryLocation', header: 'Primary', accessor: (r) => r.primaryLocation, sortValue: (r) => r.primaryLocation },
-  { key: 'deployedLocation', header: 'Deployed To', accessor: (r) => <span className="text-primary font-medium">{r.deployedLocation}</span>, sortValue: (r) => r.deployedLocation },
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'role', header: 'Role', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-xs">{r.role}</Badge>, sortValue: (r) => r.role },
+  { key: 'primaryLocation', header: 'Primary', type: 'text', accessor: (r) => r.primaryLocation, sortValue: (r) => r.primaryLocation },
+  { key: 'deployedLocation', header: 'Deployed To', type: 'text', accessor: (r) => <span className="text-primary font-medium">{r.deployedLocation}</span>, sortValue: (r) => r.deployedLocation },
   { key: 'hoursAtPrimary', header: 'Primary Hrs', type: 'number', accessor: (r) => `${r.hoursAtPrimary}h`, sortValue: (r) => r.hoursAtPrimary, align: 'right' },
   { key: 'hoursDeployed', header: 'Deployed Hrs', type: 'number', accessor: (r) => <span className="font-medium">{r.hoursDeployed}h</span>, sortValue: (r) => r.hoursDeployed, align: 'right' },
-  { key: 'deploymentRatio', header: 'Deploy %', align: 'right', sortValue: (r) => Math.round(r.hoursDeployed / (r.hoursAtPrimary + r.hoursDeployed) * 100),
+  { key: 'deploymentRatio', header: 'Deploy %', type: 'text', align: 'right', sortValue: (r) => Math.round(r.hoursDeployed / (r.hoursAtPrimary + r.hoursDeployed) * 100),
     accessor: (r) => {
       const pct = Math.round(r.hoursDeployed / (r.hoursAtPrimary + r.hoursDeployed) * 100);
       return <Badge variant={pct > 40 ? 'destructive' : pct > 25 ? 'secondary' : 'default'} className="text-xs">{pct}%</Badge>;
     } },
   { key: 'deploymentCount', header: 'Count', type: 'number', accessor: (r) => r.deploymentCount, sortValue: (r) => r.deploymentCount, align: 'right' },
-  { key: 'lastDeployed', header: 'Last Deployed', accessor: (r) => r.lastDeployed, sortValue: (r) => r.lastDeployed },
+  { key: 'lastDeployed', header: 'Last Deployed', type: 'text', accessor: (r) => r.lastDeployed, sortValue: (r) => r.lastDeployed },
 ];
 
 export function CrossLocationDeploymentReport() {

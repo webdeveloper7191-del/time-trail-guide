@@ -38,17 +38,17 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
       <span className="block text-[10px] text-muted-foreground">{format(parseISO(r.date), 'EEEE')}</span>
     </div>
   ), sortValue: (r) => r.date },
-  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
-  { key: 'area', header: 'Area', accessor: (r) => <Badge variant="outline" className="text-xs">{r.area}</Badge>, sortValue: (r) => r.area },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'area', header: 'Area', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-xs">{r.area}</Badge>, sortValue: (r) => r.area },
   { key: 'totalOpenShifts', header: 'Open', type: 'number', accessor: (r) => <span className="font-semibold">{r.totalOpenShifts}</span>, sortValue: (r) => r.totalOpenShifts, align: 'right' },
-  { key: 'filledShifts', header: 'Filled', type: 'number', accessor: (r) => r.filledShifts, sortValue: (r) => r.filledShifts, align: 'right' },
-  { key: 'filledByInternal', header: 'Internal', accessor: (r) => (
+  { key: 'filledShifts', header: 'Filled', type: 'text', accessor: (r) => r.filledShifts, sortValue: (r) => r.filledShifts, align: 'right' },
+  { key: 'filledByInternal', header: 'Internal', type: 'text', accessor: (r) => (
     <span className="text-xs">{r.filledByInternal} <span className="text-muted-foreground">({r.filledShifts > 0 ? Math.round(r.filledByInternal / r.filledShifts * 100) : 0}%)</span></span>
   ), sortValue: (r) => r.filledByInternal, align: 'right' },
-  { key: 'filledByAgency', header: 'Agency', accessor: (r) => (
+  { key: 'filledByAgency', header: 'Agency', type: 'text', accessor: (r) => (
     r.filledByAgency > 0 ? <span className="text-xs text-amber-600">{r.filledByAgency} <span className="text-muted-foreground">(~${r.filledByAgency * 480})</span></span> : <span className="text-muted-foreground text-xs">—</span>
   ), sortValue: (r) => r.filledByAgency, align: 'right' },
-  { key: 'unfilled', header: 'Unfilled', align: 'right', sortValue: (r) => r.unfilled,
+  { key: 'unfilled', header: 'Unfilled', type: 'text', align: 'right', sortValue: (r) => r.unfilled,
     accessor: (r) => r.unfilled > 0 ? <Badge variant="destructive" className="text-xs">{r.unfilled}</Badge> : <span className="text-emerald-600 text-xs">✓</span> },
   { key: 'fillRate', header: 'Fill Rate', type: 'number', align: 'right', sortValue: (r) => r.fillRate,
     accessor: (r) => (
@@ -59,12 +59,12 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
         <span className={cn('font-semibold text-xs w-8 text-right', r.fillRate >= 80 ? 'text-emerald-600' : r.fillRate >= 50 ? 'text-amber-600' : 'text-destructive')}>{r.fillRate}%</span>
       </div>
     ) },
-  { key: 'avgTime', header: 'Time to Fill', accessor: (r) => (
+  { key: 'avgTime', header: 'Time to Fill', type: 'date', accessor: (r) => (
     <span className={cn('text-xs', r.avgTimeToFillHours <= 4 ? 'text-emerald-600' : r.avgTimeToFillHours <= 12 ? 'text-amber-600' : 'text-destructive')}>
       {r.avgTimeToFillHours}h
     </span>
   ), sortValue: (r) => r.avgTimeToFillHours, align: 'right' },
-  { key: 'urgency', header: 'Urgency', sortValue: (r) => ({ low: 0, medium: 1, high: 2, critical: 3 }[r.urgency]),
+  { key: 'urgency', header: 'Urgency', type: 'text', sortValue: (r) => ({ low: 0, medium: 1, high: 2, critical: 3 }[r.urgency]),
     accessor: (r) => <Badge variant="outline" className={cn('text-[10px] capitalize',
       r.urgency === 'critical' && 'border-destructive text-destructive bg-red-50',
       r.urgency === 'high' && 'border-orange-500 text-orange-600 bg-orange-50',

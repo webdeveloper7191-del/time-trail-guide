@@ -32,18 +32,18 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockRetrospectivePay.map(r => r.location))];
 
 const tableColumns: DataTableColumn<RetrospectivePayRecord>[] = [
-  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
-  { key: 'adjustmentType', header: 'Type', sortValue: (r) => r.adjustmentType,
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => <span className="font-medium">{r.staffName}</span>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => r.location, sortValue: (r) => r.location },
+  { key: 'adjustmentType', header: 'Type', type: 'enum', sortValue: (r) => r.adjustmentType,
     accessor: (r) => <Badge variant="outline" className="text-xs">{r.adjustmentType.replace(/_/g, ' ')}</Badge> },
   { key: 'originalAmount', header: 'Original', type: 'number', accessor: (r) => `$${r.originalAmount.toLocaleString()}`, sortValue: (r) => r.originalAmount, align: 'right' },
   { key: 'adjustedAmount', header: 'Adjusted', type: 'number', accessor: (r) => `$${r.adjustedAmount.toLocaleString()}`, sortValue: (r) => r.adjustedAmount, align: 'right' },
-  { key: 'difference', header: 'Difference', align: 'right', sortValue: (r) => r.difference,
+  { key: 'difference', header: 'Difference', type: 'text', align: 'right', sortValue: (r) => r.difference,
     accessor: (r) => <span className="font-semibold text-emerald-600">+${r.difference.toLocaleString()}</span> },
-  { key: 'effectiveFrom', header: 'Effective', accessor: (r) => r.effectiveFrom, sortValue: (r) => r.effectiveFrom },
-  { key: 'status', header: 'Status', sortValue: (r) => r.status,
+  { key: 'effectiveFrom', header: 'Effective', type: 'text', accessor: (r) => r.effectiveFrom, sortValue: (r) => r.effectiveFrom },
+  { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge variant={STATUS_VARIANT[r.status]} className="text-xs">{r.status}</Badge> },
-  { key: 'reason', header: 'Reason', accessor: (r) => <span className="text-xs text-muted-foreground">{r.reason}</span>, sortValue: (r) => r.reason },
+  { key: 'reason', header: 'Reason', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground">{r.reason}</span>, sortValue: (r) => r.reason },
 ];
 
 export function RetrospectivePayReport() {

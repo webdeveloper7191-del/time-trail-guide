@@ -29,10 +29,10 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockPayRunRecords.map(r => r.location))];
 
 const tableColumns: DataTableColumn<PayRunRecord>[] = [
-  { key: 'staffName', header: 'Staff', type: 'number', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.staffId}</span></div>, sortValue: (r) => r.staffName },
-  { key: 'location', header: 'Location', accessor: (r) => r.location, sortValue: (r) => r.location },
-  { key: 'role', header: 'Role', accessor: (r) => <Badge variant="outline" className="text-xs">{r.role}</Badge>, sortValue: (r) => r.role },
-  { key: 'contractType', header: 'Contract', sortValue: (r) => r.contractType,
+  { key: 'staffName', header: 'Staff', type: 'text', accessor: (r) => <div><span className="font-medium">{r.staffName}</span><span className="block text-[10px] text-muted-foreground">{r.staffId}</span></div>, sortValue: (r) => r.staffName },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => r.location, sortValue: (r) => r.location },
+  { key: 'role', header: 'Role', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-xs">{r.role}</Badge>, sortValue: (r) => r.role },
+  { key: 'contractType', header: 'Contract', type: 'enum', sortValue: (r) => r.contractType,
     accessor: (r) => <Badge variant="outline" className="text-xs">{r.contractType.replace('_', ' ')}</Badge> },
   { key: 'regularHours', header: 'Reg Hrs', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.regularHours}h</span>, sortValue: (r) => r.regularHours, align: 'right' },
   { key: 'overtimeHours', header: 'OT Hrs', type: 'number', sortValue: (r) => r.overtimeHours, align: 'right',

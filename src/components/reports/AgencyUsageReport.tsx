@@ -27,14 +27,14 @@ const exportColumns: ExportColumn[] = [
 ];
 
 const tableColumns: DataTableColumn<AgencyUsageRecord>[] = [
-  { key: 'agencyName', header: 'Agency', accessor: (r) => (
+  { key: 'agencyName', header: 'Agency', type: 'text', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.qualityScore >= 85 ? 'bg-emerald-500' : r.qualityScore >= 70 ? 'bg-amber-500' : 'bg-red-500')} />
 
       <span className="font-medium">{r.agencyName}</span>
     </div>
   ), sortValue: (r) => r.agencyName },
-  { key: 'shiftsProvided', header: 'Shifts', type: 'number', accessor: (r) => r.shiftsProvided, sortValue: (r) => r.shiftsProvided, align: 'right' },
+  { key: 'shiftsProvided', header: 'Shifts', type: 'text', accessor: (r) => r.shiftsProvided, sortValue: (r) => r.shiftsProvided, align: 'right' },
   { key: 'totalHours', header: 'Hours', type: 'number', accessor: (r) => `${r.totalHours}h`, sortValue: (r) => r.totalHours, align: 'right' },
   { key: 'totalCost', header: 'Total Cost', type: 'number', accessor: (r) => <span className="font-semibold">${r.totalCost.toLocaleString()}</span>, sortValue: (r) => r.totalCost, align: 'right' },
   { key: 'avgHourlyRate', header: 'Avg Rate', type: 'number', accessor: (r) => (

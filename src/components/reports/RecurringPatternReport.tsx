@@ -28,14 +28,14 @@ const exportColumns: ExportColumn[] = [
 const locations = [...new Set(mockRecurringPatterns.map(r => r.location))];
 
 const tableColumns: DataTableColumn<RecurringPatternRecord>[] = [
-  { key: 'patternName', header: 'Pattern', accessor: (r) => (
+  { key: 'patternName', header: 'Pattern', type: 'text', accessor: (r) => (
     <div className="flex items-center gap-2">
       <div className={cn('w-2 h-2 rounded-full', r.adherencePercent >= 90 ? 'bg-emerald-500' : r.adherencePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} />
 
       <span className="font-medium">{r.patternName}</span>
     </div>
   ), sortValue: (r) => r.patternName },
-  { key: 'location', header: 'Location', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
+  { key: 'location', header: 'Location', type: 'enum', accessor: (r) => <span className="text-muted-foreground text-xs">{r.location}</span>, sortValue: (r) => r.location },
   { key: 'totalExpectedShifts', header: 'Expected', type: 'number', accessor: (r) => r.totalExpectedShifts, sortValue: (r) => r.totalExpectedShifts, align: 'right' },
   { key: 'actualShifts', header: 'Actual', type: 'number', accessor: (r) => (
     <span className={cn(r.actualShifts < r.totalExpectedShifts ? 'text-destructive font-medium' : '')}>{r.actualShifts}</span>
@@ -49,11 +49,11 @@ const tableColumns: DataTableColumn<RecurringPatternRecord>[] = [
         <span className={cn('text-xs font-mono w-10 text-right', r.adherencePercent < 75 ? 'text-destructive font-bold' : '')}>{r.adherencePercent}%</span>
       </div>
     ) },
-  { key: 'deviations', header: 'Deviations', align: 'right', sortValue: (r) => r.deviations,
+  { key: 'deviations', header: 'Deviations', type: 'text', align: 'right', sortValue: (r) => r.deviations,
     accessor: (r) => r.deviations > 0 ? (
       <Badge variant={r.deviations > 3 ? 'destructive' : 'outline'} className="text-xs">{r.deviations}</Badge>
     ) : <span className="text-emerald-600 text-xs">✓ None</span> },
-  { key: 'deviationReasons', header: 'Deviation Reasons', accessor: (r) => (
+  { key: 'deviationReasons', header: 'Deviation Reasons', type: 'text', accessor: (r) => (
     <div className="flex flex-wrap gap-1">
       {r.deviationReasons.length > 0 ? r.deviationReasons.map((reason, i) => (
         <Badge key={i} variant="secondary" className="text-[10px]">{reason}</Badge>
