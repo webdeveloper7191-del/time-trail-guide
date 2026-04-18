@@ -450,3 +450,36 @@ mockDemandVsActuals.forEach((r, i) => {
   r.ratioImpact = r.ratioImpact ?? `1:${Math.max(2, Math.ceil((r.actualChildren) / Math.max(1, r.actualStaff)))}`;
 });
 
+
+// =================== Sparkline trends (last 8 periods) ===================
+
+export interface StaffUtilisationRecord {
+  utilisationPercentTrend?: number[];
+  scheduledHoursTrend?: number[];
+}
+export interface OpenShiftFillRecord {
+  fillRateTrend?: number[];
+  unfilledTrend?: number[];
+}
+
+function _seedTrendR(seed: number, base: number, variance: number, len = 8, drift = 0): number[] {
+  const out: number[] = [];
+  let x = seed * 9301 + 49297;
+  for (let i = 0; i < len; i++) {
+    x = (x * 9301 + 49297) % 233280;
+    const r = (x / 233280) - 0.5;
+    out.push(Math.max(0, Math.round((base + r * variance + drift * i) * 10) / 10));
+  }
+  return out;
+}
+
+mockStaffUtilisation.forEach((r, i) => {
+  r.utilisationPercentTrend = r.utilisationPercentTrend ?? _seedTrendR(i + 111, r.utilisationPercent, 8, 8, r.utilisationTrend === 'up' ? 0.6 : r.utilisationTrend === 'down' ? -0.5 : 0.1);
+  r.scheduledHoursTrend = r.scheduledHoursTrend ?? _seedTrendR(i + 117, r.scheduledHours, 5, 8, 0.2);
+});
+
+mockOpenShiftFill.forEach((r, i) => {
+  r.fillRateTrend = r.fillRateTrend ?? _seedTrendR(i + 121, r.fillRate, 8, 8, 0.4);
+  r.unfilledTrend = r.unfilledTrend ?? _seedTrendR(i + 127, Math.max(0, r.unfilled), 2, 8, -0.1);
+});
+

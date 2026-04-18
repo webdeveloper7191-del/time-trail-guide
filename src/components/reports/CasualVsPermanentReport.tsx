@@ -49,6 +49,7 @@ const tableColumns: DataTableColumn<CasualVsPermanentRecord>[] = [
   { key: 'loadingCost', header: 'Casual Loading', type: 'number', accessor: (r) => `$${(r.loadingCost ?? 0).toLocaleString()}`, sortValue: (r) => r.loadingCost ?? 0, align: 'right' },
   { key: 'costDifferencePct', header: 'Cost Δ %', type: 'number', accessor: (r) => <span className="text-xs text-amber-600">+{r.costDifferencePct ?? 0}%</span>, sortValue: (r) => r.costDifferencePct ?? 0, align: 'right' },
   { key: 'weeklyAvgPermanent', header: 'Avg Hrs/Perm', type: 'number', accessor: (r) => `${r.weeklyAvgPermanent ?? 0}h`, sortValue: (r) => r.weeklyAvgPermanent ?? 0, align: 'right' },
+  { key: 'casualMixTrend', header: 'Casual Mix Trend (8wk)', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.casualMixTrend ?? [] },
 ];
 
 export function CasualVsPermanentReport() {
@@ -191,7 +192,7 @@ export function CasualVsPermanentReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.location}-${r.period}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.location}-${r.period}-${i}`} reportId="casual-vs-permanent" exportTitle="Casual vs Permanent" /></CardContent>
       </Card>
     </div>
   );

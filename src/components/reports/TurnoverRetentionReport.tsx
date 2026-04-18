@@ -41,6 +41,7 @@ const tableColumns: DataTableColumn<TurnoverRecord>[] = [
   { key: 'avgTenureMonths', header: 'Avg Tenure', type: 'number', accessor: (r) => `${r.avgTenureMonths}m`, sortValue: (r) => r.avgTenureMonths, align: 'right' },
   { key: 'netChange', header: 'Net', type: 'number', align: 'right', sortValue: (r) => r.hires - r.terminations,
     accessor: (r) => { const net = r.hires - r.terminations; return <span className={cn('font-medium text-xs', net > 0 ? 'text-emerald-600' : net < 0 ? 'text-destructive' : 'text-foreground')}>{net > 0 ? '+' : ''}{net}</span>; }},
+  { key: 'turnoverRateTrend', header: 'Turnover Trend (8mo)', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.turnoverRateTrend ?? [] },
 ];
 
 export function TurnoverRetentionReport() {
@@ -201,7 +202,7 @@ export function TurnoverRetentionReport() {
       {/* Detail Table */}
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Monthly Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.month} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.month} reportId="turnover-retention" exportTitle="Turnover &amp; Retention" /></CardContent>
       </Card>
     </div>
   );

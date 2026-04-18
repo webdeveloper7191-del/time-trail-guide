@@ -67,6 +67,7 @@ const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
   { key: 'avgShiftLength', header: 'Avg Shift', type: 'number', accessor: (r) => `${r.avgShiftLength ?? 0}h`, sortValue: (r) => r.avgShiftLength ?? 0, align: 'right' },
   { key: 'totalCost', header: 'Total Cost', type: 'number', accessor: (r) => <span className="font-semibold">${(r.totalCost ?? 0).toLocaleString()}</span>, sortValue: (r) => r.totalCost ?? 0, align: 'right' },
   { key: 'utilisationTrend', header: 'Trend', type: 'enum', accessor: (r) => <Badge variant={r.utilisationTrend === 'up' ? 'secondary' : r.utilisationTrend === 'down' ? 'destructive' : 'outline'} className="text-[10px]">{r.utilisationTrend}</Badge>, sortValue: (r) => r.utilisationTrend ?? '' },
+  { key: 'utilisationPercentTrend', header: 'Util Trend (8wk)', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.utilisationPercentTrend ?? [] },
 ];
 
 // Simulated weekly trend data per staff
@@ -324,7 +325,7 @@ export function StaffUtilisationReport() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.staffId} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.staffId} reportId="staff-utilisation" exportTitle="Staff Utilisation" />
         </CardContent>
       </Card>
     </div>

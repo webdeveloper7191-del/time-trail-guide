@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, ReactNode } from 'react';
+import { useState, useMemo, useCallback, useEffect, ReactNode, useRef } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import {
   ArrowUp, ArrowDown, ArrowUpDown, Filter, X, Columns3, Bookmark, Save, Trash2, Check,
+  Star, Download, FileText, FileSpreadsheet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   ColumnType, FilterRule, RuleNode, Operator, evaluateRule, evaluateNodes, flattenNodes,
   getOperatorsForType, getDefaultOperator, describeRule, isGroup,
@@ -19,8 +21,9 @@ import { AdvancedFilterPanel } from './AdvancedFilterPanel';
 import { Sparkline } from './Sparkline';
 import {
   loadHiddenColumns, saveHiddenColumns,
-  loadViews, upsertView, deleteView, SavedReportView,
+  loadViews, upsertView, deleteView, togglePinView, setDefaultView, SavedReportView,
 } from './reportViewStorage';
+import { exportToCSV, exportToPDF, ExportColumn } from '@/lib/reportExport';
 
 export interface DataTableColumn<T> {
   key: string;
@@ -51,6 +54,8 @@ interface ReportDataTableProps<T> {
   showAdvancedFilter?: boolean;
   /** Stable identifier used for per-report localStorage (column visibility + saved views). */
   reportId?: string;
+  /** Title used in exported file headers / filenames. */
+  exportTitle?: string;
 }
 
 type SortDir = 'asc' | 'desc' | null;
@@ -70,6 +75,7 @@ export function ReportDataTable<T>({
   emptyMessage = 'No data found',
   showAdvancedFilter = true,
   reportId,
+  exportTitle,
 }: ReportDataTableProps<T>) {
   const rid = reportId || autoReportId(columns);
 
@@ -99,14 +105,23 @@ export function ReportDataTable<T>({
   const [views, setViews] = useState<SavedReportView[]>(() => loadViews(rid));
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
 
-  const applyView = (view: SavedReportView) => {
+  const applyView = useCallback((view: SavedReportView) => {
     setAdvancedRules(view.rules);
     setHiddenCols(new Set(view.hiddenColumns));
     setSortCol(view.sortCol);
     setSortDir(view.sortDir);
     setColumnRules({});
     setActiveViewId(view.id);
-  };
+  }, []);
+
+  // Auto-apply default view on mount (per report).
+  const didApplyDefault = useRef(false);
+  useEffect(() => {
+    if (didApplyDefault.current) return;
+    didApplyDefault.current = true;
+    const def = views.find(v => v.isDefault);
+    if (def) applyView(def);
+  }, [views, applyView]);
 
   const handleSaveView = (name: string) => {
     if (!name.trim()) return;
@@ -130,6 +145,17 @@ export function ReportDataTable<T>({
     const next = deleteView(rid, id);
     setViews(next);
     if (activeViewId === id) setActiveViewId(null);
+  };
+
+  const handleTogglePin = (id: string) => {
+    const next = togglePinView(rid, id);
+    setViews(next);
+  };
+
+  const handleSetDefault = (id: string) => {
+    const current = views.find(v => v.id === id);
+    const next = setDefaultView(rid, current?.isDefault ? null : id);
+    setViews(next);
   };
 
   // ---- Value extraction ----
@@ -248,6 +274,24 @@ export function ReportDataTable<T>({
   const totalActive = allChipRules.length;
   const showToolbar = showAdvancedFilter || totalActive > 0;
 
+  // Export only the visible columns + filtered/sorted rows.
+  const exportCurrentView = useCallback((kind: 'csv' | 'pdf') => {
+    const exportCols: ExportColumn[] = visibleColumns
+      .filter(c => c.type !== 'sparkline')
+      .map(c => ({
+        header: c.header,
+        accessor: (row: any) => {
+          if (c.sortValue) return c.sortValue(row as T);
+          const v = c.accessor(row as T);
+          if (typeof v === 'string' || typeof v === 'number') return v;
+          return '';
+        },
+      }));
+    const title = exportTitle || 'Report';
+    if (kind === 'csv') exportToCSV(title, exportCols, sortedData as any[]);
+    else exportToPDF(title, exportCols, sortedData as any[]);
+  }, [visibleColumns, sortedData, exportTitle]);
+
   return (
     <div>
       {showToolbar && (
@@ -262,8 +306,11 @@ export function ReportDataTable<T>({
                 onApply={applyView}
                 onSave={handleSaveView}
                 onDelete={handleDeleteView}
+                onTogglePin={handleTogglePin}
+                onSetDefault={handleSetDefault}
                 hasState={totalActive > 0 || hiddenCols.size > 0 || !!sortCol}
               />
+              <ExportCurrentViewButton onExport={exportCurrentView} />
             </>
           )}
           {totalActive > 0 && (
@@ -575,10 +622,12 @@ interface SavedViewsMenuProps {
   onApply: (view: SavedReportView) => void;
   onSave: (name: string) => void;
   onDelete: (id: string) => void;
+  onTogglePin: (id: string) => void;
+  onSetDefault: (id: string) => void;
   hasState: boolean;
 }
 
-function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, hasState }: SavedViewsMenuProps) {
+function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, onTogglePin, onSetDefault, hasState }: SavedViewsMenuProps) {
   const [name, setName] = useState('');
 
   const submit = () => {
@@ -598,22 +647,43 @@ function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, hasState }
           {views.length > 0 && <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">{views.length}</Badge>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start">
-        <div className="px-3 py-2 border-b border-border/60">
+      <PopoverContent className="w-80 p-0" align="start">
+        <div className="px-3 py-2 border-b border-border/60 flex items-center justify-between">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Saved views</span>
+          <span className="text-[9px] text-muted-foreground">★ pin · ◎ default</span>
         </div>
         {views.length === 0 ? (
           <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
             No saved views yet.
           </div>
         ) : (
-          <ScrollArea className="max-h-[200px]">
+          <ScrollArea className="max-h-[240px]">
             <div className="p-1">
               {views.map(v => (
-                <div key={v.id} className={cn('group flex items-center gap-1 px-2 py-1.5 rounded hover:bg-accent', v.id === activeId && 'bg-accent')}>
-                  <button className="flex-1 text-left text-xs flex items-center gap-2 min-w-0" onClick={() => onApply(v)}>
-                    {v.id === activeId ? <Check className="h-3 w-3 text-primary shrink-0" /> : <Bookmark className="h-3 w-3 text-muted-foreground shrink-0" />}
+                <div key={v.id} className={cn('group flex items-center gap-0.5 px-1.5 py-1.5 rounded hover:bg-accent', v.id === activeId && 'bg-accent')}>
+                  <button
+                    className={cn(
+                      'p-1 rounded hover:bg-amber-500/10 shrink-0',
+                      v.pinned ? 'opacity-100' : 'opacity-40 hover:opacity-100'
+                    )}
+                    title={v.pinned ? 'Unpin' : 'Pin to top'}
+                    onClick={(e) => { e.stopPropagation(); onTogglePin(v.id); }}
+                  >
+                    <Star className={cn('h-3 w-3', v.pinned ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground')} />
+                  </button>
+                  <button
+                    className={cn(
+                      'p-1 rounded hover:bg-primary/10 shrink-0',
+                      v.isDefault ? 'opacity-100' : 'opacity-40 hover:opacity-100'
+                    )}
+                    title={v.isDefault ? 'Remove as default' : 'Set as default (auto-apply on load)'}
+                    onClick={(e) => { e.stopPropagation(); onSetDefault(v.id); }}
+                  >
+                    <Check className={cn('h-3 w-3', v.isDefault ? 'text-primary' : 'text-muted-foreground')} />
+                  </button>
+                  <button className="flex-1 text-left text-xs flex items-center gap-2 min-w-0 px-1" onClick={() => onApply(v)}>
                     <span className="truncate">{v.name}</span>
+                    {v.isDefault && <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary/40 text-primary">default</Badge>}
                     <span className="text-[9px] text-muted-foreground ml-auto shrink-0">
                       {v.rules.length}r · {v.hiddenColumns.length}h
                     </span>
@@ -654,5 +724,30 @@ function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, hasState }
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+// ============================================================================
+// ExportCurrentViewButton — exports filtered + sorted rows with visible columns
+// ============================================================================
+
+function ExportCurrentViewButton({ onExport }: { onExport: (kind: 'csv' | 'pdf') => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="h-9 gap-2 text-xs" title="Export only currently visible columns and filtered rows">
+          <Download className="h-3.5 w-3.5" />
+          Export view
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem onClick={() => onExport('csv')} className="text-xs gap-2">
+          <FileSpreadsheet className="h-3.5 w-3.5" /> CSV (visible columns)
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onExport('pdf')} className="text-xs gap-2">
+          <FileText className="h-3.5 w-3.5" /> PDF (visible columns)
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

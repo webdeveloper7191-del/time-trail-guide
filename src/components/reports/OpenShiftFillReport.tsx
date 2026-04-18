@@ -50,6 +50,7 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
   ), sortValue: (r) => r.filledByAgency, align: 'right' },
   { key: 'unfilled', header: 'Unfilled', type: 'text', align: 'right', sortValue: (r) => r.unfilled,
     accessor: (r) => r.unfilled > 0 ? <Badge variant="destructive" className="text-xs">{r.unfilled}</Badge> : <span className="text-emerald-600 text-xs">✓</span> },
+  { key: 'unfilledTrend', header: 'Unfilled Trend', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.unfilledTrend ?? [] },
   { key: 'fillRate', header: 'Fill Rate', type: 'number', align: 'right', sortValue: (r) => r.fillRate,
     accessor: (r) => (
       <div className="flex items-center gap-1.5 justify-end">
@@ -59,6 +60,7 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
         <span className={cn('font-semibold text-xs w-8 text-right', r.fillRate >= 80 ? 'text-emerald-600' : r.fillRate >= 50 ? 'text-amber-600' : 'text-destructive')}>{r.fillRate}%</span>
       </div>
     ) },
+  { key: 'fillRateTrend', header: 'Fill Rate Trend', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.fillRateTrend ?? [] },
   { key: 'avgTime', header: 'Time to Fill', type: 'date', accessor: (r) => (
     <span className={cn('text-xs', r.avgTimeToFillHours <= 4 ? 'text-emerald-600' : r.avgTimeToFillHours <= 12 ? 'text-amber-600' : 'text-destructive')}>
       {r.avgTimeToFillHours}h
@@ -303,7 +305,7 @@ export function OpenShiftFillReport() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} reportId="open-shift-fill" exportTitle="Open Shift Fill" />
         </CardContent>
       </Card>
     </div>
