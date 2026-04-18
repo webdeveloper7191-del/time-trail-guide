@@ -48,6 +48,7 @@ const tableColumns: DataTableColumn<PayRunRecord>[] = [
   { key: 'ytdSuper', header: 'YTD Super', type: 'number', accessor: (r) => `$${((r.ytdSuper ?? 0) / 1000).toFixed(1)}k`, sortValue: (r) => r.ytdSuper ?? 0, align: 'right' },
   { key: 'bankAccount', header: 'Bank A/C', type: 'text', accessor: (r) => <span className="font-mono text-[10px] text-muted-foreground">{r.bankAccount}</span>, sortValue: (r) => r.bankAccount ?? '' },
   { key: 'payrollDate', header: 'Pay Date', type: 'date', accessor: (r) => r.payrollDate ?? '—', sortValue: (r) => r.payrollDate ?? '' },
+  { key: 'grossTrend', header: 'Gross Trend (8wk)', type: 'sparkline', trendValues: (r) => r.grossTrend ?? [], accessor: () => null },
 ];
 
 export function PayRunSummaryReport() {
@@ -185,7 +186,7 @@ export function PayRunSummaryReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Pay Run Detail — {filtered[0]?.payPeriod}</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable reportId="pay-run-summary" key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
       </Card>
     </div>
   );

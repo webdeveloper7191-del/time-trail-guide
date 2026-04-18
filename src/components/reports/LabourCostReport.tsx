@@ -50,6 +50,8 @@ const tableColumns: DataTableColumn<LabourCostRecord>[] = [
   { key: 'agencyPct', header: 'Agency %', type: 'number', accessor: (r) => <span className={cn('text-xs', (r.agencyPct ?? 0) > 15 ? 'text-amber-600 font-medium' : '')}>{r.agencyPct ?? 0}%</span>, sortValue: (r) => r.agencyPct ?? 0, align: 'right' },
   { key: 'variancePercent', header: 'Variance %', type: 'number', accessor: (r) => <Badge variant={(r.variancePercent ?? 0) < -5 ? 'destructive' : (r.variancePercent ?? 0) > 5 ? 'secondary' : 'outline'} className="text-[10px]">{r.variancePercent ?? 0}%</Badge>, sortValue: (r) => r.variancePercent ?? 0, align: 'right' },
   { key: 'budgetUtilisationPct', header: 'Budget Use %', type: 'number', accessor: (r) => `${r.budgetUtilisationPct ?? 0}%`, sortValue: (r) => r.budgetUtilisationPct ?? 0, align: 'right' },
+  { key: 'totalCostTrend', header: 'Cost Trend (8wk)', type: 'sparkline', trendValues: (r) => r.totalCostTrend ?? [], accessor: () => null },
+  { key: 'variancePctTrend', header: 'Variance Trend', type: 'sparkline', trendValues: (r) => r.variancePctTrend ?? [], accessor: () => null, defaultHidden: true },
 ];
 
 export function LabourCostReport() {
@@ -198,7 +200,7 @@ export function LabourCostReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.location}-${r.department}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable reportId="labour-cost" key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.location}-${r.department}-${i}`} /></CardContent>
       </Card>
     </div>
   );

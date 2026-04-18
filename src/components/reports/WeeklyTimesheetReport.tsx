@@ -59,6 +59,8 @@ const tableColumns: DataTableColumn<WeeklyTimesheetRecord>[] = [
   { key: 'exceptions', header: 'Exceptions', type: 'number', accessor: (r) => (r.exceptions ?? 0) > 0 ? <Badge variant="destructive" className="text-[10px]">{r.exceptions}</Badge> : <span className="text-muted-foreground text-xs">—</span>, sortValue: (r) => r.exceptions ?? 0, align: 'right' },
   { key: 'submittedAt', header: 'Submitted', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.submittedAt}</span>, sortValue: (r) => r.submittedAt ?? '' },
   { key: 'approverName', header: 'Approver', type: 'enum', accessor: (r) => <span className="text-xs">{r.approverName}</span>, sortValue: (r) => r.approverName ?? '' },
+  { key: 'totalHoursTrend', header: 'Hours Trend (8wk)', type: 'sparkline', trendValues: (r) => r.totalHoursTrend ?? [], accessor: () => null },
+  { key: 'overtimeTrend', header: 'OT Trend (8wk)', type: 'sparkline', trendValues: (r) => r.overtimeTrend ?? [], accessor: () => null, defaultHidden: true },
 ];
 
 export function WeeklyTimesheetReport() {
@@ -201,7 +203,7 @@ export function WeeklyTimesheetReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Timesheet Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable reportId="weekly-timesheet" key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
       </Card>
     </div>
   );

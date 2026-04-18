@@ -332,3 +332,54 @@ mockCrossLocationDeployments.forEach((r, i) => {
   r.status = r.status ?? ((['active', 'completed', 'active', 'completed'] as const)[i % 4]);
 });
 
+
+// =================== Sparkline trends ===================
+
+export interface MultiSiteOpsData {
+  utilisationTrend?: number[];
+  costTrend?: number[];
+}
+export interface BudgetVsActualRecord {
+  variancePctTrend?: number[];
+}
+export interface AreaUtilRecord {
+  utilisationTrend?: number[];
+}
+export interface ComplianceViolationRecord {
+  violationsTrend?: number[];
+}
+export interface StaffingRatioRecord {
+  ratioTrend?: number[];
+}
+
+function _seedTrendL(seed: number, base: number, variance: number, len = 8, drift = 0): number[] {
+  const out: number[] = [];
+  let x = seed * 9301 + 49297;
+  for (let i = 0; i < len; i++) {
+    x = (x * 9301 + 49297) % 233280;
+    const r = (x / 233280) - 0.5;
+    out.push(Math.max(0, Math.round((base + r * variance + drift * i) * 10) / 10));
+  }
+  return out;
+}
+
+mockMultiSiteOps.forEach((r, i) => {
+  r.utilisationTrend = r.utilisationTrend ?? _seedTrendL(i + 61, (r as any).utilisation ?? 75, 8, 8, 0.5);
+  r.costTrend = r.costTrend ?? _seedTrendL(i + 67, (r as any).laborCost ?? 50000, 4000, 8, 200);
+});
+
+mockBudgetVsActuals.forEach((r, i) => {
+  r.variancePctTrend = r.variancePctTrend ?? _seedTrendL(i + 71, (r as any).variancePercent ?? 3, 4, 8, -0.1);
+});
+
+mockAreaUtil.forEach((r, i) => {
+  r.utilisationTrend = r.utilisationTrend ?? _seedTrendL(i + 73, (r as any).utilisation ?? 70, 8, 8, 0.3);
+});
+
+mockComplianceViolations.forEach((r, i) => {
+  r.violationsTrend = r.violationsTrend ?? _seedTrendL(i + 79, (r as any).violations ?? 2, 2, 8, -0.1);
+});
+
+mockStaffingRatios.forEach((r, i) => {
+  r.ratioTrend = r.ratioTrend ?? _seedTrendL(i + 83, (r as any).actualRatio ?? 4, 1, 8, 0);
+});

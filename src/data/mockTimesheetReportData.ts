@@ -440,3 +440,67 @@ mockAttendanceTrends.forEach((r, i) => {
   r.forecastVariance = r.forecastVariance ?? (Math.round((Math.random() - 0.5) * 6));
 });
 
+
+// =================== Sparkline trends (last 8 periods) ===================
+
+export interface WeeklyTimesheetSummary {
+  totalHoursTrend?: number[];
+  overtimeTrend?: number[];
+}
+export interface OvertimeByLocationRecord {
+  overtimeHoursTrend?: number[];
+  overtimeCostTrend?: number[];
+}
+export interface AttendanceTrendRecord {
+  attendanceRateTrend?: number[];
+}
+export interface LatePunctualityRecord {
+  lateMinutesTrend?: number[];
+}
+export interface BreakComplianceRecord {
+  complianceRateTrend?: number[];
+}
+export interface ApprovalSLARecord {
+  slaComplianceTrend?: number[];
+}
+
+function _seedTrend(seed: number, base: number, variance: number, len = 8, drift = 0): number[] {
+  // Deterministic pseudo-random based on seed
+  const out: number[] = [];
+  let x = seed * 9301 + 49297;
+  for (let i = 0; i < len; i++) {
+    x = (x * 9301 + 49297) % 233280;
+    const r = (x / 233280) - 0.5;
+    out.push(Math.max(0, Math.round((base + r * variance + drift * i) * 10) / 10));
+  }
+  return out;
+}
+
+mockWeeklyTimesheets.forEach((r, i) => {
+  r.totalHoursTrend = r.totalHoursTrend ?? _seedTrend(i + 1, r.totalHours, 6, 8, -0.1);
+  r.overtimeTrend = r.overtimeTrend ?? _seedTrend(i + 7, Math.max(1, r.overtimeHours), 3, 8, 0.2);
+});
+
+mockOvertimeByLocation.forEach((r, i) => {
+  r.overtimeHoursTrend = r.overtimeHoursTrend ?? _seedTrend(i + 11, r.totalOvertimeHours, 4, 8, 0.3);
+  r.overtimeCostTrend = r.overtimeCostTrend ?? _seedTrend(i + 13, r.overtimeCost, 250, 8, 25);
+});
+
+mockAttendanceTrends.forEach((r, i) => {
+  const rate = ((r.totalScheduled - r.absent) / r.totalScheduled) * 100;
+  r.attendanceRateTrend = r.attendanceRateTrend ?? _seedTrend(i + 3, rate, 6, 8, 0.4);
+});
+
+mockLatePunctuality.forEach((r, i) => {
+  r.lateMinutesTrend = r.lateMinutesTrend ?? _seedTrend(i + 17, r.lateMinutes, 8, 8, -0.5);
+});
+
+mockBreakCompliance.forEach((r, i) => {
+  const base = r.compliant ? 92 : 70;
+  r.complianceRateTrend = r.complianceRateTrend ?? _seedTrend(i + 19, base, 8, 8, r.compliant ? 0.3 : -0.4);
+});
+
+mockApprovalSLA.forEach((r, i) => {
+  const base = (r.withinSLA / Math.max(1, r.totalApprovals)) * 100;
+  r.slaComplianceTrend = r.slaComplianceTrend ?? _seedTrend(i + 23, base, 5, 8, 0.2);
+});
