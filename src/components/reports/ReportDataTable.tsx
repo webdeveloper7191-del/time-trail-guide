@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, ReactNode } from 'react';
+import { useState, useMemo, useCallback, useEffect, ReactNode, useRef } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import {
   ArrowUp, ArrowDown, ArrowUpDown, Filter, X, Columns3, Bookmark, Save, Trash2, Check,
+  Star, Download, FileText, FileSpreadsheet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   ColumnType, FilterRule, RuleNode, Operator, evaluateRule, evaluateNodes, flattenNodes,
   getOperatorsForType, getDefaultOperator, describeRule, isGroup,
@@ -19,8 +21,9 @@ import { AdvancedFilterPanel } from './AdvancedFilterPanel';
 import { Sparkline } from './Sparkline';
 import {
   loadHiddenColumns, saveHiddenColumns,
-  loadViews, upsertView, deleteView, SavedReportView,
+  loadViews, upsertView, deleteView, togglePinView, setDefaultView, SavedReportView,
 } from './reportViewStorage';
+import { exportToCSV, exportToPDF, ExportColumn } from '@/lib/reportExport';
 
 export interface DataTableColumn<T> {
   key: string;
