@@ -54,6 +54,8 @@ interface ReportDataTableProps<T> {
   showAdvancedFilter?: boolean;
   /** Stable identifier used for per-report localStorage (column visibility + saved views). */
   reportId?: string;
+  /** Title used in exported file headers / filenames. */
+  exportTitle?: string;
 }
 
 type SortDir = 'asc' | 'desc' | null;
