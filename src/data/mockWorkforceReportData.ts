@@ -287,3 +287,40 @@ mockSkillsMatrix.forEach((r, i) => {
   r.lastTrainingDate = r.lastTrainingDate ?? format(subDays(today, 14 + i * 7), 'yyyy-MM-dd');
 });
 
+
+// =================== Sparkline trends ===================
+
+export interface HeadcountRecord {
+  headcountTrend?: number[];
+  fteTrend?: number[];
+}
+export interface TurnoverRecord {
+  turnoverRateTrend?: number[];
+}
+export interface OnboardingRecord {
+  completionRateTrend?: number[];
+}
+
+function _seedTrendW(seed: number, base: number, variance: number, len = 8, drift = 0): number[] {
+  const out: number[] = [];
+  let x = seed * 9301 + 49297;
+  for (let i = 0; i < len; i++) {
+    x = (x * 9301 + 49297) % 233280;
+    const r = (x / 233280) - 0.5;
+    out.push(Math.max(0, Math.round((base + r * variance + drift * i) * 10) / 10));
+  }
+  return out;
+}
+
+mockHeadcountData.forEach((r, i) => {
+  r.headcountTrend = r.headcountTrend ?? _seedTrendW(i + 91, (r as any).headcount ?? 30, 4, 8, 0.5);
+  r.fteTrend = r.fteTrend ?? _seedTrendW(i + 97, (r as any).fte ?? 25, 3, 8, 0.3);
+});
+
+mockTurnoverData.forEach((r, i) => {
+  r.turnoverRateTrend = r.turnoverRateTrend ?? _seedTrendW(i + 101, (r as any).turnoverRate ?? 8, 3, 8, -0.1);
+});
+
+mockOnboardingData.forEach((r, i) => {
+  r.completionRateTrend = r.completionRateTrend ?? _seedTrendW(i + 103, (r as any).completionRate ?? 75, 8, 8, 0.4);
+});

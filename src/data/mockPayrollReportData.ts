@@ -370,3 +370,49 @@ mockCasualVsPermanent.forEach((r) => {
   r.weeklyAvgPermanent = r.weeklyAvgPermanent ?? Math.round(r.permanentHours / Math.max(1, r.permanentHeadcount));
 });
 
+
+// =================== Sparkline trends (last 8 pay periods) ===================
+
+export interface PayRunRecord {
+  grossTrend?: number[];
+  netPayTrend?: number[];
+}
+export interface LabourCostRecord {
+  totalCostTrend?: number[];
+  variancePctTrend?: number[];
+}
+export interface OnCallCostRecord {
+  totalCostTrend?: number[];
+}
+export interface CasualVsPermanentRecord {
+  casualMixTrend?: number[];
+}
+
+function _seedTrendP(seed: number, base: number, variance: number, len = 8, drift = 0): number[] {
+  const out: number[] = [];
+  let x = seed * 9301 + 49297;
+  for (let i = 0; i < len; i++) {
+    x = (x * 9301 + 49297) % 233280;
+    const r = (x / 233280) - 0.5;
+    out.push(Math.max(0, Math.round((base + r * variance + drift * i) * 10) / 10));
+  }
+  return out;
+}
+
+mockPayRunRecords.forEach((r, i) => {
+  r.grossTrend = r.grossTrend ?? _seedTrendP(i + 31, r.totalGross, r.totalGross * 0.06, 8, r.totalGross * 0.005);
+  r.netPayTrend = r.netPayTrend ?? _seedTrendP(i + 37, r.netPay ?? r.totalGross * 0.78, (r.totalGross) * 0.05, 8, 0);
+});
+
+mockLabourCosts.forEach((r, i) => {
+  r.totalCostTrend = r.totalCostTrend ?? _seedTrendP(i + 41, r.totalCost, r.totalCost * 0.08, 8, r.totalCost * 0.003);
+  r.variancePctTrend = r.variancePctTrend ?? _seedTrendP(i + 43, r.variancePercent ?? 2, 4, 8, -0.1);
+});
+
+mockOnCallCosts.forEach((r, i) => {
+  r.totalCostTrend = r.totalCostTrend ?? _seedTrendP(i + 47, r.totalCost, r.totalCost * 0.1, 8, 0);
+});
+
+mockCasualVsPermanent.forEach((r, i) => {
+  r.casualMixTrend = r.casualMixTrend ?? _seedTrendP(i + 53, r.casualMixPct ?? 30, 5, 8, 0.4);
+});
