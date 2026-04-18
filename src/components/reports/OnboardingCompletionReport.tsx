@@ -39,6 +39,7 @@ const tableColumns: DataTableColumn<OnboardingRecord>[] = [
   { key: 'stepsCompleted', header: 'Steps', type: 'text', accessor: (r) => <span className="text-xs">{r.stepsCompleted}/{r.totalSteps}</span>, sortValue: (r) => r.stepsCompleted, align: 'right' },
   { key: 'completionPct', header: 'Progress', type: 'number', className: 'w-[150px]', sortValue: (r) => r.completionPct,
     accessor: (r) => <div className="flex items-center gap-2"><Progress value={r.completionPct} className="h-2 flex-1" /><span className="text-xs w-8 text-right">{r.completionPct}%</span></div> },
+  { key: 'completionRateTrend', header: 'Trend (8wk)', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.completionRateTrend ?? [] },
   { key: 'daysInPipeline', header: 'Days', type: 'number', accessor: (r) => <span className={cn('text-xs font-medium', r.daysInPipeline > 21 ? 'text-destructive' : 'text-foreground')}>{r.daysInPipeline}d</span>, sortValue: (r) => r.daysInPipeline, align: 'right' },
   { key: 'startDate', header: 'Start Date', type: 'date', accessor: (r) => <span className="text-xs text-muted-foreground">{r.startDate}</span>, sortValue: (r) => r.startDate },
   { key: 'email', header: 'Email', type: 'text', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.email}</span>, sortValue: (r) => r.email ?? '' },
@@ -186,7 +187,7 @@ export function OnboardingCompletionReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Onboarding Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} reportId="onboarding-completion" exportTitle="Onboarding Completion" /></CardContent>
       </Card>
     </div>
   );

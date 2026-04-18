@@ -35,6 +35,7 @@ const tableColumns: DataTableColumn<BudgetVsActualRecord>[] = [
     accessor: (r) => <span className={cn('font-medium', r.variance > 0 ? 'text-emerald-600' : 'text-destructive')}>{r.variance > 0 ? '+' : ''}${r.variance.toLocaleString()}</span> },
   { key: 'variancePercent', header: 'Var %', type: 'number', align: 'right', sortValue: (r) => r.variancePercent,
     accessor: (r) => <Badge variant={r.variancePercent >= 0 ? 'default' : 'destructive'} className="text-xs">{r.variancePercent > 0 ? '+' : ''}{r.variancePercent}%</Badge> },
+  { key: 'variancePctTrend', header: 'Var % Trend', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.variancePctTrend ?? [] },
   { key: 'ytdBudget', header: 'YTD Budget', type: 'number', accessor: (r) => `$${((r.ytdBudget ?? 0) / 1000).toFixed(1)}k`, sortValue: (r) => r.ytdBudget ?? 0, align: 'right' },
   { key: 'ytdActual', header: 'YTD Actual', type: 'number', accessor: (r) => `$${((r.ytdActual ?? 0) / 1000).toFixed(1)}k`, sortValue: (r) => r.ytdActual ?? 0, align: 'right' },
   { key: 'forecastEoY', header: 'Forecast EoY', type: 'number', accessor: (r) => <span className="font-semibold">${((r.forecastEoY ?? 0) / 1000).toFixed(0)}k</span>, sortValue: (r) => r.forecastEoY ?? 0, align: 'right' },
