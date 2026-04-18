@@ -641,11 +641,13 @@ interface SavedViewsMenuProps {
   onDelete: (id: string) => void;
   onTogglePin: (id: string) => void;
   onSetDefault: (id: string) => void;
+  onSetSchedule: (id: string, schedule: ViewSchedule | null) => void;
   hasState: boolean;
 }
 
-function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, onTogglePin, onSetDefault, hasState }: SavedViewsMenuProps) {
+function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, onTogglePin, onSetDefault, onSetSchedule, hasState }: SavedViewsMenuProps) {
   const [name, setName] = useState('');
+  const [scheduleViewId, setScheduleViewId] = useState<string | null>(null);
 
   const submit = () => {
     if (!name.trim()) return;
@@ -654,6 +656,7 @@ function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, onTogglePi
   };
 
   const activeView = views.find(v => v.id === activeId);
+  const scheduleView = views.find(v => v.id === scheduleViewId) ?? null;
 
   return (
     <Popover>
@@ -664,17 +667,24 @@ function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, onTogglePi
           {views.length > 0 && <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">{views.length}</Badge>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
+      <PopoverContent className="w-96 p-0" align="start">
         <div className="px-3 py-2 border-b border-border/60 flex items-center justify-between">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Saved views</span>
-          <span className="text-[9px] text-muted-foreground">★ pin · ◎ default</span>
+          <span className="text-[9px] text-muted-foreground">★ pin · ◎ default · ⏱ schedule</span>
         </div>
-        {views.length === 0 ? (
+        {scheduleView ? (
+          <SchedulePanel
+            view={scheduleView}
+            onBack={() => setScheduleViewId(null)}
+            onSave={(s) => { onSetSchedule(scheduleView.id, s); setScheduleViewId(null); }}
+            onClear={() => { onSetSchedule(scheduleView.id, null); setScheduleViewId(null); }}
+          />
+        ) : views.length === 0 ? (
           <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
             No saved views yet.
           </div>
         ) : (
-          <ScrollArea className="max-h-[240px]">
+          <ScrollArea className="max-h-[280px]">
             <div className="p-1">
               {views.map(v => (
                 <div key={v.id} className={cn('group flex items-center gap-0.5 px-1.5 py-1.5 rounded hover:bg-accent', v.id === activeId && 'bg-accent')}>
@@ -698,9 +708,20 @@ function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, onTogglePi
                   >
                     <Check className={cn('h-3 w-3', v.isDefault ? 'text-primary' : 'text-muted-foreground')} />
                   </button>
+                  <button
+                    className={cn(
+                      'p-1 rounded hover:bg-primary/10 shrink-0',
+                      v.schedule ? 'opacity-100' : 'opacity-40 hover:opacity-100'
+                    )}
+                    title={v.schedule ? `Scheduled ${v.schedule.cadence} → ${v.schedule.recipients}` : 'Schedule export'}
+                    onClick={(e) => { e.stopPropagation(); setScheduleViewId(v.id); }}
+                  >
+                    <Clock className={cn('h-3 w-3', v.schedule ? 'text-primary' : 'text-muted-foreground')} />
+                  </button>
                   <button className="flex-1 text-left text-xs flex items-center gap-2 min-w-0 px-1" onClick={() => onApply(v)}>
                     <span className="truncate">{v.name}</span>
                     {v.isDefault && <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary/40 text-primary">default</Badge>}
+                    {v.schedule && <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary/40 text-primary gap-0.5"><Clock className="h-2 w-2" />{v.schedule.cadence}</Badge>}
                     <span className="text-[9px] text-muted-foreground ml-auto shrink-0">
                       {v.rules.length}r · {v.hiddenColumns.length}h
                     </span>
