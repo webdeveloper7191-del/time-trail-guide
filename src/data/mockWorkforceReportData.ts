@@ -324,3 +324,33 @@ mockTurnoverData.forEach((r, i) => {
 mockOnboardingData.forEach((r, i) => {
   r.completionRateTrend = r.completionRateTrend ?? _seedTrendW(i + 103, (r as any).completionRate ?? 75, 8, 8, 0.4);
 });
+
+// --- Additional sparkline trends ---
+export interface AvailabilityVsScheduledRecord {
+  utilisationTrend?: number[];
+}
+export interface ContractDistributionRecord {
+  headcountTrend?: number[];
+}
+export interface SkillsMatrixRecord {
+  skillsCoverageTrend?: number[];
+}
+export interface QualificationRecord {
+  daysUntilExpiryTrend?: number[];
+}
+
+mockAvailabilityVsScheduled.forEach((r, i) => {
+  r.utilisationTrend = r.utilisationTrend ?? _seedTrendW(i + 161, r.utilisationPct, 8, 8, 0.3);
+});
+
+mockContractDistribution.forEach((r, i) => {
+  r.headcountTrend = r.headcountTrend ?? _seedTrendW(i + 167, r.totalStaff, 3, 8, 0.2);
+});
+
+mockSkillsMatrix.forEach((r, i) => {
+  r.skillsCoverageTrend = r.skillsCoverageTrend ?? _seedTrendW(i + 171, r.totalSkills, 1.5, 8, 0.1);
+});
+
+mockQualificationData.forEach((r, i) => {
+  r.daysUntilExpiryTrend = r.daysUntilExpiryTrend ?? _seedTrendW(i + 173, Math.max(1, r.daysUntilExpiry + 60), 10, 8, -8);
+});

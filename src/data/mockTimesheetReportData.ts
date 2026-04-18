@@ -504,3 +504,12 @@ mockApprovalSLA.forEach((r, i) => {
   const base = (r.withinSLA / Math.max(1, r.totalApprovals)) * 100;
   r.slaComplianceTrend = r.slaComplianceTrend ?? _seedTrend(i + 23, base, 5, 8, 0.2);
 });
+
+// --- Additional sparkline trends ---
+export interface TimesheetExceptionRecord {
+  frequencyTrend?: number[];
+}
+
+mockTimesheetExceptions.forEach((r, i) => {
+  r.frequencyTrend = r.frequencyTrend ?? _seedTrend(i + 199, 2 + (i % 3), 1.5, 8, 0.1);
+});

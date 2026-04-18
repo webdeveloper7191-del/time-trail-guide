@@ -383,3 +383,19 @@ mockComplianceViolations.forEach((r, i) => {
 mockStaffingRatios.forEach((r, i) => {
   r.ratioTrend = r.ratioTrend ?? _seedTrendL(i + 83, (r as any).actualRatio ?? 4, 1, 8, 0);
 });
+
+// --- Additional sparkline trends ---
+export interface CapacityUtilData {
+  utilisationTrend?: number[];
+}
+export interface CrossLocationDeployment {
+  hoursDeployedTrend?: number[];
+}
+
+mockCapacityUtil.forEach((r, i) => {
+  r.utilisationTrend = r.utilisationTrend ?? _seedTrendL(i + 191, r.utilisationPercent, 8, 8, r.trend === 'up' ? 0.6 : r.trend === 'down' ? -0.5 : 0.1);
+});
+
+mockCrossLocationDeployments.forEach((r, i) => {
+  r.hoursDeployedTrend = r.hoursDeployedTrend ?? _seedTrendL(i + 197, r.hoursDeployed, 3, 8, 0.3);
+});

@@ -416,3 +416,26 @@ mockOnCallCosts.forEach((r, i) => {
 mockCasualVsPermanent.forEach((r, i) => {
   r.casualMixTrend = r.casualMixTrend ?? _seedTrendP(i + 53, r.casualMixPct ?? 30, 5, 8, 0.4);
 });
+
+// --- Additional sparkline trends ---
+export interface AllowancePenaltyRecord {
+  amountTrend?: number[];
+}
+export interface RetrospectivePayRecord {
+  differenceTrend?: number[];
+}
+export interface AwardOverrideRecord {
+  rateTrend?: number[];
+}
+
+mockAllowancePenalties.forEach((r, i) => {
+  r.amountTrend = r.amountTrend ?? _seedTrendP(i + 181, r.amount, r.amount * 0.15, 8, r.amount * 0.02);
+});
+
+mockRetrospectivePay.forEach((r, i) => {
+  r.differenceTrend = r.differenceTrend ?? _seedTrendP(i + 187, Math.abs(r.difference), Math.abs(r.difference) * 0.2, 8, 0);
+});
+
+mockAwardOverrides.forEach((r, i) => {
+  r.rateTrend = r.rateTrend ?? _seedTrendP(i + 191, r.overrideRate, 1.5, 8, 0.05);
+});
