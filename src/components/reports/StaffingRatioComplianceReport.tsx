@@ -287,7 +287,7 @@ export function StaffingRatioComplianceReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">All Ratio Checks — Detailed</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${r.timeSlot}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${r.timeSlot}-${i}`} reportId="staffing-ratio-compliance" exportTitle="Staffing Ratio Compliance" /></CardContent>
       </Card>
     </div>
   );
