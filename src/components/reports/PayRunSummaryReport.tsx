@@ -5,6 +5,7 @@ import { ReportFilterBar } from './ReportFilterBar';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
 import { ReportHelpGuide } from './ReportHelpGuide';
 import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
+import { KpiSparklineRow, KpiTileConfig } from './KpiSparklinePicker';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { mockPayRunRecords, PayRunRecord } from '@/data/mockPayrollReportData';
@@ -134,14 +135,26 @@ export function PayRunSummaryReport() {
         relatedReports={['Payroll Cost Dashboard', 'Allowance & Penalty Breakdown', 'Overtime by Location']}
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Total Gross" value={`$${(totalGross / 1000).toFixed(1)}k`} icon={DollarSign} size="sm" />
-        <StatCard label="Staff Paid" value={filtered.length} icon={Users} size="sm" />
-        <StatCard label="Avg Gross/Staff" value={`$${avgGross.toLocaleString()}`} icon={Banknote} size="sm" />
-        <StatCard label="Total Hours" value={`${totalHours}h`} icon={Clock} size="sm" />
-        <StatCard label="Staff with OT" value={staffWithOT} icon={AlertTriangle} variant={staffWithOT > filtered.length * 0.3 ? 'warning' : 'default'} size="sm" />
-        <StatCard label="OT as % Gross" value={`${otPct}%`} icon={TrendingUp} variant={Number(otPct) > 12 ? 'danger' : Number(otPct) > 8 ? 'warning' : 'success'} size="sm" />
-      </div>
+      {(() => {
+        // Build aggregate trend arrays from per-staff `grossTrend` (8 weekly points)
+        const trendLen = filtered[0]?.grossTrend?.length ?? 0;
+        const grossAgg = Array.from({ length: trendLen }, (_, i) =>
+          filtered.reduce((s, r) => s + (r.grossTrend?.[i] ?? 0), 0)
+        );
+        const otAgg = Array.from({ length: trendLen }, (_, i) =>
+          // approximate weekly OT as a fraction of weekly gross using current ratio
+          Math.round(grossAgg[i] * (totalGross > 0 ? totalOT / totalGross : 0))
+        );
+        const tiles: KpiTileConfig[] = [
+          { key: 'totalGross', label: 'Total Gross', value: `$${(totalGross / 1000).toFixed(1)}k`, icon: DollarSign, trend: grossAgg, trendLabel: 'Gross (8wk)' },
+          { key: 'staffPaid', label: 'Staff Paid', value: filtered.length, icon: Users },
+          { key: 'avgGross', label: 'Avg Gross/Staff', value: `$${avgGross.toLocaleString()}`, icon: Banknote },
+          { key: 'totalHours', label: 'Total Hours', value: `${totalHours}h`, icon: Clock },
+          { key: 'staffOT', label: 'Staff with OT', value: staffWithOT, icon: AlertTriangle, variant: staffWithOT > filtered.length * 0.3 ? 'warning' : 'default' },
+          { key: 'otPct', label: 'OT as % Gross', value: `${otPct}%`, icon: TrendingUp, trend: otAgg, trendLabel: 'OT (8wk)', variant: Number(otPct) > 12 ? 'danger' : Number(otPct) > 8 ? 'warning' : 'success' },
+        ];
+        return <KpiSparklineRow reportId="pay-run-summary" tiles={tiles} />;
+      })()}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {staffWithOT > filtered.length * 0.3 && <InsightCard type="action" title="Widespread Overtime" description={`${Math.round(staffWithOT / filtered.length * 100)}% of staff worked overtime. Consider hiring to reduce OT dependency.`} action="Review scheduling for next period" />}

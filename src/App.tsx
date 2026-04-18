@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -6,6 +7,7 @@ import { ThemeProvider } from "./theme/ThemeProvider";
 import { DemandProvider } from "./contexts/DemandContext";
 import { AwardConfigProvider } from "./contexts/AwardConfigContext";
 import { OvertimeRulesProvider } from "./contexts/OvertimeRulesContext";
+import { startScheduledExportRunner } from "./components/reports/scheduledExportRunner";
 import Index from "./pages/Index";
 import TimesheetSettings from "./pages/TimesheetSettings";
 import TimesheetAdmin from "./pages/TimesheetAdmin";
@@ -29,7 +31,9 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useEffect(() => startScheduledExportRunner(), []);
+  return (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultMode="light">
       <DemandProvider>
@@ -69,6 +73,7 @@ const App = () => (
       </DemandProvider>
     </ThemeProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

@@ -1,5 +1,21 @@
 import type { RuleNode } from './filterOperators';
 
+export type ScheduleCadence = 'daily' | 'weekly' | 'monthly';
+export type ScheduleFormat = 'csv' | 'pdf';
+
+export interface ViewSchedule {
+  cadence: ScheduleCadence;
+  format: ScheduleFormat;
+  /** Comma-separated email recipients */
+  recipients: string;
+  /** Hour of day (0-23) when the export should fire */
+  hour: number;
+  /** Epoch ms — last time we dispatched this scheduled export */
+  lastRunAt?: number;
+  /** Epoch ms — when the schedule was created/updated */
+  createdAt: number;
+}
+
 /** A saved view = filter tree + visible columns + sort + name. Per-report. */
 export interface SavedReportView {
   id: string;
@@ -13,6 +29,8 @@ export interface SavedReportView {
   pinned?: boolean;
   /** When true, the view is auto-applied on report mount. Only one per report. */
   isDefault?: boolean;
+  /** Optional recurring email export schedule. */
+  schedule?: ViewSchedule;
 }
 
 const NS = 'reports.v1';
@@ -93,4 +111,60 @@ export function setDefaultView(reportId: string, viewId: string | null) {
 
 export function getDefaultView(reportId: string): SavedReportView | null {
   return loadViews(reportId).find(v => v.isDefault) ?? null;
+}
+
+/** Set or clear a recurring export schedule on a saved view. */
+export function setViewSchedule(reportId: string, viewId: string, schedule: ViewSchedule | null) {
+  const all = loadViews(reportId).map(v =>
+    v.id === viewId ? { ...v, schedule: schedule ?? undefined } : v
+  );
+  saveViews(reportId, all);
+  return all;
+}
+
+/** Mark a scheduled view as just-dispatched. */
+export function markScheduleDispatched(reportId: string, viewId: string, at: number) {
+  const all = loadViews(reportId).map(v =>
+    v.id === viewId && v.schedule
+      ? { ...v, schedule: { ...v.schedule, lastRunAt: at } }
+      : v
+  );
+  saveViews(reportId, all);
+  return all;
+}
+
+/** Compute the next due timestamp for a schedule. */
+export function nextRunAt(schedule: ViewSchedule, now = Date.now()): number {
+  if (!schedule.lastRunAt) {
+    const first = new Date(now);
+    first.setHours(schedule.hour, 0, 0, 0);
+    if (first.getTime() <= now) {
+      if (schedule.cadence === 'daily') first.setDate(first.getDate() + 1);
+      else if (schedule.cadence === 'weekly') first.setDate(first.getDate() + 7);
+      else first.setMonth(first.getMonth() + 1);
+    }
+    return first.getTime();
+  }
+  const d = new Date(schedule.lastRunAt);
+  d.setHours(schedule.hour, 0, 0, 0);
+  if (schedule.cadence === 'daily') d.setDate(d.getDate() + 1);
+  else if (schedule.cadence === 'weekly') d.setDate(d.getDate() + 7);
+  else d.setMonth(d.getMonth() + 1);
+  return d.getTime();
+}
+
+/** Discover every report that has saved views — used by the global scheduled-export dispatcher. */
+export function listAllReportIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  const ids: string[] = [];
+  const prefix = `${NS}.`;
+  const suffix = '.views';
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+    if (key.startsWith(prefix) && key.endsWith(suffix)) {
+      ids.push(key.slice(prefix.length, key.length - suffix.length));
+    }
+  }
+  return ids;
 }
