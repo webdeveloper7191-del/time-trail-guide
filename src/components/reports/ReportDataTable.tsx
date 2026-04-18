@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import {
   ArrowUp, ArrowDown, ArrowUpDown, Filter, X, Columns3, Bookmark, Save, Trash2, Check,
-  Star, Download, FileText, FileSpreadsheet,
+  Star, Download, FileText, FileSpreadsheet, Clock, Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,9 +21,11 @@ import { AdvancedFilterPanel } from './AdvancedFilterPanel';
 import { Sparkline } from './Sparkline';
 import {
   loadHiddenColumns, saveHiddenColumns,
-  loadViews, upsertView, deleteView, togglePinView, setDefaultView, SavedReportView,
+  loadViews, upsertView, deleteView, togglePinView, setDefaultView, setViewSchedule,
+  nextRunAt, SavedReportView, ScheduleCadence, ScheduleFormat, ViewSchedule,
 } from './reportViewStorage';
 import { exportToCSV, exportToPDF, ExportColumn } from '@/lib/reportExport';
+import { toast } from 'sonner';
 
 export interface DataTableColumn<T> {
   key: string;
