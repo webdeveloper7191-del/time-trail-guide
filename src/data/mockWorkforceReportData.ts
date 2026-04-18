@@ -10,6 +10,16 @@ export interface HeadcountRecord {
   newHires: number;
   terminations: number;
   turnoverRate: number;
+  /** Average tenure (months) of staff in this dept/location */
+  avgTenureMonths?: number;
+  /** Vacant approved positions */
+  vacancies?: number;
+  /** Average annualised salary $ */
+  avgSalary?: number;
+  /** Diversity ratio % (female + non-binary) */
+  diversityPct?: number;
+  /** Manager / Lead role for the dept */
+  manager?: string;
 }
 
 export interface TurnoverRecord {
@@ -36,6 +46,16 @@ export interface OnboardingRecord {
   completionPct: number;
   daysInPipeline: number;
   assignedTo: string;
+  /** Email for contact */
+  email?: string;
+  /** Mobile phone */
+  phone?: string;
+  /** Background / WWCC check status */
+  backgroundCheck?: 'pending' | 'cleared' | 'failed';
+  /** Documents outstanding */
+  docsOutstanding?: number;
+  /** Day count until expected start */
+  daysUntilStart?: number;
 }
 
 export interface QualificationRecord {
@@ -47,6 +67,16 @@ export interface QualificationRecord {
   expiryDate: string;
   daysUntilExpiry: number;
   status: 'valid' | 'expiring_soon' | 'expired';
+  /** Issuing authority */
+  issuingBody?: string;
+  /** Reference / certificate number */
+  certificateNumber?: string;
+  /** Department for the staff member */
+  department?: string;
+  /** Renewal cost ($) */
+  renewalCost?: number;
+  /** Whether mandatory for the role */
+  mandatory?: boolean;
 }
 
 export interface AvailabilityVsScheduledRecord {
@@ -58,6 +88,16 @@ export interface AvailabilityVsScheduledRecord {
   utilisationPct: number;
   unscheduledHours: number;
   overtimeHours: number;
+  /** Contract base hours per week */
+  contractHours?: number;
+  /** Days available in the period */
+  daysAvailable?: number;
+  /** Days scheduled */
+  daysScheduled?: number;
+  /** Last shift date */
+  lastShiftDate?: string;
+  /** Contract type */
+  contractType?: 'full_time' | 'part_time' | 'casual' | 'contractor';
 }
 
 export interface ContractDistributionRecord {
@@ -68,6 +108,14 @@ export interface ContractDistributionRecord {
   casual: number;
   contractor: number;
   totalStaff: number;
+  /** % of staff that are full-time */
+  fullTimePct?: number;
+  /** % of staff that are casual */
+  casualPct?: number;
+  /** Total weekly contracted hours */
+  totalContractedHours?: number;
+  /** Average hourly cost across mix ($) */
+  avgHourlyCost?: number;
 }
 
 export interface SkillsMatrixRecord {
@@ -77,6 +125,16 @@ export interface SkillsMatrixRecord {
   skills: { name: string; level: 'beginner' | 'intermediate' | 'advanced' | 'expert' }[];
   totalSkills: number;
   certifications: number;
+  /** Role / job title */
+  role?: string;
+  /** Average skill level (1-4) */
+  avgSkillLevel?: number;
+  /** Number of expert-level skills */
+  expertSkills?: number;
+  /** Skills gap vs role requirement */
+  skillsGap?: number;
+  /** Last training date */
+  lastTrainingDate?: string;
 }
 
 // Mock data
