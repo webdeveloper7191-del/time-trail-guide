@@ -225,3 +225,61 @@ export const workforceSummaryMetrics = {
   expiringSoon: 4,
   avgTenureMonths: 15,
 };
+
+// =================== Enrichment: derived/extra fields ===================
+// Add computed defaults for new optional fields so all reports have rich data.
+
+const _managers = ['Sarah Williams', 'Mark John', 'James Chen', 'Linda Park', 'Tom Bradley'];
+mockHeadcountData.forEach((r, i) => {
+  r.avgTenureMonths = r.avgTenureMonths ?? (12 + (i * 3) % 36);
+  r.vacancies = r.vacancies ?? Math.max(0, Math.round(r.totalHeadcount * 0.05));
+  r.avgSalary = r.avgSalary ?? (62000 + (i * 2500) + (r.fte * 800));
+  r.diversityPct = r.diversityPct ?? (55 + (i * 4) % 25);
+  r.manager = r.manager ?? _managers[i % _managers.length];
+});
+
+mockOnboardingData.forEach((r, i) => {
+  r.email = r.email ?? `${r.staffName.toLowerCase().replace(/\s+/g, '.')}@company.com`;
+  r.phone = r.phone ?? `04${String(10000000 + i * 13571).slice(0, 8)}`;
+  r.backgroundCheck = r.backgroundCheck ?? ((['cleared', 'pending', 'cleared', 'cleared', 'pending', 'cleared'] as const)[i % 6]);
+  r.docsOutstanding = r.docsOutstanding ?? Math.max(0, r.totalSteps - r.stepsCompleted);
+  const start = new Date(r.startDate);
+  const days = Math.round((start.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  r.daysUntilStart = r.daysUntilStart ?? days;
+});
+
+const _qualBodies = ['Red Cross', 'Service NSW', 'St John Ambulance', 'ACECQA', 'WorkSafe'];
+mockQualificationData.forEach((r, i) => {
+  r.issuingBody = r.issuingBody ?? _qualBodies[i % _qualBodies.length];
+  r.certificateNumber = r.certificateNumber ?? `CERT-${1000 + i * 137}`;
+  r.department = r.department ?? (['Operations', 'Education', 'Administration'][i % 3]);
+  r.renewalCost = r.renewalCost ?? (i % 3 === 0 ? 180 : i % 3 === 1 ? 95 : 250);
+  r.mandatory = r.mandatory ?? (r.qualification.includes('First Aid') || r.qualification.includes('Children Check') || r.qualification.includes('CPR'));
+});
+
+mockAvailabilityVsScheduled.forEach((r, i) => {
+  r.contractHours = r.contractHours ?? r.availableHours;
+  r.daysAvailable = r.daysAvailable ?? Math.round(r.availableHours / 8);
+  r.daysScheduled = r.daysScheduled ?? Math.round(r.scheduledHours / 8);
+  r.lastShiftDate = r.lastShiftDate ?? format(subDays(today, 1 + (i % 5)), 'yyyy-MM-dd');
+  r.contractType = r.contractType ?? (['full_time', 'part_time', 'casual', 'contractor'] as const)[i % 4];
+});
+
+mockContractDistribution.forEach((r) => {
+  r.fullTimePct = r.fullTimePct ?? Math.round((r.fullTime / r.totalStaff) * 100);
+  r.casualPct = r.casualPct ?? Math.round((r.casual / r.totalStaff) * 100);
+  r.totalContractedHours = r.totalContractedHours ?? (r.fullTime * 38 + r.partTime * 24 + r.casual * 16 + r.contractor * 30);
+  r.avgHourlyCost = r.avgHourlyCost ?? Math.round(32 + (r.casual / r.totalStaff) * 8);
+});
+
+const _roles = ['Lead Educator', 'Educator', 'Assistant', 'Coordinator', 'Cook'];
+mockSkillsMatrix.forEach((r, i) => {
+  r.role = r.role ?? _roles[i % _roles.length];
+  const levelMap = { beginner: 1, intermediate: 2, advanced: 3, expert: 4 };
+  const sum = r.skills.reduce((s, sk) => s + levelMap[sk.level], 0);
+  r.avgSkillLevel = r.avgSkillLevel ?? Number((sum / Math.max(1, r.skills.length)).toFixed(1));
+  r.expertSkills = r.expertSkills ?? r.skills.filter(s => s.level === 'expert').length;
+  r.skillsGap = r.skillsGap ?? Math.max(0, 4 - r.totalSkills);
+  r.lastTrainingDate = r.lastTrainingDate ?? format(subDays(today, 14 + i * 7), 'yyyy-MM-dd');
+});
+
