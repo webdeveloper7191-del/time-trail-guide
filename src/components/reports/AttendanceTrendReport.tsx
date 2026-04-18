@@ -55,6 +55,7 @@ const tableColumns: DataTableColumn<AttendanceTrendRecord>[] = [
   { key: 'fillRatePct', header: 'Fill %', type: 'number', accessor: (r) => <span className={cn('text-xs', (r.fillRatePct ?? 0) < 90 ? 'text-destructive font-medium' : '')}>{r.fillRatePct ?? 0}%</span>, sortValue: (r) => r.fillRatePct ?? 0, align: 'right' },
   { key: 'costOfAbsence', header: 'Absence Cost', type: 'number', accessor: (r) => (r.costOfAbsence ?? 0) > 0 ? `$${(r.costOfAbsence ?? 0).toLocaleString()}` : '—', sortValue: (r) => r.costOfAbsence ?? 0, align: 'right' },
   { key: 'forecastVariance', header: 'Forecast Δ', type: 'number', accessor: (r) => <span className={cn('text-xs font-mono', Math.abs(r.forecastVariance ?? 0) > 2 ? 'text-amber-600' : '')}>{(r.forecastVariance ?? 0) > 0 ? '+' : ''}{r.forecastVariance ?? 0}</span>, sortValue: (r) => r.forecastVariance ?? 0, align: 'right' },
+  { key: 'attendanceRateTrend', header: 'Rate Trend (8d)', type: 'sparkline', trendValues: (r) => r.attendanceRateTrend ?? [], accessor: () => null },
 ];
 
 export function AttendanceTrendReport() {
@@ -215,7 +216,7 @@ export function AttendanceTrendReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Daily Attendance Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable reportId="attendance-trend" key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
       </Card>
     </div>
   );

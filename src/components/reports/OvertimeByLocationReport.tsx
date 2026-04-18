@@ -44,6 +44,8 @@ const tableColumns: DataTableColumn<OvertimeByLocationRecord>[] = [
   { key: 'variancePercent', header: 'Var %', type: 'number', accessor: (r) => `${(r.variancePercent ?? 0) > 0 ? '+' : ''}${r.variancePercent ?? 0}%`, sortValue: (r) => r.variancePercent ?? 0, align: 'right' },
   { key: 'policyLimit', header: 'Policy Limit', type: 'number', accessor: (r) => `${r.policyLimit ?? 0}h`, sortValue: (r) => r.policyLimit ?? 0, align: 'right' },
   { key: 'riskLevel', header: 'Risk', type: 'enum', accessor: (r) => <Badge variant={r.riskLevel === 'critical' ? 'destructive' : r.riskLevel === 'high' ? 'secondary' : 'outline'} className="text-[10px]">{r.riskLevel}</Badge>, sortValue: (r) => r.riskLevel ?? '' },
+  { key: 'overtimeHoursTrend', header: 'OT Trend (8wk)', type: 'sparkline', trendValues: (r) => r.overtimeHoursTrend ?? [], accessor: () => null },
+  { key: 'overtimeCostTrend', header: 'Cost Trend', type: 'sparkline', trendValues: (r) => r.overtimeCostTrend ?? [], accessor: () => null, defaultHidden: true },
 ];
 
 export function OvertimeByLocationReport() {
@@ -203,7 +205,7 @@ export function OvertimeByLocationReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Overtime Detail by Department</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable reportId="overtime-by-location" key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
       </Card>
     </div>
   );

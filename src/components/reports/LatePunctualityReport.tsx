@@ -58,6 +58,7 @@ const tableColumns: DataTableColumn<LatePunctualityRecord>[] = [
   { key: 'costImpact', header: 'Cost Impact', type: 'number', accessor: (r) => `$${r.costImpact ?? 0}`, sortValue: (r) => r.costImpact ?? 0, align: 'right' },
   { key: 'pattern', header: 'Pattern', type: 'enum', accessor: (r) => <Badge variant={r.pattern === 'chronic' ? 'destructive' : r.pattern === 'recurring' ? 'secondary' : 'outline'} className="text-[10px]">{r.pattern}</Badge>, sortValue: (r) => r.pattern ?? '' },
   { key: 'actionTaken', header: 'Action', type: 'enum', accessor: (r) => <span className="text-xs">{(r.actionTaken ?? '').replace('_', ' ')}</span>, sortValue: (r) => r.actionTaken ?? '' },
+  { key: 'lateMinutesTrend', header: 'Late Trend (8wk)', type: 'sparkline', trendValues: (r) => r.lateMinutesTrend ?? [], accessor: () => null },
 ];
 
 export function LatePunctualityReport() {
@@ -206,7 +207,7 @@ export function LatePunctualityReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Punctuality Incident Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable reportId="late-punctuality" key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
       </Card>
     </div>
   );
