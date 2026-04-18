@@ -789,3 +789,131 @@ function ExportCurrentViewButton({ onExport }: { onExport: (kind: 'csv' | 'pdf')
     </DropdownMenu>
   );
 }
+
+// ============================================================================
+// SchedulePanel — daily/weekly/monthly recurring email export config
+// ============================================================================
+
+function SchedulePanel({
+  view, onBack, onSave, onClear,
+}: {
+  view: SavedReportView;
+  onBack: () => void;
+  onSave: (s: ViewSchedule) => void;
+  onClear: () => void;
+}) {
+  const existing = view.schedule;
+  const [cadence, setCadence] = useState<ScheduleCadence>(existing?.cadence ?? 'weekly');
+  const [format, setFormat] = useState<ScheduleFormat>(existing?.format ?? 'csv');
+  const [recipients, setRecipients] = useState(existing?.recipients ?? '');
+  const [hour, setHour] = useState<number>(existing?.hour ?? 8);
+
+  const valid = recipients.trim().length > 0 && /\S+@\S+\.\S+/.test(recipients);
+
+  const save = () => {
+    if (!valid) return;
+    onSave({
+      cadence, format, recipients: recipients.trim(), hour,
+      createdAt: existing?.createdAt ?? Date.now(),
+      lastRunAt: existing?.lastRunAt,
+    });
+  };
+
+  const previewNext = useMemo(() => {
+    const fake: ViewSchedule = { cadence, format, recipients, hour, createdAt: Date.now() };
+    return new Date(nextRunAt(fake)).toLocaleString();
+  }, [cadence, format, recipients, hour]);
+
+  return (
+    <div className="p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="text-[11px] text-primary hover:underline">← Back</button>
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          Schedule export
+        </span>
+      </div>
+      <div className="text-xs font-semibold text-foreground truncate">{view.name}</div>
+
+      <div className="space-y-2">
+        <div>
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Cadence</label>
+          <div className="grid grid-cols-3 gap-1 mt-1">
+            {(['daily', 'weekly', 'monthly'] as ScheduleCadence[]).map(c => (
+              <button
+                key={c}
+                onClick={() => setCadence(c)}
+                className={cn(
+                  'h-7 text-[11px] rounded border capitalize transition-colors',
+                  cadence === c ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border hover:bg-accent'
+                )}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Format</label>
+          <div className="grid grid-cols-2 gap-1 mt-1">
+            {(['csv', 'pdf'] as ScheduleFormat[]).map(f => (
+              <button
+                key={f}
+                onClick={() => setFormat(f)}
+                className={cn(
+                  'h-7 text-[11px] rounded border uppercase transition-colors',
+                  format === f ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border hover:bg-accent'
+                )}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Recipients</label>
+          <div className="relative mt-1">
+            <Mail className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="email"
+              value={recipients}
+              onChange={(e) => setRecipients(e.target.value)}
+              placeholder="ops@company.com, finance@…"
+              className="h-7 text-xs pl-6"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Send at</label>
+          <Select value={String(hour)} onValueChange={(v) => setHour(Number(v))}>
+            <SelectTrigger className="h-7 text-xs mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 24 }, (_, i) => (
+                <SelectItem key={i} value={String(i)} className="text-xs">
+                  {i === 0 ? '12:00 AM' : i < 12 ? `${i}:00 AM` : i === 12 ? '12:00 PM' : `${i - 12}:00 PM`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="text-[10px] text-muted-foreground bg-muted/40 rounded px-2 py-1.5">
+        Next run: <span className="text-foreground font-medium">{valid ? previewNext : '—'}</span>
+      </div>
+
+      <div className="flex gap-1">
+        {existing && (
+          <Button size="sm" variant="outline" className="h-7 text-xs flex-1" onClick={onClear}>
+            Clear schedule
+          </Button>
+        )}
+        <Button size="sm" className="h-7 text-xs flex-1 gap-1" onClick={save} disabled={!valid}>
+          <Save className="h-3 w-3" /> {existing ? 'Update' : 'Schedule'}
+        </Button>
+      </div>
+    </div>
+  );
+}
