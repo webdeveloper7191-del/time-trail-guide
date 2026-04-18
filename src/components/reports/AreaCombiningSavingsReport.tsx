@@ -42,6 +42,11 @@ const tableColumns: DataTableColumn<AreaCombiningSavingsRecord>[] = [
     const m = r.durationMinutes % 60;
     return `${h}h ${m > 0 ? `${m}m` : ''}`;
   }, sortValue: (r) => r.durationMinutes, align: 'right' },
+  { key: 'combinedDurationHrs', header: 'Duration', type: 'number', accessor: (r) => `${r.combinedDurationHrs ?? 0}h`, sortValue: (r) => r.combinedDurationHrs ?? 0, align: 'right' },
+  { key: 'newRatio', header: 'New Ratio', type: 'enum', accessor: (r) => <span className="font-mono text-[11px]">{r.newRatio}</span>, sortValue: (r) => r.newRatio ?? '' },
+  { key: 'ratioCompliant', header: 'Compliant', type: 'enum', accessor: (r) => r.ratioCompliant ? <Badge variant="outline" className="text-[10px]">✓ Yes</Badge> : <Badge variant="destructive" className="text-[10px]">No</Badge>, sortValue: (r) => r.ratioCompliant ? 'Yes' : 'No' },
+  { key: 'alternativeCost', header: 'Alt. Cost', type: 'number', accessor: (r) => <span className="text-muted-foreground text-xs">${(r.alternativeCost ?? 0).toLocaleString()}</span>, sortValue: (r) => r.alternativeCost ?? 0, align: 'right' },
+  { key: 'approvedBy', header: 'Approved By', type: 'enum', accessor: (r) => <span className="text-xs">{r.approvedBy}</span>, sortValue: (r) => r.approvedBy ?? '' },
 ];
 
 export function AreaCombiningSavingsReport() {

@@ -42,6 +42,11 @@ const tableColumns: DataTableColumn<OnCallCostRecord>[] = [
   { key: 'date', header: 'Date', type: 'date', accessor: (r) => r.date, sortValue: (r) => r.date },
   { key: 'activationRate', header: 'Activation %', type: 'number', align: 'right', sortValue: (r) => r.standbyHours > 0 ? (r.activatedHours / r.standbyHours * 100) : 0,
     accessor: (r) => { const rate = r.standbyHours > 0 ? Math.round(r.activatedHours / r.standbyHours * 100) : 0; return <span className={cn('text-xs font-medium', rate > 50 ? 'text-destructive' : rate > 0 ? 'text-amber-600' : 'text-muted-foreground')}>{rate}%</span>; }},
+  { key: 'callouts', header: 'Callouts', type: 'number', accessor: (r) => r.callouts ?? 0, sortValue: (r) => r.callouts ?? 0, align: 'right' },
+  { key: 'responseTimeMinutes', header: 'Avg Response', type: 'number', accessor: (r) => `${r.responseTimeMinutes ?? 0}m`, sortValue: (r) => r.responseTimeMinutes ?? 0, align: 'right' },
+  { key: 'effectiveHourlyRate', header: 'Effective $/h', type: 'number', accessor: (r) => `$${(r.effectiveHourlyRate ?? 0).toFixed(2)}`, sortValue: (r) => r.effectiveHourlyRate ?? 0, align: 'right' },
+  { key: 'awardReference', header: 'Award Ref', type: 'enum', accessor: (r) => <span className="font-mono text-[10px] text-muted-foreground">{r.awardReference}</span>, sortValue: (r) => r.awardReference ?? '' },
+  { key: 'approvedBy', header: 'Approved By', type: 'enum', accessor: (r) => <span className="text-xs">{r.approvedBy}</span>, sortValue: (r) => r.approvedBy ?? '' },
 ];
 
 export function OnCallCostReport() {

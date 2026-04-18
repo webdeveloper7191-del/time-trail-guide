@@ -57,6 +57,11 @@ const tableColumns: DataTableColumn<FairnessRecord>[] = [
         {r.deviationFromAvg > 0 ? '+' : ''}{r.deviationFromAvg}%
       </span>
     ) },
+  { key: 'publicHolidayShifts', header: 'PH Shifts', type: 'number', accessor: (r) => r.publicHolidayShifts ?? 0, sortValue: (r) => r.publicHolidayShifts ?? 0, align: 'right' },
+  { key: 'preferredShiftMatchPct', header: 'Pref Match %', type: 'number', accessor: (r) => `${r.preferredShiftMatchPct ?? 0}%`, sortValue: (r) => r.preferredShiftMatchPct ?? 0, align: 'right' },
+  { key: 'swapsRequested', header: 'Swaps', type: 'number', accessor: (r) => (r.swapsRequested ?? 0) > 3 ? <span className="text-amber-600 font-medium text-xs">{r.swapsRequested}</span> : (r.swapsRequested ?? 0), sortValue: (r) => r.swapsRequested ?? 0, align: 'right' },
+  { key: 'ranking', header: 'Rank', type: 'number', accessor: (r) => <Badge variant="outline" className="text-[10px]">#{r.ranking}</Badge>, sortValue: (r) => r.ranking ?? 0, align: 'center' },
+  { key: 'lastReviewDate', header: 'Last Review', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.lastReviewDate}</span>, sortValue: (r) => r.lastReviewDate ?? '' },
 ];
 
 export function FairnessReport() {

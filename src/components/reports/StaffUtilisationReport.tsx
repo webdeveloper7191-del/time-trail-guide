@@ -61,6 +61,12 @@ const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
     accessor: (r) => r.leaveHours > 0 ? <span className="text-xs text-blue-600">{r.leaveHours}h</span> : <span className="text-muted-foreground text-xs">—</span> },
   { key: 'effectiveRate', header: 'Eff. $/hr', type: 'number', align: 'right', sortValue: (r) => r.scheduledHours > 0 ? Math.round(r.utilisationPercent * 0.45) : 0,
     accessor: (r) => <span className="text-xs font-mono">${(r.utilisationPercent * 0.45).toFixed(2)}</span> },
+  { key: 'department', header: 'Dept', type: 'enum', accessor: (r) => r.department ?? '—', sortValue: (r) => r.department ?? '' },
+  { key: 'contractType', header: 'Contract', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-[10px]">{(r.contractType ?? '').replace('_', ' ')}</Badge>, sortValue: (r) => r.contractType ?? '' },
+  { key: 'shiftsWorked', header: 'Shifts', type: 'number', accessor: (r) => r.shiftsWorked ?? 0, sortValue: (r) => r.shiftsWorked ?? 0, align: 'right' },
+  { key: 'avgShiftLength', header: 'Avg Shift', type: 'number', accessor: (r) => `${r.avgShiftLength ?? 0}h`, sortValue: (r) => r.avgShiftLength ?? 0, align: 'right' },
+  { key: 'totalCost', header: 'Total Cost', type: 'number', accessor: (r) => <span className="font-semibold">${(r.totalCost ?? 0).toLocaleString()}</span>, sortValue: (r) => r.totalCost ?? 0, align: 'right' },
+  { key: 'utilisationTrend', header: 'Trend', type: 'enum', accessor: (r) => <Badge variant={r.utilisationTrend === 'up' ? 'secondary' : r.utilisationTrend === 'down' ? 'destructive' : 'outline'} className="text-[10px]">{r.utilisationTrend}</Badge>, sortValue: (r) => r.utilisationTrend ?? '' },
 ];
 
 // Simulated weekly trend data per staff

@@ -41,6 +41,11 @@ const tableColumns: DataTableColumn<OnboardingRecord>[] = [
     accessor: (r) => <div className="flex items-center gap-2"><Progress value={r.completionPct} className="h-2 flex-1" /><span className="text-xs w-8 text-right">{r.completionPct}%</span></div> },
   { key: 'daysInPipeline', header: 'Days', type: 'number', accessor: (r) => <span className={cn('text-xs font-medium', r.daysInPipeline > 21 ? 'text-destructive' : 'text-foreground')}>{r.daysInPipeline}d</span>, sortValue: (r) => r.daysInPipeline, align: 'right' },
   { key: 'startDate', header: 'Start Date', type: 'date', accessor: (r) => <span className="text-xs text-muted-foreground">{r.startDate}</span>, sortValue: (r) => r.startDate },
+  { key: 'email', header: 'Email', type: 'text', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.email}</span>, sortValue: (r) => r.email ?? '' },
+  { key: 'phone', header: 'Phone', type: 'text', accessor: (r) => <span className="font-mono text-[10px]">{r.phone}</span>, sortValue: (r) => r.phone ?? '' },
+  { key: 'backgroundCheck', header: 'Background', type: 'enum', accessor: (r) => <Badge variant={r.backgroundCheck === 'failed' ? 'destructive' : r.backgroundCheck === 'pending' ? 'secondary' : 'outline'} className="text-[10px] capitalize">{r.backgroundCheck}</Badge>, sortValue: (r) => r.backgroundCheck ?? '' },
+  { key: 'docsOutstanding', header: 'Docs Pending', type: 'number', accessor: (r) => (r.docsOutstanding ?? 0) > 0 ? <span className="text-amber-600 font-medium text-xs">{r.docsOutstanding}</span> : '0', sortValue: (r) => r.docsOutstanding ?? 0, align: 'right' },
+  { key: 'daysUntilStart', header: 'Days to Start', type: 'number', accessor: (r) => <span className={cn('text-xs', (r.daysUntilStart ?? 0) < 0 ? 'text-destructive' : '')}>{r.daysUntilStart ?? 0}d</span>, sortValue: (r) => r.daysUntilStart ?? 0, align: 'right' },
 ];
 
 export function OnboardingCompletionReport() {

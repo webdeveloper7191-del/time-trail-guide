@@ -53,6 +53,11 @@ const tableColumns: DataTableColumn<TimesheetExceptionRecord>[] = [
   { key: 'newValue', header: 'New', type: 'text', accessor: (r) => <span className="text-xs font-medium">{r.newValue}</span>, sortValue: (r) => r.newValue },
   { key: 'editedBy', header: 'Edited By', type: 'text', accessor: (r) => <span className="text-xs">{r.editedBy}</span>, sortValue: (r) => r.editedBy },
   { key: 'reason', header: 'Reason', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground max-w-[200px] truncate block">{r.reason}</span>, sortValue: (r) => r.reason },
+  { key: 'amountImpact', header: '$ Impact', type: 'number', accessor: (r) => <span className={cn('font-mono text-xs', (r.amountImpact ?? 0) > 0 ? 'text-emerald-600' : 'text-destructive')}>{(r.amountImpact ?? 0) > 0 ? '+' : ''}${r.amountImpact ?? 0}</span>, sortValue: (r) => r.amountImpact ?? 0, align: 'right' },
+  { key: 'category', header: 'Category', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-[10px] capitalize">{r.category}</Badge>, sortValue: (r) => r.category ?? '' },
+  { key: 'approvalRequired', header: 'Approval', type: 'enum', accessor: (r) => r.approvalRequired ? <Badge variant="destructive" className="text-[10px]">Required</Badge> : <Badge variant="secondary" className="text-[10px]">Auto</Badge>, sortValue: (r) => r.approvalRequired ? 'Required' : 'Auto' },
+  { key: 'approverName', header: 'Approver', type: 'enum', accessor: (r) => <span className="text-xs">{r.approverName}</span>, sortValue: (r) => r.approverName ?? '' },
+  { key: 'status', header: 'Status', type: 'enum', accessor: (r) => <Badge variant={r.status === 'rejected' ? 'destructive' : r.status === 'pending' ? 'secondary' : 'outline'} className="text-[10px]">{r.status}</Badge>, sortValue: (r) => r.status ?? '' },
 ];
 
 export function TimesheetExceptionReport() {

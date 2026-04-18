@@ -43,6 +43,11 @@ const tableColumns: DataTableColumn<SkillsMatrixRecord>[] = [
   { key: 'avgLevel', header: 'Avg Level', type: 'number', align: 'right', sortValue: (r) => r.skills.reduce((s, sk) => s + levelValue[sk.level], 0) / (r.skills.length || 1),
     accessor: (r) => { const avg = r.skills.reduce((s, sk) => s + levelValue[sk.level], 0) / (r.skills.length || 1); return <span className={cn('text-xs font-medium', avg >= 3 ? 'text-emerald-600' : avg >= 2 ? 'text-foreground' : 'text-amber-600')}>{avg.toFixed(1)}</span>; }},
   { key: 'certifications', header: 'Certs', type: 'text', accessor: (r) => r.certifications > 0 ? <Badge variant="outline" className="text-[10px]">{r.certifications}</Badge> : '—', sortValue: (r) => r.certifications, align: 'right' },
+  { key: 'role', header: 'Role', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-[10px]">{r.role}</Badge>, sortValue: (r) => r.role ?? '' },
+  { key: 'avgSkillLevel', header: 'Avg Level', type: 'number', accessor: (r) => <span className="font-mono text-xs">{(r.avgSkillLevel ?? 0).toFixed(1)}</span>, sortValue: (r) => r.avgSkillLevel ?? 0, align: 'right' },
+  { key: 'expertSkills', header: 'Expert', type: 'number', accessor: (r) => (r.expertSkills ?? 0) > 0 ? <Badge variant="secondary" className="text-[10px]">{r.expertSkills}</Badge> : '—', sortValue: (r) => r.expertSkills ?? 0, align: 'right' },
+  { key: 'skillsGap', header: 'Gap', type: 'number', accessor: (r) => (r.skillsGap ?? 0) > 0 ? <span className="text-amber-600 font-medium text-xs">{r.skillsGap}</span> : <span className="text-emerald-600 text-xs">0</span>, sortValue: (r) => r.skillsGap ?? 0, align: 'right' },
+  { key: 'lastTrainingDate', header: 'Last Training', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.lastTrainingDate}</span>, sortValue: (r) => r.lastTrainingDate ?? '' },
 ];
 
 export function SkillsMatrixReport() {

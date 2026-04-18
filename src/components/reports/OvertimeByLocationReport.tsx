@@ -39,6 +39,11 @@ const tableColumns: DataTableColumn<OvertimeByLocationRecord>[] = [
   { key: 'topOvertimeStaff', header: 'Top Contributor', type: 'number', accessor: (r) => <span className="text-xs text-muted-foreground">{r.topOvertimeStaff}</span>, sortValue: (r) => r.topOvertimeStaff },
   { key: 'topOvertimeHours', header: 'Their OT', type: 'number', align: 'right', sortValue: (r) => r.topOvertimeHours,
     accessor: (r) => r.topOvertimeHours > 0 ? <span className="text-destructive text-xs font-medium">{r.topOvertimeHours}h</span> : <span className="text-muted-foreground">—</span> },
+  { key: 'budgetedOvertimeCost', header: 'OT Budget', type: 'number', accessor: (r) => `$${(r.budgetedOvertimeCost ?? 0).toLocaleString()}`, sortValue: (r) => r.budgetedOvertimeCost ?? 0, align: 'right' },
+  { key: 'variance', header: 'Variance', type: 'number', accessor: (r) => <span className={cn('font-mono text-xs', (r.variance ?? 0) > 0 ? 'text-destructive' : 'text-emerald-600')}>{(r.variance ?? 0) > 0 ? '+' : ''}${r.variance ?? 0}</span>, sortValue: (r) => r.variance ?? 0, align: 'right' },
+  { key: 'variancePercent', header: 'Var %', type: 'number', accessor: (r) => `${(r.variancePercent ?? 0) > 0 ? '+' : ''}${r.variancePercent ?? 0}%`, sortValue: (r) => r.variancePercent ?? 0, align: 'right' },
+  { key: 'policyLimit', header: 'Policy Limit', type: 'number', accessor: (r) => `${r.policyLimit ?? 0}h`, sortValue: (r) => r.policyLimit ?? 0, align: 'right' },
+  { key: 'riskLevel', header: 'Risk', type: 'enum', accessor: (r) => <Badge variant={r.riskLevel === 'critical' ? 'destructive' : r.riskLevel === 'high' ? 'secondary' : 'outline'} className="text-[10px]">{r.riskLevel}</Badge>, sortValue: (r) => r.riskLevel ?? '' },
 ];
 
 export function OvertimeByLocationReport() {

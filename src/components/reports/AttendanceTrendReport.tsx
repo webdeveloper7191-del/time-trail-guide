@@ -50,6 +50,11 @@ const tableColumns: DataTableColumn<AttendanceTrendRecord>[] = [
   { key: 'sick', header: 'Sick', type: 'text', accessor: (r) => r.absenceType.sick || '—', sortValue: (r) => r.absenceType.sick, align: 'right' },
   { key: 'noShow', header: 'No Show', type: 'text', align: 'right', sortValue: (r) => r.absenceType.noShow,
     accessor: (r) => r.absenceType.noShow > 0 ? <span className="text-destructive font-medium">{r.absenceType.noShow}</span> : <span className="text-muted-foreground">—</span> },
+  { key: 'weekday', header: 'Day', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-[10px]">{r.weekday}</Badge>, sortValue: (r) => r.weekday ?? '' },
+  { key: 'area', header: 'Area', type: 'enum', accessor: (r) => r.area ?? '—', sortValue: (r) => r.area ?? '' },
+  { key: 'fillRatePct', header: 'Fill %', type: 'number', accessor: (r) => <span className={cn('text-xs', (r.fillRatePct ?? 0) < 90 ? 'text-destructive font-medium' : '')}>{r.fillRatePct ?? 0}%</span>, sortValue: (r) => r.fillRatePct ?? 0, align: 'right' },
+  { key: 'costOfAbsence', header: 'Absence Cost', type: 'number', accessor: (r) => (r.costOfAbsence ?? 0) > 0 ? `$${(r.costOfAbsence ?? 0).toLocaleString()}` : '—', sortValue: (r) => r.costOfAbsence ?? 0, align: 'right' },
+  { key: 'forecastVariance', header: 'Forecast Δ', type: 'number', accessor: (r) => <span className={cn('text-xs font-mono', Math.abs(r.forecastVariance ?? 0) > 2 ? 'text-amber-600' : '')}>{(r.forecastVariance ?? 0) > 0 ? '+' : ''}{r.forecastVariance ?? 0}</span>, sortValue: (r) => r.forecastVariance ?? 0, align: 'right' },
 ];
 
 export function AttendanceTrendReport() {

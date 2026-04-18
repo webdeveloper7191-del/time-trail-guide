@@ -41,6 +41,11 @@ const tableColumns: DataTableColumn<CrossLocationDeployment>[] = [
     } },
   { key: 'deploymentCount', header: 'Count', type: 'number', accessor: (r) => r.deploymentCount, sortValue: (r) => r.deploymentCount, align: 'right' },
   { key: 'lastDeployed', header: 'Last Deployed', type: 'text', accessor: (r) => r.lastDeployed, sortValue: (r) => r.lastDeployed },
+  { key: 'utilisationAtPrimaryPct', header: 'Primary %', type: 'number', accessor: (r) => `${r.utilisationAtPrimaryPct ?? 0}%`, sortValue: (r) => r.utilisationAtPrimaryPct ?? 0, align: 'right' },
+  { key: 'reasonForDeployment', header: 'Reason', type: 'enum', accessor: (r) => <span className="text-xs">{r.reasonForDeployment}</span>, sortValue: (r) => r.reasonForDeployment ?? '' },
+  { key: 'travelCost', header: 'Travel $', type: 'number', accessor: (r) => `$${r.travelCost ?? 0}`, sortValue: (r) => r.travelCost ?? 0, align: 'right' },
+  { key: 'status', header: 'Status', type: 'enum', accessor: (r) => <Badge variant={r.status === 'cancelled' ? 'destructive' : r.status === 'active' ? 'secondary' : 'outline'} className="text-[10px] capitalize">{r.status}</Badge>, sortValue: (r) => r.status ?? '' },
+  { key: 'approvedBy', header: 'Approved By', type: 'enum', accessor: (r) => <span className="text-xs">{r.approvedBy}</span>, sortValue: (r) => r.approvedBy ?? '' },
 ];
 
 export function CrossLocationDeploymentReport() {

@@ -39,6 +39,9 @@ const tableColumns: DataTableColumn<ContractDistributionRecord>[] = [
     accessor: (r) => { const pct = Math.round((r.fullTime + r.partTime) / r.totalStaff * 100); return <span className={cn('text-xs font-medium', pct >= 80 ? 'text-emerald-600' : pct >= 60 ? 'text-foreground' : 'text-amber-600')}>{pct}%</span>; }},
   { key: 'casualPct', header: 'Casual %', type: 'number', align: 'right', sortValue: (r) => r.casual / r.totalStaff * 100,
     accessor: (r) => { const pct = Math.round(r.casual / r.totalStaff * 100); return <span className={cn('text-xs', pct > 20 ? 'text-destructive font-medium' : 'text-muted-foreground')}>{pct}%</span>; }},
+  { key: 'fullTimePct', header: 'FT %', type: 'number', accessor: (r) => `${r.fullTimePct ?? 0}%`, sortValue: (r) => r.fullTimePct ?? 0, align: 'right' },
+  { key: 'totalContractedHours', header: 'Contracted Hrs', type: 'number', accessor: (r) => `${r.totalContractedHours ?? 0}h`, sortValue: (r) => r.totalContractedHours ?? 0, align: 'right' },
+  { key: 'avgHourlyCost', header: 'Avg $/h', type: 'number', accessor: (r) => `$${r.avgHourlyCost ?? 0}`, sortValue: (r) => r.avgHourlyCost ?? 0, align: 'right' },
 ];
 
 export function ContractDistributionReport() {

@@ -52,6 +52,11 @@ const tableColumns: DataTableColumn<ApprovalSLARecord>[] = [
         <span className={cn('text-xs font-mono w-10 text-right', r.slaCompliancePercent < 75 ? 'text-destructive font-bold' : '')}>{r.slaCompliancePercent}%</span>
       </div>
     ) },
+  { key: 'pendingApprovals', header: 'Pending', type: 'number', accessor: (r) => (r.pendingApprovals ?? 0) > 0 ? <Badge variant="secondary" className="text-[10px]">{r.pendingApprovals}</Badge> : <span className="text-muted-foreground text-xs">0</span>, sortValue: (r) => r.pendingApprovals ?? 0, align: 'right' },
+  { key: 'fastestTurnaroundHrs', header: 'Fastest', type: 'number', accessor: (r) => `${(r.fastestTurnaroundHrs ?? 0).toFixed(1)}h`, sortValue: (r) => r.fastestTurnaroundHrs ?? 0, align: 'right' },
+  { key: 'slowestTurnaroundHrs', header: 'Slowest', type: 'number', accessor: (r) => `${(r.slowestTurnaroundHrs ?? 0).toFixed(1)}h`, sortValue: (r) => r.slowestTurnaroundHrs ?? 0, align: 'right' },
+  { key: 'escalations', header: 'Escalations', type: 'number', accessor: (r) => (r.escalations ?? 0) > 0 ? <span className="text-amber-600 font-medium text-xs">{r.escalations}</span> : '—', sortValue: (r) => r.escalations ?? 0, align: 'right' },
+  { key: 'rejectionRate', header: 'Reject %', type: 'number', accessor: (r) => `${r.rejectionRate ?? 0}%`, sortValue: (r) => r.rejectionRate ?? 0, align: 'right' },
 ];
 
 export function ApprovalSLAReport() {

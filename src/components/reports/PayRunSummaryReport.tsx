@@ -42,6 +42,12 @@ const tableColumns: DataTableColumn<PayRunRecord>[] = [
   { key: 'allowances', header: 'Allow.', type: 'number', accessor: (r) => r.allowances > 0 ? `$${r.allowances}` : '—', sortValue: (r) => r.allowances, align: 'right' },
   { key: 'superannuation', header: 'Super', type: 'number', accessor: (r) => `$${r.superannuation.toLocaleString()}`, sortValue: (r) => r.superannuation, align: 'right' },
   { key: 'totalGross', header: 'Total Gross', type: 'number', accessor: (r) => <span className="font-semibold">${r.totalGross.toLocaleString()}</span>, sortValue: (r) => r.totalGross, align: 'right' },
+  { key: 'taxWithheld', header: 'Tax', type: 'number', accessor: (r) => `$${(r.taxWithheld ?? 0).toLocaleString()}`, sortValue: (r) => r.taxWithheld ?? 0, align: 'right' },
+  { key: 'netPay', header: 'Net Pay', type: 'number', accessor: (r) => <span className="font-semibold text-foreground">${(r.netPay ?? 0).toLocaleString()}</span>, sortValue: (r) => r.netPay ?? 0, align: 'right' },
+  { key: 'ytdGross', header: 'YTD Gross', type: 'number', accessor: (r) => `$${((r.ytdGross ?? 0) / 1000).toFixed(1)}k`, sortValue: (r) => r.ytdGross ?? 0, align: 'right' },
+  { key: 'ytdSuper', header: 'YTD Super', type: 'number', accessor: (r) => `$${((r.ytdSuper ?? 0) / 1000).toFixed(1)}k`, sortValue: (r) => r.ytdSuper ?? 0, align: 'right' },
+  { key: 'bankAccount', header: 'Bank A/C', type: 'text', accessor: (r) => <span className="font-mono text-[10px] text-muted-foreground">{r.bankAccount}</span>, sortValue: (r) => r.bankAccount ?? '' },
+  { key: 'payrollDate', header: 'Pay Date', type: 'date', accessor: (r) => r.payrollDate ?? '—', sortValue: (r) => r.payrollDate ?? '' },
 ];
 
 export function PayRunSummaryReport() {

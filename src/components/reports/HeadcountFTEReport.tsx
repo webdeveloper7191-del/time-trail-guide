@@ -47,6 +47,11 @@ const tableColumns: DataTableColumn<HeadcountRecord>[] = [
   { key: 'terminations', header: 'Terms', type: 'number', accessor: (r) => r.terminations > 0 ? <Badge variant="destructive" className="text-[10px]">-{r.terminations}</Badge> : '—', sortValue: (r) => r.terminations, align: 'right' },
   { key: 'turnoverRate', header: 'Turnover', type: 'number', align: 'right', sortValue: (r) => r.turnoverRate,
     accessor: (r) => r.turnoverRate > 0 ? <span className={cn('text-xs font-medium', r.turnoverRate > 5 ? 'text-destructive' : 'text-foreground')}>{r.turnoverRate}%</span> : <span className="text-emerald-600 text-xs">0%</span> },
+  { key: 'avgTenureMonths', header: 'Avg Tenure', type: 'number', accessor: (r) => `${r.avgTenureMonths ?? 0}mo`, sortValue: (r) => r.avgTenureMonths ?? 0, align: 'right' },
+  { key: 'vacancies', header: 'Vacancies', type: 'number', accessor: (r) => (r.vacancies ?? 0) > 0 ? <Badge variant="secondary" className="text-[10px]">{r.vacancies}</Badge> : <span className="text-muted-foreground text-xs">0</span>, sortValue: (r) => r.vacancies ?? 0, align: 'right' },
+  { key: 'avgSalary', header: 'Avg Salary', type: 'number', accessor: (r) => `$${((r.avgSalary ?? 0) / 1000).toFixed(0)}k`, sortValue: (r) => r.avgSalary ?? 0, align: 'right' },
+  { key: 'diversityPct', header: 'Diversity %', type: 'number', accessor: (r) => `${r.diversityPct ?? 0}%`, sortValue: (r) => r.diversityPct ?? 0, align: 'right' },
+  { key: 'manager', header: 'Manager', type: 'enum', accessor: (r) => <span className="text-xs">{r.manager}</span>, sortValue: (r) => r.manager ?? '' },
 ];
 
 // Simulated trend data

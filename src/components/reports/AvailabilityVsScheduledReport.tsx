@@ -40,6 +40,11 @@ const tableColumns: DataTableColumn<AvailabilityVsScheduledRecord>[] = [
     accessor: (r) => r.unscheduledHours > 0 ? <span className="text-amber-600 text-xs font-medium">{r.unscheduledHours}h</span> : <span className="text-emerald-600 text-xs">—</span> },
   { key: 'overtimeHours', header: 'OT', type: 'number', align: 'right', sortValue: (r) => r.overtimeHours,
     accessor: (r) => r.overtimeHours > 0 ? <Badge variant="destructive" className="text-[10px]">{r.overtimeHours}h</Badge> : <span className="text-xs text-muted-foreground">—</span> },
+  { key: 'contractType', header: 'Contract', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-[10px]">{(r.contractType ?? '').replace('_', ' ')}</Badge>, sortValue: (r) => r.contractType ?? '' },
+  { key: 'contractHours', header: 'Contract Hrs', type: 'number', accessor: (r) => `${r.contractHours ?? 0}h`, sortValue: (r) => r.contractHours ?? 0, align: 'right' },
+  { key: 'daysAvailable', header: 'Days Avail', type: 'number', accessor: (r) => r.daysAvailable ?? 0, sortValue: (r) => r.daysAvailable ?? 0, align: 'right' },
+  { key: 'daysScheduled', header: 'Days Sched', type: 'number', accessor: (r) => r.daysScheduled ?? 0, sortValue: (r) => r.daysScheduled ?? 0, align: 'right' },
+  { key: 'lastShiftDate', header: 'Last Shift', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.lastShiftDate}</span>, sortValue: (r) => r.lastShiftDate ?? '' },
 ];
 
 export function AvailabilityVsScheduledReport() {

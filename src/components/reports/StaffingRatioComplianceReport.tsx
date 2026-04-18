@@ -39,6 +39,10 @@ const tableColumns: DataTableColumn<StaffingRatioRecord>[] = [
   { key: 'actualStaff', header: 'Act. Staff', type: 'number', accessor: (r) => r.actualStaff, sortValue: (r) => r.actualStaff, align: 'right' },
   { key: 'isCompliant', header: 'Status', type: 'enum', align: 'center', sortValue: (r) => r.isCompliant ? 1 : 0,
     accessor: (r) => r.isCompliant ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mx-auto" /> : <XCircle className="h-4 w-4 text-destructive mx-auto" /> },
+  { key: 'gap', header: 'Gap', type: 'number', accessor: (r) => (r.gap ?? 0) !== 0 ? <span className={cn('font-medium text-xs', (r.gap ?? 0) > 0 ? 'text-destructive' : 'text-emerald-600')}>{(r.gap ?? 0) > 0 ? '−' : '+'}{Math.abs(r.gap ?? 0)}</span> : <span className="text-muted-foreground text-xs">0</span>, sortValue: (r) => r.gap ?? 0, align: 'right' },
+  { key: 'costOfNonCompliance', header: 'Non-Comp Cost', type: 'number', accessor: (r) => (r.costOfNonCompliance ?? 0) > 0 ? <span className="text-destructive font-medium text-xs">${r.costOfNonCompliance}</span> : '—', sortValue: (r) => r.costOfNonCompliance ?? 0, align: 'right' },
+  { key: 'trend', header: 'Trend', type: 'enum', accessor: (r) => <Badge variant={r.trend === 'worsening' ? 'destructive' : r.trend === 'improving' ? 'secondary' : 'outline'} className="text-[10px]">{r.trend}</Badge>, sortValue: (r) => r.trend ?? '' },
+  { key: 'shiftLeader', header: 'Shift Leader', type: 'enum', accessor: (r) => <span className="text-xs">{r.shiftLeader}</span>, sortValue: (r) => r.shiftLeader ?? '' },
 ];
 
 export function StaffingRatioComplianceReport() {
