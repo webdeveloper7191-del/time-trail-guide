@@ -324,6 +324,7 @@ export function ReportDataTable<T>({
                 onDelete={handleDeleteView}
                 onTogglePin={handleTogglePin}
                 onSetDefault={handleSetDefault}
+                onSetSchedule={handleSetSchedule}
                 hasState={totalActive > 0 || hiddenCols.size > 0 || !!sortCol}
               />
               <ExportCurrentViewButton onExport={exportCurrentView} />
