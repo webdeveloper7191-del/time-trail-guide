@@ -46,6 +46,7 @@ const tableColumns: DataTableColumn<QualificationRecord>[] = [
   { key: 'certificateNumber', header: 'Cert #', type: 'text', accessor: (r) => <span className="font-mono text-[10px] text-muted-foreground">{r.certificateNumber}</span>, sortValue: (r) => r.certificateNumber ?? '' },
   { key: 'mandatory', header: 'Mandatory', type: 'enum', accessor: (r) => r.mandatory ? <Badge variant="destructive" className="text-[10px]">Required</Badge> : <Badge variant="outline" className="text-[10px]">Optional</Badge>, sortValue: (r) => r.mandatory ? 'Required' : 'Optional' },
   { key: 'renewalCost', header: 'Renewal $', type: 'number', accessor: (r) => `$${r.renewalCost ?? 0}`, sortValue: (r) => r.renewalCost ?? 0, align: 'right' },
+  { key: 'daysUntilExpiryTrend', header: 'Days-to-Expiry Trend', type: 'sparkline', trendValues: (r: any) => r.daysUntilExpiryTrend ?? [], accessor: () => null },
 ];
 
 export function QualificationExpiryReport() {
@@ -193,7 +194,7 @@ export function QualificationExpiryReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">All Qualifications</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} reportId="qualification-expiry" exportTitle="Qualification Expiry" /></CardContent>
       </Card>
     </div>
   );

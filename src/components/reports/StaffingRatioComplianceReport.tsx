@@ -43,6 +43,7 @@ const tableColumns: DataTableColumn<StaffingRatioRecord>[] = [
   { key: 'costOfNonCompliance', header: 'Non-Comp Cost', type: 'number', accessor: (r) => (r.costOfNonCompliance ?? 0) > 0 ? <span className="text-destructive font-medium text-xs">${r.costOfNonCompliance}</span> : '—', sortValue: (r) => r.costOfNonCompliance ?? 0, align: 'right' },
   { key: 'trend', header: 'Trend', type: 'enum', accessor: (r) => <Badge variant={r.trend === 'worsening' ? 'destructive' : r.trend === 'improving' ? 'secondary' : 'outline'} className="text-[10px]">{r.trend}</Badge>, sortValue: (r) => r.trend ?? '' },
   { key: 'shiftLeader', header: 'Shift Leader', type: 'enum', accessor: (r) => <span className="text-xs">{r.shiftLeader}</span>, sortValue: (r) => r.shiftLeader ?? '' },
+  { key: 'ratioTrend', header: 'Ratio Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.ratioTrend ?? [], accessor: () => null },
 ];
 
 export function StaffingRatioComplianceReport() {
@@ -286,7 +287,7 @@ export function StaffingRatioComplianceReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">All Ratio Checks — Detailed</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${r.timeSlot}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${r.timeSlot}-${i}`} reportId="staffing-ratio-compliance" exportTitle="Staffing Ratio Compliance" /></CardContent>
       </Card>
     </div>
   );

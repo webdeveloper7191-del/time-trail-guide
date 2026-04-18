@@ -50,6 +50,7 @@ const tableColumns: DataTableColumn<AwardOverrideRecord>[] = [
   { key: 'affectedHoursMonthly', header: 'Hrs/Mo', type: 'number', accessor: (r) => `${r.affectedHoursMonthly ?? 0}h`, sortValue: (r) => r.affectedHoursMonthly ?? 0, align: 'right' },
   { key: 'monthlyCostImpact', header: 'Cost Impact/Mo', type: 'number', accessor: (r) => <span className="font-semibold">${(r.monthlyCostImpact ?? 0).toLocaleString()}</span>, sortValue: (r) => r.monthlyCostImpact ?? 0, align: 'right' },
   { key: 'reviewDate', header: 'Review Date', type: 'date', accessor: (r) => r.reviewDate ?? '—', sortValue: (r) => r.reviewDate ?? '' },
+  { key: 'rateTrend', header: 'Rate Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.rateTrend ?? [], accessor: () => null },
 ];
 
 export function AwardOverrideAuditReport() {
@@ -190,7 +191,7 @@ export function AwardOverrideAuditReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">All Overrides</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} reportId="award-override-audit" exportTitle="Award Override Audit" /></CardContent>
       </Card>
     </div>
   );

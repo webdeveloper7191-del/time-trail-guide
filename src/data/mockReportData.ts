@@ -483,3 +483,53 @@ mockOpenShiftFill.forEach((r, i) => {
   r.unfilledTrend = r.unfilledTrend ?? _seedTrendR(i + 127, Math.max(0, r.unfilled), 2, 8, -0.1);
 });
 
+// --- Additional sparkline trends for remaining reports ---
+declare module './mockReportData' {}
+
+export interface AgencyUsageRecord {
+  costTrend?: number[];
+  fillRateTrend?: number[];
+  qualityScoreTrend?: number[];
+}
+export interface AreaCombiningSavingsRecord {
+  costSavedTrend?: number[];
+}
+export interface CoverageGapRecord {
+  gapTrend?: number[];
+}
+export interface FairnessRecord {
+  fairnessScoreTrend?: number[];
+}
+export interface RecurringPatternRecord {
+  adherenceTrend?: number[];
+}
+export interface OvertimeFatigueRecord {
+  fatigueScoreTrend?: number[];
+}
+
+mockAgencyUsage.forEach((r, i) => {
+  r.costTrend = r.costTrend ?? _seedTrendR(i + 131, r.totalCost, r.totalCost * 0.1, 8, r.totalCost * 0.01);
+  r.fillRateTrend = r.fillRateTrend ?? _seedTrendR(i + 137, r.fillRate, 6, 8, 0.3);
+  r.qualityScoreTrend = r.qualityScoreTrend ?? _seedTrendR(i + 139, r.qualityScore, 4, 8, 0.2);
+});
+
+mockAreaCombiningSavings.forEach((r, i) => {
+  r.costSavedTrend = r.costSavedTrend ?? _seedTrendR(i + 141, r.costSaved, r.costSaved * 0.15, 8, r.costSaved * 0.02);
+});
+
+mockCoverageGaps.forEach((r, i) => {
+  r.gapTrend = r.gapTrend ?? _seedTrendR(i + 143, Math.max(0.1, r.gap), 1.5, 8, -0.05);
+});
+
+mockFairness.forEach((r, i) => {
+  r.fairnessScoreTrend = r.fairnessScoreTrend ?? _seedTrendR(i + 149, r.fairnessScore, 6, 8, r.fairnessScore < 75 ? -0.4 : 0.3);
+});
+
+mockRecurringPatterns.forEach((r, i) => {
+  r.adherenceTrend = r.adherenceTrend ?? _seedTrendR(i + 151, r.adherencePercent, 5, 8, 0.2);
+});
+
+mockOvertimeFatigue.forEach((r, i) => {
+  r.fatigueScoreTrend = r.fatigueScoreTrend ?? _seedTrendR(i + 157, r.fatigueScore, 8, 8, r.fatigueScore > 70 ? 0.5 : -0.2);
+});
+

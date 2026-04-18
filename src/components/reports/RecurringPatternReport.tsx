@@ -65,6 +65,7 @@ const tableColumns: DataTableColumn<RecurringPatternRecord>[] = [
   { key: 'failureCost', header: 'Failure Cost', type: 'number', accessor: (r) => (r.failureCost ?? 0) > 0 ? <span className="text-destructive text-xs">${r.failureCost}</span> : '—', sortValue: (r) => r.failureCost ?? 0, align: 'right' },
   { key: 'lastDeviation', header: 'Last Deviation', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.lastDeviation}</span>, sortValue: (r) => r.lastDeviation ?? '' },
   { key: 'owner', header: 'Owner', type: 'enum', accessor: (r) => <span className="text-xs">{r.owner}</span>, sortValue: (r) => r.owner ?? '' },
+  { key: 'adherenceTrend', header: 'Adherence Trend', type: 'sparkline', trendValues: (r: any) => r.adherenceTrend ?? [], accessor: () => null },
 ];
 
 export function RecurringPatternReport() {
@@ -245,7 +246,7 @@ export function RecurringPatternReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Pattern Adherence Details</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} reportId="recurring-pattern" exportTitle="Recurring Pattern Adherence" />
         </CardContent>
       </Card>
     </div>

@@ -62,6 +62,7 @@ const tableColumns: DataTableColumn<FairnessRecord>[] = [
   { key: 'swapsRequested', header: 'Swaps', type: 'number', accessor: (r) => (r.swapsRequested ?? 0) > 3 ? <span className="text-amber-600 font-medium text-xs">{r.swapsRequested}</span> : (r.swapsRequested ?? 0), sortValue: (r) => r.swapsRequested ?? 0, align: 'right' },
   { key: 'ranking', header: 'Rank', type: 'number', accessor: (r) => <Badge variant="outline" className="text-[10px]">#{r.ranking}</Badge>, sortValue: (r) => r.ranking ?? 0, align: 'center' },
   { key: 'lastReviewDate', header: 'Last Review', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.lastReviewDate}</span>, sortValue: (r) => r.lastReviewDate ?? '' },
+  { key: 'fairnessScoreTrend', header: 'Score Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.fairnessScoreTrend ?? [], accessor: () => null },
 ];
 
 export function FairnessReport() {
@@ -258,7 +259,7 @@ export function FairnessReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Shift Distribution Equity — Sorted by Fairness Score</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable key={animKey} columns={tableColumns} data={[...filtered].sort((a, b) => a.fairnessScore - b.fairnessScore)} rowKey={(r) => r.staffId} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={[...filtered].sort((a, b) => a.fairnessScore - b.fairnessScore)} rowKey={(r) => r.staffId} reportId="fairness" exportTitle="Fairness & Equity" />
         </CardContent>
       </Card>
     </div>

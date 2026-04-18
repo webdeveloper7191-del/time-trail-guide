@@ -42,6 +42,7 @@ const tableColumns: DataTableColumn<ContractDistributionRecord>[] = [
   { key: 'fullTimePct', header: 'FT %', type: 'number', accessor: (r) => `${r.fullTimePct ?? 0}%`, sortValue: (r) => r.fullTimePct ?? 0, align: 'right' },
   { key: 'totalContractedHours', header: 'Contracted Hrs', type: 'number', accessor: (r) => `${r.totalContractedHours ?? 0}h`, sortValue: (r) => r.totalContractedHours ?? 0, align: 'right' },
   { key: 'avgHourlyCost', header: 'Avg $/h', type: 'number', accessor: (r) => `$${r.avgHourlyCost ?? 0}`, sortValue: (r) => r.avgHourlyCost ?? 0, align: 'right' },
+  { key: 'headcountTrend', header: 'Headcount Trend', type: 'sparkline', trendValues: (r: any) => r.headcountTrend ?? [], accessor: () => null },
 ];
 
 export function ContractDistributionReport() {
@@ -192,7 +193,7 @@ export function ContractDistributionReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Department Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.location}-${r.department}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.location}-${r.department}-${i}`} reportId="contract-distribution" exportTitle="Contract Distribution" /></CardContent>
       </Card>
     </div>
   );
