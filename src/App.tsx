@@ -31,7 +31,9 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useEffect(() => startScheduledExportRunner(), []);
+  return (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultMode="light">
       <DemandProvider>
@@ -71,6 +73,7 @@ const App = () => (
       </DemandProvider>
     </ThemeProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
