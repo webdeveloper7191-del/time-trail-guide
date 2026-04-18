@@ -5,6 +5,7 @@ import { ReportFilterBar } from './ReportFilterBar';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
 import { ReportHelpGuide } from './ReportHelpGuide';
 import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
+import { KpiSparklineRow, KpiTileConfig } from './KpiSparklinePicker';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { mockPayRunRecords, PayRunRecord } from '@/data/mockPayrollReportData';
