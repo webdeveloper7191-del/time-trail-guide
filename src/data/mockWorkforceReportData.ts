@@ -1,3 +1,7 @@
+import { format, subDays } from 'date-fns';
+
+const today = new Date();
+
 export interface HeadcountRecord {
   department: string;
   location: string;
