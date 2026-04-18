@@ -58,6 +58,7 @@ const tableColumns: DataTableColumn<TimesheetExceptionRecord>[] = [
   { key: 'approvalRequired', header: 'Approval', type: 'enum', accessor: (r) => r.approvalRequired ? <Badge variant="destructive" className="text-[10px]">Required</Badge> : <Badge variant="secondary" className="text-[10px]">Auto</Badge>, sortValue: (r) => r.approvalRequired ? 'Required' : 'Auto' },
   { key: 'approverName', header: 'Approver', type: 'enum', accessor: (r) => <span className="text-xs">{r.approverName}</span>, sortValue: (r) => r.approverName ?? '' },
   { key: 'status', header: 'Status', type: 'enum', accessor: (r) => <Badge variant={r.status === 'rejected' ? 'destructive' : r.status === 'pending' ? 'secondary' : 'outline'} className="text-[10px]">{r.status}</Badge>, sortValue: (r) => r.status ?? '' },
+  { key: 'frequencyTrend', header: 'Frequency Trend', type: 'sparkline', trendValues: (r: any) => r.frequencyTrend ?? [], accessor: () => null },
 ];
 
 export function TimesheetExceptionReport() {

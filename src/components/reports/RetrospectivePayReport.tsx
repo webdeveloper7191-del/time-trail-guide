@@ -50,6 +50,7 @@ const tableColumns: DataTableColumn<RetrospectivePayRecord>[] = [
   { key: 'superImpact', header: 'Super Impact', type: 'number', accessor: (r) => `$${(r.superImpact ?? 0).toLocaleString()}`, sortValue: (r) => r.superImpact ?? 0, align: 'right' },
   { key: 'paymentDate', header: 'Payment Date', type: 'date', accessor: (r) => r.paymentDate ?? '—', sortValue: (r) => r.paymentDate ?? '' },
   { key: 'approvedBy', header: 'Approved By', type: 'enum', accessor: (r) => <span className="text-xs">{r.approvedBy}</span>, sortValue: (r) => r.approvedBy ?? '' },
+  { key: 'differenceTrend', header: 'Adjustment Trend', type: 'sparkline', trendValues: (r: any) => r.differenceTrend ?? [], accessor: () => null },
 ];
 
 export function RetrospectivePayReport() {

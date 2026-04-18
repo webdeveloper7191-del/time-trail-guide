@@ -48,6 +48,7 @@ const tableColumns: DataTableColumn<SkillsMatrixRecord>[] = [
   { key: 'expertSkills', header: 'Expert', type: 'number', accessor: (r) => (r.expertSkills ?? 0) > 0 ? <Badge variant="secondary" className="text-[10px]">{r.expertSkills}</Badge> : '—', sortValue: (r) => r.expertSkills ?? 0, align: 'right' },
   { key: 'skillsGap', header: 'Gap', type: 'number', accessor: (r) => (r.skillsGap ?? 0) > 0 ? <span className="text-amber-600 font-medium text-xs">{r.skillsGap}</span> : <span className="text-emerald-600 text-xs">0</span>, sortValue: (r) => r.skillsGap ?? 0, align: 'right' },
   { key: 'lastTrainingDate', header: 'Last Training', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.lastTrainingDate}</span>, sortValue: (r) => r.lastTrainingDate ?? '' },
+  { key: 'skillsCoverageTrend', header: 'Skills Coverage Trend', type: 'sparkline', trendValues: (r: any) => r.skillsCoverageTrend ?? [], accessor: () => null },
 ];
 
 export function SkillsMatrixReport() {

@@ -43,6 +43,7 @@ const tableColumns: DataTableColumn<StaffingRatioRecord>[] = [
   { key: 'costOfNonCompliance', header: 'Non-Comp Cost', type: 'number', accessor: (r) => (r.costOfNonCompliance ?? 0) > 0 ? <span className="text-destructive font-medium text-xs">${r.costOfNonCompliance}</span> : '—', sortValue: (r) => r.costOfNonCompliance ?? 0, align: 'right' },
   { key: 'trend', header: 'Trend', type: 'enum', accessor: (r) => <Badge variant={r.trend === 'worsening' ? 'destructive' : r.trend === 'improving' ? 'secondary' : 'outline'} className="text-[10px]">{r.trend}</Badge>, sortValue: (r) => r.trend ?? '' },
   { key: 'shiftLeader', header: 'Shift Leader', type: 'enum', accessor: (r) => <span className="text-xs">{r.shiftLeader}</span>, sortValue: (r) => r.shiftLeader ?? '' },
+  { key: 'ratioTrend', header: 'Ratio Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.ratioTrend ?? [], accessor: () => null },
 ];
 
 export function StaffingRatioComplianceReport() {
