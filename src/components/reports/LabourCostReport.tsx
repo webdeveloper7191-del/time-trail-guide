@@ -44,6 +44,12 @@ const tableColumns: DataTableColumn<LabourCostRecord>[] = [
     accessor: (r) => <span className={cn('font-medium text-xs', r.variance >= 0 ? 'text-emerald-600' : 'text-destructive')}>{r.variance >= 0 ? '+' : ''}${r.variance}</span> },
   { key: 'costPerHead', header: '$/Head', type: 'number', align: 'right', sortValue: (r) => r.headcount > 0 ? r.totalCost / r.headcount : 0,
     accessor: (r) => <span className="font-mono text-xs">${r.headcount > 0 ? Math.round(r.totalCost / r.headcount).toLocaleString() : '—'}</span> },
+  { key: 'totalHours', header: 'Total Hrs', type: 'number', accessor: (r) => `${r.totalHours ?? 0}h`, sortValue: (r) => r.totalHours ?? 0, align: 'right' },
+  { key: 'costPerHour', header: 'Cost/Hr', type: 'number', accessor: (r) => `$${(r.costPerHour ?? 0).toFixed(2)}`, sortValue: (r) => r.costPerHour ?? 0, align: 'right' },
+  { key: 'overtimePct', header: 'OT %', type: 'number', accessor: (r) => <span className={cn('text-xs', (r.overtimePct ?? 0) > 12 ? 'text-destructive font-medium' : '')}>{r.overtimePct ?? 0}%</span>, sortValue: (r) => r.overtimePct ?? 0, align: 'right' },
+  { key: 'agencyPct', header: 'Agency %', type: 'number', accessor: (r) => <span className={cn('text-xs', (r.agencyPct ?? 0) > 15 ? 'text-amber-600 font-medium' : '')}>{r.agencyPct ?? 0}%</span>, sortValue: (r) => r.agencyPct ?? 0, align: 'right' },
+  { key: 'variancePercent', header: 'Variance %', type: 'number', accessor: (r) => <Badge variant={(r.variancePercent ?? 0) < -5 ? 'destructive' : (r.variancePercent ?? 0) > 5 ? 'secondary' : 'outline'} className="text-[10px]">{r.variancePercent ?? 0}%</Badge>, sortValue: (r) => r.variancePercent ?? 0, align: 'right' },
+  { key: 'budgetUtilisationPct', header: 'Budget Use %', type: 'number', accessor: (r) => `${r.budgetUtilisationPct ?? 0}%`, sortValue: (r) => r.budgetUtilisationPct ?? 0, align: 'right' },
 ];
 
 export function LabourCostReport() {

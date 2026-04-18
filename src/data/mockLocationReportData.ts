@@ -213,3 +213,122 @@ export const capacityByHourData = Array.from({ length: 11 }, (_, i) => ({
   occupancy: Math.round(20 + Math.sin((i - 2) * 0.5) * 40 + 30),
   capacity: 80,
 }));
+
+// =================== Enrichment: extra fields ===================
+
+export interface MultiSiteOpsData {
+  occupancyPercent?: number;
+  budgetUsedPct?: number;
+  managerName?: string;
+  openShifts?: number;
+  staffOnLeave?: number;
+  lastUpdated?: string;
+}
+
+export interface CapacityUtilData {
+  freeCapacity?: number;
+  utilisationVsTarget?: number;
+  hourPeakStart?: string;
+  forecastNext7d?: number;
+  revenuePerSeat?: number;
+}
+
+export interface BudgetVsActualRecord {
+  ytdBudget?: number;
+  ytdActual?: number;
+  forecastEoY?: number;
+  status?: 'on_track' | 'at_risk' | 'over_budget';
+  owner?: string;
+}
+
+export interface AreaUtilRecord {
+  freeHours?: number;
+  bookings?: number;
+  staffAssigned?: number;
+  revenueImpact?: number;
+  efficiencyScore?: number;
+}
+
+export interface ComplianceViolationRecord {
+  ageInDays?: number;
+  responsibleStaff?: string;
+  potentialFine?: number;
+  evidence?: string;
+  riskCategory?: 'safety' | 'staffing' | 'documentation' | 'operational';
+}
+
+export interface StaffingRatioRecord {
+  gap?: number;
+  costOfNonCompliance?: number;
+  trend?: 'improving' | 'stable' | 'worsening';
+  shiftLeader?: string;
+}
+
+export interface CrossLocationDeployment {
+  utilisationAtPrimaryPct?: number;
+  reasonForDeployment?: string;
+  travelCost?: number;
+  approvedBy?: string;
+  status?: 'active' | 'completed' | 'cancelled';
+}
+
+const _locManagers = ['Sarah Williams', 'Mark Stevens', 'Rachel Adams', 'Tony Nguyen', 'Linda Park'];
+mockMultiSiteOps.forEach((r, i) => {
+  r.occupancyPercent = r.occupancyPercent ?? Math.round((r.occupancy / r.capacity) * 100);
+  r.budgetUsedPct = r.budgetUsedPct ?? Math.round((r.budgetUsed / r.budgetTotal) * 100);
+  r.managerName = r.managerName ?? _locManagers[i % _locManagers.length];
+  r.openShifts = r.openShifts ?? (i === 2 ? 5 : i === 0 ? 2 : 1);
+  r.staffOnLeave = r.staffOnLeave ?? Math.max(0, r.totalStaff - r.onDuty - 3);
+  r.lastUpdated = r.lastUpdated ?? new Date().toISOString().slice(0, 16).replace('T', ' ');
+});
+
+mockCapacityUtil.forEach((r, i) => {
+  r.freeCapacity = r.freeCapacity ?? Math.max(0, r.capacity - r.currentOccupancy);
+  r.utilisationVsTarget = r.utilisationVsTarget ?? (r.utilisationPercent - 75);
+  r.hourPeakStart = r.hourPeakStart ?? `${9 + (i % 6)}:00`;
+  r.forecastNext7d = r.forecastNext7d ?? Math.round(r.avgOccupancy * (1 + (i % 3) * 0.05));
+  r.revenuePerSeat = r.revenuePerSeat ?? (45 + (i % 4) * 8);
+});
+
+mockBudgetVsActuals.forEach((r, i) => {
+  r.ytdBudget = r.ytdBudget ?? Math.round(r.budgetAmount * 6);
+  r.ytdActual = r.ytdActual ?? Math.round(r.actualAmount * 6);
+  r.forecastEoY = r.forecastEoY ?? Math.round(r.actualAmount * 12);
+  r.status = r.status ?? (r.variancePercent < -10 ? 'over_budget' : r.variancePercent < -3 ? 'at_risk' : 'on_track');
+  r.owner = r.owner ?? _locManagers[i % _locManagers.length];
+});
+
+mockAreaUtil.forEach((r, i) => {
+  r.freeHours = r.freeHours ?? Math.max(0, r.hoursOperating - r.hoursUsed);
+  r.bookings = r.bookings ?? (10 + i * 2);
+  r.staffAssigned = r.staffAssigned ?? Math.ceil(r.avgOccupancy / 6);
+  r.revenueImpact = r.revenueImpact ?? Math.round(r.avgOccupancy * 55);
+  r.efficiencyScore = r.efficiencyScore ?? Math.min(100, Math.round((r.utilisationPercent + (r.hoursUsed / r.hoursOperating) * 100) / 2));
+});
+
+const _evidenceItems = ['Photo report', 'Manager log', 'System alert', 'Audit finding', 'Staff report'];
+mockComplianceViolations.forEach((r, i) => {
+  const date = new Date(r.date);
+  r.ageInDays = r.ageInDays ?? Math.max(0, Math.round((Date.now() - date.getTime()) / 86400000));
+  r.responsibleStaff = r.responsibleStaff ?? _locManagers[i % _locManagers.length];
+  r.potentialFine = r.potentialFine ?? (r.severity === 'critical' ? 5000 + i * 500 : r.severity === 'warning' ? 1000 + i * 200 : 250);
+  r.evidence = r.evidence ?? _evidenceItems[i % _evidenceItems.length];
+  r.riskCategory = r.riskCategory ?? (r.violationType.toLowerCase().includes('staff') || r.violationType.toLowerCase().includes('ratio') ? 'staffing' : r.violationType.toLowerCase().includes('break') ? 'operational' : r.violationType.toLowerCase().includes('qual') ? 'documentation' : 'safety');
+});
+
+mockStaffingRatios.forEach((r, i) => {
+  r.gap = r.gap ?? (r.requiredStaff - r.actualStaff);
+  r.costOfNonCompliance = r.costOfNonCompliance ?? (r.isCompliant ? 0 : Math.abs(r.gap ?? 0) * 250);
+  r.trend = r.trend ?? ((['improving', 'stable', 'worsening', 'stable'] as const)[i % 4]);
+  r.shiftLeader = r.shiftLeader ?? _locManagers[i % _locManagers.length];
+});
+
+const _deployReasons = ['Staff shortage', 'Special event', 'Cover for leave', 'Project rollout', 'Training delivery'];
+mockCrossLocationDeployments.forEach((r, i) => {
+  r.utilisationAtPrimaryPct = r.utilisationAtPrimaryPct ?? Math.round((r.hoursAtPrimary / (r.hoursAtPrimary + r.hoursDeployed)) * 100);
+  r.reasonForDeployment = r.reasonForDeployment ?? _deployReasons[i % _deployReasons.length];
+  r.travelCost = r.travelCost ?? (45 + i * 8);
+  r.approvedBy = r.approvedBy ?? _locManagers[i % _locManagers.length];
+  r.status = r.status ?? ((['active', 'completed', 'active', 'completed'] as const)[i % 4]);
+});
+

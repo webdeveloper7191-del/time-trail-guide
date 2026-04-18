@@ -53,6 +53,12 @@ const tableColumns: DataTableColumn<WeeklyTimesheetRecord>[] = [
   ), sortValue: (r) => r.daysWorked, align: 'right' },
   { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge className={cn('text-xs capitalize', statusColors[r.status])}>{approvalStatusLabels[r.status]}</Badge> },
+  { key: 'hourlyRate', header: 'Rate', type: 'number', accessor: (r) => `$${r.hourlyRate ?? 0}/h`, sortValue: (r) => r.hourlyRate ?? 0, align: 'right' },
+  { key: 'estimatedGross', header: 'Est. Gross', type: 'number', accessor: (r) => <span className="font-semibold">${(r.estimatedGross ?? 0).toLocaleString()}</span>, sortValue: (r) => r.estimatedGross ?? 0, align: 'right' },
+  { key: 'avgDailyHours', header: 'Avg/Day', type: 'number', accessor: (r) => `${r.avgDailyHours ?? 0}h`, sortValue: (r) => r.avgDailyHours ?? 0, align: 'right' },
+  { key: 'exceptions', header: 'Exceptions', type: 'number', accessor: (r) => (r.exceptions ?? 0) > 0 ? <Badge variant="destructive" className="text-[10px]">{r.exceptions}</Badge> : <span className="text-muted-foreground text-xs">—</span>, sortValue: (r) => r.exceptions ?? 0, align: 'right' },
+  { key: 'submittedAt', header: 'Submitted', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.submittedAt}</span>, sortValue: (r) => r.submittedAt ?? '' },
+  { key: 'approverName', header: 'Approver', type: 'enum', accessor: (r) => <span className="text-xs">{r.approverName}</span>, sortValue: (r) => r.approverName ?? '' },
 ];
 
 export function WeeklyTimesheetReport() {

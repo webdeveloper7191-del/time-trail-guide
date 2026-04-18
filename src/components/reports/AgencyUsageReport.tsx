@@ -58,6 +58,11 @@ const tableColumns: DataTableColumn<AgencyUsageRecord>[] = [
     ) },
   { key: 'cancellationRate', header: 'Cancel %', type: 'number', align: 'right', sortValue: (r) => r.cancellationRate,
     accessor: (r) => <span className={cn(r.cancellationRate > 5 ? 'text-destructive font-medium' : 'text-muted-foreground')}>{r.cancellationRate}%</span> },
+  { key: 'ytdCost', header: 'YTD Cost', type: 'number', accessor: (r) => <span className="font-semibold">${((r.ytdCost ?? 0) / 1000).toFixed(1)}k</span>, sortValue: (r) => r.ytdCost ?? 0, align: 'right' },
+  { key: 'noShowCount', header: 'No-Shows', type: 'number', accessor: (r) => (r.noShowCount ?? 0) > 0 ? <Badge variant="destructive" className="text-[10px]">{r.noShowCount}</Badge> : '0', sortValue: (r) => r.noShowCount ?? 0, align: 'right' },
+  { key: 'preferredStatus', header: 'Tier', type: 'enum', accessor: (r) => <Badge variant={r.preferredStatus === 'preferred' ? 'secondary' : r.preferredStatus === 'last_resort' ? 'destructive' : 'outline'} className="text-[10px]">{(r.preferredStatus ?? '').replace('_', ' ')}</Badge>, sortValue: (r) => r.preferredStatus ?? '' },
+  { key: 'contractEndDate', header: 'Contract End', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.contractEndDate}</span>, sortValue: (r) => r.contractEndDate ?? '' },
+  { key: 'primaryContact', header: 'Contact', type: 'enum', accessor: (r) => <span className="text-xs">{r.primaryContact}</span>, sortValue: (r) => r.primaryContact ?? '' },
 ];
 
 export function AgencyUsageReport() {

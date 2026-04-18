@@ -46,6 +46,12 @@ const tableColumns: DataTableColumn<MultiSiteOpsData>[] = [
     accessor: (r) => { const pct = Math.round((r.budgetUsed / r.budgetTotal) * 100); return <span className={cn('text-xs', pct > 90 ? 'text-destructive font-medium' : '')}>{`$${(r.budgetUsed / 1000).toFixed(1)}k (${pct}%)`}</span>; } },
   { key: 'alerts', header: 'Alerts', type: 'text', align: 'center', sortValue: (r) => r.alerts,
     accessor: (r) => r.alerts > 0 ? <Badge variant="destructive" className="text-xs">{r.alerts}</Badge> : <CheckCircle2 className="h-4 w-4 text-emerald-500 mx-auto" /> },
+  { key: 'occupancyPercent', header: 'Occupancy %', type: 'number', accessor: (r) => <span className={cn('text-xs', (r.occupancyPercent ?? 0) > 90 ? 'text-amber-600 font-medium' : '')}>{r.occupancyPercent ?? 0}%</span>, sortValue: (r) => r.occupancyPercent ?? 0, align: 'right' },
+  { key: 'budgetUsedPct', header: 'Budget %', type: 'number', accessor: (r) => <Badge variant={(r.budgetUsedPct ?? 0) > 90 ? 'destructive' : (r.budgetUsedPct ?? 0) > 75 ? 'secondary' : 'outline'} className="text-[10px]">{r.budgetUsedPct ?? 0}%</Badge>, sortValue: (r) => r.budgetUsedPct ?? 0, align: 'right' },
+  { key: 'managerName', header: 'Manager', type: 'enum', accessor: (r) => <span className="text-xs">{r.managerName}</span>, sortValue: (r) => r.managerName ?? '' },
+  { key: 'openShifts', header: 'Open Shifts', type: 'number', accessor: (r) => (r.openShifts ?? 0) > 0 ? <Badge variant="secondary" className="text-[10px]">{r.openShifts}</Badge> : '0', sortValue: (r) => r.openShifts ?? 0, align: 'right' },
+  { key: 'staffOnLeave', header: 'On Leave', type: 'number', accessor: (r) => r.staffOnLeave ?? 0, sortValue: (r) => r.staffOnLeave ?? 0, align: 'right' },
+  { key: 'lastUpdated', header: 'Updated', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.lastUpdated}</span>, sortValue: (r) => r.lastUpdated ?? '' },
 ];
 
 export function MultiSiteOpsDashboard() {

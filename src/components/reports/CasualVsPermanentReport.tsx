@@ -43,6 +43,12 @@ const tableColumns: DataTableColumn<CasualVsPermanentRecord>[] = [
   { key: 'casualLoadingPercent', header: 'Loading', type: 'number', accessor: (r) => `${r.casualLoadingPercent}%`, sortValue: (r) => r.casualLoadingPercent, align: 'right' },
   { key: 'premiumCost', header: 'Premium', type: 'number', align: 'right', sortValue: (r) => r.casualHours * (r.costPerHourCasual - r.costPerHourPermanent),
     accessor: (r) => { const premium = r.casualHours * (r.costPerHourCasual - r.costPerHourPermanent); return <span className="text-xs text-destructive font-medium">+${premium.toLocaleString()}</span>; }},
+  { key: 'totalHeadcount', header: 'Total HC', type: 'number', accessor: (r) => r.totalHeadcount ?? 0, sortValue: (r) => r.totalHeadcount ?? 0, align: 'right' },
+  { key: 'casualMixPct', header: 'Casual Mix', type: 'number', accessor: (r) => <Badge variant={(r.casualMixPct ?? 0) > 40 ? 'destructive' : 'secondary'} className="text-[10px]">{r.casualMixPct ?? 0}%</Badge>, sortValue: (r) => r.casualMixPct ?? 0, align: 'right' },
+  { key: 'totalLabourCost', header: 'Total Cost', type: 'number', accessor: (r) => <span className="font-semibold">${((r.totalLabourCost ?? 0) / 1000).toFixed(1)}k</span>, sortValue: (r) => r.totalLabourCost ?? 0, align: 'right' },
+  { key: 'loadingCost', header: 'Casual Loading', type: 'number', accessor: (r) => `$${(r.loadingCost ?? 0).toLocaleString()}`, sortValue: (r) => r.loadingCost ?? 0, align: 'right' },
+  { key: 'costDifferencePct', header: 'Cost Δ %', type: 'number', accessor: (r) => <span className="text-xs text-amber-600">+{r.costDifferencePct ?? 0}%</span>, sortValue: (r) => r.costDifferencePct ?? 0, align: 'right' },
+  { key: 'weeklyAvgPermanent', header: 'Avg Hrs/Perm', type: 'number', accessor: (r) => `${r.weeklyAvgPermanent ?? 0}h`, sortValue: (r) => r.weeklyAvgPermanent ?? 0, align: 'right' },
 ];
 
 export function CasualVsPermanentReport() {

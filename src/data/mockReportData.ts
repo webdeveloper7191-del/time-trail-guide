@@ -279,3 +279,174 @@ export const reportSummaryMetrics = {
   avgFairnessScore: 74,
   recurringAdherence: 88,
 };
+
+// =================== Enrichment: extra fields for richer reports ===================
+
+export interface StaffUtilisationRecord {
+  department?: string;
+  contractType?: 'full_time' | 'part_time' | 'casual' | 'contractor';
+  utilisationTrend?: 'up' | 'down' | 'stable';
+  totalCost?: number;
+  shiftsWorked?: number;
+  avgShiftLength?: number;
+}
+
+export interface OvertimeFatigueRecord {
+  totalShiftsThisMonth?: number;
+  recommendedAction?: string;
+  overtimeCost?: number;
+  daysOff7d?: number;
+  trend?: 'improving' | 'stable' | 'worsening';
+}
+
+export interface OpenShiftFillRecord {
+  agencyCost?: number;
+  internalCost?: number;
+  totalCost?: number;
+  costPerShift?: number;
+  reason?: string;
+  notificationsSent?: number;
+}
+
+export interface AgencyUsageRecord {
+  ytdCost?: number;
+  contractEndDate?: string;
+  primaryContact?: string;
+  noShowCount?: number;
+  preferredStatus?: 'preferred' | 'standard' | 'last_resort';
+}
+
+export interface CoverageGapRecord {
+  durationHours?: number;
+  estimatedCost?: number;
+  resolution?: 'agency' | 'internal' | 'unfilled' | 'pending';
+  notifiedAt?: string;
+  ratioImpact?: string;
+}
+
+export interface AreaCombiningSavingsRecord {
+  combinedDurationHrs?: number;
+  newRatio?: string;
+  approvedBy?: string;
+  ratioCompliant?: boolean;
+  alternativeCost?: number;
+}
+
+export interface FairnessRecord {
+  publicHolidayShifts?: number;
+  preferredShiftMatchPct?: number;
+  swapsRequested?: number;
+  lastReviewDate?: string;
+  ranking?: number;
+}
+
+export interface RecurringPatternRecord {
+  daysActive?: number;
+  staffAssigned?: number;
+  failureCost?: number;
+  lastDeviation?: string;
+  owner?: string;
+}
+
+export interface DemandVsActualRecord {
+  variance?: number;
+  costImpact?: number;
+  weatherCondition?: string;
+  daysOfNotice?: number;
+  ratioImpact?: string;
+}
+
+const _depts = ['Nursery', 'Toddler', 'Preschool', 'Kindy', 'Kitchen'];
+const _today = new Date();
+const _fmtDate = (offset: number) => {
+  const d = new Date(_today);
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+};
+
+mockStaffUtilisation.forEach((r, i) => {
+  r.department = r.department ?? _depts[i % _depts.length];
+  r.contractType = r.contractType ?? (['full_time', 'part_time', 'casual', 'full_time', 'full_time'] as const)[i % 5];
+  r.utilisationTrend = r.utilisationTrend ?? (r.utilisationPercent > 90 ? 'up' : r.utilisationPercent < 75 ? 'down' : 'stable');
+  r.totalCost = r.totalCost ?? Math.round(r.scheduledHours * 32 + r.overtimeHours * 48);
+  r.shiftsWorked = r.shiftsWorked ?? Math.max(1, Math.round(r.scheduledHours / 8));
+  r.avgShiftLength = r.avgShiftLength ?? Number((r.scheduledHours / Math.max(1, r.shiftsWorked ?? 1)).toFixed(1));
+});
+
+mockOvertimeFatigue.forEach((r, i) => {
+  r.totalShiftsThisMonth = r.totalShiftsThisMonth ?? (15 + i * 2);
+  r.recommendedAction = r.recommendedAction ?? (r.riskLevel === 'critical' ? 'Mandatory rest period' : r.riskLevel === 'high' ? 'Reduce next-week hours' : r.riskLevel === 'medium' ? 'Monitor' : 'No action');
+  r.overtimeCost = r.overtimeCost ?? Math.round(r.overtimeHours * 48);
+  r.daysOff7d = r.daysOff7d ?? Math.max(0, 7 - r.consecutiveDays);
+  r.trend = r.trend ?? (r.fatigueScore > 70 ? 'worsening' : r.fatigueScore < 40 ? 'improving' : 'stable');
+});
+
+mockOpenShiftFill.forEach((r, i) => {
+  r.agencyCost = r.agencyCost ?? r.filledByAgency * 8 * 60;
+  r.internalCost = r.internalCost ?? r.filledByInternal * 8 * 32;
+  r.totalCost = r.totalCost ?? ((r.agencyCost ?? 0) + (r.internalCost ?? 0));
+  r.costPerShift = r.costPerShift ?? (r.filledShifts > 0 ? Math.round((r.totalCost ?? 0) / r.filledShifts) : 0);
+  r.reason = r.reason ?? (['Sick leave', 'Last-minute resignation', 'Increased demand', 'Annual leave', 'Public holiday'][i % 5]);
+  r.notificationsSent = r.notificationsSent ?? (r.totalOpenShifts * 5);
+});
+
+mockAgencyUsage.forEach((r, i) => {
+  r.ytdCost = r.ytdCost ?? r.totalCost * (4 + i);
+  r.contractEndDate = r.contractEndDate ?? `2026-${String(8 + i).padStart(2, '0')}-30`;
+  r.primaryContact = r.primaryContact ?? ['Jane Smith', 'Mark Davis', 'Lisa Wong', 'Tom Bradley'][i % 4];
+  r.noShowCount = r.noShowCount ?? Math.round(r.shiftsProvided * (r.cancellationRate / 100));
+  r.preferredStatus = r.preferredStatus ?? (r.qualityScore >= 90 ? 'preferred' : r.qualityScore >= 82 ? 'standard' : 'last_resort');
+});
+
+mockCoverageGaps.forEach((r, i) => {
+  // Calculate hours from "7:00 AM - 9:00 AM"-style timeSlot
+  const m = r.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)/);
+  let hrs = 2;
+  if (m) {
+    const toH = (h: string, mn: string, ap: string) => {
+      let hh = parseInt(h);
+      if (ap === 'PM' && hh !== 12) hh += 12;
+      if (ap === 'AM' && hh === 12) hh = 0;
+      return hh + parseInt(mn) / 60;
+    };
+    hrs = Math.max(0.5, toH(m[4], m[5], m[6]) - toH(m[1], m[2], m[3]));
+  }
+  r.durationHours = r.durationHours ?? Number(hrs.toFixed(1));
+  r.estimatedCost = r.estimatedCost ?? Math.round(r.gap * (r.durationHours ?? hrs) * 32);
+  r.resolution = r.resolution ?? (r.gap === 0 ? 'internal' : i % 3 === 0 ? 'agency' : i % 3 === 1 ? 'pending' : 'unfilled');
+  r.notifiedAt = r.notifiedAt ?? `${r.date} 06:00`;
+  r.ratioImpact = r.ratioImpact ?? (r.gap > 0 ? `1:${Math.ceil((r.requiredStaff + r.gap) / r.scheduledStaff)}` : '1:4');
+});
+
+mockAreaCombiningSavings.forEach((r, i) => {
+  r.combinedDurationHrs = r.combinedDurationHrs ?? Number((r.durationMinutes / 60).toFixed(1));
+  r.newRatio = r.newRatio ?? '1:6';
+  r.approvedBy = r.approvedBy ?? ['Sarah Williams', 'Mark Stevens', 'Linda Park'][i % 3];
+  r.ratioCompliant = r.ratioCompliant ?? true;
+  r.alternativeCost = r.alternativeCost ?? Math.round(r.costSaved * 1.4);
+});
+
+mockFairness.forEach((r, i) => {
+  r.publicHolidayShifts = r.publicHolidayShifts ?? Math.round(r.weekendShifts * 0.3);
+  r.preferredShiftMatchPct = r.preferredShiftMatchPct ?? (60 + (r.fairnessScore % 30));
+  r.swapsRequested = r.swapsRequested ?? Math.round((100 - r.fairnessScore) / 10);
+  r.lastReviewDate = r.lastReviewDate ?? _fmtDate(-30 - i);
+  r.ranking = r.ranking ?? (i + 1);
+});
+
+mockRecurringPatterns.forEach((r, i) => {
+  r.daysActive = r.daysActive ?? (30 + i * 15);
+  r.staffAssigned = r.staffAssigned ?? (3 + (i % 4));
+  r.failureCost = r.failureCost ?? r.deviations * 280;
+  r.lastDeviation = r.lastDeviation ?? (r.deviations > 0 ? _fmtDate(-(2 + i * 2)) : '—');
+  r.owner = r.owner ?? ['Sarah Williams', 'Mark Stevens', 'Linda Park'][i % 3];
+});
+
+mockDemandVsActuals.forEach((r, i) => {
+  r.variance = r.variance ?? (r.actualChildren - r.forecastedChildren);
+  r.costImpact = r.costImpact ?? Math.abs(r.variance ?? 0) * 25;
+  r.weatherCondition = r.weatherCondition ?? (['Sunny', 'Rainy', 'Cloudy', 'Hot'][i % 4]);
+  r.daysOfNotice = r.daysOfNotice ?? 7;
+  r.ratioImpact = r.ratioImpact ?? `1:${Math.max(2, Math.ceil((r.actualChildren) / Math.max(1, r.actualStaff)))}`;
+});
+

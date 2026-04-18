@@ -53,6 +53,11 @@ const tableColumns: DataTableColumn<LatePunctualityRecord>[] = [
     ) : <span className="text-muted-foreground">—</span> },
   { key: 'type', header: 'Type', type: 'enum', sortValue: (r) => r.type,
     accessor: (r) => <Badge className={cn('text-xs', typeColors[r.type])}>{typeLabels[r.type]}</Badge> },
+  { key: 'totalLateMinutes', header: 'Total Min', type: 'number', accessor: (r) => <span className="font-mono text-xs">{r.totalLateMinutes ?? 0}m</span>, sortValue: (r) => r.totalLateMinutes ?? 0, align: 'right' },
+  { key: 'occurrencesThisMonth', header: 'This Mo.', type: 'number', accessor: (r) => r.occurrencesThisMonth ?? 0, sortValue: (r) => r.occurrencesThisMonth ?? 0, align: 'right' },
+  { key: 'costImpact', header: 'Cost Impact', type: 'number', accessor: (r) => `$${r.costImpact ?? 0}`, sortValue: (r) => r.costImpact ?? 0, align: 'right' },
+  { key: 'pattern', header: 'Pattern', type: 'enum', accessor: (r) => <Badge variant={r.pattern === 'chronic' ? 'destructive' : r.pattern === 'recurring' ? 'secondary' : 'outline'} className="text-[10px]">{r.pattern}</Badge>, sortValue: (r) => r.pattern ?? '' },
+  { key: 'actionTaken', header: 'Action', type: 'enum', accessor: (r) => <span className="text-xs">{(r.actionTaken ?? '').replace('_', ' ')}</span>, sortValue: (r) => r.actionTaken ?? '' },
 ];
 
 export function LatePunctualityReport() {

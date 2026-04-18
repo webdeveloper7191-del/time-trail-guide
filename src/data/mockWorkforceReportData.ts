@@ -1,3 +1,7 @@
+import { format, subDays } from 'date-fns';
+
+const today = new Date();
+
 export interface HeadcountRecord {
   department: string;
   location: string;
@@ -10,6 +14,16 @@ export interface HeadcountRecord {
   newHires: number;
   terminations: number;
   turnoverRate: number;
+  /** Average tenure (months) of staff in this dept/location */
+  avgTenureMonths?: number;
+  /** Vacant approved positions */
+  vacancies?: number;
+  /** Average annualised salary $ */
+  avgSalary?: number;
+  /** Diversity ratio % (female + non-binary) */
+  diversityPct?: number;
+  /** Manager / Lead role for the dept */
+  manager?: string;
 }
 
 export interface TurnoverRecord {
@@ -36,6 +50,16 @@ export interface OnboardingRecord {
   completionPct: number;
   daysInPipeline: number;
   assignedTo: string;
+  /** Email for contact */
+  email?: string;
+  /** Mobile phone */
+  phone?: string;
+  /** Background / WWCC check status */
+  backgroundCheck?: 'pending' | 'cleared' | 'failed';
+  /** Documents outstanding */
+  docsOutstanding?: number;
+  /** Day count until expected start */
+  daysUntilStart?: number;
 }
 
 export interface QualificationRecord {
@@ -47,6 +71,16 @@ export interface QualificationRecord {
   expiryDate: string;
   daysUntilExpiry: number;
   status: 'valid' | 'expiring_soon' | 'expired';
+  /** Issuing authority */
+  issuingBody?: string;
+  /** Reference / certificate number */
+  certificateNumber?: string;
+  /** Department for the staff member */
+  department?: string;
+  /** Renewal cost ($) */
+  renewalCost?: number;
+  /** Whether mandatory for the role */
+  mandatory?: boolean;
 }
 
 export interface AvailabilityVsScheduledRecord {
@@ -58,6 +92,16 @@ export interface AvailabilityVsScheduledRecord {
   utilisationPct: number;
   unscheduledHours: number;
   overtimeHours: number;
+  /** Contract base hours per week */
+  contractHours?: number;
+  /** Days available in the period */
+  daysAvailable?: number;
+  /** Days scheduled */
+  daysScheduled?: number;
+  /** Last shift date */
+  lastShiftDate?: string;
+  /** Contract type */
+  contractType?: 'full_time' | 'part_time' | 'casual' | 'contractor';
 }
 
 export interface ContractDistributionRecord {
@@ -68,6 +112,14 @@ export interface ContractDistributionRecord {
   casual: number;
   contractor: number;
   totalStaff: number;
+  /** % of staff that are full-time */
+  fullTimePct?: number;
+  /** % of staff that are casual */
+  casualPct?: number;
+  /** Total weekly contracted hours */
+  totalContractedHours?: number;
+  /** Average hourly cost across mix ($) */
+  avgHourlyCost?: number;
 }
 
 export interface SkillsMatrixRecord {
@@ -77,6 +129,16 @@ export interface SkillsMatrixRecord {
   skills: { name: string; level: 'beginner' | 'intermediate' | 'advanced' | 'expert' }[];
   totalSkills: number;
   certifications: number;
+  /** Role / job title */
+  role?: string;
+  /** Average skill level (1-4) */
+  avgSkillLevel?: number;
+  /** Number of expert-level skills */
+  expertSkills?: number;
+  /** Skills gap vs role requirement */
+  skillsGap?: number;
+  /** Last training date */
+  lastTrainingDate?: string;
 }
 
 // Mock data
@@ -167,3 +229,61 @@ export const workforceSummaryMetrics = {
   expiringSoon: 4,
   avgTenureMonths: 15,
 };
+
+// =================== Enrichment: derived/extra fields ===================
+// Add computed defaults for new optional fields so all reports have rich data.
+
+const _managers = ['Sarah Williams', 'Mark John', 'James Chen', 'Linda Park', 'Tom Bradley'];
+mockHeadcountData.forEach((r, i) => {
+  r.avgTenureMonths = r.avgTenureMonths ?? (12 + (i * 3) % 36);
+  r.vacancies = r.vacancies ?? Math.max(0, Math.round(r.totalHeadcount * 0.05));
+  r.avgSalary = r.avgSalary ?? (62000 + (i * 2500) + (r.fte * 800));
+  r.diversityPct = r.diversityPct ?? (55 + (i * 4) % 25);
+  r.manager = r.manager ?? _managers[i % _managers.length];
+});
+
+mockOnboardingData.forEach((r, i) => {
+  r.email = r.email ?? `${r.staffName.toLowerCase().replace(/\s+/g, '.')}@company.com`;
+  r.phone = r.phone ?? `04${String(10000000 + i * 13571).slice(0, 8)}`;
+  r.backgroundCheck = r.backgroundCheck ?? ((['cleared', 'pending', 'cleared', 'cleared', 'pending', 'cleared'] as const)[i % 6]);
+  r.docsOutstanding = r.docsOutstanding ?? Math.max(0, r.totalSteps - r.stepsCompleted);
+  const start = new Date(r.startDate);
+  const days = Math.round((start.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  r.daysUntilStart = r.daysUntilStart ?? days;
+});
+
+const _qualBodies = ['Red Cross', 'Service NSW', 'St John Ambulance', 'ACECQA', 'WorkSafe'];
+mockQualificationData.forEach((r, i) => {
+  r.issuingBody = r.issuingBody ?? _qualBodies[i % _qualBodies.length];
+  r.certificateNumber = r.certificateNumber ?? `CERT-${1000 + i * 137}`;
+  r.department = r.department ?? (['Operations', 'Education', 'Administration'][i % 3]);
+  r.renewalCost = r.renewalCost ?? (i % 3 === 0 ? 180 : i % 3 === 1 ? 95 : 250);
+  r.mandatory = r.mandatory ?? (r.qualification.includes('First Aid') || r.qualification.includes('Children Check') || r.qualification.includes('CPR'));
+});
+
+mockAvailabilityVsScheduled.forEach((r, i) => {
+  r.contractHours = r.contractHours ?? r.availableHours;
+  r.daysAvailable = r.daysAvailable ?? Math.round(r.availableHours / 8);
+  r.daysScheduled = r.daysScheduled ?? Math.round(r.scheduledHours / 8);
+  r.lastShiftDate = r.lastShiftDate ?? format(subDays(today, 1 + (i % 5)), 'yyyy-MM-dd');
+  r.contractType = r.contractType ?? (['full_time', 'part_time', 'casual', 'contractor'] as const)[i % 4];
+});
+
+mockContractDistribution.forEach((r) => {
+  r.fullTimePct = r.fullTimePct ?? Math.round((r.fullTime / r.totalStaff) * 100);
+  r.casualPct = r.casualPct ?? Math.round((r.casual / r.totalStaff) * 100);
+  r.totalContractedHours = r.totalContractedHours ?? (r.fullTime * 38 + r.partTime * 24 + r.casual * 16 + r.contractor * 30);
+  r.avgHourlyCost = r.avgHourlyCost ?? Math.round(32 + (r.casual / r.totalStaff) * 8);
+});
+
+const _roles = ['Lead Educator', 'Educator', 'Assistant', 'Coordinator', 'Cook'];
+mockSkillsMatrix.forEach((r, i) => {
+  r.role = r.role ?? _roles[i % _roles.length];
+  const levelMap = { beginner: 1, intermediate: 2, advanced: 3, expert: 4 };
+  const sum = r.skills.reduce((s, sk) => s + levelMap[sk.level], 0);
+  r.avgSkillLevel = r.avgSkillLevel ?? Number((sum / Math.max(1, r.skills.length)).toFixed(1));
+  r.expertSkills = r.expertSkills ?? r.skills.filter(s => s.level === 'expert').length;
+  r.skillsGap = r.skillsGap ?? Math.max(0, 4 - r.totalSkills);
+  r.lastTrainingDate = r.lastTrainingDate ?? format(subDays(today, 14 + i * 7), 'yyyy-MM-dd');
+});
+

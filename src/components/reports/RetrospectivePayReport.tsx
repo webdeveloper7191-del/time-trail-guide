@@ -44,6 +44,12 @@ const tableColumns: DataTableColumn<RetrospectivePayRecord>[] = [
   { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge variant={STATUS_VARIANT[r.status]} className="text-xs">{r.status}</Badge> },
   { key: 'reason', header: 'Reason', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground">{r.reason}</span>, sortValue: (r) => r.reason },
+  { key: 'department', header: 'Dept', type: 'enum', accessor: (r) => r.department ?? '—', sortValue: (r) => r.department ?? '' },
+  { key: 'affectedShifts', header: 'Shifts Affected', type: 'number', accessor: (r) => r.affectedShifts ?? 0, sortValue: (r) => r.affectedShifts ?? 0, align: 'right' },
+  { key: 'taxImpact', header: 'Tax Impact', type: 'number', accessor: (r) => `$${(r.taxImpact ?? 0).toLocaleString()}`, sortValue: (r) => r.taxImpact ?? 0, align: 'right' },
+  { key: 'superImpact', header: 'Super Impact', type: 'number', accessor: (r) => `$${(r.superImpact ?? 0).toLocaleString()}`, sortValue: (r) => r.superImpact ?? 0, align: 'right' },
+  { key: 'paymentDate', header: 'Payment Date', type: 'date', accessor: (r) => r.paymentDate ?? '—', sortValue: (r) => r.paymentDate ?? '' },
+  { key: 'approvedBy', header: 'Approved By', type: 'enum', accessor: (r) => <span className="text-xs">{r.approvedBy}</span>, sortValue: (r) => r.approvedBy ?? '' },
 ];
 
 export function RetrospectivePayReport() {

@@ -70,6 +70,12 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
       r.urgency === 'high' && 'border-orange-500 text-orange-600 bg-orange-50',
       r.urgency === 'medium' && 'border-amber-500 text-amber-600',
     )}>{r.urgency}</Badge> },
+  { key: 'reason', header: 'Reason', type: 'enum', accessor: (r) => <span className="text-xs">{r.reason}</span>, sortValue: (r) => r.reason ?? '' },
+  { key: 'agencyCost', header: 'Agency Cost', type: 'number', accessor: (r) => `$${(r.agencyCost ?? 0).toLocaleString()}`, sortValue: (r) => r.agencyCost ?? 0, align: 'right' },
+  { key: 'internalCost', header: 'Internal Cost', type: 'number', accessor: (r) => `$${(r.internalCost ?? 0).toLocaleString()}`, sortValue: (r) => r.internalCost ?? 0, align: 'right' },
+  { key: 'totalCost', header: 'Total Cost', type: 'number', accessor: (r) => <span className="font-semibold">${(r.totalCost ?? 0).toLocaleString()}</span>, sortValue: (r) => r.totalCost ?? 0, align: 'right' },
+  { key: 'costPerShift', header: 'Cost/Shift', type: 'number', accessor: (r) => `$${r.costPerShift ?? 0}`, sortValue: (r) => r.costPerShift ?? 0, align: 'right' },
+  { key: 'notificationsSent', header: 'Notifs', type: 'number', accessor: (r) => r.notificationsSent ?? 0, sortValue: (r) => r.notificationsSent ?? 0, align: 'right' },
 ];
 
 export function OpenShiftFillReport() {

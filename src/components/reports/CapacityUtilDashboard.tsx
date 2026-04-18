@@ -36,6 +36,11 @@ const tableColumns: DataTableColumn<CapacityUtilData>[] = [
     accessor: (r) => (<div className="flex items-center gap-2"><Progress value={r.utilisationPercent} className="h-2 flex-1" /><span className={cn('text-xs font-medium w-8 text-right', r.utilisationPercent >= 90 ? 'text-destructive' : 'text-foreground')}>{r.utilisationPercent}%</span></div>) },
   { key: 'trend', header: 'Trend', type: 'text', align: 'center', sortValue: (r) => r.trend,
     accessor: (r) => r.trend === 'up' ? <TrendingUp className="h-4 w-4 text-emerald-500 mx-auto" /> : r.trend === 'down' ? <TrendingDown className="h-4 w-4 text-destructive mx-auto" /> : <Minus className="h-4 w-4 text-muted-foreground mx-auto" /> },
+  { key: 'freeCapacity', header: 'Free', type: 'number', accessor: (r) => r.freeCapacity ?? 0, sortValue: (r) => r.freeCapacity ?? 0, align: 'right' },
+  { key: 'utilisationVsTarget', header: 'vs Target', type: 'number', accessor: (r) => <span className={cn('text-xs font-mono', (r.utilisationVsTarget ?? 0) < 0 ? 'text-amber-600' : 'text-emerald-600')}>{(r.utilisationVsTarget ?? 0) > 0 ? '+' : ''}{r.utilisationVsTarget ?? 0}%</span>, sortValue: (r) => r.utilisationVsTarget ?? 0, align: 'right' },
+  { key: 'hourPeakStart', header: 'Peak Hour', type: 'text', accessor: (r) => <span className="font-mono text-xs">{r.hourPeakStart}</span>, sortValue: (r) => r.hourPeakStart ?? '' },
+  { key: 'forecastNext7d', header: 'Forecast 7d', type: 'number', accessor: (r) => r.forecastNext7d ?? 0, sortValue: (r) => r.forecastNext7d ?? 0, align: 'right' },
+  { key: 'revenuePerSeat', header: '$/Seat', type: 'number', accessor: (r) => `$${r.revenuePerSeat ?? 0}`, sortValue: (r) => r.revenuePerSeat ?? 0, align: 'right' },
 ];
 
 export function CapacityUtilDashboard() {

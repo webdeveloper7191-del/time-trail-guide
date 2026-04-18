@@ -60,6 +60,11 @@ const tableColumns: DataTableColumn<RecurringPatternRecord>[] = [
       )) : <span className="text-muted-foreground text-xs">—</span>}
     </div>
   ), sortValue: (r) => r.deviationReasons.join(', ') },
+  { key: 'daysActive', header: 'Days Active', type: 'number', accessor: (r) => `${r.daysActive ?? 0}d`, sortValue: (r) => r.daysActive ?? 0, align: 'right' },
+  { key: 'staffAssigned', header: 'Staff', type: 'number', accessor: (r) => r.staffAssigned ?? 0, sortValue: (r) => r.staffAssigned ?? 0, align: 'right' },
+  { key: 'failureCost', header: 'Failure Cost', type: 'number', accessor: (r) => (r.failureCost ?? 0) > 0 ? <span className="text-destructive text-xs">${r.failureCost}</span> : '—', sortValue: (r) => r.failureCost ?? 0, align: 'right' },
+  { key: 'lastDeviation', header: 'Last Deviation', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.lastDeviation}</span>, sortValue: (r) => r.lastDeviation ?? '' },
+  { key: 'owner', header: 'Owner', type: 'enum', accessor: (r) => <span className="text-xs">{r.owner}</span>, sortValue: (r) => r.owner ?? '' },
 ];
 
 export function RecurringPatternReport() {

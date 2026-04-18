@@ -80,6 +80,11 @@ const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
     ) },
   { key: 'riskLevel', header: 'Risk Level', type: 'text', sortValue: (r) => ({ low: 0, medium: 1, high: 2, critical: 3 }[r.riskLevel]),
     accessor: (r) => <Badge className={cn('text-xs capitalize', riskColors[r.riskLevel])}>{r.riskLevel}</Badge> },
+  { key: 'totalShiftsThisMonth', header: 'Shifts/Mo', type: 'number', accessor: (r) => r.totalShiftsThisMonth ?? 0, sortValue: (r) => r.totalShiftsThisMonth ?? 0, align: 'right' },
+  { key: 'overtimeCost', header: 'OT Cost', type: 'number', accessor: (r) => `$${(r.overtimeCost ?? 0).toLocaleString()}`, sortValue: (r) => r.overtimeCost ?? 0, align: 'right' },
+  { key: 'daysOff7d', header: 'Days Off (7d)', type: 'number', accessor: (r) => <span className={cn('text-xs', (r.daysOff7d ?? 0) === 0 ? 'text-destructive font-medium' : '')}>{r.daysOff7d ?? 0}</span>, sortValue: (r) => r.daysOff7d ?? 0, align: 'right' },
+  { key: 'trend', header: 'Trend', type: 'enum', accessor: (r) => <Badge variant={r.trend === 'worsening' ? 'destructive' : r.trend === 'improving' ? 'secondary' : 'outline'} className="text-[10px]">{r.trend}</Badge>, sortValue: (r) => r.trend ?? '' },
+  { key: 'recommendedAction', header: 'Action', type: 'text', accessor: (r) => <span className="text-[11px]">{r.recommendedAction}</span>, sortValue: (r) => r.recommendedAction ?? '' },
 ];
 
 export function OvertimeFatigueReport() {

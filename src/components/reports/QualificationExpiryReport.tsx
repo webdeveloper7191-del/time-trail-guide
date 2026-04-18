@@ -41,6 +41,11 @@ const tableColumns: DataTableColumn<QualificationRecord>[] = [
     accessor: (r) => <span className={cn('text-xs font-semibold', r.daysUntilExpiry < 0 ? 'text-destructive' : r.daysUntilExpiry < 90 ? 'text-amber-600' : 'text-emerald-600')}>{r.daysUntilExpiry < 0 ? `${Math.abs(r.daysUntilExpiry)}d overdue` : `${r.daysUntilExpiry}d`}</span> },
   { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge className={`text-[10px] ${statusColors[r.status]}`}>{statusLabels[r.status]}</Badge> },
+  { key: 'department', header: 'Dept', type: 'enum', accessor: (r) => r.department ?? '—', sortValue: (r) => r.department ?? '' },
+  { key: 'issuingBody', header: 'Issuing Body', type: 'enum', accessor: (r) => <span className="text-xs">{r.issuingBody}</span>, sortValue: (r) => r.issuingBody ?? '' },
+  { key: 'certificateNumber', header: 'Cert #', type: 'text', accessor: (r) => <span className="font-mono text-[10px] text-muted-foreground">{r.certificateNumber}</span>, sortValue: (r) => r.certificateNumber ?? '' },
+  { key: 'mandatory', header: 'Mandatory', type: 'enum', accessor: (r) => r.mandatory ? <Badge variant="destructive" className="text-[10px]">Required</Badge> : <Badge variant="outline" className="text-[10px]">Optional</Badge>, sortValue: (r) => r.mandatory ? 'Required' : 'Optional' },
+  { key: 'renewalCost', header: 'Renewal $', type: 'number', accessor: (r) => `$${r.renewalCost ?? 0}`, sortValue: (r) => r.renewalCost ?? 0, align: 'right' },
 ];
 
 export function QualificationExpiryReport() {

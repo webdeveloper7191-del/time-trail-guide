@@ -48,6 +48,12 @@ const tableColumns: DataTableColumn<BreakComplianceRecord>[] = [
   { key: 'compliant', header: 'Status', type: 'enum', sortValue: (r) => r.compliant ? 1 : 0,
     accessor: (r) => r.compliant ? <Badge className="text-xs bg-emerald-100 text-emerald-700">Compliant</Badge> : <Badge className="text-xs bg-red-100 text-red-700">Violation</Badge> },
   { key: 'violation', header: 'Violation Detail', type: 'number', accessor: (r) => r.violation ? <span className="text-xs text-destructive">{r.violation}</span> : <span className="text-muted-foreground text-xs">—</span>, sortValue: (r) => r.violation || '' },
+  { key: 'shiftStart', header: 'Shift Start', type: 'text', accessor: (r) => <span className="text-[11px]">{r.shiftStart}</span>, sortValue: (r) => r.shiftStart ?? '' },
+  { key: 'shiftEnd', header: 'Shift End', type: 'text', accessor: (r) => <span className="text-[11px]">{r.shiftEnd}</span>, sortValue: (r) => r.shiftEnd ?? '' },
+  { key: 'hourlyRate', header: 'Rate', type: 'number', accessor: (r) => `$${r.hourlyRate ?? 0}/h`, sortValue: (r) => r.hourlyRate ?? 0, align: 'right' },
+  { key: 'potentialLiability', header: 'Liability', type: 'number', accessor: (r) => (r.potentialLiability ?? 0) > 0 ? <span className="text-destructive font-medium text-xs">${r.potentialLiability}</span> : '—', sortValue: (r) => r.potentialLiability ?? 0, align: 'right' },
+  { key: 'awardReference', header: 'Award', type: 'enum', accessor: (r) => <span className="font-mono text-[10px] text-muted-foreground">{r.awardReference}</span>, sortValue: (r) => r.awardReference ?? '' },
+  { key: 'riskLevel', header: 'Risk', type: 'enum', accessor: (r) => <Badge variant={r.riskLevel === 'high' ? 'destructive' : r.riskLevel === 'medium' ? 'secondary' : 'outline'} className="text-[10px]">{r.riskLevel}</Badge>, sortValue: (r) => r.riskLevel ?? '' },
 ];
 
 export function BreakComplianceReport() {

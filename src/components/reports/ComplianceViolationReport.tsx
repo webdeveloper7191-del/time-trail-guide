@@ -35,6 +35,11 @@ const tableColumns: DataTableColumn<ComplianceViolationRecord>[] = [
   { key: 'date', header: 'Date', type: 'date', accessor: (r) => r.date, sortValue: (r) => r.date },
   { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge variant={r.status === 'resolved' ? 'default' : r.status === 'acknowledged' ? 'secondary' : 'destructive'} className="text-xs">{r.status}</Badge> },
+  { key: 'ageInDays', header: 'Age', type: 'number', accessor: (r) => <span className={cn('text-xs', (r.ageInDays ?? 0) > 7 ? 'text-destructive font-medium' : '')}>{r.ageInDays ?? 0}d</span>, sortValue: (r) => r.ageInDays ?? 0, align: 'right' },
+  { key: 'responsibleStaff', header: 'Responsible', type: 'enum', accessor: (r) => <span className="text-xs">{r.responsibleStaff}</span>, sortValue: (r) => r.responsibleStaff ?? '' },
+  { key: 'potentialFine', header: 'Fine Risk', type: 'number', accessor: (r) => <span className="font-semibold text-destructive">${(r.potentialFine ?? 0).toLocaleString()}</span>, sortValue: (r) => r.potentialFine ?? 0, align: 'right' },
+  { key: 'riskCategory', header: 'Category', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-[10px] capitalize">{r.riskCategory}</Badge>, sortValue: (r) => r.riskCategory ?? '' },
+  { key: 'evidence', header: 'Evidence', type: 'enum', accessor: (r) => <span className="text-xs">{r.evidence}</span>, sortValue: (r) => r.evidence ?? '' },
 ];
 
 export function ComplianceViolationReport() {

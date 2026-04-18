@@ -44,6 +44,12 @@ const tableColumns: DataTableColumn<AwardOverrideRecord>[] = [
   { key: 'approvedDate', header: 'Date', type: 'date', accessor: (r) => r.approvedDate, sortValue: (r) => r.approvedDate },
   { key: 'expiryDate', header: 'Expires', type: 'date', accessor: (r) => r.expiryDate || <span className="text-muted-foreground text-xs">Permanent</span>, sortValue: (r) => r.expiryDate || 'z' },
   { key: 'reason', header: 'Reason', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground">{r.reason}</span>, sortValue: (r) => r.reason },
+  { key: 'department', header: 'Dept', type: 'enum', accessor: (r) => r.department ?? '—', sortValue: (r) => r.department ?? '' },
+  { key: 'rateDifference', header: 'Rate Δ', type: 'number', accessor: (r) => <span className={cn('font-mono text-xs', (r.rateDifference ?? 0) > 0 ? 'text-emerald-600' : 'text-destructive')}>{(r.rateDifference ?? 0) > 0 ? '+' : ''}${(r.rateDifference ?? 0).toFixed(2)}</span>, sortValue: (r) => r.rateDifference ?? 0, align: 'right' },
+  { key: 'rateDifferencePct', header: 'Δ %', type: 'number', accessor: (r) => `${(r.rateDifferencePct ?? 0) > 0 ? '+' : ''}${r.rateDifferencePct ?? 0}%`, sortValue: (r) => r.rateDifferencePct ?? 0, align: 'right' },
+  { key: 'affectedHoursMonthly', header: 'Hrs/Mo', type: 'number', accessor: (r) => `${r.affectedHoursMonthly ?? 0}h`, sortValue: (r) => r.affectedHoursMonthly ?? 0, align: 'right' },
+  { key: 'monthlyCostImpact', header: 'Cost Impact/Mo', type: 'number', accessor: (r) => <span className="font-semibold">${(r.monthlyCostImpact ?? 0).toLocaleString()}</span>, sortValue: (r) => r.monthlyCostImpact ?? 0, align: 'right' },
+  { key: 'reviewDate', header: 'Review Date', type: 'date', accessor: (r) => r.reviewDate ?? '—', sortValue: (r) => r.reviewDate ?? '' },
 ];
 
 export function AwardOverrideAuditReport() {

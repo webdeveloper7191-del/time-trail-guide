@@ -44,6 +44,11 @@ const tableColumns: DataTableColumn<CoverageGapRecord>[] = [
   { key: 'gapSeverity', header: 'Severity', type: 'enum', sortValue: (r) => ({ minor: 0, moderate: 1, critical: 2 }[r.gapSeverity]),
     accessor: (r) => <Badge className={cn('text-xs capitalize', severityColors[r.gapSeverity])}>{r.gapSeverity}</Badge> },
   { key: 'reason', header: 'Reason', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground">{r.reason || '—'}</span>, sortValue: (r) => r.reason },
+  { key: 'durationHours', header: 'Duration', type: 'number', accessor: (r) => `${r.durationHours ?? 0}h`, sortValue: (r) => r.durationHours ?? 0, align: 'right' },
+  { key: 'estimatedCost', header: 'Est Cost', type: 'number', accessor: (r) => `$${(r.estimatedCost ?? 0).toLocaleString()}`, sortValue: (r) => r.estimatedCost ?? 0, align: 'right' },
+  { key: 'ratioImpact', header: 'Ratio', type: 'enum', accessor: (r) => <span className="font-mono text-[11px]">{r.ratioImpact}</span>, sortValue: (r) => r.ratioImpact ?? '' },
+  { key: 'resolution', header: 'Resolution', type: 'enum', accessor: (r) => <Badge variant={r.resolution === 'unfilled' ? 'destructive' : r.resolution === 'pending' ? 'secondary' : 'outline'} className="text-[10px] capitalize">{r.resolution}</Badge>, sortValue: (r) => r.resolution ?? '' },
+  { key: 'notifiedAt', header: 'Notified', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.notifiedAt}</span>, sortValue: (r) => r.notifiedAt ?? '' },
 ];
 
 export function CoverageGapReport() {

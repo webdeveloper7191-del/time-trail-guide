@@ -40,6 +40,11 @@ const tableColumns: DataTableColumn<AllowancePenaltyRecord>[] = [
   { key: 'amount', header: 'Amount', type: 'number', accessor: (r) => <span className="font-semibold">${r.amount.toLocaleString()}</span>, sortValue: (r) => r.amount, align: 'right' },
   { key: 'date', header: 'Date', type: 'date', accessor: (r) => r.date, sortValue: (r) => r.date },
   { key: 'awardReference', header: 'Award', type: 'text', accessor: (r) => <span className="text-muted-foreground text-xs">{r.awardReference}</span>, sortValue: (r) => r.awardReference },
+  { key: 'department', header: 'Dept', type: 'enum', accessor: (r) => r.department ?? '—', sortValue: (r) => r.department ?? '' },
+  { key: 'payPeriod', header: 'Pay Period', type: 'text', accessor: (r) => <span className="text-xs text-muted-foreground">{r.payPeriod}</span>, sortValue: (r) => r.payPeriod ?? '' },
+  { key: 'taxable', header: 'Taxable', type: 'enum', accessor: (r) => r.taxable ? <Badge variant="secondary" className="text-[10px]">Yes</Badge> : <Badge variant="outline" className="text-[10px]">No</Badge>, sortValue: (r) => r.taxable ? 'Yes' : 'No' },
+  { key: 'superApplicable', header: 'Super', type: 'enum', accessor: (r) => r.superApplicable ? '✓' : '—', sortValue: (r) => r.superApplicable ? 1 : 0, align: 'center' },
+  { key: 'approvedBy', header: 'Approved By', type: 'enum', accessor: (r) => <span className="text-xs">{r.approvedBy}</span>, sortValue: (r) => r.approvedBy ?? '' },
 ];
 
 export function AllowancePenaltyReport() {

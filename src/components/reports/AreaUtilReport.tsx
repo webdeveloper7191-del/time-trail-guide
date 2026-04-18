@@ -45,6 +45,11 @@ const tableColumns: DataTableColumn<AreaUtilRecord>[] = [
     ) },
   { key: 'status', header: 'Status', type: 'enum', sortValue: (r) => r.status,
     accessor: (r) => <Badge variant={r.status === 'active' ? 'default' : 'secondary'} className="text-xs">{r.status}</Badge> },
+  { key: 'freeHours', header: 'Free Hrs', type: 'number', accessor: (r) => `${r.freeHours ?? 0}h`, sortValue: (r) => r.freeHours ?? 0, align: 'right' },
+  { key: 'bookings', header: 'Bookings', type: 'number', accessor: (r) => r.bookings ?? 0, sortValue: (r) => r.bookings ?? 0, align: 'right' },
+  { key: 'staffAssigned', header: 'Staff', type: 'number', accessor: (r) => r.staffAssigned ?? 0, sortValue: (r) => r.staffAssigned ?? 0, align: 'right' },
+  { key: 'revenueImpact', header: 'Revenue', type: 'number', accessor: (r) => <span className="font-semibold">${(r.revenueImpact ?? 0).toLocaleString()}</span>, sortValue: (r) => r.revenueImpact ?? 0, align: 'right' },
+  { key: 'efficiencyScore', header: 'Efficiency', type: 'number', accessor: (r) => <Badge variant={(r.efficiencyScore ?? 0) >= 80 ? 'outline' : (r.efficiencyScore ?? 0) >= 60 ? 'secondary' : 'destructive'} className="text-[10px]">{r.efficiencyScore ?? 0}%</Badge>, sortValue: (r) => r.efficiencyScore ?? 0, align: 'right' },
 ];
 
 export function AreaUtilReport() {
