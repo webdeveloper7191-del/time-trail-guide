@@ -1,8 +1,9 @@
 /**
  * Type-aware filter operator engine for ReportDataTable.
- * Supports text, number, date, and enum columns with standard operators.
+ * Supports text, number, date, enum and sparkline columns with standard operators.
+ * Also supports nested rule groups with AND/OR connectors (one level deep).
  */
-export type ColumnType = 'text' | 'number' | 'date' | 'enum';
+export type ColumnType = 'text' | 'number' | 'date' | 'enum' | 'sparkline';
 
 export type Operator =
   // Text
@@ -21,6 +22,21 @@ export interface FilterRule {
   value?: string | number;
   value2?: string | number; // for between
   values?: string[]; // for in/notIn
+}
+
+export type Connector = 'AND' | 'OR';
+
+export interface FilterGroup {
+  id: string;
+  type: 'group';
+  connector: Connector; // how children are combined
+  children: FilterRule[]; // one-level deep — children are always rules
+}
+
+export type RuleNode = FilterRule | FilterGroup;
+
+export function isGroup(n: RuleNode | undefined | null): n is FilterGroup {
+  return !!n && (n as FilterGroup).type === 'group';
 }
 
 export const TEXT_OPERATORS: { value: Operator; label: string; needsValue?: boolean }[] = [
@@ -76,6 +92,7 @@ export function getOperatorsForType(type: ColumnType) {
     case 'number': return NUMBER_OPERATORS;
     case 'date': return DATE_OPERATORS;
     case 'enum': return ENUM_OPERATORS;
+    case 'sparkline': return NUMBER_OPERATORS; // filter on the trend's last value
     default: return TEXT_OPERATORS;
   }
 }
@@ -83,6 +100,7 @@ export function getOperatorsForType(type: ColumnType) {
 export function getDefaultOperator(type: ColumnType): Operator {
   switch (type) {
     case 'number': return 'gte';
+    case 'sparkline': return 'gte';
     case 'date': return 'after';
     case 'enum': return 'in';
     default: return 'contains';
@@ -120,7 +138,7 @@ export function evaluateRule(rawValue: string, numericValue: number | null, rule
     }
   }
 
-  if (type === 'number') {
+  if (type === 'number' || type === 'sparkline') {
     if (numericValue === null || isNaN(numericValue)) return false;
     const v = Number(rule.value);
     const v2 = Number(rule.value2);
@@ -178,6 +196,27 @@ export function evaluateRule(rawValue: string, numericValue: number | null, rule
   return true;
 }
 
+/**
+ * Evaluate a list of top-level RuleNodes (rules + groups) against a row.
+ * Top-level nodes are combined with AND. Inside groups, the group's connector applies.
+ */
+export function evaluateNodes(
+  nodes: RuleNode[],
+  evalRule: (rule: FilterRule) => boolean
+): boolean {
+  for (const node of nodes) {
+    if (isGroup(node)) {
+      if (node.children.length === 0) continue;
+      const results = node.children.map(evalRule);
+      const ok = node.connector === 'OR' ? results.some(Boolean) : results.every(Boolean);
+      if (!ok) return false;
+    } else {
+      if (!evalRule(node)) return false;
+    }
+  }
+  return true;
+}
+
 export function operatorLabel(op: Operator): string {
   const all = [...TEXT_OPERATORS, ...NUMBER_OPERATORS, ...DATE_OPERATORS, ...ENUM_OPERATORS];
   return all.find(o => o.value === op)?.label || op;
@@ -195,4 +234,14 @@ export function describeRule(rule: FilterRule, columnHeader: string): string {
     return `${columnHeader} ${opLabel.toLowerCase()} ${(rule.values || []).join(', ') || '?'}`;
   }
   return `${columnHeader} ${opLabel.toLowerCase()} ${rule.value ?? '?'}`;
+}
+
+/** Flatten nodes into a list of rules (for chip display + per-column matching). */
+export function flattenNodes(nodes: RuleNode[]): FilterRule[] {
+  const out: FilterRule[] = [];
+  for (const n of nodes) {
+    if (isGroup(n)) out.push(...n.children);
+    else out.push(n);
+  }
+  return out;
 }
