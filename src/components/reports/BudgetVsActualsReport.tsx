@@ -288,7 +288,7 @@ export function BudgetVsActualsReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Detailed Budget Line Items</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.category}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.category}-${i}`} reportId="budget-vs-actuals" exportTitle="Budget vs Actuals" /></CardContent>
       </Card>
     </div>
   );
