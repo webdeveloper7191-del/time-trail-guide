@@ -52,6 +52,8 @@ const tableColumns: DataTableColumn<HeadcountRecord>[] = [
   { key: 'avgSalary', header: 'Avg Salary', type: 'number', accessor: (r) => `$${((r.avgSalary ?? 0) / 1000).toFixed(0)}k`, sortValue: (r) => r.avgSalary ?? 0, align: 'right' },
   { key: 'diversityPct', header: 'Diversity %', type: 'number', accessor: (r) => `${r.diversityPct ?? 0}%`, sortValue: (r) => r.diversityPct ?? 0, align: 'right' },
   { key: 'manager', header: 'Manager', type: 'enum', accessor: (r) => <span className="text-xs">{r.manager}</span>, sortValue: (r) => r.manager ?? '' },
+  { key: 'headcountTrend', header: 'HC Trend (8wk)', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.headcountTrend ?? [] },
+  { key: 'fteTrend', header: 'FTE Trend (8wk)', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.fteTrend ?? [] },
 ];
 
 // Simulated trend data
@@ -253,7 +255,7 @@ export function HeadcountFTEReport() {
       {/* Detail Table */}
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Detailed Breakdown</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.department}-${r.location}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.department}-${r.location}-${i}`} reportId="headcount-fte" exportTitle="Headcount &amp; FTE" /></CardContent>
       </Card>
     </div>
   );
