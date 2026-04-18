@@ -622,10 +622,12 @@ interface SavedViewsMenuProps {
   onApply: (view: SavedReportView) => void;
   onSave: (name: string) => void;
   onDelete: (id: string) => void;
+  onTogglePin: (id: string) => void;
+  onSetDefault: (id: string) => void;
   hasState: boolean;
 }
 
-function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, hasState }: SavedViewsMenuProps) {
+function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, onTogglePin, onSetDefault, hasState }: SavedViewsMenuProps) {
   const [name, setName] = useState('');
 
   const submit = () => {
@@ -645,22 +647,43 @@ function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, hasState }
           {views.length > 0 && <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">{views.length}</Badge>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start">
-        <div className="px-3 py-2 border-b border-border/60">
+      <PopoverContent className="w-80 p-0" align="start">
+        <div className="px-3 py-2 border-b border-border/60 flex items-center justify-between">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Saved views</span>
+          <span className="text-[9px] text-muted-foreground">★ pin · ◎ default</span>
         </div>
         {views.length === 0 ? (
           <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
             No saved views yet.
           </div>
         ) : (
-          <ScrollArea className="max-h-[200px]">
+          <ScrollArea className="max-h-[240px]">
             <div className="p-1">
               {views.map(v => (
-                <div key={v.id} className={cn('group flex items-center gap-1 px-2 py-1.5 rounded hover:bg-accent', v.id === activeId && 'bg-accent')}>
-                  <button className="flex-1 text-left text-xs flex items-center gap-2 min-w-0" onClick={() => onApply(v)}>
-                    {v.id === activeId ? <Check className="h-3 w-3 text-primary shrink-0" /> : <Bookmark className="h-3 w-3 text-muted-foreground shrink-0" />}
+                <div key={v.id} className={cn('group flex items-center gap-0.5 px-1.5 py-1.5 rounded hover:bg-accent', v.id === activeId && 'bg-accent')}>
+                  <button
+                    className={cn(
+                      'p-1 rounded hover:bg-amber-500/10 shrink-0',
+                      v.pinned ? 'opacity-100' : 'opacity-40 hover:opacity-100'
+                    )}
+                    title={v.pinned ? 'Unpin' : 'Pin to top'}
+                    onClick={(e) => { e.stopPropagation(); onTogglePin(v.id); }}
+                  >
+                    <Star className={cn('h-3 w-3', v.pinned ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground')} />
+                  </button>
+                  <button
+                    className={cn(
+                      'p-1 rounded hover:bg-primary/10 shrink-0',
+                      v.isDefault ? 'opacity-100' : 'opacity-40 hover:opacity-100'
+                    )}
+                    title={v.isDefault ? 'Remove as default' : 'Set as default (auto-apply on load)'}
+                    onClick={(e) => { e.stopPropagation(); onSetDefault(v.id); }}
+                  >
+                    <Check className={cn('h-3 w-3', v.isDefault ? 'text-primary' : 'text-muted-foreground')} />
+                  </button>
+                  <button className="flex-1 text-left text-xs flex items-center gap-2 min-w-0 px-1" onClick={() => onApply(v)}>
                     <span className="truncate">{v.name}</span>
+                    {v.isDefault && <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary/40 text-primary">default</Badge>}
                     <span className="text-[9px] text-muted-foreground ml-auto shrink-0">
                       {v.rules.length}r · {v.hiddenColumns.length}h
                     </span>
@@ -701,5 +724,30 @@ function SavedViewsMenu({ views, activeId, onApply, onSave, onDelete, hasState }
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+// ============================================================================
+// ExportCurrentViewButton — exports filtered + sorted rows with visible columns
+// ============================================================================
+
+function ExportCurrentViewButton({ onExport }: { onExport: (kind: 'csv' | 'pdf') => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="h-9 gap-2 text-xs" title="Export only currently visible columns and filtered rows">
+          <Download className="h-3.5 w-3.5" />
+          Export view
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem onClick={() => onExport('csv')} className="text-xs gap-2">
+          <FileSpreadsheet className="h-3.5 w-3.5" /> CSV (visible columns)
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onExport('pdf')} className="text-xs gap-2">
+          <FileText className="h-3.5 w-3.5" /> PDF (visible columns)
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
