@@ -160,6 +160,20 @@ export function ReportDataTable<T>({
     setViews(next);
   };
 
+  const handleSetSchedule = (id: string, schedule: ViewSchedule | null) => {
+    const next = setViewSchedule(rid, id, schedule);
+    setViews(next);
+    const v = next.find(x => x.id === id);
+    if (schedule && v) {
+      const nextRun = new Date(nextRunAt(schedule)).toLocaleString();
+      toast.success(`Schedule saved for "${v.name}"`, {
+        description: `${schedule.cadence} ${schedule.format.toUpperCase()} → ${schedule.recipients}. Next run: ${nextRun}`,
+      });
+    } else if (v) {
+      toast(`Schedule cleared for "${v.name}"`);
+    }
+  };
+
   // ---- Value extraction ----
   const getRawValue = useCallback((col: DataTableColumn<T>, row: T): string => {
     if (col.sortValue) return String(col.sortValue(row));
