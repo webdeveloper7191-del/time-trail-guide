@@ -5,6 +5,7 @@ import { ReportFilterBar } from './ReportFilterBar';
 import { ReportDataTable, DataTableColumn } from './ReportDataTable';
 import { ReportHelpGuide } from './ReportHelpGuide';
 import { StatCard, InsightCard, SummaryRow } from './ReportWidgets';
+import { KpiSparklineRow, KpiTileConfig } from './KpiSparklinePicker';
 import { DateRange } from 'react-day-picker';
 import { ExportColumn } from '@/lib/reportExport';
 import { mockLabourCosts, LabourCostRecord } from '@/data/mockPayrollReportData';
@@ -143,14 +144,23 @@ export function LabourCostReport() {
         relatedReports={['Payroll Cost Dashboard', 'Overtime by Location', 'Casual vs Permanent Cost', 'Allowance & Penalty Breakdown']}
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Total Labour Cost" value={`$${(totalCost / 1000).toFixed(0)}k`} icon={DollarSign} size="sm" />
-        <StatCard label="Budget Variance" value={`${totalVariance >= 0 ? '+' : '-'}$${(Math.abs(totalVariance) / 1000).toFixed(1)}k`} icon={Target} variant={totalVariance >= 0 ? 'success' : 'danger'} size="sm" />
-        <StatCard label="Overtime Cost" value={`$${(totalOT / 1000).toFixed(1)}k`} icon={AlertTriangle} size="sm" />
-        <StatCard label="Agency Cost" value={`$${(totalAgency / 1000).toFixed(1)}k`} icon={Users} variant={totalAgency > totalCost * 0.1 ? 'danger' : 'default'} size="sm" />
-        <StatCard label="Cost/Head" value={`$${costPerHead.toLocaleString()}`} icon={Banknote} size="sm" />
-        <StatCard label="Over Budget" value={overBudgetCount} icon={TrendingUp} variant={overBudgetCount > 0 ? 'danger' : 'success'} subtitle={`of ${filtered.length} depts`} size="sm" />
-      </div>
+      {(() => {
+        const trendLen = (filtered[0] as any)?.costTrend?.length ?? 0;
+        const costAgg = Array.from({ length: trendLen }, (_, i) =>
+          filtered.reduce((s, r: any) => s + (r.costTrend?.[i] ?? 0), 0)
+        );
+        const otAgg = costAgg.map(v => Math.round(v * (totalCost > 0 ? totalOT / totalCost : 0)));
+        const agencyAgg = costAgg.map(v => Math.round(v * (totalCost > 0 ? totalAgency / totalCost : 0)));
+        const tiles: KpiTileConfig[] = [
+          { key: 'totalCost', label: 'Total Labour Cost', value: `$${(totalCost / 1000).toFixed(0)}k`, icon: DollarSign, trend: costAgg, trendLabel: 'Cost (8wk)' },
+          { key: 'variance', label: 'Budget Variance', value: `${totalVariance >= 0 ? '+' : '-'}$${(Math.abs(totalVariance) / 1000).toFixed(1)}k`, icon: Target, variant: totalVariance >= 0 ? 'success' : 'danger' },
+          { key: 'ot', label: 'Overtime Cost', value: `$${(totalOT / 1000).toFixed(1)}k`, icon: AlertTriangle, trend: otAgg, trendLabel: 'OT (8wk)' },
+          { key: 'agency', label: 'Agency Cost', value: `$${(totalAgency / 1000).toFixed(1)}k`, icon: Users, trend: agencyAgg, trendLabel: 'Agency (8wk)', variant: totalAgency > totalCost * 0.1 ? 'danger' : 'default' },
+          { key: 'costHead', label: 'Cost/Head', value: `$${costPerHead.toLocaleString()}`, icon: Banknote },
+          { key: 'overBudget', label: 'Over Budget', value: overBudgetCount, icon: TrendingUp, variant: overBudgetCount > 0 ? 'danger' : 'success', subtitle: `of ${filtered.length} depts` },
+        ];
+        return <KpiSparklineRow reportId="labour-cost" tiles={tiles} />;
+      })()}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {totalVariance >= 0 && <InsightCard type="positive" title="Under Budget" description={`Total labour costs are $${(totalVariance / 1000).toFixed(1)}k under budget across all locations.`} />}
