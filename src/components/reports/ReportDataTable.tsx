@@ -274,6 +274,24 @@ export function ReportDataTable<T>({
   const totalActive = allChipRules.length;
   const showToolbar = showAdvancedFilter || totalActive > 0;
 
+  // Export only the visible columns + filtered/sorted rows.
+  const exportCurrentView = useCallback((kind: 'csv' | 'pdf') => {
+    const exportCols: ExportColumn[] = visibleColumns
+      .filter(c => c.type !== 'sparkline')
+      .map(c => ({
+        header: c.header,
+        accessor: (row: any) => {
+          if (c.sortValue) return c.sortValue(row as T);
+          const v = c.accessor(row as T);
+          if (typeof v === 'string' || typeof v === 'number') return v;
+          return '';
+        },
+      }));
+    const title = exportTitle || 'Report';
+    if (kind === 'csv') exportToCSV(title, exportCols, sortedData as any[]);
+    else exportToPDF(title, exportCols, sortedData as any[]);
+  }, [visibleColumns, sortedData, exportTitle]);
+
   return (
     <div>
       {showToolbar && (
@@ -288,8 +306,11 @@ export function ReportDataTable<T>({
                 onApply={applyView}
                 onSave={handleSaveView}
                 onDelete={handleDeleteView}
+                onTogglePin={handleTogglePin}
+                onSetDefault={handleSetDefault}
                 hasState={totalActive > 0 || hiddenCols.size > 0 || !!sortCol}
               />
+              <ExportCurrentViewButton onExport={exportCurrentView} />
             </>
           )}
           {totalActive > 0 && (
