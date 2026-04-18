@@ -242,3 +242,131 @@ export const awardComplianceTrend = periods.map((m, i) => ({
   overrides: 8 - i * 0.5,
   violations: 3 - i * 0.3 + Math.round(Math.random() * 2),
 }));
+
+// =================== Enrichment: extra fields ===================
+
+export interface PayRunRecord {
+  netPay?: number;
+  taxWithheld?: number;
+  ytdGross?: number;
+  ytdSuper?: number;
+  bankAccount?: string;
+  payrollDate?: string;
+  daysInPeriod?: number;
+}
+
+export interface AllowancePenaltyRecord {
+  department?: string;
+  payPeriod?: string;
+  taxable?: boolean;
+  superApplicable?: boolean;
+  approvedBy?: string;
+}
+
+export interface RetrospectivePayRecord {
+  department?: string;
+  affectedShifts?: number;
+  taxImpact?: number;
+  superImpact?: number;
+  approvedBy?: string;
+  paymentDate?: string;
+}
+
+export interface AwardOverrideRecord {
+  department?: string;
+  rateDifference?: number;
+  rateDifferencePct?: number;
+  affectedHoursMonthly?: number;
+  monthlyCostImpact?: number;
+  reviewDate?: string;
+}
+
+export interface LabourCostRecord {
+  variancePercent?: number;
+  costPerHour?: number;
+  overtimePct?: number;
+  agencyPct?: number;
+  totalHours?: number;
+  budgetUtilisationPct?: number;
+}
+
+export interface OnCallCostRecord {
+  callouts?: number;
+  responseTimeMinutes?: number;
+  effectiveHourlyRate?: number;
+  awardReference?: string;
+  approvedBy?: string;
+}
+
+export interface CasualVsPermanentRecord {
+  costDifferencePct?: number;
+  totalHeadcount?: number;
+  casualMixPct?: number;
+  totalLabourCost?: number;
+  loadingCost?: number;
+  weeklyAvgPermanent?: number;
+}
+
+const _depts = ['Operations', 'Admin', 'Kitchen', 'Management', 'Support'];
+mockPayRunRecords.forEach((r, i) => {
+  r.taxWithheld = r.taxWithheld ?? Math.round(r.totalGross * 0.22);
+  r.netPay = r.netPay ?? (r.totalGross - (r.taxWithheld ?? 0));
+  r.ytdGross = r.ytdGross ?? Math.round(r.totalGross * (8 + (i % 4)));
+  r.ytdSuper = r.ytdSuper ?? Math.round(r.superannuation * (8 + (i % 4)));
+  r.bankAccount = r.bankAccount ?? `***${String(1000 + i * 137).slice(-4)}`;
+  r.payrollDate = r.payrollDate ?? '2026-04-15';
+  r.daysInPeriod = r.daysInPeriod ?? 14;
+});
+
+mockAllowancePenalties.forEach((r, i) => {
+  r.department = r.department ?? _depts[i % _depts.length];
+  r.payPeriod = r.payPeriod ?? '01–14 Apr 2026';
+  r.taxable = r.taxable ?? true;
+  r.superApplicable = r.superApplicable ?? (r.type === 'penalty');
+  r.approvedBy = r.approvedBy ?? 'Linda Park';
+});
+
+mockRetrospectivePay.forEach((r, i) => {
+  r.department = r.department ?? _depts[i % _depts.length];
+  r.affectedShifts = r.affectedShifts ?? (3 + i * 2);
+  r.taxImpact = r.taxImpact ?? Math.round(r.difference * 0.22);
+  r.superImpact = r.superImpact ?? Math.round(r.difference * 0.115);
+  r.approvedBy = r.approvedBy ?? 'HR Manager';
+  r.paymentDate = r.paymentDate ?? r.processedDate;
+});
+
+mockAwardOverrides.forEach((r, i) => {
+  r.department = r.department ?? _depts[i % _depts.length];
+  r.rateDifference = r.rateDifference ?? Number((r.overrideRate - r.originalRate).toFixed(2));
+  r.rateDifferencePct = r.rateDifferencePct ?? Number((((r.overrideRate - r.originalRate) / r.originalRate) * 100).toFixed(1));
+  r.affectedHoursMonthly = r.affectedHoursMonthly ?? (140 + i * 8);
+  r.monthlyCostImpact = r.monthlyCostImpact ?? Math.round((r.rateDifference ?? 0) * (r.affectedHoursMonthly ?? 140));
+  r.reviewDate = r.reviewDate ?? '2026-09-30';
+});
+
+mockLabourCosts.forEach((r) => {
+  r.variancePercent = r.variancePercent ?? Number(((r.variance / r.budgetAmount) * 100).toFixed(1));
+  r.totalHours = r.totalHours ?? Math.round(r.totalCost / 32);
+  r.costPerHour = r.costPerHour ?? Number((r.totalCost / Math.max(1, r.totalHours ?? 1)).toFixed(2));
+  r.overtimePct = r.overtimePct ?? Number(((r.overtimeCost / r.totalCost) * 100).toFixed(1));
+  r.agencyPct = r.agencyPct ?? Number(((r.agencyCost / r.totalCost) * 100).toFixed(1));
+  r.budgetUtilisationPct = r.budgetUtilisationPct ?? Math.round((r.totalCost / r.budgetAmount) * 100);
+});
+
+mockOnCallCosts.forEach((r, i) => {
+  r.callouts = r.callouts ?? (r.activatedHours > 0 ? 1 + (i % 3) : 0);
+  r.responseTimeMinutes = r.responseTimeMinutes ?? (15 + (i * 5) % 45);
+  r.effectiveHourlyRate = r.effectiveHourlyRate ?? Number((r.totalCost / Math.max(1, r.standbyHours + r.activatedHours)).toFixed(2));
+  r.awardReference = r.awardReference ?? 'MA000120';
+  r.approvedBy = r.approvedBy ?? 'Operations Manager';
+});
+
+mockCasualVsPermanent.forEach((r) => {
+  r.costDifferencePct = r.costDifferencePct ?? Number((((r.costPerHourCasual - r.costPerHourPermanent) / r.costPerHourPermanent) * 100).toFixed(1));
+  r.totalHeadcount = r.totalHeadcount ?? (r.permanentHeadcount + r.casualHeadcount);
+  r.casualMixPct = r.casualMixPct ?? Math.round((r.casualHeadcount / Math.max(1, r.totalHeadcount ?? 1)) * 100);
+  r.totalLabourCost = r.totalLabourCost ?? (r.permanentCost + r.casualCost);
+  r.loadingCost = r.loadingCost ?? Math.round(r.casualCost * (r.casualLoadingPercent / 100));
+  r.weeklyAvgPermanent = r.weeklyAvgPermanent ?? Math.round(r.permanentHours / Math.max(1, r.permanentHeadcount));
+});
+

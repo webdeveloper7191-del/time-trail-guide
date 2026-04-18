@@ -270,3 +270,173 @@ export const clockStatusLabels: Record<ClockStatus, string> = {
   late: 'Late',
   not_started: 'Not Started',
 };
+
+// =================== Enrichment: extra fields for richer reports ===================
+
+declare module './mockTimesheetReportData' {}
+
+// Augment records by adding optional enrichment fields via casting
+export interface TimesheetApprovalRecord {
+  costEstimate?: number;
+  exceptionsCount?: number;
+  payPeriodStart?: string;
+  payPeriodEnd?: string;
+  managerNotes?: string;
+  priorityLevel?: 'low' | 'medium' | 'high';
+}
+
+export interface RealTimeAttendanceRecord {
+  shiftDuration?: number;
+  shiftCompletionPct?: number;
+  expectedCost?: number;
+  contactNumber?: string;
+  area?: string;
+  hoursRemaining?: number;
+}
+
+export interface WeeklyTimesheetSummary {
+  hourlyRate?: number;
+  estimatedGross?: number;
+  exceptions?: number;
+  submittedAt?: string;
+  approverName?: string;
+  avgDailyHours?: number;
+}
+
+export interface LatePunctualityRecord {
+  totalLateMinutes?: number;
+  occurrencesThisMonth?: number;
+  costImpact?: number;
+  actionTaken?: 'none' | 'warned' | 'meeting_scheduled' | 'formal_notice';
+  pattern?: 'isolated' | 'recurring' | 'chronic';
+}
+
+export interface BreakComplianceRecord {
+  hourlyRate?: number;
+  potentialLiability?: number;
+  shiftStart?: string;
+  shiftEnd?: string;
+  awardReference?: string;
+  riskLevel?: 'low' | 'medium' | 'high';
+}
+
+export interface TimesheetExceptionRecord {
+  amountImpact?: number;
+  approvalRequired?: boolean;
+  category?: 'time' | 'rate' | 'allowance' | 'other';
+  approverName?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+}
+
+export interface ApprovalSLARecord {
+  pendingApprovals?: number;
+  fastestTurnaroundHrs?: number;
+  slowestTurnaroundHrs?: number;
+  escalations?: number;
+  rejectionRate?: number;
+}
+
+export interface OvertimeByLocationRecord {
+  budgetedOvertimeCost?: number;
+  variance?: number;
+  variancePercent?: number;
+  riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+  policyLimit?: number;
+}
+
+export interface AttendanceTrendRecord {
+  fillRatePct?: number;
+  costOfAbsence?: number;
+  weekday?: string;
+  area?: string;
+  forecastVariance?: number;
+}
+
+// Enrich data
+const _approvers = ['Linda Park', 'Mark Stevens', 'Rachel Adams', 'Tony Nguyen'];
+mockApprovalPipeline.forEach((r, i) => {
+  r.costEstimate = r.costEstimate ?? Math.round(r.totalHours * 32 + r.overtimeHours * 16);
+  r.exceptionsCount = r.exceptionsCount ?? (r.hasExceptions ? 1 + (i % 3) : 0);
+  r.payPeriodStart = r.payPeriodStart ?? '2026-04-07';
+  r.payPeriodEnd = r.payPeriodEnd ?? '2026-04-13';
+  r.managerNotes = r.managerNotes ?? (r.hasExceptions ? 'Review OT and exception fields' : '');
+  r.priorityLevel = r.priorityLevel ?? (r.overtimeHours > 4 ? 'high' : r.overtimeHours > 0 ? 'medium' : 'low');
+});
+
+const _areas = ['Nursery', 'Toddler', 'Preschool', 'Kindy', 'Kitchen'];
+mockRealTimeAttendance.forEach((r, i) => {
+  // Parse scheduled times (h:mm AM/PM) into hours
+  const parseT = (t: string) => {
+    const [time, ap] = t.split(' ');
+    const [h, m] = time.split(':').map(Number);
+    return (ap === 'PM' && h !== 12 ? h + 12 : ap === 'AM' && h === 12 ? 0 : h) + m / 60;
+  };
+  const dur = Math.max(0, parseT(r.scheduledEnd) - parseT(r.scheduledStart));
+  r.shiftDuration = r.shiftDuration ?? Number(dur.toFixed(1));
+  r.shiftCompletionPct = r.shiftCompletionPct ?? (r.currentShiftHours ? Math.min(100, Math.round((r.currentShiftHours / dur) * 100)) : 0);
+  r.expectedCost = r.expectedCost ?? Math.round(dur * 34);
+  r.contactNumber = r.contactNumber ?? `04${String(20000000 + i * 11119).slice(0, 8)}`;
+  r.area = r.area ?? _areas[i % _areas.length];
+  r.hoursRemaining = r.hoursRemaining ?? Number(Math.max(0, dur - (r.currentShiftHours ?? 0)).toFixed(1));
+});
+
+mockWeeklyTimesheets.forEach((r, i) => {
+  r.hourlyRate = r.hourlyRate ?? (28 + (i % 5) * 2);
+  r.estimatedGross = r.estimatedGross ?? Math.round(r.regularHours * (r.hourlyRate ?? 32) + r.overtimeHours * (r.hourlyRate ?? 32) * 1.5);
+  r.exceptions = r.exceptions ?? (r.overtimeHours > 4 ? 2 : r.totalHours < 30 ? 1 : 0);
+  r.submittedAt = r.submittedAt ?? '2026-04-14T08:00';
+  r.approverName = r.approverName ?? _approvers[i % _approvers.length];
+  r.avgDailyHours = r.avgDailyHours ?? Number((r.totalHours / Math.max(1, r.daysWorked)).toFixed(1));
+});
+
+mockLatePunctuality.forEach((r, i) => {
+  r.totalLateMinutes = r.totalLateMinutes ?? (r.lateMinutes + r.earlyMinutes);
+  r.occurrencesThisMonth = r.occurrencesThisMonth ?? (1 + (i % 5));
+  r.costImpact = r.costImpact ?? Math.round(((r.lateMinutes + r.earlyMinutes) / 60) * 32);
+  r.actionTaken = r.actionTaken ?? (r.lateMinutes > 20 ? 'warned' : r.lateMinutes > 10 ? 'meeting_scheduled' : 'none');
+  r.pattern = r.pattern ?? ((r.occurrencesThisMonth ?? 0) > 4 ? 'chronic' : (r.occurrencesThisMonth ?? 0) > 2 ? 'recurring' : 'isolated');
+});
+
+mockBreakCompliance.forEach((r, i) => {
+  r.hourlyRate = r.hourlyRate ?? 32;
+  r.potentialLiability = r.potentialLiability ?? (r.compliant ? 0 : Math.round(((r.requiredBreakMinutes - r.actualBreakMinutes) / 60) * 32 * 2));
+  r.shiftStart = r.shiftStart ?? '7:00 AM';
+  r.shiftEnd = r.shiftEnd ?? '3:00 PM';
+  r.awardReference = r.awardReference ?? 'MA000120';
+  r.riskLevel = r.riskLevel ?? (r.compliant ? 'low' : r.actualBreakMinutes === 0 ? 'high' : 'medium');
+});
+
+mockTimesheetExceptions.forEach((r, i) => {
+  r.amountImpact = r.amountImpact ?? (i % 2 === 0 ? 25 + i * 8 : -10 - i * 3);
+  r.approvalRequired = r.approvalRequired ?? (r.exceptionType === 'manager_override' || r.exceptionType === 'retroactive_entry');
+  r.category = r.category ?? (r.field.includes('time') || r.field.includes('Clock') ? 'time' : r.field.includes('rate') ? 'rate' : 'other');
+  r.approverName = r.approverName ?? _approvers[i % _approvers.length];
+  r.status = r.status ?? (r.editedBy === 'System' ? 'approved' : i % 3 === 0 ? 'pending' : 'approved');
+});
+
+mockApprovalSLA.forEach((r, i) => {
+  r.pendingApprovals = r.pendingApprovals ?? Math.max(0, r.totalApprovals - r.withinSLA - r.breachedSLA + (i % 3));
+  r.fastestTurnaroundHrs = r.fastestTurnaroundHrs ?? Math.max(0.5, r.avgTurnaroundHours - 4 - i);
+  r.slowestTurnaroundHrs = r.slowestTurnaroundHrs ?? r.avgTurnaroundHours + 8 + i * 2;
+  r.escalations = r.escalations ?? Math.round(r.breachedSLA * 0.5);
+  r.rejectionRate = r.rejectionRate ?? Math.round((i + 1) * 3.5);
+});
+
+mockOvertimeByLocation.forEach((r, i) => {
+  r.budgetedOvertimeCost = r.budgetedOvertimeCost ?? Math.round(r.overtimeCost * 0.8 + 200);
+  r.variance = r.variance ?? r.overtimeCost - (r.budgetedOvertimeCost ?? 0);
+  r.variancePercent = r.variancePercent ?? Math.round((r.variance / Math.max(1, r.budgetedOvertimeCost ?? 1)) * 100);
+  r.riskLevel = r.riskLevel ?? (r.totalOvertimeHours > 12 ? 'critical' : r.totalOvertimeHours > 6 ? 'high' : r.totalOvertimeHours > 2 ? 'medium' : 'low');
+  r.policyLimit = r.policyLimit ?? 10;
+});
+
+const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+mockAttendanceTrends.forEach((r, i) => {
+  r.fillRatePct = r.fillRatePct ?? Math.round(((r.totalScheduled - r.absent) / r.totalScheduled) * 100);
+  r.costOfAbsence = r.costOfAbsence ?? r.absent * 8 * 32;
+  const d = new Date(r.date);
+  r.weekday = r.weekday ?? _weekdays[(d.getDay() + 6) % 7];
+  r.area = r.area ?? _areas[i % _areas.length];
+  r.forecastVariance = r.forecastVariance ?? (Math.round((Math.random() - 0.5) * 6));
+});
+
