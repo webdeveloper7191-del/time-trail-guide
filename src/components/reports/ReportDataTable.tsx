@@ -75,6 +75,7 @@ export function ReportDataTable<T>({
   emptyMessage = 'No data found',
   showAdvancedFilter = true,
   reportId,
+  exportTitle,
 }: ReportDataTableProps<T>) {
   const rid = reportId || autoReportId(columns);
 
@@ -104,14 +105,23 @@ export function ReportDataTable<T>({
   const [views, setViews] = useState<SavedReportView[]>(() => loadViews(rid));
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
 
-  const applyView = (view: SavedReportView) => {
+  const applyView = useCallback((view: SavedReportView) => {
     setAdvancedRules(view.rules);
     setHiddenCols(new Set(view.hiddenColumns));
     setSortCol(view.sortCol);
     setSortDir(view.sortDir);
     setColumnRules({});
     setActiveViewId(view.id);
-  };
+  }, []);
+
+  // Auto-apply default view on mount (per report).
+  const didApplyDefault = useRef(false);
+  useEffect(() => {
+    if (didApplyDefault.current) return;
+    didApplyDefault.current = true;
+    const def = views.find(v => v.isDefault);
+    if (def) applyView(def);
+  }, [views, applyView]);
 
   const handleSaveView = (name: string) => {
     if (!name.trim()) return;
@@ -135,6 +145,17 @@ export function ReportDataTable<T>({
     const next = deleteView(rid, id);
     setViews(next);
     if (activeViewId === id) setActiveViewId(null);
+  };
+
+  const handleTogglePin = (id: string) => {
+    const next = togglePinView(rid, id);
+    setViews(next);
+  };
+
+  const handleSetDefault = (id: string) => {
+    const current = views.find(v => v.id === id);
+    const next = setDefaultView(rid, current?.isDefault ? null : id);
+    setViews(next);
   };
 
   // ---- Value extraction ----
