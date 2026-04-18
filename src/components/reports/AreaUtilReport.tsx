@@ -50,6 +50,7 @@ const tableColumns: DataTableColumn<AreaUtilRecord>[] = [
   { key: 'staffAssigned', header: 'Staff', type: 'number', accessor: (r) => r.staffAssigned ?? 0, sortValue: (r) => r.staffAssigned ?? 0, align: 'right' },
   { key: 'revenueImpact', header: 'Revenue', type: 'number', accessor: (r) => <span className="font-semibold">${(r.revenueImpact ?? 0).toLocaleString()}</span>, sortValue: (r) => r.revenueImpact ?? 0, align: 'right' },
   { key: 'efficiencyScore', header: 'Efficiency', type: 'number', accessor: (r) => <Badge variant={(r.efficiencyScore ?? 0) >= 80 ? 'outline' : (r.efficiencyScore ?? 0) >= 60 ? 'secondary' : 'destructive'} className="text-[10px]">{r.efficiencyScore ?? 0}%</Badge>, sortValue: (r) => r.efficiencyScore ?? 0, align: 'right' },
+  { key: 'utilisationTrend', header: 'Util Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.utilisationTrend ?? [], accessor: () => null },
 ];
 
 export function AreaUtilReport() {
@@ -287,7 +288,7 @@ export function AreaUtilReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">All Areas — Detailed Breakdown</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${i}`} reportId="area-util" exportTitle="Area Utilisation" /></CardContent>
       </Card>
     </div>
   );

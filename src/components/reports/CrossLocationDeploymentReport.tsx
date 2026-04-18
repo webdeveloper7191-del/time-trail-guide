@@ -46,6 +46,7 @@ const tableColumns: DataTableColumn<CrossLocationDeployment>[] = [
   { key: 'travelCost', header: 'Travel $', type: 'number', accessor: (r) => `$${r.travelCost ?? 0}`, sortValue: (r) => r.travelCost ?? 0, align: 'right' },
   { key: 'status', header: 'Status', type: 'enum', accessor: (r) => <Badge variant={r.status === 'cancelled' ? 'destructive' : r.status === 'active' ? 'secondary' : 'outline'} className="text-[10px] capitalize">{r.status}</Badge>, sortValue: (r) => r.status ?? '' },
   { key: 'approvedBy', header: 'Approved By', type: 'enum', accessor: (r) => <span className="text-xs">{r.approvedBy}</span>, sortValue: (r) => r.approvedBy ?? '' },
+  { key: 'hoursDeployedTrend', header: 'Deploy Hrs Trend', type: 'sparkline', trendValues: (r: any) => r.hoursDeployedTrend ?? [], accessor: () => null },
 ];
 
 export function CrossLocationDeploymentReport() {
@@ -281,7 +282,7 @@ export function CrossLocationDeploymentReport() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">All Deployments — Detailed</CardTitle>
         </CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.staffId} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.staffId} reportId="cross-location-deployment" exportTitle="Cross-Location Deployment" /></CardContent>
       </Card>
     </div>
   );

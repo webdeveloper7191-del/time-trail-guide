@@ -49,6 +49,7 @@ const tableColumns: DataTableColumn<CoverageGapRecord>[] = [
   { key: 'ratioImpact', header: 'Ratio', type: 'enum', accessor: (r) => <span className="font-mono text-[11px]">{r.ratioImpact}</span>, sortValue: (r) => r.ratioImpact ?? '' },
   { key: 'resolution', header: 'Resolution', type: 'enum', accessor: (r) => <Badge variant={r.resolution === 'unfilled' ? 'destructive' : r.resolution === 'pending' ? 'secondary' : 'outline'} className="text-[10px] capitalize">{r.resolution}</Badge>, sortValue: (r) => r.resolution ?? '' },
   { key: 'notifiedAt', header: 'Notified', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.notifiedAt}</span>, sortValue: (r) => r.notifiedAt ?? '' },
+  { key: 'gapTrend', header: 'Gap Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.gapTrend ?? [], accessor: () => null },
 ];
 
 export function CoverageGapReport() {
@@ -253,7 +254,7 @@ export function CoverageGapReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Coverage Gap Details</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} reportId="coverage-gap" exportTitle="Coverage Gap" />
         </CardContent>
       </Card>
     </div>

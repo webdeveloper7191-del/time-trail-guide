@@ -41,6 +41,7 @@ const tableColumns: DataTableColumn<CapacityUtilData>[] = [
   { key: 'hourPeakStart', header: 'Peak Hour', type: 'text', accessor: (r) => <span className="font-mono text-xs">{r.hourPeakStart}</span>, sortValue: (r) => r.hourPeakStart ?? '' },
   { key: 'forecastNext7d', header: 'Forecast 7d', type: 'number', accessor: (r) => r.forecastNext7d ?? 0, sortValue: (r) => r.forecastNext7d ?? 0, align: 'right' },
   { key: 'revenuePerSeat', header: '$/Seat', type: 'number', accessor: (r) => `$${r.revenuePerSeat ?? 0}`, sortValue: (r) => r.revenuePerSeat ?? 0, align: 'right' },
+  { key: 'utilisationTrend', header: 'Util Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.utilisationTrend ?? [], accessor: () => null },
 ];
 
 export function CapacityUtilDashboard() {
@@ -182,7 +183,7 @@ export function CapacityUtilDashboard() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Area Detail {drill && <Badge variant="secondary" className="ml-2 text-xs">Filtered</Badge>}</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.locationName}-${r.areaName}-${i}`} reportId="capacity-util" exportTitle="Capacity Utilisation" /></CardContent>
       </Card>
     </div>
   );

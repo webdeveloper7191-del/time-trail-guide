@@ -45,6 +45,7 @@ const tableColumns: DataTableColumn<AvailabilityVsScheduledRecord>[] = [
   { key: 'daysAvailable', header: 'Days Avail', type: 'number', accessor: (r) => r.daysAvailable ?? 0, sortValue: (r) => r.daysAvailable ?? 0, align: 'right' },
   { key: 'daysScheduled', header: 'Days Sched', type: 'number', accessor: (r) => r.daysScheduled ?? 0, sortValue: (r) => r.daysScheduled ?? 0, align: 'right' },
   { key: 'lastShiftDate', header: 'Last Shift', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.lastShiftDate}</span>, sortValue: (r) => r.lastShiftDate ?? '' },
+  { key: 'utilisationTrend', header: 'Util Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.utilisationTrend ?? [], accessor: () => null },
 ];
 
 export function AvailabilityVsScheduledReport() {
@@ -182,7 +183,7 @@ export function AvailabilityVsScheduledReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Staff Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.staffName}-${i}`} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r, i) => `${r.staffName}-${i}`} reportId="availability-vs-scheduled" exportTitle="Availability vs Scheduled" /></CardContent>
       </Card>
     </div>
   );

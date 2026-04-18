@@ -204,7 +204,7 @@ export function TimesheetExceptionReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Exception Audit Trail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} reportId="timesheet-exception" exportTitle="Timesheet Exception" /></CardContent>
       </Card>
     </div>
   );

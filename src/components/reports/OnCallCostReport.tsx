@@ -47,6 +47,7 @@ const tableColumns: DataTableColumn<OnCallCostRecord>[] = [
   { key: 'effectiveHourlyRate', header: 'Effective $/h', type: 'number', accessor: (r) => `$${(r.effectiveHourlyRate ?? 0).toFixed(2)}`, sortValue: (r) => r.effectiveHourlyRate ?? 0, align: 'right' },
   { key: 'awardReference', header: 'Award Ref', type: 'enum', accessor: (r) => <span className="font-mono text-[10px] text-muted-foreground">{r.awardReference}</span>, sortValue: (r) => r.awardReference ?? '' },
   { key: 'approvedBy', header: 'Approved By', type: 'enum', accessor: (r) => <span className="text-xs">{r.approvedBy}</span>, sortValue: (r) => r.approvedBy ?? '' },
+  { key: 'totalCostTrend', header: 'Cost Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.totalCostTrend ?? [], accessor: () => null },
 ];
 
 export function OnCallCostReport() {
@@ -187,7 +188,7 @@ export function OnCallCostReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} reportId="on-call-cost" exportTitle="On-Call Cost" /></CardContent>
       </Card>
     </div>
   );

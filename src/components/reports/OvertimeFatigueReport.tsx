@@ -85,6 +85,7 @@ const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
   { key: 'daysOff7d', header: 'Days Off (7d)', type: 'number', accessor: (r) => <span className={cn('text-xs', (r.daysOff7d ?? 0) === 0 ? 'text-destructive font-medium' : '')}>{r.daysOff7d ?? 0}</span>, sortValue: (r) => r.daysOff7d ?? 0, align: 'right' },
   { key: 'trend', header: 'Trend', type: 'enum', accessor: (r) => <Badge variant={r.trend === 'worsening' ? 'destructive' : r.trend === 'improving' ? 'secondary' : 'outline'} className="text-[10px]">{r.trend}</Badge>, sortValue: (r) => r.trend ?? '' },
   { key: 'recommendedAction', header: 'Action', type: 'text', accessor: (r) => <span className="text-[11px]">{r.recommendedAction}</span>, sortValue: (r) => r.recommendedAction ?? '' },
+  { key: 'fatigueScoreTrend', header: 'Fatigue Trend', type: 'sparkline', trendValues: (r: any) => r.fatigueScoreTrend ?? [], accessor: () => null },
 ];
 
 export function OvertimeFatigueReport() {
@@ -285,7 +286,7 @@ export function OvertimeFatigueReport() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable key={animKey} columns={tableColumns} data={[...filtered].sort((a, b) => b.fatigueScore - a.fatigueScore)} rowKey={(r) => r.staffId} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={[...filtered].sort((a, b) => b.fatigueScore - a.fatigueScore)} rowKey={(r) => r.staffId} reportId="overtime-fatigue" exportTitle="Overtime & Fatigue" />
         </CardContent>
       </Card>
     </div>

@@ -63,6 +63,8 @@ const tableColumns: DataTableColumn<AgencyUsageRecord>[] = [
   { key: 'preferredStatus', header: 'Tier', type: 'enum', accessor: (r) => <Badge variant={r.preferredStatus === 'preferred' ? 'secondary' : r.preferredStatus === 'last_resort' ? 'destructive' : 'outline'} className="text-[10px]">{(r.preferredStatus ?? '').replace('_', ' ')}</Badge>, sortValue: (r) => r.preferredStatus ?? '' },
   { key: 'contractEndDate', header: 'Contract End', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.contractEndDate}</span>, sortValue: (r) => r.contractEndDate ?? '' },
   { key: 'primaryContact', header: 'Contact', type: 'enum', accessor: (r) => <span className="text-xs">{r.primaryContact}</span>, sortValue: (r) => r.primaryContact ?? '' },
+  { key: 'costTrend', header: 'Cost Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.costTrend ?? [], accessor: () => null },
+  { key: 'fillRateTrendCol', header: 'Fill % Trend', type: 'sparkline', trendValues: (r: any) => r.fillRateTrend ?? [], accessor: () => null, defaultHidden: true },
 ];
 
 export function AgencyUsageReport() {
@@ -236,7 +238,7 @@ export function AgencyUsageReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Agency Performance Detail</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.agencyName} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.agencyName} reportId="agency-usage" exportTitle="Agency Usage" />
         </CardContent>
       </Card>
     </div>

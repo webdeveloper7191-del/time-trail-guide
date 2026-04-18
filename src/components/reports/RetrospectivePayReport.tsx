@@ -188,7 +188,7 @@ export function RetrospectivePayReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">All Adjustments</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} reportId="retrospective-pay" exportTitle="Retrospective Pay" /></CardContent>
       </Card>
     </div>
   );

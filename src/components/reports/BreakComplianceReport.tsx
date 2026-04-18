@@ -54,6 +54,7 @@ const tableColumns: DataTableColumn<BreakComplianceRecord>[] = [
   { key: 'potentialLiability', header: 'Liability', type: 'number', accessor: (r) => (r.potentialLiability ?? 0) > 0 ? <span className="text-destructive font-medium text-xs">${r.potentialLiability}</span> : '—', sortValue: (r) => r.potentialLiability ?? 0, align: 'right' },
   { key: 'awardReference', header: 'Award', type: 'enum', accessor: (r) => <span className="font-mono text-[10px] text-muted-foreground">{r.awardReference}</span>, sortValue: (r) => r.awardReference ?? '' },
   { key: 'riskLevel', header: 'Risk', type: 'enum', accessor: (r) => <Badge variant={r.riskLevel === 'high' ? 'destructive' : r.riskLevel === 'medium' ? 'secondary' : 'outline'} className="text-[10px]">{r.riskLevel}</Badge>, sortValue: (r) => r.riskLevel ?? '' },
+  { key: 'complianceRateTrend', header: 'Compliance Trend', type: 'sparkline', trendValues: (r: any) => r.complianceRateTrend ?? [], accessor: () => null },
 ];
 
 export function BreakComplianceReport() {
@@ -202,7 +203,7 @@ export function BreakComplianceReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Break Compliance Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} reportId="break-compliance" exportTitle="Break Compliance" /></CardContent>
       </Card>
     </div>
   );

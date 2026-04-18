@@ -57,6 +57,7 @@ const tableColumns: DataTableColumn<ApprovalSLARecord>[] = [
   { key: 'slowestTurnaroundHrs', header: 'Slowest', type: 'number', accessor: (r) => `${(r.slowestTurnaroundHrs ?? 0).toFixed(1)}h`, sortValue: (r) => r.slowestTurnaroundHrs ?? 0, align: 'right' },
   { key: 'escalations', header: 'Escalations', type: 'number', accessor: (r) => (r.escalations ?? 0) > 0 ? <span className="text-amber-600 font-medium text-xs">{r.escalations}</span> : '—', sortValue: (r) => r.escalations ?? 0, align: 'right' },
   { key: 'rejectionRate', header: 'Reject %', type: 'number', accessor: (r) => `${r.rejectionRate ?? 0}%`, sortValue: (r) => r.rejectionRate ?? 0, align: 'right' },
+  { key: 'slaComplianceTrend', header: 'SLA Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.slaComplianceTrend ?? [], accessor: () => null },
 ];
 
 export function ApprovalSLAReport() {
@@ -187,7 +188,7 @@ export function ApprovalSLAReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Approver SLA Details</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} reportId="approval-sla" exportTitle="Approval SLA" /></CardContent>
       </Card>
     </div>
   );

@@ -47,6 +47,7 @@ const tableColumns: DataTableColumn<AreaCombiningSavingsRecord>[] = [
   { key: 'ratioCompliant', header: 'Compliant', type: 'enum', accessor: (r) => r.ratioCompliant ? <Badge variant="outline" className="text-[10px]">✓ Yes</Badge> : <Badge variant="destructive" className="text-[10px]">No</Badge>, sortValue: (r) => r.ratioCompliant ? 'Yes' : 'No' },
   { key: 'alternativeCost', header: 'Alt. Cost', type: 'number', accessor: (r) => <span className="text-muted-foreground text-xs">${(r.alternativeCost ?? 0).toLocaleString()}</span>, sortValue: (r) => r.alternativeCost ?? 0, align: 'right' },
   { key: 'approvedBy', header: 'Approved By', type: 'enum', accessor: (r) => <span className="text-xs">{r.approvedBy}</span>, sortValue: (r) => r.approvedBy ?? '' },
+  { key: 'costSavedTrend', header: 'Savings Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.costSavedTrend ?? [], accessor: () => null },
 ];
 
 export function AreaCombiningSavingsReport() {
@@ -215,7 +216,7 @@ export function AreaCombiningSavingsReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Area Combining Events</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} reportId="area-combining-savings" exportTitle="Area Combining Savings" />
         </CardContent>
       </Card>
     </div>

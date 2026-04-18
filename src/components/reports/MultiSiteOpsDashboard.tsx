@@ -52,6 +52,8 @@ const tableColumns: DataTableColumn<MultiSiteOpsData>[] = [
   { key: 'openShifts', header: 'Open Shifts', type: 'number', accessor: (r) => (r.openShifts ?? 0) > 0 ? <Badge variant="secondary" className="text-[10px]">{r.openShifts}</Badge> : '0', sortValue: (r) => r.openShifts ?? 0, align: 'right' },
   { key: 'staffOnLeave', header: 'On Leave', type: 'number', accessor: (r) => r.staffOnLeave ?? 0, sortValue: (r) => r.staffOnLeave ?? 0, align: 'right' },
   { key: 'lastUpdated', header: 'Updated', type: 'date', accessor: (r) => <span className="text-[10px] text-muted-foreground">{r.lastUpdated}</span>, sortValue: (r) => r.lastUpdated ?? '' },
+  { key: 'utilisationTrend', header: 'Util Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.utilisationTrend ?? [], accessor: () => null },
+  { key: 'costTrend', header: 'Cost Trend', type: 'sparkline', trendValues: (r: any) => r.costTrend ?? [], accessor: () => null, defaultHidden: true },
 ];
 
 export function MultiSiteOpsDashboard() {
@@ -222,7 +224,7 @@ export function MultiSiteOpsDashboard() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">All Locations {drill && <Badge variant="secondary" className="ml-2 text-xs">Filtered</Badge>}</CardTitle></CardHeader>
-        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r) => r.locationId} /></CardContent>
+        <CardContent><ReportDataTable columns={tableColumns} data={filtered} rowKey={(r) => r.locationId} reportId="multi-site-ops" exportTitle="Multi-Site Operations" /></CardContent>
       </Card>
     </div>
   );

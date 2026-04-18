@@ -45,6 +45,7 @@ const tableColumns: DataTableColumn<AllowancePenaltyRecord>[] = [
   { key: 'taxable', header: 'Taxable', type: 'enum', accessor: (r) => r.taxable ? <Badge variant="secondary" className="text-[10px]">Yes</Badge> : <Badge variant="outline" className="text-[10px]">No</Badge>, sortValue: (r) => r.taxable ? 'Yes' : 'No' },
   { key: 'superApplicable', header: 'Super', type: 'enum', accessor: (r) => r.superApplicable ? '✓' : '—', sortValue: (r) => r.superApplicable ? 1 : 0, align: 'center' },
   { key: 'approvedBy', header: 'Approved By', type: 'enum', accessor: (r) => <span className="text-xs">{r.approvedBy}</span>, sortValue: (r) => r.approvedBy ?? '' },
+  { key: 'amountTrend', header: 'Amount Trend (8wk)', type: 'sparkline', trendValues: (r: any) => r.amountTrend ?? [], accessor: () => null },
 ];
 
 export function AllowancePenaltyReport() {
@@ -195,7 +196,7 @@ export function AllowancePenaltyReport() {
 
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Detail</CardTitle></CardHeader>
-        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} /></CardContent>
+        <CardContent><ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(r) => r.id} reportId="allowance-penalty" exportTitle="Allowance & Penalty" /></CardContent>
       </Card>
     </div>
   );

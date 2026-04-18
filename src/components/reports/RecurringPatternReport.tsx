@@ -245,7 +245,7 @@ export function RecurringPatternReport() {
       <Card className="border-border/60">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Pattern Adherence Details</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} />
+          <ReportDataTable key={animKey} columns={tableColumns} data={filtered} rowKey={(_, i) => i} reportId="recurring-pattern" exportTitle="Recurring Pattern Adherence" />
         </CardContent>
       </Card>
     </div>
