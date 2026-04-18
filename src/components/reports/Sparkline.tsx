@@ -41,11 +41,12 @@ export function Sparkline({
     return [x, y] as const;
   });
 
+  const lastPoint = points[points.length - 1];
   const path = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-  const areaPath = `${path} L${(points.at(-1)![0]).toFixed(1)},${height} L0,${height} Z`;
+  const areaPath = `${path} L${lastPoint[0].toFixed(1)},${height} L0,${height} Z`;
 
   const first = values[0];
-  const last = values.at(-1)!;
+  const last = values[values.length - 1];
   const delta = last - first;
   const deltaPct = first !== 0 ? (delta / Math.abs(first)) * 100 : 0;
 
@@ -67,7 +68,7 @@ export function Sparkline({
         <path d={areaPath} fill={`url(#${fillId})`} />
         <path d={path} fill="none" stroke={strokeColor} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
         {showEndDot && (
-          <circle cx={points.at(-1)![0]} cy={points.at(-1)![1]} r="1.75" fill={strokeColor} />
+          <circle cx={lastPoint[0]} cy={lastPoint[1]} r="1.75" fill={strokeColor} />
         )}
       </svg>
       {showDelta && (
