@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -6,6 +7,7 @@ import { ThemeProvider } from "./theme/ThemeProvider";
 import { DemandProvider } from "./contexts/DemandContext";
 import { AwardConfigProvider } from "./contexts/AwardConfigContext";
 import { OvertimeRulesProvider } from "./contexts/OvertimeRulesContext";
+import { startScheduledExportRunner } from "./components/reports/scheduledExportRunner";
 import Index from "./pages/Index";
 import TimesheetSettings from "./pages/TimesheetSettings";
 import TimesheetAdmin from "./pages/TimesheetAdmin";
