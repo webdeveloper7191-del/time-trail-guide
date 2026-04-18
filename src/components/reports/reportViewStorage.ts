@@ -1,5 +1,21 @@
 import type { RuleNode } from './filterOperators';
 
+export type ScheduleCadence = 'daily' | 'weekly' | 'monthly';
+export type ScheduleFormat = 'csv' | 'pdf';
+
+export interface ViewSchedule {
+  cadence: ScheduleCadence;
+  format: ScheduleFormat;
+  /** Comma-separated email recipients */
+  recipients: string;
+  /** Hour of day (0-23) when the export should fire */
+  hour: number;
+  /** Epoch ms — last time we dispatched this scheduled export */
+  lastRunAt?: number;
+  /** Epoch ms — when the schedule was created/updated */
+  createdAt: number;
+}
+
 /** A saved view = filter tree + visible columns + sort + name. Per-report. */
 export interface SavedReportView {
   id: string;
@@ -13,6 +29,8 @@ export interface SavedReportView {
   pinned?: boolean;
   /** When true, the view is auto-applied on report mount. Only one per report. */
   isDefault?: boolean;
+  /** Optional recurring email export schedule. */
+  schedule?: ViewSchedule;
 }
 
 const NS = 'reports.v1';
