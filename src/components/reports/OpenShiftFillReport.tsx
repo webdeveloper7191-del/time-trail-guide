@@ -80,8 +80,6 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
   { key: 'notificationsSent', header: 'Notifs', type: 'number', accessor: (r) => r.notificationsSent ?? 0, sortValue: (r) => r.notificationsSent ?? 0, align: 'right' },
 ];
 
-const RID = 'open-shift-fill';
-
 export function OpenShiftFillReport() {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
