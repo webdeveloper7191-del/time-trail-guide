@@ -216,6 +216,11 @@ export function EmployeePortal() {
             <EmployeeOnboardingPanel />
           </TabsContent>
 
+          <TabsContent value="schedule">
+            <EmployeeShiftsPanel />
+          </TabsContent>
+
+
           <TabsContent value="current">
             {currentWeekTimesheet ? (
               <CurrentWeekView timesheet={currentWeekTimesheet} />
