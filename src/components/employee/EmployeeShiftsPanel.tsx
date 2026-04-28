@@ -261,19 +261,21 @@ export function EmployeeShiftsPanel() {
             <ShiftList
               shifts={filteredMyShifts}
               onSwap={(s) => setSwapShift(s)}
+              onOpenDetails={(s) => setDetailsShift(s)}
             />
           ) : (
             <CalendarGrid
               weekStart={weekStart}
               shifts={filteredMyShifts}
               availability={availability}
-              onShiftClick={(s) => setSwapShift(s)}
+              onShiftClick={(s) => setDetailsShift(s)}
               onAvailabilityClick={(d) => setEditingDay(d)}
             />
           )}
           <AvailabilityStrip
             weekStart={weekStart}
             availability={availability}
+            shifts={filteredMyShifts}
             onChange={(date) => setEditingDay(availability.find(a => isSameDay(a.date, date)) || { date, status: 'available' })}
           />
         </TabsContent>
@@ -327,6 +329,12 @@ export function EmployeeShiftsPanel() {
         day={editingDay}
         onClose={() => setEditingDay(null)}
         onSave={(d, status, note) => { updateAvailability(d, status, note); setEditingDay(null); }}
+      />
+
+      <ShiftDetailsSheet
+        shift={detailsShift}
+        onClose={() => setDetailsShift(null)}
+        onSwap={(s) => { setDetailsShift(null); setSwapShift(s); }}
       />
     </div>
   );
