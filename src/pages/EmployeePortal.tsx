@@ -79,8 +79,6 @@ export function EmployeePortal() {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
 
-  const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
-
   const pageTitles: Record<string, { title: string; subtitle: string }> = {
     dashboard: { title: 'Dashboard', subtitle: 'Your activity at a glance' },
     onboarding: { title: 'Onboarding', subtitle: 'Complete your setup' },
