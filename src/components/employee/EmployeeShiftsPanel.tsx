@@ -158,16 +158,22 @@ export function EmployeeShiftsPanel() {
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>(mockSwapRequests);
   const [search, setSearch] = useState('');
   const [locFilter, setLocFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<'upcoming' | 'past' | 'all'>('upcoming');
   const [editingDay, setEditingDay] = useState<AvailabilityDay | null>(null);
 
   const locations = useMemo(() => Array.from(new Set([...mockMyShifts, ...mockOpenShifts].map(s => s.location))), []);
 
+  const startOfToday = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+
   const filteredMyShifts = useMemo(() =>
-    mockMyShifts.filter(s =>
-      (locFilter === 'all' || s.location === locFilter) &&
-      (search === '' || s.location.toLowerCase().includes(search.toLowerCase()) || s.role.toLowerCase().includes(search.toLowerCase()))
-    ).sort((a, b) => a.date.getTime() - b.date.getTime()),
-  [search, locFilter]);
+    mockMyShifts.filter(s => {
+      if (locFilter !== 'all' && s.location !== locFilter) return false;
+      if (search !== '' && !s.location.toLowerCase().includes(search.toLowerCase()) && !s.role.toLowerCase().includes(search.toLowerCase())) return false;
+      if (dateRange === 'upcoming' && s.date < startOfToday) return false;
+      if (dateRange === 'past' && s.date >= startOfToday) return false;
+      return true;
+    }).sort((a, b) => dateRange === 'past' ? b.date.getTime() - a.date.getTime() : a.date.getTime() - b.date.getTime()),
+  [search, locFilter, dateRange, startOfToday]);
 
   const filteredOpen = useMemo(() =>
     mockOpenShifts.filter(s => locFilter === 'all' || s.location === locFilter)
