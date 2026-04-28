@@ -174,6 +174,9 @@ export function EmployeePortal() {
                 <ClipboardCheck className="h-4 w-4" /> Onboarding
               </TabsTrigger>
             )}
+            <TabsTrigger value="schedule" className="gap-2">
+              <Calendar className="h-4 w-4" /> My Schedule
+            </TabsTrigger>
             <TabsTrigger value="current" className="gap-2">
               <Clock className="h-4 w-4" /> Timesheets
             </TabsTrigger>
