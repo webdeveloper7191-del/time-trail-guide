@@ -270,6 +270,28 @@ export function EmployeeShiftsPanel() {
 
         {/* ── My Shifts */}
         <TabsContent value="mine" className="mt-4 space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-0.5">
+              {(['upcoming', 'past', 'all'] as const).map(r => (
+                <Button
+                  key={r}
+                  size="sm"
+                  variant={dateRange === r ? 'default' : 'ghost'}
+                  onClick={() => setDateRange(r)}
+                  className="h-8 capitalize"
+                >
+                  {r === 'upcoming' ? 'Upcoming' : r === 'past' ? 'Past' : 'All shifts'}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {dateRange === 'past'
+                ? `Showing ${filteredMyShifts.length} past shift${filteredMyShifts.length === 1 ? '' : 's'}`
+                : dateRange === 'all'
+                ? `Showing all ${filteredMyShifts.length} shift${filteredMyShifts.length === 1 ? '' : 's'}`
+                : `Showing ${filteredMyShifts.length} upcoming shift${filteredMyShifts.length === 1 ? '' : 's'}`}
+            </p>
+          </div>
           {view === 'list' ? (
             <ShiftList
               shifts={filteredMyShifts}
