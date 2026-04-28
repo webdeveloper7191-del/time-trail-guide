@@ -185,8 +185,8 @@ export function EmployeeShiftsPanel() {
   const totalHours = filteredMyShifts.reduce((sum, s) => sum + hoursBetween(s.startTime, s.endTime, s.breakMinutes), 0);
 
   // ── Navigation
-  const goPrev = () => setWeekStart(w => subWeeks(w, view === 'calendar' ? 2 : 1));
-  const goNext = () => setWeekStart(w => addWeeks(w, view === 'calendar' ? 2 : 1));
+  const goPrev = () => setWeekStart(w => subWeeks(w, 1));
+  const goNext = () => setWeekStart(w => addWeeks(w, 1));
   const goToday = () => setWeekStart(startOfWeek(today, { weekStartsOn: 1 }));
 
   // ── Actions
