@@ -588,9 +588,10 @@ function CalendarGrid({
 }
 
 // ───────────────────────── Availability Strip ─────────────────────────
-function AvailabilityStrip({ weekStart, availability, onChange }: {
+function AvailabilityStrip({ weekStart, availability, shifts, onChange }: {
   weekStart: Date;
   availability: AvailabilityDay[];
+  shifts: MyShift[];
   onChange: (date: Date) => void;
 }) {
   const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 13) });
@@ -602,6 +603,7 @@ function AvailabilityStrip({ weekStart, availability, onChange }: {
             <Clock className="h-4 w-4 text-primary" /> My Availability
           </CardTitle>
           <div className="flex items-center gap-3 text-[11px]">
+            <Legend tone="bg-blue-500/40" label="Working" />
             <Legend tone="bg-status-approved/40" label="Available" />
             <Legend tone="bg-primary/40" label="Preferred" />
             <Legend tone="bg-status-rejected/40" label="Unavailable" />
@@ -613,15 +615,31 @@ function AvailabilityStrip({ weekStart, availability, onChange }: {
           {days.map(day => {
             const a = availability.find(av => isSameDay(av.date, day));
             const status = a?.status || 'available';
+            const dayShifts = shifts.filter(s => isSameDay(s.date, day));
+            const isWorking = dayShifts.length > 0;
             return (
               <button
                 key={day.toISOString()}
                 onClick={() => onChange(day)}
-                className={cn("rounded-md border p-2 text-left transition-all hover:scale-[1.02]", availTone[status])}
+                className={cn(
+                  "rounded-md border p-2 text-left transition-all hover:scale-[1.02]",
+                  isWorking
+                    ? "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30"
+                    : availTone[status],
+                )}
               >
                 <p className="text-[10px] uppercase tracking-wide opacity-80">{format(day, 'EEE')}</p>
                 <p className="text-base font-bold">{format(day, 'd')}</p>
-                <p className="text-[10px] capitalize mt-0.5 opacity-90">{status}</p>
+                {isWorking ? (
+                  <div className="mt-0.5">
+                    <p className="text-[10px] font-semibold flex items-center gap-1">
+                      <Briefcase className="h-2.5 w-2.5" /> Working
+                    </p>
+                    <p className="text-[10px] opacity-80">{dayShifts.length} shift{dayShifts.length === 1 ? '' : 's'}</p>
+                  </div>
+                ) : (
+                  <p className="text-[10px] capitalize mt-0.5 opacity-90">{status}</p>
+                )}
               </button>
             );
           })}
