@@ -146,6 +146,7 @@ export function EmployeeShiftsPanel() {
   const [weekStart, setWeekStart] = useState(startOfWeek(today, { weekStartsOn: 1 }));
   const [availability, setAvailability] = useState<AvailabilityDay[]>(seedAvailability(startOfWeek(today, { weekStartsOn: 1 })));
   const [swapShift, setSwapShift] = useState<MyShift | null>(null);
+  const [detailsShift, setDetailsShift] = useState<MyShift | null>(null);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>(mockSwapRequests);
   const [search, setSearch] = useState('');
