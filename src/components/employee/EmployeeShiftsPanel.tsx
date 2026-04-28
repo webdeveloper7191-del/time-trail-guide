@@ -78,6 +78,13 @@ const mockMyShifts: MyShift[] = [
   { id: 's5', date: addDays(today, 7), startTime: '07:00', endTime: '15:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'confirmed', breakMinutes: 30 },
   { id: 's6', date: addDays(today, 8), startTime: '14:00', endTime: '22:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'confirmed', breakMinutes: 30 },
   { id: 's0', date: addDays(today, -1), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '08:55', clockOut: '17:04', breaks: [{ start: '12:30', end: '13:00', type: 'unpaid', label: 'Lunch' }] },
+  { id: 'sp1', date: addDays(today, -3), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Operations', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '09:02', clockOut: '17:08', breaks: [{ start: '12:30', end: '13:00', type: 'unpaid', label: 'Lunch' }] },
+  { id: 'sp2', date: addDays(today, -5), startTime: '08:00', endTime: '16:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '07:58', clockOut: '16:01', breaks: [{ start: '12:00', end: '12:30', type: 'unpaid', label: 'Lunch' }] },
+  { id: 'sp3', date: addDays(today, -8), startTime: '12:00', endTime: '20:00', location: 'East Centre', area: 'Floor', role: 'Coordinator', status: 'completed', breakMinutes: 45, clockIn: '11:55', clockOut: '20:10', breaks: [{ start: '15:30', end: '16:15', type: 'unpaid', label: 'Dinner' }] },
+  { id: 'sp4', date: addDays(today, -10), startTime: '07:00', endTime: '15:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '06:55', clockOut: '15:04', breaks: [{ start: '11:00', end: '11:30', type: 'unpaid', label: 'Lunch' }] },
+  { id: 'sp5', date: addDays(today, -14), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Operations', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '09:01', clockOut: '17:00' },
+  { id: 'sp6', date: addDays(today, -17), startTime: '14:00', endTime: '22:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '13:58', clockOut: '22:05' },
+  { id: 'sp7', date: addDays(today, -21), startTime: '08:00', endTime: '16:00', location: 'Main Centre', area: 'Reception', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '08:00', clockOut: '16:00' },
 ];
 
 const mockOpenShifts: OpenShift[] = [
@@ -151,16 +158,22 @@ export function EmployeeShiftsPanel() {
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>(mockSwapRequests);
   const [search, setSearch] = useState('');
   const [locFilter, setLocFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<'upcoming' | 'past' | 'all'>('upcoming');
   const [editingDay, setEditingDay] = useState<AvailabilityDay | null>(null);
 
   const locations = useMemo(() => Array.from(new Set([...mockMyShifts, ...mockOpenShifts].map(s => s.location))), []);
 
+  const startOfToday = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+
   const filteredMyShifts = useMemo(() =>
-    mockMyShifts.filter(s =>
-      (locFilter === 'all' || s.location === locFilter) &&
-      (search === '' || s.location.toLowerCase().includes(search.toLowerCase()) || s.role.toLowerCase().includes(search.toLowerCase()))
-    ).sort((a, b) => a.date.getTime() - b.date.getTime()),
-  [search, locFilter]);
+    mockMyShifts.filter(s => {
+      if (locFilter !== 'all' && s.location !== locFilter) return false;
+      if (search !== '' && !s.location.toLowerCase().includes(search.toLowerCase()) && !s.role.toLowerCase().includes(search.toLowerCase())) return false;
+      if (dateRange === 'upcoming' && s.date < startOfToday) return false;
+      if (dateRange === 'past' && s.date >= startOfToday) return false;
+      return true;
+    }).sort((a, b) => dateRange === 'past' ? b.date.getTime() - a.date.getTime() : a.date.getTime() - b.date.getTime()),
+  [search, locFilter, dateRange, startOfToday]);
 
   const filteredOpen = useMemo(() =>
     mockOpenShifts.filter(s => locFilter === 'all' || s.location === locFilter)
@@ -172,8 +185,8 @@ export function EmployeeShiftsPanel() {
   const totalHours = filteredMyShifts.reduce((sum, s) => sum + hoursBetween(s.startTime, s.endTime, s.breakMinutes), 0);
 
   // ── Navigation
-  const goPrev = () => setWeekStart(w => subWeeks(w, view === 'calendar' ? 2 : 1));
-  const goNext = () => setWeekStart(w => addWeeks(w, view === 'calendar' ? 2 : 1));
+  const goPrev = () => setWeekStart(w => subWeeks(w, 1));
+  const goNext = () => setWeekStart(w => addWeeks(w, 1));
   const goToday = () => setWeekStart(startOfWeek(today, { weekStartsOn: 1 }));
 
   // ── Actions
@@ -206,7 +219,7 @@ export function EmployeeShiftsPanel() {
             <Button size="sm" variant="outline" onClick={goToday} className="h-8">Today</Button>
             <Button size="icon" variant="outline" onClick={goNext} className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
             <span className="ml-2 text-sm font-medium text-foreground">
-              {format(weekStart, 'MMM d')} – {format(addDays(weekStart, view === 'calendar' ? 13 : 6), 'MMM d, yyyy')}
+              {format(weekStart, 'MMM d')} – {format(addDays(weekStart, 6), 'MMM d, yyyy')}
             </span>
           </div>
 
@@ -257,6 +270,28 @@ export function EmployeeShiftsPanel() {
 
         {/* ── My Shifts */}
         <TabsContent value="mine" className="mt-4 space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-0.5">
+              {(['upcoming', 'past', 'all'] as const).map(r => (
+                <Button
+                  key={r}
+                  size="sm"
+                  variant={dateRange === r ? 'default' : 'ghost'}
+                  onClick={() => setDateRange(r)}
+                  className="h-8 capitalize"
+                >
+                  {r === 'upcoming' ? 'Upcoming' : r === 'past' ? 'Past' : 'All shifts'}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {dateRange === 'past'
+                ? `Showing ${filteredMyShifts.length} past shift${filteredMyShifts.length === 1 ? '' : 's'}`
+                : dateRange === 'all'
+                ? `Showing all ${filteredMyShifts.length} shift${filteredMyShifts.length === 1 ? '' : 's'}`
+                : `Showing ${filteredMyShifts.length} upcoming shift${filteredMyShifts.length === 1 ? '' : 's'}`}
+            </p>
+          </div>
           {view === 'list' ? (
             <ShiftList
               shifts={filteredMyShifts}
@@ -524,7 +559,19 @@ function SwapShiftCard({ label, shift }: { label: string; shift: SwapRequest['fr
   );
 }
 
-// ───────────────────────── Calendar Grid ─────────────────────────
+// ───────────────────────── Calendar Grid (Roster scheduler style) ─────────────────────────
+// Time-axis timeline calendar matching the main roster scheduler look,
+// adapted for a single staff member (no left staff panel, no right side panel).
+const DAY_START_HOUR = 6;   // 6 AM
+const DAY_END_HOUR = 23;    // 11 PM
+const HOURS = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR + 1 }, (_, i) => DAY_START_HOUR + i);
+
+const minutesFromDayStart = (time: string) => {
+  const [h, m] = time.split(':').map(Number);
+  return Math.max(0, (h - DAY_START_HOUR) * 60 + m);
+};
+const totalDayMinutes = (DAY_END_HOUR - DAY_START_HOUR) * 60;
+
 function CalendarGrid({
   weekStart, shifts, openShifts = [], availability, onShiftClick, onAvailabilityClick, onClaim,
 }: {
@@ -536,64 +583,163 @@ function CalendarGrid({
   onAvailabilityClick?: (d: AvailabilityDay) => void;
   onClaim?: (s: OpenShift) => void;
 }) {
-  const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 13) });
+  const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
+
+  const shiftBarTone: Record<MyShift['status'], string> = {
+    confirmed: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-500/25',
+    pending: 'bg-amber-500/15 border-amber-500/40 border-dashed text-amber-900 dark:text-amber-100 hover:bg-amber-500/25',
+    'in-progress': 'bg-primary/20 border-primary/50 text-foreground hover:bg-primary/30 ring-1 ring-primary/40',
+    completed: 'bg-muted border-border text-muted-foreground hover:bg-muted/80',
+  };
+
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 overflow-hidden">
       <CardContent className="p-0">
-        <div className="grid grid-cols-7 border-b border-border/60 bg-muted/40">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-            <div key={d} className="px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide text-center">{d}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7">
-          {days.map(day => {
-            const dayShifts = shifts.filter(s => isSameDay(s.date, day));
-            const dayOpen = openShifts.filter(s => isSameDay(s.date, day));
-            const avail = availability.find(a => isSameDay(a.date, day));
-            const isToday = isSameDay(day, new Date());
-            return (
-              <div key={day.toISOString()} className={cn(
-                "border-r border-b border-border/60 min-h-[110px] p-2 flex flex-col gap-1",
-                isToday && "bg-primary/5",
-              )}>
-                <div className="flex items-center justify-between">
-                  <span className={cn("text-xs font-medium", isToday ? "text-primary" : "text-foreground")}>{format(day, 'd')}</span>
-                  {avail && (
-                    <button
-                      onClick={() => onAvailabilityClick?.(avail)}
-                      className={cn("text-[9px] px-1.5 py-0.5 rounded border font-medium uppercase tracking-wide", availTone[avail.status])}
-                      title="Click to edit availability"
-                    >
-                      {avail.status === 'unavailable' ? 'Off' : avail.status === 'preferred' ? 'Pref' : 'Avail'}
-                    </button>
-                  )}
-                </div>
-                {dayShifts.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => onShiftClick?.(s)}
-                    className={cn("text-left rounded border px-1.5 py-1 text-[10px] leading-tight hover:opacity-80", statusTone[s.status])}
-                  >
-                    <p className="font-semibold">{fmt12(s.startTime)}</p>
-                    <p className="opacity-80 truncate">{s.location}</p>
-                  </button>
-                ))}
-                {dayOpen.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => onClaim?.(s)}
-                    className="text-left rounded border border-dashed border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300 px-1.5 py-1 text-[10px] leading-tight hover:bg-amber-500/15"
-                  >
-                    <p className="font-semibold flex items-center gap-1">
-                      {s.premium && <Sparkles className="h-2.5 w-2.5" />}
-                      {fmt12(s.startTime)} · ${s.rate}
-                    </p>
-                    <p className="opacity-80 truncate">Open · {s.location}</p>
-                  </button>
-                ))}
+        {/* Hour axis header */}
+        <div className="flex border-b border-border/60 bg-muted/40 sticky top-0 z-10">
+          <div className="w-32 shrink-0 border-r border-border/60 px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+            Day
+          </div>
+          <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${HOURS.length}, minmax(0, 1fr))` }}>
+            {HOURS.map(h => (
+              <div key={h} className="border-r border-border/40 last:border-r-0 px-1 py-2 text-[10px] text-muted-foreground text-center">
+                {h === 12 ? '12 PM' : h === 0 ? '12 AM' : h > 12 ? `${h - 12} PM` : `${h} AM`}
               </div>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+
+        {/* Day rows */}
+        <ScrollArea className="max-h-[600px]">
+          <div>
+            {days.map(day => {
+              const dayShifts = shifts.filter(s => isSameDay(s.date, day));
+              const dayOpen = openShifts.filter(s => isSameDay(s.date, day));
+              const avail = availability.find(a => isSameDay(a.date, day));
+              const isToday = isSameDay(day, new Date());
+              const status = avail?.status || 'available';
+
+              return (
+                <div
+                  key={day.toISOString()}
+                  className={cn(
+                    "flex border-b border-border/60 last:border-b-0 min-h-[64px]",
+                    isToday && "bg-primary/5",
+                  )}
+                >
+                  {/* Day label column */}
+                  <div className="w-32 shrink-0 border-r border-border/60 p-2 flex flex-col gap-1">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                        {format(day, 'EEE')}
+                      </span>
+                      <span className={cn("text-base font-bold leading-none", isToday ? "text-primary" : "text-foreground")}>
+                        {format(day, 'd')}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{format(day, 'MMM')}</span>
+                    </div>
+                    {avail && (
+                      <button
+                        onClick={() => onAvailabilityClick?.(avail)}
+                        className={cn(
+                          "text-[9px] px-1.5 py-0.5 rounded border font-medium uppercase tracking-wide w-fit",
+                          dayShifts.length > 0
+                            ? "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30"
+                            : availTone[status],
+                        )}
+                        title="Click to edit availability"
+                      >
+                        {dayShifts.length > 0
+                          ? `Working · ${dayShifts.length}`
+                          : status === 'unavailable' ? 'Off' : status === 'preferred' ? 'Preferred' : 'Available'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Timeline lane */}
+                  <div className="flex-1 relative">
+                    {/* Hour grid lines */}
+                    <div className="absolute inset-0 grid pointer-events-none" style={{ gridTemplateColumns: `repeat(${HOURS.length}, minmax(0, 1fr))` }}>
+                      {HOURS.map(h => (
+                        <div key={h} className="border-r border-border/30 last:border-r-0" />
+                      ))}
+                    </div>
+
+                    {/* Now indicator */}
+                    {isToday && (() => {
+                      const now = new Date();
+                      const nowMin = (now.getHours() - DAY_START_HOUR) * 60 + now.getMinutes();
+                      if (nowMin < 0 || nowMin > totalDayMinutes) return null;
+                      const left = (nowMin / totalDayMinutes) * 100;
+                      return (
+                        <div className="absolute top-0 bottom-0 w-px bg-primary z-20 pointer-events-none" style={{ left: `${left}%` }}>
+                          <div className="absolute -top-1 -left-[3px] h-1.5 w-1.5 rounded-full bg-primary" />
+                        </div>
+                      );
+                    })()}
+
+                    {/* Shift bars */}
+                    <div className="relative h-full py-2 px-1">
+                      {dayShifts.map(s => {
+                        const startMin = minutesFromDayStart(s.startTime);
+                        const endMin = Math.min(totalDayMinutes, minutesFromDayStart(s.endTime));
+                        const left = (startMin / totalDayMinutes) * 100;
+                        const width = Math.max(2, ((endMin - startMin) / totalDayMinutes) * 100);
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => onShiftClick?.(s)}
+                            className={cn(
+                              "absolute rounded-md border px-2 py-1 text-left transition-all overflow-hidden",
+                              shiftBarTone[s.status],
+                            )}
+                            style={{ left: `${left}%`, width: `${width}%`, top: 8, bottom: 8 }}
+                            title={`${fmt12(s.startTime)} – ${fmt12(s.endTime)} · ${s.location}`}
+                          >
+                            <p className="text-[11px] font-semibold truncate leading-tight">
+                              {fmt12(s.startTime)} – {fmt12(s.endTime)}
+                            </p>
+                            <p className="text-[10px] truncate opacity-90">{s.location} · {s.area}</p>
+                          </button>
+                        );
+                      })}
+
+                      {dayOpen.map(s => {
+                        const startMin = minutesFromDayStart(s.startTime);
+                        const endMin = Math.min(totalDayMinutes, minutesFromDayStart(s.endTime));
+                        const left = (startMin / totalDayMinutes) * 100;
+                        const width = Math.max(2, ((endMin - startMin) / totalDayMinutes) * 100);
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => onClaim?.(s)}
+                            className="absolute rounded-md border border-dashed border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 hover:bg-amber-500/20 px-2 py-1 text-left transition-all overflow-hidden"
+                            style={{ left: `${left}%`, width: `${width}%`, top: 8, bottom: 8 }}
+                            title={`Open shift · ${fmt12(s.startTime)} – ${fmt12(s.endTime)}`}
+                          >
+                            <p className="text-[11px] font-semibold truncate leading-tight flex items-center gap-1">
+                              {s.premium && <Sparkles className="h-2.5 w-2.5" />}
+                              Open · {fmt12(s.startTime)}
+                            </p>
+                            <p className="text-[10px] truncate opacity-90">${s.rate}/hr · {s.location}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 border-t border-border/60 px-4 py-2 text-[11px] text-muted-foreground bg-muted/20">
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-3 rounded-sm bg-emerald-500/40 border border-emerald-500/60" />Confirmed</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-3 rounded-sm bg-amber-500/40 border border-amber-500/60 border-dashed" />Pending</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-3 rounded-sm bg-primary/40 border border-primary/60" />In progress</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-3 rounded-sm bg-muted border border-border" />Completed</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-3 rounded-sm bg-amber-500/20 border border-dashed border-amber-500/60" />Open shift</span>
         </div>
       </CardContent>
     </Card>
