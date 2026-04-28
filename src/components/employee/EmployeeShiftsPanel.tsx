@@ -25,6 +25,12 @@ import { ShiftSwapRequestDialog } from './ShiftSwapRequestDialog';
 import { SwapInboxDialog, SwapRequest } from './SwapInboxDialog';
 
 // ───────────────────────── Types ─────────────────────────
+interface BreakEntry {
+  start: string;
+  end?: string;
+  type: 'paid' | 'unpaid';
+  label?: string;
+}
 interface MyShift {
   id: string;
   date: Date;
@@ -36,6 +42,9 @@ interface MyShift {
   status: 'confirmed' | 'pending' | 'in-progress' | 'completed';
   breakMinutes: number;
   notes?: string;
+  clockIn?: string;
+  clockOut?: string;
+  breaks?: BreakEntry[];
 }
 
 interface OpenShift {
