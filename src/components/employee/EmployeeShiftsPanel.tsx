@@ -71,12 +71,13 @@ interface AvailabilityDay {
 // ───────────────────────── Mock data ─────────────────────────
 const today = new Date();
 const mockMyShifts: MyShift[] = [
-  { id: 's1', date: addDays(today, 0), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'in-progress', breakMinutes: 30 },
+  { id: 's1', date: addDays(today, 0), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'in-progress', breakMinutes: 30, clockIn: '08:57', breaks: [{ start: '12:30', end: '13:00', type: 'unpaid', label: 'Lunch' }] },
   { id: 's2', date: addDays(today, 1), startTime: '08:00', endTime: '16:00', location: 'Main Centre', area: 'Operations', role: 'Coordinator', status: 'confirmed', breakMinutes: 30 },
   { id: 's3', date: addDays(today, 2), startTime: '12:00', endTime: '20:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'confirmed', breakMinutes: 45 },
   { id: 's4', date: addDays(today, 4), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Operations', role: 'Coordinator', status: 'pending', breakMinutes: 30 },
   { id: 's5', date: addDays(today, 7), startTime: '07:00', endTime: '15:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'confirmed', breakMinutes: 30 },
   { id: 's6', date: addDays(today, 8), startTime: '14:00', endTime: '22:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'confirmed', breakMinutes: 30 },
+  { id: 's0', date: addDays(today, -1), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '08:55', clockOut: '17:04', breaks: [{ start: '12:30', end: '13:00', type: 'unpaid', label: 'Lunch' }] },
 ];
 
 const mockOpenShifts: OpenShift[] = [
