@@ -219,7 +219,7 @@ export function EmployeeShiftsPanel() {
             <Button size="sm" variant="outline" onClick={goToday} className="h-8">Today</Button>
             <Button size="icon" variant="outline" onClick={goNext} className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
             <span className="ml-2 text-sm font-medium text-foreground">
-              {format(weekStart, 'MMM d')} – {format(addDays(weekStart, view === 'calendar' ? 13 : 6), 'MMM d, yyyy')}
+              {format(weekStart, 'MMM d')} – {format(addDays(weekStart, 6), 'MMM d, yyyy')}
             </span>
           </div>
 
