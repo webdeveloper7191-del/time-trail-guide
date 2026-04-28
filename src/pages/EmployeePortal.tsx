@@ -14,8 +14,10 @@ import {
   TrendingUp, Coffee, DollarSign, FileText, ChevronRight,
   User, Building2, Hourglass, ShieldCheck, ShieldAlert,
   GraduationCap, Target, MessageSquare, Users, Sparkles,
-  ClipboardCheck, LayoutDashboard,
+  ClipboardCheck, LayoutDashboard, Search, Bell, Settings as SettingsIcon,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { EmployeePortalSidebar } from '@/components/employee/EmployeePortalSidebar';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/timesheet/StatusBadge';
