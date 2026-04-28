@@ -356,7 +356,7 @@ function KpiTile({ icon: Icon, label, value, tone }: { icon: any; label: string;
 }
 
 // ───────────────────────── List Views ─────────────────────────
-function ShiftList({ shifts, onSwap }: { shifts: MyShift[]; onSwap: (s: MyShift) => void }) {
+function ShiftList({ shifts, onSwap, onOpenDetails }: { shifts: MyShift[]; onSwap: (s: MyShift) => void; onOpenDetails: (s: MyShift) => void }) {
   if (shifts.length === 0) {
     return <EmptyState icon={CalendarIcon} title="No shifts scheduled" desc="You're all caught up. Check the Open Shifts tab to pick up extra work." />;
   }
