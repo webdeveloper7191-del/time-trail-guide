@@ -78,6 +78,13 @@ const mockMyShifts: MyShift[] = [
   { id: 's5', date: addDays(today, 7), startTime: '07:00', endTime: '15:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'confirmed', breakMinutes: 30 },
   { id: 's6', date: addDays(today, 8), startTime: '14:00', endTime: '22:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'confirmed', breakMinutes: 30 },
   { id: 's0', date: addDays(today, -1), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '08:55', clockOut: '17:04', breaks: [{ start: '12:30', end: '13:00', type: 'unpaid', label: 'Lunch' }] },
+  { id: 'sp1', date: addDays(today, -3), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Operations', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '09:02', clockOut: '17:08', breaks: [{ start: '12:30', end: '13:00', type: 'unpaid', label: 'Lunch' }] },
+  { id: 'sp2', date: addDays(today, -5), startTime: '08:00', endTime: '16:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '07:58', clockOut: '16:01', breaks: [{ start: '12:00', end: '12:30', type: 'unpaid', label: 'Lunch' }] },
+  { id: 'sp3', date: addDays(today, -8), startTime: '12:00', endTime: '20:00', location: 'East Centre', area: 'Floor', role: 'Coordinator', status: 'completed', breakMinutes: 45, clockIn: '11:55', clockOut: '20:10', breaks: [{ start: '15:30', end: '16:15', type: 'unpaid', label: 'Dinner' }] },
+  { id: 'sp4', date: addDays(today, -10), startTime: '07:00', endTime: '15:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '06:55', clockOut: '15:04', breaks: [{ start: '11:00', end: '11:30', type: 'unpaid', label: 'Lunch' }] },
+  { id: 'sp5', date: addDays(today, -14), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Operations', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '09:01', clockOut: '17:00' },
+  { id: 'sp6', date: addDays(today, -17), startTime: '14:00', endTime: '22:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '13:58', clockOut: '22:05' },
+  { id: 'sp7', date: addDays(today, -21), startTime: '08:00', endTime: '16:00', location: 'Main Centre', area: 'Reception', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '08:00', clockOut: '16:00' },
 ];
 
 const mockOpenShifts: OpenShift[] = [
