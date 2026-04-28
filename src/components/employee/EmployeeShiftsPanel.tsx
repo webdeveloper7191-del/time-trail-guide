@@ -365,7 +365,7 @@ function ShiftList({ shifts, onSwap, onOpenDetails }: { shifts: MyShift[]; onSwa
       <ScrollArea className="max-h-[560px]">
         <div className="divide-y divide-border/60">
           {shifts.map(s => (
-            <div key={s.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors">
+            <div key={s.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => onOpenDetails(s)}>
               <div className="text-center min-w-[56px]">
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{format(s.date, 'EEE')}</p>
                 <p className="text-xl font-bold leading-tight">{format(s.date, 'd')}</p>
@@ -375,6 +375,7 @@ function ShiftList({ shifts, onSwap, onOpenDetails }: { shifts: MyShift[]; onSwa
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-foreground">{fmt12(s.startTime)} – {fmt12(s.endTime)}</span>
                   <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 capitalize", statusTone[s.status])}>{s.status.replace('-', ' ')}</Badge>
+                  {s.clockIn && !s.clockOut && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-primary/20 gap-1"><LogIn className="h-2.5 w-2.5" /> Clocked in {fmt12(s.clockIn)}</Badge>}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                   <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.location} · {s.area}</span>
@@ -385,7 +386,10 @@ function ShiftList({ shifts, onSwap, onOpenDetails }: { shifts: MyShift[]; onSwa
               <div className="text-right">
                 <p className="text-sm font-bold">{hoursBetween(s.startTime, s.endTime, s.breakMinutes).toFixed(1)}h</p>
               </div>
-              <Button size="sm" variant="outline" onClick={() => onSwap(s)} className="gap-1.5 h-8" disabled={s.status === 'completed' || s.status === 'in-progress'}>
+              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpenDetails(s); }} className="h-8 gap-1.5">
+                <FileText className="h-3.5 w-3.5" /> Details
+              </Button>
+              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onSwap(s); }} className="gap-1.5 h-8" disabled={s.status === 'completed' || s.status === 'in-progress'}>
                 <ArrowLeftRight className="h-3.5 w-3.5" /> Swap
               </Button>
             </div>
