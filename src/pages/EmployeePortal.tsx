@@ -29,6 +29,7 @@ import { EmployeeCareerPathingPanel } from '@/components/performance/employee/Em
 import { EmployeeOnboardingPanel } from '@/components/employee/EmployeeOnboardingPanel';
 import { OnboardingBanner } from '@/components/employee/OnboardingBanner';
 import { EmployeeDashboard } from '@/components/employee/EmployeeDashboard';
+import { EmployeeShiftsPanel } from '@/components/employee/EmployeeShiftsPanel';
 
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
@@ -173,6 +174,9 @@ export function EmployeePortal() {
                 <ClipboardCheck className="h-4 w-4" /> Onboarding
               </TabsTrigger>
             )}
+            <TabsTrigger value="schedule" className="gap-2">
+              <Calendar className="h-4 w-4" /> My Schedule
+            </TabsTrigger>
             <TabsTrigger value="current" className="gap-2">
               <Clock className="h-4 w-4" /> Timesheets
             </TabsTrigger>
@@ -211,6 +215,11 @@ export function EmployeePortal() {
           <TabsContent value="onboarding">
             <EmployeeOnboardingPanel />
           </TabsContent>
+
+          <TabsContent value="schedule">
+            <EmployeeShiftsPanel />
+          </TabsContent>
+
 
           <TabsContent value="current">
             {currentWeekTimesheet ? (
