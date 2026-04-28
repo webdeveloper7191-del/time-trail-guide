@@ -14,8 +14,10 @@ import {
   TrendingUp, Coffee, DollarSign, FileText, ChevronRight,
   User, Building2, Hourglass, ShieldCheck, ShieldAlert,
   GraduationCap, Target, MessageSquare, Users, Sparkles,
-  ClipboardCheck, LayoutDashboard,
+  ClipboardCheck, LayoutDashboard, Search, Bell, Settings as SettingsIcon,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { EmployeePortalSidebar } from '@/components/employee/EmployeePortalSidebar';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/timesheet/StatusBadge';
@@ -77,198 +79,186 @@ export function EmployeePortal() {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
 
+  const pageTitles: Record<string, { title: string; subtitle: string }> = {
+    dashboard: { title: 'Dashboard', subtitle: 'Your activity at a glance' },
+    onboarding: { title: 'Onboarding', subtitle: 'Complete your setup' },
+    schedule: { title: 'My Schedule', subtitle: 'Shifts, open shifts and swap requests' },
+    current: { title: 'My Timesheets', subtitle: 'Review your hours and compliance' },
+    recognition: { title: 'Recognition', subtitle: 'Celebrate your team' },
+    performance: { title: 'Performance', subtitle: 'Reviews, goals and feedback' },
+    okrs: { title: 'My OKRs', subtitle: 'Track objectives and key results' },
+    career: { title: 'Career Path', subtitle: 'Explore your growth journey' },
+    surveys: { title: 'Surveys', subtitle: 'Share your voice' },
+    '360': { title: '360° Feedback', subtitle: 'Multi-source feedback' },
+    learning: { title: 'Learning', subtitle: 'Courses and certifications' },
+  };
+  const currentPage = pageTitles[activeTab] ?? pageTitles.dashboard;
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return (
+          <EmployeeDashboard
+            employee={currentEmployee}
+            onNavigate={setActiveTab}
+            onboardingProgress={onboardingProgress}
+            onboardingComplete={onboardingComplete}
+          />
+        );
+      case 'onboarding':
+        return <EmployeeOnboardingPanel />;
+      case 'schedule':
+        return <EmployeeShiftsPanel />;
+      case 'current':
+        return currentWeekTimesheet ? (
+          <CurrentWeekView timesheet={currentWeekTimesheet} />
+        ) : (
+          <Card className="border-border/50">
+            <CardContent className="py-12 text-center">
+              <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+              <p className="font-medium">No timesheet for current week</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Start clocking in to create your timesheet
+              </p>
+            </CardContent>
+          </Card>
+        );
+      case 'recognition':
+        return <EmployeeRecognitionPanel currentUserId={currentEmployee.id} />;
+      case 'performance':
+        return <EmployeePerformancePanel currentUserId={currentEmployee.id} />;
+      case 'okrs':
+        return <EmployeeOKRPanel currentUserId={currentEmployee.id} />;
+      case 'career':
+        return <EmployeeCareerPathingPanel currentUserId={currentEmployee.id} />;
+      case 'surveys':
+        return <EmployeeSurveyPanel currentUserId={currentEmployee.id} />;
+      case '360':
+        return <Employee360Panel currentUserId={currentEmployee.id} />;
+      case 'learning':
+        return <EmployeeLMSPanel currentUserId={currentEmployee.id} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-12 w-12 bg-gradient-to-br from-primary to-primary/70">
-                <AvatarFallback className="text-primary-foreground font-medium">
-                  {getInitials(currentEmployee.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-xl font-bold">{currentEmployee.name}</h1>
-                <p className="text-sm text-muted-foreground">
-                  {currentEmployee.position} • {currentEmployee.department}
-                </p>
-              </div>
-            </div>
-            <Button variant="outline" onClick={() => window.location.href = '/timesheet-admin'}>
-              <ChevronRight className="h-4 w-4 mr-2 rotate-180" />
-              Back to Admin
+    <div className="min-h-screen bg-background flex">
+      {/* Left Sidebar */}
+      <EmployeePortalSidebar
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        showOnboarding={!onboardingComplete}
+        employeeName={currentEmployee.name}
+        employeePosition={currentEmployee.position}
+      />
+
+      {/* Main column */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Top utility bar with search */}
+        <div className="h-14 border-b border-border bg-card flex items-center gap-4 px-6 sticky top-0 z-20">
+          <div className="relative flex-1 max-w-md">
+            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by keywords"
+              className="pl-9 h-9 bg-background"
+            />
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+              <Bell className="h-4 w-4" />
             </Button>
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+              <SettingsIcon className="h-4 w-4" />
+            </Button>
+            <Avatar className="h-8 w-8 bg-gradient-to-br from-primary to-primary/70">
+              <AvatarFallback className="text-primary-foreground text-xs font-medium">
+                {getInitials(currentEmployee.name)}
+              </AvatarFallback>
+            </Avatar>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Onboarding Banner */}
-        {!onboardingComplete && (
-          <OnboardingBanner
-            progressPct={onboardingProgress}
-            onNavigate={() => setActiveTab('onboarding')}
-          />
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Total Hours</p>
-                  <p className="text-2xl font-bold text-blue-600">{stats.totalHours}h</p>
-                </div>
-                <Clock className="h-8 w-8 text-blue-600/50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Overtime</p>
-                  <p className="text-2xl font-bold text-amber-600">{stats.totalOvertime}h</p>
-                </div>
-                <Hourglass className="h-8 w-8 text-amber-600/50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Approved</p>
-                  <p className="text-2xl font-bold text-emerald-600">{stats.approvedCount}</p>
-                </div>
-                <CheckCircle2 className="h-8 w-8 text-emerald-600/50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Est. Pay</p>
-                  <p className="text-2xl font-bold text-purple-600">${stats.estimatedPay}</p>
-                </div>
-                <DollarSign className="h-8 w-8 text-purple-600/50" />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Page header banner */}
+        <div className="bg-primary/5 border-b border-border px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">{currentPage.title}</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">{currentPage.subtitle}</p>
+            </div>
+          </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 flex-wrap">
-            <TabsTrigger value="dashboard" className="gap-2">
-              <LayoutDashboard className="h-4 w-4" /> Dashboard
-            </TabsTrigger>
-            {!onboardingComplete && (
-              <TabsTrigger value="onboarding" className="gap-2">
-                <ClipboardCheck className="h-4 w-4" /> Onboarding
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="schedule" className="gap-2">
-              <Calendar className="h-4 w-4" /> My Schedule
-            </TabsTrigger>
-            <TabsTrigger value="current" className="gap-2">
-              <Clock className="h-4 w-4" /> Timesheets
-            </TabsTrigger>
-            <TabsTrigger value="recognition" className="gap-2">
-              <Sparkles className="h-4 w-4" /> Recognition
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="gap-2">
-              <Target className="h-4 w-4" /> Performance
-            </TabsTrigger>
-            <TabsTrigger value="okrs" className="gap-2">
-              <Target className="h-4 w-4" /> My OKRs
-            </TabsTrigger>
-            <TabsTrigger value="career" className="gap-2">
-              <TrendingUp className="h-4 w-4" /> Career Path
-            </TabsTrigger>
-            <TabsTrigger value="surveys" className="gap-2">
-              <MessageSquare className="h-4 w-4" /> Surveys
-            </TabsTrigger>
-            <TabsTrigger value="360" className="gap-2">
-              <Users className="h-4 w-4" /> 360° Feedback
-            </TabsTrigger>
-            <TabsTrigger value="learning" className="gap-2">
-              <GraduationCap className="h-4 w-4" /> Learning
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="dashboard">
-            <EmployeeDashboard
-              employee={currentEmployee}
-              onNavigate={setActiveTab}
-              onboardingProgress={onboardingProgress}
-              onboardingComplete={onboardingComplete}
+        {/* Page content */}
+        <main className="flex-1 px-8 py-6 overflow-x-hidden">
+          {/* Onboarding Banner */}
+          {!onboardingComplete && activeTab !== 'onboarding' && (
+            <OnboardingBanner
+              progressPct={onboardingProgress}
+              onNavigate={() => setActiveTab('onboarding')}
             />
-          </TabsContent>
+          )}
 
-          <TabsContent value="onboarding">
-            <EmployeeOnboardingPanel />
-          </TabsContent>
-
-          <TabsContent value="schedule">
-            <EmployeeShiftsPanel />
-          </TabsContent>
-
-
-          <TabsContent value="current">
-            {currentWeekTimesheet ? (
-              <CurrentWeekView timesheet={currentWeekTimesheet} />
-            ) : (
-              <Card className="border-border/50">
-                <CardContent className="py-12 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                  <p className="font-medium">No timesheet for current week</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Start clocking in to create your timesheet
-                  </p>
+          {/* Stats Cards (only on dashboard) */}
+          {activeTab === 'dashboard' && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Total Hours</p>
+                      <p className="text-2xl font-bold text-blue-600">{stats.totalHours}h</p>
+                    </div>
+                    <Clock className="h-8 w-8 text-blue-600/50" />
+                  </div>
                 </CardContent>
               </Card>
-            )}
-          </TabsContent>
 
-          <TabsContent value="recognition">
-            <EmployeeRecognitionPanel currentUserId={currentEmployee.id} />
-          </TabsContent>
+              <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Overtime</p>
+                      <p className="text-2xl font-bold text-amber-600">{stats.totalOvertime}h</p>
+                    </div>
+                    <Hourglass className="h-8 w-8 text-amber-600/50" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <TabsContent value="performance">
-            <EmployeePerformancePanel currentUserId={currentEmployee.id} />
-          </TabsContent>
+              <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Approved</p>
+                      <p className="text-2xl font-bold text-emerald-600">{stats.approvedCount}</p>
+                    </div>
+                    <CheckCircle2 className="h-8 w-8 text-emerald-600/50" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <TabsContent value="okrs">
-            <EmployeeOKRPanel currentUserId={currentEmployee.id} />
-          </TabsContent>
+              <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Est. Pay</p>
+                      <p className="text-2xl font-bold text-purple-600">${stats.estimatedPay}</p>
+                    </div>
+                    <DollarSign className="h-8 w-8 text-purple-600/50" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-          <TabsContent value="career">
-            <EmployeeCareerPathingPanel currentUserId={currentEmployee.id} />
-          </TabsContent>
-
-          <TabsContent value="surveys">
-            <EmployeeSurveyPanel currentUserId={currentEmployee.id} />
-          </TabsContent>
-
-          <TabsContent value="360">
-            <Employee360Panel currentUserId={currentEmployee.id} />
-          </TabsContent>
-
-          <TabsContent value="learning">
-            <EmployeeLMSPanel currentUserId={currentEmployee.id} />
-          </TabsContent>
-        </Tabs>
-      </main>
+          {renderContent()}
+        </main>
+      </div>
     </div>
   );
 }
+
 
 function CurrentWeekView({ timesheet }: { timesheet: Timesheet }) {
   const validation = validateCompliance(timesheet);
