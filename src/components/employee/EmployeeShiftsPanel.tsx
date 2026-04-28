@@ -293,17 +293,30 @@ export function EmployeeShiftsPanel() {
               onClaim={claimOpen}
             />
           )}
+          <AvailabilityStrip
+            weekStart={weekStart}
+            availability={availability}
+            shifts={filteredMyShifts}
+            onChange={(date) => setEditingDay(availability.find(a => isSameDay(a.date, date)) || { date, status: 'available' })}
+          />
         </TabsContent>
 
         {/* ── Swaps */}
-        <TabsContent value="swaps" className="mt-4">
+        <TabsContent value="swaps" className="mt-4 space-y-4">
           <SwapList
             requests={swapRequests}
             onAccept={(id) => { setSwapRequests(p => p.map(r => r.id === id ? { ...r, status: 'accepted', respondedAt: new Date() } : r)); toast.success('Swap accepted'); }}
             onDecline={(id) => { setSwapRequests(p => p.map(r => r.id === id ? { ...r, status: 'declined', respondedAt: new Date() } : r)); toast.info('Swap declined'); }}
             onCancel={(id) => { setSwapRequests(p => p.filter(r => r.id !== id)); toast.info('Swap cancelled'); }}
           />
+          <AvailabilityStrip
+            weekStart={weekStart}
+            availability={availability}
+            shifts={filteredMyShifts}
+            onChange={(date) => setEditingDay(availability.find(a => isSameDay(a.date, date)) || { date, status: 'available' })}
+          />
         </TabsContent>
+
       </Tabs>
 
       {/* ── Dialogs */}
