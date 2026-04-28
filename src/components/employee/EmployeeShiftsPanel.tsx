@@ -13,7 +13,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFo
 import {
   Calendar as CalendarIcon, Clock, MapPin, ArrowLeftRight, Inbox,
   List, LayoutGrid, ChevronLeft, ChevronRight, CheckCircle2, XCircle,
-  Hand, Sparkles, Building2, Search,
+  Hand, Sparkles, Building2, Search, Coffee, LogIn, LogOut, FileText, Briefcase,
 } from 'lucide-react';
 import {
   format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO,
@@ -25,6 +25,12 @@ import { ShiftSwapRequestDialog } from './ShiftSwapRequestDialog';
 import { SwapInboxDialog, SwapRequest } from './SwapInboxDialog';
 
 // ───────────────────────── Types ─────────────────────────
+interface BreakEntry {
+  start: string;
+  end?: string;
+  type: 'paid' | 'unpaid';
+  label?: string;
+}
 interface MyShift {
   id: string;
   date: Date;
@@ -36,6 +42,9 @@ interface MyShift {
   status: 'confirmed' | 'pending' | 'in-progress' | 'completed';
   breakMinutes: number;
   notes?: string;
+  clockIn?: string;
+  clockOut?: string;
+  breaks?: BreakEntry[];
 }
 
 interface OpenShift {
@@ -62,12 +71,13 @@ interface AvailabilityDay {
 // ───────────────────────── Mock data ─────────────────────────
 const today = new Date();
 const mockMyShifts: MyShift[] = [
-  { id: 's1', date: addDays(today, 0), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'in-progress', breakMinutes: 30 },
+  { id: 's1', date: addDays(today, 0), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'in-progress', breakMinutes: 30, clockIn: '08:57', breaks: [{ start: '12:30', end: '13:00', type: 'unpaid', label: 'Lunch' }] },
   { id: 's2', date: addDays(today, 1), startTime: '08:00', endTime: '16:00', location: 'Main Centre', area: 'Operations', role: 'Coordinator', status: 'confirmed', breakMinutes: 30 },
   { id: 's3', date: addDays(today, 2), startTime: '12:00', endTime: '20:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'confirmed', breakMinutes: 45 },
   { id: 's4', date: addDays(today, 4), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Operations', role: 'Coordinator', status: 'pending', breakMinutes: 30 },
   { id: 's5', date: addDays(today, 7), startTime: '07:00', endTime: '15:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'confirmed', breakMinutes: 30 },
   { id: 's6', date: addDays(today, 8), startTime: '14:00', endTime: '22:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'confirmed', breakMinutes: 30 },
+  { id: 's0', date: addDays(today, -1), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Front of House', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '08:55', clockOut: '17:04', breaks: [{ start: '12:30', end: '13:00', type: 'unpaid', label: 'Lunch' }] },
 ];
 
 const mockOpenShifts: OpenShift[] = [
@@ -136,6 +146,7 @@ export function EmployeeShiftsPanel() {
   const [weekStart, setWeekStart] = useState(startOfWeek(today, { weekStartsOn: 1 }));
   const [availability, setAvailability] = useState<AvailabilityDay[]>(seedAvailability(startOfWeek(today, { weekStartsOn: 1 })));
   const [swapShift, setSwapShift] = useState<MyShift | null>(null);
+  const [detailsShift, setDetailsShift] = useState<MyShift | null>(null);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>(mockSwapRequests);
   const [search, setSearch] = useState('');
@@ -250,19 +261,21 @@ export function EmployeeShiftsPanel() {
             <ShiftList
               shifts={filteredMyShifts}
               onSwap={(s) => setSwapShift(s)}
+              onOpenDetails={(s) => setDetailsShift(s)}
             />
           ) : (
             <CalendarGrid
               weekStart={weekStart}
               shifts={filteredMyShifts}
               availability={availability}
-              onShiftClick={(s) => setSwapShift(s)}
+              onShiftClick={(s) => setDetailsShift(s)}
               onAvailabilityClick={(d) => setEditingDay(d)}
             />
           )}
           <AvailabilityStrip
             weekStart={weekStart}
             availability={availability}
+            shifts={filteredMyShifts}
             onChange={(date) => setEditingDay(availability.find(a => isSameDay(a.date, date)) || { date, status: 'available' })}
           />
         </TabsContent>
@@ -317,6 +330,12 @@ export function EmployeeShiftsPanel() {
         onClose={() => setEditingDay(null)}
         onSave={(d, status, note) => { updateAvailability(d, status, note); setEditingDay(null); }}
       />
+
+      <ShiftDetailsSheet
+        shift={detailsShift}
+        onClose={() => setDetailsShift(null)}
+        onSwap={(s) => { setDetailsShift(null); setSwapShift(s); }}
+      />
     </div>
   );
 }
@@ -337,7 +356,7 @@ function KpiTile({ icon: Icon, label, value, tone }: { icon: any; label: string;
 }
 
 // ───────────────────────── List Views ─────────────────────────
-function ShiftList({ shifts, onSwap }: { shifts: MyShift[]; onSwap: (s: MyShift) => void }) {
+function ShiftList({ shifts, onSwap, onOpenDetails }: { shifts: MyShift[]; onSwap: (s: MyShift) => void; onOpenDetails: (s: MyShift) => void }) {
   if (shifts.length === 0) {
     return <EmptyState icon={CalendarIcon} title="No shifts scheduled" desc="You're all caught up. Check the Open Shifts tab to pick up extra work." />;
   }
@@ -346,7 +365,7 @@ function ShiftList({ shifts, onSwap }: { shifts: MyShift[]; onSwap: (s: MyShift)
       <ScrollArea className="max-h-[560px]">
         <div className="divide-y divide-border/60">
           {shifts.map(s => (
-            <div key={s.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors">
+            <div key={s.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => onOpenDetails(s)}>
               <div className="text-center min-w-[56px]">
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{format(s.date, 'EEE')}</p>
                 <p className="text-xl font-bold leading-tight">{format(s.date, 'd')}</p>
@@ -356,6 +375,7 @@ function ShiftList({ shifts, onSwap }: { shifts: MyShift[]; onSwap: (s: MyShift)
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-foreground">{fmt12(s.startTime)} – {fmt12(s.endTime)}</span>
                   <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 capitalize", statusTone[s.status])}>{s.status.replace('-', ' ')}</Badge>
+                  {s.clockIn && !s.clockOut && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-primary/20 gap-1"><LogIn className="h-2.5 w-2.5" /> Clocked in {fmt12(s.clockIn)}</Badge>}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                   <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.location} · {s.area}</span>
@@ -366,7 +386,10 @@ function ShiftList({ shifts, onSwap }: { shifts: MyShift[]; onSwap: (s: MyShift)
               <div className="text-right">
                 <p className="text-sm font-bold">{hoursBetween(s.startTime, s.endTime, s.breakMinutes).toFixed(1)}h</p>
               </div>
-              <Button size="sm" variant="outline" onClick={() => onSwap(s)} className="gap-1.5 h-8" disabled={s.status === 'completed' || s.status === 'in-progress'}>
+              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpenDetails(s); }} className="h-8 gap-1.5">
+                <FileText className="h-3.5 w-3.5" /> Details
+              </Button>
+              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onSwap(s); }} className="gap-1.5 h-8" disabled={s.status === 'completed' || s.status === 'in-progress'}>
                 <ArrowLeftRight className="h-3.5 w-3.5" /> Swap
               </Button>
             </div>
@@ -565,9 +588,10 @@ function CalendarGrid({
 }
 
 // ───────────────────────── Availability Strip ─────────────────────────
-function AvailabilityStrip({ weekStart, availability, onChange }: {
+function AvailabilityStrip({ weekStart, availability, shifts, onChange }: {
   weekStart: Date;
   availability: AvailabilityDay[];
+  shifts: MyShift[];
   onChange: (date: Date) => void;
 }) {
   const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 13) });
@@ -579,6 +603,7 @@ function AvailabilityStrip({ weekStart, availability, onChange }: {
             <Clock className="h-4 w-4 text-primary" /> My Availability
           </CardTitle>
           <div className="flex items-center gap-3 text-[11px]">
+            <Legend tone="bg-blue-500/40" label="Working" />
             <Legend tone="bg-status-approved/40" label="Available" />
             <Legend tone="bg-primary/40" label="Preferred" />
             <Legend tone="bg-status-rejected/40" label="Unavailable" />
@@ -590,15 +615,31 @@ function AvailabilityStrip({ weekStart, availability, onChange }: {
           {days.map(day => {
             const a = availability.find(av => isSameDay(av.date, day));
             const status = a?.status || 'available';
+            const dayShifts = shifts.filter(s => isSameDay(s.date, day));
+            const isWorking = dayShifts.length > 0;
             return (
               <button
                 key={day.toISOString()}
                 onClick={() => onChange(day)}
-                className={cn("rounded-md border p-2 text-left transition-all hover:scale-[1.02]", availTone[status])}
+                className={cn(
+                  "rounded-md border p-2 text-left transition-all hover:scale-[1.02]",
+                  isWorking
+                    ? "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30"
+                    : availTone[status],
+                )}
               >
                 <p className="text-[10px] uppercase tracking-wide opacity-80">{format(day, 'EEE')}</p>
                 <p className="text-base font-bold">{format(day, 'd')}</p>
-                <p className="text-[10px] capitalize mt-0.5 opacity-90">{status}</p>
+                {isWorking ? (
+                  <div className="mt-0.5">
+                    <p className="text-[10px] font-semibold flex items-center gap-1">
+                      <Briefcase className="h-2.5 w-2.5" /> Working
+                    </p>
+                    <p className="text-[10px] opacity-80">{dayShifts.length} shift{dayShifts.length === 1 ? '' : 's'}</p>
+                  </div>
+                ) : (
+                  <p className="text-[10px] capitalize mt-0.5 opacity-90">{status}</p>
+                )}
               </button>
             );
           })}
@@ -681,5 +722,128 @@ function EmptyState({ icon: Icon, title, desc }: { icon: any; title: string; des
         <p className="text-sm text-muted-foreground mt-1">{desc}</p>
       </CardContent>
     </Card>
+  );
+}
+
+// ───────────────────────── Shift Details Sheet ─────────────────────────
+function ShiftDetailsSheet({ shift, onClose, onSwap }: {
+  shift: MyShift | null;
+  onClose: () => void;
+  onSwap: (s: MyShift) => void;
+}) {
+  if (!shift) return null;
+  const scheduled = hoursBetween(shift.startTime, shift.endTime, shift.breakMinutes);
+  const breakTotal = (shift.breaks || []).reduce((acc, b) => {
+    if (!b.end) return acc;
+    const [sh, sm] = b.start.split(':').map(Number);
+    const [eh, em] = b.end.split(':').map(Number);
+    return acc + Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+  }, 0) || shift.breakMinutes;
+  const eligibleForSwap = shift.status === 'confirmed' || shift.status === 'pending';
+
+  return (
+    <Sheet open={!!shift} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="w-[480px] sm:max-w-lg overflow-y-auto">
+        <SheetHeader>
+          <div className="flex items-center justify-between">
+            <SheetTitle>Shift details</SheetTitle>
+            <Badge variant="outline" className={cn("capitalize text-[10px] h-5", statusTone[shift.status])}>
+              {shift.status.replace('-', ' ')}
+            </Badge>
+          </div>
+          <SheetDescription>{format(shift.date, 'EEEE, MMMM d, yyyy')}</SheetDescription>
+        </SheetHeader>
+
+        <div className="space-y-4 mt-6">
+          {/* Time block */}
+          <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-2">Scheduled time</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold tracking-tight" style={{ letterSpacing: '-0.025em' }}>
+                {fmt12(shift.startTime)} – {fmt12(shift.endTime)}
+              </span>
+              <span className="text-sm text-muted-foreground">· {scheduled.toFixed(1)}h paid</span>
+            </div>
+          </div>
+
+          {/* Clock in/out */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border/60 p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1 mb-1">
+                <LogIn className="h-3 w-3" /> Clock in
+              </p>
+              <p className="text-base font-semibold">
+                {shift.clockIn ? fmt12(shift.clockIn) : <span className="text-muted-foreground font-normal">Not clocked in</span>}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border/60 p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1 mb-1">
+                <LogOut className="h-3 w-3" /> Clock out
+              </p>
+              <p className="text-base font-semibold">
+                {shift.clockOut ? fmt12(shift.clockOut) : <span className="text-muted-foreground font-normal">Not clocked out</span>}
+              </p>
+            </div>
+          </div>
+
+          {/* Breaks */}
+          <div className="rounded-lg border border-border/60 p-3">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1 mb-2">
+              <Coffee className="h-3 w-3" /> Breaks · {breakTotal}m total
+            </p>
+            {shift.breaks && shift.breaks.length > 0 ? (
+              <ul className="space-y-1.5">
+                {shift.breaks.map((b, i) => (
+                  <li key={i} className="flex items-center justify-between text-sm">
+                    <span className="text-foreground">{b.label || (b.type === 'paid' ? 'Paid break' : 'Unpaid break')}</span>
+                    <span className="text-muted-foreground tabular-nums">
+                      {fmt12(b.start)} – {b.end ? fmt12(b.end) : 'in progress'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">{shift.breakMinutes}m unpaid break scheduled</p>
+            )}
+          </div>
+
+          {/* Location & role */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border/60 p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1 mb-1">
+                <MapPin className="h-3 w-3" /> Location
+              </p>
+              <p className="text-sm font-semibold">{shift.location}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{shift.area}</p>
+            </div>
+            <div className="rounded-lg border border-border/60 p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1 mb-1">
+                <Briefcase className="h-3 w-3" /> Role
+              </p>
+              <p className="text-sm font-semibold">{shift.role}</p>
+            </div>
+          </div>
+
+          {shift.notes && (
+            <div className="rounded-lg border border-border/60 p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
+              <p className="text-sm">{shift.notes}</p>
+            </div>
+          )}
+        </div>
+
+        <SheetFooter className="mt-6 flex-row justify-between sm:justify-between">
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button
+            onClick={() => onSwap(shift)}
+            disabled={!eligibleForSwap}
+            className="gap-1.5"
+            title={eligibleForSwap ? 'Request a swap with another team member' : 'This shift cannot be swapped'}
+          >
+            <ArrowLeftRight className="h-4 w-4" /> Request swap
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
