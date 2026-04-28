@@ -29,6 +29,7 @@ import { EmployeeCareerPathingPanel } from '@/components/performance/employee/Em
 import { EmployeeOnboardingPanel } from '@/components/employee/EmployeeOnboardingPanel';
 import { OnboardingBanner } from '@/components/employee/OnboardingBanner';
 import { EmployeeDashboard } from '@/components/employee/EmployeeDashboard';
+import { EmployeeShiftsPanel } from '@/components/employee/EmployeeShiftsPanel';
 
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
