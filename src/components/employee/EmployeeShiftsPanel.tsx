@@ -559,7 +559,19 @@ function SwapShiftCard({ label, shift }: { label: string; shift: SwapRequest['fr
   );
 }
 
-// ───────────────────────── Calendar Grid ─────────────────────────
+// ───────────────────────── Calendar Grid (Roster scheduler style) ─────────────────────────
+// Time-axis timeline calendar matching the main roster scheduler look,
+// adapted for a single staff member (no left staff panel, no right side panel).
+const DAY_START_HOUR = 6;   // 6 AM
+const DAY_END_HOUR = 23;    // 11 PM
+const HOURS = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR + 1 }, (_, i) => DAY_START_HOUR + i);
+
+const minutesFromDayStart = (time: string) => {
+  const [h, m] = time.split(':').map(Number);
+  return Math.max(0, (h - DAY_START_HOUR) * 60 + m);
+};
+const totalDayMinutes = (DAY_END_HOUR - DAY_START_HOUR) * 60;
+
 function CalendarGrid({
   weekStart, shifts, openShifts = [], availability, onShiftClick, onAvailabilityClick, onClaim,
 }: {
@@ -571,64 +583,163 @@ function CalendarGrid({
   onAvailabilityClick?: (d: AvailabilityDay) => void;
   onClaim?: (s: OpenShift) => void;
 }) {
-  const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 13) });
+  const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
+
+  const shiftBarTone: Record<MyShift['status'], string> = {
+    confirmed: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-500/25',
+    pending: 'bg-amber-500/15 border-amber-500/40 border-dashed text-amber-900 dark:text-amber-100 hover:bg-amber-500/25',
+    'in-progress': 'bg-primary/20 border-primary/50 text-foreground hover:bg-primary/30 ring-1 ring-primary/40',
+    completed: 'bg-muted border-border text-muted-foreground hover:bg-muted/80',
+  };
+
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 overflow-hidden">
       <CardContent className="p-0">
-        <div className="grid grid-cols-7 border-b border-border/60 bg-muted/40">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-            <div key={d} className="px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide text-center">{d}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7">
-          {days.map(day => {
-            const dayShifts = shifts.filter(s => isSameDay(s.date, day));
-            const dayOpen = openShifts.filter(s => isSameDay(s.date, day));
-            const avail = availability.find(a => isSameDay(a.date, day));
-            const isToday = isSameDay(day, new Date());
-            return (
-              <div key={day.toISOString()} className={cn(
-                "border-r border-b border-border/60 min-h-[110px] p-2 flex flex-col gap-1",
-                isToday && "bg-primary/5",
-              )}>
-                <div className="flex items-center justify-between">
-                  <span className={cn("text-xs font-medium", isToday ? "text-primary" : "text-foreground")}>{format(day, 'd')}</span>
-                  {avail && (
-                    <button
-                      onClick={() => onAvailabilityClick?.(avail)}
-                      className={cn("text-[9px] px-1.5 py-0.5 rounded border font-medium uppercase tracking-wide", availTone[avail.status])}
-                      title="Click to edit availability"
-                    >
-                      {avail.status === 'unavailable' ? 'Off' : avail.status === 'preferred' ? 'Pref' : 'Avail'}
-                    </button>
-                  )}
-                </div>
-                {dayShifts.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => onShiftClick?.(s)}
-                    className={cn("text-left rounded border px-1.5 py-1 text-[10px] leading-tight hover:opacity-80", statusTone[s.status])}
-                  >
-                    <p className="font-semibold">{fmt12(s.startTime)}</p>
-                    <p className="opacity-80 truncate">{s.location}</p>
-                  </button>
-                ))}
-                {dayOpen.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => onClaim?.(s)}
-                    className="text-left rounded border border-dashed border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300 px-1.5 py-1 text-[10px] leading-tight hover:bg-amber-500/15"
-                  >
-                    <p className="font-semibold flex items-center gap-1">
-                      {s.premium && <Sparkles className="h-2.5 w-2.5" />}
-                      {fmt12(s.startTime)} · ${s.rate}
-                    </p>
-                    <p className="opacity-80 truncate">Open · {s.location}</p>
-                  </button>
-                ))}
+        {/* Hour axis header */}
+        <div className="flex border-b border-border/60 bg-muted/40 sticky top-0 z-10">
+          <div className="w-32 shrink-0 border-r border-border/60 px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+            Day
+          </div>
+          <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${HOURS.length}, minmax(0, 1fr))` }}>
+            {HOURS.map(h => (
+              <div key={h} className="border-r border-border/40 last:border-r-0 px-1 py-2 text-[10px] text-muted-foreground text-center">
+                {h === 12 ? '12 PM' : h === 0 ? '12 AM' : h > 12 ? `${h - 12} PM` : `${h} AM`}
               </div>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+
+        {/* Day rows */}
+        <ScrollArea className="max-h-[600px]">
+          <div>
+            {days.map(day => {
+              const dayShifts = shifts.filter(s => isSameDay(s.date, day));
+              const dayOpen = openShifts.filter(s => isSameDay(s.date, day));
+              const avail = availability.find(a => isSameDay(a.date, day));
+              const isToday = isSameDay(day, new Date());
+              const status = avail?.status || 'available';
+
+              return (
+                <div
+                  key={day.toISOString()}
+                  className={cn(
+                    "flex border-b border-border/60 last:border-b-0 min-h-[64px]",
+                    isToday && "bg-primary/5",
+                  )}
+                >
+                  {/* Day label column */}
+                  <div className="w-32 shrink-0 border-r border-border/60 p-2 flex flex-col gap-1">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                        {format(day, 'EEE')}
+                      </span>
+                      <span className={cn("text-base font-bold leading-none", isToday ? "text-primary" : "text-foreground")}>
+                        {format(day, 'd')}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{format(day, 'MMM')}</span>
+                    </div>
+                    {avail && (
+                      <button
+                        onClick={() => onAvailabilityClick?.(avail)}
+                        className={cn(
+                          "text-[9px] px-1.5 py-0.5 rounded border font-medium uppercase tracking-wide w-fit",
+                          dayShifts.length > 0
+                            ? "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30"
+                            : availTone[status],
+                        )}
+                        title="Click to edit availability"
+                      >
+                        {dayShifts.length > 0
+                          ? `Working · ${dayShifts.length}`
+                          : status === 'unavailable' ? 'Off' : status === 'preferred' ? 'Preferred' : 'Available'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Timeline lane */}
+                  <div className="flex-1 relative">
+                    {/* Hour grid lines */}
+                    <div className="absolute inset-0 grid pointer-events-none" style={{ gridTemplateColumns: `repeat(${HOURS.length}, minmax(0, 1fr))` }}>
+                      {HOURS.map(h => (
+                        <div key={h} className="border-r border-border/30 last:border-r-0" />
+                      ))}
+                    </div>
+
+                    {/* Now indicator */}
+                    {isToday && (() => {
+                      const now = new Date();
+                      const nowMin = (now.getHours() - DAY_START_HOUR) * 60 + now.getMinutes();
+                      if (nowMin < 0 || nowMin > totalDayMinutes) return null;
+                      const left = (nowMin / totalDayMinutes) * 100;
+                      return (
+                        <div className="absolute top-0 bottom-0 w-px bg-primary z-20 pointer-events-none" style={{ left: `${left}%` }}>
+                          <div className="absolute -top-1 -left-[3px] h-1.5 w-1.5 rounded-full bg-primary" />
+                        </div>
+                      );
+                    })()}
+
+                    {/* Shift bars */}
+                    <div className="relative h-full py-2 px-1">
+                      {dayShifts.map(s => {
+                        const startMin = minutesFromDayStart(s.startTime);
+                        const endMin = Math.min(totalDayMinutes, minutesFromDayStart(s.endTime));
+                        const left = (startMin / totalDayMinutes) * 100;
+                        const width = Math.max(2, ((endMin - startMin) / totalDayMinutes) * 100);
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => onShiftClick?.(s)}
+                            className={cn(
+                              "absolute rounded-md border px-2 py-1 text-left transition-all overflow-hidden",
+                              shiftBarTone[s.status],
+                            )}
+                            style={{ left: `${left}%`, width: `${width}%`, top: 8, bottom: 8 }}
+                            title={`${fmt12(s.startTime)} – ${fmt12(s.endTime)} · ${s.location}`}
+                          >
+                            <p className="text-[11px] font-semibold truncate leading-tight">
+                              {fmt12(s.startTime)} – {fmt12(s.endTime)}
+                            </p>
+                            <p className="text-[10px] truncate opacity-90">{s.location} · {s.area}</p>
+                          </button>
+                        );
+                      })}
+
+                      {dayOpen.map(s => {
+                        const startMin = minutesFromDayStart(s.startTime);
+                        const endMin = Math.min(totalDayMinutes, minutesFromDayStart(s.endTime));
+                        const left = (startMin / totalDayMinutes) * 100;
+                        const width = Math.max(2, ((endMin - startMin) / totalDayMinutes) * 100);
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => onClaim?.(s)}
+                            className="absolute rounded-md border border-dashed border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 hover:bg-amber-500/20 px-2 py-1 text-left transition-all overflow-hidden"
+                            style={{ left: `${left}%`, width: `${width}%`, top: 8, bottom: 8 }}
+                            title={`Open shift · ${fmt12(s.startTime)} – ${fmt12(s.endTime)}`}
+                          >
+                            <p className="text-[11px] font-semibold truncate leading-tight flex items-center gap-1">
+                              {s.premium && <Sparkles className="h-2.5 w-2.5" />}
+                              Open · {fmt12(s.startTime)}
+                            </p>
+                            <p className="text-[10px] truncate opacity-90">${s.rate}/hr · {s.location}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 border-t border-border/60 px-4 py-2 text-[11px] text-muted-foreground bg-muted/20">
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-3 rounded-sm bg-emerald-500/40 border border-emerald-500/60" />Confirmed</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-3 rounded-sm bg-amber-500/40 border border-amber-500/60 border-dashed" />Pending</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-3 rounded-sm bg-primary/40 border border-primary/60" />In progress</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-3 rounded-sm bg-muted border border-border" />Completed</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-3 rounded-sm bg-amber-500/20 border border-dashed border-amber-500/60" />Open shift</span>
         </div>
       </CardContent>
     </Card>
