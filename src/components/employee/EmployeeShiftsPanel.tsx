@@ -724,3 +724,126 @@ function EmptyState({ icon: Icon, title, desc }: { icon: any; title: string; des
     </Card>
   );
 }
+
+// ───────────────────────── Shift Details Sheet ─────────────────────────
+function ShiftDetailsSheet({ shift, onClose, onSwap }: {
+  shift: MyShift | null;
+  onClose: () => void;
+  onSwap: (s: MyShift) => void;
+}) {
+  if (!shift) return null;
+  const scheduled = hoursBetween(shift.startTime, shift.endTime, shift.breakMinutes);
+  const breakTotal = (shift.breaks || []).reduce((acc, b) => {
+    if (!b.end) return acc;
+    const [sh, sm] = b.start.split(':').map(Number);
+    const [eh, em] = b.end.split(':').map(Number);
+    return acc + Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+  }, 0) || shift.breakMinutes;
+  const eligibleForSwap = shift.status === 'confirmed' || shift.status === 'pending';
+
+  return (
+    <Sheet open={!!shift} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="w-[480px] sm:max-w-lg overflow-y-auto">
+        <SheetHeader>
+          <div className="flex items-center justify-between">
+            <SheetTitle>Shift details</SheetTitle>
+            <Badge variant="outline" className={cn("capitalize text-[10px] h-5", statusTone[shift.status])}>
+              {shift.status.replace('-', ' ')}
+            </Badge>
+          </div>
+          <SheetDescription>{format(shift.date, 'EEEE, MMMM d, yyyy')}</SheetDescription>
+        </SheetHeader>
+
+        <div className="space-y-4 mt-6">
+          {/* Time block */}
+          <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-2">Scheduled time</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold tracking-tight" style={{ letterSpacing: '-0.025em' }}>
+                {fmt12(shift.startTime)} – {fmt12(shift.endTime)}
+              </span>
+              <span className="text-sm text-muted-foreground">· {scheduled.toFixed(1)}h paid</span>
+            </div>
+          </div>
+
+          {/* Clock in/out */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border/60 p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1 mb-1">
+                <LogIn className="h-3 w-3" /> Clock in
+              </p>
+              <p className="text-base font-semibold">
+                {shift.clockIn ? fmt12(shift.clockIn) : <span className="text-muted-foreground font-normal">Not clocked in</span>}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border/60 p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1 mb-1">
+                <LogOut className="h-3 w-3" /> Clock out
+              </p>
+              <p className="text-base font-semibold">
+                {shift.clockOut ? fmt12(shift.clockOut) : <span className="text-muted-foreground font-normal">Not clocked out</span>}
+              </p>
+            </div>
+          </div>
+
+          {/* Breaks */}
+          <div className="rounded-lg border border-border/60 p-3">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1 mb-2">
+              <Coffee className="h-3 w-3" /> Breaks · {breakTotal}m total
+            </p>
+            {shift.breaks && shift.breaks.length > 0 ? (
+              <ul className="space-y-1.5">
+                {shift.breaks.map((b, i) => (
+                  <li key={i} className="flex items-center justify-between text-sm">
+                    <span className="text-foreground">{b.label || (b.type === 'paid' ? 'Paid break' : 'Unpaid break')}</span>
+                    <span className="text-muted-foreground tabular-nums">
+                      {fmt12(b.start)} – {b.end ? fmt12(b.end) : 'in progress'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">{shift.breakMinutes}m unpaid break scheduled</p>
+            )}
+          </div>
+
+          {/* Location & role */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border/60 p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1 mb-1">
+                <MapPin className="h-3 w-3" /> Location
+              </p>
+              <p className="text-sm font-semibold">{shift.location}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{shift.area}</p>
+            </div>
+            <div className="rounded-lg border border-border/60 p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1 mb-1">
+                <Briefcase className="h-3 w-3" /> Role
+              </p>
+              <p className="text-sm font-semibold">{shift.role}</p>
+            </div>
+          </div>
+
+          {shift.notes && (
+            <div className="rounded-lg border border-border/60 p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
+              <p className="text-sm">{shift.notes}</p>
+            </div>
+          )}
+        </div>
+
+        <SheetFooter className="mt-6 flex-row justify-between sm:justify-between">
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button
+            onClick={() => onSwap(shift)}
+            disabled={!eligibleForSwap}
+            className="gap-1.5"
+            title={eligibleForSwap ? 'Request a swap with another team member' : 'This shift cannot be swapped'}
+          >
+            <ArrowLeftRight className="h-4 w-4" /> Request swap
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
