@@ -14,10 +14,13 @@ import {
   Calendar as CalendarIcon, Clock, MapPin, ArrowLeftRight, Inbox,
   List, LayoutGrid, ChevronLeft, ChevronRight, CheckCircle2, XCircle,
   Hand, Sparkles, Building2, Search, Coffee, LogIn, LogOut, FileText, Briefcase,
+  UserX, Plane, Stethoscope, Plus,
 } from 'lucide-react';
 import {
   format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO,
   eachDayOfInterval, addWeeks, subWeeks, isWithinInterval,
+  startOfMonth, endOfMonth, addMonths, subMonths, getDay, isSameMonth,
+  differenceInCalendarDays,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
