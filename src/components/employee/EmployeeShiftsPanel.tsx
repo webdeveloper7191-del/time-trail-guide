@@ -10,14 +10,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Calendar as CalendarIcon, Clock, MapPin, ArrowLeftRight, Inbox,
   List, LayoutGrid, ChevronLeft, ChevronRight, CheckCircle2, XCircle,
   Hand, Sparkles, Building2, Search, Coffee, LogIn, LogOut, FileText, Briefcase,
+  UserX, Plane, Stethoscope, Plus,
 } from 'lucide-react';
 import {
   format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO,
   eachDayOfInterval, addWeeks, subWeeks, isWithinInterval,
+  startOfMonth, endOfMonth, addMonths, subMonths, getDay, isSameMonth,
+  differenceInCalendarDays,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -147,10 +154,14 @@ const fmt12 = (t: string) => {
 };
 
 // ───────────────────────── Main Component ─────────────────────────
+const PAST_PAGE_SIZE = 8;
+type CalRange = 'week' | 'fortnight' | 'month';
+
 export function EmployeeShiftsPanel() {
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [tab, setTab] = useState<'mine' | 'open' | 'swaps'>('mine');
-  const [weekStart, setWeekStart] = useState(startOfWeek(today, { weekStartsOn: 1 }));
+  const [calRange, setCalRange] = useState<CalRange>('week');
+  const [anchorDate, setAnchorDate] = useState<Date>(today);
   const [availability, setAvailability] = useState<AvailabilityDay[]>(seedAvailability(startOfWeek(today, { weekStartsOn: 1 })));
   const [swapShift, setSwapShift] = useState<MyShift | null>(null);
   const [detailsShift, setDetailsShift] = useState<MyShift | null>(null);
@@ -160,10 +171,25 @@ export function EmployeeShiftsPanel() {
   const [locFilter, setLocFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<'upcoming' | 'past' | 'all'>('upcoming');
   const [editingDay, setEditingDay] = useState<AvailabilityDay | null>(null);
+  const [pastPage, setPastPage] = useState(1);
+  const [absentShift, setAbsentShift] = useState<MyShift | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaveSeed, setLeaveSeed] = useState<{ date?: Date; type?: 'annual' | 'sick' } | null>(null);
 
   const locations = useMemo(() => Array.from(new Set([...mockMyShifts, ...mockOpenShifts].map(s => s.location))), []);
 
   const startOfToday = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+
+  // Calendar range -> visible window
+  const rangeStart = useMemo(() => {
+    if (calRange === 'month') return startOfMonth(anchorDate);
+    return startOfWeek(anchorDate, { weekStartsOn: 1 });
+  }, [calRange, anchorDate]);
+  const rangeEnd = useMemo(() => {
+    if (calRange === 'month') return endOfMonth(anchorDate);
+    if (calRange === 'fortnight') return addDays(rangeStart, 13);
+    return addDays(rangeStart, 6);
+  }, [calRange, anchorDate, rangeStart]);
 
   const filteredMyShifts = useMemo(() =>
     mockMyShifts.filter(s => {
@@ -175,6 +201,16 @@ export function EmployeeShiftsPanel() {
     }).sort((a, b) => dateRange === 'past' ? b.date.getTime() - a.date.getTime() : a.date.getTime() - b.date.getTime()),
   [search, locFilter, dateRange, startOfToday]);
 
+  // Reset pagination when filter/search changes
+  useMemo(() => { setPastPage(1); }, [dateRange, search, locFilter]);
+
+  const paginatedMyShifts = useMemo(() => {
+    if (dateRange !== 'past') return filteredMyShifts;
+    const start = (pastPage - 1) * PAST_PAGE_SIZE;
+    return filteredMyShifts.slice(start, start + PAST_PAGE_SIZE);
+  }, [filteredMyShifts, dateRange, pastPage]);
+  const totalPastPages = Math.max(1, Math.ceil(filteredMyShifts.length / PAST_PAGE_SIZE));
+
   const filteredOpen = useMemo(() =>
     mockOpenShifts.filter(s => locFilter === 'all' || s.location === locFilter)
       .sort((a, b) => a.date.getTime() - b.date.getTime()),
@@ -184,10 +220,11 @@ export function EmployeeShiftsPanel() {
 
   const totalHours = filteredMyShifts.reduce((sum, s) => sum + hoursBetween(s.startTime, s.endTime, s.breakMinutes), 0);
 
-  // ── Navigation
-  const goPrev = () => setWeekStart(w => subWeeks(w, 1));
-  const goNext = () => setWeekStart(w => addWeeks(w, 1));
-  const goToday = () => setWeekStart(startOfWeek(today, { weekStartsOn: 1 }));
+  // ── Navigation (step by current calendar range)
+  const stepDays = calRange === 'week' ? 7 : calRange === 'fortnight' ? 14 : 0;
+  const goPrev = () => setAnchorDate(d => calRange === 'month' ? subMonths(d, 1) : addDays(d, -stepDays));
+  const goNext = () => setAnchorDate(d => calRange === 'month' ? addMonths(d, 1) : addDays(d, stepDays));
+  const goToday = () => setAnchorDate(today);
 
   // ── Actions
   const claimOpen = (s: OpenShift) => toast.success(`Application sent for ${format(s.date, 'EEE d MMM')} • ${fmt12(s.startTime)}`);
@@ -199,6 +236,12 @@ export function EmployeeShiftsPanel() {
     });
     toast.success(`Availability updated for ${format(date, 'EEE d MMM')}`);
   };
+
+  const rangeLabel = useMemo(() => {
+    if (calRange === 'month') return format(anchorDate, 'MMMM yyyy');
+    return `${format(rangeStart, 'MMM d')} – ${format(rangeEnd, 'MMM d, yyyy')}`;
+  }, [calRange, anchorDate, rangeStart, rangeEnd]);
+
 
   return (
     <div className="space-y-4">
@@ -218,10 +261,18 @@ export function EmployeeShiftsPanel() {
             <Button size="icon" variant="outline" onClick={goPrev} className="h-8 w-8"><ChevronLeft className="h-4 w-4" /></Button>
             <Button size="sm" variant="outline" onClick={goToday} className="h-8">Today</Button>
             <Button size="icon" variant="outline" onClick={goNext} className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
-            <span className="ml-2 text-sm font-medium text-foreground">
-              {format(weekStart, 'MMM d')} – {format(addDays(weekStart, 6), 'MMM d, yyyy')}
-            </span>
+            <span className="ml-2 text-sm font-medium text-foreground">{rangeLabel}</span>
           </div>
+
+          {view === 'calendar' && (
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-0.5">
+              {(['week', 'fortnight', 'month'] as CalRange[]).map(r => (
+                <Button key={r} size="sm" variant={calRange === r ? 'default' : 'ghost'} onClick={() => setCalRange(r)} className="h-8 capitalize">
+                  {r}
+                </Button>
+              ))}
+            </div>
+          )}
 
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
@@ -235,6 +286,9 @@ export function EmployeeShiftsPanel() {
                 {locations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Button size="sm" variant="outline" onClick={() => { setLeaveSeed(null); setLeaveOpen(true); }} className="h-8 gap-1.5">
+              <Plane className="h-3.5 w-3.5" /> Apply for leave
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setInboxOpen(true)} className="h-8 gap-1.5 relative">
               <Inbox className="h-3.5 w-3.5" /> Inbox
               {pendingIncoming > 0 && <Badge className="h-5 px-1.5 ml-1 bg-primary text-primary-foreground">{pendingIncoming}</Badge>}
@@ -286,29 +340,39 @@ export function EmployeeShiftsPanel() {
             </div>
             <p className="text-xs text-muted-foreground">
               {dateRange === 'past'
-                ? `Showing ${filteredMyShifts.length} past shift${filteredMyShifts.length === 1 ? '' : 's'}`
+                ? `Showing ${(pastPage - 1) * PAST_PAGE_SIZE + 1}–${Math.min(pastPage * PAST_PAGE_SIZE, filteredMyShifts.length)} of ${filteredMyShifts.length} past shifts`
                 : dateRange === 'all'
                 ? `Showing all ${filteredMyShifts.length} shift${filteredMyShifts.length === 1 ? '' : 's'}`
                 : `Showing ${filteredMyShifts.length} upcoming shift${filteredMyShifts.length === 1 ? '' : 's'}`}
             </p>
           </div>
           {view === 'list' ? (
-            <ShiftList
-              shifts={filteredMyShifts}
-              onSwap={(s) => setSwapShift(s)}
-              onOpenDetails={(s) => setDetailsShift(s)}
-            />
+            <>
+              <ShiftList
+                shifts={paginatedMyShifts}
+                onSwap={(s) => setSwapShift(s)}
+                onOpenDetails={(s) => setDetailsShift(s)}
+                onMarkAbsent={(s) => setAbsentShift(s)}
+                onApplyLeave={(s) => { setLeaveSeed({ date: s.date }); setLeaveOpen(true); }}
+              />
+              {dateRange === 'past' && totalPastPages > 1 && (
+                <Pagination page={pastPage} totalPages={totalPastPages} onChange={setPastPage} />
+              )}
+            </>
           ) : (
             <CalendarGrid
-              weekStart={weekStart}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              calRange={calRange}
               shifts={filteredMyShifts}
               availability={availability}
               onShiftClick={(s) => setDetailsShift(s)}
               onAvailabilityClick={(d) => setEditingDay(d)}
+              onApplyLeave={(d) => { setLeaveSeed({ date: d }); setLeaveOpen(true); }}
             />
           )}
           <AvailabilityStrip
-            weekStart={weekStart}
+            weekStart={startOfWeek(anchorDate, { weekStartsOn: 1 })}
             availability={availability}
             shifts={filteredMyShifts}
             onChange={(date) => setEditingDay(availability.find(a => isSameDay(a.date, date)) || { date, status: 'available' })}
@@ -321,7 +385,9 @@ export function EmployeeShiftsPanel() {
             <OpenShiftList shifts={filteredOpen} onClaim={claimOpen} />
           ) : (
             <CalendarGrid
-              weekStart={weekStart}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              calRange={calRange}
               shifts={[]}
               openShifts={filteredOpen}
               availability={availability}
@@ -329,7 +395,7 @@ export function EmployeeShiftsPanel() {
             />
           )}
           <AvailabilityStrip
-            weekStart={weekStart}
+            weekStart={startOfWeek(anchorDate, { weekStartsOn: 1 })}
             availability={availability}
             shifts={filteredMyShifts}
             onChange={(date) => setEditingDay(availability.find(a => isSameDay(a.date, date)) || { date, status: 'available' })}
@@ -345,7 +411,7 @@ export function EmployeeShiftsPanel() {
             onCancel={(id) => { setSwapRequests(p => p.filter(r => r.id !== id)); toast.info('Swap cancelled'); }}
           />
           <AvailabilityStrip
-            weekStart={weekStart}
+            weekStart={startOfWeek(anchorDate, { weekStartsOn: 1 })}
             availability={availability}
             shifts={filteredMyShifts}
             onChange={(date) => setEditingDay(availability.find(a => isSameDay(a.date, date)) || { date, status: 'available' })}
@@ -383,6 +449,32 @@ export function EmployeeShiftsPanel() {
         shift={detailsShift}
         onClose={() => setDetailsShift(null)}
         onSwap={(s) => { setDetailsShift(null); setSwapShift(s); }}
+        onMarkAbsent={(s) => { setDetailsShift(null); setAbsentShift(s); }}
+        onApplyLeave={(s) => { setDetailsShift(null); setLeaveSeed({ date: s.date }); setLeaveOpen(true); }}
+      />
+
+      <MarkAbsentSheet
+        shift={absentShift}
+        onClose={() => setAbsentShift(null)}
+        onConfirm={(s, reason, type) => {
+          setAbsentShift(null);
+          toast.success(`Marked absent for ${format(s.date, 'EEE d MMM')}${reason ? ` · ${reason}` : ''}`);
+          if (type === 'sick' || type === 'annual') {
+            setLeaveSeed({ date: s.date, type });
+            setLeaveOpen(true);
+          }
+        }}
+      />
+
+      <LeaveRequestSheet
+        open={leaveOpen}
+        seed={leaveSeed}
+        onClose={() => { setLeaveOpen(false); setLeaveSeed(null); }}
+        onSubmit={(payload) => {
+          setLeaveOpen(false);
+          setLeaveSeed(null);
+          toast.success(`${payload.type === 'annual' ? 'Annual' : payload.type === 'sick' ? 'Sick' : 'Leave'} request submitted · ${format(payload.from, 'MMM d')}${!isSameDay(payload.from, payload.to) ? ` – ${format(payload.to, 'MMM d')}` : ''}`);
+        }}
       />
     </div>
   );
@@ -404,49 +496,93 @@ function KpiTile({ icon: Icon, label, value, tone }: { icon: any; label: string;
 }
 
 // ───────────────────────── List Views ─────────────────────────
-function ShiftList({ shifts, onSwap, onOpenDetails }: { shifts: MyShift[]; onSwap: (s: MyShift) => void; onOpenDetails: (s: MyShift) => void }) {
+function ShiftList({ shifts, onSwap, onOpenDetails, onMarkAbsent, onApplyLeave }: {
+  shifts: MyShift[];
+  onSwap: (s: MyShift) => void;
+  onOpenDetails: (s: MyShift) => void;
+  onMarkAbsent?: (s: MyShift) => void;
+  onApplyLeave?: (s: MyShift) => void;
+}) {
   if (shifts.length === 0) {
     return <EmptyState icon={CalendarIcon} title="No shifts scheduled" desc="You're all caught up. Check the Open Shifts tab to pick up extra work." />;
   }
   return (
     <Card className="border-border/50">
-      <ScrollArea className="max-h-[560px]">
+      <ScrollArea className="max-h-[640px]">
         <div className="divide-y divide-border/60">
-          {shifts.map(s => (
-            <div key={s.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => onOpenDetails(s)}>
-              <div className="text-center min-w-[56px]">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{format(s.date, 'EEE')}</p>
-                <p className="text-xl font-bold leading-tight">{format(s.date, 'd')}</p>
-                <p className="text-[10px] text-muted-foreground">{format(s.date, 'MMM')}</p>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-foreground">{fmt12(s.startTime)} – {fmt12(s.endTime)}</span>
-                  <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 capitalize", statusTone[s.status])}>{s.status.replace('-', ' ')}</Badge>
-                  {s.clockIn && !s.clockOut && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-primary/20 gap-1"><LogIn className="h-2.5 w-2.5" /> Clocked in {fmt12(s.clockIn)}</Badge>}
+          {shifts.map(s => {
+            const swapDisabled = s.status === 'completed' || s.status === 'in-progress';
+            const absentDisabled = s.status === 'completed';
+            return (
+              <div key={s.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => onOpenDetails(s)}>
+                <div className="text-center min-w-[56px]">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{format(s.date, 'EEE')}</p>
+                  <p className="text-xl font-bold leading-tight">{format(s.date, 'd')}</p>
+                  <p className="text-[10px] text-muted-foreground">{format(s.date, 'MMM')}</p>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.location} · {s.area}</span>
-                  <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{s.role}</span>
-                  <span>{s.breakMinutes}m break</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-foreground">{fmt12(s.startTime)} – {fmt12(s.endTime)}</span>
+                    <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 capitalize", statusTone[s.status])}>{s.status.replace('-', ' ')}</Badge>
+                    {s.clockIn && !s.clockOut && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-primary/20 gap-1"><LogIn className="h-2.5 w-2.5" /> Clocked in {fmt12(s.clockIn)}</Badge>}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.location} · {s.area}</span>
+                    <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{s.role}</span>
+                    <span>{s.breakMinutes}m break</span>
+                  </div>
                 </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold">{hoursBetween(s.startTime, s.endTime, s.breakMinutes).toFixed(1)}h</p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpenDetails(s); }} className="h-8 gap-1.5">
+                  <FileText className="h-3.5 w-3.5" /> Details
+                </Button>
+                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onSwap(s); }} className="gap-1.5 h-8" disabled={swapDisabled}>
+                  <ArrowLeftRight className="h-3.5 w-3.5" /> Swap
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuItem disabled={absentDisabled} onClick={() => onMarkAbsent?.(s)}>
+                      <UserX className="h-4 w-4 mr-2" /> Mark absent
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onApplyLeave?.(s)}>
+                      <Plane className="h-4 w-4 mr-2" /> Apply for annual leave
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onApplyLeave?.(s)}>
+                      <Stethoscope className="h-4 w-4 mr-2" /> Apply for sick leave
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-bold">{hoursBetween(s.startTime, s.endTime, s.breakMinutes).toFixed(1)}h</p>
-              </div>
-              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpenDetails(s); }} className="h-8 gap-1.5">
-                <FileText className="h-3.5 w-3.5" /> Details
-              </Button>
-              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onSwap(s); }} className="gap-1.5 h-8" disabled={s.status === 'completed' || s.status === 'in-progress'}>
-                <ArrowLeftRight className="h-3.5 w-3.5" /> Swap
-              </Button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </ScrollArea>
     </Card>
   );
 }
+
+function Pagination({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (p: number) => void }) {
+  return (
+    <div className="flex items-center justify-end gap-2">
+      <Button size="sm" variant="outline" className="h-8" disabled={page <= 1} onClick={() => onChange(page - 1)}>
+        <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Previous
+      </Button>
+      <span className="text-xs text-muted-foreground tabular-nums">Page {page} of {totalPages}</span>
+      <Button size="sm" variant="outline" className="h-8" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
+        Next <ChevronRight className="h-3.5 w-3.5 ml-1" />
+      </Button>
+    </div>
+  );
+}
+
 
 function OpenShiftList({ shifts, onClaim }: { shifts: OpenShift[]; onClaim: (s: OpenShift) => void }) {
   if (shifts.length === 0) return <EmptyState icon={Hand} title="No open shifts" desc="Check back later — new shifts are posted as they become available." />;
@@ -573,17 +709,25 @@ const minutesFromDayStart = (time: string) => {
 const totalDayMinutes = (DAY_END_HOUR - DAY_START_HOUR) * 60;
 
 function CalendarGrid({
-  weekStart, shifts, openShifts = [], availability, onShiftClick, onAvailabilityClick, onClaim,
+  rangeStart, rangeEnd, calRange = 'week', shifts, openShifts = [], availability, onShiftClick, onAvailabilityClick, onClaim, onApplyLeave,
 }: {
-  weekStart: Date;
+  rangeStart: Date;
+  rangeEnd: Date;
+  calRange?: CalRange;
   shifts: MyShift[];
   openShifts?: OpenShift[];
   availability: AvailabilityDay[];
   onShiftClick?: (s: MyShift) => void;
   onAvailabilityClick?: (d: AvailabilityDay) => void;
   onClaim?: (s: OpenShift) => void;
+  onApplyLeave?: (date: Date) => void;
 }) {
-  const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
+  const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+
+  // Month view -> calendar grid
+  if (calRange === 'month') {
+    return <MonthCalendarGrid monthAnchor={rangeStart} shifts={shifts} openShifts={openShifts} availability={availability} onShiftClick={onShiftClick} onClaim={onClaim} onApplyLeave={onApplyLeave} />;
+  }
 
   const shiftBarTone: Record<MyShift['status'], string> = {
     confirmed: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-500/25',
@@ -885,10 +1029,12 @@ function EmptyState({ icon: Icon, title, desc }: { icon: any; title: string; des
 }
 
 // ───────────────────────── Shift Details Sheet ─────────────────────────
-function ShiftDetailsSheet({ shift, onClose, onSwap }: {
+function ShiftDetailsSheet({ shift, onClose, onSwap, onMarkAbsent, onApplyLeave }: {
   shift: MyShift | null;
   onClose: () => void;
   onSwap: (s: MyShift) => void;
+  onMarkAbsent?: (s: MyShift) => void;
+  onApplyLeave?: (s: MyShift) => void;
 }) {
   if (!shift) return null;
   const scheduled = hoursBetween(shift.startTime, shift.endTime, shift.breakMinutes);
@@ -991,18 +1137,308 @@ function ShiftDetailsSheet({ shift, onClose, onSwap }: {
           )}
         </div>
 
-        <SheetFooter className="mt-6 flex-row justify-between sm:justify-between">
+        <SheetFooter className="mt-6 flex-row justify-between sm:justify-between gap-2 flex-wrap">
           <Button variant="outline" onClick={onClose}>Close</Button>
-          <Button
-            onClick={() => onSwap(shift)}
-            disabled={!eligibleForSwap}
-            className="gap-1.5"
-            title={eligibleForSwap ? 'Request a swap with another team member' : 'This shift cannot be swapped'}
-          >
-            <ArrowLeftRight className="h-4 w-4" /> Request swap
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {onMarkAbsent && (
+              <Button variant="outline" onClick={() => onMarkAbsent(shift)} disabled={shift.status === 'completed'} className="gap-1.5">
+                <UserX className="h-4 w-4" /> Mark absent
+              </Button>
+            )}
+            {onApplyLeave && (
+              <Button variant="outline" onClick={() => onApplyLeave(shift)} className="gap-1.5">
+                <Plane className="h-4 w-4" /> Apply leave
+              </Button>
+            )}
+            <Button
+              onClick={() => onSwap(shift)}
+              disabled={!eligibleForSwap}
+              className="gap-1.5"
+              title={eligibleForSwap ? 'Request a swap with another team member' : 'This shift cannot be swapped'}
+            >
+              <ArrowLeftRight className="h-4 w-4" /> Request swap
+            </Button>
+          </div>
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  );
+}
+
+// ───────────────────────── Mark Absent Sheet ─────────────────────────
+function MarkAbsentSheet({ shift, onClose, onConfirm }: {
+  shift: MyShift | null;
+  onClose: () => void;
+  onConfirm: (s: MyShift, reason: string, type: 'no-show' | 'sick' | 'annual' | 'other') => void;
+}) {
+  const [type, setType] = useState<'no-show' | 'sick' | 'annual' | 'other'>('sick');
+  const [reason, setReason] = useState('');
+
+  useMemo(() => { if (shift) { setType('sick'); setReason(''); } }, [shift]);
+
+  if (!shift) return null;
+  const followUp = type === 'sick' || type === 'annual';
+
+  return (
+    <Sheet open={!!shift} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="w-[440px] sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>Mark absent</SheetTitle>
+          <SheetDescription>
+            {format(shift.date, 'EEEE, MMMM d')} · {fmt12(shift.startTime)} – {fmt12(shift.endTime)}
+          </SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 mt-6">
+          <div className="space-y-2">
+            <Label>Reason</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { v: 'sick', label: 'Sick', icon: Stethoscope },
+                { v: 'annual', label: 'Annual', icon: Plane },
+                { v: 'no-show', label: 'No show', icon: UserX },
+                { v: 'other', label: 'Other', icon: FileText },
+              ] as const).map(opt => (
+                <button
+                  key={opt.v}
+                  onClick={() => setType(opt.v)}
+                  className={cn(
+                    "rounded-md border px-3 py-2 text-xs font-medium capitalize transition-all flex items-center gap-2 justify-center",
+                    type === opt.v
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background border-border text-muted-foreground hover:bg-muted/50',
+                  )}
+                >
+                  <opt.icon className="h-3.5 w-3.5" /> {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="absent-note">Note (optional)</Label>
+            <Textarea id="absent-note" placeholder="Additional context for your manager…" value={reason} onChange={e => setReason(e.target.value)} rows={3} />
+          </div>
+          {followUp && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
+              You'll be prompted to submit a {type === 'sick' ? 'sick' : 'annual'} leave request after marking this shift.
+            </div>
+          )}
+        </div>
+        <SheetFooter className="mt-6">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onConfirm(shift, reason, type)}>Mark absent</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// ───────────────────────── Leave Request Sheet ─────────────────────────
+function LeaveRequestSheet({ open, seed, onClose, onSubmit }: {
+  open: boolean;
+  seed: { date?: Date; type?: 'annual' | 'sick' } | null;
+  onClose: () => void;
+  onSubmit: (p: { type: 'annual' | 'sick' | 'unpaid' | 'other'; from: Date; to: Date; reason: string; halfDay: boolean }) => void;
+}) {
+  const [type, setType] = useState<'annual' | 'sick' | 'unpaid' | 'other'>('annual');
+  const [from, setFrom] = useState<Date>(today);
+  const [to, setTo] = useState<Date>(today);
+  const [reason, setReason] = useState('');
+  const [halfDay, setHalfDay] = useState(false);
+
+  useMemo(() => {
+    if (open) {
+      setType(seed?.type || 'annual');
+      const d = seed?.date || today;
+      setFrom(d); setTo(d); setReason(''); setHalfDay(false);
+    }
+  }, [open, seed]);
+
+  const days = Math.max(1, differenceInCalendarDays(to, from) + 1);
+  const totalDays = halfDay && isSameDay(from, to) ? 0.5 : days;
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="w-[460px] sm:max-w-md overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Apply for leave</SheetTitle>
+          <SheetDescription>Submit a leave request for manager approval.</SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 mt-6">
+          <div className="space-y-2">
+            <Label>Leave type</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { v: 'annual', label: 'Annual leave', icon: Plane },
+                { v: 'sick', label: 'Sick leave', icon: Stethoscope },
+                { v: 'unpaid', label: 'Unpaid', icon: Clock },
+                { v: 'other', label: 'Other', icon: FileText },
+              ] as const).map(opt => (
+                <button
+                  key={opt.v}
+                  onClick={() => setType(opt.v)}
+                  className={cn(
+                    "rounded-md border px-3 py-2 text-xs font-medium transition-all flex items-center gap-2 justify-center",
+                    type === opt.v ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border text-muted-foreground hover:bg-muted/50',
+                  )}
+                >
+                  <opt.icon className="h-3.5 w-3.5" /> {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>From</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start font-normal">
+                    <CalendarIcon className="h-3.5 w-3.5 mr-2" />
+                    {format(from, 'MMM d, yyyy')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={from} onSelect={(d) => d && (setFrom(d), to < d && setTo(d))} initialFocus />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label>To</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start font-normal">
+                    <CalendarIcon className="h-3.5 w-3.5 mr-2" />
+                    {format(to, 'MMM d, yyyy')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={to} onSelect={(d) => d && setTo(d)} disabled={(d) => d < from} initialFocus />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-md border border-border p-3">
+            <div>
+              <Label htmlFor="half-day" className="cursor-pointer">Half day</Label>
+              <p className="text-[11px] text-muted-foreground">Only applies when from and to are the same day</p>
+            </div>
+            <Switch id="half-day" checked={halfDay} onCheckedChange={setHalfDay} disabled={!isSameDay(from, to)} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="leave-reason">Reason {type === 'annual' || type === 'unpaid' ? '(optional)' : ''}</Label>
+            <Textarea id="leave-reason" rows={3} placeholder={type === 'sick' ? 'e.g. Flu, doctor appointment' : 'e.g. Family holiday'} value={reason} onChange={e => setReason(e.target.value)} />
+          </div>
+
+          <div className="flex items-center justify-between rounded-md bg-muted/40 border border-border/60 p-3 text-sm">
+            <span className="text-muted-foreground">Total days requested</span>
+            <span className="font-bold tabular-nums">{totalDays}</span>
+          </div>
+        </div>
+        <SheetFooter className="mt-6">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onSubmit({ type, from, to, reason, halfDay })}>Submit request</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// ───────────────────────── Month Calendar Grid ─────────────────────────
+function MonthCalendarGrid({ monthAnchor, shifts, openShifts = [], availability, onShiftClick, onClaim, onApplyLeave }: {
+  monthAnchor: Date;
+  shifts: MyShift[];
+  openShifts?: OpenShift[];
+  availability: AvailabilityDay[];
+  onShiftClick?: (s: MyShift) => void;
+  onClaim?: (s: OpenShift) => void;
+  onApplyLeave?: (date: Date) => void;
+}) {
+  const monthStart = startOfMonth(monthAnchor);
+  const monthEnd = endOfMonth(monthAnchor);
+  const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const gridEnd = addDays(gridStart, 41); // 6 weeks
+  const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
+  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  return (
+    <Card className="border-border/50">
+      <CardContent className="p-3">
+        <div className="grid grid-cols-7 gap-1">
+          {weekDays.map(d => (
+            <div key={d} className="px-2 py-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wide text-center">{d}</div>
+          ))}
+          {days.map(day => {
+            const inMonth = isSameMonth(day, monthAnchor);
+            const dayShifts = shifts.filter(s => isSameDay(s.date, day));
+            const dayOpen = openShifts.filter(s => isSameDay(s.date, day));
+            const avail = availability.find(a => isSameDay(a.date, day));
+            const isCurrentDay = isSameDay(day, new Date());
+            const status = avail?.status || 'available';
+            return (
+              <div
+                key={day.toISOString()}
+                className={cn(
+                  "min-h-[96px] rounded-md border border-border/60 p-1.5 flex flex-col gap-1 transition-colors",
+                  !inMonth && "bg-muted/20 opacity-60",
+                  isCurrentDay && "ring-2 ring-primary/40",
+                  dayShifts.length === 0 && status === 'unavailable' && "bg-status-rejected/5",
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={cn("text-xs font-bold", isCurrentDay ? "text-primary" : "text-foreground")}>
+                    {format(day, 'd')}
+                  </span>
+                  {dayShifts.length === 0 && status === 'unavailable' && (
+                    <span className="text-[9px] text-status-rejected font-medium uppercase">Off</span>
+                  )}
+                </div>
+                <div className="flex-1 space-y-0.5 overflow-hidden">
+                  {dayShifts.slice(0, 3).map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => onShiftClick?.(s)}
+                      className={cn(
+                        "w-full text-left text-[10px] px-1.5 py-0.5 rounded border truncate font-medium",
+                        s.status === 'confirmed' && 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900 dark:text-emerald-100',
+                        s.status === 'pending' && 'bg-amber-500/15 border-amber-500/40 text-amber-900 dark:text-amber-100',
+                        s.status === 'in-progress' && 'bg-primary/20 border-primary/50',
+                        s.status === 'completed' && 'bg-muted border-border text-muted-foreground',
+                      )}
+                      title={`${fmt12(s.startTime)} – ${fmt12(s.endTime)} · ${s.location}`}
+                    >
+                      {fmt12(s.startTime)} {s.location}
+                    </button>
+                  ))}
+                  {dayShifts.length > 3 && (
+                    <p className="text-[9px] text-muted-foreground px-1">+{dayShifts.length - 3} more</p>
+                  )}
+                  {dayOpen.slice(0, 2).map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => onClaim?.(s)}
+                      className="w-full text-left text-[10px] px-1.5 py-0.5 rounded border border-dashed border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 truncate font-medium"
+                      title={`Open · ${fmt12(s.startTime)} – ${fmt12(s.endTime)}`}
+                    >
+                      Open · {fmt12(s.startTime)}
+                    </button>
+                  ))}
+                </div>
+                {onApplyLeave && inMonth && day >= new Date(new Date().setHours(0,0,0,0)) && (
+                  <button
+                    onClick={() => onApplyLeave(day)}
+                    className="text-[9px] text-muted-foreground hover:text-primary flex items-center gap-0.5 self-start"
+                    title="Apply for leave on this day"
+                  >
+                    <Plus className="h-2.5 w-2.5" /> Leave
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
