@@ -1029,10 +1029,12 @@ function EmptyState({ icon: Icon, title, desc }: { icon: any; title: string; des
 }
 
 // ───────────────────────── Shift Details Sheet ─────────────────────────
-function ShiftDetailsSheet({ shift, onClose, onSwap }: {
+function ShiftDetailsSheet({ shift, onClose, onSwap, onMarkAbsent, onApplyLeave }: {
   shift: MyShift | null;
   onClose: () => void;
   onSwap: (s: MyShift) => void;
+  onMarkAbsent?: (s: MyShift) => void;
+  onApplyLeave?: (s: MyShift) => void;
 }) {
   if (!shift) return null;
   const scheduled = hoursBetween(shift.startTime, shift.endTime, shift.breakMinutes);
