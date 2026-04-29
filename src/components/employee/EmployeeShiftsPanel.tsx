@@ -46,7 +46,7 @@ interface MyShift {
   location: string;
   area: string;
   role: string;
-  status: 'confirmed' | 'pending' | 'in-progress' | 'completed';
+  status: 'confirmed' | 'pending' | 'in-progress' | 'completed' | 'rejected';
   breakMinutes: number;
   notes?: string;
   clockIn?: string;
