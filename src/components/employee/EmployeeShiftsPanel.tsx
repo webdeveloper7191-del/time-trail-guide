@@ -172,7 +172,11 @@ export function EmployeeShiftsPanel() {
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>(mockSwapRequests);
   const [search, setSearch] = useState('');
   const [locFilter, setLocFilter] = useState<string>('all');
+  const [areaFilter, setAreaFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [dateRange, setDateRange] = useState<'upcoming' | 'past' | 'all'>('upcoming');
+  const [sortBy, setSortBy] = useState<'date' | 'startTime' | 'location'>('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [editingDay, setEditingDay] = useState<AvailabilityDay | null>(null);
   const [pastPage, setPastPage] = useState(1);
   const [absentShift, setAbsentShift] = useState<MyShift | null>(null);
@@ -180,6 +184,10 @@ export function EmployeeShiftsPanel() {
   const [leaveSeed, setLeaveSeed] = useState<{ date?: Date; type?: 'annual' | 'sick' } | null>(null);
 
   const locations = useMemo(() => Array.from(new Set([...mockMyShifts, ...mockOpenShifts].map(s => s.location))), []);
+  const areas = useMemo(() => {
+    const pool = locFilter === 'all' ? mockMyShifts : mockMyShifts.filter(s => s.location === locFilter);
+    return Array.from(new Set(pool.map(s => s.area)));
+  }, [locFilter]);
 
   const startOfToday = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
 
@@ -194,18 +202,43 @@ export function EmployeeShiftsPanel() {
     return addDays(rangeStart, 6);
   }, [calRange, anchorDate, rangeStart]);
 
-  const filteredMyShifts = useMemo(() =>
-    mockMyShifts.filter(s => {
+  const matchesStatus = (s: MyShift) => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'pending') return s.status === 'pending';
+    if (statusFilter === 'rejected') return s.status === 'rejected';
+    // approved = confirmed/in-progress/completed
+    return s.status === 'confirmed' || s.status === 'in-progress' || s.status === 'completed';
+  };
+
+  const sortShifts = (arr: MyShift[]) => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...arr].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === 'date') cmp = a.date.getTime() - b.date.getTime();
+      else if (sortBy === 'startTime') cmp = a.startTime.localeCompare(b.startTime);
+      else cmp = a.location.localeCompare(b.location);
+      if (cmp === 0) cmp = a.date.getTime() - b.date.getTime();
+      return cmp * dir;
+    });
+  };
+
+  const filteredMyShifts = useMemo(() => {
+    const filtered = mockMyShifts.filter(s => {
       if (locFilter !== 'all' && s.location !== locFilter) return false;
-      if (search !== '' && !s.location.toLowerCase().includes(search.toLowerCase()) && !s.role.toLowerCase().includes(search.toLowerCase())) return false;
+      if (areaFilter !== 'all' && s.area !== areaFilter) return false;
+      if (!matchesStatus(s)) return false;
+      if (search !== '' && !s.location.toLowerCase().includes(search.toLowerCase()) && !s.role.toLowerCase().includes(search.toLowerCase()) && !s.area.toLowerCase().includes(search.toLowerCase())) return false;
       if (dateRange === 'upcoming' && s.date < startOfToday) return false;
       if (dateRange === 'past' && s.date >= startOfToday) return false;
       return true;
-    }).sort((a, b) => dateRange === 'past' ? b.date.getTime() - a.date.getTime() : a.date.getTime() - b.date.getTime()),
-  [search, locFilter, dateRange, startOfToday]);
+    });
+    // Default direction-by-range when user hasn't tweaked direction is handled via sortDir state.
+    return sortShifts(filtered);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, locFilter, areaFilter, statusFilter, dateRange, startOfToday, sortBy, sortDir]);
 
-  // Reset pagination when filter/search changes
-  useMemo(() => { setPastPage(1); }, [dateRange, search, locFilter]);
+  // Reset pagination when filter/search/sort changes
+  useMemo(() => { setPastPage(1); }, [dateRange, search, locFilter, areaFilter, statusFilter, sortBy, sortDir]);
 
   const paginatedMyShifts = useMemo(() => {
     if (dateRange !== 'past') return filteredMyShifts;
