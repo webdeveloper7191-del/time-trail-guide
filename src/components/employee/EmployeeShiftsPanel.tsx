@@ -709,17 +709,25 @@ const minutesFromDayStart = (time: string) => {
 const totalDayMinutes = (DAY_END_HOUR - DAY_START_HOUR) * 60;
 
 function CalendarGrid({
-  weekStart, shifts, openShifts = [], availability, onShiftClick, onAvailabilityClick, onClaim,
+  rangeStart, rangeEnd, calRange = 'week', shifts, openShifts = [], availability, onShiftClick, onAvailabilityClick, onClaim, onApplyLeave,
 }: {
-  weekStart: Date;
+  rangeStart: Date;
+  rangeEnd: Date;
+  calRange?: CalRange;
   shifts: MyShift[];
   openShifts?: OpenShift[];
   availability: AvailabilityDay[];
   onShiftClick?: (s: MyShift) => void;
   onAvailabilityClick?: (d: AvailabilityDay) => void;
   onClaim?: (s: OpenShift) => void;
+  onApplyLeave?: (date: Date) => void;
 }) {
-  const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
+  const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+
+  // Month view -> calendar grid
+  if (calRange === 'month') {
+    return <MonthCalendarGrid monthAnchor={rangeStart} shifts={shifts} openShifts={openShifts} availability={availability} onShiftClick={onShiftClick} onClaim={onClaim} onApplyLeave={onApplyLeave} />;
+  }
 
   const shiftBarTone: Record<MyShift['status'], string> = {
     confirmed: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-500/25',
