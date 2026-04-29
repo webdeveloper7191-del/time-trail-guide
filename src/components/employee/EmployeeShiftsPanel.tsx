@@ -496,49 +496,93 @@ function KpiTile({ icon: Icon, label, value, tone }: { icon: any; label: string;
 }
 
 // ───────────────────────── List Views ─────────────────────────
-function ShiftList({ shifts, onSwap, onOpenDetails }: { shifts: MyShift[]; onSwap: (s: MyShift) => void; onOpenDetails: (s: MyShift) => void }) {
+function ShiftList({ shifts, onSwap, onOpenDetails, onMarkAbsent, onApplyLeave }: {
+  shifts: MyShift[];
+  onSwap: (s: MyShift) => void;
+  onOpenDetails: (s: MyShift) => void;
+  onMarkAbsent?: (s: MyShift) => void;
+  onApplyLeave?: (s: MyShift) => void;
+}) {
   if (shifts.length === 0) {
     return <EmptyState icon={CalendarIcon} title="No shifts scheduled" desc="You're all caught up. Check the Open Shifts tab to pick up extra work." />;
   }
   return (
     <Card className="border-border/50">
-      <ScrollArea className="max-h-[560px]">
+      <ScrollArea className="max-h-[640px]">
         <div className="divide-y divide-border/60">
-          {shifts.map(s => (
-            <div key={s.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => onOpenDetails(s)}>
-              <div className="text-center min-w-[56px]">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{format(s.date, 'EEE')}</p>
-                <p className="text-xl font-bold leading-tight">{format(s.date, 'd')}</p>
-                <p className="text-[10px] text-muted-foreground">{format(s.date, 'MMM')}</p>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-foreground">{fmt12(s.startTime)} – {fmt12(s.endTime)}</span>
-                  <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 capitalize", statusTone[s.status])}>{s.status.replace('-', ' ')}</Badge>
-                  {s.clockIn && !s.clockOut && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-primary/20 gap-1"><LogIn className="h-2.5 w-2.5" /> Clocked in {fmt12(s.clockIn)}</Badge>}
+          {shifts.map(s => {
+            const swapDisabled = s.status === 'completed' || s.status === 'in-progress';
+            const absentDisabled = s.status === 'completed';
+            return (
+              <div key={s.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => onOpenDetails(s)}>
+                <div className="text-center min-w-[56px]">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{format(s.date, 'EEE')}</p>
+                  <p className="text-xl font-bold leading-tight">{format(s.date, 'd')}</p>
+                  <p className="text-[10px] text-muted-foreground">{format(s.date, 'MMM')}</p>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.location} · {s.area}</span>
-                  <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{s.role}</span>
-                  <span>{s.breakMinutes}m break</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-foreground">{fmt12(s.startTime)} – {fmt12(s.endTime)}</span>
+                    <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 capitalize", statusTone[s.status])}>{s.status.replace('-', ' ')}</Badge>
+                    {s.clockIn && !s.clockOut && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-primary/20 gap-1"><LogIn className="h-2.5 w-2.5" /> Clocked in {fmt12(s.clockIn)}</Badge>}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.location} · {s.area}</span>
+                    <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{s.role}</span>
+                    <span>{s.breakMinutes}m break</span>
+                  </div>
                 </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold">{hoursBetween(s.startTime, s.endTime, s.breakMinutes).toFixed(1)}h</p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpenDetails(s); }} className="h-8 gap-1.5">
+                  <FileText className="h-3.5 w-3.5" /> Details
+                </Button>
+                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onSwap(s); }} className="gap-1.5 h-8" disabled={swapDisabled}>
+                  <ArrowLeftRight className="h-3.5 w-3.5" /> Swap
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuItem disabled={absentDisabled} onClick={() => onMarkAbsent?.(s)}>
+                      <UserX className="h-4 w-4 mr-2" /> Mark absent
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onApplyLeave?.(s)}>
+                      <Plane className="h-4 w-4 mr-2" /> Apply for annual leave
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onApplyLeave?.(s)}>
+                      <Stethoscope className="h-4 w-4 mr-2" /> Apply for sick leave
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-bold">{hoursBetween(s.startTime, s.endTime, s.breakMinutes).toFixed(1)}h</p>
-              </div>
-              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpenDetails(s); }} className="h-8 gap-1.5">
-                <FileText className="h-3.5 w-3.5" /> Details
-              </Button>
-              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onSwap(s); }} className="gap-1.5 h-8" disabled={s.status === 'completed' || s.status === 'in-progress'}>
-                <ArrowLeftRight className="h-3.5 w-3.5" /> Swap
-              </Button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </ScrollArea>
     </Card>
   );
 }
+
+function Pagination({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (p: number) => void }) {
+  return (
+    <div className="flex items-center justify-end gap-2">
+      <Button size="sm" variant="outline" className="h-8" disabled={page <= 1} onClick={() => onChange(page - 1)}>
+        <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Previous
+      </Button>
+      <span className="text-xs text-muted-foreground tabular-nums">Page {page} of {totalPages}</span>
+      <Button size="sm" variant="outline" className="h-8" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
+        Next <ChevronRight className="h-3.5 w-3.5 ml-1" />
+      </Button>
+    </div>
+  );
+}
+
 
 function OpenShiftList({ shifts, onClaim }: { shifts: OpenShift[]; onClaim: (s: OpenShift) => void }) {
   if (shifts.length === 0) return <EmptyState icon={Hand} title="No open shifts" desc="Check back later — new shifts are posted as they become available." />;
