@@ -336,29 +336,39 @@ export function EmployeeShiftsPanel() {
             </div>
             <p className="text-xs text-muted-foreground">
               {dateRange === 'past'
-                ? `Showing ${filteredMyShifts.length} past shift${filteredMyShifts.length === 1 ? '' : 's'}`
+                ? `Showing ${(pastPage - 1) * PAST_PAGE_SIZE + 1}–${Math.min(pastPage * PAST_PAGE_SIZE, filteredMyShifts.length)} of ${filteredMyShifts.length} past shifts`
                 : dateRange === 'all'
                 ? `Showing all ${filteredMyShifts.length} shift${filteredMyShifts.length === 1 ? '' : 's'}`
                 : `Showing ${filteredMyShifts.length} upcoming shift${filteredMyShifts.length === 1 ? '' : 's'}`}
             </p>
           </div>
           {view === 'list' ? (
-            <ShiftList
-              shifts={filteredMyShifts}
-              onSwap={(s) => setSwapShift(s)}
-              onOpenDetails={(s) => setDetailsShift(s)}
-            />
+            <>
+              <ShiftList
+                shifts={paginatedMyShifts}
+                onSwap={(s) => setSwapShift(s)}
+                onOpenDetails={(s) => setDetailsShift(s)}
+                onMarkAbsent={(s) => setAbsentShift(s)}
+                onApplyLeave={(s) => { setLeaveSeed({ date: s.date }); setLeaveOpen(true); }}
+              />
+              {dateRange === 'past' && totalPastPages > 1 && (
+                <Pagination page={pastPage} totalPages={totalPastPages} onChange={setPastPage} />
+              )}
+            </>
           ) : (
             <CalendarGrid
-              weekStart={weekStart}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              calRange={calRange}
               shifts={filteredMyShifts}
               availability={availability}
               onShiftClick={(s) => setDetailsShift(s)}
               onAvailabilityClick={(d) => setEditingDay(d)}
+              onApplyLeave={(d) => { setLeaveSeed({ date: d }); setLeaveOpen(true); }}
             />
           )}
           <AvailabilityStrip
-            weekStart={weekStart}
+            weekStart={startOfWeek(anchorDate, { weekStartsOn: 1 })}
             availability={availability}
             shifts={filteredMyShifts}
             onChange={(date) => setEditingDay(availability.find(a => isSameDay(a.date, date)) || { date, status: 'available' })}
@@ -371,7 +381,9 @@ export function EmployeeShiftsPanel() {
             <OpenShiftList shifts={filteredOpen} onClaim={claimOpen} />
           ) : (
             <CalendarGrid
-              weekStart={weekStart}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              calRange={calRange}
               shifts={[]}
               openShifts={filteredOpen}
               availability={availability}
@@ -379,7 +391,7 @@ export function EmployeeShiftsPanel() {
             />
           )}
           <AvailabilityStrip
-            weekStart={weekStart}
+            weekStart={startOfWeek(anchorDate, { weekStartsOn: 1 })}
             availability={availability}
             shifts={filteredMyShifts}
             onChange={(date) => setEditingDay(availability.find(a => isSameDay(a.date, date)) || { date, status: 'available' })}
@@ -395,7 +407,7 @@ export function EmployeeShiftsPanel() {
             onCancel={(id) => { setSwapRequests(p => p.filter(r => r.id !== id)); toast.info('Swap cancelled'); }}
           />
           <AvailabilityStrip
-            weekStart={weekStart}
+            weekStart={startOfWeek(anchorDate, { weekStartsOn: 1 })}
             availability={availability}
             shifts={filteredMyShifts}
             onChange={(date) => setEditingDay(availability.find(a => isSameDay(a.date, date)) || { date, status: 'available' })}
