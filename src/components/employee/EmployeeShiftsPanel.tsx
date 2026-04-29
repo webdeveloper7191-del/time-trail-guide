@@ -149,6 +149,42 @@ const hoursBetween = (start: string, end: string, breakMins: number) => {
   return Math.max(0, ((eh * 60 + em) - (sh * 60 + sm) - breakMins) / 60);
 };
 
+// Build an RFC-5545 .ics calendar from shifts (for Google/Outlook/Apple sync)
+function buildIcs(shifts: MyShift[]): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const toIcsLocal = (date: Date, time: string) => {
+    const [h, m] = time.split(':').map(Number);
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m);
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  };
+  const stamp = (() => {
+    const d = new Date();
+    return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+  })();
+  const escape = (s: string) => s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+  const events = shifts.map(s => [
+    'BEGIN:VEVENT',
+    `UID:${s.id}@rosteredai`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${toIcsLocal(s.date, s.startTime)}`,
+    `DTEND:${toIcsLocal(s.date, s.endTime)}`,
+    `SUMMARY:${escape(`${s.role} · ${s.location}`)}`,
+    `LOCATION:${escape(`${s.location} — ${s.area}`)}`,
+    `DESCRIPTION:${escape(`Status: ${s.status}${s.notes ? ` · ${s.notes}` : ''} · ${s.breakMinutes}m break`)}`,
+    'END:VEVENT',
+  ].join('\r\n')).join('\r\n');
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Rostered AI//Employee Portal//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:My Roster Shifts',
+    events,
+    'END:VCALENDAR',
+  ].join('\r\n');
+}
+
 const fmt12 = (t: string) => {
   const [h, m] = t.split(':').map(Number);
   const period = h >= 12 ? 'PM' : 'AM';
