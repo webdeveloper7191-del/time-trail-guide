@@ -4340,6 +4340,173 @@ export const rosterSRS: ModuleSRS = {
         outcome: "Automatic conversion protects staff from being underpaid during heavily disrupted sleepovers. The 3× higher pay ($680 vs $225) correctly reflects that the worker effectively worked all night. Rest period enforcement prevents fatigue-related incidents."
       }
     },
+
+    // ============================================================================
+    // SCHEDULING CONSTRAINTS ENGINE — Location Ratio, Area Ratio, Contracts,
+    // Hard / Soft Constraints, Conditional Rules, Solver Scoring
+    // ============================================================================
+    {
+      id: "US-RST-077",
+      title: "Configure Location-Level Ratio Constraint (Tenant Default + Location Override)",
+      actors: ["System Administrator", "Location Manager"],
+      description: "As a System Administrator, I want to configure a location-wide staff:service ratio that acts as a HARD constraint on every shift the auto-scheduler produces, so that the entire site can never be assigned fewer staff than the regulator/operating model requires, while still allowing individual locations to override the tenant default.",
+      acceptanceCriteria: [
+        "Tenant-level default ratio is configured once in Scheduling Constraints → Coverage & Staffing → H1 Required Employee Coverage",
+        "Each location can override the tenant default via the location selector in the constraints panel (locationOverrides map keyed by locationId)",
+        "Effective setting at solve time = locationOverride ?? tenantDefault (resolved by getEffectiveSetting)",
+        "Ratio is expressed as minHeadcount per role (countStrategy=PER_ROLE) OR total headcount across the location (countStrategy=TOTAL)",
+        "When enforcement=HARD: solver MUST satisfy or schedule is infeasible (red banner + 'no feasible solution' returned)",
+        "When enforcement=SOFT with allowPartialCoverage=true: shortfall is penalised by (penaltyPerMissing × shortfall × priorityMultiplier)",
+        "H20 Location Capacity caps the upper bound — staff count must not exceed location capacity (capacitySource = LOCATION_SETTING | MANUAL)",
+        "Changes to ratio require Save action and produce an audit entry (actor, before/after, scope, locationId)"
+      ],
+      businessLogic: [
+        "Hard ratio violation = solver returns INFEASIBLE; UI surfaces the affected shifts and missing role/headcount",
+        "Soft ratio violation cost = weight × priorityMultiplier (priority 1=10×, 2=10×, 3=7×, 4=7×, 5=5×, 6=5×, 7=3×, 8=3×, 9=1×, 10=1×)",
+        "PER_ROLE strategy: ratio enforced separately for each required role on the shift template (e.g. 1 RN + 2 EN + 1 PCA)",
+        "TOTAL strategy: only aggregate count is enforced — used for low-acuity sites where role mix is fungible",
+        "Location override is a partial object — unspecified fields fall through to tenant default (sparse override pattern)",
+        "Compliance engine (ratioCompliance.ts) runs the same rule pre-flight on every manual create/edit to short-circuit the solver"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Compliance Engine", relationship: "Shares the same ratio table; pre-flight check before solve" },
+        { module: "Auto-Scheduler", relationship: "Reads H1 effective setting per location and emits HARD constraint to Timefold solver" },
+        { module: "Location Management", relationship: "Provides per-location capacity (H20) and operating hours window" }
+      ],
+      endToEndJourney: [
+        "1. Admin opens Settings → Scheduling Constraints → tenant scope",
+        "2. Coverage & Staffing tab → H1 Required Employee Coverage card",
+        "3. Sets minHeadcount=4, countStrategy=PER_ROLE, enforcement=HARD, satisfiability=REQUIRED",
+        "4. Switches scope selector to 'Location: Downtown Aged Care'",
+        "5. Overrides minHeadcount=6 (higher acuity site) — only that field is overridden; everything else inherits tenant default",
+        "6. Saves → audit log records {actor, scope=location, locationId, before:{minHeadcount:4}, after:{minHeadcount:6}}",
+        "7. Manager runs Auto-Schedule for Downtown next week",
+        "8. Solver receives effective ratio = 6 PER_ROLE for Downtown, 4 PER_ROLE for all other locations",
+        "9. Tuesday morning shift is short 1 RN → solver marks INFEASIBLE for Tuesday and returns conflict report",
+        "10. Manager either adds RN to staff pool, lowers HARD to SOFT temporarily, or splits the shift"
+      ],
+      realWorldExample: {
+        scenario: "An aged-care provider operates 12 sites under a single tenant. National standard is 1:4 RN coverage, but two high-acuity sites must run 1:6 by state regulation.",
+        steps: [
+          "Tenant default H1: minHeadcount=4, PER_ROLE, HARD/REQUIRED, priority=1, weight=100",
+          "Two high-acuity locations get override: minHeadcount=6 (RN role)",
+          "Auto-scheduler runs nightly across all 12 sites in parallel",
+          "10 sites solve cleanly; 2 high-acuity sites flag INFEASIBLE on weekends due to RN shortage",
+          "Operations manager broadcasts 4 open RN shifts to agency portal",
+          "Once filled, re-solve completes — full compliance achieved"
+        ],
+        outcome: "Single source of truth for ratio policy with clean per-location exceptions. Hard enforcement guarantees no published roster ever breaches statutory ratios."
+      }
+    },
+    {
+      id: "US-RST-078",
+      title: "Configure Area / Department Ratio with Stackable Attendance Bands",
+      actors: ["Location Manager", "Department Lead"],
+      description: "As a Location Manager, I want to configure ratios at the area (room/department) level with attendance-driven bands, so that ratio requirements scale with the number of children/clients booked into a specific room rather than treating the whole site uniformly.",
+      acceptanceCriteria: [
+        "Each Area defines its own ratio bands (e.g. childcare babies room: 1:4, toddlers: 1:5, kindy: 1:11) — see ratioCompliance.ts → nqfRatioRequirements",
+        "Bands are stackable: required educators = ceil(bookedChildren / ratio) and required qualified educators = ceil(bookedChildren × qualifiedPct)",
+        "Area ratio overrides Location ratio for any shift assigned to that area",
+        "Qualified-staff sub-rule: a configurable percentage must hold the area-required qualification (e.g. 50% Diploma in babies room)",
+        "Solver constraint chain: Area ratio (most specific) → Location ratio (H1) → Tenant default (least specific) — first-match-wins for HARD, sum-of-penalties for SOFT",
+        "Pre-flight compliance check (ratioCompliance.ts) blocks save of any shift that would breach the area ratio with severity=blocking",
+        "Real-time recalculation when a child is added/removed from the booking — UI shows live shortfall per area"
+      ],
+      businessLogic: [
+        "Area ratio resolution: shift.areaId → area.ratioRequirements → applies as additional HARD constraint scoped to area-bound shifts only",
+        "Stacking formula: requiredEducators = Σ ceil(childrenInBand_i / ratio_i) across all active age-bands in the area at that time-slot",
+        "Qualification shortfall is a SEPARATE constraint from headcount — both must be satisfied (e.g. 5 staff present but only 1 Diploma when 2 needed → still non-compliant)",
+        "Time-of-day variation: ratios apply only within area operating hours; shoulder-period bands can relax ratio (configurable per area)",
+        "Cross-area movement: if Area Combining Optimization merges two rooms, the combined area inherits the strictest band of the two"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Location Management → Area Detail", relationship: "Source of ratio bands and qualification %" },
+        { module: "Demand Management", relationship: "Provides bookedChildren / projectedChildren counts that drive band calculation" },
+        { module: "Area Combining Optimization", relationship: "Merges areas and recomputes effective ratio" },
+        { module: "Compliance Dashboard", relationship: "Real-time area-level ratio status display" }
+      ],
+      endToEndJourney: [
+        "1. Location Manager opens Location → Areas → 'Babies Room'",
+        "2. Compliance tab → adds ratio band: ageGroup=babies, ratio=1:4, qualifiedPct=50%, qualification=diploma_ece",
+        "3. Saves area config → ratioCompliance.ts picks up new band",
+        "4. Booking system reports 8 babies booked Tuesday 9am-12pm",
+        "5. ratioCompliance.checkCompliance() returns: requiredEducators=2, requiredQualified=1",
+        "6. Manager opens roster, drags 1 unqualified Cert III educator to the slot",
+        "7. UI flashes red: 'Babies Room shortfall: need 1 more educator AND 1 must hold Diploma'",
+        "8. Manager assigns a Diploma-holder → status flips to compliant green",
+        "9. Auto-scheduler run later honours the same constraint as HARD — never proposes assignments that breach the band"
+      ],
+      realWorldExample: {
+        scenario: "A childcare centre with 4 rooms (Babies, Toddlers, Preschool, Kindy) running NQF ratios. Bookings fluctuate hour-by-hour as parents drop off/pick up.",
+        steps: [
+          "Area ratios configured: Babies 1:4 (Diploma 50%), Toddlers 1:5 (Cert III 50%), Preschool 1:10, Kindy 1:11",
+          "8:00am: 12 babies → need 3 educators, 2 Diploma — system schedules accordingly",
+          "10:00am: parent arrives with extra baby → bookedChildren goes 12→13 → live recalc: still need 3 (ceil(13/4)=4 — actually need 4!)",
+          "Compliance dashboard alerts: 'Babies Room: 1 educator short from 10:00am'",
+          "Manager calls in casual or moves an over-staffed Kindy educator (if cross-qualified)",
+          "Auto-Scheduler run for next week uses worst-case projected demand to pre-allocate the 4th educator"
+        ],
+        outcome: "Granular area-level enforcement matches regulatory reality (NQF ratios are room-by-room, not site-wide). Stackable bands prevent under-staffing during age-mixed periods."
+      }
+    },
+    {
+      id: "US-RST-079",
+      title: "Apply Contract Templates to Drive Per-Employee Hard & Soft Constraint Parameters",
+      actors: ["HR Administrator", "Workforce Planner"],
+      description: "As an HR Administrator, I want to define Contract Templates (e.g. Full-Time 38h, Part-Time 20h, Casual, Agency) that carry per-contract values for max weekly hours, min rest, max consecutive days, weekend caps and overtime thresholds, so that the solver applies the correct legal/contractual limits to each individual employee without needing per-staff configuration.",
+      acceptanceCriteria: [
+        "Contract Templates defined in Scheduling Constraints → Contract Templates tab (ContractTemplatesSection.tsx)",
+        "Each template specifies per-contract overrides for any parameter flagged perContract:true (maxWeeklyHours, minRestHours, maxConsecutiveDays, casualMinHours, maxWeekendsPerMonth, overtimeThresholdHours, etc.)",
+        "Each Staff record references exactly one Contract Template (staff.contractTemplateId)",
+        "At solve time, solver builds per-employee parameter map: effectiveParams = { ...constraintParams, ...contractTemplate.overrides }",
+        "Hard contract limits (H7 Max Working Hours, H6 Min Rest, H17 Consecutive Days, H11 Min Shift Length, H12 Max Shift Length) are NEVER violated",
+        "Soft contract preferences (S17 Respect Contracted Hours, S10 Weekend Fairness, S6 Overtime Minimisation) influence cost score per the priority/weight matrix",
+        "Casual employees inherit relaxed rules via the 'Casual Staff Flexibility' Conditional Rule preset (employmentType ∈ {casual, agency} → SOFT/PREFERRED with reduced weight)",
+        "Agency contracts have shortest fill priority (H10 agencyFillOrder=LAST_RESORT) — solver only assigns when no permanent staff fit"
+      ],
+      businessLogic: [
+        "Constraint hierarchy at solve: ConditionalRule override → LocationOverride → ContractTemplate override → Tenant default",
+        "Hard vs Soft semantics: HARD = solver search space pruned (assignment never considered); SOFT = assignment allowed but adds cost = weight × priorityMultiplier × violationMagnitude",
+        "Score model: Timefold returns BendableScore [hardScore, softScore]. hardScore must equal 0 for feasibility. softScore is minimised by the optimiser",
+        "perContract:true parameters appear in Contract Template editor as editable fields; non-perContract params remain global",
+        "Conditional Rules (ConditionalRule[]) match on dayOfWeek/shiftType/employmentType/timeOfDay/publicHoliday and ONLY override during matching shift contexts",
+        "Order of precedence inside a single constraint: highest-priority matching ConditionalRule wins; if multiple match, lowest priority number wins; ties broken by weight (higher weight wins)"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Awards Engine", relationship: "Contract Template inherits award classification → drives penalty rate multipliers (S9)" },
+        { module: "Staff Profile", relationship: "staff.contractTemplateId is the binding link" },
+        { module: "Auto-Scheduler", relationship: "Builds per-employee constraint instances by merging template + global config" },
+        { module: "Timesheet Compliance", relationship: "Same H7/H6/H17 thresholds used to flag worked-hour breaches post-shift" }
+      ],
+      endToEndJourney: [
+        "1. HR Admin opens Scheduling Constraints → Contract Templates tab",
+        "2. Creates 'Full-Time Permanent' template: maxWeeklyHours=38, minRestHours=10, maxConsecutiveDays=5, casualMinHours=N/A, overtimeThresholdHours=38",
+        "3. Creates 'Casual' template: maxWeeklyHours=38 (cap, not target), minRestHours=10, maxConsecutiveDays=6, casualMinHours=3",
+        "4. Creates 'Agency' template: same as Casual but agencyFillOrder=LAST_RESORT",
+        "5. Workforce Planner assigns Sarah (FT RN) → contractTemplateId=ft-permanent",
+        "6. Auto-Scheduler runs for next 2 weeks",
+        "7. For each candidate assignment of Sarah, solver checks: would this push her weekly hours > 38? → HARD violation → pruned",
+        "8. Would it push her under 38? → SOFT S17 underschedulePenalty=30 added to cost",
+        "9. For casual Mark, same week-38 cap is HARD but no underschedule penalty (no contracted minimum)",
+        "10. Resulting roster: Sarah hits 38h exactly, Mark fills variance, Agency only used for 2 unfilled night shifts"
+      ],
+      realWorldExample: {
+        scenario: "A 50-bed aged-care facility with mixed workforce: 20 FT RNs/ENs, 15 PT carers, 30 casual pool, agency contract for surge.",
+        steps: [
+          "4 contract templates created once: FT-Nurse, PT-Carer, Casual-Pool, Agency-Surge",
+          "Each of the 65 staff is bound to exactly one template via staff.contractTemplateId",
+          "Conditional Rule 'Public Holiday' set HARD/REQUIRED with maxHolidayShiftsPerMonth=4 — applies to ALL contracts uniformly",
+          "Conditional Rule 'Casual Flexibility' overrides H17 maxConsecutiveDays from 5→6 only when employmentType=casual",
+          "Auto-Scheduler produces 2-week roster in 12 seconds with hardScore=0",
+          "softScore breakdown shown: overtime cost $0, fairness variance 8%, preference satisfaction 91%, agency utilisation 4%",
+          "Manager tweaks one shift manually → S8 Preserve Pre-Assignments locks it; subsequent re-solves respect the manual choice"
+        ],
+        outcome: "Single declarative source for per-employee limits. Adding a new staff member is O(1): pick a template. Changing award rules is O(1): edit one template, all bound staff pick up new limits on next solve."
+      }
+    },
   ],
 
   // ============================================================================
