@@ -468,22 +468,47 @@ export function EmployeeShiftsPanel() {
         {/* ── My Shifts */}
         <TabsContent value="mine" className="mt-4 space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-0.5">
-              {(['upcoming', 'past', 'all'] as const).map(r => (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-0.5">
+                {(['upcoming', 'past', 'all'] as const).map(r => (
+                  <Button
+                    key={r}
+                    size="sm"
+                    variant={dateRange === r ? 'default' : 'ghost'}
+                    onClick={() => setDateRange(r)}
+                    className="h-8 capitalize"
+                  >
+                    {r === 'upcoming' ? 'Upcoming' : r === 'past' ? 'Past' : 'All shifts'}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                <span>Sort</span>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                  <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Date</SelectItem>
+                    <SelectItem value="startTime">Start time</SelectItem>
+                    <SelectItem value="location">Location</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
-                  key={r}
-                  size="sm"
-                  variant={dateRange === r ? 'default' : 'ghost'}
-                  onClick={() => setDateRange(r)}
-                  className="h-8 capitalize"
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8"
+                  onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+                  title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
                 >
-                  {r === 'upcoming' ? 'Upcoming' : r === 'past' ? 'Past' : 'All shifts'}
+                  {sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
                 </Button>
-              ))}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground">
               {dateRange === 'past'
-                ? `Showing ${(pastPage - 1) * PAST_PAGE_SIZE + 1}–${Math.min(pastPage * PAST_PAGE_SIZE, filteredMyShifts.length)} of ${filteredMyShifts.length} past shifts`
+                ? filteredMyShifts.length === 0
+                  ? 'No past shifts match your filters'
+                  : `Showing ${(pastPage - 1) * PAST_PAGE_SIZE + 1}–${Math.min(pastPage * PAST_PAGE_SIZE, filteredMyShifts.length)} of ${filteredMyShifts.length} past shifts`
                 : dateRange === 'all'
                 ? `Showing all ${filteredMyShifts.length} shift${filteredMyShifts.length === 1 ? '' : 's'}`
                 : `Showing ${filteredMyShifts.length} upcoming shift${filteredMyShifts.length === 1 ? '' : 's'}`}
