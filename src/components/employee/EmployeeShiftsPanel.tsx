@@ -92,6 +92,8 @@ const mockMyShifts: MyShift[] = [
   { id: 'sp5', date: addDays(today, -14), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Operations', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '09:01', clockOut: '17:00' },
   { id: 'sp6', date: addDays(today, -17), startTime: '14:00', endTime: '22:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '13:58', clockOut: '22:05' },
   { id: 'sp7', date: addDays(today, -21), startTime: '08:00', endTime: '16:00', location: 'Main Centre', area: 'Reception', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '08:00', clockOut: '16:00' },
+  { id: 'sp8', date: addDays(today, -6), startTime: '10:00', endTime: '14:00', location: 'East Centre', area: 'Floor', role: 'Coordinator', status: 'rejected', breakMinutes: 0, notes: 'Pickup request rejected by manager' },
+  { id: 'sp9', date: addDays(today, -12), startTime: '06:00', endTime: '10:00', location: 'North Branch', area: 'Operations', role: 'Coordinator', status: 'rejected', breakMinutes: 0 },
 ];
 
 const mockOpenShifts: OpenShift[] = [
