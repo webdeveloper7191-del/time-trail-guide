@@ -278,6 +278,38 @@ export function EmployeeShiftsPanel() {
     return `${format(rangeStart, 'MMM d')} – ${format(rangeEnd, 'MMM d, yyyy')}`;
   }, [calRange, anchorDate, rangeStart, rangeEnd]);
 
+  // ── Calendar export / sync (ICS feed)
+  const exportShiftsToIcs = (shifts: MyShift[], filename = 'my-shifts.ics') => {
+    const ics = buildIcs(shifts);
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const handleCalendarConnect = (provider: 'google' | 'outlook' | 'apple' | 'ics') => {
+    // Export shifts in the visible window for connect flows; fall back to all upcoming
+    const inWindow = mockMyShifts.filter(s => s.date >= startOfToday);
+    if (provider === 'apple' || provider === 'ics') {
+      exportShiftsToIcs(inWindow, `shifts-${format(today, 'yyyy-MM-dd')}.ics`);
+      toast.success(`Downloaded ${inWindow.length} shifts as .ics — open in your calendar app to subscribe.`);
+      return;
+    }
+    if (provider === 'google') {
+      // Google Calendar can import an .ics; trigger download + open the import URL
+      exportShiftsToIcs(inWindow, `shifts-${format(today, 'yyyy-MM-dd')}.ics`);
+      window.open('https://calendar.google.com/calendar/u/0/r/settings/export', '_blank', 'noopener');
+      toast.success('Opened Google Calendar import. Upload the downloaded .ics file to sync.');
+      return;
+    }
+    if (provider === 'outlook') {
+      exportShiftsToIcs(inWindow, `shifts-${format(today, 'yyyy-MM-dd')}.ics`);
+      window.open('https://outlook.live.com/calendar/0/addfromfile', '_blank', 'noopener');
+      toast.success('Opened Outlook import. Upload the downloaded .ics file to sync.');
+      return;
+    }
+  };
+
 
   return (
     <div className="space-y-4">
