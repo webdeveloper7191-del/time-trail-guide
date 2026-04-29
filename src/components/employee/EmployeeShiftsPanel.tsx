@@ -383,13 +383,52 @@ export function EmployeeShiftsPanel() {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} className="h-8 pl-8 w-44" />
             </div>
-            <Select value={locFilter} onValueChange={setLocFilter}>
-              <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+            <Select value={locFilter} onValueChange={(v) => { setLocFilter(v); setAreaFilter('all'); }}>
+              <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All locations</SelectItem>
                 {locations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={areaFilter} onValueChange={setAreaFilter}>
+              <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All areas</SelectItem>
+                {areas.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+              <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 gap-1.5">
+                  <CalendarPlus className="h-3.5 w-3.5" /> Connect calendar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <div className="px-2 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">Sync your shifts</div>
+                <DropdownMenuItem onClick={() => handleCalendarConnect('google')}>
+                  <Mail className="h-4 w-4 mr-2" /> Google Calendar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCalendarConnect('outlook')}>
+                  <Mail className="h-4 w-4 mr-2" /> Outlook / Microsoft 365
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCalendarConnect('apple')}>
+                  <CalendarIcon className="h-4 w-4 mr-2" /> Apple Calendar (.ics)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleCalendarConnect('ics')}>
+                  <Download className="h-4 w-4 mr-2" /> Download .ics file
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button size="sm" variant="outline" onClick={() => { setLeaveSeed(null); setLeaveOpen(true); }} className="h-8 gap-1.5">
               <Plane className="h-3.5 w-3.5" /> Apply for leave
             </Button>
