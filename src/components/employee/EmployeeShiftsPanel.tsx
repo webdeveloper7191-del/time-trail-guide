@@ -150,10 +150,14 @@ const fmt12 = (t: string) => {
 };
 
 // ───────────────────────── Main Component ─────────────────────────
+const PAST_PAGE_SIZE = 8;
+type CalRange = 'week' | 'fortnight' | 'month';
+
 export function EmployeeShiftsPanel() {
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [tab, setTab] = useState<'mine' | 'open' | 'swaps'>('mine');
-  const [weekStart, setWeekStart] = useState(startOfWeek(today, { weekStartsOn: 1 }));
+  const [calRange, setCalRange] = useState<CalRange>('week');
+  const [anchorDate, setAnchorDate] = useState<Date>(today);
   const [availability, setAvailability] = useState<AvailabilityDay[]>(seedAvailability(startOfWeek(today, { weekStartsOn: 1 })));
   const [swapShift, setSwapShift] = useState<MyShift | null>(null);
   const [detailsShift, setDetailsShift] = useState<MyShift | null>(null);
@@ -163,10 +167,25 @@ export function EmployeeShiftsPanel() {
   const [locFilter, setLocFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<'upcoming' | 'past' | 'all'>('upcoming');
   const [editingDay, setEditingDay] = useState<AvailabilityDay | null>(null);
+  const [pastPage, setPastPage] = useState(1);
+  const [absentShift, setAbsentShift] = useState<MyShift | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaveSeed, setLeaveSeed] = useState<{ date?: Date; type?: 'annual' | 'sick' } | null>(null);
 
   const locations = useMemo(() => Array.from(new Set([...mockMyShifts, ...mockOpenShifts].map(s => s.location))), []);
 
   const startOfToday = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+
+  // Calendar range -> visible window
+  const rangeStart = useMemo(() => {
+    if (calRange === 'month') return startOfMonth(anchorDate);
+    return startOfWeek(anchorDate, { weekStartsOn: 1 });
+  }, [calRange, anchorDate]);
+  const rangeEnd = useMemo(() => {
+    if (calRange === 'month') return endOfMonth(anchorDate);
+    if (calRange === 'fortnight') return addDays(rangeStart, 13);
+    return addDays(rangeStart, 6);
+  }, [calRange, anchorDate, rangeStart]);
 
   const filteredMyShifts = useMemo(() =>
     mockMyShifts.filter(s => {
@@ -178,6 +197,16 @@ export function EmployeeShiftsPanel() {
     }).sort((a, b) => dateRange === 'past' ? b.date.getTime() - a.date.getTime() : a.date.getTime() - b.date.getTime()),
   [search, locFilter, dateRange, startOfToday]);
 
+  // Reset pagination when filter/search changes
+  useMemo(() => { setPastPage(1); }, [dateRange, search, locFilter]);
+
+  const paginatedMyShifts = useMemo(() => {
+    if (dateRange !== 'past') return filteredMyShifts;
+    const start = (pastPage - 1) * PAST_PAGE_SIZE;
+    return filteredMyShifts.slice(start, start + PAST_PAGE_SIZE);
+  }, [filteredMyShifts, dateRange, pastPage]);
+  const totalPastPages = Math.max(1, Math.ceil(filteredMyShifts.length / PAST_PAGE_SIZE));
+
   const filteredOpen = useMemo(() =>
     mockOpenShifts.filter(s => locFilter === 'all' || s.location === locFilter)
       .sort((a, b) => a.date.getTime() - b.date.getTime()),
@@ -187,10 +216,11 @@ export function EmployeeShiftsPanel() {
 
   const totalHours = filteredMyShifts.reduce((sum, s) => sum + hoursBetween(s.startTime, s.endTime, s.breakMinutes), 0);
 
-  // ── Navigation
-  const goPrev = () => setWeekStart(w => subWeeks(w, 1));
-  const goNext = () => setWeekStart(w => addWeeks(w, 1));
-  const goToday = () => setWeekStart(startOfWeek(today, { weekStartsOn: 1 }));
+  // ── Navigation (step by current calendar range)
+  const stepDays = calRange === 'week' ? 7 : calRange === 'fortnight' ? 14 : 0;
+  const goPrev = () => setAnchorDate(d => calRange === 'month' ? subMonths(d, 1) : addDays(d, -stepDays));
+  const goNext = () => setAnchorDate(d => calRange === 'month' ? addMonths(d, 1) : addDays(d, stepDays));
+  const goToday = () => setAnchorDate(today);
 
   // ── Actions
   const claimOpen = (s: OpenShift) => toast.success(`Application sent for ${format(s.date, 'EEE d MMM')} • ${fmt12(s.startTime)}`);
@@ -202,6 +232,12 @@ export function EmployeeShiftsPanel() {
     });
     toast.success(`Availability updated for ${format(date, 'EEE d MMM')}`);
   };
+
+  const rangeLabel = useMemo(() => {
+    if (calRange === 'month') return format(anchorDate, 'MMMM yyyy');
+    return `${format(rangeStart, 'MMM d')} – ${format(rangeEnd, 'MMM d, yyyy')}`;
+  }, [calRange, anchorDate, rangeStart, rangeEnd]);
+
 
   return (
     <div className="space-y-4">
