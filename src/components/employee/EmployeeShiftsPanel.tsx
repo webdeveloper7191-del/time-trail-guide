@@ -132,6 +132,7 @@ const statusTone: Record<MyShift['status'], string> = {
   'pending': 'bg-status-pending/10 text-status-pending border-status-pending/20',
   'in-progress': 'bg-primary/10 text-primary border-primary/20',
   'completed': 'bg-muted text-muted-foreground border-border',
+  'rejected': 'bg-status-rejected/10 text-status-rejected border-status-rejected/20',
 };
 
 const availTone: Record<AvailabilityStatus, string> = {
