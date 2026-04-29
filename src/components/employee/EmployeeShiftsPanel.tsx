@@ -445,6 +445,32 @@ export function EmployeeShiftsPanel() {
         shift={detailsShift}
         onClose={() => setDetailsShift(null)}
         onSwap={(s) => { setDetailsShift(null); setSwapShift(s); }}
+        onMarkAbsent={(s) => { setDetailsShift(null); setAbsentShift(s); }}
+        onApplyLeave={(s) => { setDetailsShift(null); setLeaveSeed({ date: s.date }); setLeaveOpen(true); }}
+      />
+
+      <MarkAbsentSheet
+        shift={absentShift}
+        onClose={() => setAbsentShift(null)}
+        onConfirm={(s, reason, type) => {
+          setAbsentShift(null);
+          toast.success(`Marked absent for ${format(s.date, 'EEE d MMM')}${reason ? ` · ${reason}` : ''}`);
+          if (type === 'sick' || type === 'annual') {
+            setLeaveSeed({ date: s.date, type });
+            setLeaveOpen(true);
+          }
+        }}
+      />
+
+      <LeaveRequestSheet
+        open={leaveOpen}
+        seed={leaveSeed}
+        onClose={() => { setLeaveOpen(false); setLeaveSeed(null); }}
+        onSubmit={(payload) => {
+          setLeaveOpen(false);
+          setLeaveSeed(null);
+          toast.success(`${payload.type === 'annual' ? 'Annual' : payload.type === 'sick' ? 'Sick' : 'Leave'} request submitted · ${format(payload.from, 'MMM d')}${!isSameDay(payload.from, payload.to) ? ` – ${format(payload.to, 'MMM d')}` : ''}`);
+        }}
       />
     </div>
   );
