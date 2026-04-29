@@ -735,6 +735,7 @@ function CalendarGrid({
     pending: 'bg-amber-500/15 border-amber-500/40 border-dashed text-amber-900 dark:text-amber-100 hover:bg-amber-500/25',
     'in-progress': 'bg-primary/20 border-primary/50 text-foreground hover:bg-primary/30 ring-1 ring-primary/40',
     completed: 'bg-muted border-border text-muted-foreground hover:bg-muted/80',
+    rejected: 'bg-status-rejected/15 border-status-rejected/40 text-status-rejected hover:bg-status-rejected/25 line-through opacity-70',
   };
 
   return (
