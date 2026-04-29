@@ -257,10 +257,18 @@ export function EmployeeShiftsPanel() {
             <Button size="icon" variant="outline" onClick={goPrev} className="h-8 w-8"><ChevronLeft className="h-4 w-4" /></Button>
             <Button size="sm" variant="outline" onClick={goToday} className="h-8">Today</Button>
             <Button size="icon" variant="outline" onClick={goNext} className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
-            <span className="ml-2 text-sm font-medium text-foreground">
-              {format(weekStart, 'MMM d')} – {format(addDays(weekStart, 6), 'MMM d, yyyy')}
-            </span>
+            <span className="ml-2 text-sm font-medium text-foreground">{rangeLabel}</span>
           </div>
+
+          {view === 'calendar' && (
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-0.5">
+              {(['week', 'fortnight', 'month'] as CalRange[]).map(r => (
+                <Button key={r} size="sm" variant={calRange === r ? 'default' : 'ghost'} onClick={() => setCalRange(r)} className="h-8 capitalize">
+                  {r}
+                </Button>
+              ))}
+            </div>
+          )}
 
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
@@ -274,6 +282,9 @@ export function EmployeeShiftsPanel() {
                 {locations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Button size="sm" variant="outline" onClick={() => { setLeaveSeed(null); setLeaveOpen(true); }} className="h-8 gap-1.5">
+              <Plane className="h-3.5 w-3.5" /> Apply for leave
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setInboxOpen(true)} className="h-8 gap-1.5 relative">
               <Inbox className="h-3.5 w-3.5" /> Inbox
               {pendingIncoming > 0 && <Badge className="h-5 px-1.5 ml-1 bg-primary text-primary-foreground">{pendingIncoming}</Badge>}
