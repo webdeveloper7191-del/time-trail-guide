@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, ArrowUpDown, ArrowDown, ArrowUp, CalendarPlus, Download, Mail } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -46,7 +46,7 @@ interface MyShift {
   location: string;
   area: string;
   role: string;
-  status: 'confirmed' | 'pending' | 'in-progress' | 'completed';
+  status: 'confirmed' | 'pending' | 'in-progress' | 'completed' | 'rejected';
   breakMinutes: number;
   notes?: string;
   clockIn?: string;
@@ -92,6 +92,8 @@ const mockMyShifts: MyShift[] = [
   { id: 'sp5', date: addDays(today, -14), startTime: '09:00', endTime: '17:00', location: 'Main Centre', area: 'Operations', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '09:01', clockOut: '17:00' },
   { id: 'sp6', date: addDays(today, -17), startTime: '14:00', endTime: '22:00', location: 'North Branch', area: 'Floor', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '13:58', clockOut: '22:05' },
   { id: 'sp7', date: addDays(today, -21), startTime: '08:00', endTime: '16:00', location: 'Main Centre', area: 'Reception', role: 'Coordinator', status: 'completed', breakMinutes: 30, clockIn: '08:00', clockOut: '16:00' },
+  { id: 'sp8', date: addDays(today, -6), startTime: '10:00', endTime: '14:00', location: 'East Centre', area: 'Floor', role: 'Coordinator', status: 'rejected', breakMinutes: 0, notes: 'Pickup request rejected by manager' },
+  { id: 'sp9', date: addDays(today, -12), startTime: '06:00', endTime: '10:00', location: 'North Branch', area: 'Operations', role: 'Coordinator', status: 'rejected', breakMinutes: 0 },
 ];
 
 const mockOpenShifts: OpenShift[] = [
@@ -132,6 +134,7 @@ const statusTone: Record<MyShift['status'], string> = {
   'pending': 'bg-status-pending/10 text-status-pending border-status-pending/20',
   'in-progress': 'bg-primary/10 text-primary border-primary/20',
   'completed': 'bg-muted text-muted-foreground border-border',
+  'rejected': 'bg-status-rejected/10 text-status-rejected border-status-rejected/20',
 };
 
 const availTone: Record<AvailabilityStatus, string> = {
@@ -145,6 +148,42 @@ const hoursBetween = (start: string, end: string, breakMins: number) => {
   const [eh, em] = end.split(':').map(Number);
   return Math.max(0, ((eh * 60 + em) - (sh * 60 + sm) - breakMins) / 60);
 };
+
+// Build an RFC-5545 .ics calendar from shifts (for Google/Outlook/Apple sync)
+function buildIcs(shifts: MyShift[]): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const toIcsLocal = (date: Date, time: string) => {
+    const [h, m] = time.split(':').map(Number);
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m);
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  };
+  const stamp = (() => {
+    const d = new Date();
+    return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+  })();
+  const escape = (s: string) => s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+  const events = shifts.map(s => [
+    'BEGIN:VEVENT',
+    `UID:${s.id}@rosteredai`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${toIcsLocal(s.date, s.startTime)}`,
+    `DTEND:${toIcsLocal(s.date, s.endTime)}`,
+    `SUMMARY:${escape(`${s.role} · ${s.location}`)}`,
+    `LOCATION:${escape(`${s.location} — ${s.area}`)}`,
+    `DESCRIPTION:${escape(`Status: ${s.status}${s.notes ? ` · ${s.notes}` : ''} · ${s.breakMinutes}m break`)}`,
+    'END:VEVENT',
+  ].join('\r\n')).join('\r\n');
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Rostered AI//Employee Portal//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:My Roster Shifts',
+    events,
+    'END:VCALENDAR',
+  ].join('\r\n');
+}
 
 const fmt12 = (t: string) => {
   const [h, m] = t.split(':').map(Number);
@@ -169,7 +208,11 @@ export function EmployeeShiftsPanel() {
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>(mockSwapRequests);
   const [search, setSearch] = useState('');
   const [locFilter, setLocFilter] = useState<string>('all');
+  const [areaFilter, setAreaFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [dateRange, setDateRange] = useState<'upcoming' | 'past' | 'all'>('upcoming');
+  const [sortBy, setSortBy] = useState<'date' | 'startTime' | 'location'>('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [editingDay, setEditingDay] = useState<AvailabilityDay | null>(null);
   const [pastPage, setPastPage] = useState(1);
   const [absentShift, setAbsentShift] = useState<MyShift | null>(null);
@@ -177,6 +220,10 @@ export function EmployeeShiftsPanel() {
   const [leaveSeed, setLeaveSeed] = useState<{ date?: Date; type?: 'annual' | 'sick' } | null>(null);
 
   const locations = useMemo(() => Array.from(new Set([...mockMyShifts, ...mockOpenShifts].map(s => s.location))), []);
+  const areas = useMemo(() => {
+    const pool = locFilter === 'all' ? mockMyShifts : mockMyShifts.filter(s => s.location === locFilter);
+    return Array.from(new Set(pool.map(s => s.area)));
+  }, [locFilter]);
 
   const startOfToday = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
 
@@ -191,18 +238,43 @@ export function EmployeeShiftsPanel() {
     return addDays(rangeStart, 6);
   }, [calRange, anchorDate, rangeStart]);
 
-  const filteredMyShifts = useMemo(() =>
-    mockMyShifts.filter(s => {
+  const matchesStatus = (s: MyShift) => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'pending') return s.status === 'pending';
+    if (statusFilter === 'rejected') return s.status === 'rejected';
+    // approved = confirmed/in-progress/completed
+    return s.status === 'confirmed' || s.status === 'in-progress' || s.status === 'completed';
+  };
+
+  const sortShifts = (arr: MyShift[]) => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...arr].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === 'date') cmp = a.date.getTime() - b.date.getTime();
+      else if (sortBy === 'startTime') cmp = a.startTime.localeCompare(b.startTime);
+      else cmp = a.location.localeCompare(b.location);
+      if (cmp === 0) cmp = a.date.getTime() - b.date.getTime();
+      return cmp * dir;
+    });
+  };
+
+  const filteredMyShifts = useMemo(() => {
+    const filtered = mockMyShifts.filter(s => {
       if (locFilter !== 'all' && s.location !== locFilter) return false;
-      if (search !== '' && !s.location.toLowerCase().includes(search.toLowerCase()) && !s.role.toLowerCase().includes(search.toLowerCase())) return false;
+      if (areaFilter !== 'all' && s.area !== areaFilter) return false;
+      if (!matchesStatus(s)) return false;
+      if (search !== '' && !s.location.toLowerCase().includes(search.toLowerCase()) && !s.role.toLowerCase().includes(search.toLowerCase()) && !s.area.toLowerCase().includes(search.toLowerCase())) return false;
       if (dateRange === 'upcoming' && s.date < startOfToday) return false;
       if (dateRange === 'past' && s.date >= startOfToday) return false;
       return true;
-    }).sort((a, b) => dateRange === 'past' ? b.date.getTime() - a.date.getTime() : a.date.getTime() - b.date.getTime()),
-  [search, locFilter, dateRange, startOfToday]);
+    });
+    // Default direction-by-range when user hasn't tweaked direction is handled via sortDir state.
+    return sortShifts(filtered);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, locFilter, areaFilter, statusFilter, dateRange, startOfToday, sortBy, sortDir]);
 
-  // Reset pagination when filter/search changes
-  useMemo(() => { setPastPage(1); }, [dateRange, search, locFilter]);
+  // Reset pagination when filter/search/sort changes
+  useMemo(() => { setPastPage(1); }, [dateRange, search, locFilter, areaFilter, statusFilter, sortBy, sortDir]);
 
   const paginatedMyShifts = useMemo(() => {
     if (dateRange !== 'past') return filteredMyShifts;
@@ -242,6 +314,38 @@ export function EmployeeShiftsPanel() {
     return `${format(rangeStart, 'MMM d')} – ${format(rangeEnd, 'MMM d, yyyy')}`;
   }, [calRange, anchorDate, rangeStart, rangeEnd]);
 
+  // ── Calendar export / sync (ICS feed)
+  const exportShiftsToIcs = (shifts: MyShift[], filename = 'my-shifts.ics') => {
+    const ics = buildIcs(shifts);
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const handleCalendarConnect = (provider: 'google' | 'outlook' | 'apple' | 'ics') => {
+    // Export shifts in the visible window for connect flows; fall back to all upcoming
+    const inWindow = mockMyShifts.filter(s => s.date >= startOfToday);
+    if (provider === 'apple' || provider === 'ics') {
+      exportShiftsToIcs(inWindow, `shifts-${format(today, 'yyyy-MM-dd')}.ics`);
+      toast.success(`Downloaded ${inWindow.length} shifts as .ics — open in your calendar app to subscribe.`);
+      return;
+    }
+    if (provider === 'google') {
+      // Google Calendar can import an .ics; trigger download + open the import URL
+      exportShiftsToIcs(inWindow, `shifts-${format(today, 'yyyy-MM-dd')}.ics`);
+      window.open('https://calendar.google.com/calendar/u/0/r/settings/export', '_blank', 'noopener');
+      toast.success('Opened Google Calendar import. Upload the downloaded .ics file to sync.');
+      return;
+    }
+    if (provider === 'outlook') {
+      exportShiftsToIcs(inWindow, `shifts-${format(today, 'yyyy-MM-dd')}.ics`);
+      window.open('https://outlook.live.com/calendar/0/addfromfile', '_blank', 'noopener');
+      toast.success('Opened Outlook import. Upload the downloaded .ics file to sync.');
+      return;
+    }
+  };
+
 
   return (
     <div className="space-y-4">
@@ -279,13 +383,52 @@ export function EmployeeShiftsPanel() {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} className="h-8 pl-8 w-44" />
             </div>
-            <Select value={locFilter} onValueChange={setLocFilter}>
-              <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+            <Select value={locFilter} onValueChange={(v) => { setLocFilter(v); setAreaFilter('all'); }}>
+              <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All locations</SelectItem>
                 {locations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={areaFilter} onValueChange={setAreaFilter}>
+              <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All areas</SelectItem>
+                {areas.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+              <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 gap-1.5">
+                  <CalendarPlus className="h-3.5 w-3.5" /> Connect calendar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <div className="px-2 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">Sync your shifts</div>
+                <DropdownMenuItem onClick={() => handleCalendarConnect('google')}>
+                  <Mail className="h-4 w-4 mr-2" /> Google Calendar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCalendarConnect('outlook')}>
+                  <Mail className="h-4 w-4 mr-2" /> Outlook / Microsoft 365
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCalendarConnect('apple')}>
+                  <CalendarIcon className="h-4 w-4 mr-2" /> Apple Calendar (.ics)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleCalendarConnect('ics')}>
+                  <Download className="h-4 w-4 mr-2" /> Download .ics file
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button size="sm" variant="outline" onClick={() => { setLeaveSeed(null); setLeaveOpen(true); }} className="h-8 gap-1.5">
               <Plane className="h-3.5 w-3.5" /> Apply for leave
             </Button>
@@ -325,22 +468,47 @@ export function EmployeeShiftsPanel() {
         {/* ── My Shifts */}
         <TabsContent value="mine" className="mt-4 space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-0.5">
-              {(['upcoming', 'past', 'all'] as const).map(r => (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-0.5">
+                {(['upcoming', 'past', 'all'] as const).map(r => (
+                  <Button
+                    key={r}
+                    size="sm"
+                    variant={dateRange === r ? 'default' : 'ghost'}
+                    onClick={() => setDateRange(r)}
+                    className="h-8 capitalize"
+                  >
+                    {r === 'upcoming' ? 'Upcoming' : r === 'past' ? 'Past' : 'All shifts'}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                <span>Sort</span>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                  <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Date</SelectItem>
+                    <SelectItem value="startTime">Start time</SelectItem>
+                    <SelectItem value="location">Location</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
-                  key={r}
-                  size="sm"
-                  variant={dateRange === r ? 'default' : 'ghost'}
-                  onClick={() => setDateRange(r)}
-                  className="h-8 capitalize"
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8"
+                  onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+                  title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
                 >
-                  {r === 'upcoming' ? 'Upcoming' : r === 'past' ? 'Past' : 'All shifts'}
+                  {sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
                 </Button>
-              ))}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground">
               {dateRange === 'past'
-                ? `Showing ${(pastPage - 1) * PAST_PAGE_SIZE + 1}–${Math.min(pastPage * PAST_PAGE_SIZE, filteredMyShifts.length)} of ${filteredMyShifts.length} past shifts`
+                ? filteredMyShifts.length === 0
+                  ? 'No past shifts match your filters'
+                  : `Showing ${(pastPage - 1) * PAST_PAGE_SIZE + 1}–${Math.min(pastPage * PAST_PAGE_SIZE, filteredMyShifts.length)} of ${filteredMyShifts.length} past shifts`
                 : dateRange === 'all'
                 ? `Showing all ${filteredMyShifts.length} shift${filteredMyShifts.length === 1 ? '' : 's'}`
                 : `Showing ${filteredMyShifts.length} upcoming shift${filteredMyShifts.length === 1 ? '' : 's'}`}
@@ -734,6 +902,7 @@ function CalendarGrid({
     pending: 'bg-amber-500/15 border-amber-500/40 border-dashed text-amber-900 dark:text-amber-100 hover:bg-amber-500/25',
     'in-progress': 'bg-primary/20 border-primary/50 text-foreground hover:bg-primary/30 ring-1 ring-primary/40',
     completed: 'bg-muted border-border text-muted-foreground hover:bg-muted/80',
+    rejected: 'bg-status-rejected/15 border-status-rejected/40 text-status-rejected hover:bg-status-rejected/25 line-through opacity-70',
   };
 
   return (
