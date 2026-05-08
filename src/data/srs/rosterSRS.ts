@@ -4504,9 +4504,76 @@ export const rosterSRS: ModuleSRS = {
           "softScore breakdown shown: overtime cost $0, fairness variance 8%, preference satisfaction 91%, agency utilisation 4%",
           "Manager tweaks one shift manually → S8 Preserve Pre-Assignments locks it; subsequent re-solves respect the manual choice"
         ],
-        outcome: "Single declarative source for per-employee limits. Adding a new staff member is O(1): pick a template. Changing award rules is O(1): edit one template, all bound staff pick up new limits on next solve."
+      outcome: "Single declarative source for per-employee limits. Adding a new staff member is O(1): pick a template. Changing award rules is O(1): edit one template, all bound staff pick up new limits on next solve."
       }
     },
+    {
+      id: "US-RST-080",
+      title: "Handle Overnight (Cross-Midnight) Shifts in Roster, Timesheets, and Payroll",
+      actors: ["Workforce Planner", "Centre Manager", "Payroll Officer", "Staff Member"],
+      description: "As a Workforce Planner and Payroll Officer, I need overnight shifts (where clock-out occurs on the day after clock-in, e.g. 10:00 PM Mon → 6:00 AM Tue) to be handled consistently across roster display, timesheet aggregation, compliance checks, and payroll export, so that hours are credited to the correct date, rest/consecutive-day rules are evaluated against real elapsed time, and night/holiday penalty rates are calculated minute-accurately across the midnight boundary.",
+      acceptanceCriteria: [
+        "A shift is anchored to the calendar date of its startTime/clockIn (the 'start date'); endTime/clockOut may fall on start date + 1",
+        "Overnight detection: if endTime <= startTime (HH:mm comparison), system treats endTime as next day and adds 24h when computing duration",
+        "Roster grid renders the shift in the start-day column with a visual indicator (e.g. '10:00 PM – 6:00 AM (+1)' label, dashed right border, or → arrow) showing it spills into the next day",
+        "Daily and weekly hour totals credit ALL hours of the overnight shift to the start date (and start date's ISO week), even minutes worked after midnight",
+        "If a shift starts in pay period N and ends in N+1, the entire shift is attributed to period N by default (configurable per award)",
+        "Min Rest (H6/H11) is measured from the actual end timestamp (next-day) to the next shift's start timestamp — not from end-clock-time on the same calendar date",
+        "Max Daily Hours (H10) is evaluated against the shift's elapsed duration (e.g. 10pm–6am = 8h), not against same-date clock arithmetic",
+        "Max Consecutive Days (H12) counts overnight shifts by their start date only — a 10pm Mon → 6am Tue shift counts as Monday, not as both",
+        "Night loading / shift differential is calculated minute-by-minute against actual clock time (e.g. 10pm–6am at a 15% night loading window of 10pm–6am pays loading on all 8 hours, even though the shift crosses midnight)",
+        "Public holiday pro-rata: minutes worked before midnight on a public holiday pay holiday rate; minutes worked after midnight pay normal/next-day rate (or holiday rate if next day is also a holiday)",
+        "Clock-out workflow: if staff submits clockOut < clockIn, system auto-rolls clockOut +1 day with confirmation toast ('Shift ends 6:00 AM on Tue 5 May — confirm?')",
+        "Excessive duration guard: shifts >18h trigger R13_OVERNIGHT_EXCESSIVE warning to prevent accidental missed clock-out",
+        "DST forward (spring): a shift spanning the DST transition shows actual elapsed time (7h) not nominal clock difference (8h); DST backward shows 9h",
+        "Payroll export includes both startDateTime and endDateTime as full ISO timestamps; legacy date-only exports include an endsNextDay flag"
+      ],
+      businessLogic: [
+        "Anchor rule: shift.date = startDate; isOvernight = endTime <= startTime (string compare HH:mm) OR endsNextDay flag set",
+        "Duration calc: const start = parseISO(`${date}T${clockIn}`); let end = parseISO(`${date}T${clockOut}`); if (end <= start) end = addDays(end, 1); duration = differenceInMinutes(end, start)",
+        "Penalty rate calculation iterates per-minute (or per-rate-window) using actual clock timestamps, not anchored date",
+        "Rest check: nextShift.startDateTime - currentShift.endDateTime (both full ISO) must be >= minRestHours",
+        "Consecutive day count: group shifts by startDate, then count distinct consecutive calendar dates",
+        "Sleepover shifts (US-RST-058) are a special case of overnight where the entire span is logged as one record with isOvernight=true and disturbance-based active-hour conversion",
+        "Split shifts (US-RST-061) where the second segment crosses midnight: each segment evaluated independently for overnight handling",
+        "Data model: prefer storing full ISO timestamps (startDateTime, endDateTime) over (date, clockIn, clockOut) tuples to eliminate ambiguity"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Timesheets", relationship: "Same anchor + ISO-timestamp model used for clock entries and aggregation" },
+        { module: "Awards Engine", relationship: "Night loading, weekend, and public holiday rates calculated minute-by-minute against real clock time" },
+        { module: "Compliance Engine", relationship: "H6/H10/H11/H12 rest and consecutive-day checks consume real elapsed timestamps" },
+        { module: "Payroll Export", relationship: "ISO startDateTime/endDateTime emitted; pay period attribution configurable" },
+        { module: "Roster Grid UI", relationship: "Overnight indicator, dashed border, '+1' label rendered on start-day cell" }
+      ],
+      endToEndJourney: [
+        "1. Manager creates shift for Sarah: Mon 4 May, 10:00 PM – 6:00 AM",
+        "2. System detects endTime (06:00) <= startTime (22:00) → flags isOvernight=true, endsNextDay=true",
+        "3. Roster grid renders shift in Monday column with label '10:00 PM – 6:00 AM (+1)' and a → arrow into Tuesday",
+        "4. Compliance engine validates: previous shift ended Sun 9pm → rest = 25h ✓; next shift Wed 8am → rest from Tue 6am = 26h ✓; consecutive days = Mon only",
+        "5. Sarah clocks in at 10:02 PM Mon and clocks out at 6:05 AM Tue",
+        "6. Timesheet records clockIn=2026-05-04T22:02, clockOut=2026-05-05T06:05, grossMinutes=483 (8h 3m), credited to weekStartDate of Mon 4 May",
+        "7. Awards engine applies night loading 15% to minutes 22:02–06:00 (478 min) and base rate to 06:00–06:05 (5 min)",
+        "8. Public holiday check: Mon was not PH, Tue was Anzac Day → minutes after midnight pay 250% PH rate; pre-midnight pay base + night loading",
+        "9. Payroll export emits one row: employeeId=Sarah, periodStart=2026-05-04, startDateTime=2026-05-04T22:02, endDateTime=2026-05-05T06:05, grossHours=8.05, components: [base 2h, night-loading 6h, PH-loading 6.08h]",
+        "10. Audit log captures all timestamp transitions and pay-component breakdown for retro-pay and dispute resolution"
+      ],
+      realWorldExample: {
+        scenario: "An aged-care residential facility runs sleepovers and active-night shifts. Sarah (FT RN) works a 10pm–6am active-night shift on Monday 4 May 2026. Tuesday 5 May happens to be Anzac Day (public holiday in some states).",
+        steps: [
+          "Manager schedules Sarah Mon 22:00 – 06:00; system flags overnight",
+          "Roster grid shows shift in Monday column with '10:00 PM – 6:00 AM (+1)' label",
+          "Sarah clocks in 22:02 Mon, clocks out 06:05 Tue (system auto-rolled the date with confirmation)",
+          "Timesheet aggregates 8h 3m to Monday 4 May / week starting 4 May",
+          "Awards engine: 22:02–24:00 = 1h 58m at night loading 15%; 00:00–06:00 = 6h at PH rate 250% (Anzac Day) + night loading 15% stacked per BR; 06:00–06:05 = 5m at PH rate only",
+          "Min rest check: Sarah's next shift Wed 14:00 → rest from Tue 06:05 = 31h 55m ✓ (passes H11 ≥10h)",
+          "Consecutive-day count: Mon counted once (not Mon+Tue) — Sarah's run = 1 day, well under H12 max of 5",
+          "Payroll export sends startDateTime=2026-05-04T22:02+10:00, endDateTime=2026-05-05T06:05+10:00, with line items split per rate window",
+          "Sarah's payslip shows: 'Mon 4 May – overnight shift 8.05h, components: base, night loading, PH loading'"
+        ],
+        outcome: "Hours credited to correct day (Mon), rest/consecutive checks use real elapsed time, penalty rates split correctly across midnight boundary, payroll export unambiguous. No double-counting, no missed overtime, no compliance breach."
+      }
+    }
   ],
 
   // ============================================================================
