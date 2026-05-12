@@ -34,6 +34,10 @@ export interface OvertimeRuleConfig {
   doubleTimeMultiplier?: number;
   doubleTimeThreshold?: number;
 
+  // Hour caps
+  maxDailyOTHours?: number;
+  maxWeeklyOTHours?: number;
+
   // Day/time specific
   applicableDays?: ('weekday' | 'saturday' | 'sunday' | 'public_holiday')[];
   timeRange?: { start: string; end: string };
