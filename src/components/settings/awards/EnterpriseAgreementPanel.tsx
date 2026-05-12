@@ -1012,7 +1012,7 @@ export function EnterpriseAgreementPanel() {
                 </TabsContent>
               </Tabs>
 
-              <SheetFooter className="mt-6 flex gap-2">
+              <SheetFooter className="mt-6 flex flex-wrap gap-2">
                 <Button variant="outline" onClick={() => handleDuplicateEBA(selectedEBA)}>
                   <Copy className="h-4 w-4 mr-2" />
                   Duplicate
@@ -1020,6 +1020,14 @@ export function EnterpriseAgreementPanel() {
                 <Button variant="outline" onClick={() => handleExportEBA(selectedEBA)}>
                   <Download className="h-4 w-4 mr-2" />
                   Export
+                </Button>
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setEbaToDelete(selectedEBA)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
                 </Button>
                 <Button onClick={() => setShowEditWizard(true)}>
                   <Edit className="h-4 w-4 mr-2" />
