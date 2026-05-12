@@ -1158,6 +1158,23 @@ export function CustomRuleBuilderPanel() {
           </div>
         </div>
 
+        {/* Scope guidance banner */}
+        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20 p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-900 dark:text-amber-200">
+            <p className="font-medium">Custom Rules are for conditional logic only</p>
+            <p className="mt-1 text-amber-800/90 dark:text-amber-200/80">
+              Use this builder for multi-criteria exceptions like <em>"IF tenure &gt; 5 yrs AND shift = night"</em>. For standard configuration, use the dedicated tabs:
+            </p>
+            <ul className="mt-2 space-y-0.5 text-xs list-disc list-inside text-amber-800/90 dark:text-amber-200/80">
+              <li>Daily / weekly overtime thresholds → <strong>OT Rules</strong></li>
+              <li>Saturday / Sunday / public holiday loadings → <strong>Penalties</strong></li>
+              <li>Standard fixed allowances → <strong>Allowances</strong></li>
+              <li>On-call / standby / callback → <strong>On-Call</strong></li>
+            </ul>
+          </div>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className="card-material">
