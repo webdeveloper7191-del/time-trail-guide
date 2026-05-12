@@ -310,20 +310,7 @@ export function EnterpriseAgreementPanel() {
   const [showAddEmployeeDrawer, setShowAddEmployeeDrawer] = useState(false);
   const [showEditEmployeeDrawer, setShowEditEmployeeDrawer] = useState(false);
   const [employeeToEdit, setEmployeeToEdit] = useState<MultiAwardEmployeeDisplay | null>(null);
-
-  // Form state for new agreement
-  const [newAgreement, setNewAgreement] = useState({
-    name: '',
-    code: '',
-    type: 'enterprise_agreement' as AgreementType,
-    underlyingAwardId: '',
-    commencementDate: '',
-    nominalExpiryDate: '',
-    fwcApprovalNumber: '',
-    coverageDescription: '',
-    applicableStates: [] as AustralianState[],
-    superannuationRate: 11.5,
-  });
+  const [ebaToDelete, setEbaToDelete] = useState<EnterpriseAgreement | null>(null);
 
   // Comparison state
   const [compareAgreements, setCompareAgreements] = useState<string[]>([]);
