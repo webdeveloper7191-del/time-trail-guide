@@ -594,8 +594,13 @@ export function CustomRuleBuilderPanel() {
 
     const timestamp = new Date().toISOString();
 
+    // Strip classificationIds (form-only field) — rules store a single classificationId.
+    const { classificationIds, ...formCommon } = ruleForm;
+    const targets = classificationIds.length > 0 ? classificationIds : [undefined as string | undefined];
+
     if (editingRule) {
-      // Create version history entry
+      // Editing keeps a single rule; use the first selected classification.
+      const classificationId = targets[0];
       const newVersion: RuleVersion = {
         id: `v${editingRule.id}-${(editingRule.currentVersion || 0) + 1}`,
         version: (editingRule.currentVersion || 0) + 1,
@@ -610,12 +615,13 @@ export function CustomRuleBuilderPanel() {
         } as Omit<CustomRule, 'versions'>,
       };
 
-      setRules(prev => prev.map(r => 
-        r.id === editingRule.id 
-          ? { 
-              ...r, 
-              ...ruleForm, 
-              updatedAt: timestamp.split('T')[0], 
+      setRules(prev => prev.map(r =>
+        r.id === editingRule.id
+          ? {
+              ...r,
+              ...formCommon,
+              classificationId,
+              updatedAt: timestamp.split('T')[0],
               isCustom: true,
               currentVersion: (r.currentVersion || 0) + 1,
               versions: [newVersion, ...(r.versions || [])],
@@ -624,38 +630,41 @@ export function CustomRuleBuilderPanel() {
       ));
       toast.success('Rule updated successfully. Version saved to history.');
     } else {
-      const newRuleId = Date.now().toString();
-      const initialVersion: RuleVersion = {
-        id: `v${newRuleId}-1`,
-        version: 1,
-        timestamp,
-        changedBy: 'Current User',
-        changeType: 'created',
-        changeSummary: 'Initial rule creation',
-        snapshot: {
+      const newRules: RuleWithVersions[] = targets.map((classificationId, i) => {
+        const newRuleId = `${Date.now()}-${i}`;
+        const initialVersion: RuleVersion = {
+          id: `v${newRuleId}-1`,
+          version: 1,
+          timestamp,
+          changedBy: 'Current User',
+          changeType: 'created',
+          changeSummary: 'Initial rule creation',
+          snapshot: {
+            id: newRuleId,
+            ...formCommon,
+            classificationId,
+            isActive: true,
+            isCustom: true,
+            createdAt: timestamp.split('T')[0],
+          },
+        };
+        return {
           id: newRuleId,
-          ...ruleForm,
+          ...formCommon,
+          classificationId,
           isActive: true,
           isCustom: true,
           createdAt: timestamp.split('T')[0],
-        },
-      };
-
-      const newRule: RuleWithVersions = {
-        id: newRuleId,
-        ...ruleForm,
-        isActive: true,
-        isCustom: true,
-        createdAt: timestamp.split('T')[0],
-        usageCount: 0,
-        testResult: 'pending',
-        currentVersion: 1,
-        versions: [initialVersion],
-      };
-      setRules([...rules, newRule]);
-      toast.success('Rule created successfully');
+          usageCount: 0,
+          testResult: 'pending',
+          currentVersion: 1,
+          versions: [initialVersion],
+        };
+      });
+      setRules([...rules, ...newRules]);
+      toast.success(newRules.length > 1 ? `${newRules.length} rules created` : 'Rule created successfully');
     }
-    
+
     setIsPanelOpen(false);
     resetForm();
   };
