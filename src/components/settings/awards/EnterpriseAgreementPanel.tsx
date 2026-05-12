@@ -1096,6 +1096,9 @@ export function EnterpriseAgreementPanel() {
 
                   return (
                     <>
+                      <EBAComparePayRates a={eba1} b={eba2} />
+                      <EBACompareAllowances a={eba1} b={eba2} />
+                      <EBACompareConditions a={eba1} b={eba2} />
                       {/* Penalty Rates Comparison */}
                       <Card>
                         <CardHeader className="pb-2">
