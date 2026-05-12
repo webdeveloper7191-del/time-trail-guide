@@ -300,6 +300,7 @@ export function AllowanceRatesEditorPanel() {
     amount: '',
     conditions: '',
     applicableAwards: [] as string[],
+    applicableClassifications: [] as string[],
     triggerType: 'manual' as TriggerType,
     triggerConditions: {} as AllowanceTriggerConditions,
     minimumEngagement: undefined as number | undefined,
