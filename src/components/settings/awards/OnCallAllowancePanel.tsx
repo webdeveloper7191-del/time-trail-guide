@@ -189,6 +189,8 @@ export function OnCallAllowancePanel() {
         weekendRate: allowance.weekendRate?.toString() || '',
         publicHolidayMultiplier: allowance.publicHolidayMultiplier?.toString() || '',
         applicableAwards: allowance.applicableAwards,
+        applicableClassifications: allowance.applicableClassifications || [],
+        classificationInput: '',
         stackable: allowance.stackable,
         excludesWith: allowance.excludesWith,
         priority: allowance.priority,
