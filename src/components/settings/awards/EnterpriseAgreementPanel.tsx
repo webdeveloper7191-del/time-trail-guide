@@ -1441,6 +1441,28 @@ export function EnterpriseAgreementPanel() {
         onComplete={handleEBAComplete}
         existingEBA={selectedEBA || undefined}
       />
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!ebaToDelete} onOpenChange={(open) => !open && setEbaToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this enterprise agreement?</DialogTitle>
+            <DialogDescription>
+              {ebaToDelete?.name} will be permanently removed. Employees mapped to it will need to be reassigned.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEbaToDelete(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={() => ebaToDelete && handleDeleteEBA(ebaToDelete)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete agreement
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
