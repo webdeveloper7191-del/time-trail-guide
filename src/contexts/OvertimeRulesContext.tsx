@@ -5,7 +5,18 @@
 
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
-// Re-export the OvertimeRuleConfig type
+/**
+ * Canonical Overtime Rule type — single source of truth.
+ * Used by OvertimeRulesConfigPanel, CustomOvertimeRatesPanel and the unified calculator.
+ *
+ * Resolution order when multiple rules match a shift:
+ *   1. Award + classification specific rule (highest)
+ *   2. Award specific rule
+ *   3. Global rule (no awardIds)
+ * Within the same scope, higher `priority` wins; ties resolved by `updatedAt` (newest wins).
+ */
+export type OvertimeRuleSource = 'fwc' | 'eba' | 'custom' | 'default';
+
 export interface OvertimeRuleConfig {
   id: string;
   name: string;
@@ -13,26 +24,35 @@ export interface OvertimeRuleConfig {
   category: 'daily' | 'weekly' | 'penalty' | 'special';
   isActive: boolean;
   isDefault: boolean;
-  
+
   // Thresholds
   dailyThreshold?: number;
   weeklyThreshold?: number;
-  
+
   // Multipliers (as decimals, e.g., 1.5 for time-and-a-half)
   overtimeMultiplier: number;
   doubleTimeMultiplier?: number;
   doubleTimeThreshold?: number;
-  
+
   // Day/time specific
   applicableDays?: ('weekday' | 'saturday' | 'sunday' | 'public_holiday')[];
   timeRange?: { start: string; end: string };
-  
+
   // Penalty loadings (percentage, e.g., 25 for 25%)
   penaltyLoading?: number;
-  
-  // Award linkage
+
+  // Award linkage (empty/undefined = global / all awards)
   awardIds?: string[];
-  
+  classificationId?: string;
+
+  // Resolution priority (higher wins). Default 100.
+  priority?: number;
+
+  // Provenance
+  source?: OvertimeRuleSource;
+  fwcClause?: string;       // e.g. "MA000120 cl. 21.2"
+  fwcReference?: string;    // e.g. "PR758496"
+
   createdAt: string;
   updatedAt: string;
 }
