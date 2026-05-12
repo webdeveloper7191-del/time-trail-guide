@@ -350,6 +350,7 @@ export function AllowanceRatesEditorPanel() {
       amount: '', 
       conditions: '', 
       applicableAwards: [],
+      applicableClassifications: [],
       triggerType: 'manual',
       triggerConditions: {},
       minimumEngagement: undefined,
