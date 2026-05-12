@@ -157,6 +157,8 @@ export function CustomOvertimeRatesPanel() {
       after2Hours: 200,
       triggerType: 'daily',
       dayType: '',
+      priority: 100,
+      fwcClause: '',
     });
     setEditingRule(null);
   };
@@ -174,6 +176,8 @@ export function CustomOvertimeRatesPanel() {
         after2Hours: rule.rates.after2Hours,
         triggerType: rule.triggers.dailyHours ? 'daily' : rule.triggers.weeklyHours ? 'weekly' : 'time',
         dayType: rule.triggers.dayType || '',
+        priority: rule.priority ?? 100,
+        fwcClause: rule.fwcClause || '',
       });
     } else {
       resetForm();
