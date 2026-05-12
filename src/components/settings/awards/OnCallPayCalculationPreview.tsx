@@ -62,8 +62,24 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
   const [isPublicHoliday, setIsPublicHoliday] = useState(false);
   const [wasCalledBack, setWasCalledBack] = useState(true);
   const [callbackHours, setCallbackHours] = useState(1.5);
+  const [awardFilter, setAwardFilter] = useState<string>('all');
+  const [ruleFilter, setRuleFilter] = useState<string>('all');
 
-  const activeAllowances = allowances.filter(a => a.isActive);
+  // Derive available awards from the allowance set
+  const availableAwards = useMemo(() => {
+    const set = new Set<string>();
+    allowances.forEach(a => a.applicableAwards.forEach(aw => set.add(aw)));
+    return Array.from(set);
+  }, [allowances]);
+
+  // Filter active allowances by selected award + single rule
+  const activeAllowances = useMemo(() => {
+    return allowances
+      .filter(a => a.isActive)
+      .filter(a => awardFilter === 'all' || a.applicableAwards.includes(awardFilter as any))
+      .filter(a => ruleFilter === 'all' || a.id === ruleFilter);
+  }, [allowances, awardFilter, ruleFilter]);
+
 
   // Calculate pay with exclusion logic
   const calculation = useMemo(() => {
@@ -202,6 +218,47 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Award + Rule scope */}
+        <div className="p-4 rounded-lg bg-background border">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+            Evaluation Scope
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Applicable Award</Label>
+              <select
+                value={awardFilter}
+                onChange={(e) => { setAwardFilter(e.target.value); setRuleFilter('all'); }}
+                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+              >
+                <option value="all">All awards</option>
+                {availableAwards.map(a => (
+                  <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Rule</Label>
+              <select
+                value={ruleFilter}
+                onChange={(e) => setRuleFilter(e.target.value)}
+                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+              >
+                <option value="all">All matching rules (aggregate)</option>
+                {allowances
+                  .filter(a => a.isActive)
+                  .filter(a => awardFilter === 'all' || a.applicableAwards.includes(awardFilter as any))
+                  .map(a => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+              </select>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Filter the evaluator to a specific award or single rule to see exactly what is being calculated.
+          </p>
+        </div>
+
         {/* Scenario Controls */}
         <div className="p-4 rounded-lg bg-muted/50 border">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">

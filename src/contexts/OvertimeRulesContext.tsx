@@ -5,7 +5,18 @@
 
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
-// Re-export the OvertimeRuleConfig type
+/**
+ * Canonical Overtime Rule type — single source of truth.
+ * Used by OvertimeRulesConfigPanel, CustomOvertimeRatesPanel and the unified calculator.
+ *
+ * Resolution order when multiple rules match a shift:
+ *   1. Award + classification specific rule (highest)
+ *   2. Award specific rule
+ *   3. Global rule (no awardIds)
+ * Within the same scope, higher `priority` wins; ties resolved by `updatedAt` (newest wins).
+ */
+export type OvertimeRuleSource = 'fwc' | 'eba' | 'custom' | 'default';
+
 export interface OvertimeRuleConfig {
   id: string;
   name: string;
@@ -13,26 +24,39 @@ export interface OvertimeRuleConfig {
   category: 'daily' | 'weekly' | 'penalty' | 'special';
   isActive: boolean;
   isDefault: boolean;
-  
+
   // Thresholds
   dailyThreshold?: number;
   weeklyThreshold?: number;
-  
+
   // Multipliers (as decimals, e.g., 1.5 for time-and-a-half)
   overtimeMultiplier: number;
   doubleTimeMultiplier?: number;
   doubleTimeThreshold?: number;
-  
+
+  // Hour caps
+  maxDailyOTHours?: number;
+  maxWeeklyOTHours?: number;
+
   // Day/time specific
   applicableDays?: ('weekday' | 'saturday' | 'sunday' | 'public_holiday')[];
   timeRange?: { start: string; end: string };
-  
+
   // Penalty loadings (percentage, e.g., 25 for 25%)
   penaltyLoading?: number;
-  
-  // Award linkage
+
+  // Award linkage (empty/undefined = global / all awards)
   awardIds?: string[];
-  
+  classificationId?: string;
+
+  // Resolution priority (higher wins). Default 100.
+  priority?: number;
+
+  // Provenance
+  source?: OvertimeRuleSource;
+  fwcClause?: string;       // e.g. "MA000120 cl. 21.2"
+  fwcReference?: string;    // e.g. "PR758496"
+
   createdAt: string;
   updatedAt: string;
 }
@@ -40,98 +64,91 @@ export interface OvertimeRuleConfig {
 // Default rules matching the panel defaults
 const defaultRules: OvertimeRuleConfig[] = [
   {
-    id: 'default-daily',
-    name: 'Standard Daily Overtime',
+    id: 'default-daily', name: 'Standard Daily Overtime',
     description: 'Overtime triggered after daily hour threshold',
-    category: 'daily',
-    isActive: true,
-    isDefault: true,
-    dailyThreshold: 8,
-    overtimeMultiplier: 1.5,
-    doubleTimeMultiplier: 2.0,
-    doubleTimeThreshold: 10,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
+    category: 'daily', isActive: true, isDefault: true,
+    dailyThreshold: 8, overtimeMultiplier: 1.5, doubleTimeMultiplier: 2.0, doubleTimeThreshold: 10,
+    priority: 100, source: 'default',
+    createdAt: '2024-01-01', updatedAt: '2024-01-01',
   },
   {
-    id: 'default-weekly',
-    name: 'Standard Weekly Overtime',
+    id: 'default-weekly', name: 'Standard Weekly Overtime',
     description: 'Overtime triggered after weekly hour threshold (38h NES)',
-    category: 'weekly',
-    isActive: true,
-    isDefault: true,
-    weeklyThreshold: 38,
-    overtimeMultiplier: 1.5,
-    doubleTimeMultiplier: 2.0,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
+    category: 'weekly', isActive: true, isDefault: true,
+    weeklyThreshold: 38, overtimeMultiplier: 1.5, doubleTimeMultiplier: 2.0,
+    priority: 100, source: 'default',
+    createdAt: '2024-01-01', updatedAt: '2024-01-01',
   },
   {
-    id: 'saturday-penalty',
-    name: 'Saturday Penalty Rate',
+    id: 'saturday-penalty', name: 'Saturday Penalty Rate',
     description: 'Penalty loading for Saturday work',
-    category: 'penalty',
-    isActive: true,
-    isDefault: true,
-    applicableDays: ['saturday'],
-    overtimeMultiplier: 1.5,
-    penaltyLoading: 50,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
+    category: 'penalty', isActive: true, isDefault: true,
+    applicableDays: ['saturday'], overtimeMultiplier: 1.5, penaltyLoading: 50,
+    priority: 100, source: 'default',
+    createdAt: '2024-01-01', updatedAt: '2024-01-01',
   },
   {
-    id: 'sunday-penalty',
-    name: 'Sunday Penalty Rate',
+    id: 'sunday-penalty', name: 'Sunday Penalty Rate',
     description: 'Penalty loading for Sunday work',
-    category: 'penalty',
-    isActive: true,
-    isDefault: true,
-    applicableDays: ['sunday'],
-    overtimeMultiplier: 2.0,
-    penaltyLoading: 100,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
+    category: 'penalty', isActive: true, isDefault: true,
+    applicableDays: ['sunday'], overtimeMultiplier: 2.0, penaltyLoading: 100,
+    priority: 100, source: 'default',
+    createdAt: '2024-01-01', updatedAt: '2024-01-01',
   },
   {
-    id: 'public-holiday',
-    name: 'Public Holiday Rate',
+    id: 'public-holiday', name: 'Public Holiday Rate',
     description: 'Penalty loading for public holiday work',
-    category: 'penalty',
-    isActive: true,
-    isDefault: true,
-    applicableDays: ['public_holiday'],
-    overtimeMultiplier: 2.5,
-    penaltyLoading: 150,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
+    category: 'penalty', isActive: true, isDefault: true,
+    applicableDays: ['public_holiday'], overtimeMultiplier: 2.5, penaltyLoading: 150,
+    priority: 100, source: 'default',
+    createdAt: '2024-01-01', updatedAt: '2024-01-01',
   },
   {
-    id: 'night-shift',
-    name: 'Night Shift Loading',
+    id: 'night-shift', name: 'Night Shift Loading',
     description: 'Additional loading for night shift work (10pm-6am)',
-    category: 'special',
-    isActive: true,
-    isDefault: true,
-    timeRange: { start: '22:00', end: '06:00' },
-    overtimeMultiplier: 1.0,
-    penaltyLoading: 15,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
+    category: 'special', isActive: true, isDefault: true,
+    timeRange: { start: '22:00', end: '06:00' }, overtimeMultiplier: 1.0, penaltyLoading: 15,
+    priority: 100, source: 'default',
+    createdAt: '2024-01-01', updatedAt: '2024-01-01',
   },
   {
-    id: 'evening-shift',
-    name: 'Evening Shift Loading',
+    id: 'evening-shift', name: 'Evening Shift Loading',
     description: 'Additional loading for evening work (6pm-10pm)',
-    category: 'special',
-    isActive: true,
-    isDefault: true,
-    timeRange: { start: '18:00', end: '22:00' },
-    overtimeMultiplier: 1.0,
-    penaltyLoading: 10,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
+    category: 'special', isActive: true, isDefault: true,
+    timeRange: { start: '18:00', end: '22:00' }, overtimeMultiplier: 1.0, penaltyLoading: 10,
+    priority: 100, source: 'default',
+    createdAt: '2024-01-01', updatedAt: '2024-01-01',
   },
 ];
+
+/**
+ * Resolve which rule wins for a given (awardId, classificationId, category) tuple.
+ * Order: award+classification > award > global. Within scope: priority desc, updatedAt desc.
+ */
+export function resolveRule(
+  rules: OvertimeRuleConfig[],
+  category: OvertimeRuleConfig['category'],
+  awardId?: string,
+  classificationId?: string,
+): OvertimeRuleConfig | undefined {
+  const active = rules.filter(r => r.isActive && r.category === category);
+  const score = (r: OvertimeRuleConfig): number => {
+    if (awardId && r.awardIds?.includes(awardId) && classificationId && r.classificationId === classificationId) return 3;
+    if (awardId && r.awardIds?.includes(awardId)) return 2;
+    if (!r.awardIds || r.awardIds.length === 0) return 1;
+    return 0;
+  };
+  return active
+    .map(r => ({ r, s: score(r) }))
+    .filter(x => x.s > 0)
+    .sort((a, b) => {
+      if (b.s !== a.s) return b.s - a.s;
+      const pa = a.r.priority ?? 100, pb = b.r.priority ?? 100;
+      if (pb !== pa) return pb - pa;
+      return (b.r.updatedAt || '').localeCompare(a.r.updatedAt || '');
+    })[0]?.r;
+}
+
 
 interface OvertimeRulesContextType {
   rules: OvertimeRuleConfig[];

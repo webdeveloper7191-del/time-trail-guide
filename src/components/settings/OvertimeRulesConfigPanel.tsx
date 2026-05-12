@@ -18,53 +18,23 @@ import {
   Zap, TrendingUp, Copy, Scale, Timer, DollarSign, Info,
   Calendar, Moon, Sun, Star, Play, ChevronDown, ArrowRight, CircleDollarSign
 } from 'lucide-react';
-import { 
-  calculateDailyOvertime, 
-  setOvertimeRules, 
-  OvertimeBreakdown 
+import {
+  calculateDailyOvertime,
+  setOvertimeRules,
+  OvertimeBreakdown
 } from '@/lib/unifiedOvertimeCalculator';
+import { OvertimeRuleConfig } from '@/contexts/OvertimeRulesContext';
+import { australianAwards } from '@/data/australianAwards';
 
-// Overtime rule type definition
+// Re-export so existing imports keep working
+export type { OvertimeRuleConfig };
+
 // Maximum caps for validation
 const MAX_OT_MULTIPLIER = 3.0;
 const MAX_PENALTY_MULTIPLIER = 3.5;
 const MAX_DAILY_OT_HOURS = 16;
 const MAX_WEEKLY_OT_HOURS = 60;
 
-export interface OvertimeRuleConfig {
-  id: string;
-  name: string;
-  description: string;
-  category: 'daily' | 'weekly' | 'penalty' | 'special';
-  isActive: boolean;
-  isDefault: boolean;
-  
-  // Thresholds
-  dailyThreshold?: number;
-  weeklyThreshold?: number;
-  
-  // Caps
-  maxDailyOTHours?: number;
-  maxWeeklyOTHours?: number;
-  
-  // Multipliers (as decimals, e.g., 1.5 for time-and-a-half)
-  overtimeMultiplier: number;
-  doubleTimeMultiplier?: number;
-  doubleTimeThreshold?: number;
-  
-  // Day/time specific
-  applicableDays?: ('weekday' | 'saturday' | 'sunday' | 'public_holiday')[];
-  timeRange?: { start: string; end: string };
-  
-  // Penalty loadings (percentage, e.g., 25 for 25%)
-  penaltyLoading?: number;
-  
-  // Award linkage
-  awardIds?: string[];
-  
-  createdAt: string;
-  updatedAt: string;
-}
 
 const defaultRules: OvertimeRuleConfig[] = [
   {
@@ -205,6 +175,10 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
     timeRangeEnd: '',
     maxDailyOTHours: 4 as number | undefined,
     maxWeeklyOTHours: 20 as number | undefined,
+    awardIds: [] as string[],
+    classificationId: '' as string,
+    priority: 100,
+    fwcClause: '',
   });
 
   const resetForm = () => {
@@ -223,6 +197,10 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
       timeRangeEnd: '',
       maxDailyOTHours: 4,
       maxWeeklyOTHours: 20,
+      awardIds: [],
+      classificationId: '',
+      priority: 100,
+      fwcClause: '',
     });
     setEditingRule(null);
   };
@@ -245,6 +223,10 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
         timeRangeEnd: rule.timeRange?.end || '',
         maxDailyOTHours: rule.maxDailyOTHours || 4,
         maxWeeklyOTHours: rule.maxWeeklyOTHours || 20,
+        awardIds: rule.awardIds || [],
+        classificationId: rule.classificationId || '',
+        priority: rule.priority ?? 100,
+        fwcClause: rule.fwcClause || '',
       });
     } else {
       resetForm();
@@ -294,6 +276,11 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
         : undefined,
       maxDailyOTHours: formData.category === 'daily' ? formData.maxDailyOTHours : undefined,
       maxWeeklyOTHours: formData.category === 'weekly' ? formData.maxWeeklyOTHours : undefined,
+      awardIds: formData.awardIds.length > 0 ? formData.awardIds : undefined,
+      classificationId: formData.classificationId || undefined,
+      priority: formData.priority,
+      source: editingRule?.source || 'custom',
+      fwcClause: formData.fwcClause || undefined,
       createdAt: editingRule?.createdAt || now,
       updatedAt: now,
     };
@@ -911,7 +898,104 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
 
               <Separator />
 
-              {/* Daily Threshold */}
+              {/* Scope: Award + Classification + Priority + FWC clause */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <CircleDollarSign className="h-4 w-4 text-primary" />
+                  <Label className="text-base font-medium">Rule Scope</Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Apply to Awards</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {australianAwards.map(award => {
+                      const checked = formData.awardIds.includes(award.id);
+                      return (
+                        <button
+                          type="button"
+                          key={award.id}
+                          onClick={() => setFormData(prev => ({
+                            ...prev,
+                            awardIds: checked
+                              ? prev.awardIds.filter(id => id !== award.id)
+                              : [...prev.awardIds, award.id],
+                            classificationId: checked && prev.classificationId ? '' : prev.classificationId,
+                          }))}
+                          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                            checked
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted/40 text-foreground border-border hover:border-primary/40'
+                          }`}
+                        >
+                          {award.shortName}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty to apply to all awards (global rule). Award-scoped rules win over global rules.
+                  </p>
+                </div>
+
+                {formData.awardIds.length === 1 && (() => {
+                  const award = australianAwards.find(a => a.id === formData.awardIds[0]);
+                  if (!award) return null;
+                  return (
+                    <div className="space-y-2">
+                      <Label>Classification (optional)</Label>
+                      <Select
+                        value={formData.classificationId || 'all'}
+                        onValueChange={(v) => setFormData(prev => ({ ...prev, classificationId: v === 'all' ? '' : v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
+                          <SelectItem value="all">All classifications</SelectItem>
+                          {award.classifications.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.level}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Classification-specific rules win over award-level rules.
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <Label>Priority</Label>
+                    <span className="font-medium">{formData.priority}</span>
+                  </div>
+                  <Slider
+                    value={[formData.priority]}
+                    onValueChange={([v]) => setFormData(prev => ({ ...prev, priority: v }))}
+                    min={0}
+                    max={1000}
+                    step={10}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Higher priority wins when multiple rules of the same scope match. Ties broken by most recently updated.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>FWC Clause Reference (optional)</Label>
+                  <Input
+                    placeholder="e.g. MA000120 cl. 21.2"
+                    value={formData.fwcClause}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fwcClause: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Link this rule to an FWC clause for traceability and compliance audit.
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
               {formData.category === 'daily' && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
@@ -1270,6 +1354,26 @@ function RuleCard({ rule, onEdit, onToggle, onDelete, onDuplicate }: RuleCardPro
               </p>
               {rule.isDefault && (
                 <Badge variant="secondary" className="text-xs">Default</Badge>
+              )}
+              {rule.source === 'fwc' && (
+                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-700 border-blue-200">FWC</Badge>
+              )}
+              {rule.source === 'eba' && (
+                <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-700 border-purple-200">EBA</Badge>
+              )}
+              {rule.source === 'custom' && !rule.isDefault && (
+                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-700 border-amber-200">Custom</Badge>
+              )}
+              <Badge variant="outline" className="text-xs">P{rule.priority ?? 100}</Badge>
+              {rule.awardIds && rule.awardIds.length > 0 ? (
+                <Badge variant="outline" className="text-xs">
+                  {rule.awardIds.length === 1 ? '1 award' : `${rule.awardIds.length} awards`}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs">Global</Badge>
+              )}
+              {rule.fwcClause && (
+                <Badge variant="outline" className="text-[10px] text-muted-foreground">{rule.fwcClause}</Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">{rule.description}</p>

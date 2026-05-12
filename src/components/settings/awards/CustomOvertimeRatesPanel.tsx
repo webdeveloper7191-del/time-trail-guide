@@ -14,6 +14,12 @@ import { toast } from 'sonner';
 import { Plus, Clock, Percent, Edit2, Trash2, CheckCircle2, AlertCircle, Zap, Search, Building2, Filter, RotateCcw, Download } from 'lucide-react';
 import { australianAwards } from '@/data/australianAwards';
 
+/**
+ * Legacy overtime rule shape used by this panel. The canonical type is
+ * `OvertimeRuleConfig` in `@/contexts/OvertimeRulesContext`. Both share the same
+ * resolution model (award+classification > award > global, then priority desc).
+ * Resolve via `resolveRule()` from the context module.
+ */
 interface OvertimeRule {
   id: string;
   name: string;
@@ -33,6 +39,12 @@ interface OvertimeRule {
   };
   isActive: boolean;
   isCustom: boolean;
+  /** Higher priority wins when multiple rules match. Default 100. */
+  priority?: number;
+  /** Provenance: 'fwc' | 'eba' | 'custom' | 'default' */
+  source?: 'fwc' | 'eba' | 'custom' | 'default';
+  /** Optional clause reference for traceability */
+  fwcClause?: string;
 }
 
 const mockOvertimeRules: OvertimeRule[] = [
@@ -103,6 +115,8 @@ export function CustomOvertimeRatesPanel() {
     after2Hours: 200,
     triggerType: 'daily' as 'daily' | 'weekly' | 'time',
     dayType: '' as string,
+    priority: 100,
+    fwcClause: '',
   });
 
   const getAwardName = (awardId?: string) => {
@@ -143,6 +157,8 @@ export function CustomOvertimeRatesPanel() {
       after2Hours: 200,
       triggerType: 'daily',
       dayType: '',
+      priority: 100,
+      fwcClause: '',
     });
     setEditingRule(null);
   };
@@ -160,6 +176,8 @@ export function CustomOvertimeRatesPanel() {
         after2Hours: rule.rates.after2Hours,
         triggerType: rule.triggers.dailyHours ? 'daily' : rule.triggers.weeklyHours ? 'weekly' : 'time',
         dayType: rule.triggers.dayType || '',
+        priority: rule.priority ?? 100,
+        fwcClause: rule.fwcClause || '',
       });
     } else {
       resetForm();
@@ -194,6 +212,9 @@ export function CustomOvertimeRatesPanel() {
       },
       isActive: true,
       isCustom: true,
+      priority: newRule.priority,
+      source: 'custom',
+      fwcClause: newRule.fwcClause || undefined,
     };
 
     setRules([...rules, rule]);
@@ -220,6 +241,8 @@ export function CustomOvertimeRatesPanel() {
               first2Hours: newRule.first2Hours,
               after2Hours: newRule.after2Hours,
             },
+            priority: newRule.priority,
+            fwcClause: newRule.fwcClause || undefined,
           }
         : r
     ));
