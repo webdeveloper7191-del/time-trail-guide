@@ -638,13 +638,6 @@ export function AwardsConfigurationTab() {
               <span className="hidden sm:inline">Allowances</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="overtime" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">OT Calculator</span>
-            </TabsTrigger>
-            <TabsTrigger 
               value="overtime-rules" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
@@ -666,25 +659,11 @@ export function AwardsConfigurationTab() {
               <span className="hidden sm:inline">EBA</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="boot-calculator" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Scale className="h-4 w-4" />
-              <span className="hidden sm:inline">BOOT</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="calculator" 
+              value="pay-preview" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Calculator className="h-4 w-4" />
-              <span className="hidden sm:inline">Calculator</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="simulation" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Simulate</span>
+              <span className="hidden sm:inline">Pay Preview</span>
             </TabsTrigger>
             <TabsTrigger 
               value="history" 
