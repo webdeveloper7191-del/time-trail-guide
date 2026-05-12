@@ -18,53 +18,23 @@ import {
   Zap, TrendingUp, Copy, Scale, Timer, DollarSign, Info,
   Calendar, Moon, Sun, Star, Play, ChevronDown, ArrowRight, CircleDollarSign
 } from 'lucide-react';
-import { 
-  calculateDailyOvertime, 
-  setOvertimeRules, 
-  OvertimeBreakdown 
+import {
+  calculateDailyOvertime,
+  setOvertimeRules,
+  OvertimeBreakdown
 } from '@/lib/unifiedOvertimeCalculator';
+import { OvertimeRuleConfig } from '@/contexts/OvertimeRulesContext';
+import { australianAwards } from '@/data/australianAwards';
 
-// Overtime rule type definition
+// Re-export so existing imports keep working
+export type { OvertimeRuleConfig };
+
 // Maximum caps for validation
 const MAX_OT_MULTIPLIER = 3.0;
 const MAX_PENALTY_MULTIPLIER = 3.5;
 const MAX_DAILY_OT_HOURS = 16;
 const MAX_WEEKLY_OT_HOURS = 60;
 
-export interface OvertimeRuleConfig {
-  id: string;
-  name: string;
-  description: string;
-  category: 'daily' | 'weekly' | 'penalty' | 'special';
-  isActive: boolean;
-  isDefault: boolean;
-  
-  // Thresholds
-  dailyThreshold?: number;
-  weeklyThreshold?: number;
-  
-  // Caps
-  maxDailyOTHours?: number;
-  maxWeeklyOTHours?: number;
-  
-  // Multipliers (as decimals, e.g., 1.5 for time-and-a-half)
-  overtimeMultiplier: number;
-  doubleTimeMultiplier?: number;
-  doubleTimeThreshold?: number;
-  
-  // Day/time specific
-  applicableDays?: ('weekday' | 'saturday' | 'sunday' | 'public_holiday')[];
-  timeRange?: { start: string; end: string };
-  
-  // Penalty loadings (percentage, e.g., 25 for 25%)
-  penaltyLoading?: number;
-  
-  // Award linkage
-  awardIds?: string[];
-  
-  createdAt: string;
-  updatedAt: string;
-}
 
 const defaultRules: OvertimeRuleConfig[] = [
   {
