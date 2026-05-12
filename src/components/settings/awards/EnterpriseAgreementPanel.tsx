@@ -296,7 +296,7 @@ const statusColors: Record<AgreementStatus, string> = {
 export function EnterpriseAgreementPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEBA, setSelectedEBA] = useState<EnterpriseAgreement | null>(null);
-  const [showCreatePanel, setShowCreatePanel] = useState(false);
+  // (Create panel removed — creation flows through the EBAWizard)
   const [showComparePanel, setShowComparePanel] = useState(false);
   const [showMultiAwardPanel, setShowMultiAwardPanel] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<MultiAwardEmployeeDisplay | null>(null);
@@ -341,9 +341,10 @@ export function EnterpriseAgreementPanel() {
   };
 
   const filteredEBAs = ebas.filter(eba => {
-    const matchesSearch = eba.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eba.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eba.fwcApprovalNumber.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = eba.name.toLowerCase().includes(q) ||
+      eba.code.toLowerCase().includes(q) ||
+      (eba.fwcApprovalNumber?.toLowerCase().includes(q) ?? false);
     const matchesStatus = statusFilter === 'all' || eba.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -360,44 +361,60 @@ export function EnterpriseAgreementPanel() {
     setShowEditWizard(false);
   };
 
-  const handleCreateAgreement = () => {
-    toast.success('Enterprise Agreement created successfully', {
-      description: `${newAgreement.name} has been added to the system`,
-    });
-    setShowCreatePanel(false);
-    setNewAgreement({
-      name: '',
-      code: '',
-      type: 'enterprise_agreement',
-      underlyingAwardId: '',
-      commencementDate: '',
-      nominalExpiryDate: '',
-      fwcApprovalNumber: '',
-      coverageDescription: '',
-      applicableStates: [],
-      superannuationRate: 11.5,
-    });
-  };
-
+  // ── Wired action handlers ──────────────────────────────────────────────
   const handleExportEBA = (eba: EnterpriseAgreement) => {
-    toast.success('Agreement exported', {
-      description: `${eba.name} exported to PDF`,
-    });
+    const blob = new Blob([JSON.stringify(eba, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${eba.code}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Agreement exported', { description: `${eba.code}.json downloaded` });
   };
 
   const handleDuplicateEBA = (eba: EnterpriseAgreement) => {
-    toast.success('Agreement duplicated', {
-      description: `Copy of ${eba.name} created`,
-    });
+    const clone: EnterpriseAgreement = {
+      ...eba,
+      id: `eba-${Date.now()}`,
+      name: `${eba.name} (Copy)`,
+      code: `${eba.code}-COPY`,
+      status: 'pending_approval',
+      version: '1.0',
+      previousVersionId: eba.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setEbas(prev => [...prev, clone]);
+    toast.success('Agreement duplicated', { description: `${clone.name} created as a draft` });
   };
 
-  const toggleStateSelection = (state: AustralianState) => {
-    setNewAgreement(prev => ({
-      ...prev,
-      applicableStates: prev.applicableStates.includes(state)
-        ? prev.applicableStates.filter(s => s !== state)
-        : [...prev.applicableStates, state],
-    }));
+  const handleDeleteEBA = (eba: EnterpriseAgreement) => {
+    setEbas(prev => prev.filter(e => e.id !== eba.id));
+    setEbaToDelete(null);
+    setSelectedEBA(null);
+    toast.success('Agreement deleted', { description: `${eba.name} has been removed` });
+  };
+
+  const handleCreateVariation = (eba: EnterpriseAgreement) => {
+    const variation: EnterpriseAgreement = {
+      ...eba,
+      id: `eba-${Date.now()}`,
+      name: `${eba.name} — Variation`,
+      code: `${eba.code}-V${parseInt(eba.version) + 1}`,
+      status: 'pending_approval',
+      version: `${parseInt(eba.version) + 1}.0`,
+      previousVersionId: eba.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setEbas(prev => [...prev, variation]);
+    toast.success('Variation created', { description: `Version ${variation.version} drafted` });
+  };
+
+  const handleMarkSuperseded = (eba: EnterpriseAgreement) => {
+    setEbas(prev => prev.map(e => e.id === eba.id ? { ...e, status: 'superseded' as AgreementStatus } : e));
+    toast.success('Agreement marked as superseded');
   };
 
   return (
