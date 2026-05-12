@@ -901,7 +901,7 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
               {/* Scope: Award + Classification + Priority + FWC clause */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Building2Icon />
+                  <CircleDollarSign className="h-4 w-4 text-primary" />
                   <Label className="text-base font-medium">Rule Scope</Label>
                 </div>
 
