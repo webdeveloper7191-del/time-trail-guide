@@ -898,7 +898,104 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
 
               <Separator />
 
-              {/* Daily Threshold */}
+              {/* Scope: Award + Classification + Priority + FWC clause */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Building2Icon />
+                  <Label className="text-base font-medium">Rule Scope</Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Apply to Awards</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {australianAwards.map(award => {
+                      const checked = formData.awardIds.includes(award.id);
+                      return (
+                        <button
+                          type="button"
+                          key={award.id}
+                          onClick={() => setFormData(prev => ({
+                            ...prev,
+                            awardIds: checked
+                              ? prev.awardIds.filter(id => id !== award.id)
+                              : [...prev.awardIds, award.id],
+                            classificationId: checked && prev.classificationId ? '' : prev.classificationId,
+                          }))}
+                          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                            checked
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted/40 text-foreground border-border hover:border-primary/40'
+                          }`}
+                        >
+                          {award.shortName}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty to apply to all awards (global rule). Award-scoped rules win over global rules.
+                  </p>
+                </div>
+
+                {formData.awardIds.length === 1 && (() => {
+                  const award = australianAwards.find(a => a.id === formData.awardIds[0]);
+                  if (!award) return null;
+                  return (
+                    <div className="space-y-2">
+                      <Label>Classification (optional)</Label>
+                      <Select
+                        value={formData.classificationId || 'all'}
+                        onValueChange={(v) => setFormData(prev => ({ ...prev, classificationId: v === 'all' ? '' : v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
+                          <SelectItem value="all">All classifications</SelectItem>
+                          {award.classifications.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.level}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Classification-specific rules win over award-level rules.
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <Label>Priority</Label>
+                    <span className="font-medium">{formData.priority}</span>
+                  </div>
+                  <Slider
+                    value={[formData.priority]}
+                    onValueChange={([v]) => setFormData(prev => ({ ...prev, priority: v }))}
+                    min={0}
+                    max={1000}
+                    step={10}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Higher priority wins when multiple rules of the same scope match. Ties broken by most recently updated.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>FWC Clause Reference (optional)</Label>
+                  <Input
+                    placeholder="e.g. MA000120 cl. 21.2"
+                    value={formData.fwcClause}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fwcClause: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Link this rule to an FWC clause for traceability and compliance audit.
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
               {formData.category === 'daily' && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
