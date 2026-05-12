@@ -175,6 +175,10 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
     timeRangeEnd: '',
     maxDailyOTHours: 4 as number | undefined,
     maxWeeklyOTHours: 20 as number | undefined,
+    awardIds: [] as string[],
+    classificationId: '' as string,
+    priority: 100,
+    fwcClause: '',
   });
 
   const resetForm = () => {
@@ -193,6 +197,10 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
       timeRangeEnd: '',
       maxDailyOTHours: 4,
       maxWeeklyOTHours: 20,
+      awardIds: [],
+      classificationId: '',
+      priority: 100,
+      fwcClause: '',
     });
     setEditingRule(null);
   };
