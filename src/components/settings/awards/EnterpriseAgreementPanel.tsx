@@ -458,7 +458,7 @@ export function EnterpriseAgreementPanel() {
     const matchesSearch = eba.name.toLowerCase().includes(q) ||
       eba.code.toLowerCase().includes(q) ||
       (eba.fwcApprovalNumber?.toLowerCase().includes(q) ?? false);
-    const matchesStatus = statusFilter === 'all' || eba.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || deriveEffectiveStatus(eba) === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
