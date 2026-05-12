@@ -225,6 +225,7 @@ export function OnCallAllowancePanel() {
       weekendRate: formData.weekendRate ? parseFloat(formData.weekendRate) : undefined,
       publicHolidayMultiplier: formData.publicHolidayMultiplier ? parseFloat(formData.publicHolidayMultiplier) : undefined,
       applicableAwards: formData.applicableAwards,
+      applicableClassifications: formData.applicableClassifications,
       isActive: editingAllowance?.isActive ?? true,
       stackable: formData.stackable,
       excludesWith: formData.excludesWith,
