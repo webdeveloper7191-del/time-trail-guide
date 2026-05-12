@@ -694,9 +694,11 @@ export function EnterpriseAgreementPanel() {
                         <Badge className={statusColors[effectiveStatus]}>
                           {agreementStatusLabels[effectiveStatus]}
                         </Badge>
-                        <Badge className={expiryStatus.badge}>
-                          {expiryStatus.message}
-                        </Badge>
+                        {effectiveStatus === 'active' && (
+                          <Badge className={expiryStatus.badge}>
+                            {expiryStatus.message}
+                          </Badge>
+                        )}
                       </div>
                       <CardDescription className="mt-1">{eba.code} • FWC: {eba.fwcApprovalNumber}</CardDescription>
                     </div>
@@ -753,8 +755,8 @@ export function EnterpriseAgreementPanel() {
                       {selectedEBA.code} • FWC: {selectedEBA.fwcApprovalNumber}
                     </SheetDescription>
                   </div>
-                  <Badge className={statusColors[selectedEBA.status]}>
-                    {agreementStatusLabels[selectedEBA.status]}
+                  <Badge className={statusColors[deriveEffectiveStatus(selectedEBA)]}>
+                    {agreementStatusLabels[deriveEffectiveStatus(selectedEBA)]}
                   </Badge>
                 </div>
               </SheetHeader>
