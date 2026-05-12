@@ -53,6 +53,7 @@ interface OnCallAllowance {
   weekendRate?: number;
   publicHolidayMultiplier?: number;
   applicableAwards: AwardType[];
+  applicableClassifications?: string[]; // free-form labels e.g. ["Level 3", "Senior Educator"] — empty = all
   isActive: boolean;
   // Stackability settings
   stackable: boolean;
@@ -137,6 +138,8 @@ export function OnCallAllowancePanel() {
     weekendRate: '',
     publicHolidayMultiplier: '',
     applicableAwards: [] as AwardType[],
+    applicableClassifications: [] as string[],
+    classificationInput: '',
     stackable: true,
     excludesWith: [] as string[],
     priority: 1,
@@ -161,6 +164,8 @@ export function OnCallAllowancePanel() {
       weekendRate: '',
       publicHolidayMultiplier: '',
       applicableAwards: [],
+      applicableClassifications: [],
+      classificationInput: '',
       stackable: true,
       excludesWith: [],
       priority: 1,
@@ -184,6 +189,8 @@ export function OnCallAllowancePanel() {
         weekendRate: allowance.weekendRate?.toString() || '',
         publicHolidayMultiplier: allowance.publicHolidayMultiplier?.toString() || '',
         applicableAwards: allowance.applicableAwards,
+        applicableClassifications: allowance.applicableClassifications || [],
+        classificationInput: '',
         stackable: allowance.stackable,
         excludesWith: allowance.excludesWith,
         priority: allowance.priority,
@@ -218,6 +225,7 @@ export function OnCallAllowancePanel() {
       weekendRate: formData.weekendRate ? parseFloat(formData.weekendRate) : undefined,
       publicHolidayMultiplier: formData.publicHolidayMultiplier ? parseFloat(formData.publicHolidayMultiplier) : undefined,
       applicableAwards: formData.applicableAwards,
+      applicableClassifications: formData.applicableClassifications,
       isActive: editingAllowance?.isActive ?? true,
       stackable: formData.stackable,
       excludesWith: formData.excludesWith,
@@ -706,6 +714,67 @@ export function OnCallAllowancePanel() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Applicable Classifications (Optional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g. Level 3, Senior Educator"
+                    value={formData.classificationInput}
+                    onChange={(e) => setFormData(prev => ({ ...prev, classificationInput: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && formData.classificationInput.trim()) {
+                        e.preventDefault();
+                        const tag = formData.classificationInput.trim();
+                        if (!formData.applicableClassifications.includes(tag)) {
+                          setFormData(prev => ({
+                            ...prev,
+                            applicableClassifications: [...prev.applicableClassifications, tag],
+                            classificationInput: '',
+                          }));
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const tag = formData.classificationInput.trim();
+                      if (tag && !formData.applicableClassifications.includes(tag)) {
+                        setFormData(prev => ({
+                          ...prev,
+                          applicableClassifications: [...prev.applicableClassifications, tag],
+                          classificationInput: '',
+                        }));
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                {formData.applicableClassifications.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {formData.applicableClassifications.map(tag => (
+                      <Badge
+                        key={tag}
+                        variant="secondary"
+                        className="text-xs cursor-pointer hover:bg-destructive/20"
+                        onClick={() => setFormData(prev => ({
+                          ...prev,
+                          applicableClassifications: prev.applicableClassifications.filter(t => t !== tag),
+                        }))}
+                      >
+                        {tag} ×
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Press Enter or click Add. Leave empty to apply to all classifications under the selected awards.
+                </p>
               </div>
             </TabsContent>
 
