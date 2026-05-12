@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { AwardSettingsHelpGuide } from './AwardSettingsHelpGuide';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -110,7 +111,7 @@ export function PenaltyRatesEditorPanel() {
   const [editingRate, setEditingRate] = useState<PenaltyRate | null>(null);
   const [newRate, setNewRate] = useState({
     awardId: '',
-    classificationId: '',
+    classificationIds: [] as string[],
     type: 'saturday' as PenaltyRate['type'],
     customPercentage: '',
     effectiveFrom: new Date().toISOString().split('T')[0],
@@ -140,7 +141,7 @@ export function PenaltyRatesEditorPanel() {
   const resetForm = () => {
     setNewRate({
       awardId: '',
-      classificationId: '',
+      classificationIds: [],
       type: 'saturday',
       customPercentage: '',
       effectiveFrom: new Date().toISOString().split('T')[0],
@@ -154,7 +155,7 @@ export function PenaltyRatesEditorPanel() {
       setEditingRate(rate);
       setNewRate({
         awardId: rate.awardId,
-        classificationId: rate.classificationId || '',
+        classificationIds: rate.classificationId ? [rate.classificationId] : [],
         type: rate.type,
         customPercentage: (rate.customPercentage || rate.basePercentage).toString(),
         effectiveFrom: rate.effectiveFrom,
@@ -178,21 +179,31 @@ export function PenaltyRatesEditorPanel() {
     }
 
     const award = australianAwards.find(a => a.id === newRate.awardId);
-    const rate: PenaltyRate = {
-      id: Date.now().toString(),
+    // Fan-out: create one rate record per selected classification, or a single
+    // award-wide rule if none are picked.
+    const targets = newRate.classificationIds.length > 0
+      ? newRate.classificationIds
+      : [undefined as string | undefined];
+
+    const newRates: PenaltyRate[] = targets.map((classificationId, idx) => ({
+      id: `${Date.now()}-${idx}`,
       awardId: newRate.awardId,
       awardName: award?.name || '',
-      classificationId: newRate.classificationId || undefined,
+      classificationId,
       type: newRate.type,
       basePercentage: getBasePercentage(newRate.awardId, newRate.type),
       customPercentage: parseFloat(newRate.customPercentage),
       isCustom: true,
       effectiveFrom: newRate.effectiveFrom,
       notes: newRate.notes,
-    };
+    }));
 
-    setPenaltyRates([...penaltyRates, rate]);
-    toast.success('Custom penalty rate added');
+    setPenaltyRates([...penaltyRates, ...newRates]);
+    toast.success(
+      newRates.length > 1
+        ? `${newRates.length} custom penalty rates added`
+        : 'Custom penalty rate added'
+    );
     handleClosePanel();
   };
 
@@ -270,6 +281,27 @@ export function PenaltyRatesEditorPanel() {
 
   return (
     <div className="space-y-6">
+      <AwardSettingsHelpGuide
+        title="Penalty Rates"
+        summary="Configure when staff get paid more for working unsociable hours — Saturdays, Sundays, public holidays, evenings, nights, and early mornings."
+        purpose="Penalty rates apply on top of the base hourly rate. They are time-based loadings, separate from overtime (which is hours-based) and allowances (which are task-based)."
+        whenToUse={[
+          'Your award uses different penalty percentages than the FWC default.',
+          'You want a higher Sunday or public holiday rate for retention.',
+          'A specific classification needs its own penalty rule (e.g. shift workers).',
+        ]}
+        howItWorks={[
+          'Pick an award and (optionally) one or more classifications — leave empty to apply to all.',
+          'Choose the penalty type (Saturday, Sunday, etc.) and enter the new percentage of the base rate.',
+          'On save, one penalty record is created per selected classification.',
+          'Active penalties feed into Pay Preview, timesheet costing, and the shift cost engine.',
+        ]}
+        bestPractices={[
+          'Penalties are time-of-week loadings; use OT Rules for hours-based overtime instead.',
+          'Public holiday penalties usually stack with weekend penalties — verify against your award text.',
+        ]}
+        relatedTabs={['OT Rules', 'Allowances', 'Pay Preview']}
+      />
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Penalty Rates Editor</h3>
@@ -304,7 +336,7 @@ export function PenaltyRatesEditorPanel() {
               <Label>Award *</Label>
               <Select 
                 value={newRate.awardId} 
-                onValueChange={(v) => setNewRate(prev => ({ ...prev, awardId: v, classificationId: '' }))}
+                onValueChange={(v) => setNewRate(prev => ({ ...prev, awardId: v, classificationIds: [] }))}
                 disabled={!!editingRate}
               >
                 <SelectTrigger>
@@ -320,22 +352,40 @@ export function PenaltyRatesEditorPanel() {
 
             {selectedAwardData && (
               <div className="space-y-2">
-                <Label>Classification (Optional - leave empty for all)</Label>
-                <Select 
-                  value={newRate.classificationId} 
-                  onValueChange={(v) => setNewRate(prev => ({ ...prev, classificationId: v }))}
-                  disabled={!!editingRate}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="All classifications" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
-                    <SelectItem value="">All Classifications</SelectItem>
-                    {selectedAwardData.classifications.map(cls => (
-                      <SelectItem key={cls.id} value={cls.id}>{cls.level} - {cls.description}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Classifications (Optional - leave empty for all)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Select one or many. A separate penalty record is created per classification so each can be tuned independently.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedAwardData.classifications.map(cls => {
+                    const checked = newRate.classificationIds.includes(cls.id);
+                    return (
+                      <button
+                        type="button"
+                        key={cls.id}
+                        disabled={!!editingRate}
+                        onClick={() => setNewRate(prev => ({
+                          ...prev,
+                          classificationIds: checked
+                            ? prev.classificationIds.filter(id => id !== cls.id)
+                            : [...prev.classificationIds, cls.id],
+                        }))}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors disabled:opacity-50 ${
+                          checked
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-muted/40 text-foreground border-border hover:border-primary/40'
+                        }`}
+                      >
+                        {cls.level}
+                      </button>
+                    );
+                  })}
+                </div>
+                {editingRate && (
+                  <p className="text-[11px] text-muted-foreground italic">
+                    Classification scope cannot be changed when editing — delete and recreate to re-scope.
+                  </p>
+                )}
               </div>
             )}
 

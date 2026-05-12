@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { AwardSettingsHelpGuide } from './AwardSettingsHelpGuide';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -431,7 +432,7 @@ export function CustomRuleBuilderPanel() {
     description: string;
     type: CustomRule['type'];
     awardId: string;
-    classificationId: string;
+    classificationIds: string[];
     conditionGroups: ConditionGroup[];
     groupLogic: 'AND' | 'OR';
     actions: RuleAction[];
@@ -444,7 +445,7 @@ export function CustomRuleBuilderPanel() {
     description: '',
     type: 'overtime',
     awardId: '',
-    classificationId: '',
+    classificationIds: [],
     conditionGroups: [{
       id: '1',
       logic: 'AND',
@@ -551,7 +552,7 @@ export function CustomRuleBuilderPanel() {
       description: rule.description,
       type: rule.type,
       awardId: rule.awardId || '',
-      classificationId: rule.classificationId || '',
+      classificationIds: rule.classificationId ? [rule.classificationId] : [],
       conditionGroups: JSON.parse(JSON.stringify(rule.conditionGroups)),
       groupLogic: rule.groupLogic,
       actions: JSON.parse(JSON.stringify(rule.actions)),
@@ -570,7 +571,7 @@ export function CustomRuleBuilderPanel() {
       description: '',
       type: 'overtime',
       awardId: '',
-      classificationId: '',
+      classificationIds: [],
       conditionGroups: [{
         id: '1',
         logic: 'AND',
@@ -593,8 +594,13 @@ export function CustomRuleBuilderPanel() {
 
     const timestamp = new Date().toISOString();
 
+    // Strip classificationIds (form-only field) — rules store a single classificationId.
+    const { classificationIds, ...formCommon } = ruleForm;
+    const targets = classificationIds.length > 0 ? classificationIds : [undefined as string | undefined];
+
     if (editingRule) {
-      // Create version history entry
+      // Editing keeps a single rule; use the first selected classification.
+      const classificationId = targets[0];
       const newVersion: RuleVersion = {
         id: `v${editingRule.id}-${(editingRule.currentVersion || 0) + 1}`,
         version: (editingRule.currentVersion || 0) + 1,
@@ -609,12 +615,13 @@ export function CustomRuleBuilderPanel() {
         } as Omit<CustomRule, 'versions'>,
       };
 
-      setRules(prev => prev.map(r => 
-        r.id === editingRule.id 
-          ? { 
-              ...r, 
-              ...ruleForm, 
-              updatedAt: timestamp.split('T')[0], 
+      setRules(prev => prev.map(r =>
+        r.id === editingRule.id
+          ? {
+              ...r,
+              ...formCommon,
+              classificationId,
+              updatedAt: timestamp.split('T')[0],
               isCustom: true,
               currentVersion: (r.currentVersion || 0) + 1,
               versions: [newVersion, ...(r.versions || [])],
@@ -623,38 +630,41 @@ export function CustomRuleBuilderPanel() {
       ));
       toast.success('Rule updated successfully. Version saved to history.');
     } else {
-      const newRuleId = Date.now().toString();
-      const initialVersion: RuleVersion = {
-        id: `v${newRuleId}-1`,
-        version: 1,
-        timestamp,
-        changedBy: 'Current User',
-        changeType: 'created',
-        changeSummary: 'Initial rule creation',
-        snapshot: {
+      const newRules: RuleWithVersions[] = targets.map((classificationId, i) => {
+        const newRuleId = `${Date.now()}-${i}`;
+        const initialVersion: RuleVersion = {
+          id: `v${newRuleId}-1`,
+          version: 1,
+          timestamp,
+          changedBy: 'Current User',
+          changeType: 'created',
+          changeSummary: 'Initial rule creation',
+          snapshot: {
+            id: newRuleId,
+            ...formCommon,
+            classificationId,
+            isActive: true,
+            isCustom: true,
+            createdAt: timestamp.split('T')[0],
+          },
+        };
+        return {
           id: newRuleId,
-          ...ruleForm,
+          ...formCommon,
+          classificationId,
           isActive: true,
           isCustom: true,
           createdAt: timestamp.split('T')[0],
-        },
-      };
-
-      const newRule: RuleWithVersions = {
-        id: newRuleId,
-        ...ruleForm,
-        isActive: true,
-        isCustom: true,
-        createdAt: timestamp.split('T')[0],
-        usageCount: 0,
-        testResult: 'pending',
-        currentVersion: 1,
-        versions: [initialVersion],
-      };
-      setRules([...rules, newRule]);
-      toast.success('Rule created successfully');
+          usageCount: 0,
+          testResult: 'pending',
+          currentVersion: 1,
+          versions: [initialVersion],
+        };
+      });
+      setRules([...rules, ...newRules]);
+      toast.success(newRules.length > 1 ? `${newRules.length} rules created` : 'Rule created successfully');
     }
-    
+
     setIsPanelOpen(false);
     resetForm();
   };
@@ -1131,6 +1141,27 @@ export function CustomRuleBuilderPanel() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        <AwardSettingsHelpGuide
+          title="Custom Rule Builder"
+          summary="Build conditional pay rules that the dedicated tabs (OT, Penalties, Allowances, On-Call) can't express on their own."
+          purpose="The rule builder is escape-hatch logic for cases like 'pay 175% only when shift exceeds 6 hours AND staff member holds a First Aid qualification AND it's a Sunday'. Use a dedicated tab whenever you can — use this only for genuinely conditional rules."
+          whenToUse={[
+            'A rule depends on multiple conditions (time + qualification + employment type, etc.).',
+            'You need a temporary rule with a sunset date.',
+            'A site-specific or trial pay condition needs to be tested before being baked into the award.',
+          ]}
+          howItWorks={[
+            'Pick an award and one or many classifications (multi-select).',
+            'Add IF conditions (field + operator + value) joined with AND/OR logic.',
+            'Add THEN actions — apply a multiplier, add an allowance, set a flat rate, or add a loading.',
+            'Set a priority — higher priority rules win when multiple match the same shift.',
+          ]}
+          bestPractices={[
+            'Test new rules in Pay Preview before activating them.',
+            'For simple penalties/allowances, use the dedicated tabs — they are easier to audit.',
+          ]}
+          relatedTabs={['OT Rules', 'Penalties', 'Allowances', 'On-Call', 'Pay Preview']}
+        />
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -1638,12 +1669,12 @@ export function CustomRuleBuilderPanel() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Apply to Award</Label>
-                          <Select 
-                            value={ruleForm.awardId} 
-                            onValueChange={(v) => setRuleForm(prev => ({ ...prev, awardId: v, classificationId: '' }))}
+                          <Select
+                            value={ruleForm.awardId}
+                            onValueChange={(v) => setRuleForm(prev => ({ ...prev, awardId: v, classificationIds: [] }))}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="All Awards" />
@@ -1659,24 +1690,43 @@ export function CustomRuleBuilderPanel() {
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label>Classification</Label>
-                          <Select 
-                            value={ruleForm.classificationId} 
-                            onValueChange={(v) => setRuleForm(prev => ({ ...prev, classificationId: v }))}
-                            disabled={!ruleForm.awardId}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder={ruleForm.awardId ? "All Classifications" : "Select Award First"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="">All Classifications</SelectItem>
-                              {selectedAwardClassifications.map(c => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.level} - {c.description}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Label>Classifications</Label>
+                          {!ruleForm.awardId ? (
+                            <p className="text-xs text-muted-foreground italic h-10 flex items-center">
+                              Select an award to scope this rule by classification.
+                            </p>
+                          ) : (
+                            <>
+                              <div className="flex flex-wrap gap-2">
+                                {selectedAwardClassifications.map(c => {
+                                  const checked = ruleForm.classificationIds.includes(c.id);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={c.id}
+                                      onClick={() => setRuleForm(prev => ({
+                                        ...prev,
+                                        classificationIds: checked
+                                          ? prev.classificationIds.filter(id => id !== c.id)
+                                          : [...prev.classificationIds, c.id],
+                                      }))}
+                                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                                        checked
+                                          ? 'bg-primary text-primary-foreground border-primary'
+                                          : 'bg-muted/40 text-foreground border-border hover:border-primary/40'
+                                      }`}
+                                      title={c.description}
+                                    >
+                                      {c.level}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground">
+                                Pick one or many. A separate rule is created per classification on save (empty = all classifications).
+                              </p>
+                            </>
+                          )}
                         </div>
                       </div>
 
