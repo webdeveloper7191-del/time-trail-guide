@@ -1355,6 +1355,26 @@ function RuleCard({ rule, onEdit, onToggle, onDelete, onDuplicate }: RuleCardPro
               {rule.isDefault && (
                 <Badge variant="secondary" className="text-xs">Default</Badge>
               )}
+              {rule.source === 'fwc' && (
+                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-700 border-blue-200">FWC</Badge>
+              )}
+              {rule.source === 'eba' && (
+                <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-700 border-purple-200">EBA</Badge>
+              )}
+              {rule.source === 'custom' && !rule.isDefault && (
+                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-700 border-amber-200">Custom</Badge>
+              )}
+              <Badge variant="outline" className="text-xs">P{rule.priority ?? 100}</Badge>
+              {rule.awardIds && rule.awardIds.length > 0 ? (
+                <Badge variant="outline" className="text-xs">
+                  {rule.awardIds.length === 1 ? '1 award' : `${rule.awardIds.length} awards`}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs">Global</Badge>
+              )}
+              {rule.fwcClause && (
+                <Badge variant="outline" className="text-[10px] text-muted-foreground">{rule.fwcClause}</Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">{rule.description}</p>
             
