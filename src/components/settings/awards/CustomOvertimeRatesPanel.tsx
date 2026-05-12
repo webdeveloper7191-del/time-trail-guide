@@ -14,6 +14,12 @@ import { toast } from 'sonner';
 import { Plus, Clock, Percent, Edit2, Trash2, CheckCircle2, AlertCircle, Zap, Search, Building2, Filter, RotateCcw, Download } from 'lucide-react';
 import { australianAwards } from '@/data/australianAwards';
 
+/**
+ * Legacy overtime rule shape used by this panel. The canonical type is
+ * `OvertimeRuleConfig` in `@/contexts/OvertimeRulesContext`. Both share the same
+ * resolution model (award+classification > award > global, then priority desc).
+ * Resolve via `resolveRule()` from the context module.
+ */
 interface OvertimeRule {
   id: string;
   name: string;
@@ -33,6 +39,12 @@ interface OvertimeRule {
   };
   isActive: boolean;
   isCustom: boolean;
+  /** Higher priority wins when multiple rules match. Default 100. */
+  priority?: number;
+  /** Provenance: 'fwc' | 'eba' | 'custom' | 'default' */
+  source?: 'fwc' | 'eba' | 'custom' | 'default';
+  /** Optional clause reference for traceability */
+  fwcClause?: string;
 }
 
 const mockOvertimeRules: OvertimeRule[] = [
