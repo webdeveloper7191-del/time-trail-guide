@@ -1131,6 +1131,27 @@ export function CustomRuleBuilderPanel() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        <AwardSettingsHelpGuide
+          title="Custom Rule Builder"
+          summary="Build conditional pay rules that the dedicated tabs (OT, Penalties, Allowances, On-Call) can't express on their own."
+          purpose="The rule builder is escape-hatch logic for cases like 'pay 175% only when shift exceeds 6 hours AND staff member holds a First Aid qualification AND it's a Sunday'. Use a dedicated tab whenever you can — use this only for genuinely conditional rules."
+          whenToUse={[
+            'A rule depends on multiple conditions (time + qualification + employment type, etc.).',
+            'You need a temporary rule with a sunset date.',
+            'A site-specific or trial pay condition needs to be tested before being baked into the award.',
+          ]}
+          howItWorks={[
+            'Pick an award and one or many classifications (multi-select).',
+            'Add IF conditions (field + operator + value) joined with AND/OR logic.',
+            'Add THEN actions — apply a multiplier, add an allowance, set a flat rate, or add a loading.',
+            'Set a priority — higher priority rules win when multiple match the same shift.',
+          ]}
+          bestPractices={[
+            'Test new rules in Pay Preview before activating them.',
+            'For simple penalties/allowances, use the dedicated tabs — they are easier to audit.',
+          ]}
+          relatedTabs={['OT Rules', 'Penalties', 'Allowances', 'On-Call', 'Pay Preview']}
+        />
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

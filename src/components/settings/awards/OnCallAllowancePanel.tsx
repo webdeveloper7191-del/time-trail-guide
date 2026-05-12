@@ -285,6 +285,27 @@ export function OnCallAllowancePanel() {
 
   return (
     <div className="space-y-6">
+      <AwardSettingsHelpGuide
+        title="On-Call & Standby"
+        summary="A specialised allowance type with its own rules: standby pay while waiting, callback minimum-engagement, and recall multipliers when a staff member is actually called in."
+        purpose="On-call needs more than a flat allowance — it has standby vs. active states, minimum engagement times, and travel reimbursement. This tab keeps that complexity contained."
+        whenToUse={[
+          'Staff are rostered to be available outside normal hours (sleepover, on-call shifts).',
+          'You need to guarantee a minimum number of paid hours when called in.',
+          'Different awards or classifications need different on-call rates.',
+        ]}
+        howItWorks={[
+          'Configure the standby rate (hourly or flat) and active/callback multiplier.',
+          'Set minimum engagement (e.g. 3 hours paid even if call is 30 minutes).',
+          'Optionally add travel allowance for the journey to site.',
+          'Roster on-call shifts as usual — the engine applies the right rate based on actual vs. standby hours.',
+        ]}
+        bestPractices={[
+          'Match minimum engagement to your award — most awards mandate at least 2-4 hours.',
+          'Use Pay Preview > Overtime to test how on-call hours interact with weekly OT thresholds.',
+        ]}
+        relatedTabs={['Allowances', 'OT Rules', 'Pay Preview']}
+      />
       {/* Header Card */}
       <Card className="card-material-elevated border-l-4 border-l-blue-500">
         <CardHeader className="pb-3">

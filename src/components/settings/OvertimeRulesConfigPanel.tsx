@@ -362,6 +362,27 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
 
   return (
     <div className="space-y-6">
+      <AwardSettingsHelpGuide
+        title="Overtime Rules"
+        summary="Define when ordinary hours become overtime, and at what multiplier — daily, weekly, consecutive-days, or special loadings."
+        purpose="Overtime is hours-based (work beyond a threshold). It is distinct from penalties (time-based loadings) and allowances (task-based payments). The OT engine resolves rules by priority and scope."
+        whenToUse={[
+          'Your award has different OT thresholds than the FWC default (e.g. 7.6h instead of 8h).',
+          'You need a special loading for consecutive days, public holidays, or specific shift types.',
+          'A specific award/classification combination needs its own OT rule.',
+        ]}
+        howItWorks={[
+          'Pick a category (daily, weekly, consecutive, penalty, special) and set the threshold.',
+          'Set the OT multiplier (e.g. 1.5x) and optionally a double-time multiplier after a second threshold.',
+          'Scope the rule: pick one or many awards, then one or many classifications (multi-select). Empty = applies to all.',
+          'Set a priority — narrower scopes (classification > award > global) and higher priorities win.',
+        ]}
+        bestPractices={[
+          'Use Pay Preview > Overtime to validate how rules interact before publishing.',
+          'Stick to FWC clauses when possible — paste the clause reference for traceable compliance.',
+        ]}
+        relatedTabs={['Penalties', 'Pay Preview', 'Audit']}
+      />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

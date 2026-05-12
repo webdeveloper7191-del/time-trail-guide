@@ -270,6 +270,27 @@ export function PenaltyRatesEditorPanel() {
 
   return (
     <div className="space-y-6">
+      <AwardSettingsHelpGuide
+        title="Penalty Rates"
+        summary="Configure when staff get paid more for working unsociable hours — Saturdays, Sundays, public holidays, evenings, nights, and early mornings."
+        purpose="Penalty rates apply on top of the base hourly rate. They are time-based loadings, separate from overtime (which is hours-based) and allowances (which are task-based)."
+        whenToUse={[
+          'Your award uses different penalty percentages than the FWC default.',
+          'You want a higher Sunday or public holiday rate for retention.',
+          'A specific classification needs its own penalty rule (e.g. shift workers).',
+        ]}
+        howItWorks={[
+          'Pick an award and (optionally) one or more classifications — leave empty to apply to all.',
+          'Choose the penalty type (Saturday, Sunday, etc.) and enter the new percentage of the base rate.',
+          'On save, one penalty record is created per selected classification.',
+          'Active penalties feed into Pay Preview, timesheet costing, and the shift cost engine.',
+        ]}
+        bestPractices={[
+          'Penalties are time-of-week loadings; use OT Rules for hours-based overtime instead.',
+          'Public holiday penalties usually stack with weekend penalties — verify against your award text.',
+        ]}
+        relatedTabs={['OT Rules', 'Allowances', 'Pay Preview']}
+      />
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Penalty Rates Editor</h3>

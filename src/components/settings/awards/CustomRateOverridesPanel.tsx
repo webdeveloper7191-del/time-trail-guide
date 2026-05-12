@@ -293,6 +293,27 @@ export function CustomRateOverridesPanel() {
 
   return (
     <div className="space-y-6">
+      <AwardSettingsHelpGuide
+        title="Custom Rate Overrides"
+        summary="Pay specific classifications above the published award minimum without disabling the underlying award rule."
+        purpose="Use overrides to retain experienced staff, match local market rates, or honour individual contract terms while keeping the award engine as the single source of truth."
+        whenToUse={[
+          'You pay above-award rates for one or more classifications.',
+          'A specific staff cohort needs an adjusted base, casual loading, or shift loading.',
+          'You want a clear audit trail of who approved the change and why.',
+        ]}
+        howItWorks={[
+          'Select an award, then pick one or many classifications (multi-select).',
+          'Enter the new value, effective date, reason, and approver.',
+          'On save, one override record is created per classification — each can be toggled on/off independently.',
+          'Active overrides automatically replace the award rate in payroll, simulations, and shift cost.',
+        ]}
+        bestPractices={[
+          'Always include an effective date so historical timesheets remain accurate.',
+          'Prefer overrides over editing the underlying award — overrides preserve the FWC baseline.',
+        ]}
+        relatedTabs={['Awards', 'OT Rules', 'History', 'Audit']}
+      />
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Custom Rate Overrides</h3>

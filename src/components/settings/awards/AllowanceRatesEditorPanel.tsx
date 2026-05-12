@@ -494,6 +494,27 @@ export function AllowanceRatesEditorPanel() {
 
   return (
     <div className="space-y-6">
+      <AwardSettingsHelpGuide
+        title="Allowances"
+        summary="Configure flat or per-hour payments that compensate staff for specific tasks, conditions, or qualifications — meal allowances, travel, uniform, higher-duties, first-aid, etc."
+        purpose="Allowances are task- or condition-triggered payments, separate from penalties (time-based) and overtime (hours-based). They can apply per shift, per hour, or per occurrence."
+        whenToUse={[
+          'Your staff perform a duty that triggers an award allowance (e.g. higher classification, sleepover, travel).',
+          'You provide an above-award allowance to attract talent.',
+          'A site needs a unique allowance not in the parent award.',
+        ]}
+        howItWorks={[
+          'Choose the awards the allowance applies to (multi-select).',
+          'Set the trigger conditions — qualification held, higher classification duties, distance worked, etc.',
+          'Choose the rate type (flat, per-hour, per-km) and the amount.',
+          'Active allowances are added automatically by the timesheet and pay preview engines.',
+        ]}
+        bestPractices={[
+          'On-Call has its own dedicated tab because it has min-engagement and callback rules — do not duplicate it here.',
+          'Use clear names ("First Aid Cert allowance") so staff understand line items on payslips.',
+        ]}
+        relatedTabs={['On-Call', 'Penalties', 'Pay Preview']}
+      />
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Allowance Rates Editor</h3>
