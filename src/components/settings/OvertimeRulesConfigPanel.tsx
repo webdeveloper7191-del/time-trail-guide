@@ -276,6 +276,11 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
         : undefined,
       maxDailyOTHours: formData.category === 'daily' ? formData.maxDailyOTHours : undefined,
       maxWeeklyOTHours: formData.category === 'weekly' ? formData.maxWeeklyOTHours : undefined,
+      awardIds: formData.awardIds.length > 0 ? formData.awardIds : undefined,
+      classificationId: formData.classificationId || undefined,
+      priority: formData.priority,
+      source: editingRule?.source || 'custom',
+      fwcClause: formData.fwcClause || undefined,
       createdAt: editingRule?.createdAt || now,
       updatedAt: now,
     };
