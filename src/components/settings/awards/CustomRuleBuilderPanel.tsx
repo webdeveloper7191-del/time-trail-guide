@@ -432,7 +432,7 @@ export function CustomRuleBuilderPanel() {
     description: string;
     type: CustomRule['type'];
     awardId: string;
-    classificationId: string;
+    classificationIds: string[];
     conditionGroups: ConditionGroup[];
     groupLogic: 'AND' | 'OR';
     actions: RuleAction[];
@@ -445,7 +445,7 @@ export function CustomRuleBuilderPanel() {
     description: '',
     type: 'overtime',
     awardId: '',
-    classificationId: '',
+    classificationIds: [],
     conditionGroups: [{
       id: '1',
       logic: 'AND',
@@ -552,7 +552,7 @@ export function CustomRuleBuilderPanel() {
       description: rule.description,
       type: rule.type,
       awardId: rule.awardId || '',
-      classificationId: rule.classificationId || '',
+      classificationIds: rule.classificationId ? [rule.classificationId] : [],
       conditionGroups: JSON.parse(JSON.stringify(rule.conditionGroups)),
       groupLogic: rule.groupLogic,
       actions: JSON.parse(JSON.stringify(rule.actions)),
@@ -571,7 +571,7 @@ export function CustomRuleBuilderPanel() {
       description: '',
       type: 'overtime',
       awardId: '',
-      classificationId: '',
+      classificationIds: [],
       conditionGroups: [{
         id: '1',
         logic: 'AND',
