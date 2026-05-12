@@ -57,7 +57,6 @@ import { RateChangeHistoryPanel } from './awards/RateChangeHistoryPanel';
 import { BulkImportExportPanel } from './awards/BulkImportExportPanel';
 import { CustomRuleBuilderPanel } from './awards/CustomRuleBuilderPanel';
 import { AllowanceRatesEditorPanel } from './awards/AllowanceRatesEditorPanel';
-import { CustomOvertimeRatesPanel } from './awards/CustomOvertimeRatesPanel';
 
 import { PenaltyRatesEditorPanel } from './awards/PenaltyRatesEditorPanel';
 import { AwardComparisonPanel } from './awards/AwardComparisonPanel';
