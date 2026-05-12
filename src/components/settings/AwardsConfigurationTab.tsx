@@ -57,7 +57,6 @@ import { RateChangeHistoryPanel } from './awards/RateChangeHistoryPanel';
 import { BulkImportExportPanel } from './awards/BulkImportExportPanel';
 import { CustomRuleBuilderPanel } from './awards/CustomRuleBuilderPanel';
 import { AllowanceRatesEditorPanel } from './awards/AllowanceRatesEditorPanel';
-import { CustomOvertimeRatesPanel } from './awards/CustomOvertimeRatesPanel';
 
 import { PenaltyRatesEditorPanel } from './awards/PenaltyRatesEditorPanel';
 import { AwardComparisonPanel } from './awards/AwardComparisonPanel';
@@ -643,7 +642,7 @@ export function AwardsConfigurationTab() {
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">OT Test</span>
+              <span className="hidden sm:inline">OT Calculator</span>
             </TabsTrigger>
             <TabsTrigger 
               value="overtime-rules" 

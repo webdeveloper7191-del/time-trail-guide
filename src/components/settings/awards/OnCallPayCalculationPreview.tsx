@@ -223,7 +223,7 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
             Evaluation Scope
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className={`grid grid-cols-1 ${awardFilter !== 'all' ? 'md:grid-cols-2' : ''} gap-3`}>
             <div>
               <Label className="text-xs text-muted-foreground">Applicable Award</Label>
               <select
@@ -237,25 +237,29 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
                 ))}
               </select>
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Rule</Label>
-              <select
-                value={ruleFilter}
-                onChange={(e) => setRuleFilter(e.target.value)}
-                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
-              >
-                <option value="all">All matching rules (aggregate)</option>
-                {allowances
-                  .filter(a => a.isActive)
-                  .filter(a => awardFilter === 'all' || a.applicableAwards.includes(awardFilter as any))
-                  .map(a => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
-              </select>
-            </div>
+            {awardFilter !== 'all' && (
+              <div>
+                <Label className="text-xs text-muted-foreground">Rule</Label>
+                <select
+                  value={ruleFilter}
+                  onChange={(e) => setRuleFilter(e.target.value)}
+                  className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+                >
+                  <option value="all">All matching rules (aggregate)</option>
+                  {allowances
+                    .filter(a => a.isActive)
+                    .filter(a => a.applicableAwards.includes(awardFilter as any))
+                    .map(a => (
+                      <option key={a.id} value={a.id}>{a.name}</option>
+                    ))}
+                </select>
+              </div>
+            )}
           </div>
           <p className="text-[11px] text-muted-foreground mt-2">
-            Filter the evaluator to a specific award or single rule to see exactly what is being calculated.
+            {awardFilter === 'all'
+              ? 'Pick a specific award to drill into individual rules.'
+              : 'Filter to a single rule to see exactly what is being calculated.'}
           </p>
         </div>
 
