@@ -212,6 +212,9 @@ export function CustomOvertimeRatesPanel() {
       },
       isActive: true,
       isCustom: true,
+      priority: newRule.priority,
+      source: 'custom',
+      fwcClause: newRule.fwcClause || undefined,
     };
 
     setRules([...rules, rule]);
