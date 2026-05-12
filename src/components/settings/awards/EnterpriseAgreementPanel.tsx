@@ -88,7 +88,7 @@ import {
   EBACompareAllowances,
   EBACompareConditions,
 } from './EBAEnhancementCards';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Comprehensive mock EBA data
 const mockEBAs: EnterpriseAgreement[] = [
