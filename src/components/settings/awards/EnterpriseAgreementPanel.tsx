@@ -291,7 +291,15 @@ const statusColors: Record<AgreementStatus, string> = {
   expired: 'bg-red-500/10 text-red-700 border-red-200',
   pending_approval: 'bg-amber-500/10 text-amber-700 border-amber-200',
   superseded: 'bg-gray-500/10 text-gray-700 border-gray-200',
+  rejected: 'bg-rose-500/10 text-rose-700 border-rose-200',
 };
+
+/** Derive an effective status that respects nominal expiry — keeps badge UI honest. */
+function deriveEffectiveStatus(eba: EnterpriseAgreement): AgreementStatus {
+  if (eba.status === 'superseded' || eba.status === 'pending_approval' || eba.status === 'rejected') return eba.status;
+  if (isPast(new Date(eba.nominalExpiryDate))) return 'expired';
+  return eba.status;
+}
 
 export function EnterpriseAgreementPanel() {
   const [searchQuery, setSearchQuery] = useState('');
