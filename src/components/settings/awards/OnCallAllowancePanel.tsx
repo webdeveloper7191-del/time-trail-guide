@@ -164,6 +164,8 @@ export function OnCallAllowancePanel() {
       weekendRate: '',
       publicHolidayMultiplier: '',
       applicableAwards: [],
+      applicableClassifications: [],
+      classificationInput: '',
       stackable: true,
       excludesWith: [],
       priority: 1,
