@@ -518,10 +518,10 @@ export function OnCallAllowancePanel() {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Award className="h-5 w-5" />
-          Award-Level On-Call Defaults
+          Award-Level Baseline Rates
         </h3>
         <p className="text-sm text-muted-foreground">
-          Configure default on-call rates for each award. These serve as base rates when no specific allowance is defined.
+          These are the fallback on-call rates applied per award when an individual allowance above does not specify its own rate. Edit per-allowance rates in the cards above; edit baselines here.
         </p>
         <div className="grid gap-4">
           {(Object.keys(AWARD_NAMES) as AwardType[]).map(awardType => {
