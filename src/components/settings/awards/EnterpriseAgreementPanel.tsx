@@ -991,6 +991,25 @@ export function EnterpriseAgreementPanel() {
                     </div>
                   </ScrollArea>
                 </TabsContent>
+                <TabsContent value="boot" className="mt-4 space-y-4">
+                  <EBABootResultCard eba={selectedEBA} />
+                  <EBAPayTimelineCard eba={selectedEBA} />
+                </TabsContent>
+
+                <TabsContent value="lifecycle" className="mt-4 space-y-4">
+                  <EBALifecycleCard
+                    eba={selectedEBA}
+                    onCreateVariation={() => handleCreateVariation(selectedEBA)}
+                    onMarkSuperseded={() => handleMarkSuperseded(selectedEBA)}
+                  />
+                  <EBAVersionHistoryCard eba={selectedEBA} />
+                </TabsContent>
+
+                <TabsContent value="admin" className="mt-4 space-y-4">
+                  <EBACoverageMapCard eba={selectedEBA} />
+                  <EBAFWCDocumentCard eba={selectedEBA} />
+                  <EBAApprovalWorkflowCard eba={selectedEBA} />
+                </TabsContent>
               </Tabs>
 
               <SheetFooter className="mt-6 flex gap-2">
