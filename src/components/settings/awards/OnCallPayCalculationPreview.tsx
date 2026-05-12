@@ -62,8 +62,24 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
   const [isPublicHoliday, setIsPublicHoliday] = useState(false);
   const [wasCalledBack, setWasCalledBack] = useState(true);
   const [callbackHours, setCallbackHours] = useState(1.5);
+  const [awardFilter, setAwardFilter] = useState<string>('all');
+  const [ruleFilter, setRuleFilter] = useState<string>('all');
 
-  const activeAllowances = allowances.filter(a => a.isActive);
+  // Derive available awards from the allowance set
+  const availableAwards = useMemo(() => {
+    const set = new Set<string>();
+    allowances.forEach(a => a.applicableAwards.forEach(aw => set.add(aw)));
+    return Array.from(set);
+  }, [allowances]);
+
+  // Filter active allowances by selected award + single rule
+  const activeAllowances = useMemo(() => {
+    return allowances
+      .filter(a => a.isActive)
+      .filter(a => awardFilter === 'all' || a.applicableAwards.includes(awardFilter as any))
+      .filter(a => ruleFilter === 'all' || a.id === ruleFilter);
+  }, [allowances, awardFilter, ruleFilter]);
+
 
   // Calculate pay with exclusion logic
   const calculation = useMemo(() => {
