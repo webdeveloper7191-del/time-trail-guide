@@ -65,7 +65,7 @@ import { RateSimulationPanel } from './awards/RateSimulationPanel';
 import { AwardsMasterTable } from './awards/AwardsMasterTable';
 import { AwardUpdatesPanel } from './awards/AwardUpdatesPanel';
 import { OnCallAllowancePanel } from './awards/OnCallAllowancePanel';
-import { ModuleDependencyExplorer } from './architecture/ModuleDependencyExplorer';
+
 
 import { EnterpriseAgreementPanel } from './awards/EnterpriseAgreementPanel';
 import { AuditTrailViewer } from './awards/AuditTrailViewer';
@@ -777,10 +777,6 @@ export function AwardsConfigurationTab() {
 
         <TabsContent value="import-export" className="mt-0">
           <BulkImportExportPanel />
-        </TabsContent>
-
-        <TabsContent value="architecture" className="mt-0">
-          <ModuleDependencyExplorer />
         </TabsContent>
 
         <TabsContent value="audit-trail" className="mt-0">
