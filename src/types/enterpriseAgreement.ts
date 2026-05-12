@@ -9,7 +9,7 @@ import { AustralianState } from './leaveAccrual';
 export type AgreementType = 'modern_award' | 'enterprise_agreement' | 'individual_flexibility';
 
 // Agreement status
-export type AgreementStatus = 'active' | 'expired' | 'pending_approval' | 'superseded';
+export type AgreementStatus = 'active' | 'expired' | 'pending_approval' | 'superseded' | 'rejected';
 
 // Enterprise Agreement definition
 export interface EnterpriseAgreement {
@@ -288,4 +288,5 @@ export const agreementStatusLabels: Record<AgreementStatus, string> = {
   expired: 'Expired',
   pending_approval: 'Pending Approval',
   superseded: 'Superseded',
+  rejected: 'Rejected',
 };
