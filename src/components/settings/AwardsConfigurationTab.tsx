@@ -638,13 +638,6 @@ export function AwardsConfigurationTab() {
               <span className="hidden sm:inline">Allowances</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="overtime" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">OT Calculator</span>
-            </TabsTrigger>
-            <TabsTrigger 
               value="overtime-rules" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
@@ -666,25 +659,11 @@ export function AwardsConfigurationTab() {
               <span className="hidden sm:inline">EBA</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="boot-calculator" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Scale className="h-4 w-4" />
-              <span className="hidden sm:inline">BOOT</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="calculator" 
+              value="pay-preview" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
               <Calculator className="h-4 w-4" />
-              <span className="hidden sm:inline">Calculator</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="simulation" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Simulate</span>
+              <span className="hidden sm:inline">Pay Preview</span>
             </TabsTrigger>
             <TabsTrigger 
               value="history" 
@@ -745,10 +724,6 @@ export function AwardsConfigurationTab() {
           <AllowanceRatesEditorPanel />
         </TabsContent>
 
-        <TabsContent value="overtime" className="mt-0">
-          <OvertimeCalculatorTest />
-        </TabsContent>
-
         <TabsContent value="overtime-rules" className="mt-0">
           <OvertimeRulesConfigPanel />
         </TabsContent>
@@ -761,21 +736,39 @@ export function AwardsConfigurationTab() {
           <EnterpriseAgreementPanel />
         </TabsContent>
 
-        <TabsContent value="boot-calculator" className="mt-0">
-          <BOOTCalculatorPanel />
-        </TabsContent>
-
         <TabsContent value="comparison" className="mt-0">
           <AwardComparisonPanel />
         </TabsContent>
 
-
-        <TabsContent value="calculator" className="mt-0">
-          <ShiftDifferentialCalculator />
-        </TabsContent>
-
-        <TabsContent value="simulation" className="mt-0">
-          <RateSimulationPanel />
+        <TabsContent value="pay-preview" className="mt-0">
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-muted/40 p-4">
+              <p className="text-sm font-medium">Pay Preview Workspace</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Read-only previews and what-if calculators. Switch between modes below — none of these tools persist data; they only show how your configured rules would calculate against sample inputs.
+              </p>
+            </div>
+            <Tabs defaultValue="overtime" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+                <TabsTrigger value="overtime" className="gap-2"><Clock className="h-4 w-4" />Overtime</TabsTrigger>
+                <TabsTrigger value="shift-differential" className="gap-2"><Calculator className="h-4 w-4" />Shift Differential</TabsTrigger>
+                <TabsTrigger value="scenario" className="gap-2"><BarChart3 className="h-4 w-4" />Scenario Simulator</TabsTrigger>
+                <TabsTrigger value="boot" className="gap-2"><Scale className="h-4 w-4" />BOOT</TabsTrigger>
+              </TabsList>
+              <TabsContent value="overtime" className="mt-4">
+                <OvertimeCalculatorTest />
+              </TabsContent>
+              <TabsContent value="shift-differential" className="mt-4">
+                <ShiftDifferentialCalculator />
+              </TabsContent>
+              <TabsContent value="scenario" className="mt-4">
+                <RateSimulationPanel />
+              </TabsContent>
+              <TabsContent value="boot" className="mt-4">
+                <BOOTCalculatorPanel />
+              </TabsContent>
+            </Tabs>
+          </div>
         </TabsContent>
 
         <TabsContent value="history" className="mt-0">

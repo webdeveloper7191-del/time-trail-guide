@@ -296,7 +296,7 @@ export function OnCallAllowancePanel() {
               <div>
                 <CardTitle className="text-lg">On-Call Allowance Configuration</CardTitle>
                 <CardDescription>
-                  Manage standby, callback, and recall allowances for on-call shifts
+                  On-call is a specialised <strong>allowance subtype</strong> for standby, callback, and recall — managed here for clarity, but counted alongside entries in the <strong>Allowances</strong> tab.
                 </CardDescription>
               </div>
             </div>
