@@ -375,6 +375,7 @@ export function AllowanceRatesEditorPanel() {
         amount: (allowance.customAmount || allowance.baseAmount).toString(),
         conditions: allowance.conditions || '',
         applicableAwards: allowance.applicableAwards,
+        applicableClassifications: allowance.applicableClassifications || [],
         triggerType: allowance.triggerType,
         triggerConditions: allowance.triggerConditions || {},
         minimumEngagement: allowance.minimumEngagement,
