@@ -62,6 +62,7 @@ interface CustomAllowance {
   customAmount?: number;
   isOverridden: boolean;
   applicableAwards: string[];
+  applicableClassifications?: string[]; // empty/undefined = all classifications within the selected awards
   conditions?: string;
   isActive: boolean;
   // New trigger fields
