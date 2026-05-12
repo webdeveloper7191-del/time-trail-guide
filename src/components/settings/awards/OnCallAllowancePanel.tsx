@@ -53,6 +53,7 @@ interface OnCallAllowance {
   weekendRate?: number;
   publicHolidayMultiplier?: number;
   applicableAwards: AwardType[];
+  applicableClassifications?: string[]; // free-form labels e.g. ["Level 3", "Senior Educator"] — empty = all
   isActive: boolean;
   // Stackability settings
   stackable: boolean;
