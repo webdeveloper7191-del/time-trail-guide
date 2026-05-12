@@ -241,6 +241,8 @@ export function CustomOvertimeRatesPanel() {
               first2Hours: newRule.first2Hours,
               after2Hours: newRule.after2Hours,
             },
+            priority: newRule.priority,
+            fwcClause: newRule.fwcClause || undefined,
           }
         : r
     ));
