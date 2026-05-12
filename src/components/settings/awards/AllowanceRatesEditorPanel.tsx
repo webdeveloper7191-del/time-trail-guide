@@ -447,6 +447,7 @@ export function AllowanceRatesEditorPanel() {
             isOverridden: true,
             conditions: newAllowance.conditions,
             applicableAwards: newAllowance.applicableAwards,
+            applicableClassifications: newAllowance.applicableClassifications,
             triggerType: newAllowance.triggerType,
             triggerConditions: newAllowance.triggerConditions,
             minimumEngagement: newAllowance.minimumEngagement,
