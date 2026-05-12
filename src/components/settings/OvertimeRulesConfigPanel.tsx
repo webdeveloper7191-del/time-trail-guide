@@ -177,7 +177,7 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
     maxDailyOTHours: 4 as number | undefined,
     maxWeeklyOTHours: 20 as number | undefined,
     awardIds: [] as string[],
-    classificationId: '' as string,
+    classificationIds: [] as string[],
     priority: 100,
     fwcClause: '',
   });
@@ -199,7 +199,7 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
       maxDailyOTHours: 4,
       maxWeeklyOTHours: 20,
       awardIds: [],
-      classificationId: '',
+      classificationIds: [],
       priority: 100,
       fwcClause: '',
     });
@@ -225,7 +225,7 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
         maxDailyOTHours: rule.maxDailyOTHours || 4,
         maxWeeklyOTHours: rule.maxWeeklyOTHours || 20,
         awardIds: rule.awardIds || [],
-        classificationId: rule.classificationId || '',
+        classificationIds: rule.classificationId ? [rule.classificationId] : [],
         priority: rule.priority ?? 100,
         fwcClause: rule.fwcClause || '',
       });
@@ -258,8 +258,14 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
     }
 
     const now = new Date().toISOString();
-    const ruleData: OvertimeRuleConfig = {
-      id: editingRule?.id || `rule-${Date.now()}`,
+    // Fan-out: if multiple classifications selected, create a rule per classification
+    // so each can be tuned/deleted independently. Empty list = award-wide rule.
+    const targets = formData.classificationIds.length > 0
+      ? formData.classificationIds
+      : [undefined as string | undefined];
+
+    const buildRule = (classificationId: string | undefined, idx: number): OvertimeRuleConfig => ({
+      id: editingRule?.id || `rule-${Date.now()}-${idx}`,
       name: formData.name,
       description: formData.description,
       category: formData.category,
@@ -272,26 +278,29 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
       doubleTimeThreshold: formData.doubleTimeThreshold,
       penaltyLoading: formData.category === 'penalty' || formData.category === 'special' ? formData.penaltyLoading : undefined,
       applicableDays: formData.applicableDays.length > 0 ? formData.applicableDays as OvertimeRuleConfig['applicableDays'] : undefined,
-      timeRange: formData.timeRangeStart && formData.timeRangeEnd 
-        ? { start: formData.timeRangeStart, end: formData.timeRangeEnd } 
+      timeRange: formData.timeRangeStart && formData.timeRangeEnd
+        ? { start: formData.timeRangeStart, end: formData.timeRangeEnd }
         : undefined,
       maxDailyOTHours: formData.category === 'daily' ? formData.maxDailyOTHours : undefined,
       maxWeeklyOTHours: formData.category === 'weekly' ? formData.maxWeeklyOTHours : undefined,
       awardIds: formData.awardIds.length > 0 ? formData.awardIds : undefined,
-      classificationId: formData.classificationId || undefined,
+      classificationId,
       priority: formData.priority,
       source: editingRule?.source || 'custom',
       fwcClause: formData.fwcClause || undefined,
       createdAt: editingRule?.createdAt || now,
       updatedAt: now,
-    };
+    });
 
     if (editingRule) {
+      // Editing always preserves a single rule (use first selected classification, if any)
+      const ruleData = buildRule(targets[0], 0);
       setRules(prev => prev.map(r => r.id === editingRule.id ? ruleData : r));
       toast.success('Overtime rule updated');
     } else {
-      setRules(prev => [...prev, ruleData]);
-      toast.success('Overtime rule created');
+      const newRules = targets.map((c, i) => buildRule(c, i));
+      setRules(prev => [...prev, ...newRules]);
+      toast.success(newRules.length > 1 ? `${newRules.length} overtime rules created` : 'Overtime rule created');
     }
 
     handleClosePanel();
@@ -941,7 +950,7 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
                             awardIds: checked
                               ? prev.awardIds.filter(id => id !== award.id)
                               : [...prev.awardIds, award.id],
-                            classificationId: checked && prev.classificationId ? '' : prev.classificationId,
+                            classificationIds: checked ? [] : prev.classificationIds,
                           }))}
                           className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                             checked
@@ -964,23 +973,33 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
                   if (!award) return null;
                   return (
                     <div className="space-y-2">
-                      <Label>Classification (optional)</Label>
-                      <Select
-                        value={formData.classificationId || 'all'}
-                        onValueChange={(v) => setFormData(prev => ({ ...prev, classificationId: v === 'all' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
-                          <SelectItem value="all">All classifications</SelectItem>
-                          {award.classifications.map(c => (
-                            <SelectItem key={c.id} value={c.id}>{c.level}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Classifications (optional)</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {award.classifications.map(c => {
+                          const checked = formData.classificationIds.includes(c.id);
+                          return (
+                            <button
+                              type="button"
+                              key={c.id}
+                              onClick={() => setFormData(prev => ({
+                                ...prev,
+                                classificationIds: checked
+                                  ? prev.classificationIds.filter(id => id !== c.id)
+                                  : [...prev.classificationIds, c.id],
+                              }))}
+                              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                                checked
+                                  ? 'bg-primary text-primary-foreground border-primary'
+                                  : 'bg-muted/40 text-foreground border-border hover:border-primary/40'
+                              }`}
+                            >
+                              {c.level}
+                            </button>
+                          );
+                        })}
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        Classification-specific rules win over award-level rules.
+                        Pick one or many. A separate rule is created per classification so each can be tuned independently. Leave empty for award-wide. Classification-specific rules win over award-level rules.
                       </p>
                     </div>
                   );
