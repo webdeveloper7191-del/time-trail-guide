@@ -115,6 +115,8 @@ export function CustomOvertimeRatesPanel() {
     after2Hours: 200,
     triggerType: 'daily' as 'daily' | 'weekly' | 'time',
     dayType: '' as string,
+    priority: 100,
+    fwcClause: '',
   });
 
   const getAwardName = (awardId?: string) => {
