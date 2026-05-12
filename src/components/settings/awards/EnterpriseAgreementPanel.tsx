@@ -847,20 +847,32 @@ export function EnterpriseAgreementPanel() {
                             <Sun className="h-4 w-4 text-amber-500" />
                             <span className="font-medium">Evening Shift</span>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {selectedEBA.penaltyRates.eveningShift.startTime} - {selectedEBA.penaltyRates.eveningShift.endTime}
-                          </p>
-                          <p className="text-lg font-bold text-primary mt-1">{selectedEBA.penaltyRates.eveningShift.multiplier}x</p>
+                          {selectedEBA.penaltyRates.eveningShift ? (
+                            <>
+                              <p className="text-sm text-muted-foreground">
+                                {selectedEBA.penaltyRates.eveningShift.startTime} - {selectedEBA.penaltyRates.eveningShift.endTime}
+                              </p>
+                              <p className="text-lg font-bold text-primary mt-1">{selectedEBA.penaltyRates.eveningShift.multiplier}x</p>
+                            </>
+                          ) : (
+                            <p className="text-sm text-muted-foreground italic">Not configured</p>
+                          )}
                         </div>
                         <div className="p-4 rounded-lg bg-muted/50">
                           <div className="flex items-center gap-2 mb-2">
                             <Moon className="h-4 w-4 text-indigo-500" />
                             <span className="font-medium">Night Shift</span>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {selectedEBA.penaltyRates.nightShift.startTime} - {selectedEBA.penaltyRates.nightShift.endTime}
-                          </p>
-                          <p className="text-lg font-bold text-primary mt-1">{selectedEBA.penaltyRates.nightShift.multiplier}x</p>
+                          {selectedEBA.penaltyRates.nightShift ? (
+                            <>
+                              <p className="text-sm text-muted-foreground">
+                                {selectedEBA.penaltyRates.nightShift.startTime} - {selectedEBA.penaltyRates.nightShift.endTime}
+                              </p>
+                              <p className="text-lg font-bold text-primary mt-1">{selectedEBA.penaltyRates.nightShift.multiplier}x</p>
+                            </>
+                          ) : (
+                            <p className="text-sm text-muted-foreground italic">Not configured</p>
+                          )}
                         </div>
                       </div>
                     </CardContent>
