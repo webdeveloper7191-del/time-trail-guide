@@ -419,6 +419,32 @@ export function EnterpriseAgreementPanel() {
 
   return (
     <div className="space-y-6">
+      <AwardSettingsHelpGuide
+        title="Enterprise Agreements (EBAs)"
+        summary="Manage Enterprise Agreements and Individual Flexibility Arrangements alongside Modern Awards. Each agreement can override pay, allowances, penalties, leave and conditions for a defined group of employees."
+        purpose="EBAs let you formalise tailored conditions that have been negotiated with employees and approved by the Fair Work Commission. They sit on top of (and are benchmarked against) an underlying Modern Award via the Better Off Overall Test (BOOT)."
+        whenToUse={[
+          'Create or import an EBA approved by the FWC',
+          'Track expiry, scheduled pay increases and renewal tasks',
+          'Run a live BOOT against the underlying award',
+          'Compare two agreements side-by-side',
+          'Map an EBA to specific locations or areas',
+          'Configure multi-award employees who are covered by more than one instrument',
+        ]}
+        howItWorks={[
+          'Create the agreement using the 7-step wizard (basics, classifications, allowances, penalties, leave, conditions, review)',
+          'Open any agreement to view its full structure across the Overview / Pay / Allowances / Penalties / Leave / BOOT / Lifecycle / Coverage / Versions / FWC / Approval tabs',
+          'Use the lifecycle card to start renewal tasks, draft variations, or mark as superseded',
+          'Use the FWC card to upload approved PDFs and link to the FWC document search',
+          'Use Compare to diff two agreements across pay, allowances, penalties, leave and conditions',
+        ]}
+        bestPractices={[
+          'Keep the underlying award up to date — BOOT pass/fail is calculated against it',
+          'Set scheduled increase dates so renewal tasks fire 6 months before expiry',
+          'Always upload the FWC-approved PDF for an audit trail',
+        ]}
+        relatedTabs={['Awards', 'FWC Updates', 'Pay Preview', 'Audit']}
+      />
       {/* Header Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="card-material">
