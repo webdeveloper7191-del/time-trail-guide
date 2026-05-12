@@ -640,12 +640,15 @@ export function EnterpriseAgreementPanel() {
               <Separator className="my-4" />
 
               <Tabs defaultValue="overview" className="mt-4">
-                <TabsList className="w-full grid grid-cols-5">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="classifications">Pay</TabsTrigger>
-                  <TabsTrigger value="allowances">Allowances</TabsTrigger>
-                  <TabsTrigger value="penalties">Penalties</TabsTrigger>
-                  <TabsTrigger value="leave">Leave</TabsTrigger>
+                <TabsList className="w-full grid grid-cols-8 h-auto">
+                  <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+                  <TabsTrigger value="classifications" className="text-xs">Pay</TabsTrigger>
+                  <TabsTrigger value="allowances" className="text-xs">Allow.</TabsTrigger>
+                  <TabsTrigger value="penalties" className="text-xs">Penalt.</TabsTrigger>
+                  <TabsTrigger value="leave" className="text-xs">Leave</TabsTrigger>
+                  <TabsTrigger value="boot" className="text-xs">BOOT</TabsTrigger>
+                  <TabsTrigger value="lifecycle" className="text-xs">Lifecycle</TabsTrigger>
+                  <TabsTrigger value="admin" className="text-xs">Admin</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-4 mt-4">
