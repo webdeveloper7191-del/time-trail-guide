@@ -641,6 +641,7 @@ export function EnterpriseAgreementPanel() {
                   <SelectItem value="pending_approval">Pending</SelectItem>
                   <SelectItem value="expired">Expired</SelectItem>
                   <SelectItem value="superseded">Superseded</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -673,6 +674,7 @@ export function EnterpriseAgreementPanel() {
         )}
         {filteredEBAs.map(eba => {
           const expiryStatus = getExpiryStatus(eba.nominalExpiryDate);
+          const effectiveStatus = deriveEffectiveStatus(eba);
 
           return (
             <Card 
@@ -689,8 +691,8 @@ export function EnterpriseAgreementPanel() {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <CardTitle className="text-lg">{eba.name}</CardTitle>
-                        <Badge className={statusColors[eba.status]}>
-                          {agreementStatusLabels[eba.status]}
+                        <Badge className={statusColors[effectiveStatus]}>
+                          {agreementStatusLabels[effectiveStatus]}
                         </Badge>
                         <Badge className={expiryStatus.badge}>
                           {expiryStatus.message}
