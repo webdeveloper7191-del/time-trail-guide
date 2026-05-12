@@ -223,6 +223,10 @@ export function OvertimeRulesConfigPanel({ onSave }: OvertimeRulesConfigPanelPro
         timeRangeEnd: rule.timeRange?.end || '',
         maxDailyOTHours: rule.maxDailyOTHours || 4,
         maxWeeklyOTHours: rule.maxWeeklyOTHours || 20,
+        awardIds: rule.awardIds || [],
+        classificationId: rule.classificationId || '',
+        priority: rule.priority ?? 100,
+        fwcClause: rule.fwcClause || '',
       });
     } else {
       resetForm();
