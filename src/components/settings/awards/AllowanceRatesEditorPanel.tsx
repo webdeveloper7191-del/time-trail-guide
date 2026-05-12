@@ -748,6 +748,9 @@ export function AllowanceRatesEditorPanel() {
                   </div>
                 );
               })()}
+
+              <div className="space-y-2">
+                <Label>Conditions (Optional)</Label>
                 <Input
                   placeholder="e.g., When required to be on-call"
                   value={newAllowance.conditions}
