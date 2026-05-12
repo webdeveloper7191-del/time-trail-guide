@@ -454,7 +454,7 @@ export function EnterpriseAgreementPanel() {
                 <FileText className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{mockEBAs.length}</p>
+                <p className="text-2xl font-bold">{ebas.length}</p>
                 <p className="text-sm text-muted-foreground">Enterprise Agreements</p>
               </div>
             </div>
@@ -468,7 +468,7 @@ export function EnterpriseAgreementPanel() {
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{mockEBAs.filter(e => e.status === 'active').length}</p>
+                <p className="text-2xl font-bold">{ebas.filter(e => e.status === 'active').length}</p>
                 <p className="text-sm text-muted-foreground">Active Agreements</p>
               </div>
             </div>
@@ -496,7 +496,7 @@ export function EnterpriseAgreementPanel() {
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{mockEBAs.filter(e => differenceInDays(new Date(e.nominalExpiryDate), new Date()) <= 180).length}</p>
+                <p className="text-2xl font-bold">{ebas.filter(e => differenceInDays(new Date(e.nominalExpiryDate), new Date()) <= 180).length}</p>
                 <p className="text-sm text-muted-foreground">Expiring Soon</p>
               </div>
             </div>
@@ -551,6 +551,13 @@ export function EnterpriseAgreementPanel() {
 
       {/* Agreements Grid */}
       <div className="space-y-4">
+        {filteredEBAs.length === 0 && (
+          <Card className="card-material">
+            <CardContent className="p-8 text-center text-sm text-muted-foreground">
+              No agreements match the current filter.
+            </CardContent>
+          </Card>
+        )}
         {filteredEBAs.map(eba => {
           const expiryStatus = getExpiryStatus(eba.nominalExpiryDate);
 
