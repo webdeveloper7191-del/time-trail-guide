@@ -693,8 +693,61 @@ export function AllowanceRatesEditorPanel() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label>Conditions (Optional)</Label>
+              {newAllowance.applicableAwards.length > 0 && (() => {
+                const availableClassifications = newAllowance.applicableAwards.flatMap(awardId => {
+                  const award = australianAwards.find(a => a.id === awardId);
+                  return (award?.classifications || []).map(c => ({ ...c, awardId, awardName: award?.shortName || awardId }));
+                });
+                if (availableClassifications.length === 0) return null;
+                const allSelected = newAllowance.applicableClassifications.length === availableClassifications.length;
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Applicable Classifications (Optional)</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setNewAllowance(prev => ({
+                            ...prev,
+                            applicableClassifications: allSelected ? [] : availableClassifications.map(c => c.id),
+                          }))}
+                        >
+                          {allSelected ? 'Clear' : 'Select all'}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="border rounded-md p-2 max-h-44 overflow-y-auto space-y-1">
+                      {availableClassifications.map(cls => {
+                        const checked = newAllowance.applicableClassifications.includes(cls.id);
+                        return (
+                          <div key={`${cls.awardId}-${cls.id}`} className="flex items-start gap-2 px-2 py-1 rounded hover:bg-muted/50">
+                            <Checkbox
+                              id={`alw-cls-${cls.awardId}-${cls.id}`}
+                              checked={checked}
+                              onCheckedChange={(c) => setNewAllowance(prev => ({
+                                ...prev,
+                                applicableClassifications: c
+                                  ? [...prev.applicableClassifications, cls.id]
+                                  : prev.applicableClassifications.filter(id => id !== cls.id),
+                              }))}
+                            />
+                            <Label htmlFor={`alw-cls-${cls.awardId}-${cls.id}`} className="text-xs font-normal cursor-pointer leading-tight">
+                              <span className="font-medium">{cls.level}</span>
+                              <span className="text-muted-foreground"> · {cls.awardName}</span>
+                            </Label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Leave empty to apply to all classifications within the selected awards.
+                    </p>
+                  </div>
+                );
+              })()}
                 <Input
                   placeholder="e.g., When required to be on-call"
                   value={newAllowance.conditions}
