@@ -229,6 +229,111 @@ const mockEBAs: EnterpriseAgreement[] = [
     updatedAt: '2024-02-01T00:00:00Z',
     createdBy: 'admin',
   },
+  {
+    id: 'eba-3',
+    name: 'Northwind Logistics Enterprise Agreement 2026',
+    code: 'NWL-EBA-2026',
+    type: 'enterprise_agreement',
+    status: 'pending_approval',
+    coverageDescription: 'Warehouse and distribution staff at Northwind Logistics sites',
+    applicableStates: ['NSW', 'VIC'],
+    industryClassifications: ['Logistics', 'Warehousing'],
+    approvalDate: '2026-04-01',
+    commencementDate: '2026-07-01',
+    nominalExpiryDate: '2029-06-30',
+    fwcReference: 'AG2026/0099',
+    underlyingAwardId: 'storage-services-2020',
+    underlyingAwardName: 'Storage Services and Wholesale Award 2020',
+    classifications: [
+      { id: 'n1', code: 'WH-1', name: 'Warehouse Operator L1', description: 'Entry level operator', level: 1 },
+      { id: 'n2', code: 'WH-2', name: 'Warehouse Operator L2', description: 'Forklift licensed', level: 2 },
+    ],
+    payRates: [
+      { id: 'npr1', classificationId: 'n1', rateType: 'hourly', baseRate: 27.20, effectiveFrom: '2026-07-01', annualIncreasePercent: 3.0 },
+      { id: 'npr2', classificationId: 'n2', rateType: 'hourly', baseRate: 30.10, effectiveFrom: '2026-07-01', annualIncreasePercent: 3.0 },
+    ],
+    allowances: [],
+    penaltyRates: {
+      saturdayMultiplier: 1.5, sundayMultiplier: 2.0, publicHolidayMultiplier: 2.5,
+      overtime: { first2Hours: 1.5, after2Hours: 2.0 }, casualLoading: 25,
+    },
+    leaveEntitlements: [
+      { leaveType: 'Annual Leave', entitlementDays: 20, accrualMethod: 'progressive', exceedsNES: false, nesEntitlementDays: 20 },
+    ],
+    superannuationRate: 12.0,
+    conditions: [],
+    version: '1.0',
+    createdAt: '2026-04-01T00:00:00Z',
+    updatedAt: '2026-04-01T00:00:00Z',
+    createdBy: 'admin',
+  },
+  {
+    id: 'eba-4',
+    name: 'ABC Childcare Centres Enterprise Agreement 2020',
+    code: 'ABC-EBA-2020',
+    type: 'enterprise_agreement',
+    status: 'superseded',
+    coverageDescription: 'Predecessor to ABC-EBA-2023',
+    applicableStates: ['NSW', 'VIC'],
+    industryClassifications: ['Childcare'],
+    approvalDate: '2020-06-15',
+    commencementDate: '2020-07-01',
+    nominalExpiryDate: '2023-06-30',
+    fwcApprovalNumber: 'AE505555',
+    underlyingAwardName: "Children's Services Award 2010",
+    classifications: [
+      { id: 'sc1', code: 'CSW-1', name: 'Support Worker L1', description: '', level: 1 },
+    ],
+    payRates: [
+      { id: 'spr1', classificationId: 'sc1', rateType: 'hourly', baseRate: 24.00, effectiveFrom: '2020-07-01' },
+    ],
+    allowances: [],
+    penaltyRates: {
+      saturdayMultiplier: 1.5, sundayMultiplier: 2.0, publicHolidayMultiplier: 2.5,
+      overtime: { first2Hours: 1.5, after2Hours: 2.0 }, casualLoading: 25,
+    },
+    leaveEntitlements: [],
+    superannuationRate: 10.5,
+    conditions: [],
+    version: '1.0',
+    createdAt: '2020-06-15T00:00:00Z',
+    updatedAt: '2023-06-30T00:00:00Z',
+    createdBy: 'admin',
+  },
+  {
+    id: 'eba-5',
+    name: 'Coastal Hospitality Group EBA 2025',
+    code: 'CHG-EBA-2025',
+    type: 'enterprise_agreement',
+    status: 'rejected',
+    coverageDescription: 'Hospitality staff across Coastal Group venues — failed BOOT',
+    applicableStates: ['QLD'],
+    industryClassifications: ['Hospitality'],
+    approvalDate: '2025-11-12',
+    commencementDate: '2026-01-01',
+    nominalExpiryDate: '2029-01-01',
+    fwcReference: 'AG2025/4040',
+    underlyingAwardName: 'Hospitality Industry (General) Award 2020',
+    classifications: [
+      { id: 'h1', code: 'HOS-1', name: 'Food & Beverage Attendant L1', description: '', level: 1 },
+    ],
+    payRates: [
+      { id: 'hpr1', classificationId: 'h1', rateType: 'hourly', baseRate: 23.50, effectiveFrom: '2026-01-01' },
+    ],
+    allowances: [],
+    penaltyRates: {
+      saturdayMultiplier: 1.25, sundayMultiplier: 1.5, publicHolidayMultiplier: 2.25,
+      overtime: { first2Hours: 1.5, after2Hours: 2.0 }, casualLoading: 25,
+    },
+    leaveEntitlements: [],
+    superannuationRate: 11.5,
+    conditions: [],
+    notes: 'FWC declined approval — rates failed BOOT against underlying award',
+    version: '1.0',
+    createdAt: '2025-11-12T00:00:00Z',
+    updatedAt: '2025-11-12T00:00:00Z',
+    createdBy: 'admin',
+  },
 ];
 
 // Initial mock multi-award employees
@@ -291,7 +396,15 @@ const statusColors: Record<AgreementStatus, string> = {
   expired: 'bg-red-500/10 text-red-700 border-red-200',
   pending_approval: 'bg-amber-500/10 text-amber-700 border-amber-200',
   superseded: 'bg-gray-500/10 text-gray-700 border-gray-200',
+  rejected: 'bg-rose-500/10 text-rose-700 border-rose-200',
 };
+
+/** Derive an effective status that respects nominal expiry — keeps badge UI honest. */
+function deriveEffectiveStatus(eba: EnterpriseAgreement): AgreementStatus {
+  if (eba.status === 'superseded' || eba.status === 'pending_approval' || eba.status === 'rejected') return eba.status;
+  if (isPast(new Date(eba.nominalExpiryDate))) return 'expired';
+  return eba.status;
+}
 
 export function EnterpriseAgreementPanel() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -345,7 +458,7 @@ export function EnterpriseAgreementPanel() {
     const matchesSearch = eba.name.toLowerCase().includes(q) ||
       eba.code.toLowerCase().includes(q) ||
       (eba.fwcApprovalNumber?.toLowerCase().includes(q) ?? false);
-    const matchesStatus = statusFilter === 'all' || eba.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || deriveEffectiveStatus(eba) === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -528,6 +641,7 @@ export function EnterpriseAgreementPanel() {
                   <SelectItem value="pending_approval">Pending</SelectItem>
                   <SelectItem value="expired">Expired</SelectItem>
                   <SelectItem value="superseded">Superseded</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -560,6 +674,7 @@ export function EnterpriseAgreementPanel() {
         )}
         {filteredEBAs.map(eba => {
           const expiryStatus = getExpiryStatus(eba.nominalExpiryDate);
+          const effectiveStatus = deriveEffectiveStatus(eba);
 
           return (
             <Card 
@@ -576,12 +691,14 @@ export function EnterpriseAgreementPanel() {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <CardTitle className="text-lg">{eba.name}</CardTitle>
-                        <Badge className={statusColors[eba.status]}>
-                          {agreementStatusLabels[eba.status]}
+                        <Badge className={statusColors[effectiveStatus]}>
+                          {agreementStatusLabels[effectiveStatus]}
                         </Badge>
-                        <Badge className={expiryStatus.badge}>
-                          {expiryStatus.message}
-                        </Badge>
+                        {effectiveStatus === 'active' && (
+                          <Badge className={expiryStatus.badge}>
+                            {expiryStatus.message}
+                          </Badge>
+                        )}
                       </div>
                       <CardDescription className="mt-1">{eba.code} • FWC: {eba.fwcApprovalNumber}</CardDescription>
                     </div>
@@ -638,8 +755,8 @@ export function EnterpriseAgreementPanel() {
                       {selectedEBA.code} • FWC: {selectedEBA.fwcApprovalNumber}
                     </SheetDescription>
                   </div>
-                  <Badge className={statusColors[selectedEBA.status]}>
-                    {agreementStatusLabels[selectedEBA.status]}
+                  <Badge className={statusColors[deriveEffectiveStatus(selectedEBA)]}>
+                    {agreementStatusLabels[deriveEffectiveStatus(selectedEBA)]}
                   </Badge>
                 </div>
               </SheetHeader>
