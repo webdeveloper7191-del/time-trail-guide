@@ -75,6 +75,20 @@ import {
 import { AustralianState, stateLabels } from '@/types/leaveAccrual';
 import { EBAWizard } from './EBAWizard';
 import { AddEmployeeDrawer, EditEmployeeDrawer, MultiAwardEmployeeDisplay } from './MultiAwardEmployeeDrawer';
+import { AwardSettingsHelpGuide } from './AwardSettingsHelpGuide';
+import {
+  EBABootResultCard,
+  EBALifecycleCard,
+  EBAPayTimelineCard,
+  EBACoverageMapCard,
+  EBAVersionHistoryCard,
+  EBAFWCDocumentCard,
+  EBAApprovalWorkflowCard,
+  EBAComparePayRates,
+  EBACompareAllowances,
+  EBACompareConditions,
+} from './EBAEnhancementCards';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Comprehensive mock EBA data
 const mockEBAs: EnterpriseAgreement[] = [
@@ -282,7 +296,7 @@ const statusColors: Record<AgreementStatus, string> = {
 export function EnterpriseAgreementPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEBA, setSelectedEBA] = useState<EnterpriseAgreement | null>(null);
-  const [showCreatePanel, setShowCreatePanel] = useState(false);
+  // (Create panel removed — creation flows through the EBAWizard)
   const [showComparePanel, setShowComparePanel] = useState(false);
   const [showMultiAwardPanel, setShowMultiAwardPanel] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<MultiAwardEmployeeDisplay | null>(null);
@@ -296,20 +310,7 @@ export function EnterpriseAgreementPanel() {
   const [showAddEmployeeDrawer, setShowAddEmployeeDrawer] = useState(false);
   const [showEditEmployeeDrawer, setShowEditEmployeeDrawer] = useState(false);
   const [employeeToEdit, setEmployeeToEdit] = useState<MultiAwardEmployeeDisplay | null>(null);
-
-  // Form state for new agreement
-  const [newAgreement, setNewAgreement] = useState({
-    name: '',
-    code: '',
-    type: 'enterprise_agreement' as AgreementType,
-    underlyingAwardId: '',
-    commencementDate: '',
-    nominalExpiryDate: '',
-    fwcApprovalNumber: '',
-    coverageDescription: '',
-    applicableStates: [] as AustralianState[],
-    superannuationRate: 11.5,
-  });
+  const [ebaToDelete, setEbaToDelete] = useState<EnterpriseAgreement | null>(null);
 
   // Comparison state
   const [compareAgreements, setCompareAgreements] = useState<string[]>([]);
@@ -340,9 +341,10 @@ export function EnterpriseAgreementPanel() {
   };
 
   const filteredEBAs = ebas.filter(eba => {
-    const matchesSearch = eba.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eba.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eba.fwcApprovalNumber.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = eba.name.toLowerCase().includes(q) ||
+      eba.code.toLowerCase().includes(q) ||
+      (eba.fwcApprovalNumber?.toLowerCase().includes(q) ?? false);
     const matchesStatus = statusFilter === 'all' || eba.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -359,48 +361,90 @@ export function EnterpriseAgreementPanel() {
     setShowEditWizard(false);
   };
 
-  const handleCreateAgreement = () => {
-    toast.success('Enterprise Agreement created successfully', {
-      description: `${newAgreement.name} has been added to the system`,
-    });
-    setShowCreatePanel(false);
-    setNewAgreement({
-      name: '',
-      code: '',
-      type: 'enterprise_agreement',
-      underlyingAwardId: '',
-      commencementDate: '',
-      nominalExpiryDate: '',
-      fwcApprovalNumber: '',
-      coverageDescription: '',
-      applicableStates: [],
-      superannuationRate: 11.5,
-    });
-  };
-
+  // ── Wired action handlers ──────────────────────────────────────────────
   const handleExportEBA = (eba: EnterpriseAgreement) => {
-    toast.success('Agreement exported', {
-      description: `${eba.name} exported to PDF`,
-    });
+    const blob = new Blob([JSON.stringify(eba, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${eba.code}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Agreement exported', { description: `${eba.code}.json downloaded` });
   };
 
   const handleDuplicateEBA = (eba: EnterpriseAgreement) => {
-    toast.success('Agreement duplicated', {
-      description: `Copy of ${eba.name} created`,
-    });
+    const clone: EnterpriseAgreement = {
+      ...eba,
+      id: `eba-${Date.now()}`,
+      name: `${eba.name} (Copy)`,
+      code: `${eba.code}-COPY`,
+      status: 'pending_approval',
+      version: '1.0',
+      previousVersionId: eba.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setEbas(prev => [...prev, clone]);
+    toast.success('Agreement duplicated', { description: `${clone.name} created as a draft` });
   };
 
-  const toggleStateSelection = (state: AustralianState) => {
-    setNewAgreement(prev => ({
-      ...prev,
-      applicableStates: prev.applicableStates.includes(state)
-        ? prev.applicableStates.filter(s => s !== state)
-        : [...prev.applicableStates, state],
-    }));
+  const handleDeleteEBA = (eba: EnterpriseAgreement) => {
+    setEbas(prev => prev.filter(e => e.id !== eba.id));
+    setEbaToDelete(null);
+    setSelectedEBA(null);
+    toast.success('Agreement deleted', { description: `${eba.name} has been removed` });
+  };
+
+  const handleCreateVariation = (eba: EnterpriseAgreement) => {
+    const variation: EnterpriseAgreement = {
+      ...eba,
+      id: `eba-${Date.now()}`,
+      name: `${eba.name} — Variation`,
+      code: `${eba.code}-V${parseInt(eba.version) + 1}`,
+      status: 'pending_approval',
+      version: `${parseInt(eba.version) + 1}.0`,
+      previousVersionId: eba.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setEbas(prev => [...prev, variation]);
+    toast.success('Variation created', { description: `Version ${variation.version} drafted` });
+  };
+
+  const handleMarkSuperseded = (eba: EnterpriseAgreement) => {
+    setEbas(prev => prev.map(e => e.id === eba.id ? { ...e, status: 'superseded' as AgreementStatus } : e));
+    toast.success('Agreement marked as superseded');
   };
 
   return (
     <div className="space-y-6">
+      <AwardSettingsHelpGuide
+        title="Enterprise Agreements (EBAs)"
+        summary="Manage Enterprise Agreements and Individual Flexibility Arrangements alongside Modern Awards. Each agreement can override pay, allowances, penalties, leave and conditions for a defined group of employees."
+        purpose="EBAs let you formalise tailored conditions that have been negotiated with employees and approved by the Fair Work Commission. They sit on top of (and are benchmarked against) an underlying Modern Award via the Better Off Overall Test (BOOT)."
+        whenToUse={[
+          'Create or import an EBA approved by the FWC',
+          'Track expiry, scheduled pay increases and renewal tasks',
+          'Run a live BOOT against the underlying award',
+          'Compare two agreements side-by-side',
+          'Map an EBA to specific locations or areas',
+          'Configure multi-award employees who are covered by more than one instrument',
+        ]}
+        howItWorks={[
+          'Create the agreement using the 7-step wizard (basics, classifications, allowances, penalties, leave, conditions, review)',
+          'Open any agreement to view its full structure across the Overview / Pay / Allowances / Penalties / Leave / BOOT / Lifecycle / Coverage / Versions / FWC / Approval tabs',
+          'Use the lifecycle card to start renewal tasks, draft variations, or mark as superseded',
+          'Use the FWC card to upload approved PDFs and link to the FWC document search',
+          'Use Compare to diff two agreements across pay, allowances, penalties, leave and conditions',
+        ]}
+        bestPractices={[
+          'Keep the underlying award up to date — BOOT pass/fail is calculated against it',
+          'Set scheduled increase dates so renewal tasks fire 6 months before expiry',
+          'Always upload the FWC-approved PDF for an audit trail',
+        ]}
+        relatedTabs={['Awards', 'FWC Updates', 'Pay Preview', 'Audit']}
+      />
       {/* Header Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="card-material">
@@ -596,12 +640,15 @@ export function EnterpriseAgreementPanel() {
               <Separator className="my-4" />
 
               <Tabs defaultValue="overview" className="mt-4">
-                <TabsList className="w-full grid grid-cols-5">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="classifications">Pay</TabsTrigger>
-                  <TabsTrigger value="allowances">Allowances</TabsTrigger>
-                  <TabsTrigger value="penalties">Penalties</TabsTrigger>
-                  <TabsTrigger value="leave">Leave</TabsTrigger>
+                <TabsList className="w-full grid grid-cols-8 h-auto">
+                  <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+                  <TabsTrigger value="classifications" className="text-xs">Pay</TabsTrigger>
+                  <TabsTrigger value="allowances" className="text-xs">Allow.</TabsTrigger>
+                  <TabsTrigger value="penalties" className="text-xs">Penalt.</TabsTrigger>
+                  <TabsTrigger value="leave" className="text-xs">Leave</TabsTrigger>
+                  <TabsTrigger value="boot" className="text-xs">BOOT</TabsTrigger>
+                  <TabsTrigger value="lifecycle" className="text-xs">Lifecycle</TabsTrigger>
+                  <TabsTrigger value="admin" className="text-xs">Admin</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-4 mt-4">
@@ -829,20 +876,32 @@ export function EnterpriseAgreementPanel() {
                             <Sun className="h-4 w-4 text-amber-500" />
                             <span className="font-medium">Evening Shift</span>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {selectedEBA.penaltyRates.eveningShift.startTime} - {selectedEBA.penaltyRates.eveningShift.endTime}
-                          </p>
-                          <p className="text-lg font-bold text-primary mt-1">{selectedEBA.penaltyRates.eveningShift.multiplier}x</p>
+                          {selectedEBA.penaltyRates.eveningShift ? (
+                            <>
+                              <p className="text-sm text-muted-foreground">
+                                {selectedEBA.penaltyRates.eveningShift.startTime} - {selectedEBA.penaltyRates.eveningShift.endTime}
+                              </p>
+                              <p className="text-lg font-bold text-primary mt-1">{selectedEBA.penaltyRates.eveningShift.multiplier}x</p>
+                            </>
+                          ) : (
+                            <p className="text-sm text-muted-foreground italic">Not configured</p>
+                          )}
                         </div>
                         <div className="p-4 rounded-lg bg-muted/50">
                           <div className="flex items-center gap-2 mb-2">
                             <Moon className="h-4 w-4 text-indigo-500" />
                             <span className="font-medium">Night Shift</span>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {selectedEBA.penaltyRates.nightShift.startTime} - {selectedEBA.penaltyRates.nightShift.endTime}
-                          </p>
-                          <p className="text-lg font-bold text-primary mt-1">{selectedEBA.penaltyRates.nightShift.multiplier}x</p>
+                          {selectedEBA.penaltyRates.nightShift ? (
+                            <>
+                              <p className="text-sm text-muted-foreground">
+                                {selectedEBA.penaltyRates.nightShift.startTime} - {selectedEBA.penaltyRates.nightShift.endTime}
+                              </p>
+                              <p className="text-lg font-bold text-primary mt-1">{selectedEBA.penaltyRates.nightShift.multiplier}x</p>
+                            </>
+                          ) : (
+                            <p className="text-sm text-muted-foreground italic">Not configured</p>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -932,9 +991,28 @@ export function EnterpriseAgreementPanel() {
                     </div>
                   </ScrollArea>
                 </TabsContent>
+                <TabsContent value="boot" className="mt-4 space-y-4">
+                  <EBABootResultCard eba={selectedEBA} />
+                  <EBAPayTimelineCard eba={selectedEBA} />
+                </TabsContent>
+
+                <TabsContent value="lifecycle" className="mt-4 space-y-4">
+                  <EBALifecycleCard
+                    eba={selectedEBA}
+                    onCreateVariation={() => handleCreateVariation(selectedEBA)}
+                    onMarkSuperseded={() => handleMarkSuperseded(selectedEBA)}
+                  />
+                  <EBAVersionHistoryCard eba={selectedEBA} />
+                </TabsContent>
+
+                <TabsContent value="admin" className="mt-4 space-y-4">
+                  <EBACoverageMapCard eba={selectedEBA} />
+                  <EBAFWCDocumentCard eba={selectedEBA} />
+                  <EBAApprovalWorkflowCard eba={selectedEBA} />
+                </TabsContent>
               </Tabs>
 
-              <SheetFooter className="mt-6 flex gap-2">
+              <SheetFooter className="mt-6 flex flex-wrap gap-2">
                 <Button variant="outline" onClick={() => handleDuplicateEBA(selectedEBA)}>
                   <Copy className="h-4 w-4 mr-2" />
                   Duplicate
@@ -942,6 +1020,14 @@ export function EnterpriseAgreementPanel() {
                 <Button variant="outline" onClick={() => handleExportEBA(selectedEBA)}>
                   <Download className="h-4 w-4 mr-2" />
                   Export
+                </Button>
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setEbaToDelete(selectedEBA)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
                 </Button>
                 <Button onClick={() => setShowEditWizard(true)}>
                   <Edit className="h-4 w-4 mr-2" />
@@ -953,202 +1039,7 @@ export function EnterpriseAgreementPanel() {
         </SheetContent>
       </Sheet>
 
-      {/* Create Agreement Side Panel */}
-      <Sheet open={showCreatePanel} onOpenChange={setShowCreatePanel}>
-        <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Create Enterprise Agreement</SheetTitle>
-            <SheetDescription>
-              Add a new enterprise agreement or individual flexibility arrangement
-            </SheetDescription>
-          </SheetHeader>
-
-          <Separator className="my-4" />
-
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="font-medium flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Basic Information
-              </h3>
-              
-              <div className="space-y-2">
-                <Label>Agreement Name *</Label>
-                <Input 
-                  placeholder="e.g., ABC Childcare Enterprise Agreement 2024" 
-                  value={newAgreement.name}
-                  onChange={(e) => setNewAgreement(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Agreement Code *</Label>
-                  <Input 
-                    placeholder="e.g., ABC-EBA-2024" 
-                    value={newAgreement.code}
-                    onChange={(e) => setNewAgreement(prev => ({ ...prev, code: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Agreement Type *</Label>
-                  <Select 
-                    value={newAgreement.type} 
-                    onValueChange={(v) => setNewAgreement(prev => ({ ...prev, type: v as AgreementType }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="enterprise_agreement">Enterprise Agreement</SelectItem>
-                      <SelectItem value="individual_flexibility">Individual Flexibility Arrangement</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Underlying Award & FWC */}
-            <div className="space-y-4">
-              <h3 className="font-medium flex items-center gap-2">
-                <Scale className="h-4 w-4" />
-                BOOT Reference & FWC Details
-              </h3>
-              
-              <div className="space-y-2">
-                <Label>Underlying Award (BOOT Reference) *</Label>
-                <Select 
-                  value={newAgreement.underlyingAwardId}
-                  onValueChange={(v) => setNewAgreement(prev => ({ ...prev, underlyingAwardId: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select underlying award" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="children-services-2020">Children's Services Award 2020</SelectItem>
-                    <SelectItem value="educational-services-2020">Educational Services Award 2020</SelectItem>
-                    <SelectItem value="aged-care-2020">Aged Care Award 2020</SelectItem>
-                    <SelectItem value="nursing-2020">Nurses Award 2020</SelectItem>
-                    <SelectItem value="social-services-2020">Social, Community, Home Care & Disability Services Award 2020</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>FWC Approval Number</Label>
-                <Input 
-                  placeholder="e.g., AE508123"
-                  value={newAgreement.fwcApprovalNumber}
-                  onChange={(e) => setNewAgreement(prev => ({ ...prev, fwcApprovalNumber: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Dates */}
-            <div className="space-y-4">
-              <h3 className="font-medium flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Key Dates
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Commencement Date *</Label>
-                  <Input 
-                    type="date"
-                    value={newAgreement.commencementDate}
-                    onChange={(e) => setNewAgreement(prev => ({ ...prev, commencementDate: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Nominal Expiry Date *</Label>
-                  <Input 
-                    type="date"
-                    value={newAgreement.nominalExpiryDate}
-                    onChange={(e) => setNewAgreement(prev => ({ ...prev, nominalExpiryDate: e.target.value }))}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Coverage */}
-            <div className="space-y-4">
-              <h3 className="font-medium flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Coverage
-              </h3>
-              
-              <div className="space-y-2">
-                <Label>Applicable States *</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  {(Object.keys(stateLabels) as AustralianState[]).map(state => (
-                    <div 
-                      key={state}
-                      className={`p-2 rounded-lg border text-center cursor-pointer transition-colors ${
-                        newAgreement.applicableStates.includes(state) 
-                          ? 'bg-primary text-primary-foreground border-primary' 
-                          : 'bg-muted/50 hover:bg-muted'
-                      }`}
-                      onClick={() => toggleStateSelection(state)}
-                    >
-                      <span className="text-sm font-medium">{state}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Coverage Description *</Label>
-                <Textarea 
-                  placeholder="Describe which employees are covered by this agreement..."
-                  value={newAgreement.coverageDescription}
-                  onChange={(e) => setNewAgreement(prev => ({ ...prev, coverageDescription: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Superannuation */}
-            <div className="space-y-4">
-              <h3 className="font-medium flex items-center gap-2">
-                <Percent className="h-4 w-4" />
-                Superannuation
-              </h3>
-              
-              <div className="space-y-2">
-                <Label>Employer Contribution Rate (%)</Label>
-                <Input 
-                  type="number"
-                  step="0.5"
-                  value={newAgreement.superannuationRate}
-                  onChange={(e) => setNewAgreement(prev => ({ ...prev, superannuationRate: parseFloat(e.target.value) }))}
-                />
-                <p className="text-xs text-muted-foreground">Current SG minimum: 11.5%</p>
-              </div>
-            </div>
-          </div>
-
-          <SheetFooter className="mt-6">
-            <Button variant="outline" onClick={() => setShowCreatePanel(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateAgreement}>
-              <Save className="h-4 w-4 mr-2" />
-              Create Agreement
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
-
-      {/* Compare Agreements Side Panel */}
+      {/* (Legacy create-panel removed — creation now uses EBAWizard) */}
       <Sheet open={showComparePanel} onOpenChange={setShowComparePanel}>
         <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
           <SheetHeader>
@@ -1205,6 +1096,9 @@ export function EnterpriseAgreementPanel() {
 
                   return (
                     <>
+                      <EBAComparePayRates a={eba1} b={eba2} />
+                      <EBACompareAllowances a={eba1} b={eba2} />
+                      <EBACompareConditions a={eba1} b={eba2} />
                       {/* Penalty Rates Comparison */}
                       <Card>
                         <CardHeader className="pb-2">
@@ -1547,6 +1441,28 @@ export function EnterpriseAgreementPanel() {
         onComplete={handleEBAComplete}
         existingEBA={selectedEBA || undefined}
       />
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!ebaToDelete} onOpenChange={(open) => !open && setEbaToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this enterprise agreement?</DialogTitle>
+            <DialogDescription>
+              {ebaToDelete?.name} will be permanently removed. Employees mapped to it will need to be reassigned.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEbaToDelete(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={() => ebaToDelete && handleDeleteEBA(ebaToDelete)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete agreement
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
