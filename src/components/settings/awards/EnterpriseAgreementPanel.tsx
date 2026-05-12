@@ -75,6 +75,20 @@ import {
 import { AustralianState, stateLabels } from '@/types/leaveAccrual';
 import { EBAWizard } from './EBAWizard';
 import { AddEmployeeDrawer, EditEmployeeDrawer, MultiAwardEmployeeDisplay } from './MultiAwardEmployeeDrawer';
+import { AwardSettingsHelpGuide } from './AwardSettingsHelpGuide';
+import {
+  EBABootResultCard,
+  EBALifecycleCard,
+  EBAPayTimelineCard,
+  EBACoverageMapCard,
+  EBAVersionHistoryCard,
+  EBAFWCDocumentCard,
+  EBAApprovalWorkflowCard,
+  EBAComparePayRates,
+  EBACompareAllowances,
+  EBACompareConditions,
+} from './EBAEnhancementCards';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 // Comprehensive mock EBA data
 const mockEBAs: EnterpriseAgreement[] = [
