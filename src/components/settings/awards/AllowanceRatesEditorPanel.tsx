@@ -413,6 +413,7 @@ export function AllowanceRatesEditorPanel() {
       customAmount: parseFloat(newAllowance.amount),
       isOverridden: true,
       applicableAwards: newAllowance.applicableAwards,
+      applicableClassifications: newAllowance.applicableClassifications,
       conditions: newAllowance.conditions,
       isActive: true,
       triggerType: newAllowance.triggerType,
