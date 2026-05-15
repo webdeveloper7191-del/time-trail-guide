@@ -70,6 +70,7 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
   const [locationQualifications, setLocationQualifications] = useState<QualificationRequirement[]>([]);
   const [areaCombiningThresholds, setAreaCombiningThresholds] = useState<AreaCombiningThreshold[]>([]);
   const [operationalOptimization, setOperationalOptimization] = useState<OperationalOptimization | undefined>(undefined);
+  const [schedulingSettings, setSchedulingSettings] = useState<LocationSchedulingSettings>(DEFAULT_SCHEDULING_SETTINGS);
 
    // Reset form when location changes or panel opens
    useEffect(() => {
