@@ -414,6 +414,14 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
           </div>
         </TabsContent>
 
+        <TabsContent value="scheduling" className="space-y-4">
+          <LocationSchedulingTab
+            settings={schedulingSettings}
+            onChange={setSchedulingSettings}
+            isEditing={isEditing}
+          />
+        </TabsContent>
+
         <TabsContent value="compliance" className="space-y-6">
           {/* Under the Roof Ratios */}
           <div className="bg-card border border-border rounded-lg p-4">
