@@ -15,6 +15,8 @@ import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
 import StaffingRatioEditor from './StaffingRatioEditor';
 import QualificationRequirementEditor from './QualificationRequirementEditor';
 import OperationalOptimizationEditor from './OperationalOptimizationEditor';
+import LocationSchedulingTab, { LocationSchedulingSettings, DEFAULT_SCHEDULING_SETTINGS } from './LocationSchedulingTab';
+import InheritanceSummaryTab from './InheritanceSummaryTab';
 
 interface LocationDetailPanelProps {
   open: boolean;
@@ -68,6 +70,7 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
   const [locationQualifications, setLocationQualifications] = useState<QualificationRequirement[]>([]);
   const [areaCombiningThresholds, setAreaCombiningThresholds] = useState<AreaCombiningThreshold[]>([]);
   const [operationalOptimization, setOperationalOptimization] = useState<OperationalOptimization | undefined>(undefined);
+  const [schedulingSettings, setSchedulingSettings] = useState<LocationSchedulingSettings>(DEFAULT_SCHEDULING_SETTINGS);
 
    // Reset form when location changes or panel opens
    useEffect(() => {
@@ -147,10 +150,12 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start mb-4">
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="scheduling">Scheduling</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="hours">Operating Hours</TabsTrigger>
           <TabsTrigger value="areas">Areas ({areas.length})</TabsTrigger>
           <TabsTrigger value="departments">Departments ({departments.length})</TabsTrigger>
+          <TabsTrigger value="inheritance">Inheritance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
@@ -409,6 +414,14 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
           </div>
         </TabsContent>
 
+        <TabsContent value="scheduling" className="space-y-4">
+          <LocationSchedulingTab
+            settings={schedulingSettings}
+            onChange={setSchedulingSettings}
+            isEditing={isEditing}
+          />
+        </TabsContent>
+
         <TabsContent value="compliance" className="space-y-6">
           {/* Under the Roof Ratios */}
           <div className="bg-card border border-border rounded-lg p-4">
@@ -544,6 +557,14 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
               <p className="text-sm text-muted-foreground">No departments configured</p>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="inheritance" className="space-y-4">
+          <InheritanceSummaryTab
+            settings={schedulingSettings}
+            onChange={setSchedulingSettings}
+            isEditing={isEditing}
+          />
         </TabsContent>
       </Tabs>
     </PrimaryOffCanvas>
