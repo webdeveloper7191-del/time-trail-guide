@@ -15,6 +15,8 @@ import { INDUSTRY_TEMPLATES } from '@/types/industryConfig';
 import StaffingRatioEditor from './StaffingRatioEditor';
 import QualificationRequirementEditor from './QualificationRequirementEditor';
 import OperationalOptimizationEditor from './OperationalOptimizationEditor';
+import LocationSchedulingTab, { LocationSchedulingSettings, DEFAULT_SCHEDULING_SETTINGS } from './LocationSchedulingTab';
+import InheritanceSummaryTab from './InheritanceSummaryTab';
 
 interface LocationDetailPanelProps {
   open: boolean;
