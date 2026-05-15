@@ -558,6 +558,14 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="inheritance" className="space-y-4">
+          <InheritanceSummaryTab
+            settings={schedulingSettings}
+            onChange={setSchedulingSettings}
+            isEditing={isEditing}
+          />
+        </TabsContent>
       </Tabs>
     </PrimaryOffCanvas>
   );
