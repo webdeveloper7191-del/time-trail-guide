@@ -150,10 +150,12 @@ const LocationDetailPanel: React.FC<LocationDetailPanelProps> = ({
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start mb-4">
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="scheduling">Scheduling</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="hours">Operating Hours</TabsTrigger>
           <TabsTrigger value="areas">Areas ({areas.length})</TabsTrigger>
           <TabsTrigger value="departments">Departments ({departments.length})</TabsTrigger>
+          <TabsTrigger value="inheritance">Inheritance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
