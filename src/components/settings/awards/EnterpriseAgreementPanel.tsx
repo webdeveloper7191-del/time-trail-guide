@@ -1124,6 +1124,10 @@ export function EnterpriseAgreementPanel() {
                   <EBACoverageRulesPanel eba={selectedEBA} />
                 </TabsContent>
 
+                <TabsContent value="mapping" className="mt-4 space-y-4">
+                  <BulkClassificationMappingPanel eba={selectedEBA} />
+                </TabsContent>
+
                 <TabsContent value="boot" className="mt-4 space-y-4">
                   <EBABootResultCard eba={selectedEBA} />
                   <EBAPayTimelineCard eba={selectedEBA} />
