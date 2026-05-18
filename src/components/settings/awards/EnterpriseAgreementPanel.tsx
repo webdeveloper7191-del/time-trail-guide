@@ -89,6 +89,7 @@ import {
   EBACompareConditions,
 } from './EBAEnhancementCards';
 import { EBACoverageRulesPanel } from './EBACoverageRulesPanel';
+import { BulkClassificationMappingPanel } from './BulkClassificationMappingPanel';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Comprehensive mock EBA data
@@ -765,13 +766,14 @@ export function EnterpriseAgreementPanel() {
               <Separator className="my-4" />
 
               <Tabs defaultValue="overview" className="mt-4">
-                <TabsList className="w-full grid grid-cols-9 h-auto">
+                <TabsList className="w-full grid grid-cols-10 h-auto">
                   <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
                   <TabsTrigger value="classifications" className="text-xs">Pay</TabsTrigger>
                   <TabsTrigger value="allowances" className="text-xs">Allow.</TabsTrigger>
                   <TabsTrigger value="penalties" className="text-xs">Penalt.</TabsTrigger>
                   <TabsTrigger value="leave" className="text-xs">Leave</TabsTrigger>
                   <TabsTrigger value="coverage" className="text-xs">Coverage</TabsTrigger>
+                  <TabsTrigger value="mapping" className="text-xs">Mapping</TabsTrigger>
                   <TabsTrigger value="boot" className="text-xs">BOOT</TabsTrigger>
                   <TabsTrigger value="lifecycle" className="text-xs">Lifecycle</TabsTrigger>
                   <TabsTrigger value="admin" className="text-xs">Admin</TabsTrigger>
@@ -1120,6 +1122,10 @@ export function EnterpriseAgreementPanel() {
 
                 <TabsContent value="coverage" className="mt-4 space-y-4">
                   <EBACoverageRulesPanel eba={selectedEBA} />
+                </TabsContent>
+
+                <TabsContent value="mapping" className="mt-4 space-y-4">
+                  <BulkClassificationMappingPanel eba={selectedEBA} />
                 </TabsContent>
 
                 <TabsContent value="boot" className="mt-4 space-y-4">
