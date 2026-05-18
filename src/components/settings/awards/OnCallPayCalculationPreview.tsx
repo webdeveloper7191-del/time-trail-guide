@@ -281,31 +281,87 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
         </div>
 
         {/* Scenario Controls */}
-        <div className="p-4 rounded-lg bg-muted/50 border">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+        <div className="p-4 rounded-lg bg-muted/50 border space-y-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Sample Shift Scenario
           </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Day of Week</Label>
+              <select
+                value={dayOfWeek}
+                onChange={(e) => setDayOfWeek(e.target.value as DayOfWeek)}
+                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+              >
+                {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+              {isWeekend && (
+                <p className="text-[10px] text-amber-600 mt-1">Weekend rate applies</p>
+              )}
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Base Hourly Rate ($)</Label>
+              <input
+                type="number"
+                min={0}
+                step={0.5}
+                value={baseHourlyRate}
+                onChange={(e) => setBaseHourlyRate(parseFloat(e.target.value) || 0)}
+                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Trigger Type</Label>
+              <select
+                value={triggerTypeFilter}
+                onChange={(e) => setTriggerTypeFilter(e.target.value as TriggerFilter)}
+                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+              >
+                <option value="all">All triggers</option>
+                <option value="standby">Standby</option>
+                <option value="callback">Callback</option>
+                <option value="recall">Emergency recall</option>
+                <option value="emergency">Emergency</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Callback # in period</Label>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={currentCallbackCount}
+                onChange={(e) => setCurrentCallbackCount(parseInt(e.target.value) || 0)}
+                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+              />
+              {currentCallbackCount >= 3 && (
+                <p className="text-[10px] text-amber-600 mt-1">Tier uplift ×1.25</p>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-center gap-2">
-              <Switch 
-                id="weekend" 
-                checked={isWeekend} 
-                onCheckedChange={setIsWeekend}
+              <Switch
+                id="standbyActive"
+                checked={isStandbyActive}
+                onCheckedChange={setIsStandbyActive}
               />
-              <Label htmlFor="weekend" className="text-sm">Weekend</Label>
+              <Label htmlFor="standbyActive" className="text-sm">Standby Active</Label>
             </div>
             <div className="flex items-center gap-2">
-              <Switch 
-                id="publicHoliday" 
-                checked={isPublicHoliday} 
+              <Switch
+                id="publicHoliday"
+                checked={isPublicHoliday}
                 onCheckedChange={setIsPublicHoliday}
               />
               <Label htmlFor="publicHoliday" className="text-sm">Public Holiday</Label>
             </div>
             <div className="flex items-center gap-2">
-              <Switch 
-                id="calledBack" 
-                checked={wasCalledBack} 
+              <Switch
+                id="calledBack"
+                checked={wasCalledBack}
                 onCheckedChange={setWasCalledBack}
               />
               <Label htmlFor="calledBack" className="text-sm">Called Back</Label>
@@ -313,18 +369,17 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
             {wasCalledBack && (
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <select
-                  value={callbackHours}
-                  onChange={(e) => setCallbackHours(parseFloat(e.target.value))}
-                  className="text-sm border rounded px-2 py-1 bg-background"
-                >
-                  <option value={0.5}>0.5 hours</option>
-                  <option value={1}>1 hour</option>
-                  <option value={1.5}>1.5 hours</option>
-                  <option value={2}>2 hours</option>
-                  <option value={3}>3 hours</option>
-                  <option value={4}>4 hours</option>
-                </select>
+                <div className="flex-1">
+                  <Label className="text-[10px] text-muted-foreground">Actual hours worked</Label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.25}
+                    value={actualHoursWorked}
+                    onChange={(e) => setActualHoursWorked(parseFloat(e.target.value) || 0)}
+                    className="w-full text-sm border rounded px-2 py-1 bg-background"
+                  />
+                </div>
               </div>
             )}
           </div>
