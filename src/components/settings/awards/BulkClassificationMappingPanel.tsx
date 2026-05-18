@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Layers,
   MapPin,
@@ -21,6 +22,10 @@ import {
   Wand2,
   AlertTriangle,
   CheckCircle2,
+  ArrowRight,
+  Eye,
+  Plus,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EnterpriseAgreement } from '@/types/enterpriseAgreement';
@@ -63,6 +68,7 @@ export function BulkClassificationMappingPanel({ eba }: Props) {
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [targetClassificationId, setTargetClassificationId] = useState<string>('');
   const [search, setSearch] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const classifications = eba.classifications ?? [];
 
@@ -92,7 +98,30 @@ export function BulkClassificationMappingPanel({ eba }: Props) {
   const selectAll = () => setSelectedSourceIds(sourceItems.map(s => s.id));
   const clearSelection = () => setSelectedSourceIds([]);
 
-  const applyMapping = () => {
+  const targetClassification = classifications.find(c => c.id === targetClassificationId);
+
+  const previewChanges = useMemo(() => {
+    if (!targetClassification) return [];
+    return selectedSourceIds.map(sid => {
+      const item = sourceItems.find(s => s.id === sid);
+      const key = `${sourceType}:${sid}`;
+      const existing = existingByKey.get(key);
+      const newName = `${targetClassification.code} — ${targetClassification.name}`;
+      let changeType: 'new' | 'update' | 'unchanged' = 'new';
+      if (existing) {
+        changeType = existing.classificationId === targetClassification.id ? 'unchanged' : 'update';
+      }
+      return {
+        sourceId: sid,
+        label: item?.label ?? sid,
+        from: existing?.classificationName ?? null,
+        to: newName,
+        changeType,
+      };
+    });
+  }, [selectedSourceIds, sourceItems, sourceType, existingByKey, targetClassification]);
+
+  const openPreview = () => {
     if (!targetClassificationId) {
       toast.error('Select a target classification');
       return;
@@ -101,9 +130,12 @@ export function BulkClassificationMappingPanel({ eba }: Props) {
       toast.error('Select at least one item to map');
       return;
     }
-    const cls = classifications.find(c => c.id === targetClassificationId);
-    if (!cls) return;
+    setPreviewOpen(true);
+  };
 
+  const commitMapping = () => {
+    const cls = targetClassification;
+    if (!cls) return;
     const next = [...mappings];
     selectedSourceIds.forEach(sid => {
       const item = sourceItems.find(s => s.id === sid);
@@ -280,7 +312,10 @@ export function BulkClassificationMappingPanel({ eba }: Props) {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={applyMapping}>
+                <Button variant="outline" onClick={openPreview}>
+                  <Eye className="h-4 w-4 mr-1" /> Preview changes
+                </Button>
+                <Button onClick={openPreview}>
                   <Save className="h-4 w-4 mr-1" /> Apply mapping
                 </Button>
               </div>
@@ -332,6 +367,80 @@ export function BulkClassificationMappingPanel({ eba }: Props) {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-4 w-4" /> Preview mapping changes
+            </DialogTitle>
+            <DialogDescription>
+              Review the exact change per {sourceType} before applying. Nothing is saved until you confirm.
+            </DialogDescription>
+          </DialogHeader>
+
+          {(() => {
+            const newCount = previewChanges.filter(c => c.changeType === 'new').length;
+            const updateCount = previewChanges.filter(c => c.changeType === 'update').length;
+            const unchangedCount = previewChanges.filter(c => c.changeType === 'unchanged').length;
+            return (
+              <div className="flex items-center gap-2 text-xs">
+                <Badge variant="outline" className="gap-1"><Plus className="h-3 w-3" /> {newCount} new</Badge>
+                <Badge variant="outline" className="gap-1"><RefreshCw className="h-3 w-3" /> {updateCount} updated</Badge>
+                <Badge variant="outline" className="gap-1"><CheckCircle2 className="h-3 w-3" /> {unchangedCount} unchanged</Badge>
+                <span className="text-muted-foreground ml-auto">
+                  Target: <span className="font-medium text-foreground">{targetClassification ? `${targetClassification.code} — ${targetClassification.name}` : '—'}</span>
+                </span>
+              </div>
+            );
+          })()}
+
+          <ScrollArea className="max-h-[420px] border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-24">Change</TableHead>
+                  <TableHead>{sourceType.charAt(0).toUpperCase() + sourceType.slice(1)}</TableHead>
+                  <TableHead>Current</TableHead>
+                  <TableHead className="w-8"></TableHead>
+                  <TableHead>New</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {previewChanges.map(c => (
+                  <TableRow key={c.sourceId}>
+                    <TableCell>
+                      {c.changeType === 'new' && <Badge className="text-xs gap-1"><Plus className="h-3 w-3" />New</Badge>}
+                      {c.changeType === 'update' && <Badge variant="secondary" className="text-xs gap-1"><RefreshCw className="h-3 w-3" />Update</Badge>}
+                      {c.changeType === 'unchanged' && <Badge variant="outline" className="text-xs gap-1"><CheckCircle2 className="h-3 w-3" />Same</Badge>}
+                    </TableCell>
+                    <TableCell className="text-sm">{c.label}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {c.from ?? <span className="italic">unmapped</span>}
+                    </TableCell>
+                    <TableCell><ArrowRight className="h-3 w-3 text-muted-foreground" /></TableCell>
+                    <TableCell className="text-sm font-medium">{c.to}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                commitMapping();
+                setPreviewOpen(false);
+              }}
+              disabled={previewChanges.every(c => c.changeType === 'unchanged')}
+            >
+              <Save className="h-4 w-4 mr-1" />
+              Confirm & apply ({previewChanges.filter(c => c.changeType !== 'unchanged').length})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
