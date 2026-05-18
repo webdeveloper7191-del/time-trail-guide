@@ -89,7 +89,7 @@ function ruleMatches(rule: CoverageRule, staff: typeof mockStaff[number]): boole
   if (c.locations.length && !staff.locations.some(l => c.locations.includes(l))) return false;
   if (c.departments.length && !c.departments.includes(staff.department)) return false;
   if (c.employmentTypes.length) {
-    const t = staff.payConditions?.[0]?.employmentType;
+    const t = staff.currentPayCondition?.employmentType;
     if (!t || !c.employmentTypes.includes(t)) return false;
   }
   // classifications / states: skipped against mockStaff (no fields) — treated as informational
@@ -567,7 +567,7 @@ export function EBACoverageRulesPanel({ eba }: EBACoverageRulesPanelProps) {
                         <p className="font-medium">{s.firstName} {s.lastName}</p>
                         <p className="text-xs text-muted-foreground">
                           {s.department} • {s.locations.join(', ')} •{' '}
-                          {EMPLOYMENT_TYPE_LABEL[s.payConditions?.[0]?.employmentType ?? 'full_time']}
+                          {EMPLOYMENT_TYPE_LABEL[s.currentPayCondition?.employmentType ?? 'full_time']}
                         </p>
                       </div>
                       {conflicts.has(s.id) && (
