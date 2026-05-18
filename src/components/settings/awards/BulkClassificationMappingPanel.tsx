@@ -68,6 +68,7 @@ export function BulkClassificationMappingPanel({ eba }: Props) {
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [targetClassificationId, setTargetClassificationId] = useState<string>('');
   const [search, setSearch] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const classifications = eba.classifications ?? [];
 
