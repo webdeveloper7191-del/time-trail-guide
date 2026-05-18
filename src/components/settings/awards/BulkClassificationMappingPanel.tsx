@@ -98,7 +98,30 @@ export function BulkClassificationMappingPanel({ eba }: Props) {
   const selectAll = () => setSelectedSourceIds(sourceItems.map(s => s.id));
   const clearSelection = () => setSelectedSourceIds([]);
 
-  const applyMapping = () => {
+  const targetClassification = classifications.find(c => c.id === targetClassificationId);
+
+  const previewChanges = useMemo(() => {
+    if (!targetClassification) return [];
+    return selectedSourceIds.map(sid => {
+      const item = sourceItems.find(s => s.id === sid);
+      const key = `${sourceType}:${sid}`;
+      const existing = existingByKey.get(key);
+      const newName = `${targetClassification.code} — ${targetClassification.name}`;
+      let changeType: 'new' | 'update' | 'unchanged' = 'new';
+      if (existing) {
+        changeType = existing.classificationId === targetClassification.id ? 'unchanged' : 'update';
+      }
+      return {
+        sourceId: sid,
+        label: item?.label ?? sid,
+        from: existing?.classificationName ?? null,
+        to: newName,
+        changeType,
+      };
+    });
+  }, [selectedSourceIds, sourceItems, sourceType, existingByKey, targetClassification]);
+
+  const openPreview = () => {
     if (!targetClassificationId) {
       toast.error('Select a target classification');
       return;
@@ -107,9 +130,12 @@ export function BulkClassificationMappingPanel({ eba }: Props) {
       toast.error('Select at least one item to map');
       return;
     }
-    const cls = classifications.find(c => c.id === targetClassificationId);
-    if (!cls) return;
+    setPreviewOpen(true);
+  };
 
+  const commitMapping = () => {
+    const cls = targetClassification;
+    if (!cls) return;
     const next = [...mappings];
     selectedSourceIds.forEach(sid => {
       const item = sourceItems.find(s => s.id === sid);
