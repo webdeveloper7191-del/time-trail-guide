@@ -312,7 +312,10 @@ export function BulkClassificationMappingPanel({ eba }: Props) {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={applyMapping}>
+                <Button variant="outline" onClick={openPreview}>
+                  <Eye className="h-4 w-4 mr-1" /> Preview changes
+                </Button>
+                <Button onClick={openPreview}>
                   <Save className="h-4 w-4 mr-1" /> Apply mapping
                 </Button>
               </div>
