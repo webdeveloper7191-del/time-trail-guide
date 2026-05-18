@@ -88,6 +88,7 @@ import {
   EBACompareAllowances,
   EBACompareConditions,
 } from './EBAEnhancementCards';
+import { EBACoverageRulesPanel } from './EBACoverageRulesPanel';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Comprehensive mock EBA data
