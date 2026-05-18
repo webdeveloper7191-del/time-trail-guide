@@ -2056,6 +2056,82 @@ export const awardsSRS: ModuleSRS = {
         { name: "document_url", type: "NVARCHAR(500)", mandatory: false, description: "Supporting document" },
         { name: "is_active", type: "BIT", mandatory: true, description: "Whether currently active", defaultValue: "1" }
       ]
+    },
+    {
+      name: "EnterpriseAgreements",
+      schema: "awards",
+      description: "Enterprise Bargaining Agreements (EBAs) negotiated with employees, applied in place of or alongside Modern Awards",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "tenant_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Multi-tenancy identifier" },
+        { name: "name", type: "NVARCHAR(255)", mandatory: true, description: "EBA name (e.g., 'Sunshine Childcare EBA 2026-2030')" },
+        { name: "code", type: "NVARCHAR(50)", mandatory: true, description: "Short code (e.g., EBA-SC-2026)" },
+        { name: "agreement_type", type: "NVARCHAR(50)", mandatory: true, description: "modern_award | enterprise_agreement | individual_flexibility" },
+        { name: "status", type: "NVARCHAR(50)", mandatory: true, description: "draft | pending_approval | active | expired | superseded | rejected" },
+        { name: "underlying_award_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Modern Award used as BOOT comparator", foreignKey: "awards.ModernAwards.id" },
+        { name: "coverage_description", type: "NVARCHAR(MAX)", mandatory: false, description: "Plain-language description of who is covered" },
+        { name: "applicable_states", type: "NVARCHAR(255)", mandatory: false, description: "Comma-separated AU state codes" },
+        { name: "approval_date", type: "DATE", mandatory: true, description: "FWC approval date" },
+        { name: "commencement_date", type: "DATE", mandatory: true, description: "Date EBA takes effect" },
+        { name: "nominal_expiry_date", type: "DATE", mandatory: true, description: "Nominal expiry (continues to apply until replaced)" },
+        { name: "fwc_reference", type: "NVARCHAR(100)", mandatory: false, description: "Fair Work Commission file reference" },
+        { name: "fwc_approval_number", type: "NVARCHAR(100)", mandatory: false, description: "FWC approval number" },
+        { name: "superannuation_rate", type: "DECIMAL(5,2)", mandatory: true, description: "Super % (may exceed legislated SG rate)" },
+        { name: "version", type: "NVARCHAR(50)", mandatory: true, description: "EBA version (variations create new versions)" },
+        { name: "previous_version_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Predecessor EBA version", foreignKey: "awards.EnterpriseAgreements.id" },
+        { name: "boot_passed", type: "BIT", mandatory: true, description: "Whether latest BOOT validation passed", defaultValue: "0" },
+        { name: "boot_last_run_at", type: "DATETIME2", mandatory: false, description: "Last BOOT validation timestamp" },
+        { name: "created_at", type: "DATETIME2", mandatory: true, description: "Record creation" },
+        { name: "updated_at", type: "DATETIME2", mandatory: true, description: "Last update" },
+        { name: "created_by", type: "UNIQUEIDENTIFIER", mandatory: true, description: "User who created the EBA" }
+      ]
+    },
+    {
+      name: "EBAClassifications",
+      schema: "awards",
+      description: "Classification levels defined within an EBA (parallel to AwardClassifications)",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "eba_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Parent EBA", foreignKey: "awards.EnterpriseAgreements.id" },
+        { name: "code", type: "NVARCHAR(50)", mandatory: true, description: "Classification code" },
+        { name: "name", type: "NVARCHAR(255)", mandatory: true, description: "Classification name" },
+        { name: "description", type: "NVARCHAR(MAX)", mandatory: false, description: "Role description" },
+        { name: "level", type: "INT", mandatory: true, description: "Numeric level" },
+        { name: "required_qualifications", type: "NVARCHAR(MAX)", mandatory: false, description: "Minimum qualifications" },
+        { name: "min_experience_months", type: "INT", mandatory: false, description: "Minimum experience" },
+        { name: "mapped_award_classification_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Equivalent classification in underlying award (for BOOT)", foreignKey: "awards.AwardClassifications.id" }
+      ]
+    },
+    {
+      name: "EBAPayRates",
+      schema: "awards",
+      description: "Date-effective pay rates per EBA classification",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "classification_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "EBA classification", foreignKey: "awards.EBAClassifications.id" },
+        { name: "rate_type", type: "NVARCHAR(50)", mandatory: true, description: "hourly | weekly | annual" },
+        { name: "base_rate", type: "DECIMAL(10,4)", mandatory: true, description: "Base rate" },
+        { name: "effective_from", type: "DATE", mandatory: true, description: "Effective start" },
+        { name: "effective_to", type: "DATE", mandatory: false, description: "Effective end (null = current)" },
+        { name: "annual_increase_percent", type: "DECIMAL(5,2)", mandatory: false, description: "Scheduled annual increase" },
+        { name: "next_increase_date", type: "DATE", mandatory: false, description: "Date of next scheduled increase" }
+      ]
+    },
+    {
+      name: "EBACoverageMappings",
+      schema: "awards",
+      description: "Resolves which EBA applies to a given location / department / staff (used by pay calc engine)",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "eba_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Target EBA", foreignKey: "awards.EnterpriseAgreements.id" },
+        { name: "scope_type", type: "NVARCHAR(50)", mandatory: true, description: "tenant | location | department | staff" },
+        { name: "scope_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "ID of the scoped entity (null for tenant)" },
+        { name: "eba_classification_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Default classification within EBA for this scope", foreignKey: "awards.EBAClassifications.id" },
+        { name: "effective_from", type: "DATE", mandatory: true, description: "Mapping start date" },
+        { name: "effective_to", type: "DATE", mandatory: false, description: "Mapping end date" },
+        { name: "created_by", type: "UNIQUEIDENTIFIER", mandatory: true, description: "User who created mapping" },
+        { name: "created_at", type: "DATETIME2", mandatory: true, description: "Created timestamp" }
+      ]
     }
   ],
 
