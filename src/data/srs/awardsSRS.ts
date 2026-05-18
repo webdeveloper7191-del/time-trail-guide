@@ -2154,6 +2154,16 @@ export const awardsSRS: ModuleSRS = {
     { id: "BR-AWD-007", rule: "All rate overrides require documented justification and management approval", rationale: "Audit trail for Fair Work compliance" },
     { id: "BR-AWD-008", rule: "FWC rate updates must be applied on or before effective date", rationale: "Underpayment risk if delayed" },
     { id: "BR-AWD-009", rule: "Absorption clauses must be clearly documented and cannot reduce below award", rationale: "Better-off-overall test compliance" },
-    { id: "BR-AWD-010", rule: "Historical rate data must be retained for 7 years", rationale: "Fair Work record-keeping requirements" }
+    { id: "BR-AWD-010", rule: "Historical rate data must be retained for 7 years", rationale: "Fair Work record-keeping requirements" },
+    { id: "BR-AWD-011", rule: "Every active EBA must pass the Better Off Overall Test (BOOT) against its underlying Modern Award before activation", rationale: "Fair Work Act s.193 — EBA cannot be approved if employees would be worse off overall" },
+    { id: "BR-AWD-012", rule: "When both an EBA and Modern Award could apply, the EBA takes precedence for staff covered by it", rationale: "Hierarchy of industrial instruments under Fair Work Act" },
+    { id: "BR-AWD-013", rule: "EBA pay rates must equal or exceed the underlying award minimum at all times", rationale: "BOOT and minimum wage compliance" },
+    { id: "BR-AWD-014", rule: "After nominal expiry, an EBA continues to apply until replaced or terminated by FWC", rationale: "Fair Work Act s.54 — agreement remains in force post-expiry" },
+    { id: "BR-AWD-015", rule: "Pay calculation must use the EBA version that was active on the worked date, not the approval date", rationale: "Ensures correct rate is applied historically and for back-pay" },
+    { id: "BR-AWD-016", rule: "Staff covered by an EBA without a mapped classification cannot be exported to payroll", rationale: "Prevents underpayment from missing classification data" },
+    { id: "BR-AWD-017", rule: "EBA variations create a new immutable version; previous versions retained for retrospective pay", rationale: "Audit trail and back-pay accuracy" },
+    { id: "BR-AWD-018", rule: "Every pay component on a timesheet must carry source metadata (agreement_id, classification_id, clause_reference)", rationale: "Traceability for Fair Work audits and payroll reconciliation" },
+    { id: "BR-AWD-019", rule: "BOOT safety net: if a computed timesheet line falls below the underlying award value, pad to award value and raise a breach alert", rationale: "Defence-in-depth against accidental underpayment" },
+    { id: "BR-AWD-020", rule: "Renegotiation alert must be raised 6 months before EBA nominal expiry", rationale: "Operational lead time for bargaining" }
   ]
 };
