@@ -87,7 +87,7 @@ function saveRules(ebaId: string, rules: CoverageRule[]) {
 function ruleMatches(rule: CoverageRule, staff: typeof mockStaff[number]): boolean {
   const c = rule.conditions;
   if (c.locations.length && !staff.locations.some(l => c.locations.includes(l))) return false;
-  if (c.departments.length && !c.departments.includes(staff.department)) return false;
+  if (c.departments.length && (!staff.department || !c.departments.includes(staff.department))) return false;
   if (c.employmentTypes.length) {
     const t = staff.currentPayCondition?.employmentType;
     if (!t || !c.employmentTypes.includes(t)) return false;
