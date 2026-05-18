@@ -1116,6 +1116,11 @@ export function EnterpriseAgreementPanel() {
                     </div>
                   </ScrollArea>
                 </TabsContent>
+
+                <TabsContent value="coverage" className="mt-4 space-y-4">
+                  <EBACoverageRulesPanel eba={selectedEBA} />
+                </TabsContent>
+
                 <TabsContent value="boot" className="mt-4 space-y-4">
                   <EBABootResultCard eba={selectedEBA} />
                   <EBAPayTimelineCard eba={selectedEBA} />
