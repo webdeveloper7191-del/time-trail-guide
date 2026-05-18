@@ -57,13 +57,23 @@ interface CalculationStep {
   priority: number;
 }
 
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] as const;
+type DayOfWeek = typeof DAYS[number];
+type TriggerFilter = 'all' | 'standby' | 'callback' | 'recall' | 'emergency';
+
 export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculationPreviewProps) {
-  const [isWeekend, setIsWeekend] = useState(false);
+  const [dayOfWeek, setDayOfWeek] = useState<DayOfWeek>('Wednesday');
   const [isPublicHoliday, setIsPublicHoliday] = useState(false);
+  const [isStandbyActive, setIsStandbyActive] = useState(true);
   const [wasCalledBack, setWasCalledBack] = useState(true);
-  const [callbackHours, setCallbackHours] = useState(1.5);
+  const [actualHoursWorked, setActualHoursWorked] = useState(1.5);
+  const [currentCallbackCount, setCurrentCallbackCount] = useState(1);
+  const [baseHourlyRate, setBaseHourlyRate] = useState(35);
+  const [triggerTypeFilter, setTriggerTypeFilter] = useState<TriggerFilter>('all');
   const [awardFilter, setAwardFilter] = useState<string>('all');
   const [ruleFilter, setRuleFilter] = useState<string>('all');
+
+  const isWeekend = dayOfWeek === 'Saturday' || dayOfWeek === 'Sunday';
 
   // Derive available awards from the allowance set
   const availableAwards = useMemo(() => {
@@ -72,13 +82,14 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
     return Array.from(set);
   }, [allowances]);
 
-  // Filter active allowances by selected award + single rule
+  // Filter active allowances by selected award + trigger type + single rule
   const activeAllowances = useMemo(() => {
     return allowances
       .filter(a => a.isActive)
       .filter(a => awardFilter === 'all' || a.applicableAwards.includes(awardFilter as any))
+      .filter(a => triggerTypeFilter === 'all' || a.triggerType === triggerTypeFilter)
       .filter(a => ruleFilter === 'all' || a.id === ruleFilter);
-  }, [allowances, awardFilter, ruleFilter]);
+  }, [allowances, awardFilter, triggerTypeFilter, ruleFilter]);
 
 
   // Calculate pay with exclusion logic
@@ -101,11 +112,10 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
       const isStandbyType = allowance.triggerType === 'standby';
       const isCallbackType = ['callback', 'recall', 'emergency'].includes(allowance.triggerType);
 
-      // Standby always applies, callback only if called back
-      if (isStandbyType || (isCallbackType && wasCalledBack)) {
+      // Standby gated by isStandbyActive; callback gated by wasCalledBack
+      if ((isStandbyType && isStandbyActive) || (isCallbackType && wasCalledBack)) {
         // Check if non-stackable
         if (!allowance.stackable) {
-          // Non-stackable: mark conflicting lower-priority allowances as excluded
           for (const other of sortedAllowances) {
             if (other.id !== allowance.id && other.priority < allowance.priority) {
               if (!other.stackable || other.excludesWith.includes(allowance.id)) {
@@ -115,7 +125,6 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
           }
         }
 
-        // Check mutual exclusions
         for (const excludedId of allowance.excludesWith) {
           const excludedAllowance = activeAllowances.find(a => a.id === excludedId);
           if (excludedAllowance && excludedAllowance.priority < allowance.priority) {
@@ -127,7 +136,6 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
       }
     }
 
-    // Second pass: calculate amounts
     let totalPay = 0;
 
     for (const allowance of sortedAllowances) {
@@ -135,37 +143,46 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
       const isCallbackType = ['callback', 'recall', 'emergency'].includes(allowance.triggerType);
       const isExcluded = excludedAllowanceIds.has(allowance.id);
 
-      // Calculate base amount
       let amount = 0;
       let reason = '';
 
       if (isStandbyType) {
-        // Standby calculation
-        if (isPublicHoliday && allowance.publicHolidayMultiplier) {
+        if (!isStandbyActive) {
+          amount = 0;
+          reason = 'Standby not active';
+        } else if (isPublicHoliday && allowance.publicHolidayMultiplier) {
           amount = allowance.rate * allowance.publicHolidayMultiplier;
           reason = `$${allowance.rate.toFixed(2)} × ${allowance.publicHolidayMultiplier}x (public holiday)`;
         } else if (isWeekend && allowance.weekendRate) {
           amount = allowance.weekendRate;
-          reason = `Weekend rate: $${allowance.weekendRate.toFixed(2)}`;
+          reason = `Weekend rate (${dayOfWeek}): $${allowance.weekendRate.toFixed(2)}`;
         } else {
           amount = allowance.rate;
-          reason = `Base rate: $${allowance.rate.toFixed(2)}`;
+          reason = `Base rate (${dayOfWeek}): $${allowance.rate.toFixed(2)}`;
         }
       } else if (isCallbackType) {
-        // Callback calculation
         if (!wasCalledBack) {
           amount = 0;
           reason = 'Not called back';
         } else {
           const minimumHours = allowance.callbackMinimumHours || 2;
-          const paidHours = Math.max(callbackHours, minimumHours);
-          const rate = allowance.rate;
-          amount = paidHours * rate;
-          reason = `${paidHours}h × $${rate.toFixed(2)}/h${callbackHours < minimumHours ? ` (min ${minimumHours}h applies)` : ''}`;
+          const paidHours = Math.max(actualHoursWorked, minimumHours);
+          const multiplier = allowance.callbackRateMultiplier ?? 1;
+          // Effective hourly rate = max(allowance.rate, baseHourlyRate × multiplier)
+          const effectiveRate = Math.max(allowance.rate, baseHourlyRate * multiplier);
+          // Tiered uplift: 3rd+ callback in period adds 25%
+          const tierUplift = currentCallbackCount >= 3 ? 1.25 : 1;
+          amount = paidHours * effectiveRate * tierUplift;
+          const parts: string[] = [];
+          parts.push(`${paidHours}h × $${effectiveRate.toFixed(2)}/h`);
+          if (multiplier !== 1) parts.push(`(base $${baseHourlyRate.toFixed(2)} × ${multiplier}x)`);
+          if (actualHoursWorked < minimumHours) parts.push(`min ${minimumHours}h`);
+          if (tierUplift > 1) parts.push(`tier uplift ×${tierUplift} (callback #${currentCallbackCount})`);
+          reason = parts.join(' · ');
         }
       }
 
-      const applied = !isExcluded && (isStandbyType || (isCallbackType && wasCalledBack));
+      const applied = !isExcluded && ((isStandbyType && isStandbyActive) || (isCallbackType && wasCalledBack));
 
       steps.push({
         allowanceId: allowance.id,
@@ -186,7 +203,7 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
     }
 
     return { steps, totalPay };
-  }, [activeAllowances, isWeekend, isPublicHoliday, wasCalledBack, callbackHours]);
+  }, [activeAllowances, isWeekend, dayOfWeek, isPublicHoliday, isStandbyActive, wasCalledBack, actualHoursWorked, currentCallbackCount, baseHourlyRate]);
 
   const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
 
@@ -264,31 +281,87 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
         </div>
 
         {/* Scenario Controls */}
-        <div className="p-4 rounded-lg bg-muted/50 border">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+        <div className="p-4 rounded-lg bg-muted/50 border space-y-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Sample Shift Scenario
           </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Day of Week</Label>
+              <select
+                value={dayOfWeek}
+                onChange={(e) => setDayOfWeek(e.target.value as DayOfWeek)}
+                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+              >
+                {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+              {isWeekend && (
+                <p className="text-[10px] text-amber-600 mt-1">Weekend rate applies</p>
+              )}
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Base Hourly Rate ($)</Label>
+              <input
+                type="number"
+                min={0}
+                step={0.5}
+                value={baseHourlyRate}
+                onChange={(e) => setBaseHourlyRate(parseFloat(e.target.value) || 0)}
+                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Trigger Type</Label>
+              <select
+                value={triggerTypeFilter}
+                onChange={(e) => setTriggerTypeFilter(e.target.value as TriggerFilter)}
+                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+              >
+                <option value="all">All triggers</option>
+                <option value="standby">Standby</option>
+                <option value="callback">Callback</option>
+                <option value="recall">Emergency recall</option>
+                <option value="emergency">Emergency</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Callback # in period</Label>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={currentCallbackCount}
+                onChange={(e) => setCurrentCallbackCount(parseInt(e.target.value) || 0)}
+                className="w-full mt-1 text-sm border rounded px-2 py-1.5 bg-background"
+              />
+              {currentCallbackCount >= 3 && (
+                <p className="text-[10px] text-amber-600 mt-1">Tier uplift ×1.25</p>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-center gap-2">
-              <Switch 
-                id="weekend" 
-                checked={isWeekend} 
-                onCheckedChange={setIsWeekend}
+              <Switch
+                id="standbyActive"
+                checked={isStandbyActive}
+                onCheckedChange={setIsStandbyActive}
               />
-              <Label htmlFor="weekend" className="text-sm">Weekend</Label>
+              <Label htmlFor="standbyActive" className="text-sm">Standby Active</Label>
             </div>
             <div className="flex items-center gap-2">
-              <Switch 
-                id="publicHoliday" 
-                checked={isPublicHoliday} 
+              <Switch
+                id="publicHoliday"
+                checked={isPublicHoliday}
                 onCheckedChange={setIsPublicHoliday}
               />
               <Label htmlFor="publicHoliday" className="text-sm">Public Holiday</Label>
             </div>
             <div className="flex items-center gap-2">
-              <Switch 
-                id="calledBack" 
-                checked={wasCalledBack} 
+              <Switch
+                id="calledBack"
+                checked={wasCalledBack}
                 onCheckedChange={setWasCalledBack}
               />
               <Label htmlFor="calledBack" className="text-sm">Called Back</Label>
@@ -296,18 +369,17 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
             {wasCalledBack && (
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <select
-                  value={callbackHours}
-                  onChange={(e) => setCallbackHours(parseFloat(e.target.value))}
-                  className="text-sm border rounded px-2 py-1 bg-background"
-                >
-                  <option value={0.5}>0.5 hours</option>
-                  <option value={1}>1 hour</option>
-                  <option value={1.5}>1.5 hours</option>
-                  <option value={2}>2 hours</option>
-                  <option value={3}>3 hours</option>
-                  <option value={4}>4 hours</option>
-                </select>
+                <div className="flex-1">
+                  <Label className="text-[10px] text-muted-foreground">Actual hours worked</Label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.25}
+                    value={actualHoursWorked}
+                    onChange={(e) => setActualHoursWorked(parseFloat(e.target.value) || 0)}
+                    className="w-full text-sm border rounded px-2 py-1 bg-background"
+                  />
+                </div>
               </div>
             )}
           </div>
