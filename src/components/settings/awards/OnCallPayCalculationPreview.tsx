@@ -57,13 +57,23 @@ interface CalculationStep {
   priority: number;
 }
 
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] as const;
+type DayOfWeek = typeof DAYS[number];
+type TriggerFilter = 'all' | 'standby' | 'callback' | 'recall' | 'emergency';
+
 export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculationPreviewProps) {
-  const [isWeekend, setIsWeekend] = useState(false);
+  const [dayOfWeek, setDayOfWeek] = useState<DayOfWeek>('Wednesday');
   const [isPublicHoliday, setIsPublicHoliday] = useState(false);
+  const [isStandbyActive, setIsStandbyActive] = useState(true);
   const [wasCalledBack, setWasCalledBack] = useState(true);
-  const [callbackHours, setCallbackHours] = useState(1.5);
+  const [actualHoursWorked, setActualHoursWorked] = useState(1.5);
+  const [currentCallbackCount, setCurrentCallbackCount] = useState(1);
+  const [baseHourlyRate, setBaseHourlyRate] = useState(35);
+  const [triggerTypeFilter, setTriggerTypeFilter] = useState<TriggerFilter>('all');
   const [awardFilter, setAwardFilter] = useState<string>('all');
   const [ruleFilter, setRuleFilter] = useState<string>('all');
+
+  const isWeekend = dayOfWeek === 'Saturday' || dayOfWeek === 'Sunday';
 
   // Derive available awards from the allowance set
   const availableAwards = useMemo(() => {
@@ -72,13 +82,14 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
     return Array.from(set);
   }, [allowances]);
 
-  // Filter active allowances by selected award + single rule
+  // Filter active allowances by selected award + trigger type + single rule
   const activeAllowances = useMemo(() => {
     return allowances
       .filter(a => a.isActive)
       .filter(a => awardFilter === 'all' || a.applicableAwards.includes(awardFilter as any))
+      .filter(a => triggerTypeFilter === 'all' || a.triggerType === triggerTypeFilter)
       .filter(a => ruleFilter === 'all' || a.id === ruleFilter);
-  }, [allowances, awardFilter, ruleFilter]);
+  }, [allowances, awardFilter, triggerTypeFilter, ruleFilter]);
 
 
   // Calculate pay with exclusion logic
