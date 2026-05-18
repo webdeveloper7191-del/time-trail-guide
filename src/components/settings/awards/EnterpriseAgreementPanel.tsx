@@ -764,12 +764,13 @@ export function EnterpriseAgreementPanel() {
               <Separator className="my-4" />
 
               <Tabs defaultValue="overview" className="mt-4">
-                <TabsList className="w-full grid grid-cols-8 h-auto">
+                <TabsList className="w-full grid grid-cols-9 h-auto">
                   <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
                   <TabsTrigger value="classifications" className="text-xs">Pay</TabsTrigger>
                   <TabsTrigger value="allowances" className="text-xs">Allow.</TabsTrigger>
                   <TabsTrigger value="penalties" className="text-xs">Penalt.</TabsTrigger>
                   <TabsTrigger value="leave" className="text-xs">Leave</TabsTrigger>
+                  <TabsTrigger value="coverage" className="text-xs">Coverage</TabsTrigger>
                   <TabsTrigger value="boot" className="text-xs">BOOT</TabsTrigger>
                   <TabsTrigger value="lifecycle" className="text-xs">Lifecycle</TabsTrigger>
                   <TabsTrigger value="admin" className="text-xs">Admin</TabsTrigger>
