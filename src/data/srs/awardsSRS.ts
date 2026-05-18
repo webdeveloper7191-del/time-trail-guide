@@ -1762,6 +1762,185 @@ export const awardsSRS: ModuleSRS = {
         ],
         outcome: "Multi-award staff correctly tracked with appropriate rates per role. Flexibility maintained."
       }
+    },
+    {
+      id: "US-AWD-026",
+      title: "EBA Purpose, Rationale & Lifecycle",
+      actors: ["HR Manager", "Payroll Administrator", "Finance Director", "Union Delegate"],
+      description: "As an organisation, I want to operate under an Enterprise Bargaining Agreement (EBA) in place of (or in addition to) the underlying Modern Award, so that negotiated terms with the workforce are legally captured, applied consistently, and demonstrably better-off-overall than the award.",
+      acceptanceCriteria: [
+        "EBA records capture purpose, parties, coverage, term and FWC approval reference",
+        "Each EBA is anchored to an underlying Modern Award used as the BOOT comparator",
+        "EBA lifecycle states are tracked: draft → pending_approval → active → expired/superseded",
+        "Nominal expiry date triggers a renegotiation workflow and dashboard alert 6 months prior",
+        "When an EBA expires it continues to apply until replaced or terminated by FWC (per Fair Work Act s.54)",
+        "Superseded EBAs remain queryable for historical pay re-calculation and back-pay",
+        "Audit trail records who created, approved, varied or terminated the EBA and when"
+      ],
+      businessLogic: [
+        "Why EBA: an EBA lets an employer and employees collectively agree to terms tailored to the workplace (rosters, allowances, rates, leave) that improve on the Modern Award while remaining legally enforceable",
+        "Coverage: an EBA may cover an entire entity, specific locations, departments, classifications or named staff — coverage is resolved hierarchically (staff override > department > location > tenant default)",
+        "BOOT (Better Off Overall Test): every active EBA must pass BOOT against its underlying Modern Award; the system blocks activation until BOOT validation succeeds",
+        "Versioning: variations create a new immutable version; the previous version is retained with effectiveTo set to the variation date",
+        "Precedence: when both an EBA and Modern Award could apply to a shift, the EBA always wins for staff covered by it; when no EBA classification is mapped, the system falls back to the underlying award",
+        "Termination: an EBA can be terminated by mutual agreement, replacement, or FWC order — the system records the termination reason and effective date"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Staff Pay Conditions", relationship: "EBA classification stored against each staff pay condition" },
+        { module: "Timesheets", relationship: "Pay calculation engine resolves rates from the active EBA at the worked date" },
+        { module: "Compliance", relationship: "BOOT validation and Fair Work record-keeping (7 years)" },
+        { module: "Awards", relationship: "Underlying Modern Award acts as the BOOT comparator and fallback" }
+      ],
+      endToEndJourney: [
+        "1. Bargaining concludes and the EBA is approved by Fair Work Commission",
+        "2. HR Manager opens Settings → Awards → Enterprise Agreements and creates the EBA record",
+        "3. Header data captured: name, code, parties, FWC reference, approval/commencement/nominal expiry dates",
+        "4. Coverage scope defined: locations, departments and/or classification mappings",
+        "5. Underlying Modern Award selected as the BOOT comparator",
+        "6. Classifications, pay rates, penalty rates, allowances, leave entitlements and conditions configured",
+        "7. BOOT validation run — system blocks activation if any clause fails BOOT",
+        "8. Finance Director approves; EBA status set to active",
+        "9. Bulk Classification Mapping tool used to assign staff/locations/departments to EBA classifications",
+        "10. All downstream modules (Roster cost preview, Timesheet pay calc, Payroll export) start using EBA rates from commencement date",
+        "11. 6 months before nominal expiry, system raises renegotiation alert",
+        "12. New EBA version supersedes the prior version; historical version retained for back-pay calculations"
+      ],
+      realWorldExample: {
+        scenario: "Sunshine Childcare wants to offer enhanced pay and leave to retain qualified educators. They negotiate an EBA with their staff rather than relying on the Children's Services Award alone.",
+        steps: [
+          "Why: Award rates are not competitive in their region; staff turnover is high",
+          "Bargaining: 12 weeks of negotiation between management and an employee bargaining representative",
+          "Outcome: 6% above-award base rates, 5 weeks annual leave, $500 PD allowance, guaranteed shift-swap rights",
+          "FWC submission with BOOT analysis attached",
+          "Approval: FWC approves on 15 June 2026, commences 1 July 2026, nominal expiry 30 June 2030",
+          "System configuration: EBA-SC-2026 created, coverage = all Sunshine locations, underlying award = MA000120",
+          "Staff transition: existing 42 educators bulk-mapped from award classifications to equivalent EBA classifications",
+          "First pay run: 22 July 2026 — system applies EBA rates automatically; pay slips show 'Sunshine Childcare EBA 2026' as the source",
+          "Year 3: alert fires Jan 2030 to begin renegotiation"
+        ],
+        outcome: "Negotiated terms are captured once and applied consistently across rostering, timesheets and payroll for the entire 4-year EBA term, with full auditability."
+      }
+    },
+    {
+      id: "US-AWD-027",
+      title: "EBA Integration with Staff Pay Conditions",
+      actors: ["HR Manager", "Payroll Administrator"],
+      description: "As a Payroll Administrator, I want each staff member's pay condition to reference the correct EBA classification (or fall back to their Modern Award), so that the rate engine has a single source of truth for what an employee should be paid.",
+      acceptanceCriteria: [
+        "Staff pay condition stores: agreement type (modern_award | enterprise_agreement | individual_flexibility), agreementId, classificationId, effectiveFrom/To",
+        "Pay condition history preserves every change with reason, approver and effective date",
+        "Changing a staff member's EBA classification creates a new pay condition record (no destructive edits)",
+        "Bulk Classification Mapping tool can assign EBA classifications to many staff in one operation with a preview step",
+        "If a staff member is covered by an EBA but no classification is mapped, the system flags the profile as 'Incomplete EBA mapping' and blocks payroll export",
+        "Multi-award staff can hold concurrent classifications: a primary (used for entitlements/overtime) and one or more secondary classifications (used per-shift)",
+        "Rate displayed on the staff profile resolves live from the EBA pay rate effective at today's date"
+      ],
+      businessLogic: [
+        "Single source of truth: the EBA → classification → rate chain is authoritative; ad-hoc rate edits require a Custom Rate Override with documented justification and approval",
+        "Override rule: an override can lift a staff member above the EBA rate but never below — enforced at save",
+        "Effective dating: when an EBA rate increase is published, all staff on that classification automatically pick up the new rate at the effectiveFrom date without manual edits",
+        "Promotion flow: changing classification triggers a new PayCondition row with payConditionHistory entry capturing old → new classification and rate delta",
+        "Leave & super: leave accrual and super calculations read entitlements from the EBA, not the underlying award, when the staff member is EBA-covered",
+        "Termination of EBA: if an EBA is superseded mid-period, all linked staff pay conditions are migrated to the replacement EBA with a system-generated mapping suggestion that HR confirms"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Staff Profiles", relationship: "currentPayCondition + payConditionHistory reference EBA classification" },
+        { module: "Awards", relationship: "EBA classification mapping tool, BOOT validation" },
+        { module: "Custom Overrides", relationship: "Overrides layered on top of EBA-resolved rate" },
+        { module: "Leave Accrual", relationship: "Reads leave entitlements from EBA when applicable" }
+      ],
+      endToEndJourney: [
+        "1. HR opens staff profile → Pay Conditions tab",
+        "2. Selects 'Enterprise Agreement' as the pay source",
+        "3. Picks the active EBA from the dropdown (only EBAs covering the staff member's location appear)",
+        "4. Picks the EBA classification (e.g. 'Level 3 — Qualified Educator')",
+        "5. Sets effectiveFrom date; previous pay condition auto-closed with effectiveTo = newFrom - 1",
+        "6. System resolves hourly rate from EBA pay rate table effective at that date and shows preview",
+        "7. If staff is casual, casual loading from EBA (if defined) or underlying award is auto-applied",
+        "8. Save → new PayCondition row inserted; payConditionHistory updated; audit log entry written",
+        "9. Document Workflow triggers a pay change letter for staff signature",
+        "10. Roster cost previews and the next timesheet pay calc immediately reflect the new condition"
+      ],
+      realWorldExample: {
+        scenario: "Educator Maria is promoted from Level 2 to Level 3 under the Sunshine Childcare EBA 2026, effective next Monday.",
+        steps: [
+          "HR opens Maria's profile, Pay Conditions tab",
+          "Current condition: EBA-SC-2026, Level 2, $33.25/hr, effective 01-Jul-2026",
+          "Clicks 'Change pay condition', selects Level 3 ($36.00/hr), effective 02-Sep-2026",
+          "System shows preview: +$2.75/hr (+8.3%), est. weekly impact +$104.50",
+          "Maria is casual → 25% loading applied: $36.00 × 1.25 = $45.00/hr displayed",
+          "Save → old condition closed 01-Sep-2026, new condition active from 02-Sep-2026",
+          "Pay change letter auto-generated, sent to Maria via Document Workflow",
+          "Next timesheet (week starting 02-Sep) calculates 22.5 hrs × $45.00 = $1,012.50",
+          "payConditionHistory shows full audit trail with approver and timestamp"
+        ],
+        outcome: "Promotion captured cleanly with no manual rate entry, immediate flow-through to roster costing and payroll, and full audit trail for Fair Work record-keeping."
+      }
+    },
+    {
+      id: "US-AWD-028",
+      title: "EBA Integration with Timesheets & Pay Calculation",
+      actors: ["Payroll Administrator", "Centre Manager", "Employee"],
+      description: "As a Payroll Administrator, I want timesheet pay calculations to automatically resolve rates, penalties, allowances and overtime from the staff member's EBA (with award fallback), so that every approved timesheet produces a Fair Work-compliant gross pay figure with full traceability.",
+      acceptanceCriteria: [
+        "For each timesheet line the engine resolves: base rate, casual loading, penalty multiplier, allowances and overtime tier from the active EBA at the worked date",
+        "Pay calculation breakdown displays the source clause (EBA name + clause reference) for every component",
+        "If the EBA was varied or superseded between the worked date and approval date, the engine uses the version that was active on the worked date",
+        "Public holiday, weekend, evening and night penalty rates are taken from EBAPenaltyRates, not the underlying award",
+        "Overtime thresholds (daily, weekly, consecutive-day) come from the EBA conditions table",
+        "Allowances trigger per the EBA frequency rules (per_hour, per_shift, per_week, per_annum, per_occurrence)",
+        "Where the EBA is silent on a specific condition the engine falls back to the underlying Modern Award and labels the line 'fallback: <award>'",
+        "Retrospective pay calculator re-runs against historical EBA versions when back-pay is required (e.g. delayed EBA approval)"
+      ],
+      businessLogic: [
+        "Resolution order per timesheet line: Custom Override → EBA → Underlying Award → National Minimum Wage (never breached)",
+        "Date-effective lookup: rate, penalty and allowance tables are joined on workedDate BETWEEN effectiveFrom AND COALESCE(effectiveTo, '9999-12-31')",
+        "Penalty stacking: EBA may define stackable vs non-stackable penalties; engine respects EBAAllowance.isStackable / priority",
+        "Overtime: unifiedOvertimeCalculator reads thresholds from EBA conditions (category='hours') first; absence falls back to award rule",
+        "Casual loading interaction: loading applied before penalty for casuals unless EBA specifies a compounded base (rare)",
+        "Multi-award staff: each timesheet line is tagged with its applicable agreement; lines under different EBAs are calculated independently and summed",
+        "BOOT safety net: if any computed line is lower than what the underlying award would have produced, the engine raises a BOOT-breach alert and pads the line to the award value (with audit note)",
+        "Payroll export: each pay component carries agreement_id, classification_id, clause_reference and amount so external payroll systems can reconcile"
+      ],
+      priority: "critical",
+      relatedModules: [
+        { module: "Timesheets", relationship: "Pay calculation engine consumes EBA rates per line" },
+        { module: "Roster", relationship: "Forward-looking shift cost preview uses same resolver" },
+        { module: "Retrospective Pay", relationship: "Back-pay recalculation against historical EBA versions" },
+        { module: "Payroll Export", relationship: "Carries agreement metadata to Xero/MYOB" },
+        { module: "Compliance", relationship: "BOOT breach detection at line level" }
+      ],
+      endToEndJourney: [
+        "1. Staff member clocks shifts during pay period; timesheet entries created",
+        "2. Centre Manager reviews and approves timesheet",
+        "3. Pay calc engine iterates each line: lookup staff.currentPayCondition active on line.workedDate",
+        "4. Resolves agreement (EBA-SC-2026), classification (Level 3), base rate ($36.00) from EBAPayRate effective that date",
+        "5. Determines day-of-week, time-of-day → applies EBAPenaltyRates (Saturday 1.5x, etc.)",
+        "6. Evaluates EBAAllowances: shift > 5h triggers meal allowance ($18.50/shift); qualification allowance ($25/week prorated)",
+        "7. unifiedOvertimeCalculator checks EBA conditions: daily threshold 9.5h, weekly 38h",
+        "8. Each component recorded in pay breakdown with source = 'EBA-SC-2026 cl.14.3'",
+        "9. BOOT safety check: total line value ≥ underlying award value for same hours → pass",
+        "10. Timesheet status → 'Pay-ready'; payroll export bundles agreement_id + classification_id + clause refs per line",
+        "11. Xero receives mapped earnings types and posts to payroll run"
+      ],
+      realWorldExample: {
+        scenario: "Maria (Level 3 EBA-SC-2026 casual) works Mon–Sat in a pay week. Her timesheet must be calculated correctly with EBA rates, casual loading, Saturday penalty, meal allowance and overtime.",
+        steps: [
+          "Mon–Fri: 5 × 8h day shifts = 40h, Sat: 1 × 6h shift = 6h, total 46h",
+          "Base resolution: EBA-SC-2026 Level 3 = $36.00/hr; casual loading 25% → $45.00/hr",
+          "Mon–Fri 38h at $45.00 = $1,710.00 (ordinary)",
+          "Mon–Fri overtime: 2h above 38h weekly threshold (from EBA conditions): 2h × $45.00 × 1.5 = $135.00",
+          "Saturday 6h: penalty 1.5x from EBAPenaltyRates → 6 × $45.00 × 1.5 = $405.00",
+          "Allowances: 6 shifts > 5h each → 6 × meal allowance $18.50 = $111.00; PD allowance prorated $9.62/week",
+          "Gross before tax: $1,710.00 + $135.00 + $405.00 + $111.00 + $9.62 = $2,370.62",
+          "Breakdown panel shows each line tagged 'EBA-SC-2026 cl.14, cl.21, cl.26'",
+          "BOOT check vs MA000120: award gross would have been $2,108.40 → EBA better off by $262.22 ✓",
+          "Approved by Centre Manager → exported to Xero with full clause references"
+        ],
+        outcome: "Maria is paid correctly under her EBA with every rate, penalty and allowance traceable to a clause reference, BOOT-safe, and ready for payroll posting with no manual intervention."
+      }
     }
   ],
 
@@ -1877,6 +2056,82 @@ export const awardsSRS: ModuleSRS = {
         { name: "document_url", type: "NVARCHAR(500)", mandatory: false, description: "Supporting document" },
         { name: "is_active", type: "BIT", mandatory: true, description: "Whether currently active", defaultValue: "1" }
       ]
+    },
+    {
+      name: "EnterpriseAgreements",
+      schema: "awards",
+      description: "Enterprise Bargaining Agreements (EBAs) negotiated with employees, applied in place of or alongside Modern Awards",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "tenant_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Multi-tenancy identifier" },
+        { name: "name", type: "NVARCHAR(255)", mandatory: true, description: "EBA name (e.g., 'Sunshine Childcare EBA 2026-2030')" },
+        { name: "code", type: "NVARCHAR(50)", mandatory: true, description: "Short code (e.g., EBA-SC-2026)" },
+        { name: "agreement_type", type: "NVARCHAR(50)", mandatory: true, description: "modern_award | enterprise_agreement | individual_flexibility" },
+        { name: "status", type: "NVARCHAR(50)", mandatory: true, description: "draft | pending_approval | active | expired | superseded | rejected" },
+        { name: "underlying_award_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Modern Award used as BOOT comparator", foreignKey: "awards.ModernAwards.id" },
+        { name: "coverage_description", type: "NVARCHAR(MAX)", mandatory: false, description: "Plain-language description of who is covered" },
+        { name: "applicable_states", type: "NVARCHAR(255)", mandatory: false, description: "Comma-separated AU state codes" },
+        { name: "approval_date", type: "DATE", mandatory: true, description: "FWC approval date" },
+        { name: "commencement_date", type: "DATE", mandatory: true, description: "Date EBA takes effect" },
+        { name: "nominal_expiry_date", type: "DATE", mandatory: true, description: "Nominal expiry (continues to apply until replaced)" },
+        { name: "fwc_reference", type: "NVARCHAR(100)", mandatory: false, description: "Fair Work Commission file reference" },
+        { name: "fwc_approval_number", type: "NVARCHAR(100)", mandatory: false, description: "FWC approval number" },
+        { name: "superannuation_rate", type: "DECIMAL(5,2)", mandatory: true, description: "Super % (may exceed legislated SG rate)" },
+        { name: "version", type: "NVARCHAR(50)", mandatory: true, description: "EBA version (variations create new versions)" },
+        { name: "previous_version_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Predecessor EBA version", foreignKey: "awards.EnterpriseAgreements.id" },
+        { name: "boot_passed", type: "BIT", mandatory: true, description: "Whether latest BOOT validation passed", defaultValue: "0" },
+        { name: "boot_last_run_at", type: "DATETIME2", mandatory: false, description: "Last BOOT validation timestamp" },
+        { name: "created_at", type: "DATETIME2", mandatory: true, description: "Record creation" },
+        { name: "updated_at", type: "DATETIME2", mandatory: true, description: "Last update" },
+        { name: "created_by", type: "UNIQUEIDENTIFIER", mandatory: true, description: "User who created the EBA" }
+      ]
+    },
+    {
+      name: "EBAClassifications",
+      schema: "awards",
+      description: "Classification levels defined within an EBA (parallel to AwardClassifications)",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "eba_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Parent EBA", foreignKey: "awards.EnterpriseAgreements.id" },
+        { name: "code", type: "NVARCHAR(50)", mandatory: true, description: "Classification code" },
+        { name: "name", type: "NVARCHAR(255)", mandatory: true, description: "Classification name" },
+        { name: "description", type: "NVARCHAR(MAX)", mandatory: false, description: "Role description" },
+        { name: "level", type: "INT", mandatory: true, description: "Numeric level" },
+        { name: "required_qualifications", type: "NVARCHAR(MAX)", mandatory: false, description: "Minimum qualifications" },
+        { name: "min_experience_months", type: "INT", mandatory: false, description: "Minimum experience" },
+        { name: "mapped_award_classification_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Equivalent classification in underlying award (for BOOT)", foreignKey: "awards.AwardClassifications.id" }
+      ]
+    },
+    {
+      name: "EBAPayRates",
+      schema: "awards",
+      description: "Date-effective pay rates per EBA classification",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "classification_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "EBA classification", foreignKey: "awards.EBAClassifications.id" },
+        { name: "rate_type", type: "NVARCHAR(50)", mandatory: true, description: "hourly | weekly | annual" },
+        { name: "base_rate", type: "DECIMAL(10,4)", mandatory: true, description: "Base rate" },
+        { name: "effective_from", type: "DATE", mandatory: true, description: "Effective start" },
+        { name: "effective_to", type: "DATE", mandatory: false, description: "Effective end (null = current)" },
+        { name: "annual_increase_percent", type: "DECIMAL(5,2)", mandatory: false, description: "Scheduled annual increase" },
+        { name: "next_increase_date", type: "DATE", mandatory: false, description: "Date of next scheduled increase" }
+      ]
+    },
+    {
+      name: "EBACoverageMappings",
+      schema: "awards",
+      description: "Resolves which EBA applies to a given location / department / staff (used by pay calc engine)",
+      fields: [
+        { name: "id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Primary key" },
+        { name: "eba_id", type: "UNIQUEIDENTIFIER", mandatory: true, description: "Target EBA", foreignKey: "awards.EnterpriseAgreements.id" },
+        { name: "scope_type", type: "NVARCHAR(50)", mandatory: true, description: "tenant | location | department | staff" },
+        { name: "scope_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "ID of the scoped entity (null for tenant)" },
+        { name: "eba_classification_id", type: "UNIQUEIDENTIFIER", mandatory: false, description: "Default classification within EBA for this scope", foreignKey: "awards.EBAClassifications.id" },
+        { name: "effective_from", type: "DATE", mandatory: true, description: "Mapping start date" },
+        { name: "effective_to", type: "DATE", mandatory: false, description: "Mapping end date" },
+        { name: "created_by", type: "UNIQUEIDENTIFIER", mandatory: true, description: "User who created mapping" },
+        { name: "created_at", type: "DATETIME2", mandatory: true, description: "Created timestamp" }
+      ]
     }
   ],
 
@@ -1899,6 +2154,16 @@ export const awardsSRS: ModuleSRS = {
     { id: "BR-AWD-007", rule: "All rate overrides require documented justification and management approval", rationale: "Audit trail for Fair Work compliance" },
     { id: "BR-AWD-008", rule: "FWC rate updates must be applied on or before effective date", rationale: "Underpayment risk if delayed" },
     { id: "BR-AWD-009", rule: "Absorption clauses must be clearly documented and cannot reduce below award", rationale: "Better-off-overall test compliance" },
-    { id: "BR-AWD-010", rule: "Historical rate data must be retained for 7 years", rationale: "Fair Work record-keeping requirements" }
+    { id: "BR-AWD-010", rule: "Historical rate data must be retained for 7 years", rationale: "Fair Work record-keeping requirements" },
+    { id: "BR-AWD-011", rule: "Every active EBA must pass the Better Off Overall Test (BOOT) against its underlying Modern Award before activation", rationale: "Fair Work Act s.193 — EBA cannot be approved if employees would be worse off overall" },
+    { id: "BR-AWD-012", rule: "When both an EBA and Modern Award could apply, the EBA takes precedence for staff covered by it", rationale: "Hierarchy of industrial instruments under Fair Work Act" },
+    { id: "BR-AWD-013", rule: "EBA pay rates must equal or exceed the underlying award minimum at all times", rationale: "BOOT and minimum wage compliance" },
+    { id: "BR-AWD-014", rule: "After nominal expiry, an EBA continues to apply until replaced or terminated by FWC", rationale: "Fair Work Act s.54 — agreement remains in force post-expiry" },
+    { id: "BR-AWD-015", rule: "Pay calculation must use the EBA version that was active on the worked date, not the approval date", rationale: "Ensures correct rate is applied historically and for back-pay" },
+    { id: "BR-AWD-016", rule: "Staff covered by an EBA without a mapped classification cannot be exported to payroll", rationale: "Prevents underpayment from missing classification data" },
+    { id: "BR-AWD-017", rule: "EBA variations create a new immutable version; previous versions retained for retrospective pay", rationale: "Audit trail and back-pay accuracy" },
+    { id: "BR-AWD-018", rule: "Every pay component on a timesheet must carry source metadata (agreement_id, classification_id, clause_reference)", rationale: "Traceability for Fair Work audits and payroll reconciliation" },
+    { id: "BR-AWD-019", rule: "BOOT safety net: if a computed timesheet line falls below the underlying award value, pad to award value and raise a breach alert", rationale: "Defence-in-depth against accidental underpayment" },
+    { id: "BR-AWD-020", rule: "Renegotiation alert must be raised 6 months before EBA nominal expiry", rationale: "Operational lead time for bargaining" }
   ]
 };
