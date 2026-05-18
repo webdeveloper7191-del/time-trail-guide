@@ -112,11 +112,10 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
       const isStandbyType = allowance.triggerType === 'standby';
       const isCallbackType = ['callback', 'recall', 'emergency'].includes(allowance.triggerType);
 
-      // Standby always applies, callback only if called back
-      if (isStandbyType || (isCallbackType && wasCalledBack)) {
+      // Standby gated by isStandbyActive; callback gated by wasCalledBack
+      if ((isStandbyType && isStandbyActive) || (isCallbackType && wasCalledBack)) {
         // Check if non-stackable
         if (!allowance.stackable) {
-          // Non-stackable: mark conflicting lower-priority allowances as excluded
           for (const other of sortedAllowances) {
             if (other.id !== allowance.id && other.priority < allowance.priority) {
               if (!other.stackable || other.excludesWith.includes(allowance.id)) {
@@ -126,7 +125,6 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
           }
         }
 
-        // Check mutual exclusions
         for (const excludedId of allowance.excludesWith) {
           const excludedAllowance = activeAllowances.find(a => a.id === excludedId);
           if (excludedAllowance && excludedAllowance.priority < allowance.priority) {
@@ -138,7 +136,6 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
       }
     }
 
-    // Second pass: calculate amounts
     let totalPay = 0;
 
     for (const allowance of sortedAllowances) {
@@ -146,37 +143,46 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
       const isCallbackType = ['callback', 'recall', 'emergency'].includes(allowance.triggerType);
       const isExcluded = excludedAllowanceIds.has(allowance.id);
 
-      // Calculate base amount
       let amount = 0;
       let reason = '';
 
       if (isStandbyType) {
-        // Standby calculation
-        if (isPublicHoliday && allowance.publicHolidayMultiplier) {
+        if (!isStandbyActive) {
+          amount = 0;
+          reason = 'Standby not active';
+        } else if (isPublicHoliday && allowance.publicHolidayMultiplier) {
           amount = allowance.rate * allowance.publicHolidayMultiplier;
           reason = `$${allowance.rate.toFixed(2)} × ${allowance.publicHolidayMultiplier}x (public holiday)`;
         } else if (isWeekend && allowance.weekendRate) {
           amount = allowance.weekendRate;
-          reason = `Weekend rate: $${allowance.weekendRate.toFixed(2)}`;
+          reason = `Weekend rate (${dayOfWeek}): $${allowance.weekendRate.toFixed(2)}`;
         } else {
           amount = allowance.rate;
-          reason = `Base rate: $${allowance.rate.toFixed(2)}`;
+          reason = `Base rate (${dayOfWeek}): $${allowance.rate.toFixed(2)}`;
         }
       } else if (isCallbackType) {
-        // Callback calculation
         if (!wasCalledBack) {
           amount = 0;
           reason = 'Not called back';
         } else {
           const minimumHours = allowance.callbackMinimumHours || 2;
-          const paidHours = Math.max(callbackHours, minimumHours);
-          const rate = allowance.rate;
-          amount = paidHours * rate;
-          reason = `${paidHours}h × $${rate.toFixed(2)}/h${callbackHours < minimumHours ? ` (min ${minimumHours}h applies)` : ''}`;
+          const paidHours = Math.max(actualHoursWorked, minimumHours);
+          const multiplier = allowance.callbackRateMultiplier ?? 1;
+          // Effective hourly rate = max(allowance.rate, baseHourlyRate × multiplier)
+          const effectiveRate = Math.max(allowance.rate, baseHourlyRate * multiplier);
+          // Tiered uplift: 3rd+ callback in period adds 25%
+          const tierUplift = currentCallbackCount >= 3 ? 1.25 : 1;
+          amount = paidHours * effectiveRate * tierUplift;
+          const parts: string[] = [];
+          parts.push(`${paidHours}h × $${effectiveRate.toFixed(2)}/h`);
+          if (multiplier !== 1) parts.push(`(base $${baseHourlyRate.toFixed(2)} × ${multiplier}x)`);
+          if (actualHoursWorked < minimumHours) parts.push(`min ${minimumHours}h`);
+          if (tierUplift > 1) parts.push(`tier uplift ×${tierUplift} (callback #${currentCallbackCount})`);
+          reason = parts.join(' · ');
         }
       }
 
-      const applied = !isExcluded && (isStandbyType || (isCallbackType && wasCalledBack));
+      const applied = !isExcluded && ((isStandbyType && isStandbyActive) || (isCallbackType && wasCalledBack));
 
       steps.push({
         allowanceId: allowance.id,
@@ -197,7 +203,7 @@ export function OnCallPayCalculationPreview({ allowances }: OnCallPayCalculation
     }
 
     return { steps, totalPay };
-  }, [activeAllowances, isWeekend, isPublicHoliday, wasCalledBack, callbackHours]);
+  }, [activeAllowances, isWeekend, dayOfWeek, isPublicHoliday, isStandbyActive, wasCalledBack, actualHoursWorked, currentCallbackCount, baseHourlyRate]);
 
   const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
 
