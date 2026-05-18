@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Layers,
   MapPin,
@@ -21,6 +22,10 @@ import {
   Wand2,
   AlertTriangle,
   CheckCircle2,
+  ArrowRight,
+  Eye,
+  Plus,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EnterpriseAgreement } from '@/types/enterpriseAgreement';
