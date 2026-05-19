@@ -31,6 +31,17 @@ export interface TimeOff {
   notes?: string;
 }
 
+export interface ShiftTemplateBreakRule {
+  id: string;
+  name: string;
+  /** Hours of work after which this break is triggered */
+  minWorkHoursRequired: number;
+  /** Break duration in minutes */
+  breakDurationMinutes: number;
+  type: 'paid' | 'unpaid';
+  isMandatory: boolean;
+}
+
 export interface ShiftTemplate {
   id: string;
   name: string;
