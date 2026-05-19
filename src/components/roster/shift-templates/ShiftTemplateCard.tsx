@@ -66,7 +66,8 @@ import { getDeviationSummary } from '@/lib/templateAwardValidation';
    onDelete,
    customAllowances,
    onCreateAllowance,
- }: ShiftTemplateCardProps) {
+}: ShiftTemplateCardProps) {
+  const [configuredBreakRules] = useBreakRules();
    const calculateDuration = (start: string, end: string, breakMins: number) => {
      const [startH, startM] = start.split(':').map(Number);
      const [endH, endM] = end.split(':').map(Number);
