@@ -112,21 +112,33 @@
                   size="sm"
                   variant="ghost"
                   className="h-7 px-2"
+                  disabled={configuredBreakRules.length === 0}
                   onClick={() => {
-                    const next: ShiftTemplateBreakRule = {
-                      id: `br-${Date.now()}`,
-                      name: 'Break',
-                      minWorkHoursRequired: 5,
-                      breakDurationMinutes: 30,
-                      type: 'unpaid',
-                      isMandatory: true,
-                    };
+                    const source = configuredBreakRules[0];
+                    const next: ShiftTemplateBreakRule = source
+                      ? {
+                          id: `br-${Date.now()}`,
+                          name: source.name,
+                          minWorkHoursRequired: source.minWorkHoursRequired,
+                          breakDurationMinutes: source.breakDurationMinutes,
+                          type: source.type,
+                          isMandatory: source.isMandatory,
+                        }
+                      : {
+                          id: `br-${Date.now()}`,
+                          name: 'Break',
+                          minWorkHoursRequired: 5,
+                          breakDurationMinutes: 30,
+                          type: 'unpaid',
+                          isMandatory: true,
+                        };
                     onUpdate({ breakRules: [...(template.breakRules || []), next] });
                   }}
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />Add rule
                 </Button>
               </div>
+
 
               {(template.breakRules?.length ?? 0) === 0 ? (
                 <p className="text-[11px] text-muted-foreground">
