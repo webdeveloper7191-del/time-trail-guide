@@ -10,7 +10,6 @@ import { OvertimeRulesProvider } from "./contexts/OvertimeRulesContext";
 import { startScheduledExportRunner } from "./components/reports/scheduledExportRunner";
 import Index from "./pages/Index";
 import TimesheetSettings from "./pages/TimesheetSettings";
-import BreaksHub from "./pages/BreaksHub";
 import TimesheetAdmin from "./pages/TimesheetAdmin";
 import EmployeePortal from "./pages/EmployeePortal";
 import RosterScheduler from "./pages/RosterScheduler";
