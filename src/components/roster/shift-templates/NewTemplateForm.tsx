@@ -46,6 +46,7 @@
    customAllowances,
    onCreateAllowance,
  }: NewTemplateFormProps) {
+   const [configuredBreakRules] = useBreakRules();
    return (
      <div className="p-4 rounded-lg border-2 border-primary bg-background">
        <Tabs defaultValue="basic" className="w-full">
