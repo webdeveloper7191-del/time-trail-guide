@@ -50,9 +50,7 @@ import {
   ClipboardCheck,
   Scale,
   Globe,
-  Coffee,
 } from 'lucide-react';
-import { BreaksHubBody } from '@/pages/BreaksHub';
 import { australianAwards, AustralianAward, AwardClassification, calculateRates } from '@/data/australianAwards';
 import { CustomRateOverridesPanel } from './awards/CustomRateOverridesPanel';
 import { RateChangeHistoryPanel } from './awards/RateChangeHistoryPanel';
