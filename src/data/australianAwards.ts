@@ -21,6 +21,34 @@ export interface AwardClassification {
   rateSchedule?: RateSchedule[];
 }
 
+/**
+ * Employment type as defined by the modern award itself.
+ * Each FWC award explicitly lists the employment categories it covers
+ * (e.g. full-time, part-time, casual, junior, apprentice, trainee) along
+ * with their loading and minimum engagement rules.
+ */
+export interface AwardEmploymentType {
+  /** Stable code used by payroll exports (e.g. 'FT', 'PT', 'CAS', 'APP') */
+  code: string;
+  /** Display name as it appears in the award clause */
+  name: string;
+  /** Underlying base category the payroll/award engine uses for rules */
+  baseType: 'full_time' | 'part_time' | 'casual' | 'contractor';
+  /** Casual loading or junior/apprentice % of full adult rate, if defined */
+  loadingPercent?: number;
+  /** Minimum guaranteed hours per week (part-time) */
+  minHoursPerWeek?: number;
+  /** Minimum engagement per shift (casual) */
+  minEngagementHours?: number;
+  /** Whether this type accrues annual + personal leave under the award */
+  accruesLeave: boolean;
+  /** Whether overtime provisions of this award apply */
+  overtimeEligible: boolean;
+  /** Clause reference within the award document */
+  clauseRef?: string;
+  description?: string;
+}
+
 export interface AustralianAward {
   id: string;
   code: string;
@@ -31,6 +59,8 @@ export interface AustralianAward {
   version: string;
   streams?: string[];
   classifications: AwardClassification[];
+  /** Employment categories defined by the award (FT/PT/Casual + any award-specific tiers) */
+  employmentTypes: AwardEmploymentType[];
   casualLoading: number;
   saturdayPenalty: number;
   sundayPenalty: number;
@@ -69,6 +99,11 @@ export const australianAwards: AustralianAward[] = [
     effectiveDate: '2025-01-01',
     version: 'FWC 2025-26',
     streams: ['General', 'Direct Care', 'Food Services'],
+    employmentTypes: [
+      { code: 'FT',  name: 'Full-time employee',  baseType: 'full_time', accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.2' },
+      { code: 'PT',  name: 'Part-time employee',  baseType: 'part_time', minHoursPerWeek: 8,  accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.3' },
+      { code: 'CAS', name: 'Casual employee',     baseType: 'casual',    loadingPercent: 25, minEngagementHours: 2, accruesLeave: false, overtimeEligible: true, clauseRef: 'cl. 10.4' },
+    ],
     casualLoading: 25,
     saturdayPenalty: 150,
     sundayPenalty: 200,
@@ -283,6 +318,11 @@ export const australianAwards: AustralianAward[] = [
     effectiveDate: '2025-07-01',
     version: 'FWC 2025-26',
     streams: ['Registered Nurse', 'Enrolled Nurse', 'Nurse Practitioner', 'Nursing Assistant'],
+    employmentTypes: [
+      { code: 'FT',  name: 'Full-time employee',  baseType: 'full_time', accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.2' },
+      { code: 'PT',  name: 'Part-time employee',  baseType: 'part_time', minHoursPerWeek: 8,  accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.3' },
+      { code: 'CAS', name: 'Casual employee',     baseType: 'casual',    loadingPercent: 25, minEngagementHours: 2, accruesLeave: false, overtimeEligible: true, clauseRef: 'cl. 10.4' },
+    ],
     casualLoading: 25,
     saturdayPenalty: 150,
     sundayPenalty: 175,
@@ -636,6 +676,12 @@ export const australianAwards: AustralianAward[] = [
     industry: 'Childcare',
     effectiveDate: '2025-07-01',
     version: 'FWC 2025-26',
+    employmentTypes: [
+      { code: 'FT',  name: 'Full-time employee',  baseType: 'full_time', accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.2' },
+      { code: 'PT',  name: 'Part-time employee',  baseType: 'part_time', minHoursPerWeek: 15, accruesLeave: true, overtimeEligible: true, clauseRef: 'cl. 10.3' },
+      { code: 'CAS', name: 'Casual employee',     baseType: 'casual',    loadingPercent: 25, minEngagementHours: 2, accruesLeave: false, overtimeEligible: true, clauseRef: 'cl. 10.4' },
+      { code: 'TRN', name: 'Trainee',             baseType: 'full_time', loadingPercent: 60, accruesLeave: true,  overtimeEligible: true,  clauseRef: 'Sch. E', description: 'National Training Wage schedule' },
+    ],
     casualLoading: 25,
     saturdayPenalty: 150,
     sundayPenalty: 200,
@@ -695,6 +741,11 @@ export const australianAwards: AustralianAward[] = [
     industry: 'Healthcare',
     effectiveDate: '2025-07-01',
     version: 'FWC 2025-26',
+    employmentTypes: [
+      { code: 'FT',  name: 'Full-time employee',  baseType: 'full_time', accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.2' },
+      { code: 'PT',  name: 'Part-time employee',  baseType: 'part_time', minHoursPerWeek: 8,  accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.3' },
+      { code: 'CAS', name: 'Casual employee',     baseType: 'casual',    loadingPercent: 25, minEngagementHours: 2, accruesLeave: false, overtimeEligible: true, clauseRef: 'cl. 10.4' },
+    ],
     casualLoading: 25,
     saturdayPenalty: 150,
     sundayPenalty: 200,
@@ -751,6 +802,13 @@ export const australianAwards: AustralianAward[] = [
     industry: 'Hospitality',
     effectiveDate: '2025-07-01',
     version: 'FWC 2025-26',
+    employmentTypes: [
+      { code: 'FT',  name: 'Full-time employee',  baseType: 'full_time', accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.2' },
+      { code: 'PT',  name: 'Part-time employee',  baseType: 'part_time', minHoursPerWeek: 8,  accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.3' },
+      { code: 'CAS', name: 'Casual employee',     baseType: 'casual',    loadingPercent: 25, minEngagementHours: 2, accruesLeave: false, overtimeEligible: true, clauseRef: 'cl. 10.4' },
+      { code: 'APP', name: 'Apprentice',          baseType: 'full_time', loadingPercent: 55, accruesLeave: true,  overtimeEligible: true,  clauseRef: 'Sch. E', description: 'Year 1 % of adult tradesperson rate' },
+      { code: 'JNR', name: 'Junior employee',     baseType: 'full_time', loadingPercent: 70, accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 18' },
+    ],
     casualLoading: 25,
     saturdayPenalty: 125,
     sundayPenalty: 150,
@@ -789,6 +847,11 @@ export const australianAwards: AustralianAward[] = [
     industry: 'Community Services',
     effectiveDate: '2025-07-01',
     version: 'FWC 2025-26',
+    employmentTypes: [
+      { code: 'FT',  name: 'Full-time employee',  baseType: 'full_time', accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.2' },
+      { code: 'PT',  name: 'Part-time employee',  baseType: 'part_time', minHoursPerWeek: 15, accruesLeave: true, overtimeEligible: true, clauseRef: 'cl. 10.3' },
+      { code: 'CAS', name: 'Casual employee',     baseType: 'casual',    loadingPercent: 25, minEngagementHours: 2, accruesLeave: false, overtimeEligible: true, clauseRef: 'cl. 10.4' },
+    ],
     casualLoading: 25,
     saturdayPenalty: 150,
     sundayPenalty: 200,
@@ -838,6 +901,12 @@ export const australianAwards: AustralianAward[] = [
     industry: 'Retail',
     effectiveDate: '2025-07-01',
     version: 'FWC 2025-26',
+    employmentTypes: [
+      { code: 'FT',  name: 'Full-time employee',  baseType: 'full_time', accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.2' },
+      { code: 'PT',  name: 'Part-time employee',  baseType: 'part_time', minHoursPerWeek: 9,  accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 10.3' },
+      { code: 'CAS', name: 'Casual employee',     baseType: 'casual',    loadingPercent: 25, minEngagementHours: 3, accruesLeave: false, overtimeEligible: true,  clauseRef: 'cl. 10.4' },
+      { code: 'JNR', name: 'Junior employee',     baseType: 'full_time', loadingPercent: 70, accruesLeave: true,  overtimeEligible: true,  clauseRef: 'cl. 17', description: '% of adult rate by age' },
+    ],
     casualLoading: 25,
     saturdayPenalty: 125,
     sundayPenalty: 200,
