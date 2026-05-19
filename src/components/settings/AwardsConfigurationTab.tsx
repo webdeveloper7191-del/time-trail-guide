@@ -50,6 +50,7 @@ import {
   ClipboardCheck,
   Scale,
   Globe,
+  Briefcase,
 } from 'lucide-react';
 import { australianAwards, AustralianAward, AwardClassification, calculateRates } from '@/data/australianAwards';
 import { CustomRateOverridesPanel } from './awards/CustomRateOverridesPanel';
@@ -73,6 +74,7 @@ import { BOOTCalculatorPanel } from './awards/BOOTCalculatorPanel';
 import { FWCIntegrationPanel } from './awards/FWCIntegrationPanel';
 import { OvertimeCalculatorTest } from './awards/OvertimeCalculatorTest';
 import { OvertimeRulesConfigPanel } from './OvertimeRulesConfigPanel';
+import { EmploymentTypesPanel } from './awards/EmploymentTypesPanel';
 
 interface EnabledAward {
   awardId: string;
@@ -652,6 +654,13 @@ export function AwardsConfigurationTab() {
               <span className="hidden sm:inline">On-Call</span>
             </TabsTrigger>
             <TabsTrigger 
+              value="employment-types" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Briefcase className="h-4 w-4" />
+              <span className="hidden sm:inline">Employment Types</span>
+            </TabsTrigger>
+            <TabsTrigger 
               value="enterprise-agreements" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
@@ -727,7 +736,12 @@ export function AwardsConfigurationTab() {
 
 
 
+        <TabsContent value="employment-types" className="mt-0">
+          <EmploymentTypesPanel />
+        </TabsContent>
+
         <TabsContent value="enterprise-agreements" className="mt-0">
+
           <EnterpriseAgreementPanel />
         </TabsContent>
 
