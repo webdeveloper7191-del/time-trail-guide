@@ -38,11 +38,29 @@ const LEGACY_KEY = 'rai.awards.employmentTypes';
 
 function seedFor(awardId: string): EmploymentTypeOption[] {
   const award = australianAwards.find(a => a.id === awardId);
-  const casualLoading = award?.casualLoading ?? 25;
+
+  // Award-specific: hydrate directly from the modern award's employmentTypes clause
+  if (award?.employmentTypes?.length) {
+    return award.employmentTypes.map(et => ({
+      id: `${awardId}-${et.code.toLowerCase()}`,
+      name: et.name,
+      code: et.code,
+      baseType: et.baseType,
+      isSystem: true,
+      loadingPercent: et.loadingPercent,
+      accruesLeave: et.accruesLeave,
+      overtimeEligible: et.overtimeEligible,
+      description: et.clauseRef
+        ? `${et.clauseRef}${et.description ? ` — ${et.description}` : ''}`
+        : et.description,
+    }));
+  }
+
+  // Global / fallback: generic 4-row seed
   return [
     { id: `${awardId}-ft`,  name: 'Full Time',  code: 'FT',  baseType: 'full_time',  isSystem: true, accruesLeave: true,  overtimeEligible: true },
     { id: `${awardId}-pt`,  name: 'Part Time',  code: 'PT',  baseType: 'part_time',  isSystem: true, accruesLeave: true,  overtimeEligible: true },
-    { id: `${awardId}-cas`, name: 'Casual',     code: 'CAS', baseType: 'casual',     isSystem: true, accruesLeave: false, overtimeEligible: true, loadingPercent: casualLoading },
+    { id: `${awardId}-cas`, name: 'Casual',     code: 'CAS', baseType: 'casual',     isSystem: true, accruesLeave: false, overtimeEligible: true, loadingPercent: 25 },
     { id: `${awardId}-con`, name: 'Contractor', code: 'CON', baseType: 'contractor', isSystem: true, accruesLeave: false, overtimeEligible: false },
   ];
 }
