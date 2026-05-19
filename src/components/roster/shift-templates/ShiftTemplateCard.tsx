@@ -1,17 +1,18 @@
- import { ShiftTemplate, ShiftSpecialType, QualificationType, StaffMember, shiftTypeLabels, qualificationLabels, roleLabels } from '@/types/roster';
- import { Badge } from '@/components/ui/badge';
- import { Button } from '@/components/ui/button';
- import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
- import { Input } from '@/components/ui/input';
- import { Label } from '@/components/ui/label';
- import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
- import { Clock, Edit2, Trash2, Check, X, GraduationCap, Award, Phone, Moon, ArrowLeftRight, Zap, AlertTriangle } from 'lucide-react';
- import { cn } from '@/lib/utils';
- import { ShiftTypeSettings } from './ShiftTypeSettings';
- import { AllowanceType } from '@/types/allowances';
- import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
- import { ConflictBadge } from './AwardDefaultIndicator';
- import { getDeviationSummary } from '@/lib/templateAwardValidation';
+import { ShiftTemplate, ShiftTemplateBreakRule, ShiftSpecialType, QualificationType, StaffMember, shiftTypeLabels, qualificationLabels, roleLabels } from '@/types/roster';
+import { useBreakRules } from '@/lib/breakRulesStore';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Clock, Edit2, Trash2, Check, X, GraduationCap, Award, Phone, Moon, ArrowLeftRight, Zap, AlertTriangle, Plus, Coffee } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ShiftTypeSettings } from './ShiftTypeSettings';
+import { AllowanceType } from '@/types/allowances';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ConflictBadge } from './AwardDefaultIndicator';
+import { getDeviationSummary } from '@/lib/templateAwardValidation';
  
  const shiftTypeIcons: Record<ShiftSpecialType, React.ReactNode> = {
    regular: <Clock size={12} />,
