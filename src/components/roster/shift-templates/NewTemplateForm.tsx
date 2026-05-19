@@ -1,4 +1,5 @@
  import { ShiftTemplate, ShiftTemplateBreakRule, QualificationType, StaffMember, qualificationLabels, roleLabels } from '@/types/roster';
+ import { useBreakRules } from '@/lib/breakRulesStore';
  import { Button } from '@/components/ui/button';
  import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
  import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@
    customAllowances,
    onCreateAllowance,
  }: NewTemplateFormProps) {
+   const [configuredBreakRules] = useBreakRules();
    return (
      <div className="p-4 rounded-lg border-2 border-primary bg-background">
        <Tabs defaultValue="basic" className="w-full">
@@ -110,15 +112,26 @@
                   size="sm"
                   variant="ghost"
                   className="h-7 px-2"
+                  disabled={configuredBreakRules.length === 0}
                   onClick={() => {
-                    const next: ShiftTemplateBreakRule = {
-                      id: `br-${Date.now()}`,
-                      name: 'Break',
-                      minWorkHoursRequired: 5,
-                      breakDurationMinutes: 30,
-                      type: 'unpaid',
-                      isMandatory: true,
-                    };
+                    const source = configuredBreakRules[0];
+                    const next: ShiftTemplateBreakRule = source
+                      ? {
+                          id: `br-${Date.now()}`,
+                          name: source.name,
+                          minWorkHoursRequired: source.minWorkHoursRequired,
+                          breakDurationMinutes: source.breakDurationMinutes,
+                          type: source.type,
+                          isMandatory: source.isMandatory,
+                        }
+                      : {
+                          id: `br-${Date.now()}`,
+                          name: 'Break',
+                          minWorkHoursRequired: 5,
+                          breakDurationMinutes: 30,
+                          type: 'unpaid',
+                          isMandatory: true,
+                        };
                     onUpdate({ breakRules: [...(template.breakRules || []), next] });
                   }}
                 >
@@ -126,7 +139,12 @@
                 </Button>
               </div>
 
-              {(template.breakRules?.length ?? 0) === 0 ? (
+
+              {configuredBreakRules.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground">
+                  No break names configured. Add them in <span className="font-medium">Settings → Timesheet → Breaks</span>.
+                </p>
+              ) : (template.breakRules?.length ?? 0) === 0 ? (
                 <p className="text-[11px] text-muted-foreground">
                   Inherits location/award break rules. Add a rule to override per-template.
                 </p>
@@ -141,15 +159,32 @@
                   </div>
                   {(template.breakRules || []).map((rule, idx) => (
                     <div key={rule.id} className="grid grid-cols-[1fr_70px_70px_90px_28px] gap-1.5 items-center">
-                      <Input
-                        className="h-7 text-xs"
+                      <Select
                         value={rule.name}
-                        onChange={(e) => {
+                        onValueChange={(name) => {
+                          const source = configuredBreakRules.find(b => b.name === name);
                           const next = [...(template.breakRules || [])];
-                          next[idx] = { ...rule, name: e.target.value };
+                          next[idx] = source
+                            ? {
+                                ...rule,
+                                name: source.name,
+                                minWorkHoursRequired: source.minWorkHoursRequired,
+                                breakDurationMinutes: source.breakDurationMinutes,
+                                type: source.type,
+                                isMandatory: source.isMandatory,
+                              }
+                            : { ...rule, name };
                           onUpdate({ breakRules: next });
                         }}
-                      />
+                      >
+                        <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Select break" /></SelectTrigger>
+                        <SelectContent>
+                          {configuredBreakRules.map(b => (
+                            <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
                       <Input
                         type="number"
                         className="h-7 text-xs"

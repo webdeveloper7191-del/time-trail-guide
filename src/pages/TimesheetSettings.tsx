@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
+import { useBreakRules } from '@/lib/breakRulesStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -126,11 +127,7 @@ export default function TimesheetSettings() {
   ]);
 
   // Break Rules
-  const [breakRules, setBreakRules] = useState<BreakRule[]>([
-    { id: 'br-1', name: 'Lunch Break', minWorkHoursRequired: 6, breakDurationMinutes: 30, type: 'unpaid', isMandatory: true },
-    { id: 'br-2', name: 'Morning Rest', minWorkHoursRequired: 4, breakDurationMinutes: 15, type: 'paid', isMandatory: false },
-    { id: 'br-3', name: 'Afternoon Rest', minWorkHoursRequired: 8, breakDurationMinutes: 15, type: 'paid', isMandatory: false },
-  ]);
+  const [breakRules, setBreakRules] = useBreakRules();
 
   // Jurisdiction Config
   const [jurisdiction, setJurisdiction] = useState<JurisdictionConfig>({
@@ -207,19 +204,17 @@ export default function TimesheetSettings() {
       type: 'paid',
       isMandatory: false,
     };
-    setBreakRules(prev => [...prev, newRule]);
+    setBreakRules([...breakRules, newRule]);
     setHasUnsavedChanges(true);
   };
 
   const removeBreakRule = (id: string) => {
-    setBreakRules(prev => prev.filter(r => r.id !== id));
+    setBreakRules(breakRules.filter(r => r.id !== id));
     setHasUnsavedChanges(true);
   };
 
   const updateBreakRule = (id: string, updates: Partial<BreakRule>) => {
-    setBreakRules(prev => 
-      prev.map(r => r.id === id ? { ...r, ...updates } : r)
-    );
+    setBreakRules(breakRules.map(r => r.id === id ? { ...r, ...updates } : r));
     setHasUnsavedChanges(true);
   };
 
