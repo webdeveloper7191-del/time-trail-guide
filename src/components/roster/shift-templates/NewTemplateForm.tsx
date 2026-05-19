@@ -1,4 +1,5 @@
  import { ShiftTemplate, ShiftTemplateBreakRule, QualificationType, StaffMember, qualificationLabels, roleLabels } from '@/types/roster';
+ import { useBreakRules } from '@/lib/breakRulesStore';
  import { Button } from '@/components/ui/button';
  import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
  import { Input } from '@/components/ui/input';
