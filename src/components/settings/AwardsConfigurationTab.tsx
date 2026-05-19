@@ -50,6 +50,7 @@ import {
   ClipboardCheck,
   Scale,
   Globe,
+  Briefcase,
 } from 'lucide-react';
 import { australianAwards, AustralianAward, AwardClassification, calculateRates } from '@/data/australianAwards';
 import { CustomRateOverridesPanel } from './awards/CustomRateOverridesPanel';
