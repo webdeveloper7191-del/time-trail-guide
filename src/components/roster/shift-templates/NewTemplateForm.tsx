@@ -4,7 +4,7 @@
  import { Input } from '@/components/ui/input';
  import { Label } from '@/components/ui/label';
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
- import { Check, X, GraduationCap, Award } from 'lucide-react';
+ import { Check, X, GraduationCap, Award, Plus, Trash2, Coffee } from 'lucide-react';
  import { cn } from '@/lib/utils';
  import { ShiftTypeSettings } from './ShiftTypeSettings';
  import { AllowanceType } from '@/types/allowances';
