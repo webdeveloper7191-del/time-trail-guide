@@ -725,9 +725,6 @@ export function AwardsConfigurationTab() {
           <OnCallAllowancePanel />
         </TabsContent>
 
-        <TabsContent value="breaks" className="mt-0">
-          <BreaksHubBody embedded />
-        </TabsContent>
 
 
         <TabsContent value="enterprise-agreements" className="mt-0">
