@@ -92,9 +92,117 @@
                  min={0}
                  max={120}
                />
-             </div>
-           </div>
-         </TabsContent>
+              </div>
+            </div>
+
+            {/* Granular break rules override (optional) */}
+            <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium text-primary flex items-center gap-1.5">
+                  <Coffee size={13} />
+                  Break rules override
+                  <span className="text-[10px] font-normal text-muted-foreground">
+                    (optional — overrides location/award)
+                  </span>
+                </Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2"
+                  onClick={() => {
+                    const next: ShiftTemplateBreakRule = {
+                      id: `br-${Date.now()}`,
+                      name: 'Break',
+                      minWorkHoursRequired: 5,
+                      breakDurationMinutes: 30,
+                      type: 'unpaid',
+                      isMandatory: true,
+                    };
+                    onUpdate({ breakRules: [...(template.breakRules || []), next] });
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />Add rule
+                </Button>
+              </div>
+
+              {(template.breakRules?.length ?? 0) === 0 ? (
+                <p className="text-[11px] text-muted-foreground">
+                  Inherits location/award break rules. Add a rule to override per-template.
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="grid grid-cols-[1fr_70px_70px_90px_28px] gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground px-1">
+                    <span>Name</span>
+                    <span>After (h)</span>
+                    <span>Min</span>
+                    <span>Type</span>
+                    <span></span>
+                  </div>
+                  {(template.breakRules || []).map((rule, idx) => (
+                    <div key={rule.id} className="grid grid-cols-[1fr_70px_70px_90px_28px] gap-1.5 items-center">
+                      <Input
+                        className="h-7 text-xs"
+                        value={rule.name}
+                        onChange={(e) => {
+                          const next = [...(template.breakRules || [])];
+                          next[idx] = { ...rule, name: e.target.value };
+                          onUpdate({ breakRules: next });
+                        }}
+                      />
+                      <Input
+                        type="number"
+                        className="h-7 text-xs"
+                        value={rule.minWorkHoursRequired}
+                        onChange={(e) => {
+                          const next = [...(template.breakRules || [])];
+                          next[idx] = { ...rule, minWorkHoursRequired: parseFloat(e.target.value) || 0 };
+                          onUpdate({ breakRules: next });
+                        }}
+                      />
+                      <Input
+                        type="number"
+                        className="h-7 text-xs"
+                        value={rule.breakDurationMinutes}
+                        onChange={(e) => {
+                          const next = [...(template.breakRules || [])];
+                          next[idx] = { ...rule, breakDurationMinutes: parseInt(e.target.value) || 0 };
+                          onUpdate({ breakRules: next });
+                        }}
+                      />
+                      <Select
+                        value={rule.type}
+                        onValueChange={(v) => {
+                          const next = [...(template.breakRules || [])];
+                          next[idx] = { ...rule, type: v as 'paid' | 'unpaid' };
+                          onUpdate({ breakRules: next });
+                        }}
+                      >
+                        <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="paid">Paid</SelectItem>
+                          <SelectItem value="unpaid">Unpaid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          const next = (template.breakRules || []).filter((_, i) => i !== idx);
+                          onUpdate({ breakRules: next });
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+ 
  
          <TabsContent value="requirements" className="space-y-4">
            {/* Qualifications */}
