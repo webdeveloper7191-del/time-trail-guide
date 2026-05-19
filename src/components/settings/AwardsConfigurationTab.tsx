@@ -654,6 +654,13 @@ export function AwardsConfigurationTab() {
               <span className="hidden sm:inline">On-Call</span>
             </TabsTrigger>
             <TabsTrigger 
+              value="breaks" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Coffee className="h-4 w-4" />
+              <span className="hidden sm:inline">Breaks</span>
+            </TabsTrigger>
+            <TabsTrigger 
               value="enterprise-agreements" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
             >
