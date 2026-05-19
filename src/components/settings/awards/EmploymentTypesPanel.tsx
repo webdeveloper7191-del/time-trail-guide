@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Briefcase, Lock, Info } from 'lucide-react';
+import { Plus, Trash2, Briefcase, Lock, Info, Award as AwardIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { useEmploymentTypes, type EmploymentTypeOption } from '@/lib/employmentTypesStore';
+import { useEmploymentTypes, GLOBAL_AWARD_ID, type EmploymentTypeOption } from '@/lib/employmentTypesStore';
 import type { EmploymentType } from '@/types/staff';
+import { australianAwards } from '@/data/australianAwards';
 
 const baseTypeOptions: { value: EmploymentType; label: string }[] = [
   { value: 'full_time', label: 'Full Time' },
@@ -20,8 +20,13 @@ const baseTypeOptions: { value: EmploymentType; label: string }[] = [
 ];
 
 export function EmploymentTypesPanel() {
-  const [types, setTypes] = useEmploymentTypes();
-  const [adding, setAdding] = useState(false);
+  const [selectedAwardId, setSelectedAwardId] = useState<string>(GLOBAL_AWARD_ID);
+  const [types, setTypes] = useEmploymentTypes(selectedAwardId);
+
+  const selectedAward = useMemo(
+    () => australianAwards.find(a => a.id === selectedAwardId),
+    [selectedAwardId]
+  );
 
   const update = (id: string, patch: Partial<EmploymentTypeOption>) => {
     setTypes(types.map(t => (t.id === id ? { ...t, ...patch } : t)));
@@ -36,7 +41,7 @@ export function EmploymentTypesPanel() {
 
   const add = () => {
     const newType: EmploymentTypeOption = {
-      id: `cus-${Date.now()}`,
+      id: `cus-${selectedAwardId}-${Date.now()}`,
       name: 'New Employment Type',
       code: 'NEW',
       baseType: 'part_time',
@@ -45,9 +50,12 @@ export function EmploymentTypesPanel() {
       overtimeEligible: true,
     };
     setTypes([...types, newType]);
-    setAdding(true);
     toast.success('Custom employment type added');
   };
+
+  const scopeLabel = selectedAwardId === GLOBAL_AWARD_ID
+    ? 'Global (default for all awards)'
+    : selectedAward?.name ?? 'Unknown award';
 
   return (
     <Card className="border-border/60">
@@ -58,8 +66,8 @@ export function EmploymentTypesPanel() {
             Employment Types
           </CardTitle>
           <CardDescription className="mt-1.5 max-w-2xl">
-            Rename the default employment types or add custom ones (e.g. Apprentice, Trainee, Fixed-term).
-            Each type maps to a base payroll category so award rules, loading, and leave accrual continue to apply correctly.
+            Every FWC award defines its own employment type coverage (casual loading, part-time minimums, apprentices, trainees).
+            Pick an award to rename its defaults or add award-specific custom types. The Global list is used when an award has no overrides.
           </CardDescription>
         </div>
         <Button onClick={add} size="sm" className="shrink-0">
@@ -68,11 +76,43 @@ export function EmploymentTypesPanel() {
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <AwardIcon className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Award scope</span>
+          </div>
+          <Select value={selectedAwardId} onValueChange={setSelectedAwardId}>
+            <SelectTrigger className="h-9 w-[360px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Cross-award</SelectLabel>
+                <SelectItem value={GLOBAL_AWARD_ID}>Global (default for all awards)</SelectItem>
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel>Modern awards (FWC)</SelectLabel>
+                {australianAwards.map(a => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.shortName} — {a.code}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          {selectedAward && (
+            <Badge variant="outline" className="text-xs">
+              Casual loading: {selectedAward.casualLoading}%
+            </Badge>
+          )}
+        </div>
+
         <div className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
           <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
           <span>
-            System types cannot be deleted, but their display name and code can be edited.
-            Changes apply across staff profiles, rosters, awards, and payroll exports.
+            Editing <strong>{scopeLabel}</strong>. System types cannot be deleted, but display name, code, loading,
+            leave accrual, and overtime eligibility can all be tuned per award. Custom types added here only apply
+            to staff assigned to this award.
           </span>
         </div>
 
@@ -185,7 +225,7 @@ export function EmploymentTypesPanel() {
 
         <div className="flex justify-end">
           <Button
-            onClick={() => toast.success('Employment types saved')}
+            onClick={() => toast.success(`Employment types saved for ${scopeLabel}`)}
             size="sm"
           >
             Save changes

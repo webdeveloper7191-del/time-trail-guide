@@ -1,13 +1,20 @@
 /**
- * Shared store for employment types.
- * The 4 system defaults (full_time, part_time, casual, contractor) map to the
- * underlying EmploymentType enum used by payroll/award logic. Their display
- * names can be renamed. Custom types can be added but must map to a base type
- * so downstream payroll rules (loading %, overtime eligibility, leave) continue
- * to resolve.
+ * Shared store for employment types, scoped per award.
+ *
+ * Every FWC award defines its own coverage of employment types
+ * (e.g. casual loading, part-time minimum hours). We therefore store
+ * employment types keyed by awardId, so each award can rename its
+ * defaults or add award-specific custom types (e.g. Apprentice Year 3,
+ * Trainee, Fixed-term) without affecting other awards.
+ *
+ * A reserved `__global__` awardId holds organisation-wide types that
+ * apply when no award-specific configuration exists.
  */
 import { useEffect, useState } from 'react';
 import type { EmploymentType } from '@/types/staff';
+import { australianAwards } from '@/data/australianAwards';
+
+export const GLOBAL_AWARD_ID = '__global__';
 
 export interface EmploymentTypeOption {
   id: string;
@@ -17,7 +24,7 @@ export interface EmploymentTypeOption {
   code: string;
   /** Underlying base type used by payroll/award engine */
   baseType: EmploymentType;
-  /** True for the 4 seeded system entries — can be renamed but not deleted */
+  /** True for seeded system entries — can be renamed but not deleted */
   isSystem: boolean;
   /** Optional casual loading % override (only meaningful for casual base) */
   loadingPercent?: number;
@@ -26,43 +33,81 @@ export interface EmploymentTypeOption {
   description?: string;
 }
 
-const STORAGE_KEY = 'rai.awards.employmentTypes';
+const STORAGE_KEY = 'rai.awards.employmentTypesByAward';
+const LEGACY_KEY = 'rai.awards.employmentTypes';
 
-const defaults: EmploymentTypeOption[] = [
-  { id: 'sys-full-time', name: 'Full Time', code: 'FT', baseType: 'full_time', isSystem: true, accruesLeave: true, overtimeEligible: true },
-  { id: 'sys-part-time', name: 'Part Time', code: 'PT', baseType: 'part_time', isSystem: true, accruesLeave: true, overtimeEligible: true },
-  { id: 'sys-casual',    name: 'Casual',    code: 'CAS', baseType: 'casual',    isSystem: true, accruesLeave: false, overtimeEligible: true, loadingPercent: 25 },
-  { id: 'sys-contractor',name: 'Contractor',code: 'CON', baseType: 'contractor',isSystem: true, accruesLeave: false, overtimeEligible: false },
-];
+function seedFor(awardId: string): EmploymentTypeOption[] {
+  const award = australianAwards.find(a => a.id === awardId);
+  const casualLoading = award?.casualLoading ?? 25;
+  return [
+    { id: `${awardId}-ft`,  name: 'Full Time',  code: 'FT',  baseType: 'full_time',  isSystem: true, accruesLeave: true,  overtimeEligible: true },
+    { id: `${awardId}-pt`,  name: 'Part Time',  code: 'PT',  baseType: 'part_time',  isSystem: true, accruesLeave: true,  overtimeEligible: true },
+    { id: `${awardId}-cas`, name: 'Casual',     code: 'CAS', baseType: 'casual',     isSystem: true, accruesLeave: false, overtimeEligible: true, loadingPercent: casualLoading },
+    { id: `${awardId}-con`, name: 'Contractor', code: 'CON', baseType: 'contractor', isSystem: true, accruesLeave: false, overtimeEligible: false },
+  ];
+}
 
-function load(): EmploymentTypeOption[] {
-  if (typeof window === 'undefined') return defaults;
+type Store = Record<string, EmploymentTypeOption[]>;
+
+function load(): Store {
+  if (typeof window === 'undefined') return {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
+    // migrate legacy single-list store into the global bucket
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const parsed = JSON.parse(legacy) as EmploymentTypeOption[];
+      return { [GLOBAL_AWARD_ID]: parsed };
+    }
   } catch {}
-  return defaults;
+  return {};
 }
 
-let current: EmploymentTypeOption[] = load();
-const listeners = new Set<(types: EmploymentTypeOption[]) => void>();
+let store: Store = load();
+const listeners = new Set<(s: Store) => void>();
 
+function persist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); } catch {}
+  listeners.forEach(fn => fn(store));
+}
+
+export function getEmploymentTypesFor(awardId: string): EmploymentTypeOption[] {
+  if (!store[awardId]) {
+    store[awardId] = seedFor(awardId);
+    persist();
+  }
+  return store[awardId];
+}
+
+export function setEmploymentTypesFor(awardId: string, types: EmploymentTypeOption[]) {
+  store = { ...store, [awardId]: types };
+  persist();
+}
+
+/**
+ * Legacy/global accessor. Returns the global bucket; falls back to seeded
+ * defaults for the reserved global id when nothing has been stored yet.
+ */
 export function getEmploymentTypes(): EmploymentTypeOption[] {
-  return current;
+  return getEmploymentTypesFor(GLOBAL_AWARD_ID);
 }
 
-export function setEmploymentTypesStore(types: EmploymentTypeOption[]) {
-  current = types;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(types)); } catch {}
-  listeners.forEach(fn => fn(types));
-}
+/**
+ * React hook scoped to a single award.
+ * Pass GLOBAL_AWARD_ID (or omit) for the cross-award default list.
+ */
+export function useEmploymentTypes(
+  awardId: string = GLOBAL_AWARD_ID
+): [EmploymentTypeOption[], (t: EmploymentTypeOption[]) => void] {
+  const [types, setTypes] = useState<EmploymentTypeOption[]>(() => getEmploymentTypesFor(awardId));
 
-export function useEmploymentTypes(): [EmploymentTypeOption[], (t: EmploymentTypeOption[]) => void] {
-  const [types, setTypes] = useState<EmploymentTypeOption[]>(current);
   useEffect(() => {
-    const fn = (next: EmploymentTypeOption[]) => setTypes(next);
+    setTypes(getEmploymentTypesFor(awardId));
+    const fn = (s: Store) => setTypes(s[awardId] ?? []);
     listeners.add(fn);
     return () => { listeners.delete(fn); };
-  }, []);
-  return [types, setEmploymentTypesStore];
+  }, [awardId]);
+
+  return [types, (t) => setEmploymentTypesFor(awardId, t)];
 }
