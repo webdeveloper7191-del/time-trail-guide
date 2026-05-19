@@ -37,6 +37,8 @@ export interface ShiftTemplate {
   startTime: string;
   endTime: string;
   breakMinutes: number;
+  /** Optional granular break rules. When present, overrides the location/award break rules for shifts using this template. */
+  breakRules?: ShiftTemplateBreakRule[];
   color: string;
   
   // Special shift type configuration
