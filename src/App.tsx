@@ -10,6 +10,7 @@ import { OvertimeRulesProvider } from "./contexts/OvertimeRulesContext";
 import { startScheduledExportRunner } from "./components/reports/scheduledExportRunner";
 import Index from "./pages/Index";
 import TimesheetSettings from "./pages/TimesheetSettings";
+import BreaksHub from "./pages/BreaksHub";
 import TimesheetAdmin from "./pages/TimesheetAdmin";
 import EmployeePortal from "./pages/EmployeePortal";
 import RosterScheduler from "./pages/RosterScheduler";
@@ -45,6 +46,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/settings" element={<TimesheetSettings />} />
+                  <Route path="/settings/breaks" element={<BreaksHub />} />
                   <Route path="/timesheet-admin" element={<TimesheetAdmin />} />
                   <Route path="/employee-portal" element={<EmployeePortal />} />
                   <Route path="/roster" element={<RosterScheduler />} />
