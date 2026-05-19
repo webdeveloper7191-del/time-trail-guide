@@ -46,6 +46,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/settings" element={<TimesheetSettings />} />
+                  <Route path="/settings/breaks" element={<BreaksHub />} />
                   <Route path="/timesheet-admin" element={<TimesheetAdmin />} />
                   <Route path="/employee-portal" element={<EmployeePortal />} />
                   <Route path="/roster" element={<RosterScheduler />} />
