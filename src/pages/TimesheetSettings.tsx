@@ -126,11 +126,7 @@ export default function TimesheetSettings() {
   ]);
 
   // Break Rules
-  const [breakRules, setBreakRules] = useState<BreakRule[]>([
-    { id: 'br-1', name: 'Lunch Break', minWorkHoursRequired: 6, breakDurationMinutes: 30, type: 'unpaid', isMandatory: true },
-    { id: 'br-2', name: 'Morning Rest', minWorkHoursRequired: 4, breakDurationMinutes: 15, type: 'paid', isMandatory: false },
-    { id: 'br-3', name: 'Afternoon Rest', minWorkHoursRequired: 8, breakDurationMinutes: 15, type: 'paid', isMandatory: false },
-  ]);
+  const [breakRules, setBreakRules] = useBreakRules();
 
   // Jurisdiction Config
   const [jurisdiction, setJurisdiction] = useState<JurisdictionConfig>({
