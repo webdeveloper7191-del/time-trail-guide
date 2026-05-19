@@ -204,19 +204,17 @@ export default function TimesheetSettings() {
       type: 'paid',
       isMandatory: false,
     };
-    setBreakRules(prev => [...prev, newRule]);
+    setBreakRules([...breakRules, newRule]);
     setHasUnsavedChanges(true);
   };
 
   const removeBreakRule = (id: string) => {
-    setBreakRules(prev => prev.filter(r => r.id !== id));
+    setBreakRules(breakRules.filter(r => r.id !== id));
     setHasUnsavedChanges(true);
   };
 
   const updateBreakRule = (id: string, updates: Partial<BreakRule>) => {
-    setBreakRules(prev => 
-      prev.map(r => r.id === id ? { ...r, ...updates } : r)
-    );
+    setBreakRules(breakRules.map(r => r.id === id ? { ...r, ...updates } : r));
     setHasUnsavedChanges(true);
   };
 
