@@ -21,6 +21,34 @@ export interface AwardClassification {
   rateSchedule?: RateSchedule[];
 }
 
+/**
+ * Employment type as defined by the modern award itself.
+ * Each FWC award explicitly lists the employment categories it covers
+ * (e.g. full-time, part-time, casual, junior, apprentice, trainee) along
+ * with their loading and minimum engagement rules.
+ */
+export interface AwardEmploymentType {
+  /** Stable code used by payroll exports (e.g. 'FT', 'PT', 'CAS', 'APP') */
+  code: string;
+  /** Display name as it appears in the award clause */
+  name: string;
+  /** Underlying base category the payroll/award engine uses for rules */
+  baseType: 'full_time' | 'part_time' | 'casual' | 'contractor';
+  /** Casual loading or junior/apprentice % of full adult rate, if defined */
+  loadingPercent?: number;
+  /** Minimum guaranteed hours per week (part-time) */
+  minHoursPerWeek?: number;
+  /** Minimum engagement per shift (casual) */
+  minEngagementHours?: number;
+  /** Whether this type accrues annual + personal leave under the award */
+  accruesLeave: boolean;
+  /** Whether overtime provisions of this award apply */
+  overtimeEligible: boolean;
+  /** Clause reference within the award document */
+  clauseRef?: string;
+  description?: string;
+}
+
 export interface AustralianAward {
   id: string;
   code: string;
@@ -31,6 +59,8 @@ export interface AustralianAward {
   version: string;
   streams?: string[];
   classifications: AwardClassification[];
+  /** Employment categories defined by the award (FT/PT/Casual + any award-specific tiers) */
+  employmentTypes: AwardEmploymentType[];
   casualLoading: number;
   saturdayPenalty: number;
   sundayPenalty: number;
