@@ -41,14 +41,17 @@ import {
 import { format } from 'date-fns';
 import {
   AgreementType,
+  AgreementStatus,
   EBAClassification,
   EBAPayRate,
   EBAAllowance,
   EBALeaveEntitlement,
   EBACondition,
   EnterpriseAgreement,
+  agreementStatusLabels,
 } from '@/types/enterpriseAgreement';
 import { AustralianState, stateLabels } from '@/types/leaveAccrual';
+import { australianAwards } from '@/data/australianAwards';
 
 interface EBAWizardProps {
   open: boolean;
@@ -78,14 +81,18 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
     name: existingEBA?.name || '',
     code: existingEBA?.code || '',
     type: (existingEBA?.type || 'enterprise_agreement') as AgreementType,
+    status: (existingEBA?.status || 'pending_approval') as AgreementStatus,
     underlyingAwardId: existingEBA?.underlyingAwardId || '',
     underlyingAwardName: existingEBA?.underlyingAwardName || '',
     commencementDate: existingEBA?.commencementDate || '',
     nominalExpiryDate: existingEBA?.nominalExpiryDate || '',
+    approvalDate: existingEBA?.approvalDate || '',
+    fwcReference: existingEBA?.fwcReference || '',
     fwcApprovalNumber: existingEBA?.fwcApprovalNumber || '',
     coverageDescription: existingEBA?.coverageDescription || '',
     applicableStates: existingEBA?.applicableStates || [] as AustralianState[],
     superannuationRate: existingEBA?.superannuationRate || 11.5,
+    notes: existingEBA?.notes || '',
   });
 
   const [classifications, setClassifications] = useState<EBAClassification[]>(
@@ -122,6 +129,38 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
   );
 
   const currentStepIndex = WIZARD_STEPS.findIndex(s => s.id === currentStep);
+
+  const setUnderlyingAward = (id: string) => {
+    const award = australianAwards.find(a => a.id === id);
+    setBasicInfo(prev => ({
+      ...prev,
+      underlyingAwardId: id,
+      underlyingAwardName: award?.name || '',
+    }));
+  };
+
+  // Per-step validation (returns array of missing-field messages)
+  const validateStep = (step: WizardStep): string[] => {
+    const errors: string[] = [];
+    if (step === 'basic') {
+      if (!basicInfo.name.trim()) errors.push('Agreement name');
+      if (!basicInfo.code.trim()) errors.push('Agreement code');
+      if (!basicInfo.underlyingAwardId) errors.push('Underlying award (BOOT reference)');
+      if (!basicInfo.commencementDate) errors.push('Commencement date');
+      if (!basicInfo.nominalExpiryDate) errors.push('Nominal expiry date');
+      if (basicInfo.applicableStates.length === 0) errors.push('At least one applicable state');
+      if (!basicInfo.coverageDescription.trim()) errors.push('Coverage description');
+    }
+    if (step === 'classifications') {
+      if (classifications.length === 0) errors.push('At least one classification');
+      classifications.forEach((c, i) => {
+        if (!c.code.trim() || !c.name.trim()) errors.push(`Classification #${i + 1}: code and name`);
+        const rate = payRates.find(pr => pr.classificationId === c.id);
+        if (!rate || !rate.baseRate) errors.push(`Classification #${i + 1}: base rate`);
+      });
+    }
+    return errors;
+  };
 
   const toggleState = (state: AustralianState) => {
     setBasicInfo(prev => ({
@@ -210,6 +249,11 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
   };
 
   const goNext = () => {
+    const errors = validateStep(currentStep);
+    if (errors.length > 0) {
+      toast.error(`Please complete: ${errors.join(', ')}`);
+      return;
+    }
     const nextIndex = currentStepIndex + 1;
     if (nextIndex < WIZARD_STEPS.length) {
       setCurrentStep(WIZARD_STEPS[nextIndex].id);
@@ -224,6 +268,16 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
   };
 
   const handleComplete = () => {
+    // Final validation across mandatory steps
+    const allErrors = [
+      ...validateStep('basic'),
+      ...validateStep('classifications'),
+    ];
+    if (allErrors.length > 0) {
+      toast.error(`Cannot save — missing: ${allErrors.join(', ')}`);
+      return;
+    }
+
     const eba: Partial<EnterpriseAgreement> = {
       id: existingEBA?.id || `eba-${Date.now()}`,
       ...basicInfo,
@@ -234,20 +288,20 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
       leaveEntitlements,
       conditions,
       redundancyScale: existingEBA?.redundancyScale || [],
-      industryClassifications: [],
+      industryClassifications: existingEBA?.industryClassifications || [],
       version: existingEBA?.version || '1.0',
       createdAt: existingEBA?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      createdBy: 'admin',
-      status: 'active',
-      approvalDate: basicInfo.commencementDate,
-      fwcReference: '',
+      createdBy: existingEBA?.createdBy || 'admin',
+      // Fall back approval date to commencement when not set
+      approvalDate: basicInfo.approvalDate || basicInfo.commencementDate,
     };
     
     onComplete(eba);
     toast.success(isEditMode ? 'Agreement updated successfully' : 'Agreement created successfully');
     onOpenChange(false);
   };
+
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -308,30 +362,69 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
                 <Label>Underlying Award (BOOT Reference) *</Label>
                 <Select 
                   value={basicInfo.underlyingAwardId}
-                  onValueChange={(v) => setBasicInfo(prev => ({ ...prev, underlyingAwardId: v }))}
+                  onValueChange={setUnderlyingAward}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select underlying award" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="children-services-2020">Children's Services Award 2020</SelectItem>
-                    <SelectItem value="educational-services-2020">Educational Services Award 2020</SelectItem>
-                    <SelectItem value="aged-care-2020">Aged Care Award 2020</SelectItem>
-                    <SelectItem value="nursing-2020">Nurses Award 2020</SelectItem>
-                    <SelectItem value="social-services-2020">Social, Community, Home Care & Disability Services Award 2020</SelectItem>
+                    {australianAwards.map(award => (
+                      <SelectItem key={award.id} value={award.id}>
+                        {award.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>FWC Approval Number</Label>
-                <Input 
-                  placeholder="e.g., AE508123"
-                  value={basicInfo.fwcApprovalNumber}
-                  onChange={(e) => setBasicInfo(prev => ({ ...prev, fwcApprovalNumber: e.target.value }))}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>FWC Approval Number</Label>
+                  <Input 
+                    placeholder="e.g., AE508123"
+                    value={basicInfo.fwcApprovalNumber}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, fwcApprovalNumber: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>FWC Reference</Label>
+                  <Input 
+                    placeholder="e.g., AG2024/123"
+                    value={basicInfo.fwcReference}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, fwcReference: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Agreement Status</Label>
+                  <Select 
+                    value={basicInfo.status}
+                    onValueChange={(v) => setBasicInfo(prev => ({ ...prev, status: v as AgreementStatus }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(agreementStatusLabels) as AgreementStatus[]).map(s => (
+                        <SelectItem key={s} value={s}>{agreementStatusLabels[s]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Approval Date</Label>
+                  <Input 
+                    type="date"
+                    value={basicInfo.approvalDate}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, approvalDate: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">Defaults to commencement date if blank</p>
+                </div>
               </div>
             </div>
+
 
             <Separator />
 
@@ -417,6 +510,24 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
                 <p className="text-xs text-muted-foreground">Current SG minimum: 11.5%</p>
               </div>
             </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <h3 className="font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Internal Notes
+              </h3>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea 
+                  placeholder="Optional internal notes about this agreement (negotiation context, key contacts, etc.)"
+                  value={basicInfo.notes}
+                  onChange={(e) => setBasicInfo(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+            </div>
           </div>
         );
 
@@ -477,6 +588,40 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
                             value={cls.description}
                             onChange={(e) => updateClassification(cls.id, { description: e.target.value })}
                           />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Maps to Award Classification</Label>
+                            <Select 
+                              value={cls.mappedAwardClassification || ''}
+                              onValueChange={(v) => updateClassification(cls.id, { mappedAwardClassification: v })}
+                              disabled={!basicInfo.underlyingAwardId}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={basicInfo.underlyingAwardId ? 'Select award classification' : 'Pick underlying award first'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {australianAwards
+                                  .find(a => a.id === basicInfo.underlyingAwardId)
+                                  ?.classifications.map(ac => (
+                                    <SelectItem key={ac.id} value={ac.id}>
+                                      {ac.level} — {ac.description}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">Used for BOOT comparison & Classification Mapping</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Min. Experience (months)</Label>
+                            <Input 
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={cls.minExperienceMonths || ''}
+                              onChange={(e) => updateClassification(cls.id, { minExperienceMonths: parseInt(e.target.value) || undefined })}
+                            />
+                          </div>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                           <div className="space-y-2">
