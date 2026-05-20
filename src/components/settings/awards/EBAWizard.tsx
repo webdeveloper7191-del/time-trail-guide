@@ -362,30 +362,69 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
                 <Label>Underlying Award (BOOT Reference) *</Label>
                 <Select 
                   value={basicInfo.underlyingAwardId}
-                  onValueChange={(v) => setBasicInfo(prev => ({ ...prev, underlyingAwardId: v }))}
+                  onValueChange={setUnderlyingAward}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select underlying award" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="children-services-2020">Children's Services Award 2020</SelectItem>
-                    <SelectItem value="educational-services-2020">Educational Services Award 2020</SelectItem>
-                    <SelectItem value="aged-care-2020">Aged Care Award 2020</SelectItem>
-                    <SelectItem value="nursing-2020">Nurses Award 2020</SelectItem>
-                    <SelectItem value="social-services-2020">Social, Community, Home Care & Disability Services Award 2020</SelectItem>
+                    {australianAwards.map(award => (
+                      <SelectItem key={award.id} value={award.id}>
+                        {award.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>FWC Approval Number</Label>
-                <Input 
-                  placeholder="e.g., AE508123"
-                  value={basicInfo.fwcApprovalNumber}
-                  onChange={(e) => setBasicInfo(prev => ({ ...prev, fwcApprovalNumber: e.target.value }))}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>FWC Approval Number</Label>
+                  <Input 
+                    placeholder="e.g., AE508123"
+                    value={basicInfo.fwcApprovalNumber}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, fwcApprovalNumber: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>FWC Reference</Label>
+                  <Input 
+                    placeholder="e.g., AG2024/123"
+                    value={basicInfo.fwcReference}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, fwcReference: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Agreement Status</Label>
+                  <Select 
+                    value={basicInfo.status}
+                    onValueChange={(v) => setBasicInfo(prev => ({ ...prev, status: v as AgreementStatus }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(agreementStatusLabels) as AgreementStatus[]).map(s => (
+                        <SelectItem key={s} value={s}>{agreementStatusLabels[s]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Approval Date</Label>
+                  <Input 
+                    type="date"
+                    value={basicInfo.approvalDate}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, approvalDate: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">Defaults to commencement date if blank</p>
+                </div>
               </div>
             </div>
+
 
             <Separator />
 
