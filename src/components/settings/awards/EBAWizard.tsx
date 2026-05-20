@@ -81,14 +81,18 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
     name: existingEBA?.name || '',
     code: existingEBA?.code || '',
     type: (existingEBA?.type || 'enterprise_agreement') as AgreementType,
+    status: (existingEBA?.status || 'pending_approval') as AgreementStatus,
     underlyingAwardId: existingEBA?.underlyingAwardId || '',
     underlyingAwardName: existingEBA?.underlyingAwardName || '',
     commencementDate: existingEBA?.commencementDate || '',
     nominalExpiryDate: existingEBA?.nominalExpiryDate || '',
+    approvalDate: existingEBA?.approvalDate || '',
+    fwcReference: existingEBA?.fwcReference || '',
     fwcApprovalNumber: existingEBA?.fwcApprovalNumber || '',
     coverageDescription: existingEBA?.coverageDescription || '',
     applicableStates: existingEBA?.applicableStates || [] as AustralianState[],
     superannuationRate: existingEBA?.superannuationRate || 11.5,
+    notes: existingEBA?.notes || '',
   });
 
   const [classifications, setClassifications] = useState<EBAClassification[]>(
