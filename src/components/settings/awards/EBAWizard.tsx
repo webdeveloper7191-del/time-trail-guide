@@ -249,6 +249,11 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
   };
 
   const goNext = () => {
+    const errors = validateStep(currentStep);
+    if (errors.length > 0) {
+      toast.error(`Please complete: ${errors.join(', ')}`);
+      return;
+    }
     const nextIndex = currentStepIndex + 1;
     if (nextIndex < WIZARD_STEPS.length) {
       setCurrentStep(WIZARD_STEPS[nextIndex].id);
@@ -263,6 +268,16 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
   };
 
   const handleComplete = () => {
+    // Final validation across mandatory steps
+    const allErrors = [
+      ...validateStep('basic'),
+      ...validateStep('classifications'),
+    ];
+    if (allErrors.length > 0) {
+      toast.error(`Cannot save — missing: ${allErrors.join(', ')}`);
+      return;
+    }
+
     const eba: Partial<EnterpriseAgreement> = {
       id: existingEBA?.id || `eba-${Date.now()}`,
       ...basicInfo,
@@ -273,20 +288,20 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
       leaveEntitlements,
       conditions,
       redundancyScale: existingEBA?.redundancyScale || [],
-      industryClassifications: [],
+      industryClassifications: existingEBA?.industryClassifications || [],
       version: existingEBA?.version || '1.0',
       createdAt: existingEBA?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      createdBy: 'admin',
-      status: 'active',
-      approvalDate: basicInfo.commencementDate,
-      fwcReference: '',
+      createdBy: existingEBA?.createdBy || 'admin',
+      // Fall back approval date to commencement when not set
+      approvalDate: basicInfo.approvalDate || basicInfo.commencementDate,
     };
     
     onComplete(eba);
     toast.success(isEditMode ? 'Agreement updated successfully' : 'Agreement created successfully');
     onOpenChange(false);
   };
+
 
   const renderStepContent = () => {
     switch (currentStep) {
