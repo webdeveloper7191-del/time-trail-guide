@@ -605,7 +605,7 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
                                   .find(a => a.id === basicInfo.underlyingAwardId)
                                   ?.classifications.map(ac => (
                                     <SelectItem key={ac.id} value={ac.id}>
-                                      {ac.name}
+                                      {ac.level} — {ac.description}
                                     </SelectItem>
                                   ))}
                               </SelectContent>
