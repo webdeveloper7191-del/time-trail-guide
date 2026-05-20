@@ -130,6 +130,38 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
 
   const currentStepIndex = WIZARD_STEPS.findIndex(s => s.id === currentStep);
 
+  const setUnderlyingAward = (id: string) => {
+    const award = australianAwards.find(a => a.id === id);
+    setBasicInfo(prev => ({
+      ...prev,
+      underlyingAwardId: id,
+      underlyingAwardName: award?.name || '',
+    }));
+  };
+
+  // Per-step validation (returns array of missing-field messages)
+  const validateStep = (step: WizardStep): string[] => {
+    const errors: string[] = [];
+    if (step === 'basic') {
+      if (!basicInfo.name.trim()) errors.push('Agreement name');
+      if (!basicInfo.code.trim()) errors.push('Agreement code');
+      if (!basicInfo.underlyingAwardId) errors.push('Underlying award (BOOT reference)');
+      if (!basicInfo.commencementDate) errors.push('Commencement date');
+      if (!basicInfo.nominalExpiryDate) errors.push('Nominal expiry date');
+      if (basicInfo.applicableStates.length === 0) errors.push('At least one applicable state');
+      if (!basicInfo.coverageDescription.trim()) errors.push('Coverage description');
+    }
+    if (step === 'classifications') {
+      if (classifications.length === 0) errors.push('At least one classification');
+      classifications.forEach((c, i) => {
+        if (!c.code.trim() || !c.name.trim()) errors.push(`Classification #${i + 1}: code and name`);
+        const rate = payRates.find(pr => pr.classificationId === c.id);
+        if (!rate || !rate.baseRate) errors.push(`Classification #${i + 1}: base rate`);
+      });
+    }
+    return errors;
+  };
+
   const toggleState = (state: AustralianState) => {
     setBasicInfo(prev => ({
       ...prev,
