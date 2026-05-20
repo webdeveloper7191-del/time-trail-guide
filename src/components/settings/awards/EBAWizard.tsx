@@ -589,6 +589,40 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
                             onChange={(e) => updateClassification(cls.id, { description: e.target.value })}
                           />
                         </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Maps to Award Classification</Label>
+                            <Select 
+                              value={cls.mappedAwardClassification || ''}
+                              onValueChange={(v) => updateClassification(cls.id, { mappedAwardClassification: v })}
+                              disabled={!basicInfo.underlyingAwardId}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={basicInfo.underlyingAwardId ? 'Select award classification' : 'Pick underlying award first'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {australianAwards
+                                  .find(a => a.id === basicInfo.underlyingAwardId)
+                                  ?.classifications.map(ac => (
+                                    <SelectItem key={ac.id} value={ac.id}>
+                                      {ac.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">Used for BOOT comparison & Classification Mapping</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Min. Experience (months)</Label>
+                            <Input 
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={cls.minExperienceMonths || ''}
+                              onChange={(e) => updateClassification(cls.id, { minExperienceMonths: parseInt(e.target.value) || undefined })}
+                            />
+                          </div>
+                        </div>
                         <div className="grid grid-cols-3 gap-4">
                           <div className="space-y-2">
                             <Label>Rate Type</Label>
