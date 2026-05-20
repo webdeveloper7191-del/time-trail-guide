@@ -510,6 +510,24 @@ export function EBAWizard({ open, onOpenChange, onComplete, existingEBA }: EBAWi
                 <p className="text-xs text-muted-foreground">Current SG minimum: 11.5%</p>
               </div>
             </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <h3 className="font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Internal Notes
+              </h3>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea 
+                  placeholder="Optional internal notes about this agreement (negotiation context, key contacts, etc.)"
+                  value={basicInfo.notes}
+                  onChange={(e) => setBasicInfo(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+            </div>
           </div>
         );
 
