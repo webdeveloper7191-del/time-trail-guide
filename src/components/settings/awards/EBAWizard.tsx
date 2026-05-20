@@ -41,14 +41,17 @@ import {
 import { format } from 'date-fns';
 import {
   AgreementType,
+  AgreementStatus,
   EBAClassification,
   EBAPayRate,
   EBAAllowance,
   EBALeaveEntitlement,
   EBACondition,
   EnterpriseAgreement,
+  agreementStatusLabels,
 } from '@/types/enterpriseAgreement';
 import { AustralianState, stateLabels } from '@/types/leaveAccrual';
+import { australianAwards } from '@/data/australianAwards';
 
 interface EBAWizardProps {
   open: boolean;
