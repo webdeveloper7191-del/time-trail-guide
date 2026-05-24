@@ -203,6 +203,39 @@ export function OnCallSettingsEditor({
                   </p>
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="saturdayStandbyRate" className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Saturday Standby Rate ($)
+                  </Label>
+                  <Input
+                    id="saturdayStandbyRate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Same as weekend"
+                    value={config.saturdayStandbyRate ?? ''}
+                    onChange={(e) => updateConfig('saturdayStandbyRate', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sundayStandbyRate" className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Sunday Standby Rate ($)
+                  </Label>
+                  <Input
+                    id="sundayStandbyRate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Same as weekend"
+                    value={config.sundayStandbyRate ?? ''}
+                    onChange={(e) => updateConfig('sundayStandbyRate', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
