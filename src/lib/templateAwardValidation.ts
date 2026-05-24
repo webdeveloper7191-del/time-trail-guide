@@ -68,7 +68,10 @@ export function getAwardDefaults(
   shiftType: ShiftSpecialType,
   awardType: AwardType = 'general'
 ): Record<string, number | string | undefined> {
-  if (shiftType === 'on_call') return { ...DEFAULT_ON_CALL_CONFIGS[awardType] };
+  if (shiftType === 'on_call') {
+    const { dayOfWeekRates, ...rest } = DEFAULT_ON_CALL_CONFIGS[awardType];
+    return { ...rest };
+  }
   if (shiftType === 'sleepover') return { ...DEFAULT_SLEEPOVER_CONFIGS[awardType] };
   if (shiftType === 'broken') return { ...DEFAULT_BROKEN_SHIFT_CONFIGS[awardType] };
   return {};

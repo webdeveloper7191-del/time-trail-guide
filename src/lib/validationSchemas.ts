@@ -63,7 +63,7 @@ export const openShiftSchema = z.object({
   
   // On-call settings
   onCallStandbyRate: z.number().optional(),
-  onCallStandbyRateType: z.enum(['per_period', 'per_hour', 'daily']).optional(),
+  onCallStandbyRateType: z.enum(['per_period', 'per_hour', 'daily', 'percent_of_base']).optional(),
   onCallCallbackMinimumHours: z.number().optional(),
   
   // Sleepover settings

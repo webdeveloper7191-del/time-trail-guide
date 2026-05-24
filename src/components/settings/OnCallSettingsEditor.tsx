@@ -121,11 +121,45 @@ export function OnCallSettingsEditor({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="per_period">Per On-Call Period</SelectItem>
-                      <SelectItem value="per_hour">Per Hour On-Call</SelectItem>
-                      <SelectItem value="daily">Per Day</SelectItem>
+                    <SelectItem value="per_period">Per On-Call Period</SelectItem>
+                    <SelectItem value="per_hour">Per Hour On-Call</SelectItem>
+                    <SelectItem value="daily">Per Day</SelectItem>
+                    <SelectItem value="percent_of_base">% of Base Hourly Rate</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="baseHourlyRate">Base Hourly Rate ($)</Label>
+                  <Input
+                    id="baseHourlyRate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Used for % of base"
+                    value={config.baseHourlyRate || ''}
+                    onChange={(e) => updateConfig('baseHourlyRate', parseFloat(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Used when rate type is "% of base"
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="standbyAllowanceAmount">Standby Allowance ($)</Label>
+                  <Input
+                    id="standbyAllowanceAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Flat fee for being on-call"
+                    value={config.standbyAllowanceAmount ?? ''}
+                    onChange={(e) => updateConfig('standbyAllowanceAmount', parseFloat(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Flat fee paid regardless of callbacks
+                  </p>
                 </div>
               </div>
 
@@ -167,6 +201,39 @@ export function OnCallSettingsEditor({
                   <p className="text-xs text-muted-foreground">
                     Multiplied by standard standby rate
                   </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="saturdayStandbyRate" className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Saturday Standby Rate ($)
+                  </Label>
+                  <Input
+                    id="saturdayStandbyRate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Same as weekend"
+                    value={config.saturdayStandbyRate ?? ''}
+                    onChange={(e) => updateConfig('saturdayStandbyRate', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sundayStandbyRate" className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Sunday Standby Rate ($)
+                  </Label>
+                  <Input
+                    id="sundayStandbyRate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Same as weekend"
+                    value={config.sundayStandbyRate ?? ''}
+                    onChange={(e) => updateConfig('sundayStandbyRate', parseFloat(e.target.value) || 0)}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -228,6 +295,38 @@ export function OnCallSettingsEditor({
                 <p className="text-xs text-muted-foreground">
                   Maximum separate callbacks in one on-call period (leave empty for unlimited)
                 </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="minimumCallbackHours">Min Engagement Hours</Label>
+                  <Input
+                    id="minimumCallbackHours"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    placeholder="e.g., 3"
+                    value={config.minimumCallbackHours ?? ''}
+                    onChange={(e) => updateConfig('minimumCallbackHours', parseFloat(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Per callback (overrides minimum hours paid)
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="responseSlaMinutes">Response SLA (minutes)</Label>
+                  <Input
+                    id="responseSlaMinutes"
+                    type="number"
+                    min="0"
+                    placeholder="e.g., 30"
+                    value={config.responseSlaMinutes ?? ''}
+                    onChange={(e) => updateConfig('responseSlaMinutes', parseInt(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Default time to respond to callback
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
