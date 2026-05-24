@@ -32,6 +32,7 @@ const SRSDocumentation = () => {
     { id: 'demand', name: 'Demand', icon: <TrendingUp className="h-4 w-4" />, data: demandSRS },
     { id: 'awards', name: 'Awards', icon: <DollarSign className="h-4 w-4" />, data: awardsSRS },
     { id: 'performance', name: 'Performance', icon: <Target className="h-4 w-4" />, data: performanceSRS },
+    { id: 'agency', name: 'Agency', icon: <Building2 className="h-4 w-4" />, data: agencySRS as any },
   ];
 
   const renderModule = (srs: typeof rosterSRS) => (
