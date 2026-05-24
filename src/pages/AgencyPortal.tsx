@@ -33,6 +33,9 @@ import { CandidateProfilePanel } from '@/components/agency/CandidateProfilePanel
 import { AgencyAvailabilityScreen } from '@/components/agency/AgencyAvailabilityScreen';
 import { AgencyOnboardingScreen } from '@/components/agency/AgencyOnboardingScreen';
 import { AgencySettingsScreen } from '@/components/agency/AgencySettingsScreen';
+import { CandidateComplianceManager } from '@/components/agency/CandidateComplianceManager';
+import { BookingConfirmationPanel } from '@/components/agency/BookingConfirmationPanel';
+import { AttendanceReconciliationPanel } from '@/components/agency/AttendanceReconciliationPanel';
 import rosteredLogo from '@/assets/rostered-logo.png';
 import { cn } from '@/lib/utils';
 import { Candidate } from '@/types/agency';
@@ -52,6 +55,7 @@ const NAV_ITEMS = [
     icon: Users,
     children: [
       { id: 'candidates', label: 'Candidates', icon: UserCheck },
+      { id: 'compliance', label: 'Compliance', icon: Shield },
       { id: 'availability', label: 'Availability', icon: CalendarDays },
       { id: 'onboarding', label: 'Onboarding', icon: UserCog },
     ],
@@ -64,6 +68,8 @@ const NAV_ITEMS = [
     children: [
       { id: 'shifts', label: 'Shift Requests', icon: Calendar },
       { id: 'broadcasts', label: 'Broadcast Inbox', icon: BellRing },
+      { id: 'confirmations', label: 'Confirmations', icon: CheckCircle2 },
+      { id: 'attendance', label: 'Attendance', icon: Activity },
     ],
   },
   { id: 'timesheets', label: 'Timesheets', icon: ClipboardCheck },
@@ -166,11 +172,14 @@ const AgencyPortal = () => {
   const pageTitles: Record<string, { title: string; subtitle: string }> = {
     dashboard: { title: 'Dashboard', subtitle: 'Overview of your agency performance' },
     candidates: { title: 'Candidates', subtitle: 'Manage your candidate pool' },
+    compliance: { title: 'Candidate Compliance', subtitle: 'Per-candidate documents, expiry alerts and right-to-work' },
     availability: { title: 'Candidate Availability', subtitle: 'View and manage candidate schedules' },
     onboarding: { title: 'Candidate Onboarding', subtitle: 'Onboard new candidates' },
     clients: { title: 'Clients', subtitle: 'Manage client relationships' },
     shifts: { title: 'Shift Requests', subtitle: 'View and manage incoming shifts' },
     broadcasts: { title: 'Broadcast Inbox', subtitle: 'Incoming shift broadcasts from centres' },
+    confirmations: { title: 'Booking Confirmations', subtitle: 'Centre accept/reject of submitted candidates with reverse SLA' },
+    attendance: { title: 'Attendance Reconciliation', subtitle: 'Clock-in/out, discrepancies and timesheet bridge' },
     timesheets: { title: 'Timesheets', subtitle: 'Manage Timesheets' },
     invoices: { title: 'Invoices', subtitle: 'Billing and invoicing' },
     profile: { title: 'Business Profile', subtitle: 'Your agency details and compliance' },
@@ -859,6 +868,15 @@ const AgencyPortal = () => {
             {activeTab === 'broadcasts' && (
               <ShiftBroadcastInbox onMatchCandidates={() => setActiveTab('shifts')} />
             )}
+
+            {/* ═══ COMPLIANCE (per-candidate) ══════════════════════════════ */}
+            {activeTab === 'compliance' && <CandidateComplianceManager />}
+
+            {/* ═══ BOOKING CONFIRMATIONS (centre accept/reject) ════════════ */}
+            {activeTab === 'confirmations' && <BookingConfirmationPanel />}
+
+            {/* ═══ ATTENDANCE RECONCILIATION ═══════════════════════════════ */}
+            {activeTab === 'attendance' && <AttendanceReconciliationPanel />}
 
             {/* ═══ TIMESHEETS ══════════════════════════════════════════════ */}
             {activeTab === 'timesheets' && <TimesheetApprovalWorkflow />}
