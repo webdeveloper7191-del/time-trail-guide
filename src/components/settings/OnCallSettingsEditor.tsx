@@ -130,6 +130,39 @@ export function OnCallSettingsEditor({
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="baseHourlyRate">Base Hourly Rate ($)</Label>
+                  <Input
+                    id="baseHourlyRate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Used for % of base"
+                    value={config.baseHourlyRate || ''}
+                    onChange={(e) => updateConfig('baseHourlyRate', parseFloat(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Used when rate type is "% of base"
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="standbyAllowanceAmount">Standby Allowance ($)</Label>
+                  <Input
+                    id="standbyAllowanceAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Flat fee for being on-call"
+                    value={config.standbyAllowanceAmount ?? ''}
+                    onChange={(e) => updateConfig('standbyAllowanceAmount', parseFloat(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Flat fee paid regardless of callbacks
+                  </p>
+                </div>
+              </div>
+
               <Separator />
 
               <div className="grid grid-cols-2 gap-4">
