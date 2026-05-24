@@ -296,6 +296,38 @@ export function OnCallSettingsEditor({
                   Maximum separate callbacks in one on-call period (leave empty for unlimited)
                 </p>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="minimumCallbackHours">Min Engagement Hours</Label>
+                  <Input
+                    id="minimumCallbackHours"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    placeholder="e.g., 3"
+                    value={config.minimumCallbackHours ?? ''}
+                    onChange={(e) => updateConfig('minimumCallbackHours', parseFloat(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Per callback (overrides minimum hours paid)
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="responseSlaMinutes">Response SLA (minutes)</Label>
+                  <Input
+                    id="responseSlaMinutes"
+                    type="number"
+                    min="0"
+                    placeholder="e.g., 30"
+                    value={config.responseSlaMinutes ?? ''}
+                    onChange={(e) => updateConfig('responseSlaMinutes', parseInt(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Default time to respond to callback
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
