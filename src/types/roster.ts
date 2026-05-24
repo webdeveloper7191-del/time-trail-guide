@@ -66,7 +66,7 @@ export interface ShiftTemplate {
     defaultEndTime?: string;
     // Pay configuration
     standbyRate?: number;
-    standbyRateType?: 'per_period' | 'per_hour' | 'daily';
+    standbyRateType?: 'per_period' | 'per_hour' | 'daily' | 'percent_of_base';
     callbackMinimumHours?: number;
     callbackRateMultiplier?: number;
     weekendStandbyRate?: number;
