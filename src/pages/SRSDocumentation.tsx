@@ -13,6 +13,8 @@ import { rosterSRS } from '@/data/srs/rosterSRS';
 import { awardsSRS } from '@/data/srs/awardsSRS';
 import { performanceSRS } from '@/data/srs/performanceSRS';
 import { demandSRS } from '@/data/srs/demandSRS';
+import { agencySRS } from '@/data/srs/agencySRS';
+import { Building2, Network } from 'lucide-react';
 
 const SRSDocumentation = () => {
   const navigate = useNavigate();
@@ -30,6 +32,7 @@ const SRSDocumentation = () => {
     { id: 'demand', name: 'Demand', icon: <TrendingUp className="h-4 w-4" />, data: demandSRS },
     { id: 'awards', name: 'Awards', icon: <DollarSign className="h-4 w-4" />, data: awardsSRS },
     { id: 'performance', name: 'Performance', icon: <Target className="h-4 w-4" />, data: performanceSRS },
+    { id: 'agency', name: 'Agency', icon: <Building2 className="h-4 w-4" />, data: agencySRS as any },
   ];
 
   const renderModule = (srs: typeof rosterSRS) => (
@@ -157,6 +160,100 @@ const SRSDocumentation = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* API Endpoints (Agency module) */}
+      {(srs as any).apiEndpoints && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Network className="h-5 w-5" />API Endpoints ({(srs as any).apiEndpoints.length})</CardTitle>
+            <CardDescription>REST contracts powering the centre ↔ agency integration.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(srs as any).apiEndpoints.map((ep: any) => (
+              <Collapsible key={ep.id}>
+                <CollapsibleTrigger className="w-full">
+                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 text-left">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Badge variant={ep.method === 'GET' ? 'secondary' : ep.method === 'DELETE' ? 'destructive' : 'default'} className="font-mono">{ep.method}</Badge>
+                      <code className="text-xs font-mono truncate">{ep.path}</code>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-muted-foreground hidden md:inline">{ep.name}</span>
+                      <Badge variant="outline" className="text-xs">{ep.id}</Badge>
+                    </div>
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="mt-2 p-4 border rounded-lg bg-muted/30 space-y-3 text-sm">
+                    <p>{ep.description}</p>
+                    <div className="grid md:grid-cols-2 gap-3 text-xs">
+                      <div><span className="font-semibold">Auth:</span> {ep.auth}</div>
+                      <div><span className="font-semibold">Consumer:</span> {ep.consumer}</div>
+                    </div>
+                    {ep.request.pathParams && <div><h5 className="font-semibold text-xs mb-1">Path Params</h5><pre className="bg-background p-2 rounded text-xs overflow-auto">{JSON.stringify(ep.request.pathParams, null, 2)}</pre></div>}
+                    {ep.request.queryParams && <div><h5 className="font-semibold text-xs mb-1">Query Params</h5><pre className="bg-background p-2 rounded text-xs overflow-auto">{JSON.stringify(ep.request.queryParams, null, 2)}</pre></div>}
+                    {ep.request.headers && <div><h5 className="font-semibold text-xs mb-1">Headers</h5><pre className="bg-background p-2 rounded text-xs overflow-auto">{JSON.stringify(ep.request.headers, null, 2)}</pre></div>}
+                    {ep.request.body && <div><h5 className="font-semibold text-xs mb-1">Request Body</h5><pre className="bg-background p-2 rounded text-xs overflow-auto">{ep.request.body}</pre></div>}
+                    <div>
+                      <h5 className="font-semibold text-xs mb-1">Response <Badge className="ml-1">{ep.response.status}</Badge></h5>
+                      <pre className="bg-background p-2 rounded text-xs overflow-auto">{ep.response.body}</pre>
+                    </div>
+                    {ep.errors && ep.errors.length > 0 && (
+                      <div>
+                        <h5 className="font-semibold text-xs mb-1">Errors</h5>
+                        <ul className="text-xs space-y-1">{ep.errors.map((e: any, i: number) => <li key={i}><Badge variant="destructive" className="mr-2">{e.status}</Badge><code className="font-mono">{e.code}</code> — {e.description}</li>)}</ul>
+                      </div>
+                    )}
+                    {ep.sideEffects && ep.sideEffects.length > 0 && (
+                      <div>
+                        <h5 className="font-semibold text-xs mb-1">Side Effects</h5>
+                        <ul className="text-xs space-y-1">{ep.sideEffects.map((s: string, i: number) => <li key={i}>• {s}</li>)}</ul>
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Workflows (Agency module) */}
+      {(srs as any).workflows && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Workflow className="h-5 w-5" />End-to-End Workflows ({(srs as any).workflows.length})</CardTitle>
+            <CardDescription>Sequenced actor steps with the API endpoints each step invokes.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(srs as any).workflows.map((wf: any) => (
+              <div key={wf.id} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold">{wf.name}</h4>
+                    <p className="text-xs text-muted-foreground">Trigger: {wf.trigger}</p>
+                  </div>
+                  <Badge variant="outline">{wf.id}</Badge>
+                </div>
+                <Table>
+                  <TableHeader><TableRow><TableHead className="w-12">#</TableHead><TableHead>Actor</TableHead><TableHead>Action</TableHead><TableHead>Endpoint</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {wf.steps.map((s: any) => (
+                      <TableRow key={s.step}>
+                        <TableCell className="font-mono text-xs">{s.step}</TableCell>
+                        <TableCell className="text-xs"><Badge variant="secondary">{s.actor}</Badge></TableCell>
+                        <TableCell className="text-xs">{s.action}</TableCell>
+                        <TableCell className="text-xs">{s.endpoint ? <code className="font-mono">{s.endpoint}</code> : <span className="text-muted-foreground">—</span>}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="text-xs bg-muted/40 p-2 rounded"><span className="font-semibold">Outcome:</span> {wf.outcome}</div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 
@@ -201,7 +298,7 @@ const SRSDocumentation = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-lg grid-cols-4">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5">
             {modules.map(m => (
               <TabsTrigger key={m.id} value={m.id} className="flex items-center gap-2">{m.icon}{m.name}</TabsTrigger>
             ))}
