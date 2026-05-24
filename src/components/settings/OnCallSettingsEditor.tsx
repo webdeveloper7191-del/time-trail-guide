@@ -121,9 +121,10 @@ export function OnCallSettingsEditor({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="per_period">Per On-Call Period</SelectItem>
-                      <SelectItem value="per_hour">Per Hour On-Call</SelectItem>
-                      <SelectItem value="daily">Per Day</SelectItem>
+                    <SelectItem value="per_period">Per On-Call Period</SelectItem>
+                    <SelectItem value="per_hour">Per Hour On-Call</SelectItem>
+                    <SelectItem value="daily">Per Day</SelectItem>
+                    <SelectItem value="percent_of_base">% of Base Hourly Rate</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
