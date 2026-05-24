@@ -47,15 +47,30 @@ export interface AllowanceType {
   stackable?: boolean; // Can be combined with other allowances
 }
 
+// Day-of-week scope for differentiated on-call rates
+export type OnCallDayScope = 'weekday' | 'saturday' | 'sunday' | 'public_holiday';
+
+// Trigger type for how a callback was initiated (audit trail)
+export type OnCallTriggerType = 'phone' | 'sms' | 'app' | 'email' | 'manual';
+
 // On-call specific configuration for award settings
 export interface OnCallConfiguration {
+  baseHourlyRate?: number; // Base hourly rate used when standby is calculated as % of base
   standbyRate: number; // Flat rate for being on-call (paid regardless of callback)
-  standbyRateType: 'per_period' | 'per_hour' | 'daily'; // How standby is calculated
+  standbyAllowanceAmount?: number; // Flat allowance for being on call (alias for clarity)
+  standbyRateType: 'per_period' | 'per_hour' | 'daily' | 'percent_of_base'; // How standby is calculated
+  standbyPercentOfBase?: number; // When standbyRateType = percent_of_base
   callbackMinimumHours: number; // Minimum hours paid when called back (e.g., 2 or 3)
+  minimumCallbackHours?: number; // Alias used by payroll engine (e.g. 3-hour minimum engagement)
   callbackRateMultiplier: number; // Multiplier for callback pay (e.g., 1.5 for time-and-a-half)
   publicHolidayStandbyMultiplier?: number; // Higher rate for public holiday on-call
   weekendStandbyRate?: number; // Different rate for weekend on-call
+  saturdayStandbyRate?: number; // Differentiated Saturday on-call rate
+  sundayStandbyRate?: number; // Differentiated Sunday on-call rate
   maximumCallbacksPerPeriod?: number; // Maximum separate callbacks in one on-call period
+  responseSlaMinutes?: number; // Default SLA for responding to a callback
+  // Per-day-of-week rate overrides for granular award scheduling
+  dayOfWeekRates?: Partial<Record<OnCallDayScope, number>>;
 }
 
 // Sleepover specific configuration for award settings
