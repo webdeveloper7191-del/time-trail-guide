@@ -792,12 +792,7 @@ export const agencySRS: AgencyModuleSRS = {
     { id: 'NFR-AG-06', category: 'Compliance', requirement: 'Government verification calls retried max 3x; failures surface as pending_verification (never silently approve)' },
   ],
 
-  nonFunctionalRequirements: [
-    { id: 'NFR-AG-01', category: 'Performance', requirement: 'Match engine returns within 1.5s for <500 candidates' },
-    { id: 'NFR-AG-02', category: 'Security', requirement: 'All API endpoints scoped per tenant + per agency relationship' },
-    { id: 'NFR-AG-03', category: 'Reliability', requirement: 'Webhook retries with exponential backoff, max 24h' },
-    { id: 'NFR-AG-04', category: 'Auditability', requirement: 'Every state change written to audit_log with actor + diff' },
-  ],
+
   userStories: [
     {
       id: 'US-AG-01',
