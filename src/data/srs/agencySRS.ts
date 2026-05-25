@@ -233,12 +233,71 @@ const apiEndpoints: ApiEndpointSpec[] = [
   "candidateId":"cand-22",
   "complianceScore":96,
   "status":"compliant",
+  "missingRequired":[],
+  "nextExpiryDate":"2026-08-01",
   "documents":[
-    {"id":"doc-1","type":"WWCC","number":"WWC1234567E","jurisdiction":"NSW",
-     "issuedAt":"2024-01-12","expiresAt":"2029-01-11","fileUrl":"https://...","status":"valid"},
-    {"id":"doc-2","type":"FirstAid","expiresAt":"2026-08-01","status":"expiring_soon"}
-  ],
-  "missingRequired":[]
+    {
+      "id":"doc-1","type":"WWCC","category":"government_check",
+      "name":"Working With Children Check","number":"WWC1234567E",
+      "jurisdiction":"NSW","country":"AU",
+      "issuingAuthority":"NSW Office of the Children's Guardian",
+      "issuedAt":"2024-01-12","expiresAt":"2029-01-11",
+      "renewalCadence":"once_off_with_expiry","renewalIntervalMonths":60,
+      "isMandatory":true,"isGovernmentVerified":true,
+      "verificationSource":"OCG_API","verifiedAt":"2024-01-13T03:11:00Z",
+      "verificationReference":"VRF-OCG-99812",
+      "fileUrl":"https://storage/.../doc-1.pdf","fileMimeType":"application/pdf",
+      "fileSizeBytes":184221,"uploadedBy":"candidate",
+      "uploadedAt":"2024-01-12T10:00:00Z","status":"valid",
+      "candidateAcknowledgedAt":"2024-01-12T10:01:00Z"
+    },
+    {
+      "id":"doc-2","type":"FirstAid","category":"qualification",
+      "name":"HLTAID012 - First Aid in Education and Care",
+      "issuingAuthority":"RTO","rtoCode":"45160",
+      "issuedAt":"2023-08-01","expiresAt":"2026-08-01",
+      "renewalCadence":"recurring","renewalIntervalMonths":36,
+      "isMandatory":true,"isGovernmentVerified":false,"status":"expiring_soon"
+    },
+    {
+      "id":"doc-3","type":"PoliceCheck","category":"government_check",
+      "issuingAuthority":"Australian Federal Police",
+      "issuedAt":"2025-11-02","renewalCadence":"recurring","renewalIntervalMonths":12,
+      "isMandatory":true,"isGovernmentVerified":true,
+      "verificationSource":"AFP_NPCS","status":"valid"
+    },
+    {
+      "id":"doc-4","type":"NDISWorkerScreening","category":"government_check",
+      "jurisdiction":"NSW","issuingAuthority":"NDIS Quality and Safeguards Commission",
+      "expiresAt":"2030-03-15","renewalCadence":"once_off_with_expiry",
+      "renewalIntervalMonths":60,"isMandatory":false,"isGovernmentVerified":true,
+      "verificationSource":"NDIS_REGISTER","status":"valid"
+    },
+    {
+      "id":"doc-5","type":"VisaWorkRights","category":"government_check",
+      "country":"AU","issuingAuthority":"Department of Home Affairs",
+      "subclass":"500","workHoursLimitPerFortnight":48,
+      "expiresAt":"2027-02-01","renewalCadence":"once_off_with_expiry",
+      "isMandatory":true,"isGovernmentVerified":true,
+      "verificationSource":"VEVO","verificationReference":"VEVO-7781123","status":"valid"
+    },
+    {
+      "id":"doc-6","type":"Immunisation","category":"health",
+      "name":"AIR Immunisation History Statement",
+      "issuingAuthority":"Australian Immunisation Register",
+      "issuedAt":"2025-04-01","renewalCadence":"ongoing_no_expiry",
+      "isMandatory":true,"isGovernmentVerified":true,
+      "verificationSource":"AIR_API","status":"valid"
+    },
+    {
+      "id":"doc-7","type":"Qualification","category":"qualification",
+      "name":"Diploma of Early Childhood Education and Care (CHC50121)",
+      "issuingAuthority":"TAFE NSW","rtoCode":"90003",
+      "issuedAt":"2022-11-30","renewalCadence":"once_off",
+      "isMandatory":true,"isGovernmentVerified":false,
+      "evidenceType":"certificate_pdf","status":"valid"
+    }
+  ]
 }`,
     },
   },
@@ -247,25 +306,189 @@ const apiEndpoints: ApiEndpointSpec[] = [
     name: 'Upload Candidate Compliance Document',
     method: 'POST',
     path: '/api/v1/agency/candidates/:candidateId/compliance',
-    description: 'Multipart upload of a compliance document; triggers OCR + verification job.',
-    auth: 'Bearer JWT (agency)',
-    consumer: 'CandidateComplianceManager',
+    description: 'Multipart upload of a compliance document by agency OR candidate self-service; triggers OCR + government verification where applicable.',
+    auth: 'Bearer JWT (agency admin) OR short-lived candidate token',
+    consumer: 'CandidateComplianceManager / Candidate self-service portal',
     request: {
       pathParams: { candidateId: 'cand-22' },
       headers: { 'Content-Type': 'multipart/form-data' },
       body: `form-data:
-  type: "PoliceCheck"
+  type: "WWCC"                            # WWCC|PoliceCheck|NDISWorkerScreening|VisaWorkRights|Immunisation|FirstAid|CPR|Qualification|DriversLicence|Identity|Reference|Other
+  category: "government_check"            # government_check|qualification|health|identity|reference|other
+  name: "Working With Children Check"
+  number: "WWC1234567E"
   jurisdiction: "NSW"
-  number: "PC998877"
-  issuedAt: "2026-02-01"
-  expiresAt: "2029-02-01"
-  file: <binary>`,
+  country: "AU"
+  issuingAuthority: "NSW Office of the Children's Guardian"
+  rtoCode: null                           # required for RTO-issued qualifications
+  subclass: null                          # required for visa docs
+  issuedAt: "2024-01-12"
+  expiresAt: "2029-01-11"                 # null when renewalCadence in once_off|ongoing_no_expiry
+  renewalCadence: "once_off_with_expiry"  # once_off|once_off_with_expiry|recurring|ongoing_no_expiry
+  renewalIntervalMonths: 60               # used to auto-suggest next renewal when recurring
+  isMandatory: true
+  requestGovernmentVerification: true     # triggers WWCC/AFP/NDIS/VEVO/AIR lookup if supported
+  candidateConsentSignedAt: "2024-01-12T10:00:00Z"  # required for govt verifications
+  uploadedBy: "candidate"                 # candidate|agency_admin|centre_admin
+  file: <binary>                          # PDF / JPG / PNG, max 10MB`,
     },
     response: {
       status: 201,
-      body: `{"id":"doc-9","status":"pending_verification","verificationJobId":"vrf-31"}`,
+      body: `{
+  "id":"doc-9","status":"pending_verification",
+  "verificationJobId":"vrf-31",
+  "renewalDueAt":"2029-01-11",
+  "requiresCandidateAcknowledgement":true
+}`,
+    },
+    errors: [
+      { status: 400, code: 'CONSENT_MISSING', description: 'Government verification requested without candidate consent' },
+      { status: 413, code: 'FILE_TOO_LARGE', description: 'File exceeds 10MB' },
+      { status: 415, code: 'UNSUPPORTED_FILE_TYPE', description: 'Only PDF/JPG/PNG accepted' },
+    ],
+    sideEffects: [
+      'Government verification job enqueued when verificationSource is supported',
+      'Renewal reminders scheduled at T-60, T-30, T-7 days before expiresAt',
+      'Compliance score recomputed',
+    ],
+  },
+  {
+    id: 'API-AG-014',
+    name: 'Qualification & Document Catalogue (per role/jurisdiction)',
+    method: 'GET',
+    path: '/api/v1/agency/qualifications/catalogue',
+    description: 'Returns the canonical list of qualifications and government checks required or recommended for a given role + jurisdiction. Drives the candidate onboarding checklist and the missingRequired calculation.',
+    auth: 'Bearer JWT (any authenticated user)',
+    consumer: 'Candidate onboarding wizard / CandidateComplianceManager',
+    request: { queryParams: { role: 'DiplomaEducator', jurisdiction: 'NSW', industry: 'childcare' } },
+    response: {
+      status: 200,
+      body: `{
+  "role":"DiplomaEducator","jurisdiction":"NSW",
+  "items":[
+    {"type":"WWCC","isMandatory":true,"renewalCadence":"once_off_with_expiry","renewalIntervalMonths":60,"governmentVerified":true,"verificationSource":"OCG_API"},
+    {"type":"PoliceCheck","isMandatory":true,"renewalCadence":"recurring","renewalIntervalMonths":12,"governmentVerified":true,"verificationSource":"AFP_NPCS"},
+    {"type":"FirstAid","isMandatory":true,"renewalCadence":"recurring","renewalIntervalMonths":36},
+    {"type":"CPR","isMandatory":true,"renewalCadence":"recurring","renewalIntervalMonths":12},
+    {"type":"Qualification","isMandatory":true,"renewalCadence":"once_off","acceptedQualifications":["CHC50121","CHC50113"]},
+    {"type":"Immunisation","isMandatory":true,"renewalCadence":"ongoing_no_expiry"},
+    {"type":"VisaWorkRights","isMandatory":"if_non_citizen","renewalCadence":"once_off_with_expiry"},
+    {"type":"NDISWorkerScreening","isMandatory":false}
+  ]
+}`,
     },
   },
+  {
+    id: 'API-AG-015',
+    name: 'Trigger Government Verification',
+    method: 'POST',
+    path: '/api/v1/agency/compliance/:documentId/verify',
+    description: 'Calls the relevant government registry to verify the document (WWCC OCG, AFP NPCS, NDIS Register, VEVO, AIR). Idempotent; safe to retry.',
+    auth: 'Bearer JWT (agency admin or system)',
+    consumer: 'CandidateComplianceManager / nightly verification job',
+    request: {
+      pathParams: { documentId: 'doc-1' },
+      body: `{ "force": false, "consentReference": "consent-7781" }`,
+    },
+    response: {
+      status: 200,
+      body: `{
+  "documentId":"doc-1","verificationSource":"OCG_API",
+  "result":"verified","verifiedAt":"2026-05-25T03:11:00Z",
+  "verificationReference":"VRF-OCG-99812",
+  "registryStatus":"current","expiresAt":"2029-01-11"
+}`,
+    },
+    errors: [
+      { status: 400, code: 'CONSENT_MISSING', description: 'No candidate consent on file' },
+      { status: 404, code: 'NOT_ON_REGISTRY', description: 'Document number not found on government register' },
+      { status: 502, code: 'UPSTREAM_UNAVAILABLE', description: 'Registry temporarily unavailable; retry queued' },
+    ],
+    sideEffects: ['Document status -> valid|rejected', 'Compliance score recomputed', 'Audit log entry'],
+  },
+  {
+    id: 'API-AG-016',
+    name: 'List Documents Due for Renewal',
+    method: 'GET',
+    path: '/api/v1/agency/compliance/renewals',
+    description: 'Returns recurring/expiring documents due within the window; used by reminder service and dashboard.',
+    auth: 'Bearer JWT (agency admin)',
+    consumer: 'CandidateComplianceManager renewals dashboard',
+    request: { queryParams: { withinDays: '60', candidateId: 'optional', type: 'optional' } },
+    response: {
+      status: 200,
+      body: `{
+  "items":[
+    {"candidateId":"cand-22","documentId":"doc-2","type":"FirstAid","expiresAt":"2026-08-01","daysUntilExpiry":68,"renewalCadence":"recurring","remindersSent":1}
+  ]
+}`,
+    },
+  },
+  {
+    id: 'API-AG-017',
+    name: 'Candidate Accept / Decline Shift Offer',
+    method: 'POST',
+    path: '/api/v1/agency/offers/:offerId/response',
+    description: 'Candidate accepts or declines a shift offer pushed to them after centre confirmation. Acceptance locks the placement; decline triggers backup-candidate workflow.',
+    auth: 'Short-lived candidate token (magic link / app session)',
+    consumer: 'Candidate mobile/web portal',
+    request: {
+      pathParams: { offerId: 'off-7781' },
+      body: `{
+  "response":"accept",                    // accept | decline
+  "declineReason": null,                  // required if decline
+  "acknowledgements":{
+    "shiftDetailsRead":true,
+    "complianceConfirmed":true,
+    "travelDistanceOk":true,
+    "rateAccepted":true,
+    "codeOfConductAccepted":true
+  },
+  "signatureBase64":"...",                // optional digital signature
+  "respondedAt":"2026-06-03T11:30:00Z"
+}`,
+    },
+    response: {
+      status: 200,
+      body: `{
+  "offerId":"off-7781","placementId":"plc-555","status":"accepted",
+  "confirmedAt":"2026-06-03T11:30:01Z",
+  "nextSteps":["check_in_qr_url","centre_address","supervisor_contact"]
+}`,
+    },
+    errors: [
+      { status: 409, code: 'OFFER_EXPIRED', description: 'Candidate response window passed' },
+      { status: 409, code: 'OFFER_ALREADY_DECIDED', description: 'Offer already accepted/declined' },
+      { status: 412, code: 'COMPLIANCE_LAPSED', description: 'Candidate doc expired between submission and acceptance' },
+    ],
+    sideEffects: [
+      'Placement.status -> confirmed (on accept) or pending (on decline -> next backup)',
+      'Webhook offer.responded fired to agency + centre',
+      'Roster cell updated to show confirmed candidate',
+    ],
+  },
+  {
+    id: 'API-AG-018',
+    name: 'List Candidate Pending Offers',
+    method: 'GET',
+    path: '/api/v1/agency/candidates/:candidateId/offers',
+    description: 'Inbox of shift offers awaiting candidate acceptance with countdown timers.',
+    auth: 'Short-lived candidate token',
+    consumer: 'Candidate mobile/web portal',
+    request: { pathParams: { candidateId: 'cand-22' }, queryParams: { status: 'pending' } },
+    response: {
+      status: 200,
+      body: `{
+  "offers":[
+    {"id":"off-7781","placementId":"plc-555","centreName":"Sunshine ELC Bondi",
+     "shiftDate":"2026-06-04","startTime":"07:00","endTime":"15:30",
+     "role":"Diploma Educator","payRate":48.0,"travelDistanceKm":3.2,
+     "respondByDeadline":"2026-06-03T12:00:00Z","status":"pending"}
+  ]
+}`,
+    },
+  },
+
 
   // ====== CLOCK-IN / ATTENDANCE RECONCILIATION ======
   {
@@ -458,7 +681,50 @@ const workflows: WorkflowSpec[] = [
     ],
     outcome: 'Only compliant candidates can be placed; centres see live compliance status.',
   },
+  {
+    id: 'WF-AG-03',
+    name: 'Candidate Self-Onboarding & Document Submission',
+    trigger: 'Candidate invited by agency (magic link / app)',
+    steps: [
+      { step: 1, actor: 'System', action: 'Fetch qualification catalogue for role + jurisdiction', endpoint: 'API-AG-014' },
+      { step: 2, actor: 'Candidate', action: 'Reviews checklist; signs consent for government verifications' },
+      { step: 3, actor: 'Candidate', action: 'Uploads each required document (uploadedBy=candidate)', endpoint: 'API-AG-007' },
+      { step: 4, actor: 'System', action: 'Triggers government verification where supported', endpoint: 'API-AG-015' },
+      { step: 5, actor: 'Candidate', action: 'Acknowledges accuracy of uploaded data' },
+      { step: 6, actor: 'Agency Admin', action: 'Reviews unverified docs; marks verified or rejected' },
+      { step: 7, actor: 'System', action: 'Sets candidate status=available once missingRequired is empty' },
+    ],
+    outcome: 'Candidate file is complete, fully verified, and eligible for shift submissions.',
+  },
+  {
+    id: 'WF-AG-04',
+    name: 'Candidate Offer Acceptance (post centre confirmation)',
+    trigger: 'Centre accepts a candidate submission (API-AG-005)',
+    steps: [
+      { step: 1, actor: 'System', action: 'Creates candidate_shift_offer with respond-by deadline; pushes notification' },
+      { step: 2, actor: 'Candidate', action: 'Opens offer in portal', endpoint: 'API-AG-018' },
+      { step: 3, actor: 'System', action: 'Re-checks compliance freshness (no doc has expired since submission)' },
+      { step: 4, actor: 'Candidate', action: 'Accepts or declines with acknowledgements + signature', endpoint: 'API-AG-017' },
+      { step: 5, actor: 'System', action: 'On accept -> placement.status=confirmed; on decline -> next backup or re-broadcast' },
+      { step: 6, actor: 'System', action: 'Sends candidate the shift pack (address, QR check-in URL, supervisor contact)' },
+    ],
+    outcome: 'Placement is only "confirmed" after both centre and candidate accept; lapsed compliance is caught before shift start.',
+  },
+  {
+    id: 'WF-AG-05',
+    name: 'Document Renewal Cycle',
+    trigger: 'Recurring/expiring document approaches expiresAt',
+    steps: [
+      { step: 1, actor: 'System', action: 'Nightly job lists renewals due in 60 days', endpoint: 'API-AG-016' },
+      { step: 2, actor: 'System', action: 'Sends reminder to candidate + agency at T-60, T-30, T-7, T-1' },
+      { step: 3, actor: 'Candidate', action: 'Uploads renewed document', endpoint: 'API-AG-007' },
+      { step: 4, actor: 'System', action: 'Re-runs government verification', endpoint: 'API-AG-015' },
+      { step: 5, actor: 'System', action: 'On expiresAt without renewal -> document.status=expired; candidate becomes ineligible for new shifts' },
+    ],
+    outcome: 'Recurring qualifications stay current; lapses block new placements automatically.',
+  },
 ];
+
 
 export const agencySRS: AgencyModuleSRS = {
   moduleName: 'Agency Integration',
@@ -468,16 +734,22 @@ export const agencySRS: AgencyModuleSRS = {
     'The Agency Integration module connects centres with external staffing agencies to broadcast unfilled shifts, match and submit candidates, confirm bookings under reverse SLA, capture compliant attendance, reconcile timesheets, generate invoices (including RCTI), and rate placements. It exposes a REST API plus signed outbound webhooks, with all calls scoped per tenant and per agency relationship.',
   objectives: [
     'Fill open shifts within the urgency SLA via ranked agency matching',
-    'Guarantee per-candidate compliance (WWCC, Police Check, NDIS, Visa) at submission time',
-    'Close the booking loop with explicit centre confirmation (two-way handshake)',
+    'Guarantee per-candidate compliance (WWCC, Police Check, NDIS, Visa, Immunisation, Qualifications) at submission AND at candidate-acceptance time',
+    'Distinguish once-off, once-off-with-expiry, recurring, and ongoing documents and manage renewals automatically',
+    'Allow candidates to self-upload documents and acknowledge accuracy via short-lived token (no agency login)',
+    'Verify documents against official government registries (OCG, AFP, NDIS, VEVO, AIR) with consent',
+    'Close the booking loop with explicit centre confirmation AND candidate acceptance (two-sided handshake)',
     'Eliminate manual timesheet entry through clock-event -> timesheet bridge',
     'Provide auditable invoicing (charge vs pay rate, GST, RCTI)',
     'Feed match quality back into the engine via post-placement ratings',
   ],
   scope: [
     'Shift broadcast + agency inbox',
-    'Candidate matching, submission, and centre confirmation',
-    'Per-candidate compliance documents with expiry alerts',
+    'Candidate matching, submission, centre confirmation, and candidate acceptance',
+    'Per-candidate compliance documents with renewal cadence and expiry alerts',
+    'Candidate self-service portal for document upload and offer response',
+    'Government registry verification (WWCC OCG, AFP NPCS, NDIS Register, VEVO, AIR)',
+    'Qualification catalogue keyed by role + jurisdiction + industry',
     'Clock-in (QR / geofence / PIN / kiosk) and discrepancy handling',
     'Placement -> Timesheet bridge',
     'Invoicing incl. RCTI / GST',
@@ -486,14 +758,14 @@ export const agencySRS: AgencyModuleSRS = {
   ],
   outOfScope: [
     'Payroll disbursement to candidates (handled by agency payroll)',
-    'Background-check provider integrations (future)',
-    'End-user candidate mobile app (future release)',
+    'Building government registry APIs themselves (we consume official adapters)',
   ],
+
   actors: [
     { name: 'Centre Admin', description: 'Schedules, broadcasts, confirms bookings, reconciles attendance.', permissions: ['shift_request.create', 'submission.decide', 'placement.reconcile', 'invoice.view'] },
     { name: 'Agency Scheduler', description: 'Receives broadcasts, matches and submits candidates.', permissions: ['shift_request.read', 'submission.create', 'candidate.manage'] },
     { name: 'Agency Billing', description: 'Generates invoices and tracks payments.', permissions: ['invoice.create', 'invoice.send'] },
-    { name: 'Candidate', description: 'Clocks in/out for assigned placements.', permissions: ['clock_event.create:self'] },
+    { name: 'Candidate', description: 'Self-uploads compliance documents, accepts/declines offers, clocks in/out.', permissions: ['document.upload:self', 'document.acknowledge:self', 'offer.respond:self', 'clock_event.create:self'] },
     { name: 'System', description: 'Webhooks, SLA timers, compliance jobs.', permissions: ['webhook.dispatch', 'job.run'] },
   ],
   functionalRequirements: [
@@ -504,13 +776,29 @@ export const agencySRS: AgencyModuleSRS = {
     { id: 'FR-AG-05', category: 'Attendance', requirement: 'Clock events must capture method + geo and flag variance', priority: 'must' },
     { id: 'FR-AG-06', category: 'Invoicing', requirement: 'Invoice must include GST and support RCTI mode', priority: 'must' },
     { id: 'FR-AG-07', category: 'Webhooks', requirement: 'All outbound webhooks signed with HMAC-SHA256', priority: 'must' },
+    { id: 'FR-AG-08', category: 'Compliance', requirement: 'Every compliance document must declare renewal cadence (once_off | once_off_with_expiry | recurring | ongoing_no_expiry) and renewal interval where applicable', priority: 'must' },
+    { id: 'FR-AG-09', category: 'Compliance', requirement: 'System must call government registries (OCG WWCC, AFP NPCS, NDIS Register, VEVO, AIR) when verificationSource is supported and consent is on file', priority: 'must' },
+    { id: 'FR-AG-10', category: 'Compliance', requirement: 'Qualification catalogue must drive missingRequired computation per role + jurisdiction + industry', priority: 'must' },
+    { id: 'FR-AG-11', category: 'Compliance', requirement: 'Candidates must be able to self-upload documents via a short-lived token without an agency portal login', priority: 'must' },
+    { id: 'FR-AG-12', category: 'Compliance', requirement: 'Candidate must record explicit consent before any government registry call (timestamp + reference stored)', priority: 'must' },
+    { id: 'FR-AG-13', category: 'Compliance', requirement: 'Renewal reminders sent at T-60, T-30, T-7, T-1 days for any document with expiresAt', priority: 'must' },
+    { id: 'FR-AG-14', category: 'Booking', requirement: 'Candidate must accept the offer (acknowledgements + optional signature) before placement becomes confirmed', priority: 'must' },
+    { id: 'FR-AG-15', category: 'Booking', requirement: 'Compliance freshness re-checked at candidate acceptance; lapses block confirmation with COMPLIANCE_LAPSED', priority: 'must' },
+    { id: 'FR-AG-16', category: 'Booking', requirement: 'Declined offer auto-rolls to next backup candidate (or re-broadcasts) within seconds', priority: 'should' },
+    { id: 'FR-AG-17', category: 'Compliance', requirement: 'Visa documents must capture subclass and workHoursLimitPerFortnight; matching engine respects the cap', priority: 'must' },
+    { id: 'FR-AG-18', category: 'Compliance', requirement: 'Qualifications must reference issuingAuthority and RTO code where applicable', priority: 'must' },
+    { id: 'FR-AG-19', category: 'Audit', requirement: 'Every government_check_request stores requester, consent reference, registry response, and outcome', priority: 'must' },
   ],
   nonFunctionalRequirements: [
     { id: 'NFR-AG-01', category: 'Performance', requirement: 'Match engine returns within 1.5s for <500 candidates' },
     { id: 'NFR-AG-02', category: 'Security', requirement: 'All API endpoints scoped per tenant + per agency relationship' },
     { id: 'NFR-AG-03', category: 'Reliability', requirement: 'Webhook retries with exponential backoff, max 24h' },
     { id: 'NFR-AG-04', category: 'Auditability', requirement: 'Every state change written to audit_log with actor + diff' },
+    { id: 'NFR-AG-05', category: 'Privacy', requirement: 'Compliance documents encrypted at rest; signed URLs expire in 15 min; PII redacted from registry response logs' },
+    { id: 'NFR-AG-06', category: 'Compliance', requirement: 'Government verification calls retried max 3x; failures surface as pending_verification (never silently approve)' },
   ],
+
+
   userStories: [
     {
       id: 'US-AG-01',
@@ -600,19 +888,96 @@ export const agencySRS: AgencyModuleSRS = {
     {
       name: 'candidate_compliance_documents',
       schema: 'public',
-      description: 'Per-candidate compliance docs with expiry.',
+      description: 'Per-candidate compliance docs with expiry, renewal cadence, and government-verification metadata.',
       fields: [
         { name: 'id', type: 'uuid', mandatory: true, description: 'PK' },
-        { name: 'candidate_id', type: 'uuid', mandatory: true, description: 'FK' },
-        { name: 'type', type: 'enum', mandatory: true, description: 'WWCC/PoliceCheck/FirstAid/NDIS/Visa/Qualification/Immunisation' },
-        { name: 'number', type: 'text', mandatory: false, description: 'Document number' },
-        { name: 'jurisdiction', type: 'text', mandatory: false, description: 'State/territory' },
+        { name: 'candidate_id', type: 'uuid', mandatory: true, description: 'FK -> candidates.id', indexed: true },
+        { name: 'type', type: 'enum', mandatory: true, description: 'WWCC|PoliceCheck|NDISWorkerScreening|VisaWorkRights|Immunisation|FirstAid|CPR|Qualification|DriversLicence|Identity|Reference|Other' },
+        { name: 'category', type: 'enum', mandatory: true, description: 'government_check|qualification|health|identity|reference|other' },
+        { name: 'name', type: 'text', mandatory: false, description: 'Human-readable name (e.g. CHC50121)' },
+        { name: 'number', type: 'text', mandatory: false, description: 'Document/registration number' },
+        { name: 'jurisdiction', type: 'text', mandatory: false, description: 'State/territory (e.g. NSW)' },
+        { name: 'country', type: 'text', mandatory: false, description: 'ISO country code' },
+        { name: 'issuing_authority', type: 'text', mandatory: false, description: 'Body that issued the document' },
+        { name: 'rto_code', type: 'text', mandatory: false, description: 'Registered Training Org code (qualifications)' },
+        { name: 'subclass', type: 'text', mandatory: false, description: 'Visa subclass (visa docs)' },
+        { name: 'work_hours_limit_per_fortnight', type: 'integer', mandatory: false, description: 'Visa work-hours cap if applicable' },
         { name: 'issued_at', type: 'date', mandatory: false, description: 'Issue date' },
-        { name: 'expires_at', type: 'date', mandatory: false, description: 'Expiry' },
-        { name: 'file_url', type: 'text', mandatory: false, description: 'Storage URL' },
-        { name: 'status', type: 'enum', mandatory: true, description: 'valid/expiring_soon/expired/pending_verification/rejected' },
+        { name: 'expires_at', type: 'date', mandatory: false, description: 'Expiry date; null for once_off / ongoing_no_expiry' },
+        { name: 'renewal_cadence', type: 'enum', mandatory: true, description: 'once_off|once_off_with_expiry|recurring|ongoing_no_expiry' },
+        { name: 'renewal_interval_months', type: 'integer', mandatory: false, description: 'Used to auto-suggest renewals for recurring docs' },
+        { name: 'is_mandatory', type: 'boolean', mandatory: true, description: 'Required for placement eligibility' },
+        { name: 'is_government_verified', type: 'boolean', mandatory: true, description: 'True when verified against an official registry' },
+        { name: 'verification_source', type: 'enum', mandatory: false, description: 'OCG_API|AFP_NPCS|NDIS_REGISTER|VEVO|AIR_API|MANUAL|NONE' },
+        { name: 'verification_reference', type: 'text', mandatory: false, description: 'Registry reference returned by source' },
+        { name: 'verified_at', type: 'timestamptz', mandatory: false, description: 'Verification timestamp' },
+        { name: 'verified_by', type: 'text', mandatory: false, description: 'system|<userId>' },
+        { name: 'candidate_consent_signed_at', type: 'timestamptz', mandatory: false, description: 'Consent timestamp for govt lookup' },
+        { name: 'candidate_acknowledged_at', type: 'timestamptz', mandatory: false, description: 'Candidate confirmed accuracy of doc' },
+        { name: 'uploaded_by', type: 'enum', mandatory: true, description: 'candidate|agency_admin|centre_admin|system' },
+        { name: 'uploaded_at', type: 'timestamptz', mandatory: true, description: 'Upload timestamp' },
+        { name: 'file_url', type: 'text', mandatory: false, description: 'Signed storage URL' },
+        { name: 'file_mime_type', type: 'text', mandatory: false, description: 'MIME type' },
+        { name: 'file_size_bytes', type: 'integer', mandatory: false, description: 'File size' },
+        { name: 'reminders_sent', type: 'integer', mandatory: true, description: 'Count of expiry reminders sent', defaultValue: '0' },
+        { name: 'last_reminder_at', type: 'timestamptz', mandatory: false, description: 'Last reminder sent at' },
+        { name: 'status', type: 'enum', mandatory: true, description: 'pending_verification|valid|expiring_soon|expired|rejected|missing' },
       ],
     },
+    {
+      name: 'qualification_catalogue',
+      schema: 'public',
+      description: 'Canonical list of required/recommended qualifications and checks per role + jurisdiction.',
+      fields: [
+        { name: 'id', type: 'uuid', mandatory: true, description: 'PK' },
+        { name: 'role', type: 'text', mandatory: true, description: 'Role key (e.g. DiplomaEducator)' },
+        { name: 'jurisdiction', type: 'text', mandatory: true, description: 'State/territory' },
+        { name: 'industry', type: 'text', mandatory: true, description: 'childcare|aged_care|disability|hospitality|...' },
+        { name: 'document_type', type: 'enum', mandatory: true, description: 'See candidate_compliance_documents.type' },
+        { name: 'is_mandatory', type: 'text', mandatory: true, description: 'true|false|if_non_citizen' },
+        { name: 'renewal_cadence', type: 'enum', mandatory: true, description: 'Default cadence for this requirement' },
+        { name: 'renewal_interval_months', type: 'integer', mandatory: false, description: 'Default renewal interval' },
+        { name: 'government_verified', type: 'boolean', mandatory: true, description: 'Whether registry verification is available' },
+        { name: 'verification_source', type: 'text', mandatory: false, description: 'Registry source key' },
+        { name: 'accepted_qualifications', type: 'jsonb', mandatory: false, description: 'Array of acceptable qualification codes' },
+      ],
+    },
+    {
+      name: 'government_check_requests',
+      schema: 'public',
+      description: 'Audit trail of government registry verification calls.',
+      fields: [
+        { name: 'id', type: 'uuid', mandatory: true, description: 'PK' },
+        { name: 'document_id', type: 'uuid', mandatory: true, description: 'FK -> candidate_compliance_documents.id' },
+        { name: 'source', type: 'enum', mandatory: true, description: 'OCG_API|AFP_NPCS|NDIS_REGISTER|VEVO|AIR_API' },
+        { name: 'requested_at', type: 'timestamptz', mandatory: true, description: 'When call was made' },
+        { name: 'requested_by', type: 'text', mandatory: true, description: 'userId or "system"' },
+        { name: 'consent_reference', type: 'text', mandatory: true, description: 'Candidate consent record reference' },
+        { name: 'response_status', type: 'enum', mandatory: false, description: 'verified|not_found|expired|rejected|error' },
+        { name: 'response_payload', type: 'jsonb', mandatory: false, description: 'Raw registry response (PII redacted)' },
+        { name: 'completed_at', type: 'timestamptz', mandatory: false, description: 'Completion time' },
+      ],
+    },
+    {
+      name: 'candidate_shift_offers',
+      schema: 'public',
+      description: 'Offer pushed to candidate after centre confirmation; candidate must accept before shift becomes confirmed.',
+      fields: [
+        { name: 'id', type: 'uuid', mandatory: true, description: 'PK' },
+        { name: 'placement_id', type: 'uuid', mandatory: true, description: 'FK -> agency_placements.id' },
+        { name: 'candidate_id', type: 'uuid', mandatory: true, description: 'FK -> candidates.id', indexed: true },
+        { name: 'submission_id', type: 'uuid', mandatory: true, description: 'FK -> agency_submissions.id' },
+        { name: 'offer_sent_at', type: 'timestamptz', mandatory: true, description: 'When offer pushed to candidate' },
+        { name: 'respond_by_deadline', type: 'timestamptz', mandatory: true, description: 'Hard cutoff for candidate response' },
+        { name: 'status', type: 'enum', mandatory: true, description: 'pending|accepted|declined|expired|withdrawn' },
+        { name: 'response_at', type: 'timestamptz', mandatory: false, description: 'When candidate responded' },
+        { name: 'decline_reason', type: 'text', mandatory: false, description: 'Reason if declined' },
+        { name: 'acknowledgements', type: 'jsonb', mandatory: false, description: 'Per-clause acceptance map (shift details, compliance, rate, code of conduct)' },
+        { name: 'signature_url', type: 'text', mandatory: false, description: 'Stored digital signature image' },
+        { name: 'reminders_sent', type: 'integer', mandatory: true, description: 'Reminder count', defaultValue: '0' },
+      ],
+    },
+
     {
       name: 'agency_clock_events',
       schema: 'public',
@@ -659,6 +1024,14 @@ export const agencySRS: AgencyModuleSRS = {
     { id: 'BR-AG-04', rule: 'Clock events outside the geofence are flagged but not rejected', rationale: 'Allow override with admin note for edge cases' },
     { id: 'BR-AG-05', rule: 'Invoice line item = max(actual_hours, minimum_engagement_hours) x charge_rate', rationale: 'Honours minimum engagement contracts' },
     { id: 'BR-AG-06', rule: 'Outbound webhook failures retry with exponential backoff up to 24h, then dead-letter', rationale: 'Reliability without infinite retries' },
+    { id: 'BR-AG-07', rule: 'A document with renewalCadence=recurring auto-creates a renewal task at expiresAt - renewalIntervalMonths/12 anchor', rationale: 'Ensures rolling qualifications never lapse silently' },
+    { id: 'BR-AG-08', rule: 'Government verification cannot be marked verified without a stored consent_reference', rationale: 'Privacy + Australian Privacy Principles compliance' },
+    { id: 'BR-AG-09', rule: 'Candidate offer auto-expires at respond_by_deadline and triggers backup roll-over', rationale: 'Protects centre from no-response candidates' },
+    { id: 'BR-AG-10', rule: 'Placement becomes confirmed only when BOTH centre acceptance AND candidate acceptance recorded', rationale: 'Two-sided handshake prevents disputes' },
+    { id: 'BR-AG-11', rule: 'A document uploaded by candidate stays pending_verification until reviewed by agency admin OR auto-verified by registry', rationale: 'Prevents self-attested-only compliance' },
+    { id: 'BR-AG-12', rule: 'Visa work-hours cap (workHoursLimitPerFortnight) is enforced by the match engine before submission', rationale: 'Avoids visa breaches' },
+    { id: 'BR-AG-13', rule: 'qualification_catalogue is versioned per jurisdiction; changing requirements does not retroactively invalidate already-placed candidates for current shift', rationale: 'Stability of in-flight bookings' },
+
   ],
   apiEndpoints,
   workflows,
