@@ -681,7 +681,50 @@ const workflows: WorkflowSpec[] = [
     ],
     outcome: 'Only compliant candidates can be placed; centres see live compliance status.',
   },
+  {
+    id: 'WF-AG-03',
+    name: 'Candidate Self-Onboarding & Document Submission',
+    trigger: 'Candidate invited by agency (magic link / app)',
+    steps: [
+      { step: 1, actor: 'System', action: 'Fetch qualification catalogue for role + jurisdiction', endpoint: 'API-AG-014' },
+      { step: 2, actor: 'Candidate', action: 'Reviews checklist; signs consent for government verifications' },
+      { step: 3, actor: 'Candidate', action: 'Uploads each required document (uploadedBy=candidate)', endpoint: 'API-AG-007' },
+      { step: 4, actor: 'System', action: 'Triggers government verification where supported', endpoint: 'API-AG-015' },
+      { step: 5, actor: 'Candidate', action: 'Acknowledges accuracy of uploaded data' },
+      { step: 6, actor: 'Agency Admin', action: 'Reviews unverified docs; marks verified or rejected' },
+      { step: 7, actor: 'System', action: 'Sets candidate status=available once missingRequired is empty' },
+    ],
+    outcome: 'Candidate file is complete, fully verified, and eligible for shift submissions.',
+  },
+  {
+    id: 'WF-AG-04',
+    name: 'Candidate Offer Acceptance (post centre confirmation)',
+    trigger: 'Centre accepts a candidate submission (API-AG-005)',
+    steps: [
+      { step: 1, actor: 'System', action: 'Creates candidate_shift_offer with respond-by deadline; pushes notification' },
+      { step: 2, actor: 'Candidate', action: 'Opens offer in portal', endpoint: 'API-AG-018' },
+      { step: 3, actor: 'System', action: 'Re-checks compliance freshness (no doc has expired since submission)' },
+      { step: 4, actor: 'Candidate', action: 'Accepts or declines with acknowledgements + signature', endpoint: 'API-AG-017' },
+      { step: 5, actor: 'System', action: 'On accept -> placement.status=confirmed; on decline -> next backup or re-broadcast' },
+      { step: 6, actor: 'System', action: 'Sends candidate the shift pack (address, QR check-in URL, supervisor contact)' },
+    ],
+    outcome: 'Placement is only "confirmed" after both centre and candidate accept; lapsed compliance is caught before shift start.',
+  },
+  {
+    id: 'WF-AG-05',
+    name: 'Document Renewal Cycle',
+    trigger: 'Recurring/expiring document approaches expiresAt',
+    steps: [
+      { step: 1, actor: 'System', action: 'Nightly job lists renewals due in 60 days', endpoint: 'API-AG-016' },
+      { step: 2, actor: 'System', action: 'Sends reminder to candidate + agency at T-60, T-30, T-7, T-1' },
+      { step: 3, actor: 'Candidate', action: 'Uploads renewed document', endpoint: 'API-AG-007' },
+      { step: 4, actor: 'System', action: 'Re-runs government verification', endpoint: 'API-AG-015' },
+      { step: 5, actor: 'System', action: 'On expiresAt without renewal -> document.status=expired; candidate becomes ineligible for new shifts' },
+    ],
+    outcome: 'Recurring qualifications stay current; lapses block new placements automatically.',
+  },
 ];
+
 
 export const agencySRS: AgencyModuleSRS = {
   moduleName: 'Agency Integration',
