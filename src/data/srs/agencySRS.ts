@@ -223,65 +223,176 @@ const apiEndpoints: ApiEndpointSpec[] = [
   // ====== CANDIDATE SUBMISSION & BOOKING CONFIRMATION ======
   {
     id: 'API-AG-004',
-    name: 'Submit Candidate (Agency -> Centre)',
+    name: 'Submit Candidates (Agency -> Centre, multi-candidate)',
     method: 'POST',
     path: '/api/v1/agency/shift-requests/:id/submissions',
-    description: 'Agency proposes one or more candidates for a shift; awaits centre confirmation.',
+    description: 'Agency submits ONE submission containing N candidate proposals for a single shift request. Each candidate carries its own role offer, proposed rate, compliance snapshot, availability confirmation and ranking. Centre then accepts/rejects per candidate. Supports primary + backup ordering and partial fills for multi-slot shifts.',
     auth: 'Bearer JWT (agency)',
     consumer: 'AgencyPortal -> ShiftMatchingPanel',
     request: {
       pathParams: { id: 'sr-7781' },
       body: `{
-  "candidateIds": ["cand-22","cand-45"],
-  "proposedRate": {"chargeRate": 62.0, "payRate": 48.0},
-  "agencyNotes": "Both have prior experience at this centre"
+  "shiftRequestId": "sr-7781",
+  "agencyId": "agc-1",
+  "submittedBy": { "userId": "agency-user-12", "name": "Mia Patel" },
+  "agencyNotes": "Top 3 ranked; all confirmed available; happy to send replacement if rejected.",
+  "expiresAt": "2026-06-03T13:12:11Z",            // mirrors reverse-SLA deadline
+  "allowPartialFill": true,                        // centre can accept some, reject others
+  "candidates": [
+    {
+      "candidateId": "cand-22",
+      "rank": 1,                                    // 1 = primary, 2+ = backups
+      "role": "primary",                            // primary|backup|alternate
+      "offeredRoleId": "role-diploma-educator",
+      "matchScore": 94,
+      "distanceKm": 3.2,
+      "availabilityConfirmedAt": "2026-06-03T09:45:00Z",
+      "proposedRate": {
+        "payRate": 48.00,
+        "chargeRate": 62.00,
+        "currency": "AUD",
+        "counterOffer": false                       // true if differs from shift compensation
+      },
+      "complianceSnapshot": {
+        "score": 96,
+        "status": "compliant",
+        "missingRequired": [],
+        "qualificationsMatched": ["WWCC","FIRSTAID","DIPLOMA_ECE"],
+        "qualificationsPreferredMatched": ["ANAPHYLAXIS"],
+        "qualificationsExpiringWithin30Days": [],
+        "snapshotAt": "2026-06-03T09:45:11Z"
+      },
+      "fatigueCheck": { "hoursThisWeek": 22, "withinLimits": true },
+      "candidateConsentToShare": true,              // candidate consented to share profile with this centre
+      "candidateAcceptanceStatus": "pending_offer", // pending_offer|pre_accepted (worker pre-approved by agency)
+      "notes": "Has worked at this centre 4 times; 4.9★ avg"
+    },
+    {
+      "candidateId": "cand-45",
+      "rank": 2,
+      "role": "backup",
+      "offeredRoleId": "role-diploma-educator",
+      "matchScore": 88,
+      "distanceKm": 6.1,
+      "availabilityConfirmedAt": "2026-06-03T09:46:00Z",
+      "proposedRate": { "payRate": 48.00, "chargeRate": 62.00, "currency": "AUD", "counterOffer": false },
+      "complianceSnapshot": { "score": 92, "status": "compliant", "missingRequired": [],
+        "qualificationsMatched": ["WWCC","FIRSTAID","DIPLOMA_ECE"], "snapshotAt": "2026-06-03T09:46:05Z" },
+      "candidateConsentToShare": true,
+      "candidateAcceptanceStatus": "pending_offer"
+    },
+    {
+      "candidateId": "cand-77",
+      "rank": 3,
+      "role": "alternate",
+      "offeredRoleId": "role-cert3-educator",       // alternate role (lower qualification)
+      "matchScore": 81,
+      "distanceKm": 2.0,
+      "proposedRate": { "payRate": 42.00, "chargeRate": 56.00, "currency": "AUD", "counterOffer": true },
+      "complianceSnapshot": { "score": 90, "status": "compliant", "missingRequired": [],
+        "qualificationsMatched": ["WWCC","FIRSTAID","CERT3_ECE"], "snapshotAt": "2026-06-03T09:46:30Z" },
+      "candidateConsentToShare": true,
+      "candidateAcceptanceStatus": "pending_offer"
+    }
+  ]
 }`,
     },
     response: {
       status: 201,
       body: `{
-  "submissionId":"sub-901",
-  "status":"pending_centre_confirmation",
-  "slaDeadline":"2026-06-03T13:12:11Z",
-  "candidates":[{"id":"cand-22","status":"submitted"},{"id":"cand-45","status":"submitted"}]
+  "submissionId": "sub-901",
+  "shiftRequestId": "sr-7781",
+  "status": "pending_centre_confirmation",
+  "slaDeadline": "2026-06-03T13:12:11Z",
+  "allowPartialFill": true,
+  "totalSlotsRequested": 1,
+  "totalSlotsRemaining": 1,
+  "candidates": [
+    { "id": "cand-22", "rank": 1, "role": "primary",   "status": "submitted", "complianceStatus": "compliant" },
+    { "id": "cand-45", "rank": 2, "role": "backup",    "status": "submitted", "complianceStatus": "compliant" },
+    { "id": "cand-77", "rank": 3, "role": "alternate", "status": "submitted", "complianceStatus": "compliant", "isCounterOffer": true }
+  ]
 }`,
     },
-    sideEffects: ['Reverse SLA timer started via bookingConfirmationService'],
+    errors: [
+      { status: 400, code: 'EMPTY_CANDIDATES', description: 'candidates array must contain at least one entry' },
+      { status: 400, code: 'DUPLICATE_RANK', description: 'rank values must be unique within the submission' },
+      { status: 400, code: 'DUPLICATE_CANDIDATE', description: 'Same candidateId submitted twice in one submission' },
+      { status: 409, code: 'CANDIDATE_ALREADY_SUBMITTED', description: 'Candidate already submitted for this shift by this or another agency' },
+      { status: 409, code: 'CANDIDATE_DOUBLE_BOOKED', description: 'Candidate has a confirmed placement overlapping this shift' },
+      { status: 422, code: 'COMPLIANCE_INELIGIBLE', description: 'One or more candidates missing required qualifications (details: { candidateId, missingRequired[] })' },
+      { status: 422, code: 'CONSENT_MISSING', description: 'candidateConsentToShare must be true to submit profile to centre' },
+      { status: 410, code: 'SHIFT_CLOSED', description: 'Shift request is no longer open' },
+    ],
+    sideEffects: [
+      'Reverse SLA timer started via bookingConfirmationService (single timer for whole submission)',
+      'Each candidate row persisted to agency_submission_candidates (rank-ordered)',
+      'Webhook centre.submission.received fired to centre with full multi-candidate payload',
+      'Counter-offers (rate mismatch) flagged for centre review',
+    ],
   },
   {
     id: 'API-AG-005',
-    name: 'Centre Confirm / Reject Submission',
+    name: 'Centre Confirm / Reject Submission (per-candidate decisions)',
     method: 'POST',
     path: '/api/v1/agency/submissions/:submissionId/decision',
-    description: 'Centre accepts or rejects a submitted candidate. Acceptance creates a Placement.',
+    description: 'Centre records a decision per candidate within a single submission. Supports accepting one, accepting multiple (for multi-slot shifts), rejecting all, or partial fills. Each acceptance creates exactly one Placement.',
     auth: 'Bearer JWT (centre admin)',
     consumer: 'Centre -> BookingConfirmationPanel',
     request: {
       pathParams: { submissionId: 'sub-901' },
       body: `{
-  "candidateId":"cand-22",
-  "decision":"accept",
-  "rejectionReason": null,
-  "interviewRequested": false
+  "decisions": [
+    {
+      "candidateId": "cand-22",
+      "decision": "accept",                        // accept|reject|hold|request_interview
+      "acceptedRate": { "payRate": 48.00, "chargeRate": 62.00, "currency": "AUD" },
+      "notes": "Confirmed for 7am start"
+    },
+    {
+      "candidateId": "cand-45",
+      "decision": "hold",                          // keep as standby backup
+      "holdUntil": "2026-06-04T05:00:00Z"
+    },
+    {
+      "candidateId": "cand-77",
+      "decision": "reject",
+      "rejectionReason": "rate_too_high",         // rate_too_high|under_qualified|unavailable|other
+      "rejectionNotes": "Counter-offer above budget"
+    }
+  ],
+  "closeSubmission": false                          // true = no further decisions accepted
 }`,
     },
     response: {
       status: 200,
       body: `{
-  "submissionId":"sub-901",
-  "candidateId":"cand-22",
-  "placementId":"plc-555",
-  "status":"confirmed",
-  "decidedAt":"2026-06-03T11:00:02Z"
+  "submissionId": "sub-901",
+  "shiftRequestId": "sr-7781",
+  "results": [
+    { "candidateId": "cand-22", "decision": "accept", "placementId": "plc-555", "candidateOfferId": "off-330", "status": "confirmed_by_centre" },
+    { "candidateId": "cand-45", "decision": "hold",   "status": "on_hold", "holdUntil": "2026-06-04T05:00:00Z" },
+    { "candidateId": "cand-77", "decision": "reject", "status": "rejected" }
+  ],
+  "submissionStatus": "partially_decided",          // pending|partially_decided|closed
+  "slotsFilled": 1,
+  "slotsRemaining": 0,
+  "decidedAt": "2026-06-03T11:00:02Z"
 }`,
     },
     errors: [
+      { status: 400, code: 'NO_DECISIONS', description: 'decisions array required' },
+      { status: 404, code: 'CANDIDATE_NOT_IN_SUBMISSION', description: 'candidateId not part of this submission' },
+      { status: 409, code: 'OVER_FILL', description: 'Cannot accept more candidates than open slots on the shift' },
       { status: 410, code: 'SLA_EXPIRED', description: 'Submission window closed; resubmit required' },
+      { status: 410, code: 'COMPLIANCE_LAPSED', description: 'Compliance snapshot stale; agency must resubmit refreshed candidate' },
     ],
     sideEffects: [
-      'Placement row created (status=pending)',
-      'Webhook agency.submission.decided fired to agency',
-      'Notification to candidate via candidate channel',
+      'For each accept: create candidate_shift_offer (status=offered) and Placement (status=pending_candidate)',
+      'For each reject: free the slot, notify agency, record reason for analytics',
+      'For each hold: keep candidate in backup queue; auto-roll if primary declines (API-AG-017)',
+      'Webhook agency.submission.decided fired to agency with per-candidate result map',
+      'Notification dispatched to each accepted candidate via their preferred channel',
     ],
   },
 
@@ -862,6 +973,14 @@ export const agencySRS: AgencyModuleSRS = {
     { id: 'FR-AG-21', category: 'Broadcast', requirement: 'Compensation fields (payRate, chargeRate, salaryOffered, loadings, allowances) are optional individually but currency is mandatory; system rejects payRate below award minimum for the role classification', priority: 'must' },
     { id: 'FR-AG-22', category: 'Broadcast', requirement: 'Each qualificationRequirement supports mandatory vs preferred, jurisdiction, mustBeCurrentOn (shift date) and acceptedAlternatives so agency match engine can correctly score eligibility', priority: 'must' },
     { id: 'FR-AG-23', category: 'Broadcast', requirement: 'Centre may flag compensation as negotiable, allowing agency to counter-offer via submission.proposedRate before centre acceptance', priority: 'should' },
+    { id: 'FR-AG-24', category: 'Submission', requirement: 'A single submission must support N candidates with unique rank (1=primary, 2+=backup) and an explicit role (primary|backup|alternate)', priority: 'must' },
+    { id: 'FR-AG-25', category: 'Submission', requirement: 'Each candidate row must carry its own proposedRate, compliance snapshot (frozen at submit time), match score and availability confirmation', priority: 'must' },
+    { id: 'FR-AG-26', category: 'Submission', requirement: 'Centre may issue per-candidate decisions (accept/reject/hold/request_interview) on the same submission; partial fills supported for multi-slot shifts', priority: 'must' },
+    { id: 'FR-AG-27', category: 'Submission', requirement: 'System must reject duplicate candidate within a submission and a candidate already submitted for the same shift by any agency', priority: 'must' },
+    { id: 'FR-AG-28', category: 'Submission', requirement: 'Rejection must capture a structured reason code (rate_too_high|under_qualified|unavailable|other) for analytics and agency feedback loops', priority: 'must' },
+    { id: 'FR-AG-29', category: 'Submission', requirement: 'Held candidates auto-roll to offered status if a higher-ranked candidate declines, within holdUntil window', priority: 'should' },
+    { id: 'FR-AG-30', category: 'Submission', requirement: 'Counter-offers (proposedRate differing from shift compensation) must be flagged isCounterOffer=true and surfaced in centre confirmation UI', priority: 'must' },
+    { id: 'FR-AG-31', category: 'Submission', requirement: 'candidateConsentToShare must be true for every candidate in the submission; rejected otherwise (privacy)', priority: 'must' },
   ],
   nonFunctionalRequirements: [
     { id: 'NFR-AG-01', category: 'Performance', requirement: 'Match engine returns within 1.5s for <500 candidates' },
@@ -959,14 +1078,52 @@ export const agencySRS: AgencyModuleSRS = {
     {
       name: 'agency_submissions',
       schema: 'public',
-      description: 'Candidate proposals awaiting centre decision.',
+      description: 'Header row per submission (one submission can carry many candidates for the same shift).',
       fields: [
         { name: 'id', type: 'uuid', mandatory: true, description: 'PK' },
-        { name: 'shift_request_id', type: 'uuid', mandatory: true, description: 'FK', foreignKey: 'agency_shift_requests.id' },
-        { name: 'candidate_id', type: 'uuid', mandatory: true, description: 'FK', foreignKey: 'candidates.id' },
-        { name: 'status', type: 'enum', mandatory: true, description: 'pending/accepted/rejected/expired' },
+        { name: 'shift_request_id', type: 'uuid', mandatory: true, description: 'FK', foreignKey: 'agency_shift_requests.id', indexed: true },
+        { name: 'agency_id', type: 'uuid', mandatory: true, description: 'Submitting agency', indexed: true },
+        { name: 'submitted_by_user_id', type: 'uuid', mandatory: true, description: 'Agency user who submitted' },
+        { name: 'agency_notes', type: 'text', mandatory: false, description: 'Free-text notes for centre' },
+        { name: 'allow_partial_fill', type: 'boolean', mandatory: true, description: 'Centre may accept a subset of candidates', defaultValue: 'true' },
+        { name: 'total_slots_requested', type: 'integer', mandatory: true, description: 'Open slots on the shift at submission time' },
+        { name: 'total_slots_remaining', type: 'integer', mandatory: true, description: 'Slots still open after current decisions' },
+        { name: 'status', type: 'enum', mandatory: true, description: 'pending_centre_confirmation|partially_decided|filled|rejected|expired|withdrawn' },
         { name: 'sla_deadline', type: 'timestamptz', mandatory: true, description: 'Centre decision deadline' },
-        { name: 'decided_at', type: 'timestamptz', mandatory: false, description: 'When centre decided' },
+        { name: 'first_decided_at', type: 'timestamptz', mandatory: false, description: 'First per-candidate decision' },
+        { name: 'closed_at', type: 'timestamptz', mandatory: false, description: 'When no further decisions accepted' },
+      ],
+    },
+    {
+      name: 'agency_submission_candidates',
+      schema: 'public',
+      description: 'Per-candidate row within a submission. Carries rank, proposed rate, compliance snapshot and decision.',
+      fields: [
+        { name: 'id', type: 'uuid', mandatory: true, description: 'PK' },
+        { name: 'submission_id', type: 'uuid', mandatory: true, description: 'FK', foreignKey: 'agency_submissions.id', indexed: true },
+        { name: 'candidate_id', type: 'uuid', mandatory: true, description: 'FK', foreignKey: 'candidates.id', indexed: true },
+        { name: 'rank', type: 'integer', mandatory: true, description: '1 = primary, 2+ = backups; unique within submission' },
+        { name: 'role_in_submission', type: 'enum', mandatory: true, description: 'primary|backup|alternate' },
+        { name: 'offered_role_id', type: 'uuid', mandatory: false, description: 'Role being offered (may differ from required for alternates)' },
+        { name: 'match_score', type: 'numeric', mandatory: false, description: '0-100 match-engine score' },
+        { name: 'distance_km', type: 'numeric', mandatory: false, description: 'Distance from shift location' },
+        { name: 'availability_confirmed_at', type: 'timestamptz', mandatory: false, description: 'When agency confirmed candidate availability' },
+        { name: 'proposed_pay_rate', type: 'numeric', mandatory: false, description: 'Proposed hourly pay rate' },
+        { name: 'proposed_charge_rate', type: 'numeric', mandatory: false, description: 'Proposed hourly charge rate' },
+        { name: 'proposed_currency', type: 'text', mandatory: true, description: 'ISO currency code', defaultValue: 'AUD' },
+        { name: 'is_counter_offer', type: 'boolean', mandatory: true, description: 'True when proposed rate differs from shift compensation', defaultValue: 'false' },
+        { name: 'compliance_snapshot', type: 'jsonb', mandatory: true, description: 'Frozen compliance state at submission time (score, status, missingRequired, qualificationsMatched, snapshotAt)' },
+        { name: 'fatigue_check', type: 'jsonb', mandatory: false, description: '{hoursThisWeek, withinLimits}' },
+        { name: 'candidate_consent_to_share', type: 'boolean', mandatory: true, description: 'Candidate consented to share profile with this centre' },
+        { name: 'candidate_acceptance_status', type: 'enum', mandatory: true, description: 'pending_offer|pre_accepted|offered|accepted|declined|expired', defaultValue: 'pending_offer' },
+        { name: 'centre_decision', type: 'enum', mandatory: false, description: 'accept|reject|hold|request_interview' },
+        { name: 'centre_decision_at', type: 'timestamptz', mandatory: false, description: 'When centre decided on this candidate' },
+        { name: 'rejection_reason', type: 'enum', mandatory: false, description: 'rate_too_high|under_qualified|unavailable|other' },
+        { name: 'rejection_notes', type: 'text', mandatory: false, description: 'Free-text rejection notes' },
+        { name: 'hold_until', type: 'timestamptz', mandatory: false, description: 'When hold expires (auto-rolls to next backup)' },
+        { name: 'placement_id', type: 'uuid', mandatory: false, description: 'Set when accepted', foreignKey: 'agency_placements.id' },
+        { name: 'candidate_offer_id', type: 'uuid', mandatory: false, description: 'Outbound offer to candidate', foreignKey: 'candidate_shift_offers.id' },
+        { name: 'notes', type: 'text', mandatory: false, description: 'Agency notes about this candidate' },
       ],
     },
     {
@@ -1130,6 +1287,10 @@ export const agencySRS: AgencyModuleSRS = {
     { id: 'BR-AG-11', rule: 'A document uploaded by candidate stays pending_verification until reviewed by agency admin OR auto-verified by registry', rationale: 'Prevents self-attested-only compliance' },
     { id: 'BR-AG-12', rule: 'Visa work-hours cap (workHoursLimitPerFortnight) is enforced by the match engine before submission', rationale: 'Avoids visa breaches' },
     { id: 'BR-AG-13', rule: 'qualification_catalogue is versioned per jurisdiction; changing requirements does not retroactively invalidate already-placed candidates for current shift', rationale: 'Stability of in-flight bookings' },
+    { id: 'BR-AG-14', rule: 'Number of accepted candidates in a submission cannot exceed shift_request.totalSlotsRequested - already-filled slots', rationale: 'Prevents over-fill across submissions from multiple agencies' },
+    { id: 'BR-AG-15', rule: 'When primary (rank=1) is rejected/declined, the next ranked candidate with centre_decision=hold is auto-promoted to offered within 60s', rationale: 'Frictionless backup roll-over for time-critical shifts' },
+    { id: 'BR-AG-16', rule: 'Compliance snapshot stored on agency_submission_candidates is immutable; re-evaluation at centre acceptance triggers COMPLIANCE_LAPSED if any required doc expired between submit and accept', rationale: 'Auditability + safety' },
+    { id: 'BR-AG-17', rule: 'Submission auto-closes when slots_remaining=0 OR sla_deadline passes; remaining undecided candidates marked expired', rationale: 'Clean lifecycle, frees backup candidates' },
 
   ],
   apiEndpoints,
