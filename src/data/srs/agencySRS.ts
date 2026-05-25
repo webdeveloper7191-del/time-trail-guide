@@ -320,7 +320,7 @@ const apiEndpoints: ApiEndpointSpec[] = [
       { status: 400, code: 'DUPLICATE_CANDIDATE', description: 'Same candidateId submitted twice in one submission' },
       { status: 409, code: 'CANDIDATE_ALREADY_SUBMITTED', description: 'Candidate already submitted for this shift by this or another agency' },
       { status: 409, code: 'CANDIDATE_DOUBLE_BOOKED', description: 'Candidate has a confirmed placement overlapping this shift' },
-      { status: 422, code: 'COMPLIANCE_INELIGIBLE', description: 'One or more candidates missing required qualifications', details: '{ candidateId, missingRequired[] }' },
+      { status: 422, code: 'COMPLIANCE_INELIGIBLE', description: 'One or more candidates missing required qualifications (details: { candidateId, missingRequired[] })' },
       { status: 422, code: 'CONSENT_MISSING', description: 'candidateConsentToShare must be true to submit profile to centre' },
       { status: 410, code: 'SHIFT_CLOSED', description: 'Shift request is no longer open' },
     ],
