@@ -862,6 +862,7 @@ export const agencySRS: AgencyModuleSRS = {
     { id: 'FR-AG-21', category: 'Broadcast', requirement: 'Compensation fields (payRate, chargeRate, salaryOffered, loadings, allowances) are optional individually but currency is mandatory; system rejects payRate below award minimum for the role classification', priority: 'must' },
     { id: 'FR-AG-22', category: 'Broadcast', requirement: 'Each qualificationRequirement supports mandatory vs preferred, jurisdiction, mustBeCurrentOn (shift date) and acceptedAlternatives so agency match engine can correctly score eligibility', priority: 'must' },
     { id: 'FR-AG-23', category: 'Broadcast', requirement: 'Centre may flag compensation as negotiable, allowing agency to counter-offer via submission.proposedRate before centre acceptance', priority: 'should' },
+  ],
   nonFunctionalRequirements: [
     { id: 'NFR-AG-01', category: 'Performance', requirement: 'Match engine returns within 1.5s for <500 candidates' },
     { id: 'NFR-AG-02', category: 'Security', requirement: 'All API endpoints scoped per tenant + per agency relationship' },
