@@ -64,18 +64,66 @@ const apiEndpoints: ApiEndpointSpec[] = [
       body: `{
   "clientId": "centre-123",
   "locationId": "loc-44",
+  "locationName": "Sunshine ELC Bondi",
+  "locationAddress": "12 Campbell Pde, Bondi NSW 2026",
   "areaId": "area-toddler-2",
+  "areaName": "Toddler Room 2",
+  "industry": "childcare",
+  "jurisdiction": "NSW-AU",
+
   "date": "2026-06-04",
   "startTime": "07:00",
   "endTime": "15:30",
   "breakMinutes": 30,
-  "requiredRole": "Diploma Educator",
-  "requiredQualifications": ["WWCC", "FirstAid"],
-  "urgency": "high",
-  "rateCardId": "rc-9",
-  "notes": "Cover for sick leave",
+  "shiftType": "regular",                 // regular|on_call|sleepover|split
+
+  "role": {
+    "id": "role-diploma-educator",
+    "name": "Diploma Educator",
+    "awardClassification": "CSE Level 3.4",
+    "minExperienceYears": 1
+  },
+
+  "qualificationRequirements": [
+    { "code": "WWCC",      "name": "Working With Children Check",  "mandatory": true,  "jurisdiction": "NSW-AU", "mustBeCurrentOn": "2026-06-04" },
+    { "code": "FIRSTAID",  "name": "HLTAID012 First Aid",          "mandatory": true,  "mustBeCurrentOn": "2026-06-04" },
+    { "code": "DIPLOMA_ECE","name":"Diploma of Early Childhood",   "mandatory": true,  "acceptedAlternatives": ["ACECQA_EQUIV_DIPLOMA"] },
+    { "code": "ANAPHYLAXIS","name": "Anaphylaxis Training",        "mandatory": false, "preferred": true }
+  ],
+  "skillRequirements": ["nappy_change", "lead_room"],
+  "languagePreferences": ["en"],
+
+  "compensation": {                       // all fields optional except currency
+    "currency": "AUD",
+    "rateCardId": "rc-9",                 // if omitted, use payRate/chargeRate below
+    "payRate": 48.00,                     // optional - hourly rate paid to worker
+    "chargeRate": 62.00,                  // optional - hourly rate charged to centre
+    "salaryOffered": null,                // optional flat salary (for perm/contract conversions)
+    "loadings": {
+      "casualLoadingPct": 25,
+      "weekendMultiplier": 1.5,
+      "publicHolidayMultiplier": 2.5,
+      "overtimeMultiplier": 1.5
+    },
+    "allowances": [
+      { "code": "TRAVEL", "amount": 15.00, "unit": "per_shift" }
+    ],
+    "estimatedShiftValue": 527.00,        // calculated, for agency reference
+    "negotiable": false
+  },
+
+  "uniformAndPpe": { "dressCode": "Closed shoes, agency polo", "ppeProvided": ["gloves"] },
+  "supervisor": { "name": "Sarah Chen", "phone": "+61-400-111-222" },
+  "checkInMethod": "qr",                  // qr|geofence|pin|kiosk|manual
+  "geofence": { "lat": -33.8915, "lng": 151.2767, "radiusMeters": 150 },
+
+  "urgency": "high",                      // low|medium|high|critical
+  "fillMode": "managed",                  // express|managed
+  "notes": "Cover for sick leave; room has 12 toddlers",
   "agencyIds": ["agc-1","agc-2"],
-  "responseDeadline": "2026-06-03T18:00:00Z"
+  "responseDeadline": "2026-06-03T18:00:00Z",
+  "preferredCandidateIds": ["cand-22"],   // optional bias for matching
+  "blockedCandidateIds": []
 }`,
     },
     response: {
@@ -85,16 +133,21 @@ const apiEndpoints: ApiEndpointSpec[] = [
   "status": "broadcasting",
   "broadcastedTo": ["agc-1","agc-2"],
   "createdAt": "2026-06-03T09:12:11Z",
-  "expiresAt": "2026-06-03T18:00:00Z"
+  "expiresAt": "2026-06-03T18:00:00Z",
+  "estimatedShiftValue": 527.00,
+  "qualificationRequirementCount": 4
 }`,
     },
     errors: [
       { status: 400, code: 'INVALID_TIME_RANGE', description: 'endTime must be after startTime' },
+      { status: 400, code: 'MISSING_QUALIFICATIONS', description: 'qualificationRequirements is required for clinical/childcare roles' },
+      { status: 400, code: 'INVALID_RATE', description: 'payRate must be >= award minimum for the classification' },
       { status: 409, code: 'DUPLICATE_REQUEST', description: 'Identical open request already exists' },
     ],
     sideEffects: [
-      'Webhook POST /agency-webhook/shift.broadcast fired to each agency',
+      'Webhook POST /agency-webhook/shift.broadcast fired to each agency with full shift payload',
       'Notification dispatched via agencyNotificationService',
+      'Matching engine pre-filters agency talent pools using qualificationRequirements',
     ],
   },
   {
