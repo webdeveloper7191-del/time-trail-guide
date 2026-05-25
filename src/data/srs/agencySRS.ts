@@ -64,18 +64,66 @@ const apiEndpoints: ApiEndpointSpec[] = [
       body: `{
   "clientId": "centre-123",
   "locationId": "loc-44",
+  "locationName": "Sunshine ELC Bondi",
+  "locationAddress": "12 Campbell Pde, Bondi NSW 2026",
   "areaId": "area-toddler-2",
+  "areaName": "Toddler Room 2",
+  "industry": "childcare",
+  "jurisdiction": "NSW-AU",
+
   "date": "2026-06-04",
   "startTime": "07:00",
   "endTime": "15:30",
   "breakMinutes": 30,
-  "requiredRole": "Diploma Educator",
-  "requiredQualifications": ["WWCC", "FirstAid"],
-  "urgency": "high",
-  "rateCardId": "rc-9",
-  "notes": "Cover for sick leave",
+  "shiftType": "regular",                 // regular|on_call|sleepover|split
+
+  "role": {
+    "id": "role-diploma-educator",
+    "name": "Diploma Educator",
+    "awardClassification": "CSE Level 3.4",
+    "minExperienceYears": 1
+  },
+
+  "qualificationRequirements": [
+    { "code": "WWCC",      "name": "Working With Children Check",  "mandatory": true,  "jurisdiction": "NSW-AU", "mustBeCurrentOn": "2026-06-04" },
+    { "code": "FIRSTAID",  "name": "HLTAID012 First Aid",          "mandatory": true,  "mustBeCurrentOn": "2026-06-04" },
+    { "code": "DIPLOMA_ECE","name":"Diploma of Early Childhood",   "mandatory": true,  "acceptedAlternatives": ["ACECQA_EQUIV_DIPLOMA"] },
+    { "code": "ANAPHYLAXIS","name": "Anaphylaxis Training",        "mandatory": false, "preferred": true }
+  ],
+  "skillRequirements": ["nappy_change", "lead_room"],
+  "languagePreferences": ["en"],
+
+  "compensation": {                       // all fields optional except currency
+    "currency": "AUD",
+    "rateCardId": "rc-9",                 // if omitted, use payRate/chargeRate below
+    "payRate": 48.00,                     // optional - hourly rate paid to worker
+    "chargeRate": 62.00,                  // optional - hourly rate charged to centre
+    "salaryOffered": null,                // optional flat salary (for perm/contract conversions)
+    "loadings": {
+      "casualLoadingPct": 25,
+      "weekendMultiplier": 1.5,
+      "publicHolidayMultiplier": 2.5,
+      "overtimeMultiplier": 1.5
+    },
+    "allowances": [
+      { "code": "TRAVEL", "amount": 15.00, "unit": "per_shift" }
+    ],
+    "estimatedShiftValue": 527.00,        // calculated, for agency reference
+    "negotiable": false
+  },
+
+  "uniformAndPpe": { "dressCode": "Closed shoes, agency polo", "ppeProvided": ["gloves"] },
+  "supervisor": { "name": "Sarah Chen", "phone": "+61-400-111-222" },
+  "checkInMethod": "qr",                  // qr|geofence|pin|kiosk|manual
+  "geofence": { "lat": -33.8915, "lng": 151.2767, "radiusMeters": 150 },
+
+  "urgency": "high",                      // low|medium|high|critical
+  "fillMode": "managed",                  // express|managed
+  "notes": "Cover for sick leave; room has 12 toddlers",
   "agencyIds": ["agc-1","agc-2"],
-  "responseDeadline": "2026-06-03T18:00:00Z"
+  "responseDeadline": "2026-06-03T18:00:00Z",
+  "preferredCandidateIds": ["cand-22"],   // optional bias for matching
+  "blockedCandidateIds": []
 }`,
     },
     response: {
@@ -85,16 +133,21 @@ const apiEndpoints: ApiEndpointSpec[] = [
   "status": "broadcasting",
   "broadcastedTo": ["agc-1","agc-2"],
   "createdAt": "2026-06-03T09:12:11Z",
-  "expiresAt": "2026-06-03T18:00:00Z"
+  "expiresAt": "2026-06-03T18:00:00Z",
+  "estimatedShiftValue": 527.00,
+  "qualificationRequirementCount": 4
 }`,
     },
     errors: [
       { status: 400, code: 'INVALID_TIME_RANGE', description: 'endTime must be after startTime' },
+      { status: 400, code: 'MISSING_QUALIFICATIONS', description: 'qualificationRequirements is required for clinical/childcare roles' },
+      { status: 400, code: 'INVALID_RATE', description: 'payRate must be >= award minimum for the classification' },
       { status: 409, code: 'DUPLICATE_REQUEST', description: 'Identical open request already exists' },
     ],
     sideEffects: [
-      'Webhook POST /agency-webhook/shift.broadcast fired to each agency',
+      'Webhook POST /agency-webhook/shift.broadcast fired to each agency with full shift payload',
       'Notification dispatched via agencyNotificationService',
+      'Matching engine pre-filters agency talent pools using qualificationRequirements',
     ],
   },
   {
@@ -121,9 +174,24 @@ const apiEndpoints: ApiEndpointSpec[] = [
   "data": [
     {
       "id":"sr-7781","clientName":"Sunshine ELC","locationName":"Bondi",
-      "date":"2026-06-04","startTime":"07:00","endTime":"15:30",
-      "requiredRole":"Diploma Educator","urgency":"high",
-      "rate":{"chargeRate":62.0,"payRate":48.0,"currency":"AUD"},
+      "locationAddress":"12 Campbell Pde, Bondi NSW 2026",
+      "areaName":"Toddler Room 2",
+      "date":"2026-06-04","startTime":"07:00","endTime":"15:30","breakMinutes":30,
+      "shiftType":"regular",
+      "role":{"name":"Diploma Educator","awardClassification":"CSE Level 3.4","minExperienceYears":1},
+      "qualificationRequirements":[
+        {"code":"WWCC","mandatory":true,"jurisdiction":"NSW-AU"},
+        {"code":"FIRSTAID","mandatory":true},
+        {"code":"DIPLOMA_ECE","mandatory":true},
+        {"code":"ANAPHYLAXIS","mandatory":false,"preferred":true}
+      ],
+      "skillRequirements":["nappy_change","lead_room"],
+      "compensation":{
+        "currency":"AUD","payRate":48.0,"chargeRate":62.0,
+        "salaryOffered":null,"estimatedShiftValue":527.0,"negotiable":false
+      },
+      "urgency":"high","fillMode":"managed",
+      "checkInMethod":"qr","supervisor":{"name":"Sarah Chen"},
       "expiresAt":"2026-06-03T18:00:00Z","status":"open"
     }
   ],
@@ -617,7 +685,9 @@ const apiEndpoints: ApiEndpointSpec[] = [
   "event":"shift.broadcast",
   "shiftRequestId":"sr-7781",
   "expiresAt":"2026-06-03T18:00:00Z",
-  "payload":{ "...":"see API-AG-001 response" }
+  "payload":{
+    "...":"full shift body per API-AG-001 (role, qualificationRequirements, skillRequirements, compensation incl. payRate/chargeRate/salaryOffered, supervisor, checkInMethod, geofence, uniformAndPpe, urgency, fillMode)"
+  }
 }`,
     },
     response: { status: 200, body: `{ "received": true }` },
@@ -788,6 +858,10 @@ export const agencySRS: AgencyModuleSRS = {
     { id: 'FR-AG-17', category: 'Compliance', requirement: 'Visa documents must capture subclass and workHoursLimitPerFortnight; matching engine respects the cap', priority: 'must' },
     { id: 'FR-AG-18', category: 'Compliance', requirement: 'Qualifications must reference issuingAuthority and RTO code where applicable', priority: 'must' },
     { id: 'FR-AG-19', category: 'Audit', requirement: 'Every government_check_request stores requester, consent reference, registry response, and outcome', priority: 'must' },
+    { id: 'FR-AG-20', category: 'Broadcast', requirement: 'Shift broadcast payload must include full role spec, qualification & skill requirements, supervisor, check-in method, and geofence so agencies can pre-filter without a callback', priority: 'must' },
+    { id: 'FR-AG-21', category: 'Broadcast', requirement: 'Compensation fields (payRate, chargeRate, salaryOffered, loadings, allowances) are optional individually but currency is mandatory; system rejects payRate below award minimum for the role classification', priority: 'must' },
+    { id: 'FR-AG-22', category: 'Broadcast', requirement: 'Each qualificationRequirement supports mandatory vs preferred, jurisdiction, mustBeCurrentOn (shift date) and acceptedAlternatives so agency match engine can correctly score eligibility', priority: 'must' },
+    { id: 'FR-AG-23', category: 'Broadcast', requirement: 'Centre may flag compensation as negotiable, allowing agency to counter-offer via submission.proposedRate before centre acceptance', priority: 'should' },
   ],
   nonFunctionalRequirements: [
     { id: 'NFR-AG-01', category: 'Performance', requirement: 'Match engine returns within 1.5s for <500 candidates' },
@@ -851,9 +925,34 @@ export const agencySRS: AgencyModuleSRS = {
         { name: 'date', type: 'date', mandatory: true, description: 'Shift date', indexed: true },
         { name: 'start_time', type: 'time', mandatory: true, description: 'Start time' },
         { name: 'end_time', type: 'time', mandatory: true, description: 'End time' },
-        { name: 'required_role', type: 'text', mandatory: true, description: 'Role required' },
+        { name: 'break_minutes', type: 'int', mandatory: true, description: 'Unpaid break minutes' },
+        { name: 'shift_type', type: 'enum', mandatory: true, description: 'regular|on_call|sleepover|split' },
+        { name: 'required_role', type: 'text', mandatory: true, description: 'Role required (denormalised role.name)' },
+        { name: 'role_id', type: 'uuid', mandatory: false, description: 'FK to roles', foreignKey: 'roles.id' },
+        { name: 'award_classification', type: 'text', mandatory: false, description: 'Award classification e.g. CSE Level 3.4' },
+        { name: 'min_experience_years', type: 'numeric', mandatory: false, description: 'Minimum years of experience' },
+        { name: 'qualification_requirements', type: 'jsonb', mandatory: true, description: 'Array of {code, name, mandatory, jurisdiction, mustBeCurrentOn, acceptedAlternatives, preferred}' },
+        { name: 'skill_requirements', type: 'jsonb', mandatory: false, description: 'Array of skill codes' },
+        { name: 'language_preferences', type: 'jsonb', mandatory: false, description: 'Preferred languages' },
+        { name: 'pay_rate', type: 'numeric', mandatory: false, description: 'Optional hourly rate paid to worker' },
+        { name: 'charge_rate', type: 'numeric', mandatory: false, description: 'Optional hourly rate charged to centre' },
+        { name: 'salary_offered', type: 'numeric', mandatory: false, description: 'Optional flat salary (temp-to-perm / contract conversion)' },
+        { name: 'currency', type: 'text', mandatory: true, description: 'ISO currency, default AUD' },
+        { name: 'rate_card_id', type: 'uuid', mandatory: false, description: 'Reference rate card' },
+        { name: 'loadings', type: 'jsonb', mandatory: false, description: 'Casual/weekend/PH/OT multipliers' },
+        { name: 'allowances', type: 'jsonb', mandatory: false, description: 'Travel, meal, KM allowances' },
+        { name: 'estimated_shift_value', type: 'numeric', mandatory: false, description: 'Calculated total for agency reference' },
+        { name: 'compensation_negotiable', type: 'boolean', mandatory: false, description: 'Whether agency may counter-offer rate' },
+        { name: 'check_in_method', type: 'enum', mandatory: true, description: 'qr|geofence|pin|kiosk|manual' },
+        { name: 'geofence', type: 'jsonb', mandatory: false, description: '{lat, lng, radiusMeters}' },
+        { name: 'supervisor', type: 'jsonb', mandatory: false, description: '{name, phone, email}' },
+        { name: 'uniform_and_ppe', type: 'jsonb', mandatory: false, description: '{dressCode, ppeProvided[]}' },
         { name: 'urgency', type: 'enum', mandatory: true, description: 'low/medium/high/critical' },
+        { name: 'fill_mode', type: 'enum', mandatory: true, description: 'express|managed' },
         { name: 'status', type: 'enum', mandatory: true, description: 'open/broadcasting/matched/filled/cancelled/expired' },
+        { name: 'preferred_candidate_ids', type: 'jsonb', mandatory: false, description: 'Bias for matching engine' },
+        { name: 'blocked_candidate_ids', type: 'jsonb', mandatory: false, description: 'Candidates to exclude' },
+        { name: 'notes', type: 'text', mandatory: false, description: 'Free-text notes' },
         { name: 'expires_at', type: 'timestamptz', mandatory: true, description: 'Response deadline' },
       ],
     },
