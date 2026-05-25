@@ -858,7 +858,10 @@ export const agencySRS: AgencyModuleSRS = {
     { id: 'FR-AG-17', category: 'Compliance', requirement: 'Visa documents must capture subclass and workHoursLimitPerFortnight; matching engine respects the cap', priority: 'must' },
     { id: 'FR-AG-18', category: 'Compliance', requirement: 'Qualifications must reference issuingAuthority and RTO code where applicable', priority: 'must' },
     { id: 'FR-AG-19', category: 'Audit', requirement: 'Every government_check_request stores requester, consent reference, registry response, and outcome', priority: 'must' },
-  ],
+    { id: 'FR-AG-20', category: 'Broadcast', requirement: 'Shift broadcast payload must include full role spec, qualification & skill requirements, supervisor, check-in method, and geofence so agencies can pre-filter without a callback', priority: 'must' },
+    { id: 'FR-AG-21', category: 'Broadcast', requirement: 'Compensation fields (payRate, chargeRate, salaryOffered, loadings, allowances) are optional individually but currency is mandatory; system rejects payRate below award minimum for the role classification', priority: 'must' },
+    { id: 'FR-AG-22', category: 'Broadcast', requirement: 'Each qualificationRequirement supports mandatory vs preferred, jurisdiction, mustBeCurrentOn (shift date) and acceptedAlternatives so agency match engine can correctly score eligibility', priority: 'must' },
+    { id: 'FR-AG-23', category: 'Broadcast', requirement: 'Centre may flag compensation as negotiable, allowing agency to counter-offer via submission.proposedRate before centre acceptance', priority: 'should' },
   nonFunctionalRequirements: [
     { id: 'NFR-AG-01', category: 'Performance', requirement: 'Match engine returns within 1.5s for <500 candidates' },
     { id: 'NFR-AG-02', category: 'Security', requirement: 'All API endpoints scoped per tenant + per agency relationship' },
