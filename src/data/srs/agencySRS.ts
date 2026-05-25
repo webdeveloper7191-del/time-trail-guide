@@ -685,7 +685,9 @@ const apiEndpoints: ApiEndpointSpec[] = [
   "event":"shift.broadcast",
   "shiftRequestId":"sr-7781",
   "expiresAt":"2026-06-03T18:00:00Z",
-  "payload":{ "...":"see API-AG-001 response" }
+  "payload":{
+    "...":"full shift body per API-AG-001 (role, qualificationRequirements, skillRequirements, compensation incl. payRate/chargeRate/salaryOffered, supervisor, checkInMethod, geofence, uniformAndPpe, urgency, fillMode)"
+  }
 }`,
     },
     response: { status: 200, body: `{ "received": true }` },
