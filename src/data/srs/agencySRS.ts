@@ -233,12 +233,71 @@ const apiEndpoints: ApiEndpointSpec[] = [
   "candidateId":"cand-22",
   "complianceScore":96,
   "status":"compliant",
+  "missingRequired":[],
+  "nextExpiryDate":"2026-08-01",
   "documents":[
-    {"id":"doc-1","type":"WWCC","number":"WWC1234567E","jurisdiction":"NSW",
-     "issuedAt":"2024-01-12","expiresAt":"2029-01-11","fileUrl":"https://...","status":"valid"},
-    {"id":"doc-2","type":"FirstAid","expiresAt":"2026-08-01","status":"expiring_soon"}
-  ],
-  "missingRequired":[]
+    {
+      "id":"doc-1","type":"WWCC","category":"government_check",
+      "name":"Working With Children Check","number":"WWC1234567E",
+      "jurisdiction":"NSW","country":"AU",
+      "issuingAuthority":"NSW Office of the Children's Guardian",
+      "issuedAt":"2024-01-12","expiresAt":"2029-01-11",
+      "renewalCadence":"once_off_with_expiry","renewalIntervalMonths":60,
+      "isMandatory":true,"isGovernmentVerified":true,
+      "verificationSource":"OCG_API","verifiedAt":"2024-01-13T03:11:00Z",
+      "verificationReference":"VRF-OCG-99812",
+      "fileUrl":"https://storage/.../doc-1.pdf","fileMimeType":"application/pdf",
+      "fileSizeBytes":184221,"uploadedBy":"candidate",
+      "uploadedAt":"2024-01-12T10:00:00Z","status":"valid",
+      "candidateAcknowledgedAt":"2024-01-12T10:01:00Z"
+    },
+    {
+      "id":"doc-2","type":"FirstAid","category":"qualification",
+      "name":"HLTAID012 - First Aid in Education and Care",
+      "issuingAuthority":"RTO","rtoCode":"45160",
+      "issuedAt":"2023-08-01","expiresAt":"2026-08-01",
+      "renewalCadence":"recurring","renewalIntervalMonths":36,
+      "isMandatory":true,"isGovernmentVerified":false,"status":"expiring_soon"
+    },
+    {
+      "id":"doc-3","type":"PoliceCheck","category":"government_check",
+      "issuingAuthority":"Australian Federal Police",
+      "issuedAt":"2025-11-02","renewalCadence":"recurring","renewalIntervalMonths":12,
+      "isMandatory":true,"isGovernmentVerified":true,
+      "verificationSource":"AFP_NPCS","status":"valid"
+    },
+    {
+      "id":"doc-4","type":"NDISWorkerScreening","category":"government_check",
+      "jurisdiction":"NSW","issuingAuthority":"NDIS Quality and Safeguards Commission",
+      "expiresAt":"2030-03-15","renewalCadence":"once_off_with_expiry",
+      "renewalIntervalMonths":60,"isMandatory":false,"isGovernmentVerified":true,
+      "verificationSource":"NDIS_REGISTER","status":"valid"
+    },
+    {
+      "id":"doc-5","type":"VisaWorkRights","category":"government_check",
+      "country":"AU","issuingAuthority":"Department of Home Affairs",
+      "subclass":"500","workHoursLimitPerFortnight":48,
+      "expiresAt":"2027-02-01","renewalCadence":"once_off_with_expiry",
+      "isMandatory":true,"isGovernmentVerified":true,
+      "verificationSource":"VEVO","verificationReference":"VEVO-7781123","status":"valid"
+    },
+    {
+      "id":"doc-6","type":"Immunisation","category":"health",
+      "name":"AIR Immunisation History Statement",
+      "issuingAuthority":"Australian Immunisation Register",
+      "issuedAt":"2025-04-01","renewalCadence":"ongoing_no_expiry",
+      "isMandatory":true,"isGovernmentVerified":true,
+      "verificationSource":"AIR_API","status":"valid"
+    },
+    {
+      "id":"doc-7","type":"Qualification","category":"qualification",
+      "name":"Diploma of Early Childhood Education and Care (CHC50121)",
+      "issuingAuthority":"TAFE NSW","rtoCode":"90003",
+      "issuedAt":"2022-11-30","renewalCadence":"once_off",
+      "isMandatory":true,"isGovernmentVerified":false,
+      "evidenceType":"certificate_pdf","status":"valid"
+    }
+  ]
 }`,
     },
   },
@@ -247,25 +306,189 @@ const apiEndpoints: ApiEndpointSpec[] = [
     name: 'Upload Candidate Compliance Document',
     method: 'POST',
     path: '/api/v1/agency/candidates/:candidateId/compliance',
-    description: 'Multipart upload of a compliance document; triggers OCR + verification job.',
-    auth: 'Bearer JWT (agency)',
-    consumer: 'CandidateComplianceManager',
+    description: 'Multipart upload of a compliance document by agency OR candidate self-service; triggers OCR + government verification where applicable.',
+    auth: 'Bearer JWT (agency admin) OR short-lived candidate token',
+    consumer: 'CandidateComplianceManager / Candidate self-service portal',
     request: {
       pathParams: { candidateId: 'cand-22' },
       headers: { 'Content-Type': 'multipart/form-data' },
       body: `form-data:
-  type: "PoliceCheck"
+  type: "WWCC"                            # WWCC|PoliceCheck|NDISWorkerScreening|VisaWorkRights|Immunisation|FirstAid|CPR|Qualification|DriversLicence|Identity|Reference|Other
+  category: "government_check"            # government_check|qualification|health|identity|reference|other
+  name: "Working With Children Check"
+  number: "WWC1234567E"
   jurisdiction: "NSW"
-  number: "PC998877"
-  issuedAt: "2026-02-01"
-  expiresAt: "2029-02-01"
-  file: <binary>`,
+  country: "AU"
+  issuingAuthority: "NSW Office of the Children's Guardian"
+  rtoCode: null                           # required for RTO-issued qualifications
+  subclass: null                          # required for visa docs
+  issuedAt: "2024-01-12"
+  expiresAt: "2029-01-11"                 # null when renewalCadence in once_off|ongoing_no_expiry
+  renewalCadence: "once_off_with_expiry"  # once_off|once_off_with_expiry|recurring|ongoing_no_expiry
+  renewalIntervalMonths: 60               # used to auto-suggest next renewal when recurring
+  isMandatory: true
+  requestGovernmentVerification: true     # triggers WWCC/AFP/NDIS/VEVO/AIR lookup if supported
+  candidateConsentSignedAt: "2024-01-12T10:00:00Z"  # required for govt verifications
+  uploadedBy: "candidate"                 # candidate|agency_admin|centre_admin
+  file: <binary>                          # PDF / JPG / PNG, max 10MB`,
     },
     response: {
       status: 201,
-      body: `{"id":"doc-9","status":"pending_verification","verificationJobId":"vrf-31"}`,
+      body: `{
+  "id":"doc-9","status":"pending_verification",
+  "verificationJobId":"vrf-31",
+  "renewalDueAt":"2029-01-11",
+  "requiresCandidateAcknowledgement":true
+}`,
+    },
+    errors: [
+      { status: 400, code: 'CONSENT_MISSING', description: 'Government verification requested without candidate consent' },
+      { status: 413, code: 'FILE_TOO_LARGE', description: 'File exceeds 10MB' },
+      { status: 415, code: 'UNSUPPORTED_FILE_TYPE', description: 'Only PDF/JPG/PNG accepted' },
+    ],
+    sideEffects: [
+      'Government verification job enqueued when verificationSource is supported',
+      'Renewal reminders scheduled at T-60, T-30, T-7 days before expiresAt',
+      'Compliance score recomputed',
+    ],
+  },
+  {
+    id: 'API-AG-014',
+    name: 'Qualification & Document Catalogue (per role/jurisdiction)',
+    method: 'GET',
+    path: '/api/v1/agency/qualifications/catalogue',
+    description: 'Returns the canonical list of qualifications and government checks required or recommended for a given role + jurisdiction. Drives the candidate onboarding checklist and the missingRequired calculation.',
+    auth: 'Bearer JWT (any authenticated user)',
+    consumer: 'Candidate onboarding wizard / CandidateComplianceManager',
+    request: { queryParams: { role: 'DiplomaEducator', jurisdiction: 'NSW', industry: 'childcare' } },
+    response: {
+      status: 200,
+      body: `{
+  "role":"DiplomaEducator","jurisdiction":"NSW",
+  "items":[
+    {"type":"WWCC","isMandatory":true,"renewalCadence":"once_off_with_expiry","renewalIntervalMonths":60,"governmentVerified":true,"verificationSource":"OCG_API"},
+    {"type":"PoliceCheck","isMandatory":true,"renewalCadence":"recurring","renewalIntervalMonths":12,"governmentVerified":true,"verificationSource":"AFP_NPCS"},
+    {"type":"FirstAid","isMandatory":true,"renewalCadence":"recurring","renewalIntervalMonths":36},
+    {"type":"CPR","isMandatory":true,"renewalCadence":"recurring","renewalIntervalMonths":12},
+    {"type":"Qualification","isMandatory":true,"renewalCadence":"once_off","acceptedQualifications":["CHC50121","CHC50113"]},
+    {"type":"Immunisation","isMandatory":true,"renewalCadence":"ongoing_no_expiry"},
+    {"type":"VisaWorkRights","isMandatory":"if_non_citizen","renewalCadence":"once_off_with_expiry"},
+    {"type":"NDISWorkerScreening","isMandatory":false}
+  ]
+}`,
     },
   },
+  {
+    id: 'API-AG-015',
+    name: 'Trigger Government Verification',
+    method: 'POST',
+    path: '/api/v1/agency/compliance/:documentId/verify',
+    description: 'Calls the relevant government registry to verify the document (WWCC OCG, AFP NPCS, NDIS Register, VEVO, AIR). Idempotent; safe to retry.',
+    auth: 'Bearer JWT (agency admin or system)',
+    consumer: 'CandidateComplianceManager / nightly verification job',
+    request: {
+      pathParams: { documentId: 'doc-1' },
+      body: `{ "force": false, "consentReference": "consent-7781" }`,
+    },
+    response: {
+      status: 200,
+      body: `{
+  "documentId":"doc-1","verificationSource":"OCG_API",
+  "result":"verified","verifiedAt":"2026-05-25T03:11:00Z",
+  "verificationReference":"VRF-OCG-99812",
+  "registryStatus":"current","expiresAt":"2029-01-11"
+}`,
+    },
+    errors: [
+      { status: 400, code: 'CONSENT_MISSING', description: 'No candidate consent on file' },
+      { status: 404, code: 'NOT_ON_REGISTRY', description: 'Document number not found on government register' },
+      { status: 502, code: 'UPSTREAM_UNAVAILABLE', description: 'Registry temporarily unavailable; retry queued' },
+    ],
+    sideEffects: ['Document status -> valid|rejected', 'Compliance score recomputed', 'Audit log entry'],
+  },
+  {
+    id: 'API-AG-016',
+    name: 'List Documents Due for Renewal',
+    method: 'GET',
+    path: '/api/v1/agency/compliance/renewals',
+    description: 'Returns recurring/expiring documents due within the window; used by reminder service and dashboard.',
+    auth: 'Bearer JWT (agency admin)',
+    consumer: 'CandidateComplianceManager renewals dashboard',
+    request: { queryParams: { withinDays: '60', candidateId: 'optional', type: 'optional' } },
+    response: {
+      status: 200,
+      body: `{
+  "items":[
+    {"candidateId":"cand-22","documentId":"doc-2","type":"FirstAid","expiresAt":"2026-08-01","daysUntilExpiry":68,"renewalCadence":"recurring","remindersSent":1}
+  ]
+}`,
+    },
+  },
+  {
+    id: 'API-AG-017',
+    name: 'Candidate Accept / Decline Shift Offer',
+    method: 'POST',
+    path: '/api/v1/agency/offers/:offerId/response',
+    description: 'Candidate accepts or declines a shift offer pushed to them after centre confirmation. Acceptance locks the placement; decline triggers backup-candidate workflow.',
+    auth: 'Short-lived candidate token (magic link / app session)',
+    consumer: 'Candidate mobile/web portal',
+    request: {
+      pathParams: { offerId: 'off-7781' },
+      body: `{
+  "response":"accept",                    // accept | decline
+  "declineReason": null,                  // required if decline
+  "acknowledgements":{
+    "shiftDetailsRead":true,
+    "complianceConfirmed":true,
+    "travelDistanceOk":true,
+    "rateAccepted":true,
+    "codeOfConductAccepted":true
+  },
+  "signatureBase64":"...",                // optional digital signature
+  "respondedAt":"2026-06-03T11:30:00Z"
+}`,
+    },
+    response: {
+      status: 200,
+      body: `{
+  "offerId":"off-7781","placementId":"plc-555","status":"accepted",
+  "confirmedAt":"2026-06-03T11:30:01Z",
+  "nextSteps":["check_in_qr_url","centre_address","supervisor_contact"]
+}`,
+    },
+    errors: [
+      { status: 409, code: 'OFFER_EXPIRED', description: 'Candidate response window passed' },
+      { status: 409, code: 'OFFER_ALREADY_DECIDED', description: 'Offer already accepted/declined' },
+      { status: 412, code: 'COMPLIANCE_LAPSED', description: 'Candidate doc expired between submission and acceptance' },
+    ],
+    sideEffects: [
+      'Placement.status -> confirmed (on accept) or pending (on decline -> next backup)',
+      'Webhook offer.responded fired to agency + centre',
+      'Roster cell updated to show confirmed candidate',
+    ],
+  },
+  {
+    id: 'API-AG-018',
+    name: 'List Candidate Pending Offers',
+    method: 'GET',
+    path: '/api/v1/agency/candidates/:candidateId/offers',
+    description: 'Inbox of shift offers awaiting candidate acceptance with countdown timers.',
+    auth: 'Short-lived candidate token',
+    consumer: 'Candidate mobile/web portal',
+    request: { pathParams: { candidateId: 'cand-22' }, queryParams: { status: 'pending' } },
+    response: {
+      status: 200,
+      body: `{
+  "offers":[
+    {"id":"off-7781","placementId":"plc-555","centreName":"Sunshine ELC Bondi",
+     "shiftDate":"2026-06-04","startTime":"07:00","endTime":"15:30",
+     "role":"Diploma Educator","payRate":48.0,"travelDistanceKm":3.2,
+     "respondByDeadline":"2026-06-03T12:00:00Z","status":"pending"}
+  ]
+}`,
+    },
+  },
+
 
   // ====== CLOCK-IN / ATTENDANCE RECONCILIATION ======
   {
