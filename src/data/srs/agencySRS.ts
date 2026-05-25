@@ -174,9 +174,24 @@ const apiEndpoints: ApiEndpointSpec[] = [
   "data": [
     {
       "id":"sr-7781","clientName":"Sunshine ELC","locationName":"Bondi",
-      "date":"2026-06-04","startTime":"07:00","endTime":"15:30",
-      "requiredRole":"Diploma Educator","urgency":"high",
-      "rate":{"chargeRate":62.0,"payRate":48.0,"currency":"AUD"},
+      "locationAddress":"12 Campbell Pde, Bondi NSW 2026",
+      "areaName":"Toddler Room 2",
+      "date":"2026-06-04","startTime":"07:00","endTime":"15:30","breakMinutes":30,
+      "shiftType":"regular",
+      "role":{"name":"Diploma Educator","awardClassification":"CSE Level 3.4","minExperienceYears":1},
+      "qualificationRequirements":[
+        {"code":"WWCC","mandatory":true,"jurisdiction":"NSW-AU"},
+        {"code":"FIRSTAID","mandatory":true},
+        {"code":"DIPLOMA_ECE","mandatory":true},
+        {"code":"ANAPHYLAXIS","mandatory":false,"preferred":true}
+      ],
+      "skillRequirements":["nappy_change","lead_room"],
+      "compensation":{
+        "currency":"AUD","payRate":48.0,"chargeRate":62.0,
+        "salaryOffered":null,"estimatedShiftValue":527.0,"negotiable":false
+      },
+      "urgency":"high","fillMode":"managed",
+      "checkInMethod":"qr","supervisor":{"name":"Sarah Chen"},
       "expiresAt":"2026-06-03T18:00:00Z","status":"open"
     }
   ],
