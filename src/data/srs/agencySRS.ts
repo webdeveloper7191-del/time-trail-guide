@@ -759,7 +759,7 @@ export const agencySRS: AgencyModuleSRS = {
     { name: 'Centre Admin', description: 'Schedules, broadcasts, confirms bookings, reconciles attendance.', permissions: ['shift_request.create', 'submission.decide', 'placement.reconcile', 'invoice.view'] },
     { name: 'Agency Scheduler', description: 'Receives broadcasts, matches and submits candidates.', permissions: ['shift_request.read', 'submission.create', 'candidate.manage'] },
     { name: 'Agency Billing', description: 'Generates invoices and tracks payments.', permissions: ['invoice.create', 'invoice.send'] },
-    { name: 'Candidate', description: 'Clocks in/out for assigned placements.', permissions: ['clock_event.create:self'] },
+    { name: 'Candidate', description: 'Self-uploads compliance documents, accepts/declines offers, clocks in/out.', permissions: ['document.upload:self', 'document.acknowledge:self', 'offer.respond:self', 'clock_event.create:self'] },
     { name: 'System', description: 'Webhooks, SLA timers, compliance jobs.', permissions: ['webhook.dispatch', 'job.run'] },
   ],
   functionalRequirements: [
