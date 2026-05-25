@@ -1287,6 +1287,10 @@ export const agencySRS: AgencyModuleSRS = {
     { id: 'BR-AG-11', rule: 'A document uploaded by candidate stays pending_verification until reviewed by agency admin OR auto-verified by registry', rationale: 'Prevents self-attested-only compliance' },
     { id: 'BR-AG-12', rule: 'Visa work-hours cap (workHoursLimitPerFortnight) is enforced by the match engine before submission', rationale: 'Avoids visa breaches' },
     { id: 'BR-AG-13', rule: 'qualification_catalogue is versioned per jurisdiction; changing requirements does not retroactively invalidate already-placed candidates for current shift', rationale: 'Stability of in-flight bookings' },
+    { id: 'BR-AG-14', rule: 'Number of accepted candidates in a submission cannot exceed shift_request.totalSlotsRequested - already-filled slots', rationale: 'Prevents over-fill across submissions from multiple agencies' },
+    { id: 'BR-AG-15', rule: 'When primary (rank=1) is rejected/declined, the next ranked candidate with centre_decision=hold is auto-promoted to offered within 60s', rationale: 'Frictionless backup roll-over for time-critical shifts' },
+    { id: 'BR-AG-16', rule: 'Compliance snapshot stored on agency_submission_candidates is immutable; re-evaluation at centre acceptance triggers COMPLIANCE_LAPSED if any required doc expired between submit and accept', rationale: 'Auditability + safety' },
+    { id: 'BR-AG-17', rule: 'Submission auto-closes when slots_remaining=0 OR sla_deadline passes; remaining undecided candidates marked expired', rationale: 'Clean lifecycle, frees backup candidates' },
 
   ],
   apiEndpoints,
