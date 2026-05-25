@@ -734,16 +734,22 @@ export const agencySRS: AgencyModuleSRS = {
     'The Agency Integration module connects centres with external staffing agencies to broadcast unfilled shifts, match and submit candidates, confirm bookings under reverse SLA, capture compliant attendance, reconcile timesheets, generate invoices (including RCTI), and rate placements. It exposes a REST API plus signed outbound webhooks, with all calls scoped per tenant and per agency relationship.',
   objectives: [
     'Fill open shifts within the urgency SLA via ranked agency matching',
-    'Guarantee per-candidate compliance (WWCC, Police Check, NDIS, Visa) at submission time',
-    'Close the booking loop with explicit centre confirmation (two-way handshake)',
+    'Guarantee per-candidate compliance (WWCC, Police Check, NDIS, Visa, Immunisation, Qualifications) at submission AND at candidate-acceptance time',
+    'Distinguish once-off, once-off-with-expiry, recurring, and ongoing documents and manage renewals automatically',
+    'Allow candidates to self-upload documents and acknowledge accuracy via short-lived token (no agency login)',
+    'Verify documents against official government registries (OCG, AFP, NDIS, VEVO, AIR) with consent',
+    'Close the booking loop with explicit centre confirmation AND candidate acceptance (two-sided handshake)',
     'Eliminate manual timesheet entry through clock-event -> timesheet bridge',
     'Provide auditable invoicing (charge vs pay rate, GST, RCTI)',
     'Feed match quality back into the engine via post-placement ratings',
   ],
   scope: [
     'Shift broadcast + agency inbox',
-    'Candidate matching, submission, and centre confirmation',
-    'Per-candidate compliance documents with expiry alerts',
+    'Candidate matching, submission, centre confirmation, and candidate acceptance',
+    'Per-candidate compliance documents with renewal cadence and expiry alerts',
+    'Candidate self-service portal for document upload and offer response',
+    'Government registry verification (WWCC OCG, AFP NPCS, NDIS Register, VEVO, AIR)',
+    'Qualification catalogue keyed by role + jurisdiction + industry',
     'Clock-in (QR / geofence / PIN / kiosk) and discrepancy handling',
     'Placement -> Timesheet bridge',
     'Invoicing incl. RCTI / GST',
@@ -752,9 +758,9 @@ export const agencySRS: AgencyModuleSRS = {
   ],
   outOfScope: [
     'Payroll disbursement to candidates (handled by agency payroll)',
-    'Background-check provider integrations (future)',
-    'End-user candidate mobile app (future release)',
+    'Building government registry APIs themselves (we consume official adapters)',
   ],
+
   actors: [
     { name: 'Centre Admin', description: 'Schedules, broadcasts, confirms bookings, reconciles attendance.', permissions: ['shift_request.create', 'submission.decide', 'placement.reconcile', 'invoice.view'] },
     { name: 'Agency Scheduler', description: 'Receives broadcasts, matches and submits candidates.', permissions: ['shift_request.read', 'submission.create', 'candidate.manage'] },
