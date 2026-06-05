@@ -45,7 +45,7 @@ import {
   HelpCircle,
   Award,
 } from 'lucide-react';
-import { ApprovalTier, BreakRule, ApprovalRule, ApprovalRuleCondition, SlaBreachAction } from '@/types/compliance';
+import { ApprovalTier, BreakRule, ApprovalRule, ApprovalRuleCondition, SlaBreachAction, ApprovalTriggerSet } from '@/types/compliance';
 import { ApprovalDelegationModal } from '@/components/timesheet/ApprovalDelegationModal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
