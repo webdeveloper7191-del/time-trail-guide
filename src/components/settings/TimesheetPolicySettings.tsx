@@ -72,11 +72,11 @@ function usePolicyAndScope() {
   }
 
   const fieldProps = <S extends SectionKey, F extends keyof TimesheetPolicy[S]>(
-    section: S, field: F, label: string, description?: string,
+    section: S, field: F, label: string, description?: string, example?: React.ReactNode,
   ) => ({
     overridden: isOverridden(section, field),
     onReset: () => clearOverride(section, field),
-    label, description, isTenant,
+    label, description, example, isTenant,
   });
 
   return { scope, isTenant, resolved, setField, fieldProps };
