@@ -266,26 +266,11 @@ export function PolicyPermissions() {
           />
         </PermissionGroup>
 
-        <PermissionGroup title="Breaks">
-          <ToggleRow
-            {...fieldProps('permissions', 'wrapUpBreaksSooner', 'Wrap up Breaks Sooner',
-              'Allow team members to end their breaks early and resume work before the scheduled time.')}
-            value={resolved.permissions.wrapUpBreaksSooner}
-            onChange={v => setField('permissions', 'wrapUpBreaksSooner', v)}
-          />
-          <ToggleRow
-            {...fieldProps('permissions', 'editOwnBreakDuration', 'Edit Own Break Duration',
-              'Allow staff to adjust the duration of breaks on their own timesheet entries.')}
-            value={resolved.permissions.editOwnBreakDuration}
-            onChange={v => setField('permissions', 'editOwnBreakDuration', v)}
-          />
-          <ToggleRow
-            {...fieldProps('permissions', 'addBreaksToPastTimesheets', 'Add Breaks to Past Timesheets',
-              'Allow staff to retroactively add break entries to previously submitted timesheets (until approved).')}
-            value={resolved.permissions.addBreaksToPastTimesheets}
-            onChange={v => setField('permissions', 'addBreaksToPastTimesheets', v)}
-          />
-        </PermissionGroup>
+        <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+          Looking for break permissions (wrap up sooner, edit own duration, add to past timesheets)?
+          They now live in the <span className="font-medium text-foreground">Breaks</span> tab under
+          <span className="font-medium text-foreground"> Staff Break Permissions</span>.
+        </div>
       </CardContent>
     </Card>
   );
@@ -407,53 +392,87 @@ export function PolicyBreaks() {
     <Card>
       <CardHeader>
         <CardTitle className="tracking-tight">Breaks (Policy)</CardTitle>
-        <CardDescription>Break handling and paid-meal policy.</CardDescription>
+        <CardDescription>Break behaviour, flagging and staff break permissions.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-1 divide-y">
-        <div className="mb-3 flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+      <CardContent className="space-y-6">
+        <div className="flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
           <Info className="h-4 w-4 mt-0.5 shrink-0 text-foreground/70" />
           <div className="space-y-1">
-            <p className="font-medium text-foreground">Precedence: Award rules win over these policies.</p>
+            <p className="font-medium text-foreground">Precedence chain</p>
             <p>
-              When an applicable Award (or Enterprise Agreement) defines mandatory break
-              duration, timing, or paid/unpaid status, those rules override the tenant/location
-              settings below. These policies act as the <span className="font-medium">fallback</span> when
-              no award rule applies, and control the <span className="font-medium">UX behaviour</span>
-              {' '}(auto-include on clock-out, flagging, rounding) that awards don't specify.
+              <span className="font-medium">Award / EA</span> → <span className="font-medium">Break Rules library</span> →{' '}
+              <span className="font-medium">Location override</span> → <span className="font-medium">Tenant default</span>.
             </p>
             <p>
-              Order of precedence: <span className="font-medium">Award/EA → Location override → Tenant default</span>.
+              When an applicable Award (or Enterprise Agreement) defines mandatory break duration,
+              timing, or paid/unpaid status, those rules win. Otherwise the{' '}
+              <span className="font-medium">Break Rules</span> defined below this card determine when
+              breaks apply and whether they're paid. The settings here control{' '}
+              <span className="font-medium">UX behaviour</span> (auto-include on clock-out, variance flagging)
+              and <span className="font-medium">staff self-service</span> permissions.
             </p>
           </div>
         </div>
 
-        <ToggleRow
-          {...fieldProps('breaks', 'autoIncludeScheduledOnClockOut', 'Auto-Include Scheduled Breaks on Clock-Out',
-            "Automatically add any unrecorded scheduled breaks to the timesheet at clock-out. Note: If team members don't have edit permissions, they won't be able to remove these breaks afterwards.")}
-          value={resolved.breaks.autoIncludeScheduledOnClockOut}
-          onChange={v => setField('breaks', 'autoIncludeScheduledOnClockOut', v)}
-        />
-        <ToggleRow
-          {...fieldProps('breaks', 'flagShortOrMissedBreaks', 'Flag Short or Missed Breaks in Timesheets',
-            'Show a warning when a scheduled break is shorter than expected or completely missed.')}
-          value={resolved.breaks.flagShortOrMissedBreaks}
-          onChange={v => setField('breaks', 'flagShortOrMissedBreaks', v)}
-        />
-        <SelectRow
-          {...fieldProps('breaks', 'paidMealBreaks', 'Paid Meal Breaks',
-            "Specify if meal breaks are paid. In most cases, it's recommended to use 'Rest breaks' for paid time.")}
-          value={resolved.breaks.paidMealBreaks}
-          options={paidMealOptions}
-          onChange={v => setField('breaks', 'paidMealBreaks', v as TimesheetPolicy['breaks']['paidMealBreaks'])}
-        />
-        {resolved.breaks.paidMealBreaks === 'over_threshold' && (
-          <NumberRow
-            {...fieldProps('breaks', 'paidMealOverMinutesThreshold', 'Paid if shift exceeds (minutes)',
-              'Meal breaks become paid when the shift exceeds this duration.')}
-            value={resolved.breaks.paidMealOverMinutesThreshold}
-            onChange={v => setField('breaks', 'paidMealOverMinutesThreshold', v)}
+        <PermissionGroup title="Behaviour">
+          <ToggleRow
+            {...fieldProps('breaks', 'autoIncludeScheduledOnClockOut', 'Auto-Include Scheduled Breaks on Clock-Out',
+              "Automatically add any unrecorded scheduled breaks to the timesheet at clock-out. Inserted breaks inherit their paid/unpaid status from the matching Break Rule. If team members don't have edit permissions, they won't be able to remove these breaks afterwards.")}
+            value={resolved.breaks.autoIncludeScheduledOnClockOut}
+            onChange={v => setField('breaks', 'autoIncludeScheduledOnClockOut', v)}
           />
-        )}
+          <SelectRow
+            {...fieldProps('breaks', 'paidMealBreaks', 'Paid Meal Breaks (fallback)',
+              "Applies only when no Break Rule and no Award rule defines whether a meal break is paid. Acts as the final fallback.")}
+            value={resolved.breaks.paidMealBreaks}
+            options={paidMealOptions}
+            onChange={v => setField('breaks', 'paidMealBreaks', v as TimesheetPolicy['breaks']['paidMealBreaks'])}
+          />
+          {resolved.breaks.paidMealBreaks === 'over_threshold' && (
+            <NumberRow
+              {...fieldProps('breaks', 'paidMealOverMinutesThreshold', 'Paid if shift exceeds (minutes)',
+                'Meal breaks become paid when the shift exceeds this duration.')}
+              value={resolved.breaks.paidMealOverMinutesThreshold}
+              onChange={v => setField('breaks', 'paidMealOverMinutesThreshold', v)}
+            />
+          )}
+        </PermissionGroup>
+
+        <PermissionGroup title="Flagging">
+          <SelectRow
+            {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag Break Duration Variance',
+              'Alert managers when the actual break taken differs from the scheduled break duration. Replaces the legacy on/off "flag short or missed breaks" toggle.')}
+            value={resolved.issues.flagBreakDurationVariance}
+            options={varianceFlagOptions}
+            onChange={v => setField('issues', 'flagBreakDurationVariance', v as TimesheetPolicy['issues']['flagBreakDurationVariance'])}
+          />
+        </PermissionGroup>
+
+        <PermissionGroup title="Staff Break Permissions">
+          <ToggleRow
+            {...fieldProps('permissions', 'wrapUpBreaksSooner', 'Wrap up Breaks Sooner',
+              'Allow team members to end their breaks early and resume work before the scheduled time.')}
+            value={resolved.permissions.wrapUpBreaksSooner}
+            onChange={v => setField('permissions', 'wrapUpBreaksSooner', v)}
+          />
+          <ToggleRow
+            {...fieldProps('permissions', 'editOwnBreakDuration', 'Edit Own Break Duration',
+              'Allow staff to adjust the duration of breaks on their own timesheet entries.')}
+            value={resolved.permissions.editOwnBreakDuration}
+            onChange={v => setField('permissions', 'editOwnBreakDuration', v)}
+          />
+          <ToggleRow
+            {...fieldProps('permissions', 'addBreaksToPastTimesheets', 'Add Breaks to Past Timesheets',
+              'Allow staff to retroactively add break entries to previously submitted timesheets (until approved).')}
+            value={resolved.permissions.addBreaksToPastTimesheets}
+            onChange={v => setField('permissions', 'addBreaksToPastTimesheets', v)}
+          />
+        </PermissionGroup>
+
+        <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+          The <span className="font-medium text-foreground">Break Rules library</span> (when breaks
+          are required, their duration, and paid/unpaid status) is configured in the table below.
+        </div>
       </CardContent>
     </Card>
   );
@@ -475,13 +494,9 @@ export function PolicyIssues() {
           options={varianceFlagOptions}
           onChange={v => setField('issues', 'flagShiftTimeVariance', v as TimesheetPolicy['issues']['flagShiftTimeVariance'])}
         />
-        <SelectRow
-          {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag Break Duration Variance',
-            'Alert managers when the actual break taken differs from the scheduled break duration.')}
-          value={resolved.issues.flagBreakDurationVariance}
-          options={varianceFlagOptions}
-          onChange={v => setField('issues', 'flagBreakDurationVariance', v as TimesheetPolicy['issues']['flagBreakDurationVariance'])}
-        />
+        <div className="pt-2 text-xs text-muted-foreground">
+          Break duration variance flagging now lives in the <span className="font-medium text-foreground">Breaks</span> tab under <span className="font-medium text-foreground">Flagging</span>.
+        </div>
       </CardContent>
     </Card>
   );
