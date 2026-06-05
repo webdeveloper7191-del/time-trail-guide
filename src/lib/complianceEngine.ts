@@ -6,7 +6,8 @@ import {
   OvertimeCalculation,
   ApprovalChain,
   ApprovalRule,
-  ApprovalStep
+  ApprovalStep,
+  FlagSeverity,
 } from '@/types/compliance';
 import { 
   australianJurisdiction, 
@@ -15,6 +16,30 @@ import {
   AwardType 
 } from './australianJurisdiction';
 import { calculateTimesheetOvertime, TimesheetEntry } from './unifiedOvertimeCalculator';
+import { timesheetPolicyStore } from './timesheetPolicyStore';
+import { TimesheetIssuesSettings, AnomalySeverity, VarianceFlag } from '@/types/timesheetPolicy';
+
+function getIssuesPolicy(locationId?: string): TimesheetIssuesSettings {
+  return timesheetPolicyStore.getResolvedPolicy(locationId).issues;
+}
+
+/** Map AnomalySeverity → FlagSeverity; returns null when 'off' (skip flag). */
+function toFlagSeverity(sev: AnomalySeverity): FlagSeverity | null {
+  if (sev === 'off') return null;
+  return sev;
+}
+
+/** Minutes threshold for VarianceFlag ('never' returns null → skip). */
+function varianceMinutes(v: VarianceFlag): number | null {
+  switch (v) {
+    case 'never': return null;
+    case 'over_5m': return 5;
+    case 'over_10m': return 10;
+    case 'over_15m': return 15;
+    case 'always': return 0;
+  }
+}
+
 
 // Re-export Australian jurisdiction as default
 export const defaultJurisdiction: Jurisdiction = australianJurisdiction;
