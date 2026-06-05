@@ -167,18 +167,36 @@ export default function TimesheetSettings() {
   // Break Rules
   const [breakRules, setBreakRules] = useBreakRules();
 
-  // Jurisdiction Config
+  // Jurisdiction Config — defaults to Australia (NES + Modern Awards)
   const [jurisdiction, setJurisdiction] = useState<JurisdictionConfig>({
-    id: 'us-federal',
-    name: 'US Federal',
-    code: 'US-FED',
-    maxDailyHours: 12,
-    maxWeeklyHours: 60,
+    id: 'au-nes',
+    name: 'Australia — National Employment Standards',
+    code: 'AU-NES',
+    state: 'NSW',
+    awardType: 'general',
+    maxDailyHours: 10,
+    maxWeeklyHours: 38,
     overtimeThresholdDaily: 8,
-    overtimeThresholdWeekly: 40,
+    overtimeThresholdWeekly: 38,
     overtimeMultiplier: 1.5,
-    doubleTimeThreshold: 12,
+    doubleTimeThreshold: 10,
     doubleTimeMultiplier: 2.0,
+    minRestBetweenShiftsHours: 10,
+    maxConsecutiveDays: 6,
+    spanOfHoursMax: 12,
+    saturdayMultiplier: 1.25,
+    sundayMultiplier: 1.5,
+    publicHolidayMultiplier: 2.5,
+    nightLoadingMultiplier: 1.15,
+    casualLoadingPercent: 25,
+    minEngagementHours: 3,
+    sourceMap: {
+      hoursLimits: 'tenant',
+      overtime: 'award',
+      restSpan: 'award',
+      penalties: 'award',
+      engagement: 'award',
+    },
   });
 
   // Approval Chain Config
