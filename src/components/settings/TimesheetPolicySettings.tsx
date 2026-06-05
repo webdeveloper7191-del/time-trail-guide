@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Globe2, RotateCcw, Info } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { Building2, Globe2, RotateCcw, Info, HelpCircle } from 'lucide-react';
 import { mockLocations } from '@/data/mockLocationData';
 import {
   TimesheetPolicy,
