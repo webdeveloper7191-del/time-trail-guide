@@ -506,6 +506,23 @@ export function PolicyBreaks() {
           />
         </PermissionGroup>
 
+        <PermissionGroup title="Rounding">
+          <ToggleRow
+            {...fieldProps('approving', 'roundShortBreakUpToScheduled', 'Round short breaks up to scheduled',
+              'Automatically extend short breaks to match the scheduled duration. Longer breaks follow the rule below.')}
+            value={resolved.approving.roundShortBreakUpToScheduled}
+            onChange={v => setField('approving', 'roundShortBreakUpToScheduled', v)}
+          />
+          <SelectRow
+            {...fieldProps('approving', 'breakRoundingAdjustment', 'Break Time Rounding',
+              'How non-snapped break durations are rounded. Later rounding may reduce payable time.')}
+            value={resolved.approving.breakRoundingAdjustment}
+            options={roundingOptions}
+            onChange={v => setField('approving', 'breakRoundingAdjustment', v as TimesheetPolicy['approving']['breakRoundingAdjustment'])}
+          />
+        </PermissionGroup>
+
+
         <PermissionGroup title="Staff Break Permissions">
           <ToggleRow
             {...fieldProps('permissions', 'wrapUpBreaksSooner', 'Wrap up Breaks Sooner',
