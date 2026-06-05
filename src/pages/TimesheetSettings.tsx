@@ -356,9 +356,13 @@ export default function TimesheetSettings() {
   const addApprovalRule = () => {
     const newRule: ApprovalRule = {
       id: `ar-${Date.now()}`,
-      name: 'New Rule',
-      condition: 'exception',
-      requiredTier: 'manager',
+      name: 'New Step',
+      triggers: { hasException: true },
+      requiredTier: 'senior_manager',
+      slaHours: 24,
+      reminderHours: 4,
+      slaBreachAction: 'escalate',
+      requireCommentOnReject: true,
     };
     setApprovalRules(prev => [...prev, newRule]);
     setHasUnsavedChanges(true);
