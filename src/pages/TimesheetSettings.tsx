@@ -311,14 +311,8 @@ export default function TimesheetSettings() {
     setHasUnsavedChanges(true);
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-500/10 text-red-600 border-red-500/20';
-      case 'warning': return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
-      case 'info': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
+
+
 
   const getTierLabel = (tier: ApprovalTier) => {
     const labels: Record<ApprovalTier, string> = {
