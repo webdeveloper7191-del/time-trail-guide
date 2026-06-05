@@ -389,12 +389,52 @@ function EscalationCard({
   const setTrigger = (patch: Partial<ApprovalTriggerSet>) =>
     onUpdate({ triggers: { ...t, ...patch } });
 
+  // Derive bands: prefer rule.bands, otherwise synthesize one from legacy flat fields.
+  const bands: ApprovalBand[] = rule.bands?.length
+    ? rule.bands
+    : [{
+        id: `${rule.id}-b1`,
+        locationGroupIds: rule.locationGroupIds,
+        locationIds: rule.locationIds,
+        employmentTypes: rule.employmentTypes,
+        requiredTier: rule.requiredTier,
+        assignedApproverId: rule.assignedApproverId,
+        slaHours: rule.slaHours ?? 24,
+        slaBreachAction: rule.slaBreachAction ?? 'escalate',
+        parallelApproval: rule.parallelApproval,
+        requireCommentOnReject: rule.requireCommentOnReject ?? true,
+        notifyStaffOnRoute: rule.notifyStaffOnRoute,
+      }];
+
+  const updateBands = (next: ApprovalBand[]) => {
+    // Keep the first band's role/SLA mirrored on the top-level rule fields so
+    // the collapsed summary and any legacy readers stay coherent.
+    const first = next[0];
+    onUpdate({
+      bands: next,
+      requiredTier: first?.requiredTier ?? rule.requiredTier,
+      assignedApproverId: first?.assignedApproverId,
+      slaHours: first?.slaHours,
+      slaBreachAction: first?.slaBreachAction,
+      locationGroupIds: first?.locationGroupIds,
+      locationIds: first?.locationIds,
+      employmentTypes: first?.employmentTypes,
+    });
+  };
+  const patchBand = (id: string, patch: Partial<ApprovalBand>) =>
+    updateBands(bands.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+  const addBand = () =>
+    updateBands([...bands, {
+      id: `band-${Date.now()}`,
+      requiredTier: 'senior_manager',
+      slaHours: 48,
+      slaBreachAction: 'escalate',
+      requireCommentOnReject: true,
+    }]);
+  const removeBand = (id: string) =>
+    updateBands(bands.length > 1 ? bands.filter((b) => b.id !== id) : bands);
+
   const triggerSummary = summarizeTriggers(t);
-  const scopeChips: string[] = [];
-  if (rule.locationGroupIds?.length) scopeChips.push(`${rule.locationGroupIds.length} group${rule.locationGroupIds.length > 1 ? 's' : ''}`);
-  if (rule.locationIds?.length) scopeChips.push(`${rule.locationIds.length} location${rule.locationIds.length > 1 ? 's' : ''}`);
-  if (!rule.locationGroupIds?.length && !rule.locationIds?.length) scopeChips.push('All locations');
-  if (rule.employmentTypes?.length) scopeChips.push(rule.employmentTypes.join(' · '));
 
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
@@ -414,16 +454,15 @@ function EscalationCard({
             <span className="text-muted-foreground font-normal">When </span>
             {triggerSummary.join(' or ')}
           </p>
-          {/* Line 2: approver + SLA + scope */}
+          {/* Line 2: band count + first band preview */}
           <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-            <Badge variant="secondary" className="font-normal">{tierLabel[rule.requiredTier]}</Badge>
-            <span>· SLA {rule.slaHours ?? 24}h</span>
-            <span>· on breach: {breachLabel(rule.slaBreachAction ?? 'escalate')}</span>
-            {scopeChips.map((c) => (
-              <Badge key={c} variant="outline" className="font-normal gap-1">
-                <Filter className="h-2.5 w-2.5" />{c}
-              </Badge>
-            ))}
+            <Badge variant="secondary" className="font-normal">
+              {bands.length} band{bands.length > 1 ? 's' : ''}
+            </Badge>
+            <span>· {tierLabel[bands[0].requiredTier]}</span>
+            <span>· SLA {bands[0].slaHours}h</span>
+            <span>· on breach: {breachLabel(bands[0].slaBreachAction)}</span>
+            <span>· {bandScopeLabel(bands[0])}</span>
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -439,6 +478,7 @@ function EscalationCard({
           {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
         </div>
       </button>
+
 
       {/* Expanded editor */}
       {expanded && (
