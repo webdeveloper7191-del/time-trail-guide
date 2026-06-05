@@ -247,7 +247,7 @@ export default function TimesheetSettings() {
   ]);
 
   // Notification Settings — per-event channel matrix
-  type NotifChannels = { email: boolean; slack: boolean; teams: boolean; inApp: boolean };
+  type NotifChannels = { email: boolean; inApp: boolean };
   type NotifEventKey =
     | 'newSubmission'
     | 'emailOnFlag'
@@ -260,7 +260,7 @@ export default function TimesheetSettings() {
     | 'correction'
     | 'payAdjustment';
 
-  const defaultChannels: NotifChannels = { email: true, slack: false, teams: false, inApp: true };
+  const defaultChannels: NotifChannels = { email: true, inApp: true };
 
   const [notifications, setNotifications] = useState({
     // Legacy flags (kept for backward compat with other screens reading them)
@@ -268,8 +268,6 @@ export default function TimesheetSettings() {
     emailOnEscalation: true,
     emailOnAutoApprove: false,
     emailOnRejection: true,
-    slackIntegration: false,
-    teamsIntegration: false,
     webhookUrl: '',
     dailyDigest: true,
     digestTime: '09:00',
@@ -282,7 +280,7 @@ export default function TimesheetSettings() {
       newSubmission:        { ...defaultChannels },
       emailOnFlag:          { ...defaultChannels },
       emailOnEscalation:    { ...defaultChannels },
-      emailOnAutoApprove:   { email: false, slack: false, teams: false, inApp: true },
+      emailOnAutoApprove:   { email: false, inApp: true },
       emailOnRejection:     { ...defaultChannels },
       missedClockOut:       { ...defaultChannels },
       unsubmittedNearCutoff:{ ...defaultChannels },
@@ -291,6 +289,7 @@ export default function TimesheetSettings() {
       payAdjustment:        { ...defaultChannels },
     } as Record<NotifEventKey, NotifChannels>,
   });
+
 
   // Delegations (for ApprovalDelegationModal)
   const [delegationOpen, setDelegationOpen] = useState(false);
