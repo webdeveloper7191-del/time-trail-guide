@@ -147,10 +147,11 @@ export function PolicyTimeTracking() {
             'Allow staff to clock in and out via the web app.')}
           value={resolved.timeTracking.enableWebClock}
           onChange={v => setField('timeTracking', 'enableWebClock', v)}
+          comingSoon
         />
         <ToggleRow
           {...fieldProps('timeTracking', 'enableMobileClock', 'Enable Mobile App Clock-in/out',
-            'Allow staff to clock in and out via the mobile app.')}
+            'Allow staff to clock in and out via the staff mobile app.')}
           value={resolved.timeTracking.enableMobileClock}
           onChange={v => setField('timeTracking', 'enableMobileClock', v)}
         />
@@ -175,17 +176,12 @@ export function PolicyTimeTracking() {
           />
         )}
         <ToggleRow
-          {...fieldProps('timeTracking', 'enableSmsClock', 'Enable SMS Clock-in/out',
-            'Staff can clock in/out by replying to SMS with commands like "start shift", "end shift", or "break shift".')}
-          value={resolved.timeTracking.enableSmsClock}
-          onChange={v => setField('timeTracking', 'enableSmsClock', v)}
-        />
-        <ToggleRow
-          {...fieldProps('timeTracking', 'requireKioskPhoto', 'Require Kiosk Photo Verification',
-            'Team members must take a photo at the kiosk when starting or ending a shift.')}
+          {...fieldProps('timeTracking', 'requireKioskPhoto', 'Require Face Verification',
+            'Team members must clock in using face verification at the kiosk when starting or ending a shift.')}
           value={resolved.timeTracking.requireKioskPhoto}
           onChange={v => setField('timeTracking', 'requireKioskPhoto', v)}
         />
+
         <NumberRow
           {...fieldProps('timeTracking', 'minTimesheetMinutes', 'Minimum timesheet length (minutes)',
             'Timesheets shorter than the specified duration will not be recorded.')}
