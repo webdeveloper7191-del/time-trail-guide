@@ -1260,7 +1260,8 @@ export default function TimesheetSettings() {
                         ] as [NotifEventKey, string][]).map(([key, label]) => (
                           <tr key={key} className="border-t">
                             <td className="p-3 font-medium">{label}</td>
-                            {(['inApp', 'email', 'slack', 'teams'] as (keyof NotifChannels)[]).map((ch) => (
+                            {(['inApp', 'email'] as (keyof NotifChannels)[]).map((ch) => (
+
                               <td key={ch} className="p-3 text-center">
                                 <Switch
                                   checked={notifications.events[key][ch]}
