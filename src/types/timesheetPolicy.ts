@@ -95,12 +95,18 @@ export interface TimesheetIssuesSettings {
   longShiftWithoutBreakHours: number; // e.g. 6
   flagHighWeeklyOvertime: AnomalySeverity;
   highWeeklyOvertimeThreshold: number; // hours
+  // Break behaviour
+  flagExceededBreak: AnomalySeverity;
+  exceededBreakPercent: number; // % of scheduled/allowed break, e.g. 150
   // Behavioural patterns
   flagPatternDrift: AnomalySeverity;
   patternDriftMinutes: number; // deviation from historical average
+  flagBuddyPunching: AnomalySeverity;
+  flagIrregularPunchPattern: AnomalySeverity;
   // Routing
   blockSubmissionOnCritical: boolean;
 }
+
 
 export interface TimesheetPolicy {
   timeTracking: TimeTrackingSettings;
