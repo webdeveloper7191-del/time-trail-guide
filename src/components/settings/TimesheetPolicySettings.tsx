@@ -18,7 +18,7 @@ import {
   paidMealOptions,
   varianceFlagOptions,
 } from '@/types/timesheetPolicy';
-import { timesheetPolicyStore } from '@/lib/timesheetPolicyStore';
+import { timesheetPolicyStore, getPolicyVersion } from '@/lib/timesheetPolicyStore';
 
 type SectionKey = keyof TimesheetPolicy;
 
