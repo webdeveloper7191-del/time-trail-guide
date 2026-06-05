@@ -24,13 +24,26 @@ export interface TimeTrackingSettings {
   minTimesheetMinutes: number;
 }
 
+export type EarlyClockInPolicy = 'never' | 'within_minutes' | 'anytime';
+
 export interface TeamMemberPermissions {
+  // Editing
   createAndEditTimesheets: boolean;
   updateTimesheetsDuringShift: boolean;
-  clockInAnytimeBeforeShift: boolean;
+  editClockTimesAfterSubmission: boolean;
+  addNotesAndAttachments: boolean;
+  // Clock-in / out
+  earlyClockInPolicy: EarlyClockInPolicy;
   earlyClockInMinutes: number;
+  lateClockInGraceMinutes: number;
+  allowEarlyClockOut: boolean;
+  autoClockOutAfterShiftMinutes: number;
+  // Breaks
   wrapUpBreaksSooner: boolean;
+  editOwnBreakDuration: boolean;
+  addBreaksToPastTimesheets: boolean;
 }
+
 
 export interface TimesheetApprovingSettings {
   autoApproval: ApprovalCadence;
