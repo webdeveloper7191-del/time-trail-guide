@@ -165,18 +165,8 @@ export default function TimesheetSettings() {
   ]);
 
   // Flagging Rules
-  const [flaggingRules, setFlaggingRules] = useState<FlaggingRule[]>([
-    { id: 'flag-1', name: 'Early Clock-In', type: 'early_clock_in', enabled: true, severity: 'warning', threshold: 5, description: 'Flag clock-ins before specified hour (24h format)' },
-    { id: 'flag-2', name: 'Late Clock-Out', type: 'late_clock_out', enabled: true, severity: 'warning', threshold: 22, description: 'Flag clock-outs after specified hour (24h format)' },
-    { id: 'flag-3', name: 'Missing Clock-Out', type: 'missing_clock_out', enabled: true, severity: 'critical', description: 'Flag entries without clock-out recorded' },
-    { id: 'flag-4', name: 'Excessive Daily Hours', type: 'max_daily_hours', enabled: true, severity: 'critical', threshold: 12, description: 'Flag when daily hours exceed limit' },
-    { id: 'flag-5', name: 'Pattern Drift', type: 'pattern_drift', enabled: true, severity: 'info', threshold: 60, description: 'Flag deviation from average clock time (minutes)' },
-    { id: 'flag-6', name: 'Buddy Punching Suspected', type: 'buddy_punching', enabled: true, severity: 'critical', description: 'Flag potential unauthorized punching' },
-    { id: 'flag-7', name: 'Missed Break', type: 'missed_break', enabled: true, severity: 'warning', description: 'Flag when mandatory breaks not taken' },
-    { id: 'flag-8', name: 'Exceeded Break', type: 'exceeded_break', enabled: true, severity: 'info', threshold: 150, description: 'Flag when break exceeds % of allowed time' },
-    { id: 'flag-9', name: 'High Overtime', type: 'overtime_threshold', enabled: true, severity: 'warning', threshold: 50, description: 'Flag when overtime exceeds % of weekly threshold' },
-    { id: 'flag-10', name: 'Irregular Punch Pattern', type: 'irregular_punch', enabled: true, severity: 'warning', description: 'Flag unusual punch sequences' },
-  ]);
+
+
 
   // Break Rules
   const [breakRules, setBreakRules] = useBreakRules();
