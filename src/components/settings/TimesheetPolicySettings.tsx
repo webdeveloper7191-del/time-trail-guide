@@ -147,10 +147,11 @@ export function PolicyTimeTracking() {
             'Allow staff to clock in and out via the web app.')}
           value={resolved.timeTracking.enableWebClock}
           onChange={v => setField('timeTracking', 'enableWebClock', v)}
+          comingSoon
         />
         <ToggleRow
           {...fieldProps('timeTracking', 'enableMobileClock', 'Enable Mobile App Clock-in/out',
-            'Allow staff to clock in and out via the mobile app.')}
+            'Allow staff to clock in and out via the staff mobile app.')}
           value={resolved.timeTracking.enableMobileClock}
           onChange={v => setField('timeTracking', 'enableMobileClock', v)}
         />
@@ -175,17 +176,12 @@ export function PolicyTimeTracking() {
           />
         )}
         <ToggleRow
-          {...fieldProps('timeTracking', 'enableSmsClock', 'Enable SMS Clock-in/out',
-            'Staff can clock in/out by replying to SMS with commands like "start shift", "end shift", or "break shift".')}
-          value={resolved.timeTracking.enableSmsClock}
-          onChange={v => setField('timeTracking', 'enableSmsClock', v)}
-        />
-        <ToggleRow
-          {...fieldProps('timeTracking', 'requireKioskPhoto', 'Require Kiosk Photo Verification',
-            'Team members must take a photo at the kiosk when starting or ending a shift.')}
+          {...fieldProps('timeTracking', 'requireKioskPhoto', 'Require Face Verification',
+            'Team members must clock in using face verification at the kiosk when starting or ending a shift.')}
           value={resolved.timeTracking.requireKioskPhoto}
           onChange={v => setField('timeTracking', 'requireKioskPhoto', v)}
         />
+
         <NumberRow
           {...fieldProps('timeTracking', 'minTimesheetMinutes', 'Minimum timesheet length (minutes)',
             'Timesheets shorter than the specified duration will not be recorded.')}
@@ -435,15 +431,21 @@ interface BaseRowProps {
   isTenant: boolean;
   overridden: boolean;
   onReset: () => void;
+  comingSoon?: boolean;
 }
 
-function RowShell({ label, description, isTenant, overridden, onReset, control }: BaseRowProps & { control: React.ReactNode }) {
+function RowShell({ label, description, isTenant, overridden, onReset, comingSoon, control }: BaseRowProps & { control: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-6 py-4">
+    <div className={`flex items-start justify-between gap-6 py-4 ${comingSoon ? 'opacity-60' : ''}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <Label className="text-sm font-medium tracking-tight">{label}</Label>
-          {!isTenant && (
+          {comingSoon && (
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30 text-[10px] h-5 dark:text-amber-400">
+              Coming Soon
+            </Badge>
+          )}
+          {!isTenant && !comingSoon && (
             overridden ? (
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] h-5">
                 Overridden
@@ -454,7 +456,7 @@ function RowShell({ label, description, isTenant, overridden, onReset, control }
               </Badge>
             )
           )}
-          {!isTenant && overridden && (
+          {!isTenant && overridden && !comingSoon && (
             <button
               type="button"
               onClick={onReset}
@@ -468,15 +470,16 @@ function RowShell({ label, description, isTenant, overridden, onReset, control }
           <p className="text-xs text-muted-foreground mt-1 max-w-2xl">{description}</p>
         )}
       </div>
-      <div className="flex-shrink-0">{control}</div>
+      <div className="flex-shrink-0 pointer-events-auto">{control}</div>
     </div>
   );
 }
 
 function ToggleRow(props: BaseRowProps & { value: boolean; onChange: (v: boolean) => void }) {
-  const { value, onChange, ...rest } = props;
-  return <RowShell {...rest} control={<Switch checked={value} onCheckedChange={onChange} />} />;
+  const { value, onChange, comingSoon, ...rest } = props;
+  return <RowShell {...rest} comingSoon={comingSoon} control={<Switch checked={value} onCheckedChange={onChange} disabled={comingSoon} />} />;
 }
+
 
 function NumberRow(props: BaseRowProps & { value: number; onChange: (v: number) => void }) {
   const { value, onChange, ...rest } = props;
