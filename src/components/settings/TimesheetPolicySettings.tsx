@@ -350,6 +350,23 @@ export function PolicyBreaks() {
         <CardDescription>Break handling and paid-meal policy.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-1 divide-y">
+        <div className="mb-3 flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+          <Info className="h-4 w-4 mt-0.5 shrink-0 text-foreground/70" />
+          <div className="space-y-1">
+            <p className="font-medium text-foreground">Precedence: Award rules win over these policies.</p>
+            <p>
+              When an applicable Award (or Enterprise Agreement) defines mandatory break
+              duration, timing, or paid/unpaid status, those rules override the tenant/location
+              settings below. These policies act as the <span className="font-medium">fallback</span> when
+              no award rule applies, and control the <span className="font-medium">UX behaviour</span>
+              {' '}(auto-include on clock-out, flagging, rounding) that awards don't specify.
+            </p>
+            <p>
+              Order of precedence: <span className="font-medium">Award/EA → Location override → Tenant default</span>.
+            </p>
+          </div>
+        </div>
+
         <ToggleRow
           {...fieldProps('breaks', 'autoIncludeScheduledOnClockOut', 'Auto-Include Scheduled Breaks on Clock-Out',
             "Automatically add any unrecorded scheduled breaks to the timesheet at clock-out. Note: If team members don't have edit permissions, they won't be able to remove these breaks afterwards.")}
