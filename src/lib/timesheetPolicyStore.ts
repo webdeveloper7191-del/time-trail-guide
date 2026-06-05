@@ -17,6 +17,10 @@ type LocationOverridesMap = Record<string, TimesheetPolicyOverride>;
 let tenantPolicy: TimesheetPolicy = loadTenant();
 let locationOverrides: LocationOverridesMap = loadLocations();
 const listeners = new Set<() => void>();
+const snapshotCache = new Map<string, TimesheetPolicy>();
+
+function cacheKey(locationId?: string) { return locationId ?? '__tenant__'; }
+function invalidateSnapshots() { snapshotCache.clear(); }
 
 function loadTenant(): TimesheetPolicy {
   try {
@@ -42,6 +46,7 @@ function persist() {
     localStorage.setItem(TENANT_KEY, JSON.stringify(tenantPolicy));
     localStorage.setItem(LOC_KEY, JSON.stringify(locationOverrides));
   } catch {/* noop */}
+  invalidateSnapshots();
   listeners.forEach(fn => fn());
 }
 
@@ -75,10 +80,16 @@ export const timesheetPolicyStore = {
     return locationOverrides[locationId] ?? {};
   },
 
-  /** Resolved policy — tenant defaults with location overrides applied. */
+  /** Resolved policy — tenant defaults with location overrides applied. Cached. */
   getResolvedPolicy(locationId?: string): TimesheetPolicy {
-    if (!locationId) return tenantPolicy;
-    return mergePolicy(tenantPolicy, locationOverrides[locationId]);
+    const key = cacheKey(locationId);
+    const cached = snapshotCache.get(key);
+    if (cached) return cached;
+    const resolved = locationId
+      ? mergePolicy(tenantPolicy, locationOverrides[locationId])
+      : tenantPolicy;
+    snapshotCache.set(key, resolved);
+    return resolved;
   },
 
   setTenantField<S extends keyof TimesheetPolicy, F extends keyof TimesheetPolicy[S]>(
