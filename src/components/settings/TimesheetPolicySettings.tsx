@@ -146,47 +146,54 @@ export function PolicyTimeTracking() {
       <CardContent className="space-y-1 divide-y">
         <ToggleRow
           {...fieldProps('timeTracking', 'enableWebClock', 'Enable Web Clock-in/out',
-            'Allow staff to clock in and out via the web app.')}
+            'Allow staff to clock in and out via the web app.',
+            <><p className="font-medium mb-1">Example</p><p>A reception staff member on a desktop opens the web portal and taps "Clock in" at 8:58 AM. With this OFF, the button is hidden and they must use the mobile app or kiosk.</p></>)}
           value={resolved.timeTracking.enableWebClock}
           onChange={v => setField('timeTracking', 'enableWebClock', v)}
           comingSoon
         />
         <ToggleRow
           {...fieldProps('timeTracking', 'enableMobileClock', 'Enable Mobile App Clock-in/out',
-            'Allow staff to clock in and out via the staff mobile app.')}
+            'Allow staff to clock in and out via the staff mobile app.',
+            <><p className="font-medium mb-1">Example</p><p>A field worker arrives on-site and clocks in from the mobile app. Useful for staff who don't have access to a fixed kiosk or computer.</p></>)}
           value={resolved.timeTracking.enableMobileClock}
           onChange={v => setField('timeTracking', 'enableMobileClock', v)}
         />
         <ToggleRow
           {...fieldProps('timeTracking', 'captureGpsOnMobile', 'Capture GPS on Mobile Clock-in/out',
-            'Record GPS coordinates when staff clock in or out via mobile. Distance from scheduled location will appear in timesheets.')}
+            'Record GPS coordinates when staff clock in or out via mobile. Distance from scheduled location will appear in timesheets.',
+            <><p className="font-medium mb-1">Example</p><p>Liam clocks in via mobile from 1.2 km away from his assigned location. The timesheet shows "Clocked in 1.2 km from site" so the manager can investigate without blocking the clock-in.</p></>)}
           value={resolved.timeTracking.captureGpsOnMobile}
           onChange={v => setField('timeTracking', 'captureGpsOnMobile', v)}
         />
         <ToggleRow
           {...fieldProps('timeTracking', 'restrictToGeofence', 'Restrict Clock-ins to Geo-fence',
-            'Prevent clock-ins from outside a defined distance using GPS location.')}
+            'Prevent clock-ins from outside a defined distance using GPS location.',
+            <><p className="font-medium mb-1">Example</p><p>With the radius set to 100 m, a staff member trying to clock in from a café 500 m away sees: "You must be at the site to clock in." Stops accidental or fraudulent off-site clock-ins.</p></>)}
           value={resolved.timeTracking.restrictToGeofence}
           onChange={v => setField('timeTracking', 'restrictToGeofence', v)}
         />
         {resolved.timeTracking.restrictToGeofence && (
           <NumberRow
             {...fieldProps('timeTracking', 'geofenceRadiusMeters', 'Geo-fence radius (meters)',
-              'Maximum distance from scheduled location at which clock-in is allowed.')}
+              'Maximum distance from scheduled location at which clock-in is allowed.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>150</strong>. A large hospital campus allows clock-in from any entrance. A small clinic might use <strong>50</strong> to keep clock-ins precisely on-site.</p></>)}
             value={resolved.timeTracking.geofenceRadiusMeters}
             onChange={v => setField('timeTracking', 'geofenceRadiusMeters', v)}
           />
         )}
         <ToggleRow
           {...fieldProps('timeTracking', 'requireKioskPhoto', 'Require Face Verification',
-            'Team members must clock in using face verification at the kiosk when starting or ending a shift.')}
+            'Team members must clock in using face verification at the kiosk when starting or ending a shift.',
+            <><p className="font-medium mb-1">Example</p><p>At a warehouse kiosk, the camera takes a quick selfie that's matched against the staff profile photo. Prevents "buddy punching" where one worker clocks in for another.</p></>)}
           value={resolved.timeTracking.requireKioskPhoto}
           onChange={v => setField('timeTracking', 'requireKioskPhoto', v)}
         />
 
         <NumberRow
           {...fieldProps('timeTracking', 'minTimesheetMinutes', 'Minimum timesheet length (minutes)',
-            'Timesheets shorter than the specified duration will not be recorded.')}
+            'Timesheets shorter than the specified duration will not be recorded.',
+            <><p className="font-medium mb-1">Example</p><p>Set to <strong>15</strong>. A staff member clocks in, realises they're at the wrong location, and clocks out after 4 minutes. The entry is discarded so it doesn't clutter timesheets or payroll.</p></>)}
           value={resolved.timeTracking.minTimesheetMinutes}
           onChange={v => setField('timeTracking', 'minTimesheetMinutes', v)}
         />
@@ -207,25 +214,29 @@ export function PolicyPermissions() {
         <PermissionGroup title="Editing">
           <ToggleRow
             {...fieldProps('permissions', 'createAndEditTimesheets', 'Create and Edit Timesheets',
-              'Allow team members to create and edit their timesheets via the web or mobile app.')}
+              'Allow team members to create and edit their timesheets via the web or mobile app.',
+              <><p className="font-medium mb-1">Example</p><p>Maya forgot to clock in yesterday. With this <strong>ON</strong>, she can add the missing entry herself; with OFF, she must ask her manager to add it.</p></>)}
             value={resolved.permissions.createAndEditTimesheets}
             onChange={v => setField('permissions', 'createAndEditTimesheets', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'updateTimesheetsDuringShift', 'Update Timesheets During Shifts',
-              'Allow team members to make timesheet updates while they are active on shift.')}
+              'Allow team members to make timesheet updates while they are active on shift.',
+              <><p className="font-medium mb-1">Example</p><p>A nurse mid-shift realises she clocked in 10 minutes late. With this <strong>ON</strong>, she fixes the start time before the shift ends; with OFF, the edit is only possible after clock-out.</p></>)}
             value={resolved.permissions.updateTimesheetsDuringShift}
             onChange={v => setField('permissions', 'updateTimesheetsDuringShift', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'editClockTimesAfterSubmission', 'Edit Clock Times After Submission',
-              'Allow staff to modify clock-in/out times after a timesheet has been submitted (until it is approved). Audited.')}
+              'Allow staff to modify clock-in/out times after a timesheet has been submitted (until it is approved). Audited.',
+              <><p className="font-medium mb-1">Example</p><p>Alex submits Friday's timesheet then notices his clock-out was 15 min off. With this <strong>ON</strong>, he edits and re-submits — the change is logged in the audit trail. Once a manager approves, edits are locked.</p></>)}
             value={resolved.permissions.editClockTimesAfterSubmission}
             onChange={v => setField('permissions', 'editClockTimesAfterSubmission', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'addNotesAndAttachments', 'Add Notes and Attachments',
-              'Allow staff to attach notes, files, or photos to their timesheet entries.')}
+              'Allow staff to attach notes, files, or photos to their timesheet entries.',
+              <><p className="font-medium mb-1">Example</p><p>A driver attaches a photo of a delayed delivery to explain a late clock-out, plus a note: "Traffic on M1, arrived 22 min late." Approver sees the context immediately.</p></>)}
             value={resolved.permissions.addNotesAndAttachments}
             onChange={v => setField('permissions', 'addNotesAndAttachments', v)}
           />
@@ -234,7 +245,8 @@ export function PolicyPermissions() {
         <PermissionGroup title="Clock-in & Clock-out">
           <SelectRow
             {...fieldProps('permissions', 'earlyClockInPolicy', 'Early Clock-in Policy',
-              'Control whether team members can clock in before their scheduled shift start.')}
+              'Control whether team members can clock in before their scheduled shift start.',
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Up to X minutes early"</em> to prevent staff clocking in 45 minutes before their shift (and accumulating unwanted early-start pay). Choose <em>"Not allowed"</em> for strict on-the-minute starts.</p></>)}
             value={resolved.permissions.earlyClockInPolicy}
             options={earlyClockInOptions}
             onChange={v => setField('permissions', 'earlyClockInPolicy', v as TimesheetPolicy['permissions']['earlyClockInPolicy'])}
@@ -242,26 +254,30 @@ export function PolicyPermissions() {
           {resolved.permissions.earlyClockInPolicy === 'within_minutes' && (
             <NumberRow
               {...fieldProps('permissions', 'earlyClockInMinutes', 'Maximum early clock-in (minutes)',
-                'How many minutes before the scheduled start a team member can clock in.')}
+                'How many minutes before the scheduled start a team member can clock in.',
+                <><p className="font-medium mb-1">Example</p><p>Set to <strong>15</strong>. Roster start 9:00. Clock-in at 8:50 → allowed. Clock-in at 8:40 → blocked with: "Too early, try again in 10 min."</p></>)}
               value={resolved.permissions.earlyClockInMinutes}
               onChange={v => setField('permissions', 'earlyClockInMinutes', v)}
             />
           )}
           <NumberRow
             {...fieldProps('permissions', 'lateClockInGraceMinutes', 'Late clock-in grace (minutes)',
-              'Clock-ins within this many minutes after the scheduled start still count as on-time (no late flag).')}
+              'Clock-ins within this many minutes after the scheduled start still count as on-time (no late flag).',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>5</strong>. Roster start 9:00. Clock-in 9:04 → on-time. Clock-in 9:08 → flagged "Late by 8 min" for the manager.</p></>)}
             value={resolved.permissions.lateClockInGraceMinutes}
             onChange={v => setField('permissions', 'lateClockInGraceMinutes', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'allowEarlyClockOut', 'Allow Early Clock-out',
-              'Permit staff to clock out before their scheduled shift end time.')}
+              'Permit staff to clock out before their scheduled shift end time.',
+              <><p className="font-medium mb-1">Example</p><p>Roster end 17:00. With <strong>ON</strong>, staff can clock out at 16:30 (paid only for time worked). With OFF, they're asked to confirm or request manager approval.</p></>)}
             value={resolved.permissions.allowEarlyClockOut}
             onChange={v => setField('permissions', 'allowEarlyClockOut', v)}
           />
           <NumberRow
             {...fieldProps('permissions', 'autoClockOutAfterShiftMinutes', 'Auto clock-out after shift end (minutes)',
-              'If a team member forgets to clock out, automatically clock them out this many minutes after the scheduled end. Set 0 to disable.')}
+              'If a team member forgets to clock out, automatically clock them out this many minutes after the scheduled end. Set 0 to disable.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>30</strong>. Roster end 17:00. Staff forgets to clock out → at 17:30 the system auto-closes the shift at 17:00 and flags it for review. Prevents runaway 24-hour timesheets.</p></>)}
             value={resolved.permissions.autoClockOutAfterShiftMinutes}
             onChange={v => setField('permissions', 'autoClockOutAfterShiftMinutes', v)}
           />
@@ -518,13 +534,15 @@ export function PolicyBreaks() {
         <PermissionGroup title="Behaviour">
           <ToggleRow
             {...fieldProps('breaks', 'autoIncludeScheduledOnClockOut', 'Auto-Include Scheduled Breaks on Clock-Out',
-              "Automatically add any unrecorded scheduled breaks to the timesheet at clock-out. Inserted breaks inherit their paid/unpaid status from the matching Break Rule. If team members don't have edit permissions, they won't be able to remove these breaks afterwards.")}
+              "Automatically add any unrecorded scheduled breaks to the timesheet at clock-out. Inserted breaks inherit their paid/unpaid status from the matching Break Rule. If team members don't have edit permissions, they won't be able to remove these breaks afterwards.",
+              <><p className="font-medium mb-1">Example</p><p>Dan was rostered with a 30-min unpaid lunch but forgot to log it. At clock-out the system auto-inserts the 30-min break, so the timesheet correctly shows 7.5 paid hours instead of 8.</p></>)}
             value={resolved.breaks.autoIncludeScheduledOnClockOut}
             onChange={v => setField('breaks', 'autoIncludeScheduledOnClockOut', v)}
           />
           <SelectRow
             {...fieldProps('breaks', 'paidMealBreaks', 'Paid Meal Breaks (fallback)',
-              "Applies only when no Break Rule and no Award rule defines whether a meal break is paid. Acts as the final fallback.")}
+              "Applies only when no Break Rule and no Award rule defines whether a meal break is paid. Acts as the final fallback.",
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Paid if shift exceeds threshold"</em>. A 4-hour shift → meal break is unpaid. A 9-hour shift exceeding the threshold below → meal break is paid. Award rules (if defined) always take precedence over this fallback.</p></>)}
             value={resolved.breaks.paidMealBreaks}
             options={paidMealOptions}
             onChange={v => setField('breaks', 'paidMealBreaks', v as TimesheetPolicy['breaks']['paidMealBreaks'])}
@@ -532,7 +550,8 @@ export function PolicyBreaks() {
           {resolved.breaks.paidMealBreaks === 'over_threshold' && (
             <NumberRow
               {...fieldProps('breaks', 'paidMealOverMinutesThreshold', 'Paid if shift exceeds (minutes)',
-                'Meal breaks become paid when the shift exceeds this duration.')}
+                'Meal breaks become paid when the shift exceeds this duration.',
+                <><p className="font-medium mb-1">Example</p><p>Set to <strong>360</strong> (6 hours). A 5-hour shift → meal break unpaid. A 7-hour shift → meal break paid because total time exceeds the threshold.</p></>)}
               value={resolved.breaks.paidMealOverMinutesThreshold}
               onChange={v => setField('breaks', 'paidMealOverMinutesThreshold', v)}
             />
@@ -542,7 +561,8 @@ export function PolicyBreaks() {
         <PermissionGroup title="Flagging">
           <SelectRow
             {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag Break Duration Variance',
-              'Alert managers when the actual break taken differs from the scheduled break duration. Replaces the legacy on/off "flag short or missed breaks" toggle.')}
+              'Alert managers when the actual break taken differs from the scheduled break duration. Replaces the legacy on/off "flag short or missed breaks" toggle.',
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Variance over 10 minutes"</em>. Scheduled 30-min break, actual 25 min → no flag. Actual 15 min → flagged: "Break 15 min short of schedule." Helps catch fatigue or compliance issues without alert noise.</p></>)}
             value={resolved.issues.flagBreakDurationVariance}
             options={varianceFlagOptions}
             onChange={v => setField('issues', 'flagBreakDurationVariance', v as TimesheetPolicy['issues']['flagBreakDurationVariance'])}
@@ -552,13 +572,15 @@ export function PolicyBreaks() {
         <PermissionGroup title="Rounding">
           <ToggleRow
             {...fieldProps('approving', 'roundShortBreakUpToScheduled', 'Round short breaks up to scheduled',
-              'Automatically extend short breaks to match the scheduled duration. Longer breaks follow the rule below.')}
+              'Automatically extend short breaks to match the scheduled duration. Longer breaks follow the rule below.',
+              <><p className="font-medium mb-1">Example</p><p>Scheduled 30-min unpaid break, staff took 24 min. With <strong>ON</strong>, the recorded break becomes 30 min — so 6 min are deducted from paid time (matches the schedule). With OFF, only 24 min are deducted.</p></>)}
             value={resolved.approving.roundShortBreakUpToScheduled}
             onChange={v => setField('approving', 'roundShortBreakUpToScheduled', v)}
           />
           <SelectRow
             {...fieldProps('approving', 'breakRoundingAdjustment', 'Break Time Rounding',
-              'How non-snapped break durations are rounded. Later rounding may reduce payable time.')}
+              'How non-snapped break durations are rounded. Later rounding may reduce payable time.',
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Nearest 5 minutes"</em>. A 32-min break records as 30 min. A 38-min break records as 40 min. Keeps timesheet entries tidy and consistent for payroll.</p></>)}
             value={resolved.approving.breakRoundingAdjustment}
             options={roundingOptions}
             onChange={v => setField('approving', 'breakRoundingAdjustment', v as TimesheetPolicy['approving']['breakRoundingAdjustment'])}
@@ -569,23 +591,27 @@ export function PolicyBreaks() {
         <PermissionGroup title="Staff Break Permissions">
           <ToggleRow
             {...fieldProps('permissions', 'wrapUpBreaksSooner', 'Wrap up Breaks Sooner',
-              'Allow team members to end their breaks early and resume work before the scheduled time.')}
+              'Allow team members to end their breaks early and resume work before the scheduled time.',
+              <><p className="font-medium mb-1">Example</p><p>Sam's 30-min break starts at 12:00. At 12:18 the floor gets busy. With <strong>ON</strong>, he taps "End break" and returns. With OFF, the system locks him out of clock-in until 12:30.</p></>)}
             value={resolved.permissions.wrapUpBreaksSooner}
             onChange={v => setField('permissions', 'wrapUpBreaksSooner', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'editOwnBreakDuration', 'Edit Own Break Duration',
-              'Allow staff to adjust the duration of breaks on their own timesheet entries.')}
+              'Allow staff to adjust the duration of breaks on their own timesheet entries.',
+              <><p className="font-medium mb-1">Example</p><p>Recorded break shows 22 min but Mia actually took 30 min (forgot to clock back from break). With <strong>ON</strong>, she corrects it on her own timesheet; with OFF, she must ask a manager.</p></>)}
             value={resolved.permissions.editOwnBreakDuration}
             onChange={v => setField('permissions', 'editOwnBreakDuration', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'addBreaksToPastTimesheets', 'Add Breaks to Past Timesheets',
-              'Allow staff to retroactively add break entries to previously submitted timesheets (until approved).')}
+              'Allow staff to retroactively add break entries to previously submitted timesheets (until approved).',
+              <><p className="font-medium mb-1">Example</p><p>Jordan forgot to log Tuesday's lunch break. With <strong>ON</strong>, he opens Tuesday's submitted timesheet and adds the break before the manager approves. After approval, edits are locked.</p></>)}
             value={resolved.permissions.addBreaksToPastTimesheets}
             onChange={v => setField('permissions', 'addBreaksToPastTimesheets', v)}
           />
         </PermissionGroup>
+
 
         <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
           The <span className="font-medium text-foreground">Break Rules library</span> (when breaks
