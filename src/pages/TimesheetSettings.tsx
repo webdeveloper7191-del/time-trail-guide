@@ -72,78 +72,8 @@ import {
 } from '@/lib/timefoldSolver';
 import { Plug, PlugZap, Cpu } from 'lucide-react';
 
-interface AutoApprovalCondition {
-  id: string;
-  name: string;
-  enabled: boolean;
-  parameter?: number;
-  description: string;
-}
 
 
-
-
-type ComplianceSource = 'award' | 'location' | 'tenant';
-type AustralianState = 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'NT' | 'ACT';
-type AwardTypeKey = 'general' | 'children_services' | 'healthcare' | 'hospitality' | 'retail' | 'social_community' | 'aged_care' | 'disability';
-
-interface JurisdictionConfig {
-  id: string;
-  name: string;
-  code: string;
-  state: AustralianState;
-  awardType: AwardTypeKey;
-  // Hours limits
-  maxDailyHours: number;
-  maxWeeklyHours: number;
-  // Overtime
-  overtimeThresholdDaily: number;
-  overtimeThresholdWeekly: number;
-  overtimeMultiplier: number;
-  doubleTimeThreshold: number;
-  doubleTimeMultiplier: number;
-  // Rest & span (AU NES)
-  minRestBetweenShiftsHours: number;
-  maxConsecutiveDays: number;
-  spanOfHoursMax: number;
-  // Penalty rates (multipliers)
-  saturdayMultiplier: number;
-  sundayMultiplier: number;
-  publicHolidayMultiplier: number;
-  nightLoadingMultiplier: number;
-  // Casual & engagement
-  casualLoadingPercent: number;
-  minEngagementHours: number;
-  // Source attribution per group (Award > Location > Tenant)
-  sourceMap: {
-    hoursLimits: ComplianceSource;
-    overtime: ComplianceSource;
-    restSpan: ComplianceSource;
-    penalties: ComplianceSource;
-    engagement: ComplianceSource;
-  };
-}
-
-interface EscalationConfig {
-  tier: ApprovalTier;
-  slaHours: number;
-  escalateTo: ApprovalTier;
-  notifyEmails: string[];
-}
-
-function SourceBadge({ source }: { source: ComplianceSource }) {
-  const map = {
-    award: { label: 'From Award', icon: Award, cls: 'bg-primary text-primary-foreground border-transparent' },
-    location: { label: 'Location override', icon: Building2, cls: 'bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400' },
-    tenant: { label: 'Tenant default', icon: Globe, cls: 'bg-muted text-muted-foreground border-border' },
-  } as const;
-  const { label, icon: Icon, cls } = map[source];
-  return (
-    <Badge variant="outline" className={`gap-1 text-[10px] h-5 ${cls}`}>
-      <Icon className="h-3 w-3" /> {label}
-    </Badge>
-  );
-}
 
 export default function TimesheetSettings() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
