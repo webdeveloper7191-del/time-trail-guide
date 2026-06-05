@@ -215,16 +215,73 @@ export default function TimesheetSettings() {
     { tier: 'hr', slaHours: 96, escalateTo: 'hr', notifyEmails: [] },
   ]);
 
-  // Notification Settings
+  // Notification Settings — per-event channel matrix
+  type NotifChannels = { email: boolean; slack: boolean; teams: boolean; inApp: boolean };
+  type NotifEventKey =
+    | 'newSubmission'
+    | 'emailOnFlag'
+    | 'emailOnEscalation'
+    | 'emailOnAutoApprove'
+    | 'emailOnRejection'
+    | 'missedClockOut'
+    | 'unsubmittedNearCutoff'
+    | 'slaDueSoon'
+    | 'correction'
+    | 'payAdjustment';
+
+  const defaultChannels: NotifChannels = { email: true, slack: false, teams: false, inApp: true };
+
   const [notifications, setNotifications] = useState({
+    // Legacy flags (kept for backward compat with other screens reading them)
     emailOnFlag: true,
     emailOnEscalation: true,
     emailOnAutoApprove: false,
     emailOnRejection: true,
     slackIntegration: false,
+    teamsIntegration: false,
+    webhookUrl: '',
     dailyDigest: true,
     digestTime: '09:00',
+    managerDigestTime: '17:00',
+    quietHoursEnabled: false,
+    quietHoursStart: '20:00',
+    quietHoursEnd: '07:00',
+    suppressOnWeekends: false,
+    events: {
+      newSubmission:        { ...defaultChannels },
+      emailOnFlag:          { ...defaultChannels },
+      emailOnEscalation:    { ...defaultChannels },
+      emailOnAutoApprove:   { email: false, slack: false, teams: false, inApp: true },
+      emailOnRejection:     { ...defaultChannels },
+      missedClockOut:       { ...defaultChannels },
+      unsubmittedNearCutoff:{ ...defaultChannels },
+      slaDueSoon:           { ...defaultChannels },
+      correction:           { ...defaultChannels },
+      payAdjustment:        { ...defaultChannels },
+    } as Record<NotifEventKey, NotifChannels>,
   });
+
+  // Delegations (for ApprovalDelegationModal)
+  const [delegationOpen, setDelegationOpen] = useState(false);
+  const [delegations, setDelegations] = useState<any[]>([]);
+
+  // Mock approver directory — would come from staff/users API
+  const approverDirectory = [
+    { id: 'u1', name: 'Jane Doe', tier: 'senior_manager' as ApprovalTier },
+    { id: 'u2', name: 'Robert Wilson', tier: 'hr' as ApprovalTier },
+    { id: 'u3', name: 'Emily Brown', tier: 'manager' as ApprovalTier },
+    { id: 'u4', name: 'David Lee', tier: 'manager' as ApprovalTier },
+    { id: 'u5', name: 'Sarah Chen', tier: 'director' as ApprovalTier },
+  ];
+
+  const mockLocations = [
+    { id: 'loc-1', name: 'Sydney CBD' },
+    { id: 'loc-2', name: 'Melbourne Central' },
+    { id: 'loc-3', name: 'Brisbane North' },
+    { id: 'loc-4', name: 'Perth West' },
+  ];
+
+  const employmentTypeOptions = ['Full-time', 'Part-time', 'Casual', 'Agency', 'Contractor'];
 
   const handleSave = () => {
     toast.success('Settings saved successfully');
