@@ -28,8 +28,8 @@ export function TimesheetPolicySettings() {
   const [scope, setScope] = useState<string>(TENANT_SCOPE);
   const isTenant = scope === TENANT_SCOPE;
 
-  // Subscribe so updates re-render
-  useSyncExternalStore(timesheetPolicyStore.subscribe, () => Date.now());
+  // Subscribe so updates re-render (stable snapshot — only changes on persist)
+  useSyncExternalStore(timesheetPolicyStore.subscribe, getPolicyVersion);
 
   const tenant = timesheetPolicyStore.getTenantPolicy();
   const resolved = useMemo(
