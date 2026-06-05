@@ -247,7 +247,7 @@ export default function TimesheetSettings() {
   ]);
 
   // Notification Settings — per-event channel matrix
-  type NotifChannels = { email: boolean; slack: boolean; teams: boolean; inApp: boolean };
+  type NotifChannels = { email: boolean; inApp: boolean };
   type NotifEventKey =
     | 'newSubmission'
     | 'emailOnFlag'
@@ -260,7 +260,7 @@ export default function TimesheetSettings() {
     | 'correction'
     | 'payAdjustment';
 
-  const defaultChannels: NotifChannels = { email: true, slack: false, teams: false, inApp: true };
+  const defaultChannels: NotifChannels = { email: true, inApp: true };
 
   const [notifications, setNotifications] = useState({
     // Legacy flags (kept for backward compat with other screens reading them)
@@ -268,8 +268,6 @@ export default function TimesheetSettings() {
     emailOnEscalation: true,
     emailOnAutoApprove: false,
     emailOnRejection: true,
-    slackIntegration: false,
-    teamsIntegration: false,
     webhookUrl: '',
     dailyDigest: true,
     digestTime: '09:00',
@@ -282,7 +280,7 @@ export default function TimesheetSettings() {
       newSubmission:        { ...defaultChannels },
       emailOnFlag:          { ...defaultChannels },
       emailOnEscalation:    { ...defaultChannels },
-      emailOnAutoApprove:   { email: false, slack: false, teams: false, inApp: true },
+      emailOnAutoApprove:   { email: false, inApp: true },
       emailOnRejection:     { ...defaultChannels },
       missedClockOut:       { ...defaultChannels },
       unsubmittedNearCutoff:{ ...defaultChannels },
@@ -291,6 +289,7 @@ export default function TimesheetSettings() {
       payAdjustment:        { ...defaultChannels },
     } as Record<NotifEventKey, NotifChannels>,
   });
+
 
   // Delegations (for ApprovalDelegationModal)
   const [delegationOpen, setDelegationOpen] = useState(false);
@@ -1243,9 +1242,8 @@ export default function TimesheetSettings() {
                           <th className="text-left p-3 font-medium">Event</th>
                           <th className="p-3 font-medium">In-App</th>
                           <th className="p-3 font-medium">Email</th>
-                          <th className="p-3 font-medium">Slack</th>
-                          <th className="p-3 font-medium">Teams</th>
                         </tr>
+
                       </thead>
                       <tbody>
                         {([
@@ -1262,7 +1260,8 @@ export default function TimesheetSettings() {
                         ] as [NotifEventKey, string][]).map(([key, label]) => (
                           <tr key={key} className="border-t">
                             <td className="p-3 font-medium">{label}</td>
-                            {(['inApp', 'email', 'slack', 'teams'] as (keyof NotifChannels)[]).map((ch) => (
+                            {(['inApp', 'email'] as (keyof NotifChannels)[]).map((ch) => (
+
                               <td key={ch} className="p-3 text-center">
                                 <Switch
                                   checked={notifications.events[key][ch]}
@@ -1400,43 +1399,8 @@ export default function TimesheetSettings() {
                   <div className="space-y-4">
                     <h4 className="font-medium">Integrations</h4>
 
-                    <div className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded bg-[hsl(290,60%,25%)] flex items-center justify-center">
-                          <span className="text-primary-foreground font-bold text-lg">#</span>
-                        </div>
-                        <div>
-                          <p className="font-medium">Slack</p>
-                          <p className="text-sm text-muted-foreground">Route notifications to a Slack workspace</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications.slackIntegration}
-                        onCheckedChange={(checked) => {
-                          setNotifications({ ...notifications, slackIntegration: checked });
-                          setHasUnsavedChanges(true);
-                        }}
-                      />
-                    </div>
 
-                    <div className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded bg-[hsl(220,70%,45%)] flex items-center justify-center">
-                          <span className="text-primary-foreground font-bold text-sm">T</span>
-                        </div>
-                        <div>
-                          <p className="font-medium">Microsoft Teams</p>
-                          <p className="text-sm text-muted-foreground">Post notifications to a Teams channel</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications.teamsIntegration}
-                        onCheckedChange={(checked) => {
-                          setNotifications({ ...notifications, teamsIntegration: checked });
-                          setHasUnsavedChanges(true);
-                        }}
-                      />
-                    </div>
+
 
                     <div className="p-4 rounded-lg border space-y-2">
                       <Label className="text-sm font-medium">Webhook URL (optional)</Label>
