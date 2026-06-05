@@ -86,17 +86,45 @@ interface FlaggingRule {
   description: string;
 }
 
+type ComplianceSource = 'award' | 'location' | 'tenant';
+type AustralianState = 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'NT' | 'ACT';
+type AwardTypeKey = 'general' | 'children_services' | 'healthcare' | 'hospitality' | 'retail' | 'social_community' | 'aged_care' | 'disability';
+
 interface JurisdictionConfig {
   id: string;
   name: string;
   code: string;
+  state: AustralianState;
+  awardType: AwardTypeKey;
+  // Hours limits
   maxDailyHours: number;
   maxWeeklyHours: number;
+  // Overtime
   overtimeThresholdDaily: number;
   overtimeThresholdWeekly: number;
   overtimeMultiplier: number;
   doubleTimeThreshold: number;
   doubleTimeMultiplier: number;
+  // Rest & span (AU NES)
+  minRestBetweenShiftsHours: number;
+  maxConsecutiveDays: number;
+  spanOfHoursMax: number;
+  // Penalty rates (multipliers)
+  saturdayMultiplier: number;
+  sundayMultiplier: number;
+  publicHolidayMultiplier: number;
+  nightLoadingMultiplier: number;
+  // Casual & engagement
+  casualLoadingPercent: number;
+  minEngagementHours: number;
+  // Source attribution per group (Award > Location > Tenant)
+  sourceMap: {
+    hoursLimits: ComplianceSource;
+    overtime: ComplianceSource;
+    restSpan: ComplianceSource;
+    penalties: ComplianceSource;
+    engagement: ComplianceSource;
+  };
 }
 
 interface EscalationConfig {
