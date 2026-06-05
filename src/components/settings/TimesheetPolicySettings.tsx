@@ -214,25 +214,29 @@ export function PolicyPermissions() {
         <PermissionGroup title="Editing">
           <ToggleRow
             {...fieldProps('permissions', 'createAndEditTimesheets', 'Create and Edit Timesheets',
-              'Allow team members to create and edit their timesheets via the web or mobile app.')}
+              'Allow team members to create and edit their timesheets via the web or mobile app.',
+              <><p className="font-medium mb-1">Example</p><p>Maya forgot to clock in yesterday. With this <strong>ON</strong>, she can add the missing entry herself; with OFF, she must ask her manager to add it.</p></>)}
             value={resolved.permissions.createAndEditTimesheets}
             onChange={v => setField('permissions', 'createAndEditTimesheets', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'updateTimesheetsDuringShift', 'Update Timesheets During Shifts',
-              'Allow team members to make timesheet updates while they are active on shift.')}
+              'Allow team members to make timesheet updates while they are active on shift.',
+              <><p className="font-medium mb-1">Example</p><p>A nurse mid-shift realises she clocked in 10 minutes late. With this <strong>ON</strong>, she fixes the start time before the shift ends; with OFF, the edit is only possible after clock-out.</p></>)}
             value={resolved.permissions.updateTimesheetsDuringShift}
             onChange={v => setField('permissions', 'updateTimesheetsDuringShift', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'editClockTimesAfterSubmission', 'Edit Clock Times After Submission',
-              'Allow staff to modify clock-in/out times after a timesheet has been submitted (until it is approved). Audited.')}
+              'Allow staff to modify clock-in/out times after a timesheet has been submitted (until it is approved). Audited.',
+              <><p className="font-medium mb-1">Example</p><p>Alex submits Friday's timesheet then notices his clock-out was 15 min off. With this <strong>ON</strong>, he edits and re-submits — the change is logged in the audit trail. Once a manager approves, edits are locked.</p></>)}
             value={resolved.permissions.editClockTimesAfterSubmission}
             onChange={v => setField('permissions', 'editClockTimesAfterSubmission', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'addNotesAndAttachments', 'Add Notes and Attachments',
-              'Allow staff to attach notes, files, or photos to their timesheet entries.')}
+              'Allow staff to attach notes, files, or photos to their timesheet entries.',
+              <><p className="font-medium mb-1">Example</p><p>A driver attaches a photo of a delayed delivery to explain a late clock-out, plus a note: "Traffic on M1, arrived 22 min late." Approver sees the context immediately.</p></>)}
             value={resolved.permissions.addNotesAndAttachments}
             onChange={v => setField('permissions', 'addNotesAndAttachments', v)}
           />
@@ -241,7 +245,8 @@ export function PolicyPermissions() {
         <PermissionGroup title="Clock-in & Clock-out">
           <SelectRow
             {...fieldProps('permissions', 'earlyClockInPolicy', 'Early Clock-in Policy',
-              'Control whether team members can clock in before their scheduled shift start.')}
+              'Control whether team members can clock in before their scheduled shift start.',
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Up to X minutes early"</em> to prevent staff clocking in 45 minutes before their shift (and accumulating unwanted early-start pay). Choose <em>"Not allowed"</em> for strict on-the-minute starts.</p></>)}
             value={resolved.permissions.earlyClockInPolicy}
             options={earlyClockInOptions}
             onChange={v => setField('permissions', 'earlyClockInPolicy', v as TimesheetPolicy['permissions']['earlyClockInPolicy'])}
@@ -249,26 +254,30 @@ export function PolicyPermissions() {
           {resolved.permissions.earlyClockInPolicy === 'within_minutes' && (
             <NumberRow
               {...fieldProps('permissions', 'earlyClockInMinutes', 'Maximum early clock-in (minutes)',
-                'How many minutes before the scheduled start a team member can clock in.')}
+                'How many minutes before the scheduled start a team member can clock in.',
+                <><p className="font-medium mb-1">Example</p><p>Set to <strong>15</strong>. Roster start 9:00. Clock-in at 8:50 → allowed. Clock-in at 8:40 → blocked with: "Too early, try again in 10 min."</p></>)}
               value={resolved.permissions.earlyClockInMinutes}
               onChange={v => setField('permissions', 'earlyClockInMinutes', v)}
             />
           )}
           <NumberRow
             {...fieldProps('permissions', 'lateClockInGraceMinutes', 'Late clock-in grace (minutes)',
-              'Clock-ins within this many minutes after the scheduled start still count as on-time (no late flag).')}
+              'Clock-ins within this many minutes after the scheduled start still count as on-time (no late flag).',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>5</strong>. Roster start 9:00. Clock-in 9:04 → on-time. Clock-in 9:08 → flagged "Late by 8 min" for the manager.</p></>)}
             value={resolved.permissions.lateClockInGraceMinutes}
             onChange={v => setField('permissions', 'lateClockInGraceMinutes', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'allowEarlyClockOut', 'Allow Early Clock-out',
-              'Permit staff to clock out before their scheduled shift end time.')}
+              'Permit staff to clock out before their scheduled shift end time.',
+              <><p className="font-medium mb-1">Example</p><p>Roster end 17:00. With <strong>ON</strong>, staff can clock out at 16:30 (paid only for time worked). With OFF, they're asked to confirm or request manager approval.</p></>)}
             value={resolved.permissions.allowEarlyClockOut}
             onChange={v => setField('permissions', 'allowEarlyClockOut', v)}
           />
           <NumberRow
             {...fieldProps('permissions', 'autoClockOutAfterShiftMinutes', 'Auto clock-out after shift end (minutes)',
-              'If a team member forgets to clock out, automatically clock them out this many minutes after the scheduled end. Set 0 to disable.')}
+              'If a team member forgets to clock out, automatically clock them out this many minutes after the scheduled end. Set 0 to disable.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>30</strong>. Roster end 17:00. Staff forgets to clock out → at 17:30 the system auto-closes the shift at 17:00 and flags it for review. Prevents runaway 24-hour timesheets.</p></>)}
             value={resolved.permissions.autoClockOutAfterShiftMinutes}
             onChange={v => setField('permissions', 'autoClockOutAfterShiftMinutes', v)}
           />
