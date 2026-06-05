@@ -752,6 +752,24 @@ export function PolicyIssues() {
           />
         </PermissionGroup>
 
+        <PermissionGroup title="Break Behaviour">
+          <SelectRow
+            {...fieldProps('issues', 'flagExceededBreak', 'Exceeded Break Duration',
+              'Flag when a recorded break runs longer than the allowed/scheduled duration by more than the percentage below.',
+              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>150%</em>, severity = <em>Info</em>. A 30-min meal break stretches to 50 min (167%) — flagged so the manager can decide whether to deduct unpaid time.</p></>)}
+            value={resolved.issues.flagExceededBreak}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagExceededBreak', v as TimesheetPolicy['issues']['flagExceededBreak'])}
+          />
+          <NumberRow
+            {...fieldProps('issues', 'exceededBreakPercent', 'Exceeded Break Threshold (%)',
+              'Break duration above this percentage of the scheduled length triggers the flag.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <em>150</em>. A 30-min scheduled break is fine up to 45 min; 46 min triggers the flag.</p></>)}
+            value={resolved.issues.exceededBreakPercent}
+            onChange={v => setField('issues', 'exceededBreakPercent', Math.max(100, v))}
+          />
+        </PermissionGroup>
+
         <PermissionGroup title="Behavioural Patterns">
           <SelectRow
             {...fieldProps('issues', 'flagPatternDrift', 'Pattern Drift',
@@ -768,7 +786,24 @@ export function PolicyIssues() {
             value={resolved.issues.patternDriftMinutes}
             onChange={v => setField('issues', 'patternDriftMinutes', Math.max(0, v))}
           />
+          <SelectRow
+            {...fieldProps('issues', 'flagBuddyPunching', 'Suspected Buddy Punching',
+              'Detect when two staff clock in/out from the same device within seconds of each other — a classic indicator of one person punching for another.',
+              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Critical</em>. Two clock-ins from the same kiosk within 4 seconds on different staff IDs route the timesheets to HR for investigation before payroll.</p></>)}
+            value={resolved.issues.flagBuddyPunching}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagBuddyPunching', v as TimesheetPolicy['issues']['flagBuddyPunching'])}
+          />
+          <SelectRow
+            {...fieldProps('issues', 'flagIrregularPunchPattern', 'Irregular Punch Pattern',
+              'Catch unusual punch sequences such as multiple clock-ins without a clock-out, rapid in/out cycles, or out-of-order timestamps.',
+              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Warning</em>. Mia clocks in, out, in, and out three times within 20 minutes. The pattern is flagged so a manager can confirm whether a device or training issue is to blame.</p></>)}
+            value={resolved.issues.flagIrregularPunchPattern}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagIrregularPunchPattern', v as TimesheetPolicy['issues']['flagIrregularPunchPattern'])}
+          />
         </PermissionGroup>
+
 
         <PermissionGroup title="Submission Behaviour">
           <ToggleRow
