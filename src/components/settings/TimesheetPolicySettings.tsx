@@ -583,18 +583,41 @@ export function PolicyIssues() {
 interface BaseRowProps {
   label: string;
   description?: string;
+  example?: React.ReactNode;
   isTenant: boolean;
   overridden: boolean;
   onReset: () => void;
   comingSoon?: boolean;
 }
 
-function RowShell({ label, description, isTenant, overridden, onReset, comingSoon, control }: BaseRowProps & { control: React.ReactNode }) {
+function HelpHint({ content }: { content: React.ReactNode }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label="More info"
+            className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function RowShell({ label, description, example, isTenant, overridden, onReset, comingSoon, control }: BaseRowProps & { control: React.ReactNode }) {
   return (
     <div className={`flex items-start justify-between gap-6 py-4 ${comingSoon ? 'opacity-60' : ''}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <Label className="text-sm font-medium tracking-tight">{label}</Label>
+          {example && <HelpHint content={example} />}
           {comingSoon && (
             <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30 text-[10px] h-5 dark:text-amber-400">
               Coming Soon
