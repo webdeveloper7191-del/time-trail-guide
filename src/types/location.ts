@@ -62,7 +62,13 @@ export interface Location {
   // Relationships
   areaIds: string[]; // Areas within this location
   departmentIds: string[]; // Departments within this location
-  
+
+  // Approval routing — used as fixed Step 1 of the timesheet approval chain.
+  // `managerId` is the primary Location Manager; `backupManagerId` is used when
+  // the primary is on leave / delegated.
+  managerId?: string;
+  backupManagerId?: string;
+
   // Audit
   createdAt: string;
   updatedAt: string;
