@@ -258,12 +258,8 @@ export default function TimesheetSettings() {
     setHasUnsavedChanges(true);
   };
 
-  const updateFlaggingRule = (id: string, updates: Partial<FlaggingRule>) => {
-    setFlaggingRules(prev => 
-      prev.map(r => r.id === id ? { ...r, ...updates } : r)
-    );
-    setHasUnsavedChanges(true);
-  };
+
+
 
   const addBreakRule = () => {
     const newRule: BreakRule = {
