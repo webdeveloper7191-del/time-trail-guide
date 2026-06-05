@@ -50,14 +50,41 @@ export interface Jurisdiction {
 
 export type ApprovalTier = 'auto' | 'manager' | 'senior_manager' | 'director' | 'hr';
 
+export type ApprovalRuleCondition =
+  | 'all'
+  | 'overtime'
+  | 'exception'
+  | 'high_hours'
+  | 'compliance_flag'
+  | 'location'
+  | 'employment_type';
+
+export type SlaBreachAction = 'escalate' | 'auto_approve' | 'auto_reject' | 'hold';
+
 export interface ApprovalRule {
   id: string;
   name: string;
-  condition: 'overtime' | 'exception' | 'high_hours' | 'compliance_flag' | 'all';
+  condition: ApprovalRuleCondition;
   threshold?: number;
   requiredTier: ApprovalTier;
+  /** Specific user assigned as the approver for this rule (overrides tier-based lookup). */
+  assignedApproverId?: string;
+  /** Restrict rule to specific locations (when condition = 'location' or as extra filter). */
+  locationIds?: string[];
+  /** Restrict rule to specific employment types (e.g. casual, agency). */
+  employmentTypes?: string[];
   escalationTier?: ApprovalTier;
   escalationHours?: number;
+  /** Send a reminder N hours before SLA breach. */
+  reminderHours?: number;
+  /** Action to take when SLA is breached. */
+  slaBreachAction?: SlaBreachAction;
+  /** Require approvers to enter a comment when rejecting or adjusting. */
+  requireCommentOnReject?: boolean;
+  /** Approval mode: serial (default) or parallel (all approvers must approve). */
+  parallelApproval?: boolean;
+  /** Notify the staff member when this rule routes their timesheet. */
+  notifyStaffOnRoute?: boolean;
 }
 
 export interface ApprovalStep {
