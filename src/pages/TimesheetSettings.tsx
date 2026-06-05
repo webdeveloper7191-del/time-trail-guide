@@ -198,13 +198,40 @@ export default function TimesheetSettings() {
     },
   });
 
-  // Approval Chain Config
+  // Step 1 — Location Manager (always first, cannot be removed)
+  const [locationManagerStep, setLocationManagerStep] = useState({
+    enabled: true,
+    skipWhenAutoApproved: true,
+    slaHours: 24,
+    reminderHours: 4,
+    breachAction: 'escalate' as SlaBreachAction,
+    requireCommentOnReject: true,
+    notifyStaffOnRoute: false,
+  });
+
+  // Additional approval steps — run after Location Manager when their triggers match
   const [approvalRules, setApprovalRules] = useState<ApprovalRule[]>([
-    { id: 'ar-1', name: 'Standard Auto-Approve', condition: 'all', requiredTier: 'auto' },
-    { id: 'ar-2', name: 'Moderate Overtime', condition: 'overtime', threshold: 2, requiredTier: 'manager', escalationTier: 'senior_manager', escalationHours: 24 },
-    { id: 'ar-3', name: 'High Overtime', condition: 'overtime', threshold: 8, requiredTier: 'senior_manager', escalationTier: 'director', escalationHours: 48 },
-    { id: 'ar-4', name: 'Compliance Issues', condition: 'compliance_flag', requiredTier: 'hr', escalationHours: 72 },
-    { id: 'ar-5', name: 'Exception Review', condition: 'exception', requiredTier: 'manager', escalationTier: 'hr', escalationHours: 48 },
+    {
+      id: 'ar-ot',
+      name: 'High Overtime Review',
+      triggers: { hasOvertime: true, overtimeOverHours: 8 },
+      requiredTier: 'senior_manager',
+      slaHours: 48,
+      reminderHours: 6,
+      slaBreachAction: 'escalate',
+      escalationTier: 'director',
+      requireCommentOnReject: true,
+    },
+    {
+      id: 'ar-cf',
+      name: 'Compliance Flag Review',
+      triggers: { hasComplianceFlag: true },
+      requiredTier: 'hr',
+      slaHours: 72,
+      reminderHours: 12,
+      slaBreachAction: 'hold',
+      requireCommentOnReject: true,
+    },
   ]);
 
   // Escalation Config
