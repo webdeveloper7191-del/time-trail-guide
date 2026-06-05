@@ -396,7 +396,7 @@ export default function TimesheetSettings() {
 
 
             {/* Auto-Approval Tab */}
-            <TabsContent value="auto-approval" className="space-y-6">
+            <TabsContent value="approving" className="space-y-6">
               {/* Master Toggle */}
               <Card>
                 <CardHeader>
@@ -523,7 +523,7 @@ export default function TimesheetSettings() {
             </TabsContent>
 
             {/* Flagging Tab */}
-            <TabsContent value="flagging" className="space-y-6">
+            <TabsContent value="flags" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1144,7 +1144,7 @@ export default function TimesheetSettings() {
             </TabsContent>
 
             {/* Notifications Tab */}
-            <TabsContent value="notifications" className="space-y-6">
+            <TabsContent value="workflow" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
