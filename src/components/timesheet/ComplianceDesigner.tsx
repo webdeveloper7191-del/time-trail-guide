@@ -83,35 +83,6 @@ export function ComplianceDesigner({ value, onChange }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Award source — read-only reference */}
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="pt-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <Award className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-              <div className="space-y-1">
-                <p className="font-medium tracking-tight">Pay rules are managed in Awards</p>
-                <p className="text-sm text-muted-foreground">
-                  Overtime, penalty rates, casual loading, and minimum engagement come from your award configuration.
-                  This tab only controls which conditions raise <span className="font-medium text-foreground">compliance flags</span> on a timesheet for reviewer attention.
-                </p>
-                <p className="text-xs text-muted-foreground pt-1">
-                  Effective award: <span className="font-medium text-foreground">{value.effectiveAwardLabel}</span>
-                  {value.effectiveAwardReference && (
-                    <span className="text-muted-foreground"> ({value.effectiveAwardReference})</span>
-                  )}
-                </p>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" asChild className="gap-1.5 shrink-0">
-              <Link to="/settings?tab=awards">
-                <ExternalLink className="h-3.5 w-3.5" /> Manage Awards
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Flagging thresholds */}
       <Card>
         <CardHeader>
