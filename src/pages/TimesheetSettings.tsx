@@ -1399,43 +1399,8 @@ export default function TimesheetSettings() {
                   <div className="space-y-4">
                     <h4 className="font-medium">Integrations</h4>
 
-                    <div className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded bg-[hsl(290,60%,25%)] flex items-center justify-center">
-                          <span className="text-primary-foreground font-bold text-lg">#</span>
-                        </div>
-                        <div>
-                          <p className="font-medium">Slack</p>
-                          <p className="text-sm text-muted-foreground">Route notifications to a Slack workspace</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications.slackIntegration}
-                        onCheckedChange={(checked) => {
-                          setNotifications({ ...notifications, slackIntegration: checked });
-                          setHasUnsavedChanges(true);
-                        }}
-                      />
-                    </div>
 
-                    <div className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded bg-[hsl(220,70%,45%)] flex items-center justify-center">
-                          <span className="text-primary-foreground font-bold text-sm">T</span>
-                        </div>
-                        <div>
-                          <p className="font-medium">Microsoft Teams</p>
-                          <p className="text-sm text-muted-foreground">Post notifications to a Teams channel</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications.teamsIntegration}
-                        onCheckedChange={(checked) => {
-                          setNotifications({ ...notifications, teamsIntegration: checked });
-                          setHasUnsavedChanges(true);
-                        }}
-                      />
-                    </div>
+
 
                     <div className="p-4 rounded-lg border space-y-2">
                       <Label className="text-sm font-medium">Webhook URL (optional)</Label>
