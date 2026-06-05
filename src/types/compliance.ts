@@ -73,6 +73,26 @@ export interface ApprovalTriggerSet {
   hasException?: boolean;
 }
 
+/**
+ * A single approver "band" inside an escalation step. A band combines a scope
+ * (location groups / locations / employment types) with an approver and SLA.
+ * Bands are evaluated top-to-bottom — the first matching band routes the timesheet.
+ * Leave all scope fields empty to make a band the catch-all for that step.
+ */
+export interface ApprovalBand {
+  id: string;
+  locationGroupIds?: string[];
+  locationIds?: string[];
+  employmentTypes?: string[];
+  requiredTier: ApprovalTier;
+  assignedApproverId?: string;
+  slaHours: number;
+  slaBreachAction: SlaBreachAction;
+  parallelApproval?: boolean;
+  requireCommentOnReject?: boolean;
+  notifyStaffOnRoute?: boolean;
+}
+
 export interface ApprovalRule {
   id: string;
   name: string;
@@ -81,6 +101,11 @@ export interface ApprovalRule {
   /** New simplified multi-trigger model. */
   triggers?: ApprovalTriggerSet;
   threshold?: number;
+  /**
+   * Approver bands for this step. When set, supersedes the legacy single-approver
+   * fields below. Each band can target a different scope (group, location, employment).
+   */
+  bands?: ApprovalBand[];
   requiredTier: ApprovalTier;
   /** Specific user assigned as the approver for this rule (overrides tier-based lookup). */
   assignedApproverId?: string;
@@ -106,6 +131,7 @@ export interface ApprovalRule {
   /** Notify the staff member when this rule routes their timesheet. */
   notifyStaffOnRoute?: boolean;
 }
+
 
 export interface ApprovalStep {
   tier: ApprovalTier;
