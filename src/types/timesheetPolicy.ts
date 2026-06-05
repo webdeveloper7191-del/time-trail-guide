@@ -187,9 +187,14 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
     longShiftWithoutBreakHours: 6,
     flagHighWeeklyOvertime: 'warning',
     highWeeklyOvertimeThreshold: 8,
+    flagExceededBreak: 'info',
+    exceededBreakPercent: 150,
     flagPatternDrift: 'info',
     patternDriftMinutes: 60,
+    flagBuddyPunching: 'critical',
+    flagIrregularPunchPattern: 'warning',
     blockSubmissionOnCritical: true,
+
   },
 };
 
