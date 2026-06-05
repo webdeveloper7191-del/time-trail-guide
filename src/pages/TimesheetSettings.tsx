@@ -222,12 +222,8 @@ export default function TimesheetSettings() {
     setHasUnsavedChanges(false);
   };
 
-  const updateCondition = (id: string, updates: Partial<AutoApprovalCondition>) => {
-    setAutoApprovalConditions(prev => 
-      prev.map(c => c.id === id ? { ...c, ...updates } : c)
-    );
-    setHasUnsavedChanges(true);
-  };
+
+
 
 
 
