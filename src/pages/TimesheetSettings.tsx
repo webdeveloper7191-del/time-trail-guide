@@ -312,6 +312,15 @@ export default function TimesheetSettings() {
     { id: 'loc-4', name: 'Perth West' },
   ];
 
+  const mockLocationGroups = [
+    { id: 'grp-nsw', name: 'NSW Region' },
+    { id: 'grp-vic', name: 'VIC Region' },
+    { id: 'grp-qld', name: 'QLD Region' },
+    { id: 'grp-wa', name: 'WA Region' },
+    { id: 'grp-east', name: 'East Coast Cluster' },
+    { id: 'grp-flagship', name: 'Flagship Sites' },
+  ];
+
   const employmentTypeOptions = ['Full-time', 'Part-time', 'Casual', 'Agency', 'Contractor'];
 
   const handleSave = () => {
