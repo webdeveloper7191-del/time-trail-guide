@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import { ApprovalTier, BreakRule, ApprovalRule, ApprovalRuleCondition, SlaBreachAction, ApprovalTriggerSet } from '@/types/compliance';
 import { ApprovalDelegationModal } from '@/components/timesheet/ApprovalDelegationModal';
+import { ApprovalFlowDesigner } from '@/components/timesheet/ApprovalFlowDesigner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
 import {
