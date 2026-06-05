@@ -146,47 +146,54 @@ export function PolicyTimeTracking() {
       <CardContent className="space-y-1 divide-y">
         <ToggleRow
           {...fieldProps('timeTracking', 'enableWebClock', 'Enable Web Clock-in/out',
-            'Allow staff to clock in and out via the web app.')}
+            'Allow staff to clock in and out via the web app.',
+            <><p className="font-medium mb-1">Example</p><p>A reception staff member on a desktop opens the web portal and taps "Clock in" at 8:58 AM. With this OFF, the button is hidden and they must use the mobile app or kiosk.</p></>)}
           value={resolved.timeTracking.enableWebClock}
           onChange={v => setField('timeTracking', 'enableWebClock', v)}
           comingSoon
         />
         <ToggleRow
           {...fieldProps('timeTracking', 'enableMobileClock', 'Enable Mobile App Clock-in/out',
-            'Allow staff to clock in and out via the staff mobile app.')}
+            'Allow staff to clock in and out via the staff mobile app.',
+            <><p className="font-medium mb-1">Example</p><p>A field worker arrives on-site and clocks in from the mobile app. Useful for staff who don't have access to a fixed kiosk or computer.</p></>)}
           value={resolved.timeTracking.enableMobileClock}
           onChange={v => setField('timeTracking', 'enableMobileClock', v)}
         />
         <ToggleRow
           {...fieldProps('timeTracking', 'captureGpsOnMobile', 'Capture GPS on Mobile Clock-in/out',
-            'Record GPS coordinates when staff clock in or out via mobile. Distance from scheduled location will appear in timesheets.')}
+            'Record GPS coordinates when staff clock in or out via mobile. Distance from scheduled location will appear in timesheets.',
+            <><p className="font-medium mb-1">Example</p><p>Liam clocks in via mobile from 1.2 km away from his assigned location. The timesheet shows "Clocked in 1.2 km from site" so the manager can investigate without blocking the clock-in.</p></>)}
           value={resolved.timeTracking.captureGpsOnMobile}
           onChange={v => setField('timeTracking', 'captureGpsOnMobile', v)}
         />
         <ToggleRow
           {...fieldProps('timeTracking', 'restrictToGeofence', 'Restrict Clock-ins to Geo-fence',
-            'Prevent clock-ins from outside a defined distance using GPS location.')}
+            'Prevent clock-ins from outside a defined distance using GPS location.',
+            <><p className="font-medium mb-1">Example</p><p>With the radius set to 100 m, a staff member trying to clock in from a café 500 m away sees: "You must be at the site to clock in." Stops accidental or fraudulent off-site clock-ins.</p></>)}
           value={resolved.timeTracking.restrictToGeofence}
           onChange={v => setField('timeTracking', 'restrictToGeofence', v)}
         />
         {resolved.timeTracking.restrictToGeofence && (
           <NumberRow
             {...fieldProps('timeTracking', 'geofenceRadiusMeters', 'Geo-fence radius (meters)',
-              'Maximum distance from scheduled location at which clock-in is allowed.')}
+              'Maximum distance from scheduled location at which clock-in is allowed.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>150</strong>. A large hospital campus allows clock-in from any entrance. A small clinic might use <strong>50</strong> to keep clock-ins precisely on-site.</p></>)}
             value={resolved.timeTracking.geofenceRadiusMeters}
             onChange={v => setField('timeTracking', 'geofenceRadiusMeters', v)}
           />
         )}
         <ToggleRow
           {...fieldProps('timeTracking', 'requireKioskPhoto', 'Require Face Verification',
-            'Team members must clock in using face verification at the kiosk when starting or ending a shift.')}
+            'Team members must clock in using face verification at the kiosk when starting or ending a shift.',
+            <><p className="font-medium mb-1">Example</p><p>At a warehouse kiosk, the camera takes a quick selfie that's matched against the staff profile photo. Prevents "buddy punching" where one worker clocks in for another.</p></>)}
           value={resolved.timeTracking.requireKioskPhoto}
           onChange={v => setField('timeTracking', 'requireKioskPhoto', v)}
         />
 
         <NumberRow
           {...fieldProps('timeTracking', 'minTimesheetMinutes', 'Minimum timesheet length (minutes)',
-            'Timesheets shorter than the specified duration will not be recorded.')}
+            'Timesheets shorter than the specified duration will not be recorded.',
+            <><p className="font-medium mb-1">Example</p><p>Set to <strong>15</strong>. A staff member clocks in, realises they're at the wrong location, and clocks out after 4 minutes. The entry is discarded so it doesn't clutter timesheets or payroll.</p></>)}
           value={resolved.timeTracking.minTimesheetMinutes}
           onChange={v => setField('timeTracking', 'minTimesheetMinutes', v)}
         />
