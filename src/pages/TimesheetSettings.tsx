@@ -76,15 +76,8 @@ interface AutoApprovalCondition {
   description: string;
 }
 
-interface FlaggingRule {
-  id: string;
-  name: string;
-  type: string;
-  enabled: boolean;
-  severity: 'info' | 'warning' | 'critical';
-  threshold?: number;
-  description: string;
-}
+
+
 
 type ComplianceSource = 'award' | 'location' | 'tenant';
 type AustralianState = 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'NT' | 'ACT';
@@ -165,18 +158,8 @@ export default function TimesheetSettings() {
   ]);
 
   // Flagging Rules
-  const [flaggingRules, setFlaggingRules] = useState<FlaggingRule[]>([
-    { id: 'flag-1', name: 'Early Clock-In', type: 'early_clock_in', enabled: true, severity: 'warning', threshold: 5, description: 'Flag clock-ins before specified hour (24h format)' },
-    { id: 'flag-2', name: 'Late Clock-Out', type: 'late_clock_out', enabled: true, severity: 'warning', threshold: 22, description: 'Flag clock-outs after specified hour (24h format)' },
-    { id: 'flag-3', name: 'Missing Clock-Out', type: 'missing_clock_out', enabled: true, severity: 'critical', description: 'Flag entries without clock-out recorded' },
-    { id: 'flag-4', name: 'Excessive Daily Hours', type: 'max_daily_hours', enabled: true, severity: 'critical', threshold: 12, description: 'Flag when daily hours exceed limit' },
-    { id: 'flag-5', name: 'Pattern Drift', type: 'pattern_drift', enabled: true, severity: 'info', threshold: 60, description: 'Flag deviation from average clock time (minutes)' },
-    { id: 'flag-6', name: 'Buddy Punching Suspected', type: 'buddy_punching', enabled: true, severity: 'critical', description: 'Flag potential unauthorized punching' },
-    { id: 'flag-7', name: 'Missed Break', type: 'missed_break', enabled: true, severity: 'warning', description: 'Flag when mandatory breaks not taken' },
-    { id: 'flag-8', name: 'Exceeded Break', type: 'exceeded_break', enabled: true, severity: 'info', threshold: 150, description: 'Flag when break exceeds % of allowed time' },
-    { id: 'flag-9', name: 'High Overtime', type: 'overtime_threshold', enabled: true, severity: 'warning', threshold: 50, description: 'Flag when overtime exceeds % of weekly threshold' },
-    { id: 'flag-10', name: 'Irregular Punch Pattern', type: 'irregular_punch', enabled: true, severity: 'warning', description: 'Flag unusual punch sequences' },
-  ]);
+
+
 
   // Break Rules
   const [breakRules, setBreakRules] = useBreakRules();
@@ -258,12 +241,8 @@ export default function TimesheetSettings() {
     setHasUnsavedChanges(true);
   };
 
-  const updateFlaggingRule = (id: string, updates: Partial<FlaggingRule>) => {
-    setFlaggingRules(prev => 
-      prev.map(r => r.id === id ? { ...r, ...updates } : r)
-    );
-    setHasUnsavedChanges(true);
-  };
+
+
 
   const addBreakRule = () => {
     const newRule: BreakRule = {
@@ -311,14 +290,8 @@ export default function TimesheetSettings() {
     setHasUnsavedChanges(true);
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-500/10 text-red-600 border-red-500/20';
-      case 'warning': return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
-      case 'info': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
+
+
 
   const getTierLabel = (tier: ApprovalTier) => {
     const labels: Record<ApprovalTier, string> = {
@@ -582,120 +555,8 @@ export default function TimesheetSettings() {
               </Card>
             </TabsContent>
 
-            {/* Flagging Tab */}
-            <TabsContent value="flags" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-primary" />
-                    Anomaly Detection & Flagging Rules
-                  </CardTitle>
-                  <CardDescription>
-                    Configure which patterns and anomalies should trigger compliance flags. Flags can block auto-approval or require additional review.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {flaggingRules.map((rule) => (
-                    <div
-                      key={rule.id}
-                      className={`p-4 rounded-lg border transition-all ${
-                        rule.enabled ? 'bg-card' : 'bg-muted/50'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3 flex-1">
-                          <Switch
-                            checked={rule.enabled}
-                            onCheckedChange={(checked) => updateFlaggingRule(rule.id, { enabled: checked })}
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className={`font-medium ${!rule.enabled && 'text-muted-foreground'}`}>
-                                {rule.name}
-                              </p>
-                              <Badge className={getSeverityColor(rule.severity)} variant="outline">
-                                {rule.severity}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{rule.description}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          {rule.threshold !== undefined && (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                value={rule.threshold}
-                                onChange={(e) => updateFlaggingRule(rule.id, { threshold: Number(e.target.value) })}
-                                className="w-20 text-center"
-                                disabled={!rule.enabled}
-                              />
-                            </div>
-                          )}
-                          <Select
-                            value={rule.severity}
-                            onValueChange={(value: 'info' | 'warning' | 'critical') => 
-                              updateFlaggingRule(rule.id, { severity: value })
-                            }
-                            disabled={!rule.enabled}
-                          >
-                            <SelectTrigger className="w-28">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="info">Info</SelectItem>
-                              <SelectItem value="warning">Warning</SelectItem>
-                              <SelectItem value="critical">Critical</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
 
-              {/* Severity Legend */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Info className="h-5 w-5 text-primary" />
-                    Severity Levels
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                      <Info className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-blue-700">Info</p>
-                        <p className="text-sm text-blue-600/80">
-                          Informational flags that don't affect approval. Visible for awareness only.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                      <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-amber-700">Warning</p>
-                        <p className="text-sm text-amber-600/80">
-                          Requires manual review. Blocks auto-approval but allows submission.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-                      <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-red-700">Critical</p>
-                        <p className="text-sm text-red-600/80">
-                          Blocks submission until resolved. Escalates to HR for review.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+
 
             {/* Breaks Tab */}
             <TabsContent value="breaks" className="space-y-6">
