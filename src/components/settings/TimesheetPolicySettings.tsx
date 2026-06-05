@@ -18,6 +18,7 @@ import {
   paidMealOptions,
   varianceFlagOptions,
   earlyClockInOptions,
+  anomalySeverityOptions,
 } from '@/types/timesheetPolicy';
 import { timesheetPolicyStore, getPolicyVersion } from '@/lib/timesheetPolicyStore';
 
@@ -627,20 +628,157 @@ export function PolicyIssues() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="tracking-tight">Timesheet Issues</CardTitle>
-        <CardDescription>When to alert managers about timesheet anomalies.</CardDescription>
+        <CardTitle className="tracking-tight">Anomaly Flags</CardTitle>
+        <CardDescription>
+          Decide which timesheet anomalies are detected, how serious each one is, and whether they
+          should block submission or just notify managers. Severity feeds into auto-approval (the
+          Approving tab skips auto-approval if any flag is raised when "Skip if flagged" is on).
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-1 divide-y">
-        <SelectRow
-          {...fieldProps('issues', 'flagShiftTimeVariance', 'Flag Shift Time Variance',
-            'Alert managers if the recorded shift start or end time differs from the scheduled time.')}
-          value={resolved.issues.flagShiftTimeVariance}
-          options={varianceFlagOptions}
-          onChange={v => setField('issues', 'flagShiftTimeVariance', v as TimesheetPolicy['issues']['flagShiftTimeVariance'])}
-        />
-        <div className="pt-2 text-xs text-muted-foreground">
-          Break duration variance flagging now lives in the <span className="font-medium text-foreground">Breaks</span> tab under <span className="font-medium text-foreground">Flagging</span>.
+      <CardContent className="space-y-6">
+        <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Severity levels:</span>{' '}
+          <span className="text-foreground">Off</span> – disabled ·{' '}
+          <span className="text-foreground">Info</span> – logged only ·{' '}
+          <span className="text-foreground">Warning</span> – blocks auto-approval, manager review ·{' '}
+          <span className="text-foreground">Critical</span> – blocks submission when "Block submission on critical" is on.
         </div>
+
+        <PermissionGroup title="Time Variance">
+          <SelectRow
+            {...fieldProps('issues', 'flagShiftTimeVariance', 'Flag Shift Time Variance',
+              'Raise a flag when actual clock-in/out differs from the scheduled start/end by more than this threshold.',
+              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>Over 10 minutes</em>. Priya was rostered 9:00–17:00 but clocked 8:42–17:24. Both ends drift &gt;10 min, so the timesheet is flagged for review instead of auto-approving.</p></>)}
+            value={resolved.issues.flagShiftTimeVariance}
+            options={varianceFlagOptions}
+            onChange={v => setField('issues', 'flagShiftTimeVariance', v as TimesheetPolicy['issues']['flagShiftTimeVariance'])}
+          />
+          <SelectRow
+            {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag Break Duration Variance',
+              'Raise a flag when the recorded break duration differs from what was scheduled.',
+              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>Over 10 minutes</em>. A 30-min meal break is scheduled. Tom records only 14 min — flagged. A 32-min break — within tolerance, no flag.</p></>)}
+            value={resolved.issues.flagBreakDurationVariance}
+            options={varianceFlagOptions}
+            onChange={v => setField('issues', 'flagBreakDurationVariance', v as TimesheetPolicy['issues']['flagBreakDurationVariance'])}
+          />
+        </PermissionGroup>
+
+        <PermissionGroup title="Missing & Unusual Entries">
+          <SelectRow
+            {...fieldProps('issues', 'flagMissingClockOut', 'Missing Clock-Out',
+              'Severity assigned when a shift has a clock-in but no clock-out (likely a forgotten punch).',
+              <><p className="font-medium mb-1">Example</p><p>Set to <em>Critical</em>. Ava clocked in at 7:00 and never clocked out. The timesheet cannot be submitted until a manager corrects the missing punch — preventing a 24-hour pay event.</p></>)}
+            value={resolved.issues.flagMissingClockOut}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagMissingClockOut', v as TimesheetPolicy['issues']['flagMissingClockOut'])}
+          />
+          <SelectRow
+            {...fieldProps('issues', 'flagUnusualEarlyClockIn', 'Unusual Early Clock-In',
+              'Flag clock-ins that occur before the "early hour" cutoff — useful for catching accidental overnight punches.',
+              <><p className="font-medium mb-1">Example</p><p>Cutoff = <em>5 AM</em>, severity = <em>Warning</em>. A clock-in at 4:12 AM is flagged for review. A clock-in at 6:30 AM is not.</p></>)}
+            value={resolved.issues.flagUnusualEarlyClockIn}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagUnusualEarlyClockIn', v as TimesheetPolicy['issues']['flagUnusualEarlyClockIn'])}
+          />
+          <NumberRow
+            {...fieldProps('issues', 'unusualEarlyClockInBeforeHour', 'Early Clock-In Cutoff Hour',
+              'Hour of day (0–23) before which clock-ins are considered unusual.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <em>5</em>. Any clock-in recorded between midnight and 4:59 AM triggers an "Unusual early start" anomaly.</p></>)}
+            value={resolved.issues.unusualEarlyClockInBeforeHour}
+            onChange={v => setField('issues', 'unusualEarlyClockInBeforeHour', Math.max(0, Math.min(23, v)))}
+          />
+          <SelectRow
+            {...fieldProps('issues', 'flagUnusualLateClockOut', 'Unusual Late Clock-Out',
+              'Flag clock-outs that occur after the "late hour" cutoff — catches forgotten end-of-day punches.',
+              <><p className="font-medium mb-1">Example</p><p>Cutoff = <em>22 (10 PM)</em>, severity = <em>Warning</em>. A clock-out at 23:40 is flagged so a manager can confirm staff weren't double-paid into the next day.</p></>)}
+            value={resolved.issues.flagUnusualLateClockOut}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagUnusualLateClockOut', v as TimesheetPolicy['issues']['flagUnusualLateClockOut'])}
+          />
+          <NumberRow
+            {...fieldProps('issues', 'unusualLateClockOutAfterHour', 'Late Clock-Out Cutoff Hour',
+              'Hour of day (0–23) after which clock-outs are considered unusual.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <em>22</em>. Any clock-out recorded at 22:00 or later raises the "Unusual late end" anomaly.</p></>)}
+            value={resolved.issues.unusualLateClockOutAfterHour}
+            onChange={v => setField('issues', 'unusualLateClockOutAfterHour', Math.max(0, Math.min(23, v)))}
+          />
+        </PermissionGroup>
+
+        <PermissionGroup title="Excessive Hours">
+          <SelectRow
+            {...fieldProps('issues', 'flagExcessiveDailyHours', 'Excessive Daily Hours',
+              'Severity when a single day exceeds the maximum allowed working hours.',
+              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>12h</em>, severity = <em>Critical</em>. Liam records a 13h25m shift. The system blocks submission until a manager verifies it was a genuine emergency callout.</p></>)}
+            value={resolved.issues.flagExcessiveDailyHours}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagExcessiveDailyHours', v as TimesheetPolicy['issues']['flagExcessiveDailyHours'])}
+          />
+          <NumberRow
+            {...fieldProps('issues', 'excessiveDailyHoursThreshold', 'Daily Hours Threshold',
+              'Maximum hours per day before the excessive-hours flag fires.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <em>12</em>. A 12h shift is fine; a 12h05m shift triggers the flag.</p></>)}
+            value={resolved.issues.excessiveDailyHoursThreshold}
+            onChange={v => setField('issues', 'excessiveDailyHoursThreshold', Math.max(0, v))}
+          />
+          <SelectRow
+            {...fieldProps('issues', 'flagLongShiftWithoutBreak', 'Long Shift Without Break',
+              'Flag shifts that exceed the threshold but have no break recorded — a common compliance risk.',
+              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>6h</em>, severity = <em>Warning</em>. Mia worked 7h15m with zero breaks recorded. The timesheet is held for review since a meal break is legally required after 5 hours under most awards.</p></>)}
+            value={resolved.issues.flagLongShiftWithoutBreak}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagLongShiftWithoutBreak', v as TimesheetPolicy['issues']['flagLongShiftWithoutBreak'])}
+          />
+          <NumberRow
+            {...fieldProps('issues', 'longShiftWithoutBreakHours', 'Hours Before Break Required',
+              'Minimum continuous hours worked without a break before the flag fires.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <em>6</em>. A 5h45m shift with no break is fine; 6h01m with no break triggers the anomaly.</p></>)}
+            value={resolved.issues.longShiftWithoutBreakHours}
+            onChange={v => setField('issues', 'longShiftWithoutBreakHours', Math.max(0, v))}
+          />
+          <SelectRow
+            {...fieldProps('issues', 'flagHighWeeklyOvertime', 'High Weekly Overtime',
+              'Flag weeks where overtime exceeds a threshold so payroll and managers are alerted to budget impact.',
+              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>8h</em>, severity = <em>Warning</em>. Sam logged 12h of overtime in one week. The timesheet routes to a senior manager for sign-off before payroll.</p></>)}
+            value={resolved.issues.flagHighWeeklyOvertime}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagHighWeeklyOvertime', v as TimesheetPolicy['issues']['flagHighWeeklyOvertime'])}
+          />
+          <NumberRow
+            {...fieldProps('issues', 'highWeeklyOvertimeThreshold', 'Weekly Overtime Threshold',
+              'Overtime hours per week above which the flag fires.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <em>8</em>. 7.5h of weekly overtime — no flag. 8.5h — flagged for senior review.</p></>)}
+            value={resolved.issues.highWeeklyOvertimeThreshold}
+            onChange={v => setField('issues', 'highWeeklyOvertimeThreshold', Math.max(0, v))}
+          />
+        </PermissionGroup>
+
+        <PermissionGroup title="Behavioural Patterns">
+          <SelectRow
+            {...fieldProps('issues', 'flagPatternDrift', 'Pattern Drift',
+              'Detect when clock-in times deviate significantly from a staff member\'s historical average — possible buddy-punching or schedule confusion.',
+              <><p className="font-medium mb-1">Example</p><p>Drift = <em>60 min</em>, severity = <em>Info</em>. Noah usually clocks in around 8:30 AM. He clocks in at 10:15 AM — flagged as informational so managers can spot a missed shift swap.</p></>)}
+            value={resolved.issues.flagPatternDrift}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagPatternDrift', v as TimesheetPolicy['issues']['flagPatternDrift'])}
+          />
+          <NumberRow
+            {...fieldProps('issues', 'patternDriftMinutes', 'Pattern Drift Threshold (min)',
+              'Minutes of deviation from the historical average clock-in time before the flag fires.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <em>60</em>. A 45-min deviation is ignored; a 75-min deviation is flagged.</p></>)}
+            value={resolved.issues.patternDriftMinutes}
+            onChange={v => setField('issues', 'patternDriftMinutes', Math.max(0, v))}
+          />
+        </PermissionGroup>
+
+        <PermissionGroup title="Submission Behaviour">
+          <ToggleRow
+            {...fieldProps('issues', 'blockSubmissionOnCritical', 'Block Submission on Critical',
+              'Prevent staff from submitting timesheets that contain any Critical-severity anomaly until it is resolved.',
+              <><p className="font-medium mb-1">Example</p><p>With <strong>ON</strong>, a missing clock-out (Critical) blocks the weekly submit button until a manager corrects it. With OFF, the timesheet submits but stays in a "Needs review" queue.</p></>)}
+            value={resolved.issues.blockSubmissionOnCritical}
+            onChange={v => setField('issues', 'blockSubmissionOnCritical', v)}
+          />
+        </PermissionGroup>
       </CardContent>
     </Card>
   );

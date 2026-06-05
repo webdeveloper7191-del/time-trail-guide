@@ -76,9 +76,30 @@ export interface BreaksSettings {
   paidMealOverMinutesThreshold: number;
 }
 
+export type AnomalySeverity = 'off' | 'info' | 'warning' | 'critical';
+
 export interface TimesheetIssuesSettings {
+  // Time variance
   flagShiftTimeVariance: VarianceFlag;
   flagBreakDurationVariance: VarianceFlag;
+  // Missing / unusual entries
+  flagMissingClockOut: AnomalySeverity;
+  flagUnusualEarlyClockIn: AnomalySeverity;
+  unusualEarlyClockInBeforeHour: number; // 0-23, e.g. 5 = before 5am
+  flagUnusualLateClockOut: AnomalySeverity;
+  unusualLateClockOutAfterHour: number; // 0-23, e.g. 22 = after 10pm
+  // Excessive hours
+  flagExcessiveDailyHours: AnomalySeverity;
+  excessiveDailyHoursThreshold: number; // e.g. 12
+  flagLongShiftWithoutBreak: AnomalySeverity;
+  longShiftWithoutBreakHours: number; // e.g. 6
+  flagHighWeeklyOvertime: AnomalySeverity;
+  highWeeklyOvertimeThreshold: number; // hours
+  // Behavioural patterns
+  flagPatternDrift: AnomalySeverity;
+  patternDriftMinutes: number; // deviation from historical average
+  // Routing
+  blockSubmissionOnCritical: boolean;
 }
 
 export interface TimesheetPolicy {
@@ -148,7 +169,21 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
   },
   issues: {
     flagShiftTimeVariance: 'never',
-    flagBreakDurationVariance: 'always',
+    flagBreakDurationVariance: 'over_10m',
+    flagMissingClockOut: 'critical',
+    flagUnusualEarlyClockIn: 'warning',
+    unusualEarlyClockInBeforeHour: 5,
+    flagUnusualLateClockOut: 'warning',
+    unusualLateClockOutAfterHour: 22,
+    flagExcessiveDailyHours: 'critical',
+    excessiveDailyHoursThreshold: 12,
+    flagLongShiftWithoutBreak: 'warning',
+    longShiftWithoutBreakHours: 6,
+    flagHighWeeklyOvertime: 'warning',
+    highWeeklyOvertimeThreshold: 8,
+    flagPatternDrift: 'info',
+    patternDriftMinutes: 60,
+    blockSubmissionOnCritical: true,
   },
 };
 
@@ -203,4 +238,11 @@ export const varianceFlagOptions: { value: VarianceFlag; label: string }[] = [
   { value: 'over_10m', label: 'Variance over 10 minutes' },
   { value: 'over_15m', label: 'Variance over 15 minutes' },
   { value: 'always', label: 'Always' },
+];
+
+export const anomalySeverityOptions: { value: AnomalySeverity; label: string }[] = [
+  { value: 'off', label: 'Off' },
+  { value: 'info', label: 'Info' },
+  { value: 'warning', label: 'Warning' },
+  { value: 'critical', label: 'Critical' },
 ];
