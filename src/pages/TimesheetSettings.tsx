@@ -517,11 +517,7 @@ export default function TimesheetSettings() {
                 </TabsTrigger>
                 <TabsTrigger value="flags" className="gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Anomaly Flags</span>
-                </TabsTrigger>
-                <TabsTrigger value="compliance" className="gap-2">
-                  <Scale className="h-4 w-4" />
-                  <span className="hidden sm:inline">Compliance</span>
+                  <span className="hidden sm:inline">Flags & Limits</span>
                 </TabsTrigger>
                 <TabsTrigger value="workflow" className="gap-2">
                   <Users className="h-4 w-4" />
@@ -536,7 +532,13 @@ export default function TimesheetSettings() {
                 <PolicyApproving />
                 <PolicyUnscheduled />
               </TabsContent>
-              <TabsContent value="flags" className="space-y-6"><PolicyIssues /></TabsContent>
+              <TabsContent value="flags" className="space-y-6">
+                <PolicyIssues />
+                <ComplianceDesigner
+                  value={compliance}
+                  onChange={(next) => { setCompliance(next); setHasUnsavedChanges(true); }}
+                />
+              </TabsContent>
 
 
 
