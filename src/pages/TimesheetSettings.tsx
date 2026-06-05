@@ -134,6 +134,20 @@ interface EscalationConfig {
   notifyEmails: string[];
 }
 
+function SourceBadge({ source }: { source: ComplianceSource }) {
+  const map = {
+    award: { label: 'From Award', icon: Award, cls: 'bg-primary text-primary-foreground border-transparent' },
+    location: { label: 'Location override', icon: Building2, cls: 'bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400' },
+    tenant: { label: 'Tenant default', icon: Globe, cls: 'bg-muted text-muted-foreground border-border' },
+  } as const;
+  const { label, icon: Icon, cls } = map[source];
+  return (
+    <Badge variant="outline" className={`gap-1 text-[10px] h-5 ${cls}`}>
+      <Icon className="h-3 w-3" /> {label}
+    </Badge>
+  );
+}
+
 export default function TimesheetSettings() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
