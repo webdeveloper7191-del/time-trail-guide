@@ -281,6 +281,7 @@ export function ApprovalFlowDesigner({
                 onRemove={() => { onRemoveRule(rule.id); mark(); }}
                 approverDirectory={approverDirectory}
                 locations={locations}
+                locationGroups={locationGroups}
                 employmentTypes={employmentTypes}
               />
             </div>
