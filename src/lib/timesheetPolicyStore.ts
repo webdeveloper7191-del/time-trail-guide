@@ -16,11 +16,13 @@ type LocationOverridesMap = Record<string, TimesheetPolicyOverride>;
 
 let tenantPolicy: TimesheetPolicy = loadTenant();
 let locationOverrides: LocationOverridesMap = loadLocations();
+let version = 0;
 const listeners = new Set<() => void>();
 const snapshotCache = new Map<string, TimesheetPolicy>();
 
 function cacheKey(locationId?: string) { return locationId ?? '__tenant__'; }
 function invalidateSnapshots() { snapshotCache.clear(); }
+export function getPolicyVersion() { return version; }
 
 function loadTenant(): TimesheetPolicy {
   try {
@@ -46,6 +48,7 @@ function persist() {
     localStorage.setItem(TENANT_KEY, JSON.stringify(tenantPolicy));
     localStorage.setItem(LOC_KEY, JSON.stringify(locationOverrides));
   } catch {/* noop */}
+  version++;
   invalidateSnapshots();
   listeners.forEach(fn => fn());
 }
