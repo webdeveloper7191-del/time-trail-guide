@@ -16,6 +16,7 @@ import {
   timeDriftOptions,
   paidMealOptions,
   varianceFlagOptions,
+  earlyClockInOptions,
 } from '@/types/timesheetPolicy';
 import { timesheetPolicyStore, getPolicyVersion } from '@/lib/timesheetPolicyStore';
 
