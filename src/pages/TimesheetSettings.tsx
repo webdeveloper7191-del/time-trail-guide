@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import { ApprovalTier, BreakRule, ApprovalRule } from '@/types/compliance';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
+import { TimesheetPolicySettings } from '@/components/settings/TimesheetPolicySettings';
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
 import { TimefoldIntegrationPanel } from '@/components/roster/TimefoldIntegrationPanel';
 import { TimefoldConstraintConfigPanel } from '@/components/settings/TimefoldConstraintConfigPanel';
@@ -339,6 +340,11 @@ export default function TimesheetSettings() {
 
         <div className="p-6">
           {activeSection === 'timesheet' ? (
+            <div className="space-y-8">
+              <TimesheetPolicySettings />
+              <div className="border-t pt-6">
+                <h2 className="text-lg font-semibold tracking-tight mb-1">Advanced workflow & compliance</h2>
+                <p className="text-sm text-muted-foreground mb-4">Approval chains, compliance jurisdictions, escalation rules, and alert delivery.</p>
             <Tabs defaultValue="auto-approval" className="space-y-6">
               <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
                 <TabsTrigger value="auto-approval" className="gap-2">
@@ -1257,6 +1263,8 @@ export default function TimesheetSettings() {
               </Card>
             </TabsContent>
             </Tabs>
+              </div>
+            </div>
           ) : activeSection === 'awards' ? (
             <AwardsConfigurationTab />
           ) : (

@@ -1,0 +1,167 @@
+/**
+ * Timesheet Policy Settings
+ *
+ * Two-tier configuration: tenant-level defaults + optional per-location overrides.
+ * When a location field is `undefined`, the tenant default is used.
+ * See `src/lib/timesheetPolicyStore.ts` for resolution.
+ */
+
+export type RoundingDirection = 'never' | 'nearest_5' | 'nearest_10' | 'nearest_15' | 'up_nearest_15' | 'down_nearest_15';
+export type ApprovalCadence = 'never' | 'daily' | 'on_submit' | 'matches_schedule';
+export type LinkUnscheduled = 'never' | 'best_fit' | 'exact_match' | 'same_location';
+export type TimeDrift = 'never' | 'within_15m' | 'within_30m' | 'within_1h' | 'within_2h' | 'within_4h';
+export type PaidMealMode = 'never' | 'always' | 'over_threshold';
+export type VarianceFlag = 'never' | 'over_5m' | 'over_10m' | 'over_15m' | 'always';
+
+export interface TimeTrackingSettings {
+  enableWebClock: boolean;
+  enableMobileClock: boolean;
+  captureGpsOnMobile: boolean;
+  restrictToGeofence: boolean;
+  geofenceRadiusMeters: number;
+  enableSmsClock: boolean;
+  requireKioskPhoto: boolean;
+  minTimesheetMinutes: number;
+}
+
+export interface TeamMemberPermissions {
+  createAndEditTimesheets: boolean;
+  updateTimesheetsDuringShift: boolean;
+  clockInAnytimeBeforeShift: boolean;
+  earlyClockInMinutes: number;
+  wrapUpBreaksSooner: boolean;
+}
+
+export interface TimesheetApprovingSettings {
+  autoApproval: ApprovalCadence;
+  roundingEnabled: boolean;
+  adjustStartToScheduledIfEarlier: boolean;
+  startTimeAdjustment: RoundingDirection;
+  adjustEndToScheduledIfDelayed: boolean;
+  endTimeAdjustment: RoundingDirection;
+  roundShortBreakUpToScheduled: boolean;
+  breakRoundingAdjustment: RoundingDirection;
+}
+
+export interface UnscheduledShiftsSettings {
+  linkUnscheduledToScheduled: LinkUnscheduled;
+  allowTimeDriftMatching: TimeDrift;
+  requireTrainingForUnscheduled: boolean;
+}
+
+export interface BreaksSettings {
+  autoIncludeScheduledOnClockOut: boolean;
+  flagShortOrMissedBreaks: boolean;
+  paidMealBreaks: PaidMealMode;
+  paidMealOverMinutesThreshold: number;
+}
+
+export interface TimesheetIssuesSettings {
+  flagShiftTimeVariance: VarianceFlag;
+  flagBreakDurationVariance: VarianceFlag;
+}
+
+export interface TimesheetPolicy {
+  timeTracking: TimeTrackingSettings;
+  permissions: TeamMemberPermissions;
+  approving: TimesheetApprovingSettings;
+  unscheduled: UnscheduledShiftsSettings;
+  breaks: BreaksSettings;
+  issues: TimesheetIssuesSettings;
+}
+
+/** Partial override — every field optional, including sub-sections. */
+export type TimesheetPolicyOverride = {
+  [K in keyof TimesheetPolicy]?: Partial<TimesheetPolicy[K]>;
+};
+
+export const defaultTimesheetPolicy: TimesheetPolicy = {
+  timeTracking: {
+    enableWebClock: true,
+    enableMobileClock: true,
+    captureGpsOnMobile: false,
+    restrictToGeofence: false,
+    geofenceRadiusMeters: 100,
+    enableSmsClock: false,
+    requireKioskPhoto: false,
+    minTimesheetMinutes: 15,
+  },
+  permissions: {
+    createAndEditTimesheets: false,
+    updateTimesheetsDuringShift: false,
+    clockInAnytimeBeforeShift: false,
+    earlyClockInMinutes: 15,
+    wrapUpBreaksSooner: false,
+  },
+  approving: {
+    autoApproval: 'never',
+    roundingEnabled: false,
+    adjustStartToScheduledIfEarlier: false,
+    startTimeAdjustment: 'never',
+    adjustEndToScheduledIfDelayed: false,
+    endTimeAdjustment: 'never',
+    roundShortBreakUpToScheduled: false,
+    breakRoundingAdjustment: 'never',
+  },
+  unscheduled: {
+    linkUnscheduledToScheduled: 'never',
+    allowTimeDriftMatching: 'never',
+    requireTrainingForUnscheduled: false,
+  },
+  breaks: {
+    autoIncludeScheduledOnClockOut: false,
+    flagShortOrMissedBreaks: false,
+    paidMealBreaks: 'never',
+    paidMealOverMinutesThreshold: 30,
+  },
+  issues: {
+    flagShiftTimeVariance: 'never',
+    flagBreakDurationVariance: 'always',
+  },
+};
+
+export const roundingOptions: { value: RoundingDirection; label: string }[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'nearest_5', label: 'Nearest 5 minutes' },
+  { value: 'nearest_10', label: 'Nearest 10 minutes' },
+  { value: 'nearest_15', label: 'Nearest 15 minutes' },
+  { value: 'up_nearest_15', label: 'Round up to 15 minutes' },
+  { value: 'down_nearest_15', label: 'Round down to 15 minutes' },
+];
+
+export const approvalCadenceOptions: { value: ApprovalCadence; label: string }[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'on_submit', label: 'On submission' },
+  { value: 'matches_schedule', label: 'When matches scheduled shift' },
+  { value: 'daily', label: 'Daily (end of day)' },
+];
+
+export const linkUnscheduledOptions: { value: LinkUnscheduled; label: string }[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'best_fit', label: 'Best Fit (±8 hours)' },
+  { value: 'exact_match', label: 'Exact start/end match' },
+  { value: 'same_location', label: 'Same location/area only' },
+];
+
+export const timeDriftOptions: { value: TimeDrift; label: string }[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'within_15m', label: 'Within 15 minutes' },
+  { value: 'within_30m', label: 'Within 30 minutes' },
+  { value: 'within_1h', label: 'Within 1 hour' },
+  { value: 'within_2h', label: 'Within 2 hours' },
+  { value: 'within_4h', label: 'Within 4 hours' },
+];
+
+export const paidMealOptions: { value: PaidMealMode; label: string }[] = [
+  { value: 'never', label: 'Never (unpaid)' },
+  { value: 'always', label: 'Always paid' },
+  { value: 'over_threshold', label: 'Paid if shift exceeds threshold' },
+];
+
+export const varianceFlagOptions: { value: VarianceFlag; label: string }[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'over_5m', label: 'Variance over 5 minutes' },
+  { value: 'over_10m', label: 'Variance over 10 minutes' },
+  { value: 'over_15m', label: 'Variance over 15 minutes' },
+  { value: 'always', label: 'Always' },
+];
