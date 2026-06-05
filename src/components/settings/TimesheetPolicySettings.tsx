@@ -199,44 +199,107 @@ export function PolicyPermissions() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="tracking-tight">Team Member Permissions</CardTitle>
-        <CardDescription>What staff are allowed to do with their own timesheets.</CardDescription>
+        <CardTitle className="tracking-tight">Staff Self-Service Permissions</CardTitle>
+        <CardDescription>What staff are allowed to do with their own timesheets, clock events and breaks.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-1 divide-y">
-        <ToggleRow
-          {...fieldProps('permissions', 'createAndEditTimesheets', 'Create and Edit Timesheets',
-            'Allow team members to create and edit their timesheets via the web or mobile app.')}
-          value={resolved.permissions.createAndEditTimesheets}
-          onChange={v => setField('permissions', 'createAndEditTimesheets', v)}
-        />
-        <ToggleRow
-          {...fieldProps('permissions', 'updateTimesheetsDuringShift', 'Update Timesheets During Shifts',
-            'Allow team members to make timesheet updates while they are active on shift.')}
-          value={resolved.permissions.updateTimesheetsDuringShift}
-          onChange={v => setField('permissions', 'updateTimesheetsDuringShift', v)}
-        />
-        <ToggleRow
-          {...fieldProps('permissions', 'clockInAnytimeBeforeShift', 'Clock in anytime before the shift',
-            'Permit early clock-ins before the scheduled shift start time.')}
-          value={resolved.permissions.clockInAnytimeBeforeShift}
-          onChange={v => setField('permissions', 'clockInAnytimeBeforeShift', v)}
-        />
-        <NumberRow
-          {...fieldProps('permissions', 'earlyClockInMinutes', 'How early team members can start shifts (minutes)',
-            'Set how many minutes early a team member is allowed to clock in before their scheduled shift.')}
-          value={resolved.permissions.earlyClockInMinutes}
-          onChange={v => setField('permissions', 'earlyClockInMinutes', v)}
-        />
-        <ToggleRow
-          {...fieldProps('permissions', 'wrapUpBreaksSooner', 'Wrap up breaks sooner',
-            'Allow team members to end their breaks early and resume work before the scheduled time.')}
-          value={resolved.permissions.wrapUpBreaksSooner}
-          onChange={v => setField('permissions', 'wrapUpBreaksSooner', v)}
-        />
+      <CardContent className="space-y-6">
+        <PermissionGroup title="Editing">
+          <ToggleRow
+            {...fieldProps('permissions', 'createAndEditTimesheets', 'Create and Edit Timesheets',
+              'Allow team members to create and edit their timesheets via the web or mobile app.')}
+            value={resolved.permissions.createAndEditTimesheets}
+            onChange={v => setField('permissions', 'createAndEditTimesheets', v)}
+          />
+          <ToggleRow
+            {...fieldProps('permissions', 'updateTimesheetsDuringShift', 'Update Timesheets During Shifts',
+              'Allow team members to make timesheet updates while they are active on shift.')}
+            value={resolved.permissions.updateTimesheetsDuringShift}
+            onChange={v => setField('permissions', 'updateTimesheetsDuringShift', v)}
+          />
+          <ToggleRow
+            {...fieldProps('permissions', 'editClockTimesAfterSubmission', 'Edit Clock Times After Submission',
+              'Allow staff to modify clock-in/out times after a timesheet has been submitted (until it is approved). Audited.')}
+            value={resolved.permissions.editClockTimesAfterSubmission}
+            onChange={v => setField('permissions', 'editClockTimesAfterSubmission', v)}
+          />
+          <ToggleRow
+            {...fieldProps('permissions', 'addNotesAndAttachments', 'Add Notes and Attachments',
+              'Allow staff to attach notes, files, or photos to their timesheet entries.')}
+            value={resolved.permissions.addNotesAndAttachments}
+            onChange={v => setField('permissions', 'addNotesAndAttachments', v)}
+          />
+        </PermissionGroup>
+
+        <PermissionGroup title="Clock-in & Clock-out">
+          <SelectRow
+            {...fieldProps('permissions', 'earlyClockInPolicy', 'Early Clock-in Policy',
+              'Control whether team members can clock in before their scheduled shift start.')}
+            value={resolved.permissions.earlyClockInPolicy}
+            options={earlyClockInOptions}
+            onChange={v => setField('permissions', 'earlyClockInPolicy', v as TimesheetPolicy['permissions']['earlyClockInPolicy'])}
+          />
+          {resolved.permissions.earlyClockInPolicy === 'within_minutes' && (
+            <NumberRow
+              {...fieldProps('permissions', 'earlyClockInMinutes', 'Maximum early clock-in (minutes)',
+                'How many minutes before the scheduled start a team member can clock in.')}
+              value={resolved.permissions.earlyClockInMinutes}
+              onChange={v => setField('permissions', 'earlyClockInMinutes', v)}
+            />
+          )}
+          <NumberRow
+            {...fieldProps('permissions', 'lateClockInGraceMinutes', 'Late clock-in grace (minutes)',
+              'Clock-ins within this many minutes after the scheduled start still count as on-time (no late flag).')}
+            value={resolved.permissions.lateClockInGraceMinutes}
+            onChange={v => setField('permissions', 'lateClockInGraceMinutes', v)}
+          />
+          <ToggleRow
+            {...fieldProps('permissions', 'allowEarlyClockOut', 'Allow Early Clock-out',
+              'Permit staff to clock out before their scheduled shift end time.')}
+            value={resolved.permissions.allowEarlyClockOut}
+            onChange={v => setField('permissions', 'allowEarlyClockOut', v)}
+          />
+          <NumberRow
+            {...fieldProps('permissions', 'autoClockOutAfterShiftMinutes', 'Auto clock-out after shift end (minutes)',
+              'If a team member forgets to clock out, automatically clock them out this many minutes after the scheduled end. Set 0 to disable.')}
+            value={resolved.permissions.autoClockOutAfterShiftMinutes}
+            onChange={v => setField('permissions', 'autoClockOutAfterShiftMinutes', v)}
+          />
+        </PermissionGroup>
+
+        <PermissionGroup title="Breaks">
+          <ToggleRow
+            {...fieldProps('permissions', 'wrapUpBreaksSooner', 'Wrap up Breaks Sooner',
+              'Allow team members to end their breaks early and resume work before the scheduled time.')}
+            value={resolved.permissions.wrapUpBreaksSooner}
+            onChange={v => setField('permissions', 'wrapUpBreaksSooner', v)}
+          />
+          <ToggleRow
+            {...fieldProps('permissions', 'editOwnBreakDuration', 'Edit Own Break Duration',
+              'Allow staff to adjust the duration of breaks on their own timesheet entries.')}
+            value={resolved.permissions.editOwnBreakDuration}
+            onChange={v => setField('permissions', 'editOwnBreakDuration', v)}
+          />
+          <ToggleRow
+            {...fieldProps('permissions', 'addBreaksToPastTimesheets', 'Add Breaks to Past Timesheets',
+              'Allow staff to retroactively add break entries to previously submitted timesheets (until approved).')}
+            value={resolved.permissions.addBreaksToPastTimesheets}
+            onChange={v => setField('permissions', 'addBreaksToPastTimesheets', v)}
+          />
+        </PermissionGroup>
       </CardContent>
     </Card>
   );
 }
+
+function PermissionGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">{title}</h4>
+      <div className="space-y-1 divide-y border-t">{children}</div>
+    </div>
+  );
+}
+
 
 export function PolicyApproving() {
   const { resolved, setField, fieldProps } = usePolicyAndScope();
