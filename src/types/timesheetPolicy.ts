@@ -102,10 +102,18 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
   permissions: {
     createAndEditTimesheets: false,
     updateTimesheetsDuringShift: false,
-    clockInAnytimeBeforeShift: false,
+    editClockTimesAfterSubmission: false,
+    addNotesAndAttachments: true,
+    earlyClockInPolicy: 'within_minutes',
     earlyClockInMinutes: 15,
+    lateClockInGraceMinutes: 5,
+    allowEarlyClockOut: false,
+    autoClockOutAfterShiftMinutes: 30,
     wrapUpBreaksSooner: false,
+    editOwnBreakDuration: false,
+    addBreaksToPastTimesheets: false,
   },
+
   approving: {
     autoApproval: 'never',
     roundingEnabled: false,
