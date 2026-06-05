@@ -352,7 +352,7 @@ export default function TimesheetSettings() {
             <div className="space-y-6">
               <TimesheetPolicyScopeBar />
             <Tabs defaultValue="time-tracking" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex flex-wrap h-auto">
+              <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex flex-wrap h-auto">
                 <TabsTrigger value="time-tracking" className="gap-2">
                   <FingerprintIcon className="h-4 w-4" />
                   <span className="hidden sm:inline">Time Tracking</span>
@@ -361,33 +361,17 @@ export default function TimesheetSettings() {
                   <ShieldCheck className="h-4 w-4" />
                   <span className="hidden sm:inline">Permissions</span>
                 </TabsTrigger>
+                <TabsTrigger value="breaks" className="gap-2">
+                  <Coffee className="h-4 w-4" />
+                  <span className="hidden sm:inline">Breaks</span>
+                </TabsTrigger>
                 <TabsTrigger value="approving" className="gap-2">
                   <CheckSquare className="h-4 w-4" />
                   <span className="hidden sm:inline">Approving</span>
                 </TabsTrigger>
-                <TabsTrigger value="unscheduled" className="gap-2">
-                  <CalendarClock className="h-4 w-4" />
-                  <span className="hidden sm:inline">Unscheduled</span>
-                </TabsTrigger>
-                <TabsTrigger value="policy-breaks" className="gap-2">
-                  <CoffeeIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Breaks (Policy)</span>
-                </TabsTrigger>
-                <TabsTrigger value="issues" className="gap-2">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Issues</span>
-                </TabsTrigger>
-                <TabsTrigger value="auto-approval" className="gap-2">
-                  <Zap className="h-4 w-4" />
-                  <span className="hidden sm:inline">Auto-Approval</span>
-                </TabsTrigger>
-                <TabsTrigger value="flagging" className="gap-2">
+                <TabsTrigger value="flags" className="gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Flagging</span>
-                </TabsTrigger>
-                <TabsTrigger value="breaks" className="gap-2">
-                  <Coffee className="h-4 w-4" />
-                  <span className="hidden sm:inline">Breaks</span>
+                  <span className="hidden sm:inline">Anomaly Flags</span>
                 </TabsTrigger>
                 <TabsTrigger value="compliance" className="gap-2">
                   <Scale className="h-4 w-4" />
@@ -395,24 +379,24 @@ export default function TimesheetSettings() {
                 </TabsTrigger>
                 <TabsTrigger value="workflow" className="gap-2">
                   <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">Workflow</span>
-                </TabsTrigger>
-                <TabsTrigger value="notifications" className="gap-2">
-                  <Bell className="h-4 w-4" />
-                  <span className="hidden sm:inline">Alerts</span>
+                  <span className="hidden sm:inline">Workflow & Notifications</span>
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="time-tracking"><PolicyTimeTracking /></TabsContent>
               <TabsContent value="permissions"><PolicyPermissions /></TabsContent>
-              <TabsContent value="approving"><PolicyApproving /></TabsContent>
-              <TabsContent value="unscheduled"><PolicyUnscheduled /></TabsContent>
-              <TabsContent value="policy-breaks"><PolicyBreaks /></TabsContent>
-              <TabsContent value="issues"><PolicyIssues /></TabsContent>
+              <TabsContent value="breaks" className="space-y-6"><PolicyBreaks /></TabsContent>
+              <TabsContent value="approving" className="space-y-6">
+                <PolicyApproving />
+                <PolicyUnscheduled />
+              </TabsContent>
+              <TabsContent value="flags" className="space-y-6"><PolicyIssues /></TabsContent>
+
+
 
 
             {/* Auto-Approval Tab */}
-            <TabsContent value="auto-approval" className="space-y-6">
+            <TabsContent value="approving" className="space-y-6">
               {/* Master Toggle */}
               <Card>
                 <CardHeader>
@@ -539,7 +523,7 @@ export default function TimesheetSettings() {
             </TabsContent>
 
             {/* Flagging Tab */}
-            <TabsContent value="flagging" className="space-y-6">
+            <TabsContent value="flags" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1160,7 +1144,7 @@ export default function TimesheetSettings() {
             </TabsContent>
 
             {/* Notifications Tab */}
-            <TabsContent value="notifications" className="space-y-6">
+            <TabsContent value="workflow" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
