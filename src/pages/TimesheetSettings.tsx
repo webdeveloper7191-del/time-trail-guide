@@ -132,13 +132,16 @@ export default function TimesheetSettings() {
     },
   ]);
 
-  // Escalation Config
-  const [escalationConfigs, setEscalationConfigs] = useState<EscalationConfig[]>([
-    { tier: 'manager', slaHours: 24, escalateTo: 'senior_manager', notifyEmails: [] },
-    { tier: 'senior_manager', slaHours: 48, escalateTo: 'director', notifyEmails: [] },
-    { tier: 'director', slaHours: 72, escalateTo: 'hr', notifyEmails: [] },
-    { tier: 'hr', slaHours: 96, escalateTo: 'hr', notifyEmails: [] },
-  ]);
+  // Simplified compliance: only flag thresholds. Pay logic lives in Awards.
+  const [compliance, setCompliance] = useState<ComplianceState>({
+    effectiveAwardLabel: 'General / Clerks',
+    effectiveAwardReference: 'MA000002',
+    maxDailyHours: { enabled: true, value: 10, severity: 'warning' },
+    maxWeeklyHours: { enabled: true, value: 38, severity: 'warning' },
+    minRestBetweenShiftsHours: { enabled: true, value: 10, severity: 'critical' },
+    maxConsecutiveDays: { enabled: true, value: 6, severity: 'warning' },
+  });
+
 
   // Notification Settings — per-event channel matrix
   type NotifChannels = { email: boolean; inApp: boolean };
