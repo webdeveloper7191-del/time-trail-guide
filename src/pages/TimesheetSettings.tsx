@@ -198,10 +198,13 @@ export default function TimesheetSettings() {
     },
   });
 
+  // Tenant-wide: auto-approve clean timesheets (skip Location Manager when no flags/OT/exceptions)
+  const [autoApproveClean, setAutoApproveClean] = useState(false);
+
   // Step 1 — Location Manager (always first, cannot be removed)
   const [locationManagerStep, setLocationManagerStep] = useState({
     enabled: true,
-    skipWhenAutoApproved: true,
+    skipWhenAutoApproved: false,
     slaHours: 24,
     reminderHours: 4,
     breachAction: 'escalate' as SlaBreachAction,
