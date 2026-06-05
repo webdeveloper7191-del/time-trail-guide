@@ -47,7 +47,16 @@ import {
 } from 'lucide-react';
 import { ApprovalTier, BreakRule, ApprovalRule } from '@/types/compliance';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
-import { TimesheetPolicySettings } from '@/components/settings/TimesheetPolicySettings';
+import {
+  TimesheetPolicyScopeBar,
+  PolicyTimeTracking,
+  PolicyPermissions,
+  PolicyApproving,
+  PolicyUnscheduled,
+  PolicyBreaks,
+  PolicyIssues,
+} from '@/components/settings/TimesheetPolicySettings';
+import { Fingerprint as FingerprintIcon, ShieldCheck, CheckSquare, CalendarClock, Coffee as CoffeeIcon, AlertCircle } from 'lucide-react';
 import { TimefoldConstraintPanel } from '@/components/roster/TimefoldConstraintPanel';
 import { TimefoldIntegrationPanel } from '@/components/roster/TimefoldIntegrationPanel';
 import { TimefoldConstraintConfigPanel } from '@/components/settings/TimefoldConstraintConfigPanel';
