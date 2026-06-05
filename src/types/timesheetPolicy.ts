@@ -24,13 +24,26 @@ export interface TimeTrackingSettings {
   minTimesheetMinutes: number;
 }
 
+export type EarlyClockInPolicy = 'never' | 'within_minutes' | 'anytime';
+
 export interface TeamMemberPermissions {
+  // Editing
   createAndEditTimesheets: boolean;
   updateTimesheetsDuringShift: boolean;
-  clockInAnytimeBeforeShift: boolean;
+  editClockTimesAfterSubmission: boolean;
+  addNotesAndAttachments: boolean;
+  // Clock-in / out
+  earlyClockInPolicy: EarlyClockInPolicy;
   earlyClockInMinutes: number;
+  lateClockInGraceMinutes: number;
+  allowEarlyClockOut: boolean;
+  autoClockOutAfterShiftMinutes: number;
+  // Breaks
   wrapUpBreaksSooner: boolean;
+  editOwnBreakDuration: boolean;
+  addBreaksToPastTimesheets: boolean;
 }
+
 
 export interface TimesheetApprovingSettings {
   autoApproval: ApprovalCadence;
@@ -89,10 +102,18 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
   permissions: {
     createAndEditTimesheets: false,
     updateTimesheetsDuringShift: false,
-    clockInAnytimeBeforeShift: false,
+    editClockTimesAfterSubmission: false,
+    addNotesAndAttachments: true,
+    earlyClockInPolicy: 'within_minutes',
     earlyClockInMinutes: 15,
+    lateClockInGraceMinutes: 5,
+    allowEarlyClockOut: false,
+    autoClockOutAfterShiftMinutes: 30,
     wrapUpBreaksSooner: false,
+    editOwnBreakDuration: false,
+    addBreaksToPastTimesheets: false,
   },
+
   approving: {
     autoApproval: 'never',
     roundingEnabled: false,
@@ -135,6 +156,13 @@ export const approvalCadenceOptions: { value: ApprovalCadence; label: string }[]
   { value: 'matches_schedule', label: 'When matches scheduled shift' },
   { value: 'daily', label: 'Daily (end of day)' },
 ];
+
+export const earlyClockInOptions: { value: EarlyClockInPolicy; label: string }[] = [
+  { value: 'never', label: 'Not allowed' },
+  { value: 'within_minutes', label: 'Up to X minutes early' },
+  { value: 'anytime', label: 'Anytime before shift' },
+];
+
 
 export const linkUnscheduledOptions: { value: LinkUnscheduled; label: string }[] = [
   { value: 'never', label: 'Never' },
