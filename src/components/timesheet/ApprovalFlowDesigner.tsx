@@ -543,118 +543,152 @@ function EscalationCard({
             </p>
           </div>
 
-          {/* WHO + SLA */}
+          {/* APPROVER BANDS: scope + who + SLA per band */}
           <div>
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground mb-2 block">Who &amp; SLA</Label>
-            <div className="grid gap-3 md:grid-cols-4">
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Approver role</Label>
-                <Select
-                  value={rule.requiredTier}
-                  onValueChange={(v: ApprovalTier) => onUpdate({ requiredTier: v, assignedApproverId: undefined })}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="senior_manager">Senior / Area Manager</SelectItem>
-                    <SelectItem value="director">Director / State Manager</SelectItem>
-                    <SelectItem value="hr">HR / Payroll</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Specific person</Label>
-                <Select
-                  value={rule.assignedApproverId || 'any'}
-                  onValueChange={(v) => onUpdate({ assignedApproverId: v === 'any' ? undefined : v })}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="any">Any in role</SelectItem>
-                    {approverDirectory.filter((u) => u.tier === rule.requiredTier).map((u) => (
-                      <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">SLA (hours)</Label>
-                <Input
-                  type="number"
-                  value={rule.slaHours ?? 24}
-                  onChange={(e) => onUpdate({ slaHours: Number(e.target.value) })}
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">On SLA breach</Label>
-                <Select
-                  value={rule.slaBreachAction || 'escalate'}
-                  onValueChange={(v: SlaBreachAction) => onUpdate({ slaBreachAction: v })}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="escalate">Escalate to next role</SelectItem>
-                    <SelectItem value="auto_approve">Auto-approve</SelectItem>
-                    <SelectItem value="auto_reject">Auto-reject</SelectItem>
-                    <SelectItem value="hold">Hold for review</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Route to (by scope)
+              </Label>
+              <Button variant="outline" size="sm" onClick={addBand} className="gap-1.5 h-7">
+                <Plus className="h-3.5 w-3.5" />
+                Add band
+              </Button>
             </div>
-            <div className="flex flex-wrap gap-4 mt-3">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox
-                  checked={!!rule.parallelApproval}
-                  onCheckedChange={(c) => onUpdate({ parallelApproval: !!c })}
-                />
-                Parallel approval (all approvers must approve)
-              </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox
-                  checked={rule.requireCommentOnReject ?? true}
-                  onCheckedChange={(c) => onUpdate({ requireCommentOnReject: !!c })}
-                />
-                Require comment on reject
-              </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox
-                  checked={!!rule.notifyStaffOnRoute}
-                  onCheckedChange={(c) => onUpdate({ notifyStaffOnRoute: !!c })}
-                />
-                Notify staff when routed
-              </label>
+            <p className="text-xs text-muted-foreground mb-3">
+              Bands are evaluated top-to-bottom. The first one whose scope matches the
+              timesheet wins. Leave all scope filters empty to make a band the catch-all.
+            </p>
+
+            <div className="space-y-3">
+              {bands.map((band, bIdx) => (
+                <div key={band.id} className="rounded-md border bg-background p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="font-mono text-[10px] h-5">
+                        Band {bIdx + 1}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{bandScopeLabel(band)}</span>
+                    </div>
+                    {bands.length > 1 && (
+                      <Button
+                        variant="ghost" size="sm"
+                        onClick={() => removeBand(band.id)}
+                        className="h-7 text-muted-foreground hover:text-destructive gap-1"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Scope row */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ScopePopover
+                      label={band.locationGroupIds?.length ? `${band.locationGroupIds.length} group${band.locationGroupIds.length > 1 ? 's' : ''}` : 'All location groups'}
+                      options={locationGroups.map((g) => ({ id: g.id, label: g.name }))}
+                      selected={band.locationGroupIds ?? []}
+                      onChange={(ids) => patchBand(band.id, { locationGroupIds: ids.length ? ids : undefined })}
+                      emptyLabel="All location groups"
+                    />
+                    <ScopePopover
+                      label={band.locationIds?.length ? `${band.locationIds.length} location${band.locationIds.length > 1 ? 's' : ''}` : 'All locations'}
+                      options={locations.map((l) => ({ id: l.id, label: l.name }))}
+                      selected={band.locationIds ?? []}
+                      onChange={(ids) => patchBand(band.id, { locationIds: ids.length ? ids : undefined })}
+                      emptyLabel="All locations"
+                    />
+                    <ScopePopover
+                      label={band.employmentTypes?.length ? band.employmentTypes.join(' · ') : 'All employment types'}
+                      options={employmentTypes.map((et) => ({ id: et, label: et }))}
+                      selected={band.employmentTypes ?? []}
+                      onChange={(ids) => patchBand(band.id, { employmentTypes: ids.length ? ids : undefined })}
+                      emptyLabel="All employment types"
+                    />
+                  </div>
+
+                  {/* Who + SLA row */}
+                  <div className="grid gap-3 md:grid-cols-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1.5 block">Approver role</Label>
+                      <Select
+                        value={band.requiredTier}
+                        onValueChange={(v: ApprovalTier) => patchBand(band.id, { requiredTier: v, assignedApproverId: undefined })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="senior_manager">Senior / Area Manager</SelectItem>
+                          <SelectItem value="director">Director / State Manager</SelectItem>
+                          <SelectItem value="hr">HR / Payroll</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1.5 block">Specific person</Label>
+                      <Select
+                        value={band.assignedApproverId || 'any'}
+                        onValueChange={(v) => patchBand(band.id, { assignedApproverId: v === 'any' ? undefined : v })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any">Any in role</SelectItem>
+                          {approverDirectory.filter((u) => u.tier === band.requiredTier).map((u) => (
+                            <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1.5 block">SLA (hours)</Label>
+                      <Input
+                        type="number"
+                        value={band.slaHours}
+                        onChange={(e) => patchBand(band.id, { slaHours: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1.5 block">On SLA breach</Label>
+                      <Select
+                        value={band.slaBreachAction}
+                        onValueChange={(v: SlaBreachAction) => patchBand(band.id, { slaBreachAction: v })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="escalate">Escalate to next role</SelectItem>
+                          <SelectItem value="auto_approve">Auto-approve</SelectItem>
+                          <SelectItem value="auto_reject">Auto-reject</SelectItem>
+                          <SelectItem value="hold">Hold for review</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={!!band.parallelApproval}
+                        onCheckedChange={(c) => patchBand(band.id, { parallelApproval: !!c })}
+                      />
+                      Parallel approval
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={band.requireCommentOnReject ?? true}
+                        onCheckedChange={(c) => patchBand(band.id, { requireCommentOnReject: !!c })}
+                      />
+                      Require comment on reject
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={!!band.notifyStaffOnRoute}
+                        onCheckedChange={(c) => patchBand(band.id, { notifyStaffOnRoute: !!c })}
+                      />
+                      Notify staff when routed
+                    </label>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Applies to (scope) */}
-          <div>
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground mb-2 block">Applies to</Label>
-            <div className="flex flex-wrap items-center gap-2">
-              <ScopePopover
-                label={rule.locationGroupIds?.length ? `${rule.locationGroupIds.length} group${rule.locationGroupIds.length > 1 ? 's' : ''}` : 'All location groups'}
-                options={locationGroups.map((g) => ({ id: g.id, label: g.name }))}
-                selected={rule.locationGroupIds ?? []}
-                onChange={(ids) => onUpdate({ locationGroupIds: ids.length ? ids : undefined })}
-                emptyLabel="All location groups"
-              />
-              <ScopePopover
-                label={rule.locationIds?.length ? `${rule.locationIds.length} location${rule.locationIds.length > 1 ? 's' : ''}` : 'All locations'}
-                options={locations.map((l) => ({ id: l.id, label: l.name }))}
-                selected={rule.locationIds ?? []}
-                onChange={(ids) => onUpdate({ locationIds: ids.length ? ids : undefined })}
-                emptyLabel="All locations"
-              />
-              <ScopePopover
-                label={rule.employmentTypes?.length ? rule.employmentTypes.join(' · ') : 'All employment types'}
-                options={employmentTypes.map((et) => ({ id: et, label: et }))}
-                selected={rule.employmentTypes ?? []}
-                onChange={(ids) => onUpdate({ employmentTypes: ids.length ? ids : undefined })}
-                emptyLabel="All employment types"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Filter by <strong>location group</strong> (e.g. state or region), specific locations, or employment type. Leave blank to apply to all.
-            </p>
-          </div>
         </div>
       )}
     </div>
