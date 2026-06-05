@@ -169,7 +169,21 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
   },
   issues: {
     flagShiftTimeVariance: 'never',
-    flagBreakDurationVariance: 'always',
+    flagBreakDurationVariance: 'over_10m',
+    flagMissingClockOut: 'critical',
+    flagUnusualEarlyClockIn: 'warning',
+    unusualEarlyClockInBeforeHour: 5,
+    flagUnusualLateClockOut: 'warning',
+    unusualLateClockOutAfterHour: 22,
+    flagExcessiveDailyHours: 'critical',
+    excessiveDailyHoursThreshold: 12,
+    flagLongShiftWithoutBreak: 'warning',
+    longShiftWithoutBreakHours: 6,
+    flagHighWeeklyOvertime: 'warning',
+    highWeeklyOvertimeThreshold: 8,
+    flagPatternDrift: 'info',
+    patternDriftMinutes: 60,
+    blockSubmissionOnCritical: true,
   },
 };
 
