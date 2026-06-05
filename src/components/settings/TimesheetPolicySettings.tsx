@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Globe2, RotateCcw, Info } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { Building2, Globe2, RotateCcw, Info, HelpCircle } from 'lucide-react';
 import { mockLocations } from '@/data/mockLocationData';
 import {
   TimesheetPolicy,
@@ -71,11 +72,11 @@ function usePolicyAndScope() {
   }
 
   const fieldProps = <S extends SectionKey, F extends keyof TimesheetPolicy[S]>(
-    section: S, field: F, label: string, description?: string,
+    section: S, field: F, label: string, description?: string, example?: React.ReactNode,
   ) => ({
     overridden: isOverridden(section, field),
     onReset: () => clearOverride(section, field),
-    label, description, isTenant,
+    label, description, example, isTenant,
   });
 
   return { scope, isTenant, resolved, setField, fieldProps };
@@ -313,7 +314,13 @@ export function PolicyApproving() {
         <PermissionGroup title="Auto-Approval">
           <SelectRow
             {...fieldProps('approving', 'autoApproval', 'Automatic Timesheet Approval',
-              'Automatically approve timesheets if they align with the scheduled shift or fall within the defined grace period.')}
+              'Automatically approve timesheets if they align with the scheduled shift or fall within the defined grace period.',
+              <>
+                <p className="font-medium mb-1">What it does</p>
+                <p className="mb-2">Decides when timesheets bypass manual approval.</p>
+                <p className="font-medium mb-1">Example</p>
+                <p>Choose <em>"When matches scheduled shift"</em>. Sarah was rostered 9:00–17:00 and clocked 9:02–17:01. The system auto-approves because the drift sits within the match tolerance below.</p>
+              </>)}
             value={resolved.approving.autoApproval}
             options={approvalCadenceOptions}
             onChange={v => setField('approving', 'autoApproval', v as TimesheetPolicy['approving']['autoApproval'])}
@@ -323,26 +330,42 @@ export function PolicyApproving() {
               {resolved.approving.autoApproval === 'matches_schedule' && (
                 <NumberRow
                   {...fieldProps('approving', 'autoApprovalMatchToleranceMinutes', 'Match tolerance (minutes)',
-                    'How far recorded start/end can drift from the scheduled shift and still be considered a match.')}
+                    'How far recorded start/end can drift from the scheduled shift and still be considered a match.',
+                    <>
+                      <p className="font-medium mb-1">Example</p>
+                      <p>Set to <strong>5</strong>. Roster 9:00–17:00. Clock 8:57–17:04 → auto-approves (within 5 min). Clock 9:08–17:00 → routes to a manager because the start drifted 8 minutes.</p>
+                    </>)}
                   value={resolved.approving.autoApprovalMatchToleranceMinutes}
                   onChange={v => setField('approving', 'autoApprovalMatchToleranceMinutes', v)}
                 />
               )}
               <ToggleRow
                 {...fieldProps('approving', 'skipAutoApprovalIfFlagged', 'Skip auto-approval if flagged',
-                  'Hold timesheets for manual review when any anomaly flag is raised (variance, missed break, overtime threshold, etc.).')}
+                  'Hold timesheets for manual review when any anomaly flag is raised (variance, missed break, overtime threshold, etc.).',
+                  <>
+                    <p className="font-medium mb-1">Example</p>
+                    <p>Tom missed his scheduled meal break. With this <strong>ON</strong>, the timesheet skips auto-approval and waits for a manager — even if everything else looks fine. With it OFF, it would auto-approve and the flag would only be visible in reports.</p>
+                  </>)}
                 value={resolved.approving.skipAutoApprovalIfFlagged}
                 onChange={v => setField('approving', 'skipAutoApprovalIfFlagged', v)}
               />
               <NumberRow
                 {...fieldProps('approving', 'autoApprovalMaxDailyHours', 'Max auto-approvable daily hours',
-                  'Timesheets exceeding this many hours in a day will not auto-approve. Set 0 to disable the cap.')}
+                  'Timesheets exceeding this many hours in a day will not auto-approve. Set 0 to disable the cap.',
+                  <>
+                    <p className="font-medium mb-1">Example</p>
+                    <p>Set to <strong>10</strong>. A 9.5-hour shift auto-approves. An 11-hour shift routes to a manager so that long days are always reviewed before pay. Set to <strong>0</strong> to disable this safety cap.</p>
+                  </>)}
                 value={resolved.approving.autoApprovalMaxDailyHours}
                 onChange={v => setField('approving', 'autoApprovalMaxDailyHours', v)}
               />
               <ToggleRow
                 {...fieldProps('approving', 'notifyStaffOnAdjustment', 'Notify staff on auto-adjustment',
-                  'Send the team member a notification when rounding or auto-approval changes their recorded times.')}
+                  'Send the team member a notification when rounding or auto-approval changes their recorded times.',
+                  <>
+                    <p className="font-medium mb-1">Example</p>
+                    <p>Priya clocks out at 17:07; rounding snaps it back to 17:00. With this <strong>ON</strong>, she receives a push notification: "Your clock-out was rounded from 17:07 to 17:00." Keeps staff trust by showing all adjustments transparently.</p>
+                  </>)}
                 value={resolved.approving.notifyStaffOnAdjustment}
                 onChange={v => setField('approving', 'notifyStaffOnAdjustment', v)}
               />
@@ -353,7 +376,11 @@ export function PolicyApproving() {
         <PermissionGroup title="Rounding">
           <ToggleRow
             {...fieldProps('approving', 'roundingEnabled', 'Timesheet Rounding (Auto)',
-              'Master switch for automatic rounding of start and end times. When off, the rules below are ignored.')}
+              'Master switch for automatic rounding of start and end times. When off, the rules below are ignored.',
+              <>
+                <p className="font-medium mb-1">What it does</p>
+                <p>Turns on the rounding engine. When OFF, recorded times are used verbatim and the four rules below are ignored (even if individually set).</p>
+              </>)}
             value={resolved.approving.roundingEnabled}
             onChange={v => setField('approving', 'roundingEnabled', v)}
           />
@@ -361,26 +388,42 @@ export function PolicyApproving() {
             <div className="space-y-1 divide-y">
               <ToggleRow
                 {...fieldProps('approving', 'adjustStartToScheduledIfEarlier', 'Snap start to scheduled if earlier',
-                  'Early clock-ins are rounded forward to the scheduled start. Later clock-ins follow the rounding rule below.')}
+                  'Early clock-ins are rounded forward to the scheduled start. Later clock-ins follow the rounding rule below.',
+                  <>
+                    <p className="font-medium mb-1">Example</p>
+                    <p>Roster start 9:00. Staff clocks in 8:52. With <strong>ON</strong>, the recorded start becomes 9:00 (no early-start pay). With OFF, 8:52 is preserved and rounded per the rule below.</p>
+                  </>)}
                 value={resolved.approving.adjustStartToScheduledIfEarlier}
                 onChange={v => setField('approving', 'adjustStartToScheduledIfEarlier', v)}
               />
               <SelectRow
                 {...fieldProps('approving', 'startTimeAdjustment', 'Start Time Rounding',
-                  'How non-snapped start times are rounded. Later rounding may reduce payable hours.')}
+                  'How non-snapped start times are rounded. Later rounding may reduce payable hours.',
+                  <>
+                    <p className="font-medium mb-1">Example</p>
+                    <p>Choose <em>"Nearest 15 minutes"</em>. Clock-in 9:07 → recorded as 9:00. Clock-in 9:08 → 9:15. Choose <em>"Round up to 15"</em> to always favour the employee on late starts.</p>
+                  </>)}
                 value={resolved.approving.startTimeAdjustment}
                 options={roundingOptions}
                 onChange={v => setField('approving', 'startTimeAdjustment', v as TimesheetPolicy['approving']['startTimeAdjustment'])}
               />
               <ToggleRow
                 {...fieldProps('approving', 'adjustEndToScheduledIfDelayed', 'Snap end to scheduled if delayed',
-                  'Late clock-outs are rounded back to the scheduled end. Early clock-outs follow the rounding rule below.')}
+                  'Late clock-outs are rounded back to the scheduled end. Early clock-outs follow the rounding rule below.',
+                  <>
+                    <p className="font-medium mb-1">Example</p>
+                    <p>Roster end 17:00. Staff clocks out 17:09. With <strong>ON</strong>, the recorded end becomes 17:00 (no unapproved overtime). With OFF, 17:09 is preserved and rounded per the rule below — and may trigger overtime.</p>
+                  </>)}
                 value={resolved.approving.adjustEndToScheduledIfDelayed}
                 onChange={v => setField('approving', 'adjustEndToScheduledIfDelayed', v)}
               />
               <SelectRow
                 {...fieldProps('approving', 'endTimeAdjustment', 'End Time Rounding',
-                  'How non-snapped end times are rounded. Earlier rounding may reduce total hours paid.')}
+                  'How non-snapped end times are rounded. Earlier rounding may reduce total hours paid.',
+                  <>
+                    <p className="font-medium mb-1">Example</p>
+                    <p>Choose <em>"Nearest 15 minutes"</em>. Clock-out 16:53 → 16:45 (staff loses 5 min). Choose <em>"Round down to 15"</em> for strict trimming, or <em>"Nearest 5"</em> for a fairer split.</p>
+                  </>)}
                 value={resolved.approving.endTimeAdjustment}
                 options={roundingOptions}
                 onChange={v => setField('approving', 'endTimeAdjustment', v as TimesheetPolicy['approving']['endTimeAdjustment'])}
@@ -582,18 +625,41 @@ export function PolicyIssues() {
 interface BaseRowProps {
   label: string;
   description?: string;
+  example?: React.ReactNode;
   isTenant: boolean;
   overridden: boolean;
   onReset: () => void;
   comingSoon?: boolean;
 }
 
-function RowShell({ label, description, isTenant, overridden, onReset, comingSoon, control }: BaseRowProps & { control: React.ReactNode }) {
+function HelpHint({ content }: { content: React.ReactNode }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label="More info"
+            className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function RowShell({ label, description, example, isTenant, overridden, onReset, comingSoon, control }: BaseRowProps & { control: React.ReactNode }) {
   return (
     <div className={`flex items-start justify-between gap-6 py-4 ${comingSoon ? 'opacity-60' : ''}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <Label className="text-sm font-medium tracking-tight">{label}</Label>
+          {example && <HelpHint content={example} />}
           {comingSoon && (
             <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30 text-[10px] h-5 dark:text-amber-400">
               Coming Soon
