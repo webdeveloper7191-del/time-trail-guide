@@ -367,6 +367,15 @@ function breachLabel(a: SlaBreachAction): string {
   }
 }
 
+function bandScopeLabel(b: ApprovalBand): string {
+  const parts: string[] = [];
+  if (b.locationGroupIds?.length) parts.push(`${b.locationGroupIds.length} group${b.locationGroupIds.length > 1 ? 's' : ''}`);
+  if (b.locationIds?.length) parts.push(`${b.locationIds.length} location${b.locationIds.length > 1 ? 's' : ''}`);
+  if (b.employmentTypes?.length) parts.push(b.employmentTypes.join(' · '));
+  return parts.length ? parts.join(' · ') : 'All locations & employment types';
+}
+
+
 /* ─────────────── Escalation step card ─────────────── */
 
 function EscalationCard({
