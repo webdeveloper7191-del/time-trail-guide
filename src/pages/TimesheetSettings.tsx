@@ -1301,7 +1301,6 @@ export default function TimesheetSettings() {
               </Card>
             </TabsContent>
             </Tabs>
-              </div>
             </div>
           ) : activeSection === 'awards' ? (
             <AwardsConfigurationTab />
