@@ -61,20 +61,38 @@ export type ApprovalRuleCondition =
 
 export type SlaBreachAction = 'escalate' | 'auto_approve' | 'auto_reject' | 'hold';
 
+/**
+ * Simplified trigger set for additional approval steps.
+ * A step runs when ANY enabled trigger matches. Empty triggers = always (after Step 1).
+ */
+export interface ApprovalTriggerSet {
+  hasOvertime?: boolean;
+  overtimeOverHours?: number;          // e.g. overtime exceeds 4h
+  dailyHoursOver?: number;             // e.g. any day > 12h
+  hasComplianceFlag?: boolean;
+  hasException?: boolean;
+}
+
 export interface ApprovalRule {
   id: string;
   name: string;
-  condition: ApprovalRuleCondition;
+  /** @deprecated kept for backward compatibility — prefer `triggers`. */
+  condition?: ApprovalRuleCondition;
+  /** New simplified multi-trigger model. */
+  triggers?: ApprovalTriggerSet;
   threshold?: number;
   requiredTier: ApprovalTier;
   /** Specific user assigned as the approver for this rule (overrides tier-based lookup). */
   assignedApproverId?: string;
-  /** Restrict rule to specific locations (when condition = 'location' or as extra filter). */
+  /** Restrict rule to specific locations (scope filter). */
   locationIds?: string[];
   /** Restrict rule to specific employment types (e.g. casual, agency). */
   employmentTypes?: string[];
-  escalationTier?: ApprovalTier;
+  /** Hours allowed before the step escalates / breaches SLA. */
+  slaHours?: number;
+  /** @deprecated use `slaHours`. */
   escalationHours?: number;
+  escalationTier?: ApprovalTier;
   /** Send a reminder N hours before SLA breach. */
   reminderHours?: number;
   /** Action to take when SLA is breached. */
