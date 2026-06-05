@@ -69,7 +69,7 @@ function mergePolicy(base: TimesheetPolicy, override?: TimesheetPolicyOverride):
 export const timesheetPolicyStore = {
   subscribe(fn: () => void) {
     listeners.add(fn);
-    return () => listeners.delete(fn);
+    return () => { listeners.delete(fn); };
   },
 
   getTenantPolicy(): TimesheetPolicy {
