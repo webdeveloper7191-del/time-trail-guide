@@ -588,6 +588,13 @@ function EscalationCard({
             <Label className="text-xs uppercase tracking-wide text-muted-foreground mb-2 block">Applies to</Label>
             <div className="flex flex-wrap items-center gap-2">
               <ScopePopover
+                label={rule.locationGroupIds?.length ? `${rule.locationGroupIds.length} group${rule.locationGroupIds.length > 1 ? 's' : ''}` : 'All location groups'}
+                options={locationGroups.map((g) => ({ id: g.id, label: g.name }))}
+                selected={rule.locationGroupIds ?? []}
+                onChange={(ids) => onUpdate({ locationGroupIds: ids.length ? ids : undefined })}
+                emptyLabel="All location groups"
+              />
+              <ScopePopover
                 label={rule.locationIds?.length ? `${rule.locationIds.length} location${rule.locationIds.length > 1 ? 's' : ''}` : 'All locations'}
                 options={locations.map((l) => ({ id: l.id, label: l.name }))}
                 selected={rule.locationIds ?? []}
@@ -602,6 +609,9 @@ function EscalationCard({
                 emptyLabel="All employment types"
               />
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Filter by <strong>location group</strong> (e.g. state or region), specific locations, or employment type. Leave blank to apply to all.
+            </p>
           </div>
         </div>
       )}
