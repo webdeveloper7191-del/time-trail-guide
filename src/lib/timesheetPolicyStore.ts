@@ -48,6 +48,7 @@ function persist() {
     localStorage.setItem(TENANT_KEY, JSON.stringify(tenantPolicy));
     localStorage.setItem(LOC_KEY, JSON.stringify(locationOverrides));
   } catch {/* noop */}
+  version++;
   invalidateSnapshots();
   listeners.forEach(fn => fn());
 }
