@@ -534,13 +534,15 @@ export function PolicyBreaks() {
         <PermissionGroup title="Behaviour">
           <ToggleRow
             {...fieldProps('breaks', 'autoIncludeScheduledOnClockOut', 'Auto-Include Scheduled Breaks on Clock-Out',
-              "Automatically add any unrecorded scheduled breaks to the timesheet at clock-out. Inserted breaks inherit their paid/unpaid status from the matching Break Rule. If team members don't have edit permissions, they won't be able to remove these breaks afterwards.")}
+              "Automatically add any unrecorded scheduled breaks to the timesheet at clock-out. Inserted breaks inherit their paid/unpaid status from the matching Break Rule. If team members don't have edit permissions, they won't be able to remove these breaks afterwards.",
+              <><p className="font-medium mb-1">Example</p><p>Dan was rostered with a 30-min unpaid lunch but forgot to log it. At clock-out the system auto-inserts the 30-min break, so the timesheet correctly shows 7.5 paid hours instead of 8.</p></>)}
             value={resolved.breaks.autoIncludeScheduledOnClockOut}
             onChange={v => setField('breaks', 'autoIncludeScheduledOnClockOut', v)}
           />
           <SelectRow
             {...fieldProps('breaks', 'paidMealBreaks', 'Paid Meal Breaks (fallback)',
-              "Applies only when no Break Rule and no Award rule defines whether a meal break is paid. Acts as the final fallback.")}
+              "Applies only when no Break Rule and no Award rule defines whether a meal break is paid. Acts as the final fallback.",
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Paid if shift exceeds threshold"</em>. A 4-hour shift → meal break is unpaid. A 9-hour shift exceeding the threshold below → meal break is paid. Award rules (if defined) always take precedence over this fallback.</p></>)}
             value={resolved.breaks.paidMealBreaks}
             options={paidMealOptions}
             onChange={v => setField('breaks', 'paidMealBreaks', v as TimesheetPolicy['breaks']['paidMealBreaks'])}
@@ -548,7 +550,8 @@ export function PolicyBreaks() {
           {resolved.breaks.paidMealBreaks === 'over_threshold' && (
             <NumberRow
               {...fieldProps('breaks', 'paidMealOverMinutesThreshold', 'Paid if shift exceeds (minutes)',
-                'Meal breaks become paid when the shift exceeds this duration.')}
+                'Meal breaks become paid when the shift exceeds this duration.',
+                <><p className="font-medium mb-1">Example</p><p>Set to <strong>360</strong> (6 hours). A 5-hour shift → meal break unpaid. A 7-hour shift → meal break paid because total time exceeds the threshold.</p></>)}
               value={resolved.breaks.paidMealOverMinutesThreshold}
               onChange={v => setField('breaks', 'paidMealOverMinutesThreshold', v)}
             />
@@ -558,7 +561,8 @@ export function PolicyBreaks() {
         <PermissionGroup title="Flagging">
           <SelectRow
             {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag Break Duration Variance',
-              'Alert managers when the actual break taken differs from the scheduled break duration. Replaces the legacy on/off "flag short or missed breaks" toggle.')}
+              'Alert managers when the actual break taken differs from the scheduled break duration. Replaces the legacy on/off "flag short or missed breaks" toggle.',
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Variance over 10 minutes"</em>. Scheduled 30-min break, actual 25 min → no flag. Actual 15 min → flagged: "Break 15 min short of schedule." Helps catch fatigue or compliance issues without alert noise.</p></>)}
             value={resolved.issues.flagBreakDurationVariance}
             options={varianceFlagOptions}
             onChange={v => setField('issues', 'flagBreakDurationVariance', v as TimesheetPolicy['issues']['flagBreakDurationVariance'])}
@@ -568,13 +572,15 @@ export function PolicyBreaks() {
         <PermissionGroup title="Rounding">
           <ToggleRow
             {...fieldProps('approving', 'roundShortBreakUpToScheduled', 'Round short breaks up to scheduled',
-              'Automatically extend short breaks to match the scheduled duration. Longer breaks follow the rule below.')}
+              'Automatically extend short breaks to match the scheduled duration. Longer breaks follow the rule below.',
+              <><p className="font-medium mb-1">Example</p><p>Scheduled 30-min unpaid break, staff took 24 min. With <strong>ON</strong>, the recorded break becomes 30 min — so 6 min are deducted from paid time (matches the schedule). With OFF, only 24 min are deducted.</p></>)}
             value={resolved.approving.roundShortBreakUpToScheduled}
             onChange={v => setField('approving', 'roundShortBreakUpToScheduled', v)}
           />
           <SelectRow
             {...fieldProps('approving', 'breakRoundingAdjustment', 'Break Time Rounding',
-              'How non-snapped break durations are rounded. Later rounding may reduce payable time.')}
+              'How non-snapped break durations are rounded. Later rounding may reduce payable time.',
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Nearest 5 minutes"</em>. A 32-min break records as 30 min. A 38-min break records as 40 min. Keeps timesheet entries tidy and consistent for payroll.</p></>)}
             value={resolved.approving.breakRoundingAdjustment}
             options={roundingOptions}
             onChange={v => setField('approving', 'breakRoundingAdjustment', v as TimesheetPolicy['approving']['breakRoundingAdjustment'])}
@@ -585,23 +591,27 @@ export function PolicyBreaks() {
         <PermissionGroup title="Staff Break Permissions">
           <ToggleRow
             {...fieldProps('permissions', 'wrapUpBreaksSooner', 'Wrap up Breaks Sooner',
-              'Allow team members to end their breaks early and resume work before the scheduled time.')}
+              'Allow team members to end their breaks early and resume work before the scheduled time.',
+              <><p className="font-medium mb-1">Example</p><p>Sam's 30-min break starts at 12:00. At 12:18 the floor gets busy. With <strong>ON</strong>, he taps "End break" and returns. With OFF, the system locks him out of clock-in until 12:30.</p></>)}
             value={resolved.permissions.wrapUpBreaksSooner}
             onChange={v => setField('permissions', 'wrapUpBreaksSooner', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'editOwnBreakDuration', 'Edit Own Break Duration',
-              'Allow staff to adjust the duration of breaks on their own timesheet entries.')}
+              'Allow staff to adjust the duration of breaks on their own timesheet entries.',
+              <><p className="font-medium mb-1">Example</p><p>Recorded break shows 22 min but Mia actually took 30 min (forgot to clock back from break). With <strong>ON</strong>, she corrects it on her own timesheet; with OFF, she must ask a manager.</p></>)}
             value={resolved.permissions.editOwnBreakDuration}
             onChange={v => setField('permissions', 'editOwnBreakDuration', v)}
           />
           <ToggleRow
             {...fieldProps('permissions', 'addBreaksToPastTimesheets', 'Add Breaks to Past Timesheets',
-              'Allow staff to retroactively add break entries to previously submitted timesheets (until approved).')}
+              'Allow staff to retroactively add break entries to previously submitted timesheets (until approved).',
+              <><p className="font-medium mb-1">Example</p><p>Jordan forgot to log Tuesday's lunch break. With <strong>ON</strong>, he opens Tuesday's submitted timesheet and adds the break before the manager approves. After approval, edits are locked.</p></>)}
             value={resolved.permissions.addBreaksToPastTimesheets}
             onChange={v => setField('permissions', 'addBreaksToPastTimesheets', v)}
           />
         </PermissionGroup>
+
 
         <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
           The <span className="font-medium text-foreground">Break Rules library</span> (when breaks
