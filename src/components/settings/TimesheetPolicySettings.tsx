@@ -288,65 +288,123 @@ function PermissionGroup({ title, children }: { title: string; children: React.R
 
 export function PolicyApproving() {
   const { resolved, setField, fieldProps } = usePolicyAndScope();
+  const roundingOn = resolved.approving.roundingEnabled;
+  const autoApprovalOn = resolved.approving.autoApproval !== 'never';
   return (
     <Card>
       <CardHeader>
         <CardTitle className="tracking-tight">Timesheet Approving</CardTitle>
-        <CardDescription>Automatic approval and rounding behaviour.</CardDescription>
+        <CardDescription>Automatic approval, rounding and approval routing.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-1 divide-y">
-        <SelectRow
-          {...fieldProps('approving', 'autoApproval', 'Automatic Timesheet Approval',
-            'Automatically approve timesheets if they align with the scheduled shift or fall within the defined grace period.')}
-          value={resolved.approving.autoApproval}
-          options={approvalCadenceOptions}
-          onChange={v => setField('approving', 'autoApproval', v as TimesheetPolicy['approving']['autoApproval'])}
-        />
-        <ToggleRow
-          {...fieldProps('approving', 'roundingEnabled', 'Timesheet Rounding (Auto)',
-            'Enable automatic rounding of start times, end times, and breaks based on the preferences below.')}
-          value={resolved.approving.roundingEnabled}
-          onChange={v => setField('approving', 'roundingEnabled', v)}
-        />
-        <ToggleRow
-          {...fieldProps('approving', 'adjustStartToScheduledIfEarlier', 'Adjust to scheduled start time if earlier',
-            'Early clock-ins will be rounded to the scheduled start time. Later clock-ins will follow the rounding rule below.')}
-          value={resolved.approving.adjustStartToScheduledIfEarlier}
-          onChange={v => setField('approving', 'adjustStartToScheduledIfEarlier', v)}
-        />
-        <SelectRow
-          {...fieldProps('approving', 'startTimeAdjustment', 'Start Time Adjustment',
-            'Set how early or late start times are rounded. Later rounding may reduce payable hours.')}
-          value={resolved.approving.startTimeAdjustment}
-          options={roundingOptions}
-          onChange={v => setField('approving', 'startTimeAdjustment', v as TimesheetPolicy['approving']['startTimeAdjustment'])}
-        />
-        <ToggleRow
-          {...fieldProps('approving', 'adjustEndToScheduledIfDelayed', 'Adjust to scheduled end time if delayed',
-            'Round late clock-outs to the scheduled end time. Early clock-outs will follow the end time rounding rule below.')}
-          value={resolved.approving.adjustEndToScheduledIfDelayed}
-          onChange={v => setField('approving', 'adjustEndToScheduledIfDelayed', v)}
-        />
-        <SelectRow
-          {...fieldProps('approving', 'endTimeAdjustment', 'End Time Adjustment',
-            'Set how early or late end times are rounded. Earlier rounding may reduce total hours paid.')}
-          value={resolved.approving.endTimeAdjustment}
-          options={roundingOptions}
-          onChange={v => setField('approving', 'endTimeAdjustment', v as TimesheetPolicy['approving']['endTimeAdjustment'])}
-        />
-        <ToggleRow
-          {...fieldProps('approving', 'roundShortBreakUpToScheduled', "Round break duration if it's shorter than scheduled",
-            'Automatically round short breaks up to the scheduled duration. Longer breaks will follow the rule set below.')}
-          value={resolved.approving.roundShortBreakUpToScheduled}
-          onChange={v => setField('approving', 'roundShortBreakUpToScheduled', v)}
-        />
-        <SelectRow
-          {...fieldProps('approving', 'breakRoundingAdjustment', 'Break Time Rounding Adjustment',
-            'Define how short or long breaks are rounded. Later rounding may reduce payable time.')}
-          value={resolved.approving.breakRoundingAdjustment}
-          options={roundingOptions}
-          onChange={v => setField('approving', 'breakRoundingAdjustment', v as TimesheetPolicy['approving']['breakRoundingAdjustment'])}
-        />
+      <CardContent className="space-y-6">
+        <div className="flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+          <Info className="h-4 w-4 mt-0.5 shrink-0 text-foreground/70" />
+          <div className="space-y-1">
+            <p className="font-medium text-foreground">Precedence chain</p>
+            <p>
+              <span className="font-medium">Award / EA</span> →{' '}
+              <span className="font-medium">Location override</span> →{' '}
+              <span className="font-medium">Tenant default</span>. Rounding never reduces hours below
+              what an applicable Award guarantees.
+            </p>
+          </div>
+        </div>
+
+        <PermissionGroup title="Auto-Approval">
+          <SelectRow
+            {...fieldProps('approving', 'autoApproval', 'Automatic Timesheet Approval',
+              'Automatically approve timesheets if they align with the scheduled shift or fall within the defined grace period.')}
+            value={resolved.approving.autoApproval}
+            options={approvalCadenceOptions}
+            onChange={v => setField('approving', 'autoApproval', v as TimesheetPolicy['approving']['autoApproval'])}
+          />
+          <div className={autoApprovalOn ? '' : 'opacity-50 pointer-events-none select-none'}>
+            <div className="space-y-1 divide-y">
+              {resolved.approving.autoApproval === 'matches_schedule' && (
+                <NumberRow
+                  {...fieldProps('approving', 'autoApprovalMatchToleranceMinutes', 'Match tolerance (minutes)',
+                    'How far recorded start/end can drift from the scheduled shift and still be considered a match.')}
+                  value={resolved.approving.autoApprovalMatchToleranceMinutes}
+                  onChange={v => setField('approving', 'autoApprovalMatchToleranceMinutes', v)}
+                />
+              )}
+              <ToggleRow
+                {...fieldProps('approving', 'skipAutoApprovalIfFlagged', 'Skip auto-approval if flagged',
+                  'Hold timesheets for manual review when any anomaly flag is raised (variance, missed break, overtime threshold, etc.).')}
+                value={resolved.approving.skipAutoApprovalIfFlagged}
+                onChange={v => setField('approving', 'skipAutoApprovalIfFlagged', v)}
+              />
+              <NumberRow
+                {...fieldProps('approving', 'autoApprovalMaxDailyHours', 'Max auto-approvable daily hours',
+                  'Timesheets exceeding this many hours in a day will not auto-approve. Set 0 to disable the cap.')}
+                value={resolved.approving.autoApprovalMaxDailyHours}
+                onChange={v => setField('approving', 'autoApprovalMaxDailyHours', v)}
+              />
+              <ToggleRow
+                {...fieldProps('approving', 'notifyStaffOnAdjustment', 'Notify staff on auto-adjustment',
+                  'Send the team member a notification when rounding or auto-approval changes their recorded times.')}
+                value={resolved.approving.notifyStaffOnAdjustment}
+                onChange={v => setField('approving', 'notifyStaffOnAdjustment', v)}
+              />
+            </div>
+          </div>
+        </PermissionGroup>
+
+        <PermissionGroup title="Rounding">
+          <ToggleRow
+            {...fieldProps('approving', 'roundingEnabled', 'Timesheet Rounding (Auto)',
+              'Master switch for automatic rounding of start and end times. When off, the rules below are ignored.')}
+            value={resolved.approving.roundingEnabled}
+            onChange={v => setField('approving', 'roundingEnabled', v)}
+          />
+          <div className={roundingOn ? '' : 'opacity-50 pointer-events-none select-none'}>
+            <div className="space-y-1 divide-y">
+              <ToggleRow
+                {...fieldProps('approving', 'adjustStartToScheduledIfEarlier', 'Snap start to scheduled if earlier',
+                  'Early clock-ins are rounded forward to the scheduled start. Later clock-ins follow the rounding rule below.')}
+                value={resolved.approving.adjustStartToScheduledIfEarlier}
+                onChange={v => setField('approving', 'adjustStartToScheduledIfEarlier', v)}
+              />
+              <SelectRow
+                {...fieldProps('approving', 'startTimeAdjustment', 'Start Time Rounding',
+                  'How non-snapped start times are rounded. Later rounding may reduce payable hours.')}
+                value={resolved.approving.startTimeAdjustment}
+                options={roundingOptions}
+                onChange={v => setField('approving', 'startTimeAdjustment', v as TimesheetPolicy['approving']['startTimeAdjustment'])}
+              />
+              <ToggleRow
+                {...fieldProps('approving', 'adjustEndToScheduledIfDelayed', 'Snap end to scheduled if delayed',
+                  'Late clock-outs are rounded back to the scheduled end. Early clock-outs follow the rounding rule below.')}
+                value={resolved.approving.adjustEndToScheduledIfDelayed}
+                onChange={v => setField('approving', 'adjustEndToScheduledIfDelayed', v)}
+              />
+              <SelectRow
+                {...fieldProps('approving', 'endTimeAdjustment', 'End Time Rounding',
+                  'How non-snapped end times are rounded. Earlier rounding may reduce total hours paid.')}
+                value={resolved.approving.endTimeAdjustment}
+                options={roundingOptions}
+                onChange={v => setField('approving', 'endTimeAdjustment', v as TimesheetPolicy['approving']['endTimeAdjustment'])}
+              />
+            </div>
+          </div>
+          <div className="pt-2 text-xs text-muted-foreground">
+            Break rounding now lives in the <span className="font-medium text-foreground">Breaks</span> tab under <span className="font-medium text-foreground">Rounding</span>.
+          </div>
+        </PermissionGroup>
+
+        <PermissionGroup title="Approval Chain">
+          <div className="py-2 text-xs text-muted-foreground space-y-1">
+            <p>
+              Multi-tier approval routing (Manager → Senior Manager → Director / HR) with SLA
+              deadlines and escalation is configured per workflow.
+            </p>
+            <p>
+              Note: when <span className="font-medium text-foreground">Automatic Timesheet Approval</span>
+              {' '}is enabled, qualifying timesheets bypass the chain entirely unless
+              {' '}<span className="font-medium text-foreground">Skip auto-approval if flagged</span> holds them.
+            </p>
+          </div>
+        </PermissionGroup>
       </CardContent>
     </Card>
   );
@@ -447,6 +505,23 @@ export function PolicyBreaks() {
             onChange={v => setField('issues', 'flagBreakDurationVariance', v as TimesheetPolicy['issues']['flagBreakDurationVariance'])}
           />
         </PermissionGroup>
+
+        <PermissionGroup title="Rounding">
+          <ToggleRow
+            {...fieldProps('approving', 'roundShortBreakUpToScheduled', 'Round short breaks up to scheduled',
+              'Automatically extend short breaks to match the scheduled duration. Longer breaks follow the rule below.')}
+            value={resolved.approving.roundShortBreakUpToScheduled}
+            onChange={v => setField('approving', 'roundShortBreakUpToScheduled', v)}
+          />
+          <SelectRow
+            {...fieldProps('approving', 'breakRoundingAdjustment', 'Break Time Rounding',
+              'How non-snapped break durations are rounded. Later rounding may reduce payable time.')}
+            value={resolved.approving.breakRoundingAdjustment}
+            options={roundingOptions}
+            onChange={v => setField('approving', 'breakRoundingAdjustment', v as TimesheetPolicy['approving']['breakRoundingAdjustment'])}
+          />
+        </PermissionGroup>
+
 
         <PermissionGroup title="Staff Break Permissions">
           <ToggleRow

@@ -46,12 +46,19 @@ export interface TeamMemberPermissions {
 
 
 export interface TimesheetApprovingSettings {
+  // Auto-approval
   autoApproval: ApprovalCadence;
+  skipAutoApprovalIfFlagged: boolean;
+  autoApprovalMatchToleranceMinutes: number;
+  autoApprovalMaxDailyHours: number; // 0 disables the cap
+  notifyStaffOnAdjustment: boolean;
+  // Rounding (master + start/end)
   roundingEnabled: boolean;
   adjustStartToScheduledIfEarlier: boolean;
   startTimeAdjustment: RoundingDirection;
   adjustEndToScheduledIfDelayed: boolean;
   endTimeAdjustment: RoundingDirection;
+  // Break rounding (rendered inside Breaks tab, owned here for now)
   roundShortBreakUpToScheduled: boolean;
   breakRoundingAdjustment: RoundingDirection;
 }
@@ -116,6 +123,10 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
 
   approving: {
     autoApproval: 'never',
+    skipAutoApprovalIfFlagged: true,
+    autoApprovalMatchToleranceMinutes: 5,
+    autoApprovalMaxDailyHours: 0,
+    notifyStaffOnAdjustment: true,
     roundingEnabled: false,
     adjustStartToScheduledIfEarlier: false,
     startTimeAdjustment: 'never',
