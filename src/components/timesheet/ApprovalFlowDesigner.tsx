@@ -106,6 +106,7 @@ export function ApprovalFlowDesigner({
   onRemoveRule,
   approverDirectory,
   locations,
+  locationGroups = [],
   employmentTypes,
   onOpenDelegations,
   onDirty,
