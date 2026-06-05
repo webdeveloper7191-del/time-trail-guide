@@ -76,15 +76,8 @@ interface AutoApprovalCondition {
   description: string;
 }
 
-interface FlaggingRule {
-  id: string;
-  name: string;
-  type: string;
-  enabled: boolean;
-  severity: 'info' | 'warning' | 'critical';
-  threshold?: number;
-  description: string;
-}
+
+
 
 type ComplianceSource = 'award' | 'location' | 'tenant';
 type AustralianState = 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'NT' | 'ACT';
