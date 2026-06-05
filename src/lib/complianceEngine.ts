@@ -6,7 +6,8 @@ import {
   OvertimeCalculation,
   ApprovalChain,
   ApprovalRule,
-  ApprovalStep
+  ApprovalStep,
+  FlagSeverity,
 } from '@/types/compliance';
 import { 
   australianJurisdiction, 
@@ -15,6 +16,30 @@ import {
   AwardType 
 } from './australianJurisdiction';
 import { calculateTimesheetOvertime, TimesheetEntry } from './unifiedOvertimeCalculator';
+import { timesheetPolicyStore } from './timesheetPolicyStore';
+import { TimesheetIssuesSettings, AnomalySeverity, VarianceFlag } from '@/types/timesheetPolicy';
+
+function getIssuesPolicy(locationId?: string): TimesheetIssuesSettings {
+  return timesheetPolicyStore.getResolvedPolicy(locationId).issues;
+}
+
+/** Map AnomalySeverity → FlagSeverity; returns null when 'off' (skip flag). */
+function toFlagSeverity(sev: AnomalySeverity): FlagSeverity | null {
+  if (sev === 'off') return null;
+  return sev;
+}
+
+/** Minutes threshold for VarianceFlag ('never' returns null → skip). */
+function varianceMinutes(v: VarianceFlag): number | null {
+  switch (v) {
+    case 'never': return null;
+    case 'over_5m': return 5;
+    case 'over_10m': return 10;
+    case 'over_15m': return 15;
+    case 'always': return 0;
+  }
+}
+
 
 // Re-export Australian jurisdiction as default
 export const defaultJurisdiction: Jurisdiction = australianJurisdiction;
@@ -59,75 +84,106 @@ export const defaultApprovalRules: ApprovalRule[] = [
   { id: 'ar5', name: 'Exception Handling', condition: 'exception', requiredTier: 'manager' },
 ];
 
-// Detect irregular punches and anomalies
-export function detectAnomalies(timesheet: Timesheet, historicalData?: Timesheet[]): ComplianceFlag[] {
+// Detect irregular punches and anomalies (driven by resolved TimesheetPolicy.issues)
+export function detectAnomalies(
+  timesheet: Timesheet,
+  historicalData?: Timesheet[],
+  locationId?: string,
+  issuesOverride?: TimesheetIssuesSettings,
+): ComplianceFlag[] {
   const flags: ComplianceFlag[] = [];
-  
-  timesheet.entries.forEach((entry, index) => {
+  const issues = issuesOverride ?? getIssuesPolicy(locationId);
+
+  timesheet.entries.forEach((entry) => {
     // Missing clock out
     if (!entry.clockOut) {
-      flags.push({
-        id: `flag-${entry.id}-missing-out`,
-        type: 'missing_clock_out',
-        severity: 'critical',
-        title: 'Missing Clock Out',
-        description: `No clock-out recorded for ${entry.date}`,
-        entryDate: entry.date,
-      });
-    }
-
-    // Early clock in (before 5 AM)
-    if (entry.clockIn) {
-      const [hour] = entry.clockIn.split(':').map(Number);
-      if (hour < 5) {
+      const sev = toFlagSeverity(issues.flagMissingClockOut);
+      if (sev) {
         flags.push({
-          id: `flag-${entry.id}-early-in`,
-          type: 'early_clock_in',
-          severity: 'warning',
-          title: 'Unusual Early Start',
-          description: `Clock-in at ${entry.clockIn} is unusually early`,
+          id: `flag-${entry.id}-missing-out`,
+          type: 'missing_clock_out',
+          severity: sev,
+          title: 'Missing Clock Out',
+          description: `No clock-out recorded for ${entry.date}`,
           entryDate: entry.date,
         });
       }
     }
 
-    // Late clock out (after 10 PM)
+    // Unusual early clock-in
+    if (entry.clockIn) {
+      const sev = toFlagSeverity(issues.flagUnusualEarlyClockIn);
+      const [hour] = entry.clockIn.split(':').map(Number);
+      if (sev && hour < issues.unusualEarlyClockInBeforeHour) {
+        flags.push({
+          id: `flag-${entry.id}-early-in`,
+          type: 'early_clock_in',
+          severity: sev,
+          title: 'Unusual Early Start',
+          description: `Clock-in at ${entry.clockIn} is before ${issues.unusualEarlyClockInBeforeHour}:00`,
+          entryDate: entry.date,
+        });
+      }
+    }
+
+    // Unusual late clock-out
     if (entry.clockOut) {
+      const sev = toFlagSeverity(issues.flagUnusualLateClockOut);
       const [hour] = entry.clockOut.split(':').map(Number);
-      if (hour >= 22) {
+      if (sev && hour >= issues.unusualLateClockOutAfterHour) {
         flags.push({
           id: `flag-${entry.id}-late-out`,
           type: 'late_clock_out',
-          severity: 'warning',
+          severity: sev,
           title: 'Unusual Late End',
-          description: `Clock-out at ${entry.clockOut} is unusually late`,
+          description: `Clock-out at ${entry.clockOut} is at/after ${issues.unusualLateClockOutAfterHour}:00`,
           entryDate: entry.date,
         });
       }
     }
 
     // Excessive daily hours
-    if (entry.grossHours > 12) {
-      flags.push({
-        id: `flag-${entry.id}-max-hours`,
-        type: 'max_daily_hours',
-        severity: 'critical',
-        title: 'Excessive Daily Hours',
-        description: `${entry.grossHours}h exceeds maximum allowed 12h`,
-        entryDate: entry.date,
-      });
+    {
+      const sev = toFlagSeverity(issues.flagExcessiveDailyHours);
+      if (sev && entry.grossHours > issues.excessiveDailyHoursThreshold) {
+        flags.push({
+          id: `flag-${entry.id}-max-hours`,
+          type: 'max_daily_hours',
+          severity: sev,
+          title: 'Excessive Daily Hours',
+          description: `${entry.grossHours}h exceeds maximum allowed ${issues.excessiveDailyHoursThreshold}h`,
+          entryDate: entry.date,
+        });
+      }
     }
 
-    // Pattern drift detection (comparing to historical average)
+    // Long shift without a break
+    {
+      const sev = toFlagSeverity(issues.flagLongShiftWithoutBreak);
+      const totalBreakMin = entry.breaks?.reduce((s, b) => s + b.duration, 0) ?? 0;
+      if (sev && entry.grossHours > issues.longShiftWithoutBreakHours && totalBreakMin === 0) {
+        flags.push({
+          id: `flag-${entry.id}-no-break`,
+          type: 'missed_break',
+          severity: sev,
+          title: 'Long Shift Without Break',
+          description: `${entry.grossHours}h worked with no break recorded (threshold ${issues.longShiftWithoutBreakHours}h)`,
+          entryDate: entry.date,
+        });
+      }
+    }
+
+    // Pattern drift
     if (historicalData && historicalData.length > 0) {
+      const sev = toFlagSeverity(issues.flagPatternDrift);
       const avgClockIn = getAverageClockInTime(historicalData);
-      if (avgClockIn && entry.clockIn) {
+      if (sev && avgClockIn && entry.clockIn) {
         const diff = getTimeDifferenceMinutes(avgClockIn, entry.clockIn);
-        if (Math.abs(diff) > 60) {
+        if (Math.abs(diff) > issues.patternDriftMinutes) {
           flags.push({
             id: `flag-${entry.id}-pattern-drift`,
             type: 'pattern_drift',
-            severity: 'info',
+            severity: sev,
             title: 'Pattern Deviation',
             description: `Clock-in time deviates ${Math.abs(diff)} minutes from usual pattern`,
             entryDate: entry.date,
@@ -137,65 +193,86 @@ export function detectAnomalies(timesheet: Timesheet, historicalData?: Timesheet
     }
   });
 
-  // Check for buddy punching indicators (same location, similar times)
-  // This would require multi-employee data comparison
+  // High weekly overtime
+  {
+    const sev = toFlagSeverity(issues.flagHighWeeklyOvertime);
+    if (sev && timesheet.overtimeHours > issues.highWeeklyOvertimeThreshold) {
+      flags.push({
+        id: `flag-${timesheet.id}-high-ot`,
+        type: 'overtime_threshold',
+        severity: sev,
+        title: 'High Weekly Overtime',
+        description: `${timesheet.overtimeHours}h overtime exceeds ${issues.highWeeklyOvertimeThreshold}h threshold`,
+      });
+    }
+  }
 
   return flags;
 }
 
-// Validate break compliance
-export function validateBreaks(entry: ClockEntry, jurisdiction: Jurisdiction): ComplianceFlag[] {
+// Validate break compliance (uses jurisdiction for required durations + policy for exceeded-break %)
+export function validateBreaks(
+  entry: ClockEntry,
+  jurisdiction: Jurisdiction,
+  locationId?: string,
+  issuesOverride?: TimesheetIssuesSettings,
+): ComplianceFlag[] {
   const flags: ComplianceFlag[] = [];
-  
+  const issues = issuesOverride ?? getIssuesPolicy(locationId);
+  const missedSev = toFlagSeverity(issues.flagLongShiftWithoutBreak) ?? 'warning';
+  const exceededSev = toFlagSeverity(issues.flagExceededBreak);
+  const exceededMultiplier = (issues.exceededBreakPercent ?? 150) / 100;
+
   jurisdiction.breakRules.forEach((rule) => {
     if (entry.grossHours >= rule.minWorkHoursRequired && rule.isMandatory) {
       const totalBreakMinutes = entry.breaks.reduce((sum, b) => sum + b.duration, 0);
-      
+
       if (totalBreakMinutes < rule.breakDurationMinutes) {
         flags.push({
           id: `flag-${entry.id}-missed-break-${rule.id}`,
           type: 'missed_break',
-          severity: 'warning',
+          severity: missedSev,
           title: 'Missed Required Break',
           description: `${rule.name} (${rule.breakDurationMinutes}m) not taken. Only ${totalBreakMinutes}m recorded.`,
           entryDate: entry.date,
         });
-      } else if (totalBreakMinutes > rule.breakDurationMinutes * 1.5) {
+      } else if (exceededSev && totalBreakMinutes > rule.breakDurationMinutes * exceededMultiplier) {
         flags.push({
           id: `flag-${entry.id}-exceeded-break-${rule.id}`,
           type: 'exceeded_break',
-          severity: 'info',
+          severity: exceededSev,
           title: 'Extended Break Time',
-          description: `Break time (${totalBreakMinutes}m) exceeds typical duration`,
+          description: `Break time (${totalBreakMinutes}m) exceeds ${Math.round(exceededMultiplier * 100)}% of allowed (${rule.breakDurationMinutes}m)`,
           entryDate: entry.date,
         });
       }
     }
   });
 
+
   return flags;
 }
 
 // Full compliance validation
 export function validateCompliance(
-  timesheet: Timesheet, 
-  jurisdiction: Jurisdiction = defaultJurisdiction
+  timesheet: Timesheet,
+  jurisdiction: Jurisdiction = defaultJurisdiction,
+  locationId?: string,
 ): ComplianceValidation {
   const flags: ComplianceFlag[] = [];
   const blockingIssues: string[] = [];
   const warnings: string[] = [];
+  const issues = getIssuesPolicy(locationId);
 
-  // Run anomaly detection
-  const anomalies = detectAnomalies(timesheet);
-  flags.push(...anomalies);
+  // Run anomaly detection (policy-driven)
+  flags.push(...detectAnomalies(timesheet, undefined, locationId, issues));
 
-  // Validate breaks for each entry
+  // Validate breaks for each entry (policy-driven)
   timesheet.entries.forEach((entry) => {
-    const breakFlags = validateBreaks(entry, jurisdiction);
-    flags.push(...breakFlags);
+    flags.push(...validateBreaks(entry, jurisdiction, locationId, issues));
   });
 
-  // Check weekly hour limits
+  // Check weekly hour limits (always enforced — jurisdiction-level)
   if (timesheet.totalHours > jurisdiction.maxWeeklyHours) {
     flags.push({
       id: `flag-weekly-max`,
@@ -204,22 +281,9 @@ export function validateCompliance(
       title: 'Weekly Hours Exceeded',
       description: `${timesheet.totalHours}h exceeds maximum ${jurisdiction.maxWeeklyHours}h weekly limit`,
     });
-    blockingIssues.push('Weekly hours exceed legal limit');
   }
 
-  // Check overtime threshold
-  if (timesheet.overtimeHours > jurisdiction.overtimeThresholdWeekly * 0.5) {
-    flags.push({
-      id: `flag-high-overtime`,
-      type: 'overtime_threshold',
-      severity: 'warning',
-      title: 'High Overtime',
-      description: `${timesheet.overtimeHours}h overtime requires additional approval`,
-    });
-    warnings.push('High overtime hours flagged for review');
-  }
-
-  // Categorize issues
+  // Categorize issues — only critical blocks if policy says so
   flags.forEach((flag) => {
     if (flag.severity === 'critical' && !blockingIssues.includes(flag.description)) {
       blockingIssues.push(flag.description);
@@ -228,14 +292,18 @@ export function validateCompliance(
     }
   });
 
+  const hasCritical = blockingIssues.length > 0;
+  const canSubmit = issues.blockSubmissionOnCritical ? !hasCritical : true;
+
   return {
-    isCompliant: blockingIssues.length === 0,
+    isCompliant: !hasCritical,
     flags,
-    canSubmit: blockingIssues.length === 0,
+    canSubmit,
     blockingIssues,
     warnings,
   };
 }
+
 
 // Calculate overtime with stacked rates
 /**
