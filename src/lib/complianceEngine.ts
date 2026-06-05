@@ -255,24 +255,24 @@ export function validateBreaks(
 
 // Full compliance validation
 export function validateCompliance(
-  timesheet: Timesheet, 
-  jurisdiction: Jurisdiction = defaultJurisdiction
+  timesheet: Timesheet,
+  jurisdiction: Jurisdiction = defaultJurisdiction,
+  locationId?: string,
 ): ComplianceValidation {
   const flags: ComplianceFlag[] = [];
   const blockingIssues: string[] = [];
   const warnings: string[] = [];
+  const issues = getIssuesPolicy(locationId);
 
-  // Run anomaly detection
-  const anomalies = detectAnomalies(timesheet);
-  flags.push(...anomalies);
+  // Run anomaly detection (policy-driven)
+  flags.push(...detectAnomalies(timesheet, undefined, locationId, issues));
 
-  // Validate breaks for each entry
+  // Validate breaks for each entry (policy-driven)
   timesheet.entries.forEach((entry) => {
-    const breakFlags = validateBreaks(entry, jurisdiction);
-    flags.push(...breakFlags);
+    flags.push(...validateBreaks(entry, jurisdiction, locationId, issues));
   });
 
-  // Check weekly hour limits
+  // Check weekly hour limits (always enforced — jurisdiction-level)
   if (timesheet.totalHours > jurisdiction.maxWeeklyHours) {
     flags.push({
       id: `flag-weekly-max`,
@@ -281,22 +281,9 @@ export function validateCompliance(
       title: 'Weekly Hours Exceeded',
       description: `${timesheet.totalHours}h exceeds maximum ${jurisdiction.maxWeeklyHours}h weekly limit`,
     });
-    blockingIssues.push('Weekly hours exceed legal limit');
   }
 
-  // Check overtime threshold
-  if (timesheet.overtimeHours > jurisdiction.overtimeThresholdWeekly * 0.5) {
-    flags.push({
-      id: `flag-high-overtime`,
-      type: 'overtime_threshold',
-      severity: 'warning',
-      title: 'High Overtime',
-      description: `${timesheet.overtimeHours}h overtime requires additional approval`,
-    });
-    warnings.push('High overtime hours flagged for review');
-  }
-
-  // Categorize issues
+  // Categorize issues — only critical blocks if policy says so
   flags.forEach((flag) => {
     if (flag.severity === 'critical' && !blockingIssues.includes(flag.description)) {
       blockingIssues.push(flag.description);
@@ -305,14 +292,18 @@ export function validateCompliance(
     }
   });
 
+  const hasCritical = blockingIssues.length > 0;
+  const canSubmit = issues.blockSubmissionOnCritical ? !hasCritical : true;
+
   return {
-    isCompliant: blockingIssues.length === 0,
+    isCompliant: !hasCritical,
     flags,
-    canSubmit: blockingIssues.length === 0,
+    canSubmit,
     blockingIssues,
     warnings,
   };
 }
+
 
 // Calculate overtime with stacked rates
 /**
