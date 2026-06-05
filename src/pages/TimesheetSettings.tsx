@@ -1215,6 +1215,7 @@ export default function TimesheetSettings() {
                 onRemoveRule={removeApprovalRule}
                 approverDirectory={approverDirectory}
                 locations={mockLocations}
+                locationGroups={mockLocationGroups}
                 employmentTypes={employmentTypeOptions}
                 onOpenDelegations={() => setDelegationOpen(true)}
                 onDirty={() => setHasUnsavedChanges(true)}
