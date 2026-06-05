@@ -157,6 +157,13 @@ export const approvalCadenceOptions: { value: ApprovalCadence; label: string }[]
   { value: 'daily', label: 'Daily (end of day)' },
 ];
 
+export const earlyClockInOptions: { value: EarlyClockInPolicy; label: string }[] = [
+  { value: 'never', label: 'Not allowed' },
+  { value: 'within_minutes', label: 'Up to X minutes early' },
+  { value: 'anytime', label: 'Anytime before shift' },
+];
+
+
 export const linkUnscheduledOptions: { value: LinkUnscheduled; label: string }[] = [
   { value: 'never', label: 'Never' },
   { value: 'best_fit', label: 'Best Fit (±8 hours)' },
