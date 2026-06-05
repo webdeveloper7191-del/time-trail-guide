@@ -200,6 +200,13 @@ export default function TimesheetSettings() {
     },
   });
 
+  // Simplified compliance model — award preset + per-field overrides.
+  const [compliance, setCompliance] = useState<ComplianceState>({
+    state: 'NSW',
+    awardType: 'general',
+    overrides: {},
+  });
+
   // Tenant-wide: auto-approve clean timesheets (skip Location Manager when no flags/OT/exceptions)
   const [autoApproveClean, setAutoApproveClean] = useState(false);
 
