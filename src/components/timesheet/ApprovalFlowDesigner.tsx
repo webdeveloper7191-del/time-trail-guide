@@ -50,6 +50,7 @@ interface ApproverDirectoryUser {
 }
 
 interface LocationOption { id: string; name: string }
+interface LocationGroupOption { id: string; name: string }
 
 interface Props {
   autoApproveClean: boolean;
@@ -62,6 +63,7 @@ interface Props {
   onRemoveRule: (id: string) => void;
   approverDirectory: ApproverDirectoryUser[];
   locations: LocationOption[];
+  locationGroups?: LocationGroupOption[];
   employmentTypes: string[];
   onOpenDelegations: () => void;
   onDirty?: () => void;
