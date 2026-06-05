@@ -435,15 +435,21 @@ interface BaseRowProps {
   isTenant: boolean;
   overridden: boolean;
   onReset: () => void;
+  comingSoon?: boolean;
 }
 
-function RowShell({ label, description, isTenant, overridden, onReset, control }: BaseRowProps & { control: React.ReactNode }) {
+function RowShell({ label, description, isTenant, overridden, onReset, comingSoon, control }: BaseRowProps & { control: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-6 py-4">
+    <div className={`flex items-start justify-between gap-6 py-4 ${comingSoon ? 'opacity-60' : ''}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <Label className="text-sm font-medium tracking-tight">{label}</Label>
-          {!isTenant && (
+          {comingSoon && (
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30 text-[10px] h-5 dark:text-amber-400">
+              Coming Soon
+            </Badge>
+          )}
+          {!isTenant && !comingSoon && (
             overridden ? (
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] h-5">
                 Overridden
@@ -454,7 +460,7 @@ function RowShell({ label, description, isTenant, overridden, onReset, control }
               </Badge>
             )
           )}
-          {!isTenant && overridden && (
+          {!isTenant && overridden && !comingSoon && (
             <button
               type="button"
               onClick={onReset}
@@ -468,15 +474,16 @@ function RowShell({ label, description, isTenant, overridden, onReset, control }
           <p className="text-xs text-muted-foreground mt-1 max-w-2xl">{description}</p>
         )}
       </div>
-      <div className="flex-shrink-0">{control}</div>
+      <div className="flex-shrink-0 pointer-events-auto">{control}</div>
     </div>
   );
 }
 
 function ToggleRow(props: BaseRowProps & { value: boolean; onChange: (v: boolean) => void }) {
-  const { value, onChange, ...rest } = props;
-  return <RowShell {...rest} control={<Switch checked={value} onCheckedChange={onChange} />} />;
+  const { value, onChange, comingSoon, ...rest } = props;
+  return <RowShell {...rest} comingSoon={comingSoon} control={<Switch checked={value} onCheckedChange={onChange} disabled={comingSoon} />} />;
 }
+
 
 function NumberRow(props: BaseRowProps & { value: number; onChange: (v: number) => void }) {
   const { value, onChange, ...rest } = props;
