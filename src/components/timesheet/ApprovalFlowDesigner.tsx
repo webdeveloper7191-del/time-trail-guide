@@ -369,7 +369,7 @@ function breachLabel(a: SlaBreachAction): string {
 
 function EscalationCard({
   rule, index, expanded, onToggle, onUpdate, onRemove,
-  approverDirectory, locations, employmentTypes,
+  approverDirectory, locations, locationGroups, employmentTypes,
 }: {
   rule: ApprovalRule;
   index: number;
@@ -379,6 +379,7 @@ function EscalationCard({
   onRemove: () => void;
   approverDirectory: ApproverDirectoryUser[];
   locations: LocationOption[];
+  locationGroups: LocationGroupOption[];
   employmentTypes: string[];
 }) {
   const Icon = tierIcon[rule.requiredTier] ?? Users;
@@ -388,8 +389,9 @@ function EscalationCard({
 
   const triggerSummary = summarizeTriggers(t);
   const scopeChips: string[] = [];
+  if (rule.locationGroupIds?.length) scopeChips.push(`${rule.locationGroupIds.length} group${rule.locationGroupIds.length > 1 ? 's' : ''}`);
   if (rule.locationIds?.length) scopeChips.push(`${rule.locationIds.length} location${rule.locationIds.length > 1 ? 's' : ''}`);
-  else scopeChips.push('All locations');
+  if (!rule.locationGroupIds?.length && !rule.locationIds?.length) scopeChips.push('All locations');
   if (rule.employmentTypes?.length) scopeChips.push(rule.employmentTypes.join(' · '));
 
   return (
