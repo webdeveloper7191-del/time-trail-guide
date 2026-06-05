@@ -1242,9 +1242,8 @@ export default function TimesheetSettings() {
                           <th className="text-left p-3 font-medium">Event</th>
                           <th className="p-3 font-medium">In-App</th>
                           <th className="p-3 font-medium">Email</th>
-                          <th className="p-3 font-medium">Slack</th>
-                          <th className="p-3 font-medium">Teams</th>
                         </tr>
+
                       </thead>
                       <tbody>
                         {([
