@@ -123,6 +123,10 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
 
   approving: {
     autoApproval: 'never',
+    skipAutoApprovalIfFlagged: true,
+    autoApprovalMatchToleranceMinutes: 5,
+    autoApprovalMaxDailyHours: 0,
+    notifyStaffOnAdjustment: true,
     roundingEnabled: false,
     adjustStartToScheduledIfEarlier: false,
     startTimeAdjustment: 'never',
