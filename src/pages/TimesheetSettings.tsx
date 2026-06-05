@@ -45,7 +45,9 @@ import {
   HelpCircle,
   Award,
 } from 'lucide-react';
-import { ApprovalTier, BreakRule, ApprovalRule } from '@/types/compliance';
+import { ApprovalTier, BreakRule, ApprovalRule, ApprovalRuleCondition, SlaBreachAction } from '@/types/compliance';
+import { ApprovalDelegationModal } from '@/components/timesheet/ApprovalDelegationModal';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
 import {
   TimesheetPolicyScopeBar,
@@ -213,16 +215,73 @@ export default function TimesheetSettings() {
     { tier: 'hr', slaHours: 96, escalateTo: 'hr', notifyEmails: [] },
   ]);
 
-  // Notification Settings
+  // Notification Settings — per-event channel matrix
+  type NotifChannels = { email: boolean; slack: boolean; teams: boolean; inApp: boolean };
+  type NotifEventKey =
+    | 'newSubmission'
+    | 'emailOnFlag'
+    | 'emailOnEscalation'
+    | 'emailOnAutoApprove'
+    | 'emailOnRejection'
+    | 'missedClockOut'
+    | 'unsubmittedNearCutoff'
+    | 'slaDueSoon'
+    | 'correction'
+    | 'payAdjustment';
+
+  const defaultChannels: NotifChannels = { email: true, slack: false, teams: false, inApp: true };
+
   const [notifications, setNotifications] = useState({
+    // Legacy flags (kept for backward compat with other screens reading them)
     emailOnFlag: true,
     emailOnEscalation: true,
     emailOnAutoApprove: false,
     emailOnRejection: true,
     slackIntegration: false,
+    teamsIntegration: false,
+    webhookUrl: '',
     dailyDigest: true,
     digestTime: '09:00',
+    managerDigestTime: '17:00',
+    quietHoursEnabled: false,
+    quietHoursStart: '20:00',
+    quietHoursEnd: '07:00',
+    suppressOnWeekends: false,
+    events: {
+      newSubmission:        { ...defaultChannels },
+      emailOnFlag:          { ...defaultChannels },
+      emailOnEscalation:    { ...defaultChannels },
+      emailOnAutoApprove:   { email: false, slack: false, teams: false, inApp: true },
+      emailOnRejection:     { ...defaultChannels },
+      missedClockOut:       { ...defaultChannels },
+      unsubmittedNearCutoff:{ ...defaultChannels },
+      slaDueSoon:           { ...defaultChannels },
+      correction:           { ...defaultChannels },
+      payAdjustment:        { ...defaultChannels },
+    } as Record<NotifEventKey, NotifChannels>,
   });
+
+  // Delegations (for ApprovalDelegationModal)
+  const [delegationOpen, setDelegationOpen] = useState(false);
+  const [delegations, setDelegations] = useState<any[]>([]);
+
+  // Mock approver directory — would come from staff/users API
+  const approverDirectory = [
+    { id: 'u1', name: 'Jane Doe', tier: 'senior_manager' as ApprovalTier },
+    { id: 'u2', name: 'Robert Wilson', tier: 'hr' as ApprovalTier },
+    { id: 'u3', name: 'Emily Brown', tier: 'manager' as ApprovalTier },
+    { id: 'u4', name: 'David Lee', tier: 'manager' as ApprovalTier },
+    { id: 'u5', name: 'Sarah Chen', tier: 'director' as ApprovalTier },
+  ];
+
+  const mockLocations = [
+    { id: 'loc-1', name: 'Sydney CBD' },
+    { id: 'loc-2', name: 'Melbourne Central' },
+    { id: 'loc-3', name: 'Brisbane North' },
+    { id: 'loc-4', name: 'Perth West' },
+  ];
+
+  const employmentTypeOptions = ['Full-time', 'Part-time', 'Casual', 'Agency', 'Contractor'];
 
   const handleSave = () => {
     toast.success('Settings saved successfully');
@@ -1101,6 +1160,46 @@ export default function TimesheetSettings() {
 
             {/* Workflow Tab */}
             <TabsContent value="workflow" className="space-y-6">
+              {/* Approver Directory & Delegation */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <UserCheck className="h-5 w-5 text-primary" />
+                        Approvers &amp; Delegation
+                      </CardTitle>
+                      <CardDescription>
+                        Map approvers to tiers and manage temporary delegations when approvers are unavailable.
+                      </CardDescription>
+                    </div>
+                    <Button variant="outline" className="gap-2" onClick={() => setDelegationOpen(true)}>
+                      <Users className="h-4 w-4" />
+                      Manage Delegations
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {approverDirectory.map((u) => (
+                      <div key={u.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                            <UserCheck className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{u.name}</p>
+                            <p className="text-xs text-muted-foreground">{getTierLabel(u.tier)}</p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="text-xs">Active</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Multi-Tier Approval Rules */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -1110,7 +1209,7 @@ export default function TimesheetSettings() {
                         Multi-Tier Approval Rules
                       </CardTitle>
                       <CardDescription>
-                        Configure conditional routing rules that determine which approval tier handles each timesheet based on conditions.
+                        Conditional routing rules. Conditions can match timesheet attributes, locations, or employment types.
                       </CardDescription>
                     </div>
                     <Button onClick={addApprovalRule} variant="outline" className="gap-2">
@@ -1121,11 +1220,8 @@ export default function TimesheetSettings() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {approvalRules.map((rule, index) => (
-                    <div
-                      key={rule.id}
-                      className="p-4 rounded-lg border bg-card"
-                    >
-                      <div className="flex items-center gap-2 mb-4">
+                    <div key={rule.id} className="p-4 rounded-lg border bg-card space-y-4">
+                      <div className="flex items-center gap-2">
                         <Badge variant="outline" className="font-mono">{index + 1}</Badge>
                         <Input
                           value={rule.name}
@@ -1141,51 +1237,99 @@ export default function TimesheetSettings() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="grid gap-4 md:grid-cols-5 items-end">
+
+                      <div className="grid gap-4 md:grid-cols-3">
                         <div>
                           <Label className="text-xs text-muted-foreground mb-1.5 block">Condition</Label>
                           <Select
                             value={rule.condition}
-                            onValueChange={(value: ApprovalRule['condition']) => 
+                            onValueChange={(value: ApprovalRuleCondition) =>
                               updateApprovalRule(rule.id, { condition: value })
                             }
                           >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All Timesheets</SelectItem>
                               <SelectItem value="overtime">Has Overtime</SelectItem>
                               <SelectItem value="exception">Has Exception</SelectItem>
                               <SelectItem value="high_hours">High Hours</SelectItem>
                               <SelectItem value="compliance_flag">Compliance Flag</SelectItem>
+                              <SelectItem value="location">By Location</SelectItem>
+                              <SelectItem value="employment_type">By Employment Type</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
+
                         {(rule.condition === 'overtime' || rule.condition === 'high_hours') && (
                           <div>
-                            <Label className="text-xs text-muted-foreground mb-1.5 block">Threshold</Label>
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                value={rule.threshold || 0}
-                                onChange={(e) => updateApprovalRule(rule.id, { threshold: Number(e.target.value) })}
-                              />
-                              <span className="text-sm text-muted-foreground">hrs</span>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Threshold (hrs)</Label>
+                            <Input
+                              type="number"
+                              value={rule.threshold || 0}
+                              onChange={(e) => updateApprovalRule(rule.id, { threshold: Number(e.target.value) })}
+                            />
+                          </div>
+                        )}
+
+                        {rule.condition === 'location' && (
+                          <div className="md:col-span-2">
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Locations</Label>
+                            <div className="flex flex-wrap gap-2 p-2 rounded-md border">
+                              {mockLocations.map((loc) => {
+                                const selected = rule.locationIds?.includes(loc.id) ?? false;
+                                return (
+                                  <label key={loc.id} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                                    <Checkbox
+                                      checked={selected}
+                                      onCheckedChange={(c) => {
+                                        const set = new Set(rule.locationIds ?? []);
+                                        if (c) set.add(loc.id); else set.delete(loc.id);
+                                        updateApprovalRule(rule.id, { locationIds: Array.from(set) });
+                                      }}
+                                    />
+                                    {loc.name}
+                                  </label>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
+
+                        {rule.condition === 'employment_type' && (
+                          <div className="md:col-span-2">
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Employment Types</Label>
+                            <div className="flex flex-wrap gap-2 p-2 rounded-md border">
+                              {employmentTypeOptions.map((et) => {
+                                const selected = rule.employmentTypes?.includes(et) ?? false;
+                                return (
+                                  <label key={et} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                                    <Checkbox
+                                      checked={selected}
+                                      onCheckedChange={(c) => {
+                                        const set = new Set(rule.employmentTypes ?? []);
+                                        if (c) set.add(et); else set.delete(et);
+                                        updateApprovalRule(rule.id, { employmentTypes: Array.from(set) });
+                                      }}
+                                    />
+                                    {et}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-4">
                         <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Required Approver</Label>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Required Tier</Label>
                           <Select
                             value={rule.requiredTier}
-                            onValueChange={(value: ApprovalTier) => 
+                            onValueChange={(value: ApprovalTier) =>
                               updateApprovalRule(rule.id, { requiredTier: value })
                             }
                           >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="auto">Auto-Approve</SelectItem>
                               <SelectItem value="manager">Manager</SelectItem>
@@ -1196,18 +1340,37 @@ export default function TimesheetSettings() {
                           </Select>
                         </div>
                         <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Escalate To</Label>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Assigned Approver</Label>
                           <Select
-                            value={rule.escalationTier || 'none'}
-                            onValueChange={(value) => 
-                              updateApprovalRule(rule.id, { 
-                                escalationTier: value === 'none' ? undefined : value as ApprovalTier 
+                            value={rule.assignedApproverId || 'any'}
+                            onValueChange={(value) =>
+                              updateApprovalRule(rule.id, {
+                                assignedApproverId: value === 'any' ? undefined : value,
                               })
                             }
                           >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">Any in tier</SelectItem>
+                              {approverDirectory
+                                .filter((u) => rule.requiredTier === 'auto' || u.tier === rule.requiredTier)
+                                .map((u) => (
+                                  <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Escalate To</Label>
+                          <Select
+                            value={rule.escalationTier || 'none'}
+                            onValueChange={(value) =>
+                              updateApprovalRule(rule.id, {
+                                escalationTier: value === 'none' ? undefined : (value as ApprovalTier),
+                              })
+                            }
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="none">No Escalation</SelectItem>
                               <SelectItem value="manager">Manager</SelectItem>
@@ -1224,6 +1387,57 @@ export default function TimesheetSettings() {
                             value={rule.escalationHours || 24}
                             onChange={(e) => updateApprovalRule(rule.id, { escalationHours: Number(e.target.value) })}
                           />
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Reminder before SLA (hrs)</Label>
+                          <Input
+                            type="number"
+                            value={rule.reminderHours ?? 4}
+                            onChange={(e) => updateApprovalRule(rule.id, { reminderHours: Number(e.target.value) })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">On SLA breach</Label>
+                          <Select
+                            value={rule.slaBreachAction || 'escalate'}
+                            onValueChange={(value: SlaBreachAction) =>
+                              updateApprovalRule(rule.id, { slaBreachAction: value })
+                            }
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="escalate">Escalate to next tier</SelectItem>
+                              <SelectItem value="auto_approve">Auto-approve</SelectItem>
+                              <SelectItem value="auto_reject">Auto-reject</SelectItem>
+                              <SelectItem value="hold">Hold for review</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex flex-col justify-end gap-2">
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={!!rule.parallelApproval}
+                              onCheckedChange={(c) => updateApprovalRule(rule.id, { parallelApproval: !!c })}
+                            />
+                            Parallel approval (all must approve)
+                          </label>
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={rule.requireCommentOnReject ?? true}
+                              onCheckedChange={(c) => updateApprovalRule(rule.id, { requireCommentOnReject: !!c })}
+                            />
+                            Require comment on reject / adjust
+                          </label>
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={!!rule.notifyStaffOnRoute}
+                              onCheckedChange={(c) => updateApprovalRule(rule.id, { notifyStaffOnRoute: !!c })}
+                            />
+                            Notify staff when routed
+                          </label>
                         </div>
                       </div>
                     </div>
@@ -1263,101 +1477,80 @@ export default function TimesheetSettings() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            {/* Notifications Tab */}
-            <TabsContent value="workflow" className="space-y-6">
+              {/* Notifications */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Bell className="h-5 w-5 text-primary" />
-                    Notification Preferences
+                    Notifications
                   </CardTitle>
                   <CardDescription>
-                    Configure when and how notifications are sent for timesheet events.
+                    Choose which channels deliver each event. In-app notifications appear in the bell menu.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <AlertTriangle className="h-5 w-5 text-amber-500" />
-                        <div>
-                          <p className="font-medium">Email on Flag</p>
-                          <p className="text-sm text-muted-foreground">Send email when a compliance flag is raised</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications.emailOnFlag}
-                        onCheckedChange={(checked) => {
-                          setNotifications({ ...notifications, emailOnFlag: checked });
-                          setHasUnsavedChanges(true);
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <ArrowRight className="h-5 w-5 text-orange-500" />
-                        <div>
-                          <p className="font-medium">Email on Escalation</p>
-                          <p className="text-sm text-muted-foreground">Send email when a timesheet is escalated to next tier</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications.emailOnEscalation}
-                        onCheckedChange={(checked) => {
-                          setNotifications({ ...notifications, emailOnEscalation: checked });
-                          setHasUnsavedChanges(true);
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                        <div>
-                          <p className="font-medium">Email on Auto-Approve</p>
-                          <p className="text-sm text-muted-foreground">Send confirmation when timesheet is auto-approved</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications.emailOnAutoApprove}
-                        onCheckedChange={(checked) => {
-                          setNotifications({ ...notifications, emailOnAutoApprove: checked });
-                          setHasUnsavedChanges(true);
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <XCircle className="h-5 w-5 text-red-500" />
-                        <div>
-                          <p className="font-medium">Email on Rejection</p>
-                          <p className="text-sm text-muted-foreground">Send email when a timesheet is rejected</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications.emailOnRejection}
-                        onCheckedChange={(checked) => {
-                          setNotifications({ ...notifications, emailOnRejection: checked });
-                          setHasUnsavedChanges(true);
-                        }}
-                      />
-                    </div>
+                  {/* Channel matrix */}
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-xs text-muted-foreground">
+                        <tr>
+                          <th className="text-left p-3 font-medium">Event</th>
+                          <th className="p-3 font-medium">In-App</th>
+                          <th className="p-3 font-medium">Email</th>
+                          <th className="p-3 font-medium">Slack</th>
+                          <th className="p-3 font-medium">Teams</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {([
+                          ['newSubmission', 'New timesheet submitted'],
+                          ['emailOnFlag', 'Compliance flag raised'],
+                          ['emailOnEscalation', 'Approval escalated'],
+                          ['emailOnAutoApprove', 'Auto-approved'],
+                          ['emailOnRejection', 'Timesheet rejected'],
+                          ['missedClockOut', 'Missed clock-out'],
+                          ['unsubmittedNearCutoff', 'Unsubmitted near pay cut-off'],
+                          ['slaDueSoon', 'Approval SLA due soon'],
+                          ['correction', 'Timesheet corrected'],
+                          ['payAdjustment', 'Pay adjustment applied'],
+                        ] as [NotifEventKey, string][]).map(([key, label]) => (
+                          <tr key={key} className="border-t">
+                            <td className="p-3 font-medium">{label}</td>
+                            {(['inApp', 'email', 'slack', 'teams'] as (keyof NotifChannels)[]).map((ch) => (
+                              <td key={ch} className="p-3 text-center">
+                                <Switch
+                                  checked={notifications.events[key][ch]}
+                                  onCheckedChange={(checked) => {
+                                    setNotifications({
+                                      ...notifications,
+                                      events: {
+                                        ...notifications.events,
+                                        [key]: { ...notifications.events[key], [ch]: checked },
+                                      },
+                                    });
+                                    setHasUnsavedChanges(true);
+                                  }}
+                                />
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
 
                   <Separator />
 
+                  {/* Digests */}
                   <div className="space-y-4">
-                    <h4 className="font-medium">Daily Digest</h4>
+                    <h4 className="font-medium">Digests</h4>
                     <div className="flex items-center justify-between p-4 rounded-lg border">
                       <div className="flex items-center gap-3">
                         <Calendar className="h-5 w-5 text-primary" />
                         <div>
                           <p className="font-medium">Enable Daily Digest</p>
-                          <p className="text-sm text-muted-foreground">Receive a summary of pending approvals each day</p>
+                          <p className="text-sm text-muted-foreground">Summary of pending approvals each morning</p>
                         </div>
                       </div>
                       <Switch
@@ -1369,42 +1562,170 @@ export default function TimesheetSettings() {
                       />
                     </div>
                     {notifications.dailyDigest && (
-                      <div className="flex items-center gap-4 pl-4">
-                        <Label>Send digest at</Label>
-                        <Input
-                          type="time"
-                          value={notifications.digestTime}
-                          onChange={(e) => {
-                            setNotifications({ ...notifications, digestTime: e.target.value });
-                            setHasUnsavedChanges(true);
-                          }}
-                          className="w-32"
-                        />
+                      <div className="grid gap-4 md:grid-cols-2 pl-4">
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Staff digest time</Label>
+                          <Input
+                            type="time"
+                            value={notifications.digestTime}
+                            onChange={(e) => {
+                              setNotifications({ ...notifications, digestTime: e.target.value });
+                              setHasUnsavedChanges(true);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Manager digest time</Label>
+                          <Input
+                            type="time"
+                            value={notifications.managerDigestTime}
+                            onChange={(e) => {
+                              setNotifications({ ...notifications, managerDigestTime: e.target.value });
+                              setHasUnsavedChanges(true);
+                            }}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
 
                   <Separator />
 
+                  {/* Quiet hours */}
                   <div className="space-y-4">
-                    <h4 className="font-medium">Integrations</h4>
-                    <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded bg-[#4A154B] flex items-center justify-center">
-                          <span className="text-white font-bold text-lg">#</span>
+                    <h4 className="font-medium">Quiet Hours</h4>
+                    <div className="flex items-center justify-between p-4 rounded-lg border">
+                      <div>
+                        <p className="font-medium">Suppress non-critical notifications</p>
+                        <p className="text-sm text-muted-foreground">
+                          Hold notifications during quiet hours and weekends (critical alerts always send).
+                        </p>
+                      </div>
+                      <Switch
+                        checked={notifications.quietHoursEnabled}
+                        onCheckedChange={(checked) => {
+                          setNotifications({ ...notifications, quietHoursEnabled: checked });
+                          setHasUnsavedChanges(true);
+                        }}
+                      />
+                    </div>
+                    {notifications.quietHoursEnabled && (
+                      <div className="grid gap-4 md:grid-cols-3 pl-4">
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">From</Label>
+                          <Input
+                            type="time"
+                            value={notifications.quietHoursStart}
+                            onChange={(e) => {
+                              setNotifications({ ...notifications, quietHoursStart: e.target.value });
+                              setHasUnsavedChanges(true);
+                            }}
+                          />
                         </div>
                         <div>
-                          <p className="font-medium">Slack Integration</p>
-                          <p className="text-sm text-muted-foreground">Send notifications to a Slack channel</p>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">To</Label>
+                          <Input
+                            type="time"
+                            value={notifications.quietHoursEnd}
+                            onChange={(e) => {
+                              setNotifications({ ...notifications, quietHoursEnd: e.target.value });
+                              setHasUnsavedChanges(true);
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={notifications.suppressOnWeekends}
+                              onCheckedChange={(c) => {
+                                setNotifications({ ...notifications, suppressOnWeekends: !!c });
+                                setHasUnsavedChanges(true);
+                              }}
+                            />
+                            Suppress on weekends
+                          </label>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">
-                        Configure
-                      </Button>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Integrations */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Integrations</h4>
+
+                    <div className="flex items-center justify-between p-4 rounded-lg border">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded bg-[hsl(290,60%,25%)] flex items-center justify-center">
+                          <span className="text-primary-foreground font-bold text-lg">#</span>
+                        </div>
+                        <div>
+                          <p className="font-medium">Slack</p>
+                          <p className="text-sm text-muted-foreground">Route notifications to a Slack workspace</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notifications.slackIntegration}
+                        onCheckedChange={(checked) => {
+                          setNotifications({ ...notifications, slackIntegration: checked });
+                          setHasUnsavedChanges(true);
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 rounded-lg border">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded bg-[hsl(220,70%,45%)] flex items-center justify-center">
+                          <span className="text-primary-foreground font-bold text-sm">T</span>
+                        </div>
+                        <div>
+                          <p className="font-medium">Microsoft Teams</p>
+                          <p className="text-sm text-muted-foreground">Post notifications to a Teams channel</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notifications.teamsIntegration}
+                        onCheckedChange={(checked) => {
+                          setNotifications({ ...notifications, teamsIntegration: checked });
+                          setHasUnsavedChanges(true);
+                        }}
+                      />
+                    </div>
+
+                    <div className="p-4 rounded-lg border space-y-2">
+                      <Label className="text-sm font-medium">Webhook URL (optional)</Label>
+                      <Input
+                        type="url"
+                        placeholder="https://example.com/webhooks/timesheets"
+                        value={notifications.webhookUrl}
+                        onChange={(e) => {
+                          setNotifications({ ...notifications, webhookUrl: e.target.value });
+                          setHasUnsavedChanges(true);
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        POST JSON payloads for every enabled event. Useful for custom integrations.
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+
+              <ApprovalDelegationModal
+                open={delegationOpen}
+                onClose={() => setDelegationOpen(false)}
+                currentUser="current-user"
+                delegations={delegations}
+                onCreateDelegation={(d) => {
+                  setDelegations((prev) => [
+                    ...prev,
+                    { ...d, id: `del-${Date.now()}`, createdAt: new Date().toISOString(), status: 'active' },
+                  ]);
+                  setHasUnsavedChanges(true);
+                }}
+                onRevokeDelegation={(id) => setDelegations((prev) => prev.filter((d) => d.id !== id))}
+              />
             </TabsContent>
             </Tabs>
             </div>
