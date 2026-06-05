@@ -76,9 +76,30 @@ export interface BreaksSettings {
   paidMealOverMinutesThreshold: number;
 }
 
+export type AnomalySeverity = 'off' | 'info' | 'warning' | 'critical';
+
 export interface TimesheetIssuesSettings {
+  // Time variance
   flagShiftTimeVariance: VarianceFlag;
   flagBreakDurationVariance: VarianceFlag;
+  // Missing / unusual entries
+  flagMissingClockOut: AnomalySeverity;
+  flagUnusualEarlyClockIn: AnomalySeverity;
+  unusualEarlyClockInBeforeHour: number; // 0-23, e.g. 5 = before 5am
+  flagUnusualLateClockOut: AnomalySeverity;
+  unusualLateClockOutAfterHour: number; // 0-23, e.g. 22 = after 10pm
+  // Excessive hours
+  flagExcessiveDailyHours: AnomalySeverity;
+  excessiveDailyHoursThreshold: number; // e.g. 12
+  flagLongShiftWithoutBreak: AnomalySeverity;
+  longShiftWithoutBreakHours: number; // e.g. 6
+  flagHighWeeklyOvertime: AnomalySeverity;
+  highWeeklyOvertimeThreshold: number; // hours
+  // Behavioural patterns
+  flagPatternDrift: AnomalySeverity;
+  patternDriftMinutes: number; // deviation from historical average
+  // Routing
+  blockSubmissionOnCritical: boolean;
 }
 
 export interface TimesheetPolicy {
