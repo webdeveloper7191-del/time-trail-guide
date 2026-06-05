@@ -239,3 +239,10 @@ export const varianceFlagOptions: { value: VarianceFlag; label: string }[] = [
   { value: 'over_15m', label: 'Variance over 15 minutes' },
   { value: 'always', label: 'Always' },
 ];
+
+export const anomalySeverityOptions: { value: AnomalySeverity; label: string }[] = [
+  { value: 'off', label: 'Off' },
+  { value: 'info', label: 'Info' },
+  { value: 'warning', label: 'Warning' },
+  { value: 'critical', label: 'Critical' },
+];
