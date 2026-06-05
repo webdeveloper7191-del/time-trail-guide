@@ -45,7 +45,7 @@ import {
   HelpCircle,
   Award,
 } from 'lucide-react';
-import { ApprovalTier, BreakRule, ApprovalRule, ApprovalRuleCondition, SlaBreachAction } from '@/types/compliance';
+import { ApprovalTier, BreakRule, ApprovalRule, ApprovalRuleCondition, SlaBreachAction, ApprovalTriggerSet } from '@/types/compliance';
 import { ApprovalDelegationModal } from '@/components/timesheet/ApprovalDelegationModal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
@@ -198,13 +198,40 @@ export default function TimesheetSettings() {
     },
   });
 
-  // Approval Chain Config
+  // Step 1 — Location Manager (always first, cannot be removed)
+  const [locationManagerStep, setLocationManagerStep] = useState({
+    enabled: true,
+    skipWhenAutoApproved: true,
+    slaHours: 24,
+    reminderHours: 4,
+    breachAction: 'escalate' as SlaBreachAction,
+    requireCommentOnReject: true,
+    notifyStaffOnRoute: false,
+  });
+
+  // Additional approval steps — run after Location Manager when their triggers match
   const [approvalRules, setApprovalRules] = useState<ApprovalRule[]>([
-    { id: 'ar-1', name: 'Standard Auto-Approve', condition: 'all', requiredTier: 'auto' },
-    { id: 'ar-2', name: 'Moderate Overtime', condition: 'overtime', threshold: 2, requiredTier: 'manager', escalationTier: 'senior_manager', escalationHours: 24 },
-    { id: 'ar-3', name: 'High Overtime', condition: 'overtime', threshold: 8, requiredTier: 'senior_manager', escalationTier: 'director', escalationHours: 48 },
-    { id: 'ar-4', name: 'Compliance Issues', condition: 'compliance_flag', requiredTier: 'hr', escalationHours: 72 },
-    { id: 'ar-5', name: 'Exception Review', condition: 'exception', requiredTier: 'manager', escalationTier: 'hr', escalationHours: 48 },
+    {
+      id: 'ar-ot',
+      name: 'High Overtime Review',
+      triggers: { hasOvertime: true, overtimeOverHours: 8 },
+      requiredTier: 'senior_manager',
+      slaHours: 48,
+      reminderHours: 6,
+      slaBreachAction: 'escalate',
+      escalationTier: 'director',
+      requireCommentOnReject: true,
+    },
+    {
+      id: 'ar-cf',
+      name: 'Compliance Flag Review',
+      triggers: { hasComplianceFlag: true },
+      requiredTier: 'hr',
+      slaHours: 72,
+      reminderHours: 12,
+      slaBreachAction: 'hold',
+      requireCommentOnReject: true,
+    },
   ]);
 
   // Escalation Config
@@ -329,9 +356,13 @@ export default function TimesheetSettings() {
   const addApprovalRule = () => {
     const newRule: ApprovalRule = {
       id: `ar-${Date.now()}`,
-      name: 'New Rule',
-      condition: 'exception',
-      requiredTier: 'manager',
+      name: 'New Step',
+      triggers: { hasException: true },
+      requiredTier: 'senior_manager',
+      slaHours: 24,
+      reminderHours: 4,
+      slaBreachAction: 'escalate',
+      requireCommentOnReject: true,
     };
     setApprovalRules(prev => [...prev, newRule]);
     setHasUnsavedChanges(true);
@@ -1199,284 +1230,407 @@ export default function TimesheetSettings() {
                 </CardContent>
               </Card>
 
-              {/* Multi-Tier Approval Rules */}
+              {/* Step 1 — Location Manager (fixed) */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono">1</Badge>
+                        <UserCheck className="h-5 w-5 text-primary" />
+                        Location Manager
+                        <Badge variant="secondary" className="text-xs">Always first</Badge>
+                      </CardTitle>
+                      <CardDescription>
+                        Every timesheet is routed first to the manager of the staff member's home location.
+                        Auto-resolved from each Location's Manager field — no per-location rules needed for national operators.
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1.5 block">SLA (hours)</Label>
+                      <Input
+                        type="number"
+                        value={locationManagerStep.slaHours}
+                        onChange={(e) => {
+                          setLocationManagerStep({ ...locationManagerStep, slaHours: Number(e.target.value) });
+                          setHasUnsavedChanges(true);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1.5 block">Reminder before SLA (hrs)</Label>
+                      <Input
+                        type="number"
+                        value={locationManagerStep.reminderHours}
+                        onChange={(e) => {
+                          setLocationManagerStep({ ...locationManagerStep, reminderHours: Number(e.target.value) });
+                          setHasUnsavedChanges(true);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1.5 block">On SLA breach</Label>
+                      <Select
+                        value={locationManagerStep.breachAction}
+                        onValueChange={(value: SlaBreachAction) => {
+                          setLocationManagerStep({ ...locationManagerStep, breachAction: value });
+                          setHasUnsavedChanges(true);
+                        }}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="escalate">Escalate to backup manager</SelectItem>
+                          <SelectItem value="auto_approve">Auto-approve</SelectItem>
+                          <SelectItem value="auto_reject">Auto-reject</SelectItem>
+                          <SelectItem value="hold">Hold for review</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col justify-end gap-2">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={locationManagerStep.skipWhenAutoApproved}
+                          onCheckedChange={(c) => {
+                            setLocationManagerStep({ ...locationManagerStep, skipWhenAutoApproved: !!c });
+                            setHasUnsavedChanges(true);
+                          }}
+                        />
+                        Skip when clean &amp; auto-approved
+                      </label>
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={locationManagerStep.requireCommentOnReject}
+                          onCheckedChange={(c) => {
+                            setLocationManagerStep({ ...locationManagerStep, requireCommentOnReject: !!c });
+                            setHasUnsavedChanges(true);
+                          }}
+                        />
+                        Require comment on reject
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 text-xs text-muted-foreground">
+                    <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <p>
+                      Set each Location's Manager &amp; Backup Manager in <strong>Location Management</strong>.
+                      Delegation handles temporary cover.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Additional Approval Steps */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="flex items-center gap-2">
                         <Users className="h-5 w-5 text-primary" />
-                        Multi-Tier Approval Rules
+                        Additional Approval Steps
                       </CardTitle>
                       <CardDescription>
-                        Conditional routing rules. Conditions can match timesheet attributes, locations, or employment types.
+                        Optional steps added <strong>after</strong> the Location Manager when triggers match.
+                        Pick any combination of triggers — the step runs if any one matches.
                       </CardDescription>
                     </div>
                     <Button onClick={addApprovalRule} variant="outline" className="gap-2">
                       <Plus className="h-4 w-4" />
-                      Add Rule
+                      Add Step
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {approvalRules.map((rule, index) => (
-                    <div key={rule.id} className="p-4 rounded-lg border bg-card space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="font-mono">{index + 1}</Badge>
-                        <Input
-                          value={rule.name}
-                          onChange={(e) => updateApprovalRule(rule.id, { name: e.target.value })}
-                          className="max-w-xs font-medium"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="ml-auto text-destructive hover:text-destructive"
-                          onClick={() => removeApprovalRule(rule.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-3">
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Condition</Label>
-                          <Select
-                            value={rule.condition}
-                            onValueChange={(value: ApprovalRuleCondition) =>
-                              updateApprovalRule(rule.id, { condition: value })
-                            }
+                  {approvalRules.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-6">
+                      No additional steps. Timesheets complete after Location Manager approval.
+                    </p>
+                  )}
+                  {approvalRules.map((rule, index) => {
+                    const t = rule.triggers ?? {};
+                    const setTrigger = (patch: Partial<ApprovalTriggerSet>) =>
+                      updateApprovalRule(rule.id, { triggers: { ...t, ...patch } });
+                    return (
+                      <div key={rule.id} className="p-4 rounded-lg border bg-card space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="font-mono">{index + 2}</Badge>
+                          <Input
+                            value={rule.name}
+                            onChange={(e) => updateApprovalRule(rule.id, { name: e.target.value })}
+                            className="max-w-xs font-medium"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="ml-auto text-destructive hover:text-destructive"
+                            onClick={() => removeApprovalRule(rule.id)}
                           >
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Timesheets</SelectItem>
-                              <SelectItem value="overtime">Has Overtime</SelectItem>
-                              <SelectItem value="exception">Has Exception</SelectItem>
-                              <SelectItem value="high_hours">High Hours</SelectItem>
-                              <SelectItem value="compliance_flag">Compliance Flag</SelectItem>
-                              <SelectItem value="location">By Location</SelectItem>
-                              <SelectItem value="employment_type">By Employment Type</SelectItem>
-                            </SelectContent>
-                          </Select>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
 
-                        {(rule.condition === 'overtime' || rule.condition === 'high_hours') && (
+                        {/* Triggers */}
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-2 block">Run this step when…</Label>
+                          <div className="grid gap-2 md:grid-cols-2 p-3 rounded-md border bg-muted/30">
+                            <label className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={!!t.hasOvertime}
+                                onCheckedChange={(c) => setTrigger({ hasOvertime: !!c })}
+                              />
+                              Timesheet has overtime
+                            </label>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Checkbox
+                                checked={t.overtimeOverHours !== undefined}
+                                onCheckedChange={(c) =>
+                                  setTrigger({ overtimeOverHours: c ? (t.overtimeOverHours ?? 4) : undefined })
+                                }
+                              />
+                              Overtime exceeds
+                              <Input
+                                type="number"
+                                className="w-20 h-8"
+                                disabled={t.overtimeOverHours === undefined}
+                                value={t.overtimeOverHours ?? 4}
+                                onChange={(e) => setTrigger({ overtimeOverHours: Number(e.target.value) })}
+                              />
+                              hrs
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Checkbox
+                                checked={t.dailyHoursOver !== undefined}
+                                onCheckedChange={(c) =>
+                                  setTrigger({ dailyHoursOver: c ? (t.dailyHoursOver ?? 12) : undefined })
+                                }
+                              />
+                              Any day over
+                              <Input
+                                type="number"
+                                className="w-20 h-8"
+                                disabled={t.dailyHoursOver === undefined}
+                                value={t.dailyHoursOver ?? 12}
+                                onChange={(e) => setTrigger({ dailyHoursOver: Number(e.target.value) })}
+                              />
+                              hrs
+                            </div>
+                            <label className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={!!t.hasComplianceFlag}
+                                onCheckedChange={(c) => setTrigger({ hasComplianceFlag: !!c })}
+                              />
+                              Has compliance flag
+                            </label>
+                            <label className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={!!t.hasException}
+                                onCheckedChange={(c) => setTrigger({ hasException: !!c })}
+                              />
+                              Has any exception
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Scope filters (optional) */}
+                        <details className="rounded-md border">
+                          <summary className="cursor-pointer px-3 py-2 text-sm font-medium select-none">
+                            Restrict to locations / employment types (optional)
+                          </summary>
+                          <div className="p-3 space-y-3 border-t">
+                            <div>
+                              <Label className="text-xs text-muted-foreground mb-1.5 block">Locations</Label>
+                              <div className="flex flex-wrap gap-2 p-2 rounded-md border">
+                                {mockLocations.map((loc) => {
+                                  const selected = rule.locationIds?.includes(loc.id) ?? false;
+                                  return (
+                                    <label key={loc.id} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                                      <Checkbox
+                                        checked={selected}
+                                        onCheckedChange={(c) => {
+                                          const set = new Set(rule.locationIds ?? []);
+                                          if (c) set.add(loc.id); else set.delete(loc.id);
+                                          updateApprovalRule(rule.id, { locationIds: Array.from(set) });
+                                        }}
+                                      />
+                                      {loc.name}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Leave empty to apply to all locations.
+                              </p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground mb-1.5 block">Employment Types</Label>
+                              <div className="flex flex-wrap gap-2 p-2 rounded-md border">
+                                {employmentTypeOptions.map((et) => {
+                                  const selected = rule.employmentTypes?.includes(et) ?? false;
+                                  return (
+                                    <label key={et} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                                      <Checkbox
+                                        checked={selected}
+                                        onCheckedChange={(c) => {
+                                          const set = new Set(rule.employmentTypes ?? []);
+                                          if (c) set.add(et); else set.delete(et);
+                                          updateApprovalRule(rule.id, { employmentTypes: Array.from(set) });
+                                        }}
+                                      />
+                                      {et}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </details>
+
+                        {/* Approver + SLA */}
+                        <div className="grid gap-4 md:grid-cols-3">
                           <div>
-                            <Label className="text-xs text-muted-foreground mb-1.5 block">Threshold (hrs)</Label>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Approver Role</Label>
+                            <Select
+                              value={rule.requiredTier}
+                              onValueChange={(value: ApprovalTier) =>
+                                updateApprovalRule(rule.id, { requiredTier: value, assignedApproverId: undefined })
+                              }
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="senior_manager">Senior / Area Manager</SelectItem>
+                                <SelectItem value="director">Director / State Manager</SelectItem>
+                                <SelectItem value="hr">HR / Payroll</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Specific Approver</Label>
+                            <Select
+                              value={rule.assignedApproverId || 'any'}
+                              onValueChange={(value) =>
+                                updateApprovalRule(rule.id, {
+                                  assignedApproverId: value === 'any' ? undefined : value,
+                                })
+                              }
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="any">Any in role</SelectItem>
+                                {approverDirectory
+                                  .filter((u) => u.tier === rule.requiredTier)
+                                  .map((u) => (
+                                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">SLA (hours)</Label>
                             <Input
                               type="number"
-                              value={rule.threshold || 0}
-                              onChange={(e) => updateApprovalRule(rule.id, { threshold: Number(e.target.value) })}
+                              value={rule.slaHours ?? rule.escalationHours ?? 24}
+                              onChange={(e) => updateApprovalRule(rule.id, { slaHours: Number(e.target.value) })}
                             />
                           </div>
-                        )}
+                        </div>
 
-                        {rule.condition === 'location' && (
-                          <div className="md:col-span-2">
-                            <Label className="text-xs text-muted-foreground mb-1.5 block">Locations</Label>
-                            <div className="flex flex-wrap gap-2 p-2 rounded-md border">
-                              {mockLocations.map((loc) => {
-                                const selected = rule.locationIds?.includes(loc.id) ?? false;
-                                return (
-                                  <label key={loc.id} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                                    <Checkbox
-                                      checked={selected}
-                                      onCheckedChange={(c) => {
-                                        const set = new Set(rule.locationIds ?? []);
-                                        if (c) set.add(loc.id); else set.delete(loc.id);
-                                        updateApprovalRule(rule.id, { locationIds: Array.from(set) });
-                                      }}
-                                    />
-                                    {loc.name}
-                                  </label>
-                                );
-                              })}
-                            </div>
+                        <div className="grid gap-4 md:grid-cols-3">
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Reminder before SLA (hrs)</Label>
+                            <Input
+                              type="number"
+                              value={rule.reminderHours ?? 4}
+                              onChange={(e) => updateApprovalRule(rule.id, { reminderHours: Number(e.target.value) })}
+                            />
                           </div>
-                        )}
-
-                        {rule.condition === 'employment_type' && (
-                          <div className="md:col-span-2">
-                            <Label className="text-xs text-muted-foreground mb-1.5 block">Employment Types</Label>
-                            <div className="flex flex-wrap gap-2 p-2 rounded-md border">
-                              {employmentTypeOptions.map((et) => {
-                                const selected = rule.employmentTypes?.includes(et) ?? false;
-                                return (
-                                  <label key={et} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                                    <Checkbox
-                                      checked={selected}
-                                      onCheckedChange={(c) => {
-                                        const set = new Set(rule.employmentTypes ?? []);
-                                        if (c) set.add(et); else set.delete(et);
-                                        updateApprovalRule(rule.id, { employmentTypes: Array.from(set) });
-                                      }}
-                                    />
-                                    {et}
-                                  </label>
-                                );
-                              })}
-                            </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">On SLA breach</Label>
+                            <Select
+                              value={rule.slaBreachAction || 'escalate'}
+                              onValueChange={(value: SlaBreachAction) =>
+                                updateApprovalRule(rule.id, { slaBreachAction: value })
+                              }
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="escalate">Escalate to next role</SelectItem>
+                                <SelectItem value="auto_approve">Auto-approve</SelectItem>
+                                <SelectItem value="auto_reject">Auto-reject</SelectItem>
+                                <SelectItem value="hold">Hold for review</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
-                        )}
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-4">
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Required Tier</Label>
-                          <Select
-                            value={rule.requiredTier}
-                            onValueChange={(value: ApprovalTier) =>
-                              updateApprovalRule(rule.id, { requiredTier: value })
-                            }
-                          >
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="auto">Auto-Approve</SelectItem>
-                              <SelectItem value="manager">Manager</SelectItem>
-                              <SelectItem value="senior_manager">Senior Manager</SelectItem>
-                              <SelectItem value="director">Director</SelectItem>
-                              <SelectItem value="hr">HR Department</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Assigned Approver</Label>
-                          <Select
-                            value={rule.assignedApproverId || 'any'}
-                            onValueChange={(value) =>
-                              updateApprovalRule(rule.id, {
-                                assignedApproverId: value === 'any' ? undefined : value,
-                              })
-                            }
-                          >
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="any">Any in tier</SelectItem>
-                              {approverDirectory
-                                .filter((u) => rule.requiredTier === 'auto' || u.tier === rule.requiredTier)
-                                .map((u) => (
-                                  <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Escalate To</Label>
-                          <Select
-                            value={rule.escalationTier || 'none'}
-                            onValueChange={(value) =>
-                              updateApprovalRule(rule.id, {
-                                escalationTier: value === 'none' ? undefined : (value as ApprovalTier),
-                              })
-                            }
-                          >
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No Escalation</SelectItem>
-                              <SelectItem value="manager">Manager</SelectItem>
-                              <SelectItem value="senior_manager">Senior Manager</SelectItem>
-                              <SelectItem value="director">Director</SelectItem>
-                              <SelectItem value="hr">HR Department</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">SLA (hours)</Label>
-                          <Input
-                            type="number"
-                            value={rule.escalationHours || 24}
-                            onChange={(e) => updateApprovalRule(rule.id, { escalationHours: Number(e.target.value) })}
-                          />
+                          <div className="flex flex-col justify-end gap-2">
+                            <label className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={!!rule.parallelApproval}
+                                onCheckedChange={(c) => updateApprovalRule(rule.id, { parallelApproval: !!c })}
+                              />
+                              Parallel (all must approve)
+                            </label>
+                            <label className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={rule.requireCommentOnReject ?? true}
+                                onCheckedChange={(c) => updateApprovalRule(rule.id, { requireCommentOnReject: !!c })}
+                              />
+                              Require comment on reject
+                            </label>
+                            <label className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={!!rule.notifyStaffOnRoute}
+                                onCheckedChange={(c) => updateApprovalRule(rule.id, { notifyStaffOnRoute: !!c })}
+                              />
+                              Notify staff when routed
+                            </label>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="grid gap-4 md:grid-cols-3">
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Reminder before SLA (hrs)</Label>
-                          <Input
-                            type="number"
-                            value={rule.reminderHours ?? 4}
-                            onChange={(e) => updateApprovalRule(rule.id, { reminderHours: Number(e.target.value) })}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">On SLA breach</Label>
-                          <Select
-                            value={rule.slaBreachAction || 'escalate'}
-                            onValueChange={(value: SlaBreachAction) =>
-                              updateApprovalRule(rule.id, { slaBreachAction: value })
-                            }
-                          >
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="escalate">Escalate to next tier</SelectItem>
-                              <SelectItem value="auto_approve">Auto-approve</SelectItem>
-                              <SelectItem value="auto_reject">Auto-reject</SelectItem>
-                              <SelectItem value="hold">Hold for review</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex flex-col justify-end gap-2">
-                          <label className="flex items-center gap-2 text-sm cursor-pointer">
-                            <Checkbox
-                              checked={!!rule.parallelApproval}
-                              onCheckedChange={(c) => updateApprovalRule(rule.id, { parallelApproval: !!c })}
-                            />
-                            Parallel approval (all must approve)
-                          </label>
-                          <label className="flex items-center gap-2 text-sm cursor-pointer">
-                            <Checkbox
-                              checked={rule.requireCommentOnReject ?? true}
-                              onCheckedChange={(c) => updateApprovalRule(rule.id, { requireCommentOnReject: !!c })}
-                            />
-                            Require comment on reject / adjust
-                          </label>
-                          <label className="flex items-center gap-2 text-sm cursor-pointer">
-                            <Checkbox
-                              checked={!!rule.notifyStaffOnRoute}
-                              onCheckedChange={(c) => updateApprovalRule(rule.id, { notifyStaffOnRoute: !!c })}
-                            />
-                            Notify staff when routed
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </CardContent>
               </Card>
 
-              {/* Escalation Flow Visualization */}
+              {/* Approval Flow Visualization (derived) */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ArrowRight className="h-5 w-5 text-primary" />
-                    Escalation Flow
+                    Approval Flow Preview
                   </CardTitle>
+                  <CardDescription>Resolved order: Step 1 is always Location Manager, followed by any additional steps whose triggers match.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg overflow-x-auto">
-                    {escalationConfigs.map((config, index) => (
-                      <div key={config.tier} className="flex items-center">
+                  <div className="flex items-center justify-start gap-4 p-4 bg-muted/50 rounded-lg overflow-x-auto">
+                    <div className="text-center shrink-0">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 bg-primary text-primary-foreground">
+                        <UserCheck className="h-6 w-6" />
+                      </div>
+                      <p className="text-sm font-medium">Location Manager</p>
+                      <p className="text-xs text-muted-foreground">{locationManagerStep.slaHours}h SLA</p>
+                    </div>
+                    {approvalRules.map((rule) => (
+                      <div key={rule.id} className="flex items-center gap-4 shrink-0">
+                        <ChevronRight className="h-6 w-6 text-muted-foreground" />
                         <div className="text-center">
-                          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 ${
-                            index === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/20'
-                          }`}>
-                            {config.tier === 'manager' && <UserCheck className="h-6 w-6" />}
-                            {config.tier === 'senior_manager' && <Users className="h-6 w-6" />}
-                            {config.tier === 'director' && <Building2 className="h-6 w-6" />}
-                            {config.tier === 'hr' && <Shield className="h-6 w-6" />}
+                          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 bg-muted-foreground/20">
+                            {rule.requiredTier === 'senior_manager' && <Users className="h-6 w-6" />}
+                            {rule.requiredTier === 'director' && <Building2 className="h-6 w-6" />}
+                            {rule.requiredTier === 'hr' && <Shield className="h-6 w-6" />}
                           </div>
-                          <p className="text-sm font-medium">{getTierLabel(config.tier)}</p>
-                          <p className="text-xs text-muted-foreground">{config.slaHours}h SLA</p>
+                          <p className="text-sm font-medium">{rule.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {getTierLabel(rule.requiredTier)} · {rule.slaHours ?? 24}h
+                          </p>
                         </div>
-                        {index < escalationConfigs.length - 1 && (
-                          <ChevronRight className="h-6 w-6 text-muted-foreground mx-4" />
-                        )}
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
+
 
               {/* Notifications */}
               <Card>
