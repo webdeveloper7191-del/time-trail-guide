@@ -494,13 +494,9 @@ export function PolicyIssues() {
           options={varianceFlagOptions}
           onChange={v => setField('issues', 'flagShiftTimeVariance', v as TimesheetPolicy['issues']['flagShiftTimeVariance'])}
         />
-        <SelectRow
-          {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag Break Duration Variance',
-            'Alert managers when the actual break taken differs from the scheduled break duration.')}
-          value={resolved.issues.flagBreakDurationVariance}
-          options={varianceFlagOptions}
-          onChange={v => setField('issues', 'flagBreakDurationVariance', v as TimesheetPolicy['issues']['flagBreakDurationVariance'])}
-        />
+        <div className="pt-2 text-xs text-muted-foreground">
+          Break duration variance flagging now lives in the <span className="font-medium text-foreground">Breaks</span> tab under <span className="font-medium text-foreground">Flagging</span>.
+        </div>
       </CardContent>
     </Card>
   );
