@@ -79,56 +79,9 @@ export default function TimesheetSettings() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Auto-Approval Conditions
-  const [autoApprovalEnabled, setAutoApprovalEnabled] = useState(true);
-  const [autoApprovalConditions, setAutoApprovalConditions] = useState<AutoApprovalCondition[]>([
-    { id: 'cond-1', name: 'No Compliance Flags', enabled: true, description: 'Timesheet has no critical or warning flags' },
-    { id: 'cond-2', name: 'Within Regular Hours', enabled: true, parameter: 40, description: 'Total hours do not exceed weekly threshold' },
-    { id: 'cond-3', name: 'No Overtime', enabled: false, parameter: 0, description: 'Timesheet contains zero overtime hours' },
-    { id: 'cond-4', name: 'Overtime Under Limit', enabled: true, parameter: 2, description: 'Overtime hours below specified threshold' },
-    { id: 'cond-5', name: 'All Breaks Taken', enabled: true, description: 'All mandatory breaks properly recorded' },
-    { id: 'cond-6', name: 'No Pattern Anomalies', enabled: true, description: 'Clock patterns consistent with historical data' },
-    { id: 'cond-7', name: 'Complete Clock Entries', enabled: true, description: 'All days have both clock-in and clock-out' },
-  ]);
-
-  // Flagging Rules
-
-
-
   // Break Rules
   const [breakRules, setBreakRules] = useBreakRules();
 
-  // Jurisdiction Config — defaults to Australia (NES + Modern Awards)
-  const [jurisdiction, setJurisdiction] = useState<JurisdictionConfig>({
-    id: 'au-nes',
-    name: 'Australia — National Employment Standards',
-    code: 'AU-NES',
-    state: 'NSW',
-    awardType: 'general',
-    maxDailyHours: 10,
-    maxWeeklyHours: 38,
-    overtimeThresholdDaily: 8,
-    overtimeThresholdWeekly: 38,
-    overtimeMultiplier: 1.5,
-    doubleTimeThreshold: 10,
-    doubleTimeMultiplier: 2.0,
-    minRestBetweenShiftsHours: 10,
-    maxConsecutiveDays: 6,
-    spanOfHoursMax: 12,
-    saturdayMultiplier: 1.25,
-    sundayMultiplier: 1.5,
-    publicHolidayMultiplier: 2.5,
-    nightLoadingMultiplier: 1.15,
-    casualLoadingPercent: 25,
-    minEngagementHours: 3,
-    sourceMap: {
-      hoursLimits: 'tenant',
-      overtime: 'award',
-      restSpan: 'award',
-      penalties: 'award',
-      engagement: 'award',
-    },
-  });
 
   // Simplified compliance: only flag thresholds. Pay logic lives in Awards.
   const [compliance, setCompliance] = useState<ComplianceState>({
