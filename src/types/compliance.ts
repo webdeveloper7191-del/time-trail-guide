@@ -86,6 +86,8 @@ export interface ApprovalRule {
   assignedApproverId?: string;
   /** Restrict rule to specific locations (scope filter). */
   locationIds?: string[];
+  /** Restrict rule to specific location groups (e.g. state, region, brand). */
+  locationGroupIds?: string[];
   /** Restrict rule to specific employment types (e.g. casual, agency). */
   employmentTypes?: string[];
   /** Hours allowed before the step escalates / breaches SLA. */

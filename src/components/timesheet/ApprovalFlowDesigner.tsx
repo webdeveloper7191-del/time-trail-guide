@@ -50,6 +50,7 @@ interface ApproverDirectoryUser {
 }
 
 interface LocationOption { id: string; name: string }
+interface LocationGroupOption { id: string; name: string }
 
 interface Props {
   autoApproveClean: boolean;
@@ -62,6 +63,7 @@ interface Props {
   onRemoveRule: (id: string) => void;
   approverDirectory: ApproverDirectoryUser[];
   locations: LocationOption[];
+  locationGroups?: LocationGroupOption[];
   employmentTypes: string[];
   onOpenDelegations: () => void;
   onDirty?: () => void;
@@ -104,6 +106,7 @@ export function ApprovalFlowDesigner({
   onRemoveRule,
   approverDirectory,
   locations,
+  locationGroups = [],
   employmentTypes,
   onOpenDelegations,
   onDirty,
@@ -278,6 +281,7 @@ export function ApprovalFlowDesigner({
                 onRemove={() => { onRemoveRule(rule.id); mark(); }}
                 approverDirectory={approverDirectory}
                 locations={locations}
+                locationGroups={locationGroups}
                 employmentTypes={employmentTypes}
               />
             </div>
@@ -365,7 +369,7 @@ function breachLabel(a: SlaBreachAction): string {
 
 function EscalationCard({
   rule, index, expanded, onToggle, onUpdate, onRemove,
-  approverDirectory, locations, employmentTypes,
+  approverDirectory, locations, locationGroups, employmentTypes,
 }: {
   rule: ApprovalRule;
   index: number;
@@ -375,6 +379,7 @@ function EscalationCard({
   onRemove: () => void;
   approverDirectory: ApproverDirectoryUser[];
   locations: LocationOption[];
+  locationGroups: LocationGroupOption[];
   employmentTypes: string[];
 }) {
   const Icon = tierIcon[rule.requiredTier] ?? Users;
@@ -384,8 +389,9 @@ function EscalationCard({
 
   const triggerSummary = summarizeTriggers(t);
   const scopeChips: string[] = [];
+  if (rule.locationGroupIds?.length) scopeChips.push(`${rule.locationGroupIds.length} group${rule.locationGroupIds.length > 1 ? 's' : ''}`);
   if (rule.locationIds?.length) scopeChips.push(`${rule.locationIds.length} location${rule.locationIds.length > 1 ? 's' : ''}`);
-  else scopeChips.push('All locations');
+  if (!rule.locationGroupIds?.length && !rule.locationIds?.length) scopeChips.push('All locations');
   if (rule.employmentTypes?.length) scopeChips.push(rule.employmentTypes.join(' · '));
 
   return (
@@ -582,6 +588,13 @@ function EscalationCard({
             <Label className="text-xs uppercase tracking-wide text-muted-foreground mb-2 block">Applies to</Label>
             <div className="flex flex-wrap items-center gap-2">
               <ScopePopover
+                label={rule.locationGroupIds?.length ? `${rule.locationGroupIds.length} group${rule.locationGroupIds.length > 1 ? 's' : ''}` : 'All location groups'}
+                options={locationGroups.map((g) => ({ id: g.id, label: g.name }))}
+                selected={rule.locationGroupIds ?? []}
+                onChange={(ids) => onUpdate({ locationGroupIds: ids.length ? ids : undefined })}
+                emptyLabel="All location groups"
+              />
+              <ScopePopover
                 label={rule.locationIds?.length ? `${rule.locationIds.length} location${rule.locationIds.length > 1 ? 's' : ''}` : 'All locations'}
                 options={locations.map((l) => ({ id: l.id, label: l.name }))}
                 selected={rule.locationIds ?? []}
@@ -596,6 +609,9 @@ function EscalationCard({
                 emptyLabel="All employment types"
               />
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Filter by <strong>location group</strong> (e.g. state or region), specific locations, or employment type. Leave blank to apply to all.
+            </p>
           </div>
         </div>
       )}
