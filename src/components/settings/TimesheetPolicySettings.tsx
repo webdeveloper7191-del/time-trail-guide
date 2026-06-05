@@ -266,26 +266,11 @@ export function PolicyPermissions() {
           />
         </PermissionGroup>
 
-        <PermissionGroup title="Breaks">
-          <ToggleRow
-            {...fieldProps('permissions', 'wrapUpBreaksSooner', 'Wrap up Breaks Sooner',
-              'Allow team members to end their breaks early and resume work before the scheduled time.')}
-            value={resolved.permissions.wrapUpBreaksSooner}
-            onChange={v => setField('permissions', 'wrapUpBreaksSooner', v)}
-          />
-          <ToggleRow
-            {...fieldProps('permissions', 'editOwnBreakDuration', 'Edit Own Break Duration',
-              'Allow staff to adjust the duration of breaks on their own timesheet entries.')}
-            value={resolved.permissions.editOwnBreakDuration}
-            onChange={v => setField('permissions', 'editOwnBreakDuration', v)}
-          />
-          <ToggleRow
-            {...fieldProps('permissions', 'addBreaksToPastTimesheets', 'Add Breaks to Past Timesheets',
-              'Allow staff to retroactively add break entries to previously submitted timesheets (until approved).')}
-            value={resolved.permissions.addBreaksToPastTimesheets}
-            onChange={v => setField('permissions', 'addBreaksToPastTimesheets', v)}
-          />
-        </PermissionGroup>
+        <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+          Looking for break permissions (wrap up sooner, edit own duration, add to past timesheets)?
+          They now live in the <span className="font-medium text-foreground">Breaks</span> tab under
+          <span className="font-medium text-foreground"> Staff Break Permissions</span>.
+        </div>
       </CardContent>
     </Card>
   );
