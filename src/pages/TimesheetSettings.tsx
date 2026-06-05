@@ -72,133 +72,16 @@ import {
 } from '@/lib/timefoldSolver';
 import { Plug, PlugZap, Cpu } from 'lucide-react';
 
-interface AutoApprovalCondition {
-  id: string;
-  name: string;
-  enabled: boolean;
-  parameter?: number;
-  description: string;
-}
 
 
-
-
-type ComplianceSource = 'award' | 'location' | 'tenant';
-type AustralianState = 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'NT' | 'ACT';
-type AwardTypeKey = 'general' | 'children_services' | 'healthcare' | 'hospitality' | 'retail' | 'social_community' | 'aged_care' | 'disability';
-
-interface JurisdictionConfig {
-  id: string;
-  name: string;
-  code: string;
-  state: AustralianState;
-  awardType: AwardTypeKey;
-  // Hours limits
-  maxDailyHours: number;
-  maxWeeklyHours: number;
-  // Overtime
-  overtimeThresholdDaily: number;
-  overtimeThresholdWeekly: number;
-  overtimeMultiplier: number;
-  doubleTimeThreshold: number;
-  doubleTimeMultiplier: number;
-  // Rest & span (AU NES)
-  minRestBetweenShiftsHours: number;
-  maxConsecutiveDays: number;
-  spanOfHoursMax: number;
-  // Penalty rates (multipliers)
-  saturdayMultiplier: number;
-  sundayMultiplier: number;
-  publicHolidayMultiplier: number;
-  nightLoadingMultiplier: number;
-  // Casual & engagement
-  casualLoadingPercent: number;
-  minEngagementHours: number;
-  // Source attribution per group (Award > Location > Tenant)
-  sourceMap: {
-    hoursLimits: ComplianceSource;
-    overtime: ComplianceSource;
-    restSpan: ComplianceSource;
-    penalties: ComplianceSource;
-    engagement: ComplianceSource;
-  };
-}
-
-interface EscalationConfig {
-  tier: ApprovalTier;
-  slaHours: number;
-  escalateTo: ApprovalTier;
-  notifyEmails: string[];
-}
-
-function SourceBadge({ source }: { source: ComplianceSource }) {
-  const map = {
-    award: { label: 'From Award', icon: Award, cls: 'bg-primary text-primary-foreground border-transparent' },
-    location: { label: 'Location override', icon: Building2, cls: 'bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400' },
-    tenant: { label: 'Tenant default', icon: Globe, cls: 'bg-muted text-muted-foreground border-border' },
-  } as const;
-  const { label, icon: Icon, cls } = map[source];
-  return (
-    <Badge variant="outline" className={`gap-1 text-[10px] h-5 ${cls}`}>
-      <Icon className="h-3 w-3" /> {label}
-    </Badge>
-  );
-}
 
 export default function TimesheetSettings() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Auto-Approval Conditions
-  const [autoApprovalEnabled, setAutoApprovalEnabled] = useState(true);
-  const [autoApprovalConditions, setAutoApprovalConditions] = useState<AutoApprovalCondition[]>([
-    { id: 'cond-1', name: 'No Compliance Flags', enabled: true, description: 'Timesheet has no critical or warning flags' },
-    { id: 'cond-2', name: 'Within Regular Hours', enabled: true, parameter: 40, description: 'Total hours do not exceed weekly threshold' },
-    { id: 'cond-3', name: 'No Overtime', enabled: false, parameter: 0, description: 'Timesheet contains zero overtime hours' },
-    { id: 'cond-4', name: 'Overtime Under Limit', enabled: true, parameter: 2, description: 'Overtime hours below specified threshold' },
-    { id: 'cond-5', name: 'All Breaks Taken', enabled: true, description: 'All mandatory breaks properly recorded' },
-    { id: 'cond-6', name: 'No Pattern Anomalies', enabled: true, description: 'Clock patterns consistent with historical data' },
-    { id: 'cond-7', name: 'Complete Clock Entries', enabled: true, description: 'All days have both clock-in and clock-out' },
-  ]);
-
-  // Flagging Rules
-
-
-
   // Break Rules
   const [breakRules, setBreakRules] = useBreakRules();
 
-  // Jurisdiction Config — defaults to Australia (NES + Modern Awards)
-  const [jurisdiction, setJurisdiction] = useState<JurisdictionConfig>({
-    id: 'au-nes',
-    name: 'Australia — National Employment Standards',
-    code: 'AU-NES',
-    state: 'NSW',
-    awardType: 'general',
-    maxDailyHours: 10,
-    maxWeeklyHours: 38,
-    overtimeThresholdDaily: 8,
-    overtimeThresholdWeekly: 38,
-    overtimeMultiplier: 1.5,
-    doubleTimeThreshold: 10,
-    doubleTimeMultiplier: 2.0,
-    minRestBetweenShiftsHours: 10,
-    maxConsecutiveDays: 6,
-    spanOfHoursMax: 12,
-    saturdayMultiplier: 1.25,
-    sundayMultiplier: 1.5,
-    publicHolidayMultiplier: 2.5,
-    nightLoadingMultiplier: 1.15,
-    casualLoadingPercent: 25,
-    minEngagementHours: 3,
-    sourceMap: {
-      hoursLimits: 'tenant',
-      overtime: 'award',
-      restSpan: 'award',
-      penalties: 'award',
-      engagement: 'award',
-    },
-  });
 
   // Simplified compliance: only flag thresholds. Pay logic lives in Awards.
   const [compliance, setCompliance] = useState<ComplianceState>({
@@ -249,13 +132,9 @@ export default function TimesheetSettings() {
     },
   ]);
 
-  // Escalation Config
-  const [escalationConfigs, setEscalationConfigs] = useState<EscalationConfig[]>([
-    { tier: 'manager', slaHours: 24, escalateTo: 'senior_manager', notifyEmails: [] },
-    { tier: 'senior_manager', slaHours: 48, escalateTo: 'director', notifyEmails: [] },
-    { tier: 'director', slaHours: 72, escalateTo: 'hr', notifyEmails: [] },
-    { tier: 'hr', slaHours: 96, escalateTo: 'hr', notifyEmails: [] },
-  ]);
+
+
+
 
   // Notification Settings — per-event channel matrix
   type NotifChannels = { email: boolean; inApp: boolean };
@@ -343,12 +222,8 @@ export default function TimesheetSettings() {
     setHasUnsavedChanges(false);
   };
 
-  const updateCondition = (id: string, updates: Partial<AutoApprovalCondition>) => {
-    setAutoApprovalConditions(prev => 
-      prev.map(c => c.id === id ? { ...c, ...updates } : c)
-    );
-    setHasUnsavedChanges(true);
-  };
+
+
 
 
 
@@ -517,11 +392,7 @@ export default function TimesheetSettings() {
                 </TabsTrigger>
                 <TabsTrigger value="flags" className="gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Anomaly Flags</span>
-                </TabsTrigger>
-                <TabsTrigger value="compliance" className="gap-2">
-                  <Scale className="h-4 w-4" />
-                  <span className="hidden sm:inline">Compliance</span>
+                  <span className="hidden sm:inline">Flags & Limits</span>
                 </TabsTrigger>
                 <TabsTrigger value="workflow" className="gap-2">
                   <Users className="h-4 w-4" />
@@ -536,291 +407,18 @@ export default function TimesheetSettings() {
                 <PolicyApproving />
                 <PolicyUnscheduled />
               </TabsContent>
-              <TabsContent value="flags" className="space-y-6"><PolicyIssues /></TabsContent>
+              <TabsContent value="flags" className="space-y-6">
+                <PolicyIssues />
+                <ComplianceDesigner
+                  value={compliance}
+                  onChange={(next) => { setCompliance(next); setHasUnsavedChanges(true); }}
+                />
+              </TabsContent>
 
 
 
 
-            {/* Auto-Approval Tab */}
-            <TabsContent value="approving" className="space-y-6">
-              {/* Master Toggle */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="flex items-center gap-2">
-                        <Zap className="h-5 w-5 text-primary" />
-                        Automatic Approval Engine
-                      </CardTitle>
-                      <CardDescription>
-                        Enable automatic approval for timesheets that meet all specified conditions
-                      </CardDescription>
-                    </div>
-                    <Switch
-                      checked={autoApprovalEnabled}
-                      onCheckedChange={(checked) => {
-                        setAutoApprovalEnabled(checked);
-                        setHasUnsavedChanges(true);
-                      }}
-                    />
-                  </div>
-                </CardHeader>
-                {autoApprovalEnabled && (
-                  <CardContent className="pt-0">
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-green-700">Auto-Approval Active</p>
-                        <p className="text-sm text-green-600/80">
-                          Timesheets meeting all enabled conditions below will be automatically approved without manual review
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
 
-              {/* Conditions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-primary" />
-                    Auto-Approval Conditions
-                  </CardTitle>
-                  <CardDescription>
-                    All enabled conditions must be met for automatic approval. Disable conditions to make auto-approval more lenient.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {autoApprovalConditions.map((condition) => (
-                    <div
-                      key={condition.id}
-                      className={`p-4 rounded-lg border transition-all ${
-                        condition.enabled 
-                          ? 'bg-primary/5 border-primary/20' 
-                          : 'bg-muted/50 border-border'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Switch
-                            checked={condition.enabled}
-                            onCheckedChange={(checked) => updateCondition(condition.id, { enabled: checked })}
-                            disabled={!autoApprovalEnabled}
-                          />
-                          <div>
-                            <p className={`font-medium ${!condition.enabled && 'text-muted-foreground'}`}>
-                              {condition.name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">{condition.description}</p>
-                          </div>
-                        </div>
-                        {condition.parameter !== undefined && (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              value={condition.parameter}
-                              onChange={(e) => updateCondition(condition.id, { parameter: Number(e.target.value) })}
-                              className="w-20 text-center"
-                              disabled={!condition.enabled || !autoApprovalEnabled}
-                            />
-                            <span className="text-sm text-muted-foreground">
-                              {condition.name.includes('Hours') ? 'hours' : 'hrs'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Logic Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Eye className="h-5 w-5 text-primary" />
-                    Approval Logic Preview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm">
-                    <p className="text-muted-foreground mb-2">// Auto-approval will trigger when:</p>
-                    <div className="space-y-1">
-                      {autoApprovalConditions.filter(c => c.enabled).map((c, i, arr) => (
-                        <div key={c.id} className="flex items-center gap-2">
-                          <span className="text-green-600">✓</span>
-                          <span>
-                            {c.name}
-                            {c.parameter !== undefined && (
-                              <span className="text-primary"> ({c.parameter}h)</span>
-                            )}
-                          </span>
-                          {i < arr.length - 1 && <span className="text-muted-foreground ml-2">AND</span>}
-                        </div>
-                      ))}
-                    </div>
-                    {autoApprovalConditions.filter(c => c.enabled).length === 0 && (
-                      <p className="text-amber-600">⚠ No conditions enabled - all timesheets will be auto-approved</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-
-
-
-            {/* Breaks Tab */}
-            <TabsContent value="breaks" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <Coffee className="h-5 w-5 text-primary" />
-                        Break Rules Configuration
-                      </CardTitle>
-                      <CardDescription>
-                        Define mandatory and optional break rules based on hours worked. These rules are jurisdiction-aware and enforced during compliance validation.
-                      </CardDescription>
-                    </div>
-                    <Button onClick={addBreakRule} variant="outline" className="gap-2">
-                      <Plus className="h-4 w-4" />
-                      Add Break Rule
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {breakRules.map((rule) => (
-                    <div
-                      key={rule.id}
-                      className="p-4 rounded-lg border bg-card"
-                    >
-                      <div className="grid gap-4 md:grid-cols-6 items-end">
-                        <div className="md:col-span-2">
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Break Name</Label>
-                          <Input
-                            value={rule.name}
-                            onChange={(e) => updateBreakRule(rule.id, { name: e.target.value })}
-                            placeholder="Break name"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">After Hours Worked</Label>
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="number"
-                              value={rule.minWorkHoursRequired}
-                              onChange={(e) => updateBreakRule(rule.id, { minWorkHoursRequired: Number(e.target.value) })}
-                              min={0}
-                              max={24}
-                            />
-                            <span className="text-sm text-muted-foreground">hrs</span>
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Duration</Label>
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="number"
-                              value={rule.breakDurationMinutes}
-                              onChange={(e) => updateBreakRule(rule.id, { breakDurationMinutes: Number(e.target.value) })}
-                              min={5}
-                              max={120}
-                            />
-                            <span className="text-sm text-muted-foreground">min</span>
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Type</Label>
-                          <Select
-                            value={rule.type}
-                            onValueChange={(value: 'paid' | 'unpaid') => updateBreakRule(rule.id, { type: value })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="paid">Paid</SelectItem>
-                              <SelectItem value="unpaid">Unpaid</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex items-center gap-4 justify-between">
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={rule.isMandatory}
-                              onCheckedChange={(checked) => updateBreakRule(rule.id, { isMandatory: checked })}
-                            />
-                            <span className="text-sm">{rule.isMandatory ? 'Mandatory' : 'Optional'}</span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => removeBreakRule(rule.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {breakRules.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No break rules configured. Click "Add Break Rule" to create one.
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Break Enforcement Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Timer className="h-5 w-5 text-primary" />
-                    Break Enforcement Logic
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <Badge className="bg-primary/10 text-primary border-primary/20">Mandatory</Badge>
-                      <p className="text-sm text-muted-foreground">
-                        If an employee works more than the required hours and doesn't take the break, a <strong>Missed Break</strong> flag is raised. This blocks auto-approval.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Badge className="bg-muted text-muted-foreground">Optional</Badge>
-                      <p className="text-sm text-muted-foreground">
-                        Optional breaks are tracked but not enforced. Employees can take them without triggering flags if missed.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Paid</Badge>
-                      <p className="text-sm text-muted-foreground">
-                        Break time counts towards total paid hours.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Unpaid</Badge>
-                      <p className="text-sm text-muted-foreground">
-                        Break time is deducted from total hours when calculating pay.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Compliance Tab */}
-            <TabsContent value="compliance" className="space-y-6">
-              <ComplianceDesigner
-                value={compliance}
-                onChange={(next) => { setCompliance(next); setHasUnsavedChanges(true); }}
-              />
-            </TabsContent>
 
 
             {/* Workflow Tab */}
