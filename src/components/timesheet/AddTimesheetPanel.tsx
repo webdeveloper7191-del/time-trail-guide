@@ -28,6 +28,8 @@ interface EntryForm {
   breakStart: string;
   breakEnd: string;
   notes: string;
+  exceptionReason?: ExceptionReason | '';
+  exceptionNote?: string;
 }
 
 const emptyEntry = (): EntryForm => ({
@@ -37,7 +39,20 @@ const emptyEntry = (): EntryForm => ({
   breakStart: '12:00',
   breakEnd: '12:30',
   notes: '',
+  exceptionReason: '',
+  exceptionNote: '',
 });
+
+const EXCEPTION_REASONS: { value: ExceptionReason; label: string }[] = [
+  { value: 'missed_clock_in', label: 'Missed clock-in' },
+  { value: 'missed_clock_out', label: 'Missed clock-out' },
+  { value: 'missed_break', label: 'Missed / short break' },
+  { value: 'unpaid_overtime', label: 'Unpaid overtime worked' },
+  { value: 'equipment_issue', label: 'Equipment / kiosk issue' },
+  { value: 'incorrect_rate', label: 'Incorrect pay rate' },
+  { value: 'shift_cut_short', label: 'Shift cut short' },
+  { value: 'other', label: 'Other' },
+];
 
 export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelProps) {
   const [employeeName, setEmployeeName] = useState('');
