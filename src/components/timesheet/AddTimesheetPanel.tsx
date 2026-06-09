@@ -83,15 +83,18 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     setEntries(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateEntry = (index: number, field: keyof EntryForm, value: string) => {
+  const updateEntry = <K extends keyof EntryForm>(index: number, field: K, value: EntryForm[K]) => {
     setEntries(prev => prev.map((e, i) => i === index ? { ...e, [field]: value } : e));
   };
 
   const calculateHours = (clockIn: string, clockOut: string): number => {
+    if (!clockIn || !clockOut) return 0;
     const [inH, inM] = clockIn.split(':').map(Number);
     const [outH, outM] = clockOut.split(':').map(Number);
     return Math.max(0, (outH * 60 + outM - inH * 60 - inM) / 60);
   };
+
+  const entryNeedsException = (e: EntryForm) => !e.clockIn || !e.clockOut;
 
   const handleSubmit = () => {
     if (!employeeName || !employeeEmail || !department || !locationId || !weekStartDate) {
@@ -102,6 +105,15 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     if (entries.length === 0) {
       toast.error('Add at least one time entry');
       return;
+    }
+
+    // Enforce exception when a clock time is missing
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      if (entryNeedsException(e) && (!e.exceptionReason || !e.exceptionNote?.trim())) {
+        toast.error(`Entry ${i + 1}: missing clock time requires an exception reason and note`);
+        return;
+      }
     }
 
     const location = locations.find(l => l.id === locationId)!;
@@ -120,17 +132,30 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
         type: 'lunch' as const,
       }] : [];
 
+      // Auto-derive exception reason if user left it blank but a clock time is missing
+      let exception: TimesheetException | undefined;
+      if (entry.exceptionReason && entry.exceptionNote?.trim()) {
+        exception = {
+          reason: entry.exceptionReason as ExceptionReason,
+          note: entry.exceptionNote.trim(),
+          raisedBy: 'manager',
+          raisedAt: new Date().toISOString(),
+          resolved: false,
+        };
+      }
+
       return {
         id: `entry-${i}`,
         date: entry.date || weekStartDate,
-        clockIn: entry.clockIn,
-        clockOut: entry.clockOut,
+        clockIn: entry.clockIn || null,
+        clockOut: entry.clockOut || null,
         breaks,
         totalBreakMinutes: breakMinutes,
         grossHours,
         netHours,
         overtime: Math.max(0, netHours - 8),
         notes: entry.notes,
+        exception,
       };
     });
 
