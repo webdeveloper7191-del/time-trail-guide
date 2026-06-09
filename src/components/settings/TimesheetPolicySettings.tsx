@@ -662,27 +662,37 @@ export function PolicyIssues() {
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagMissingClockOut', v as TimesheetPolicy['issues']['flagMissingClockOut'])}
           />
-          <OperatingHoursRow
-            isTenant={fieldProps('issues', 'operatingHoursMode', '').isTenant}
-            modeOverridden={fieldProps('issues', 'operatingHoursMode', '').overridden}
-            startOverridden={fieldProps('issues', 'operatingHoursStartMinutes', '').overridden}
-            endOverridden={fieldProps('issues', 'operatingHoursEndMinutes', '').overridden}
-            sevOverridden={fieldProps('issues', 'flagOutsideOperatingHours', '').overridden}
-            onResetAll={() => {
-              fieldProps('issues', 'operatingHoursMode', '').onReset();
-              fieldProps('issues', 'operatingHoursStartMinutes', '').onReset();
-              fieldProps('issues', 'operatingHoursEndMinutes', '').onReset();
-              fieldProps('issues', 'flagOutsideOperatingHours', '').onReset();
-            }}
-            mode={resolved.issues.operatingHoursMode}
-            startMinutes={resolved.issues.operatingHoursStartMinutes}
-            endMinutes={resolved.issues.operatingHoursEndMinutes}
-            severity={resolved.issues.flagOutsideOperatingHours}
-            onModeChange={v => setField('issues', 'operatingHoursMode', v)}
-            onStartChange={v => setField('issues', 'operatingHoursStartMinutes', v)}
-            onEndChange={v => setField('issues', 'operatingHoursEndMinutes', v)}
-            onSeverityChange={v => setField('issues', 'flagOutsideOperatingHours', v)}
+          <SelectRow
+            {...fieldProps('issues', 'flagClockBoundaryBreach', 'Flag Out-of-Bounds Clock Events',
+              'Raise a flag when staff clock in too early or clock out too late, relative to the boundary chosen below.',
+              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Warning</em>, boundary = <em>Scheduled shift</em>, early tolerance = <em>15 min</em>. Clock-in 20 min before shift start → flagged. 10 min early → no flag.</p></>)}
+            value={resolved.issues.flagClockBoundaryBreach}
+            options={anomalySeverityOptions}
+            onChange={v => setField('issues', 'flagClockBoundaryBreach', v as TimesheetPolicy['issues']['flagClockBoundaryBreach'])}
           />
+          <SelectRow
+            {...fieldProps('issues', 'clockBoundaryReference', 'Boundary Reference',
+              'Decide whether the tolerances below are measured against each staff member\'s scheduled shift, or against the location\'s operating hours (configured in Location settings). Choose Scheduled shift for roster-driven sites; choose Operating window for open-floor / drop-in sites.',
+              <><p className="font-medium mb-1">Example</p><p>A 24/7 hospital sets operating hours to "always open" in Location settings, then picks <em>Scheduled shift</em> here so flags fire only when a punch drifts from the rostered start/end.</p></>)}
+            value={resolved.issues.clockBoundaryReference}
+            options={clockBoundaryReferenceOptions}
+            onChange={v => setField('issues', 'clockBoundaryReference', v as TimesheetPolicy['issues']['clockBoundaryReference'])}
+          />
+          <NumberRow
+            {...fieldProps('issues', 'earlyClockInToleranceMinutes', 'Early Clock-In Tolerance (minutes)',
+              'How many minutes a clock-in may precede the boundary (shift start or operating window open) without being flagged.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>30</strong>. Roster start 9:00 AM. Clock-in 8:35 AM → ok. Clock-in 8:20 AM → flagged.</p></>)}
+            value={resolved.issues.earlyClockInToleranceMinutes}
+            onChange={v => setField('issues', 'earlyClockInToleranceMinutes', Math.max(0, v))}
+          />
+          <NumberRow
+            {...fieldProps('issues', 'lateClockOutToleranceMinutes', 'Late Clock-Out Tolerance (minutes)',
+              'How many minutes a clock-out may exceed the boundary (shift end or operating window close) without being flagged.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>30</strong>. Roster end 5:00 PM. Clock-out 5:25 PM → ok. Clock-out 5:45 PM → flagged.</p></>)}
+            value={resolved.issues.lateClockOutToleranceMinutes}
+            onChange={v => setField('issues', 'lateClockOutToleranceMinutes', Math.max(0, v))}
+          />
+
 
         </PermissionGroup>
 
