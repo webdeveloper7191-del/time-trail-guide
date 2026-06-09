@@ -110,49 +110,11 @@ export function detectAnomalies(
       }
     }
 
-    // Outside operating hours (unified early-in / late-out check)
-    if (issues.operatingHoursMode === 'fixed_window') {
-      const sev = toFlagSeverity(issues.flagOutsideOperatingHours);
-      if (sev) {
-        const start = issues.operatingHoursStartMinutes;
-        const end = issues.operatingHoursEndMinutes;
-        const fmt = (m: number) => {
-          const h = Math.floor(m / 60);
-          const min = m % 60;
-          const ampm = h < 12 ? 'AM' : 'PM';
-          const h12 = ((h + 11) % 12) + 1;
-          return `${h12}:${min.toString().padStart(2, '0')} ${ampm}`;
-        };
-        const inWindow = (minute: number) =>
-          start <= end ? minute >= start && minute <= end : minute >= start || minute <= end;
-        const toMin = (t: string) => {
-          const [h, m] = t.split(':').map(Number);
-          return h * 60 + (m || 0);
-        };
-        const windowLabel = `${fmt(start)} – ${fmt(end)}`;
+    // Clock-event boundary tolerance is evaluated upstream where the operating window /
+    // scheduled shift times are available. Engine reads issues.flagClockBoundaryBreach,
+    // issues.earlyClockInToleranceMinutes, issues.lateClockOutToleranceMinutes when wiring
+    // the join with roster/operating-hours data.
 
-        if (entry.clockIn && !inWindow(toMin(entry.clockIn))) {
-          flags.push({
-            id: `flag-${entry.id}-outside-in`,
-            type: 'early_clock_in',
-            severity: sev,
-            title: 'Clock-in outside operating hours',
-            description: `Clock-in at ${fmt(toMin(entry.clockIn))} is outside the operating window (${windowLabel})`,
-            entryDate: entry.date,
-          });
-        }
-        if (entry.clockOut && !inWindow(toMin(entry.clockOut))) {
-          flags.push({
-            id: `flag-${entry.id}-outside-out`,
-            type: 'late_clock_out',
-            severity: sev,
-            title: 'Clock-out outside operating hours',
-            description: `Clock-out at ${fmt(toMin(entry.clockOut))} is outside the operating window (${windowLabel})`,
-            entryDate: entry.date,
-          });
-        }
-      }
-    }
 
 
     // Excessive daily hours

@@ -78,7 +78,8 @@ export interface BreaksSettings {
 
 export type AnomalySeverity = 'off' | 'info' | 'warning' | 'critical';
 
-export type OperatingHoursMode = 'fixed_window' | 'always_open';
+export type ClockBoundaryReference = 'operating_window' | 'scheduled_shift';
+
 
 
 export interface TimesheetIssuesSettings {
@@ -87,11 +88,12 @@ export interface TimesheetIssuesSettings {
   flagBreakDurationVariance: VarianceFlag;
   // Missing / unusual entries
   flagMissingClockOut: AnomalySeverity;
-  // Operating hours window (replaces separate early-in / late-out rules)
-  operatingHoursMode: OperatingHoursMode;
-  operatingHoursStartMinutes: number; // 0-1439 minutes from midnight
-  operatingHoursEndMinutes: number;   // 0-1439 minutes from midnight; if end < start, window wraps midnight
-  flagOutsideOperatingHours: AnomalySeverity;
+  // Clock-event boundary tolerance (operating window & shift times are configured elsewhere)
+  clockBoundaryReference: ClockBoundaryReference;
+  earlyClockInToleranceMinutes: number;  // clock-in more than this many min before boundary → flag
+  lateClockOutToleranceMinutes: number;  // clock-out more than this many min after boundary → flag
+  flagClockBoundaryBreach: AnomalySeverity;
+
 
   // Excessive hours
   flagExcessiveDailyHours: AnomalySeverity;
@@ -182,10 +184,11 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
     flagShiftTimeVariance: 'never',
     flagBreakDurationVariance: 'over_10m',
     flagMissingClockOut: 'critical',
-    operatingHoursMode: 'fixed_window',
-    operatingHoursStartMinutes: 6 * 60,   // 6:00 AM
-    operatingHoursEndMinutes: 22 * 60,    // 10:00 PM
-    flagOutsideOperatingHours: 'warning',
+    clockBoundaryReference: 'scheduled_shift',
+    earlyClockInToleranceMinutes: 30,
+    lateClockOutToleranceMinutes: 30,
+    flagClockBoundaryBreach: 'warning',
+
 
 
     flagExcessiveDailyHours: 'critical',
@@ -264,3 +267,9 @@ export const anomalySeverityOptions: { value: AnomalySeverity; label: string }[]
   { value: 'warning', label: 'Warning' },
   { value: 'critical', label: 'Critical' },
 ];
+
+export const clockBoundaryReferenceOptions: { value: ClockBoundaryReference; label: string }[] = [
+  { value: 'scheduled_shift', label: 'Scheduled shift (per staff roster)' },
+  { value: 'operating_window', label: 'Operating window (location hours)' },
+];
+
