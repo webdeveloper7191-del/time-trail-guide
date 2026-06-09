@@ -284,11 +284,37 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                       <Input type="date" className="h-8 text-xs" value={entry.date} onChange={e => updateEntry(i, 'date', e.target.value)} />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Clock In</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] text-muted-foreground">Clock In</Label>
+                        <button
+                          type="button"
+                          className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                          onClick={() => {
+                            const wasSet = !!entry.clockIn;
+                            updateEntry(i, 'clockIn', wasSet ? '' : '09:00');
+                            if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_in');
+                          }}
+                        >
+                          {entry.clockIn ? 'Mark missing' : 'Set time'}
+                        </button>
+                      </div>
                       <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
+                        <button
+                          type="button"
+                          className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                          onClick={() => {
+                            const wasSet = !!entry.clockOut;
+                            updateEntry(i, 'clockOut', wasSet ? '' : '17:00');
+                            if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_out');
+                          }}
+                        >
+                          {entry.clockOut ? 'Mark missing' : 'Set time'}
+                        </button>
+                      </div>
                       <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
                     </div>
                   </div>
@@ -306,6 +332,48 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                     <Label className="text-[10px] text-muted-foreground">Notes</Label>
                     <Input className="h-8 text-xs" placeholder="Optional notes" value={entry.notes} onChange={e => updateEntry(i, 'notes', e.target.value)} />
                   </div>
+
+                  {/* Exception block — required when a clock time is missing, otherwise optional */}
+                  {(entryNeedsException(entry) || entry.exceptionReason) && (
+                    <div className="space-y-2 p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                          <Label className="text-[11px] font-semibold text-amber-700">
+                            {entryNeedsException(entry) ? 'Exception required' : 'Exception (optional)'}
+                          </Label>
+                        </div>
+                        {entryNeedsException(entry) && (
+                          <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 text-amber-700">
+                            Missing clock time
+                          </Badge>
+                        )}
+                      </div>
+                      <Select
+                        value={entry.exceptionReason || ''}
+                        onValueChange={(v) => updateEntry(i, 'exceptionReason', v as ExceptionReason)}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Select reason..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EXCEPTION_REASONS.map(r => (
+                            <SelectItem key={r.value} value={r.value} className="text-xs">{r.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Textarea
+                        placeholder="Explain what happened (required for approval)..."
+                        className="text-xs min-h-[52px]"
+                        value={entry.exceptionNote || ''}
+                        onChange={e => updateEntry(i, 'exceptionNote', e.target.value)}
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        This routes the timesheet to the approver tier configured under
+                        <em> Workflow &amp; Notifications → Manual exception raised</em>.
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
