@@ -573,6 +573,55 @@ export default function TimesheetSettings() {
                     timesheet owner. <strong>Manager</strong> = their assigned approver. Senior
                     Manager, HR and Payroll receive escalations and audit-relevant events.
                   </p>
+
+                  <Separator />
+
+                  {/* Digests */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Digests</h4>
+                    <div className="flex items-center justify-between p-4 rounded-lg border">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-medium">Enable Daily Digest</p>
+                          <p className="text-sm text-muted-foreground">Summary of pending approvals each morning</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notifications.dailyDigest}
+                        onCheckedChange={(checked) => {
+                          setNotifications({ ...notifications, dailyDigest: checked });
+                          setHasUnsavedChanges(true);
+                        }}
+                      />
+                    </div>
+                    {notifications.dailyDigest && (
+                      <div className="grid gap-4 md:grid-cols-2 pl-4">
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Staff digest time</Label>
+                          <Input
+                            type="time"
+                            value={notifications.digestTime}
+                            onChange={(e) => {
+                              setNotifications({ ...notifications, digestTime: e.target.value });
+                              setHasUnsavedChanges(true);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Manager digest time</Label>
+                          <Input
+                            type="time"
+                            value={notifications.managerDigestTime}
+                            onChange={(e) => {
+                              setNotifications({ ...notifications, managerDigestTime: e.target.value });
+                              setHasUnsavedChanges(true);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                       <div className="grid gap-4 md:grid-cols-2 pl-4">
                         <div>
                           <Label className="text-xs text-muted-foreground mb-1.5 block">Staff digest time</Label>
