@@ -147,7 +147,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
       return {
         id: `entry-${i}`,
         date: entry.date || weekStartDate,
-        clockIn: entry.clockIn || null,
+        clockIn: entry.clockIn || '',
         clockOut: entry.clockOut || null,
         breaks,
         totalBreakMinutes: breakMinutes,
