@@ -8,6 +8,24 @@ export interface BreakEntry {
   type: 'lunch' | 'short' | 'other';
 }
 
+export type ExceptionReason =
+  | 'missed_clock_in'
+  | 'missed_clock_out'
+  | 'missed_break'
+  | 'unpaid_overtime'
+  | 'equipment_issue'
+  | 'incorrect_rate'
+  | 'shift_cut_short'
+  | 'other';
+
+export interface TimesheetException {
+  reason: ExceptionReason;
+  note: string;
+  raisedBy: 'staff' | 'manager' | 'system';
+  raisedAt: string;
+  resolved?: boolean;
+}
+
 export interface ClockEntry {
   id: string;
   date: string;
@@ -19,6 +37,7 @@ export interface ClockEntry {
   netHours: number; // after break deduction
   overtime: number;
   notes?: string;
+  exception?: TimesheetException;
   // Original values for audit trail
   originalClockIn?: string;
   originalClockOut?: string | null;

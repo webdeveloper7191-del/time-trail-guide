@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Timesheet, ClockEntry, BreakEntry } from '@/types/timesheet';
+import { Timesheet, ClockEntry, BreakEntry, ExceptionReason, TimesheetException } from '@/types/timesheet';
 import { locations } from '@/data/mockTimesheets';
-import { Plus, Trash2, Clock } from 'lucide-react';
+import { Plus, Trash2, Clock, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format, addDays, parseISO } from 'date-fns';
 import { formatTime12h } from '@/lib/timeFormat';
@@ -27,6 +28,8 @@ interface EntryForm {
   breakStart: string;
   breakEnd: string;
   notes: string;
+  exceptionReason?: ExceptionReason | '';
+  exceptionNote?: string;
 }
 
 const emptyEntry = (): EntryForm => ({
@@ -36,7 +39,20 @@ const emptyEntry = (): EntryForm => ({
   breakStart: '12:00',
   breakEnd: '12:30',
   notes: '',
+  exceptionReason: '',
+  exceptionNote: '',
 });
+
+const EXCEPTION_REASONS: { value: ExceptionReason; label: string }[] = [
+  { value: 'missed_clock_in', label: 'Missed clock-in' },
+  { value: 'missed_clock_out', label: 'Missed clock-out' },
+  { value: 'missed_break', label: 'Missed / short break' },
+  { value: 'unpaid_overtime', label: 'Unpaid overtime worked' },
+  { value: 'equipment_issue', label: 'Equipment / kiosk issue' },
+  { value: 'incorrect_rate', label: 'Incorrect pay rate' },
+  { value: 'shift_cut_short', label: 'Shift cut short' },
+  { value: 'other', label: 'Other' },
+];
 
 export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelProps) {
   const [employeeName, setEmployeeName] = useState('');
@@ -67,15 +83,18 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     setEntries(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateEntry = (index: number, field: keyof EntryForm, value: string) => {
+  const updateEntry = <K extends keyof EntryForm>(index: number, field: K, value: EntryForm[K]) => {
     setEntries(prev => prev.map((e, i) => i === index ? { ...e, [field]: value } : e));
   };
 
   const calculateHours = (clockIn: string, clockOut: string): number => {
+    if (!clockIn || !clockOut) return 0;
     const [inH, inM] = clockIn.split(':').map(Number);
     const [outH, outM] = clockOut.split(':').map(Number);
     return Math.max(0, (outH * 60 + outM - inH * 60 - inM) / 60);
   };
+
+  const entryNeedsException = (e: EntryForm) => !e.clockIn || !e.clockOut;
 
   const handleSubmit = () => {
     if (!employeeName || !employeeEmail || !department || !locationId || !weekStartDate) {
@@ -86,6 +105,15 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     if (entries.length === 0) {
       toast.error('Add at least one time entry');
       return;
+    }
+
+    // Enforce exception when a clock time is missing
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      if (entryNeedsException(e) && (!e.exceptionReason || !e.exceptionNote?.trim())) {
+        toast.error(`Entry ${i + 1}: missing clock time requires an exception reason and note`);
+        return;
+      }
     }
 
     const location = locations.find(l => l.id === locationId)!;
@@ -104,17 +132,30 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
         type: 'lunch' as const,
       }] : [];
 
+      // Auto-derive exception reason if user left it blank but a clock time is missing
+      let exception: TimesheetException | undefined;
+      if (entry.exceptionReason && entry.exceptionNote?.trim()) {
+        exception = {
+          reason: entry.exceptionReason as ExceptionReason,
+          note: entry.exceptionNote.trim(),
+          raisedBy: 'manager',
+          raisedAt: new Date().toISOString(),
+          resolved: false,
+        };
+      }
+
       return {
         id: `entry-${i}`,
         date: entry.date || weekStartDate,
-        clockIn: entry.clockIn,
-        clockOut: entry.clockOut,
+        clockIn: entry.clockIn || '',
+        clockOut: entry.clockOut || null,
         breaks,
         totalBreakMinutes: breakMinutes,
         grossHours,
         netHours,
         overtime: Math.max(0, netHours - 8),
         notes: entry.notes,
+        exception,
       };
     });
 
@@ -243,11 +284,37 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                       <Input type="date" className="h-8 text-xs" value={entry.date} onChange={e => updateEntry(i, 'date', e.target.value)} />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Clock In</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] text-muted-foreground">Clock In</Label>
+                        <button
+                          type="button"
+                          className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                          onClick={() => {
+                            const wasSet = !!entry.clockIn;
+                            updateEntry(i, 'clockIn', wasSet ? '' : '09:00');
+                            if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_in');
+                          }}
+                        >
+                          {entry.clockIn ? 'Mark missing' : 'Set time'}
+                        </button>
+                      </div>
                       <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
+                        <button
+                          type="button"
+                          className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                          onClick={() => {
+                            const wasSet = !!entry.clockOut;
+                            updateEntry(i, 'clockOut', wasSet ? '' : '17:00');
+                            if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_out');
+                          }}
+                        >
+                          {entry.clockOut ? 'Mark missing' : 'Set time'}
+                        </button>
+                      </div>
                       <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
                     </div>
                   </div>
@@ -265,6 +332,48 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                     <Label className="text-[10px] text-muted-foreground">Notes</Label>
                     <Input className="h-8 text-xs" placeholder="Optional notes" value={entry.notes} onChange={e => updateEntry(i, 'notes', e.target.value)} />
                   </div>
+
+                  {/* Exception block — required when a clock time is missing, otherwise optional */}
+                  {(entryNeedsException(entry) || entry.exceptionReason) && (
+                    <div className="space-y-2 p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                          <Label className="text-[11px] font-semibold text-amber-700">
+                            {entryNeedsException(entry) ? 'Exception required' : 'Exception (optional)'}
+                          </Label>
+                        </div>
+                        {entryNeedsException(entry) && (
+                          <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 text-amber-700">
+                            Missing clock time
+                          </Badge>
+                        )}
+                      </div>
+                      <Select
+                        value={entry.exceptionReason || ''}
+                        onValueChange={(v) => updateEntry(i, 'exceptionReason', v as ExceptionReason)}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Select reason..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EXCEPTION_REASONS.map(r => (
+                            <SelectItem key={r.value} value={r.value} className="text-xs">{r.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Textarea
+                        placeholder="Explain what happened (required for approval)..."
+                        className="text-xs min-h-[52px]"
+                        value={entry.exceptionNote || ''}
+                        onChange={e => updateEntry(i, 'exceptionNote', e.target.value)}
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        This routes the timesheet to the approver tier configured under
+                        <em> Workflow &amp; Notifications → Manual exception raised</em>.
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
