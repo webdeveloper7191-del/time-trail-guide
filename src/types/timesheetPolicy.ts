@@ -78,7 +78,8 @@ export interface BreaksSettings {
 
 export type AnomalySeverity = 'off' | 'info' | 'warning' | 'critical';
 
-export type OperatingHoursMode = 'fixed_window' | 'always_open';
+export type ClockBoundaryReference = 'operating_window' | 'scheduled_shift';
+
 
 
 export interface TimesheetIssuesSettings {
