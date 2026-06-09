@@ -78,6 +78,9 @@ export interface BreaksSettings {
 
 export type AnomalySeverity = 'off' | 'info' | 'warning' | 'critical';
 
+export type OperatingHoursMode = 'fixed_window' | 'always_open';
+
+
 export interface TimesheetIssuesSettings {
   // Time variance
   flagShiftTimeVariance: VarianceFlag;
