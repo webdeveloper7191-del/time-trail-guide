@@ -50,6 +50,15 @@ import { ApprovalDelegationModal } from '@/components/timesheet/ApprovalDelegati
 import { ApprovalFlowDesigner } from '@/components/timesheet/ApprovalFlowDesigner';
 import { ComplianceDesigner, ComplianceState } from '@/components/timesheet/ComplianceDesigner';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
 import {
   TimesheetPolicyScopeBar,
