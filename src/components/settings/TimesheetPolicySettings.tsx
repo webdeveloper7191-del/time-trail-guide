@@ -19,7 +19,9 @@ import {
   varianceFlagOptions,
   earlyClockInOptions,
   anomalySeverityOptions,
+  clockBoundaryReferenceOptions,
 } from '@/types/timesheetPolicy';
+
 import { timesheetPolicyStore, getPolicyVersion } from '@/lib/timesheetPolicyStore';
 
 type SectionKey = keyof TimesheetPolicy;
