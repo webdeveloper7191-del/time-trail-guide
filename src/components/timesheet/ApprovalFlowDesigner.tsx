@@ -542,9 +542,16 @@ function EscalationCard({
                 <Checkbox checked={!!t.hasComplianceFlag} onCheckedChange={(c) => setTrigger({ hasComplianceFlag: !!c })} />
                 Any compliance flag
               </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded border bg-card">
-                <Checkbox checked={!!t.hasException} onCheckedChange={(c) => setTrigger({ hasException: !!c })} />
-                Manual exception raised
+              <label className="flex items-start gap-2 text-sm cursor-pointer p-2 rounded border bg-card">
+                <Checkbox className="mt-0.5" checked={!!t.hasException} onCheckedChange={(c) => setTrigger({ hasException: !!c })} />
+                <span className="flex-1">
+                  <span className="block">Manual exception raised</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">
+                    A staff member or manager flagged the timesheet with a note (e.g. missed break,
+                    unpaid overtime, incorrect clock time) via the <strong>"Raise exception"</strong> action
+                    on the timesheet detail view. These require human review before approval.
+                  </span>
+                </span>
               </label>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
