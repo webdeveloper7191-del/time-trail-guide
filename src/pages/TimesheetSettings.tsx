@@ -480,9 +480,76 @@ export default function TimesheetSettings() {
                 onDirty={() => setHasUnsavedChanges(true)}
               />
 
+              {/* Auto-generate timesheets from clock-in data */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    Auto-generate Timesheets from Clock Data
+                  </CardTitle>
+                  <CardDescription>
+                    If a staff member hasn't submitted their timesheet, automatically build one from their clock-in / clock-out events so payroll and approvals aren't blocked.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg border">
+                    <div>
+                      <p className="font-medium">Enable auto-generation</p>
+                      <p className="text-sm text-muted-foreground">
+                        Generated timesheets are flagged so approvers know they came from clock data, not staff submission.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notifications.autoGenerateFromClockData}
+                      onCheckedChange={(checked) => {
+                        setNotifications({ ...notifications, autoGenerateFromClockData: checked });
+                        setHasUnsavedChanges(true);
+                      }}
+                    />
+                  </div>
+                  {notifications.autoGenerateFromClockData && (
+                    <div className="grid gap-4 md:grid-cols-2 pl-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1.5 block">Generate after (hours past shift end)</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={168}
+                          value={notifications.autoGenerateAfterHours}
+                          onChange={(e) => {
+                            setNotifications({ ...notifications, autoGenerateAfterHours: Number(e.target.value) || 0 });
+                            setHasUnsavedChanges(true);
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Wait this long after the shift ends before auto-building from clock data.
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1.5 block">Flag severity</Label>
+                        <Select
+                          value={notifications.autoGenerateFlag}
+                          onValueChange={(v: 'info' | 'warning' | 'critical') => {
+                            setNotifications({ ...notifications, autoGenerateFlag: v });
+                            setHasUnsavedChanges(true);
+                          }}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="info">Info — note on the timesheet</SelectItem>
+                            <SelectItem value="warning">Warning — approver review required</SelectItem>
+                            <SelectItem value="critical">Critical — block auto-approval</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Controls how strongly the generated timesheet is flagged for review.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-
-              {/* Notifications */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
