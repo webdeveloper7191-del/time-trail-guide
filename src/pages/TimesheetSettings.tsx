@@ -50,6 +50,15 @@ import { ApprovalDelegationModal } from '@/components/timesheet/ApprovalDelegati
 import { ApprovalFlowDesigner } from '@/components/timesheet/ApprovalFlowDesigner';
 import { ComplianceDesigner, ComplianceState } from '@/components/timesheet/ComplianceDesigner';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 import { AwardsConfigurationTab } from '@/components/settings/AwardsConfigurationTab';
 import {
   TimesheetPolicyScopeBar,
@@ -183,6 +192,9 @@ export default function TimesheetSettings() {
     emailOnRejection: true,
     webhookUrl: '',
     dailyDigest: true,
+    digestFrequency: 'daily' as 'daily' | 'weekly' | 'pay_cycle',
+    digestWeekday: 'mon' as 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun',
+    digestRecipients: rolesOf('direct_manager', 'senior_manager') as NotifRecipients,
     digestTime: '09:00',
     managerDigestTime: '17:00',
     quietHoursEnabled: false,
@@ -482,7 +494,8 @@ export default function TimesheetSettings() {
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50 text-xs text-muted-foreground">
                         <tr>
-                          <th className="text-left p-3 font-medium w-[34%]">Event</th>
+                          <th className="text-left p-3 font-medium w-[30%]">Event</th>
+                          <th className="text-left p-3 font-medium w-[110px]">Audience</th>
                           <th className="text-left p-3 font-medium">Recipients</th>
                           <th className="p-3 font-medium w-[80px]">In-App</th>
                           <th className="p-3 font-medium w-[80px]">Email</th>
@@ -490,18 +503,24 @@ export default function TimesheetSettings() {
                       </thead>
                       <tbody>
                         {([
-                          ['newSubmission',         'New timesheet submitted',       'Staff submitted their timesheet — usually goes to their manager for approval.'],
-                          ['emailOnFlag',           'Compliance flag raised',        'A break, overtime or anomaly was flagged — review needed by the approver.'],
-                          ['emailOnEscalation',     'Approval escalated',            'SLA breached or skipped tier — escalated to a higher approver.'],
-                          ['emailOnAutoApprove',    'Auto-approved',                 'System auto-approved a timesheet — typically a courtesy to the staff member.'],
-                          ['emailOnRejection',      'Timesheet rejected',            'An approver rejected the timesheet — the staff member needs to fix and resubmit.'],
-                          ['missedClockOut',        'Missed clock-out',              'Staff forgot to clock out — alert the staff member and their manager.'],
-                          ['unsubmittedNearCutoff', 'Unsubmitted near pay cut-off',  'Reminder before payroll close — sent to staff who haven\'t submitted.'],
-                          ['slaDueSoon',            'Approval SLA due soon',         'Reminder to approvers that pending timesheets are about to breach SLA.'],
-                          ['correction',            'Timesheet corrected',           'A manager edited an approved timesheet — notify staff and payroll.'],
-                          ['payAdjustment',         'Pay adjustment applied',        'Back-pay or retro adjustment posted — notify staff and payroll.'],
-                        ] as [NotifEventKey, string, string][]).map(([key, label, desc]) => {
+                          ['newSubmission',         'New timesheet submitted',       'manager', 'Staff submitted their timesheet — usually goes to their manager for approval.'],
+                          ['emailOnFlag',           'Compliance flag raised',        'manager', 'A break, overtime or anomaly was flagged — review needed by the approver.'],
+                          ['emailOnEscalation',     'Approval escalated',            'manager', 'SLA breached or skipped tier — escalated to a higher approver.'],
+                          ['emailOnAutoApprove',    'Auto-approved',                 'staff',   'System auto-approved a timesheet — typically a courtesy to the staff member.'],
+                          ['emailOnRejection',      'Timesheet rejected',            'staff',   'An approver rejected the timesheet — the staff member needs to fix and resubmit.'],
+                          ['missedClockOut',        'Missed clock-out',              'both',    'Staff forgot to clock out — alert the staff member and their manager.'],
+                          ['unsubmittedNearCutoff', 'Unsubmitted near pay cut-off',  'staff',   'Reminder before payroll close — sent to staff who haven\'t submitted.'],
+                          ['slaDueSoon',            'Approval SLA due soon',         'manager', 'Reminder to approvers that pending timesheets are about to breach SLA.'],
+                          ['correction',            'Timesheet corrected',           'both',    'A manager edited an approved timesheet — notify staff and payroll.'],
+                          ['payAdjustment',         'Pay adjustment applied',        'staff',   'Back-pay or retro adjustment posted — notify staff and payroll.'],
+                        ] as [NotifEventKey, string, 'staff' | 'manager' | 'both', string][]).map(([key, label, audience, desc]) => {
                           const ev = notifications.events[key];
+                          const selectedRoles = NOTIF_ROLES.filter(r => ev.recipients[r.key]);
+                          const audienceMeta = {
+                            staff:   { label: 'Staff',   className: 'bg-blue-50 text-blue-700 border-blue-200' },
+                            manager: { label: 'Manager', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+                            both:    { label: 'Both',    className: 'bg-violet-50 text-violet-700 border-violet-200' },
+                          }[audience];
                           return (
                             <tr key={key} className="border-t align-top">
                               <td className="p-3">
@@ -509,38 +528,51 @@ export default function TimesheetSettings() {
                                 <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{desc}</p>
                               </td>
                               <td className="p-3">
-                                <div className="flex flex-wrap gap-1.5">
-                                  {NOTIF_ROLES.map((r) => {
-                                    const active = ev.recipients[r.key];
-                                    return (
-                                      <button
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${audienceMeta.className}`}>
+                                  {audienceMeta.label}
+                                </span>
+                              </td>
+                              <td className="p-3">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-8 gap-1.5 max-w-[280px] justify-between font-normal">
+                                      <span className="truncate text-xs">
+                                        {selectedRoles.length === 0
+                                          ? 'No recipients'
+                                          : selectedRoles.length <= 2
+                                            ? selectedRoles.map(r => r.short).join(', ')
+                                            : `${selectedRoles.length} roles selected`}
+                                      </span>
+                                      <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="start" className="w-56">
+                                    <DropdownMenuLabel className="text-xs">Send to roles</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {NOTIF_ROLES.map((r) => (
+                                      <DropdownMenuCheckboxItem
                                         key={r.key}
-                                        type="button"
-                                        title={r.label}
-                                        onClick={() => {
+                                        checked={ev.recipients[r.key]}
+                                        onCheckedChange={(checked) => {
                                           setNotifications({
                                             ...notifications,
                                             events: {
                                               ...notifications.events,
                                               [key]: {
                                                 ...ev,
-                                                recipients: { ...ev.recipients, [r.key]: !active },
+                                                recipients: { ...ev.recipients, [r.key]: !!checked },
                                               },
                                             },
                                           });
                                           setHasUnsavedChanges(true);
                                         }}
-                                        className={`px-2 py-0.5 rounded-full text-xs border transition-colors ${
-                                          active
-                                            ? 'bg-primary text-primary-foreground border-primary'
-                                            : 'bg-background text-muted-foreground border-border hover:bg-muted'
-                                        }`}
+                                        onSelect={(e) => e.preventDefault()}
                                       >
-                                        {r.short}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
+                                        {r.label}
+                                      </DropdownMenuCheckboxItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </td>
                               {(['inApp', 'email'] as (keyof NotifChannels)[]).map((ch) => (
                                 <td key={ch} className="p-3 text-center">
@@ -569,22 +601,28 @@ export default function TimesheetSettings() {
                     </table>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Tap a role chip to add or remove it as a recipient. <strong>Staff</strong> = the
-                    timesheet owner. <strong>Manager</strong> = their assigned approver. Senior
-                    Manager, HR and Payroll receive escalations and audit-relevant events.
+                    <strong>Audience</strong> classifies who the event is primarily about — <em>Staff</em>{' '}
+                    events concern the timesheet owner, <em>Manager</em> events drive approval workflow,
+                    <em> Both</em> affect either side. Use the <strong>Recipients</strong> dropdown to pick
+                    exactly which roles receive each notification.
                   </p>
 
                   <Separator />
 
                   {/* Digests */}
                   <div className="space-y-4">
-                    <h4 className="font-medium">Digests</h4>
+                    <div>
+                      <h4 className="font-medium">Approvals Digest</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        A scheduled summary of pending timesheet approvals — sent to the roles you choose.
+                      </p>
+                    </div>
                     <div className="flex items-center justify-between p-4 rounded-lg border">
                       <div className="flex items-center gap-3">
                         <Calendar className="h-5 w-5 text-primary" />
                         <div>
-                          <p className="font-medium">Enable Daily Digest</p>
-                          <p className="text-sm text-muted-foreground">Summary of pending approvals each morning</p>
+                          <p className="font-medium">Enable digest</p>
+                          <p className="text-sm text-muted-foreground">Aggregate reminders instead of one notification per timesheet.</p>
                         </div>
                       </div>
                       <Switch
@@ -598,27 +636,101 @@ export default function TimesheetSettings() {
                     {notifications.dailyDigest && (
                       <div className="grid gap-4 md:grid-cols-2 pl-4">
                         <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Staff digest time</Label>
-                          <Input
-                            type="time"
-                            value={notifications.digestTime}
-                            onChange={(e) => {
-                              setNotifications({ ...notifications, digestTime: e.target.value });
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Frequency</Label>
+                          <Select
+                            value={notifications.digestFrequency}
+                            onValueChange={(v: 'daily' | 'weekly' | 'pay_cycle') => {
+                              setNotifications({ ...notifications, digestFrequency: v });
                               setHasUnsavedChanges(true);
                             }}
-                          />
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="pay_cycle">Once per pay cycle</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {notifications.digestFrequency === 'daily' && 'Sent every working day at the time below.'}
+                            {notifications.digestFrequency === 'weekly' && 'Sent once a week on the selected day.'}
+                            {notifications.digestFrequency === 'pay_cycle' && 'Sent once per pay period — typically the day before pay cut-off.'}
+                          </p>
                         </div>
                         <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Manager digest time</Label>
-                          <Input
-                            type="time"
-                            value={notifications.managerDigestTime}
-                            onChange={(e) => {
-                              setNotifications({ ...notifications, managerDigestTime: e.target.value });
-                              setHasUnsavedChanges(true);
-                            }}
-                          />
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Recipients</Label>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" className="w-full justify-between font-normal">
+                                <span className="truncate text-sm">
+                                  {(() => {
+                                    const sel = NOTIF_ROLES.filter(r => notifications.digestRecipients[r.key]);
+                                    if (sel.length === 0) return 'No recipients';
+                                    if (sel.length <= 2) return sel.map(r => r.short).join(', ');
+                                    return `${sel.length} roles selected`;
+                                  })()}
+                                </span>
+                                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56">
+                              <DropdownMenuLabel className="text-xs">Send digest to</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              {NOTIF_ROLES.map((r) => (
+                                <DropdownMenuCheckboxItem
+                                  key={r.key}
+                                  checked={notifications.digestRecipients[r.key]}
+                                  onCheckedChange={(checked) => {
+                                    setNotifications({
+                                      ...notifications,
+                                      digestRecipients: { ...notifications.digestRecipients, [r.key]: !!checked },
+                                    });
+                                    setHasUnsavedChanges(true);
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                >
+                                  {r.label}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
+                        {notifications.digestFrequency === 'weekly' && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Send on</Label>
+                            <Select
+                              value={notifications.digestWeekday}
+                              onValueChange={(v: any) => {
+                                setNotifications({ ...notifications, digestWeekday: v });
+                                setHasUnsavedChanges(true);
+                              }}
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="mon">Monday</SelectItem>
+                                <SelectItem value="tue">Tuesday</SelectItem>
+                                <SelectItem value="wed">Wednesday</SelectItem>
+                                <SelectItem value="thu">Thursday</SelectItem>
+                                <SelectItem value="fri">Friday</SelectItem>
+                                <SelectItem value="sat">Saturday</SelectItem>
+                                <SelectItem value="sun">Sunday</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        {notifications.digestFrequency !== 'pay_cycle' && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Send time</Label>
+                            <Input
+                              type="time"
+                              value={notifications.digestTime}
+                              onChange={(e) => {
+                                setNotifications({ ...notifications, digestTime: e.target.value });
+                                setHasUnsavedChanges(true);
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
