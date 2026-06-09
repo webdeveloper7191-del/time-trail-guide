@@ -662,36 +662,28 @@ export function PolicyIssues() {
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagMissingClockOut', v as TimesheetPolicy['issues']['flagMissingClockOut'])}
           />
-          <SelectRow
-            {...fieldProps('issues', 'flagUnusualEarlyClockIn', 'Unusual Early Clock-In',
-              'Flag clock-ins that occur before the "early hour" cutoff — useful for catching accidental overnight punches.',
-              <><p className="font-medium mb-1">Example</p><p>Cutoff = <em>5 AM</em>, severity = <em>Warning</em>. A clock-in at 4:12 AM is flagged for review. A clock-in at 6:30 AM is not.</p></>)}
-            value={resolved.issues.flagUnusualEarlyClockIn}
-            options={anomalySeverityOptions}
-            onChange={v => setField('issues', 'flagUnusualEarlyClockIn', v as TimesheetPolicy['issues']['flagUnusualEarlyClockIn'])}
+          <OperatingHoursRow
+            isTenant={fieldProps('issues', 'operatingHoursMode', '').isTenant}
+            modeOverridden={fieldProps('issues', 'operatingHoursMode', '').overridden}
+            startOverridden={fieldProps('issues', 'operatingHoursStartMinutes', '').overridden}
+            endOverridden={fieldProps('issues', 'operatingHoursEndMinutes', '').overridden}
+            sevOverridden={fieldProps('issues', 'flagOutsideOperatingHours', '').overridden}
+            onResetAll={() => {
+              fieldProps('issues', 'operatingHoursMode', '').onReset();
+              fieldProps('issues', 'operatingHoursStartMinutes', '').onReset();
+              fieldProps('issues', 'operatingHoursEndMinutes', '').onReset();
+              fieldProps('issues', 'flagOutsideOperatingHours', '').onReset();
+            }}
+            mode={resolved.issues.operatingHoursMode}
+            startMinutes={resolved.issues.operatingHoursStartMinutes}
+            endMinutes={resolved.issues.operatingHoursEndMinutes}
+            severity={resolved.issues.flagOutsideOperatingHours}
+            onModeChange={v => setField('issues', 'operatingHoursMode', v)}
+            onStartChange={v => setField('issues', 'operatingHoursStartMinutes', v)}
+            onEndChange={v => setField('issues', 'operatingHoursEndMinutes', v)}
+            onSeverityChange={v => setField('issues', 'flagOutsideOperatingHours', v)}
           />
-          <NumberRow
-            {...fieldProps('issues', 'unusualEarlyClockInBeforeHour', 'Early Clock-In Cutoff Hour',
-              'Hour of day (0–23) before which clock-ins are considered unusual.',
-              <><p className="font-medium mb-1">Example</p><p>Set to <em>5</em>. Any clock-in recorded between midnight and 4:59 AM triggers an "Unusual early start" anomaly.</p></>)}
-            value={resolved.issues.unusualEarlyClockInBeforeHour}
-            onChange={v => setField('issues', 'unusualEarlyClockInBeforeHour', Math.max(0, Math.min(23, v)))}
-          />
-          <SelectRow
-            {...fieldProps('issues', 'flagUnusualLateClockOut', 'Unusual Late Clock-Out',
-              'Flag clock-outs that occur after the "late hour" cutoff — catches forgotten end-of-day punches.',
-              <><p className="font-medium mb-1">Example</p><p>Cutoff = <em>22 (10 PM)</em>, severity = <em>Warning</em>. A clock-out at 23:40 is flagged so a manager can confirm staff weren't double-paid into the next day.</p></>)}
-            value={resolved.issues.flagUnusualLateClockOut}
-            options={anomalySeverityOptions}
-            onChange={v => setField('issues', 'flagUnusualLateClockOut', v as TimesheetPolicy['issues']['flagUnusualLateClockOut'])}
-          />
-          <NumberRow
-            {...fieldProps('issues', 'unusualLateClockOutAfterHour', 'Late Clock-Out Cutoff Hour',
-              'Hour of day (0–23) after which clock-outs are considered unusual.',
-              <><p className="font-medium mb-1">Example</p><p>Set to <em>22</em>. Any clock-out recorded at 22:00 or later raises the "Unusual late end" anomaly.</p></>)}
-            value={resolved.issues.unusualLateClockOutAfterHour}
-            onChange={v => setField('issues', 'unusualLateClockOutAfterHour', Math.max(0, Math.min(23, v)))}
-          />
+
         </PermissionGroup>
 
         <PermissionGroup title="Excessive Hours">
