@@ -136,8 +136,15 @@ export default function TimesheetSettings() {
 
 
 
-  // Notification Settings — per-event channel matrix
+  // Notification Settings — per-event recipients + channels
   type NotifChannels = { email: boolean; inApp: boolean };
+  type NotifRoleKey =
+    | 'staff_owner'
+    | 'direct_manager'
+    | 'senior_manager'
+    | 'hr'
+    | 'payroll_admin';
+  type NotifRecipients = Record<NotifRoleKey, boolean>;
   type NotifEventKey =
     | 'newSubmission'
     | 'emailOnFlag'
@@ -150,7 +157,23 @@ export default function TimesheetSettings() {
     | 'correction'
     | 'payAdjustment';
 
+  const NOTIF_ROLES: { key: NotifRoleKey; label: string; short: string }[] = [
+    { key: 'staff_owner',    label: 'Staff (timesheet owner)', short: 'Staff' },
+    { key: 'direct_manager', label: 'Direct manager',          short: 'Manager' },
+    { key: 'senior_manager', label: 'Senior manager',          short: 'Sr. Mgr' },
+    { key: 'hr',             label: 'HR',                      short: 'HR' },
+    { key: 'payroll_admin',  label: 'Payroll admin',           short: 'Payroll' },
+  ];
+
+  const noRoles: NotifRecipients = {
+    staff_owner: false, direct_manager: false, senior_manager: false, hr: false, payroll_admin: false,
+  };
+  const rolesOf = (...keys: NotifRoleKey[]): NotifRecipients =>
+    keys.reduce((acc, k) => ({ ...acc, [k]: true }), { ...noRoles });
+
   const defaultChannels: NotifChannels = { email: true, inApp: true };
+
+  type NotifEvent = { channels: NotifChannels; recipients: NotifRecipients };
 
   const [notifications, setNotifications] = useState({
     // Legacy flags (kept for backward compat with other screens reading them)
@@ -167,17 +190,17 @@ export default function TimesheetSettings() {
     quietHoursEnd: '07:00',
     suppressOnWeekends: false,
     events: {
-      newSubmission:        { ...defaultChannels },
-      emailOnFlag:          { ...defaultChannels },
-      emailOnEscalation:    { ...defaultChannels },
-      emailOnAutoApprove:   { email: false, inApp: true },
-      emailOnRejection:     { ...defaultChannels },
-      missedClockOut:       { ...defaultChannels },
-      unsubmittedNearCutoff:{ ...defaultChannels },
-      slaDueSoon:           { ...defaultChannels },
-      correction:           { ...defaultChannels },
-      payAdjustment:        { ...defaultChannels },
-    } as Record<NotifEventKey, NotifChannels>,
+      newSubmission:        { channels: { ...defaultChannels }, recipients: rolesOf('direct_manager') },
+      emailOnFlag:          { channels: { ...defaultChannels }, recipients: rolesOf('direct_manager', 'senior_manager') },
+      emailOnEscalation:    { channels: { ...defaultChannels }, recipients: rolesOf('senior_manager', 'hr') },
+      emailOnAutoApprove:   { channels: { email: false, inApp: true }, recipients: rolesOf('staff_owner', 'direct_manager') },
+      emailOnRejection:     { channels: { ...defaultChannels }, recipients: rolesOf('staff_owner') },
+      missedClockOut:       { channels: { ...defaultChannels }, recipients: rolesOf('staff_owner', 'direct_manager') },
+      unsubmittedNearCutoff:{ channels: { ...defaultChannels }, recipients: rolesOf('staff_owner', 'direct_manager') },
+      slaDueSoon:           { channels: { ...defaultChannels }, recipients: rolesOf('direct_manager', 'senior_manager') },
+      correction:           { channels: { ...defaultChannels }, recipients: rolesOf('staff_owner', 'payroll_admin') },
+      payAdjustment:        { channels: { ...defaultChannels }, recipients: rolesOf('staff_owner', 'payroll_admin') },
+    } as Record<NotifEventKey, NotifEvent>,
   });
 
 
