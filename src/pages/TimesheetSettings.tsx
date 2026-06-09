@@ -622,32 +622,6 @@ export default function TimesheetSettings() {
                       </div>
                     )}
                   </div>
-                      <div className="grid gap-4 md:grid-cols-2 pl-4">
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Staff digest time</Label>
-                          <Input
-                            type="time"
-                            value={notifications.digestTime}
-                            onChange={(e) => {
-                              setNotifications({ ...notifications, digestTime: e.target.value });
-                              setHasUnsavedChanges(true);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Manager digest time</Label>
-                          <Input
-                            type="time"
-                            value={notifications.managerDigestTime}
-                            onChange={(e) => {
-                              setNotifications({ ...notifications, managerDigestTime: e.target.value });
-                              setHasUnsavedChanges(true);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
                   <Separator />
 
