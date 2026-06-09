@@ -136,8 +136,15 @@ export default function TimesheetSettings() {
 
 
 
-  // Notification Settings — per-event channel matrix
+  // Notification Settings — per-event recipients + channels
   type NotifChannels = { email: boolean; inApp: boolean };
+  type NotifRoleKey =
+    | 'staff_owner'
+    | 'direct_manager'
+    | 'senior_manager'
+    | 'hr'
+    | 'payroll_admin';
+  type NotifRecipients = Record<NotifRoleKey, boolean>;
   type NotifEventKey =
     | 'newSubmission'
     | 'emailOnFlag'
@@ -150,7 +157,23 @@ export default function TimesheetSettings() {
     | 'correction'
     | 'payAdjustment';
 
+  const NOTIF_ROLES: { key: NotifRoleKey; label: string; short: string }[] = [
+    { key: 'staff_owner',    label: 'Staff (timesheet owner)', short: 'Staff' },
+    { key: 'direct_manager', label: 'Direct manager',          short: 'Manager' },
+    { key: 'senior_manager', label: 'Senior manager',          short: 'Sr. Mgr' },
+    { key: 'hr',             label: 'HR',                      short: 'HR' },
+    { key: 'payroll_admin',  label: 'Payroll admin',           short: 'Payroll' },
+  ];
+
+  const noRoles: NotifRecipients = {
+    staff_owner: false, direct_manager: false, senior_manager: false, hr: false, payroll_admin: false,
+  };
+  const rolesOf = (...keys: NotifRoleKey[]): NotifRecipients =>
+    keys.reduce((acc, k) => ({ ...acc, [k]: true }), { ...noRoles });
+
   const defaultChannels: NotifChannels = { email: true, inApp: true };
+
+  type NotifEvent = { channels: NotifChannels; recipients: NotifRecipients };
 
   const [notifications, setNotifications] = useState({
     // Legacy flags (kept for backward compat with other screens reading them)
@@ -167,17 +190,17 @@ export default function TimesheetSettings() {
     quietHoursEnd: '07:00',
     suppressOnWeekends: false,
     events: {
-      newSubmission:        { ...defaultChannels },
-      emailOnFlag:          { ...defaultChannels },
-      emailOnEscalation:    { ...defaultChannels },
-      emailOnAutoApprove:   { email: false, inApp: true },
-      emailOnRejection:     { ...defaultChannels },
-      missedClockOut:       { ...defaultChannels },
-      unsubmittedNearCutoff:{ ...defaultChannels },
-      slaDueSoon:           { ...defaultChannels },
-      correction:           { ...defaultChannels },
-      payAdjustment:        { ...defaultChannels },
-    } as Record<NotifEventKey, NotifChannels>,
+      newSubmission:        { channels: { ...defaultChannels }, recipients: rolesOf('direct_manager') },
+      emailOnFlag:          { channels: { ...defaultChannels }, recipients: rolesOf('direct_manager', 'senior_manager') },
+      emailOnEscalation:    { channels: { ...defaultChannels }, recipients: rolesOf('senior_manager', 'hr') },
+      emailOnAutoApprove:   { channels: { email: false, inApp: true }, recipients: rolesOf('staff_owner', 'direct_manager') },
+      emailOnRejection:     { channels: { ...defaultChannels }, recipients: rolesOf('staff_owner') },
+      missedClockOut:       { channels: { ...defaultChannels }, recipients: rolesOf('staff_owner', 'direct_manager') },
+      unsubmittedNearCutoff:{ channels: { ...defaultChannels }, recipients: rolesOf('staff_owner', 'direct_manager') },
+      slaDueSoon:           { channels: { ...defaultChannels }, recipients: rolesOf('direct_manager', 'senior_manager') },
+      correction:           { channels: { ...defaultChannels }, recipients: rolesOf('staff_owner', 'payroll_admin') },
+      payAdjustment:        { channels: { ...defaultChannels }, recipients: rolesOf('staff_owner', 'payroll_admin') },
+    } as Record<NotifEventKey, NotifEvent>,
   });
 
 
@@ -454,55 +477,102 @@ export default function TimesheetSettings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Channel matrix */}
+                  {/* Channel + recipients matrix */}
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50 text-xs text-muted-foreground">
                         <tr>
-                          <th className="text-left p-3 font-medium">Event</th>
-                          <th className="p-3 font-medium">In-App</th>
-                          <th className="p-3 font-medium">Email</th>
+                          <th className="text-left p-3 font-medium w-[34%]">Event</th>
+                          <th className="text-left p-3 font-medium">Recipients</th>
+                          <th className="p-3 font-medium w-[80px]">In-App</th>
+                          <th className="p-3 font-medium w-[80px]">Email</th>
                         </tr>
-
                       </thead>
                       <tbody>
                         {([
-                          ['newSubmission', 'New timesheet submitted'],
-                          ['emailOnFlag', 'Compliance flag raised'],
-                          ['emailOnEscalation', 'Approval escalated'],
-                          ['emailOnAutoApprove', 'Auto-approved'],
-                          ['emailOnRejection', 'Timesheet rejected'],
-                          ['missedClockOut', 'Missed clock-out'],
-                          ['unsubmittedNearCutoff', 'Unsubmitted near pay cut-off'],
-                          ['slaDueSoon', 'Approval SLA due soon'],
-                          ['correction', 'Timesheet corrected'],
-                          ['payAdjustment', 'Pay adjustment applied'],
-                        ] as [NotifEventKey, string][]).map(([key, label]) => (
-                          <tr key={key} className="border-t">
-                            <td className="p-3 font-medium">{label}</td>
-                            {(['inApp', 'email'] as (keyof NotifChannels)[]).map((ch) => (
-
-                              <td key={ch} className="p-3 text-center">
-                                <Switch
-                                  checked={notifications.events[key][ch]}
-                                  onCheckedChange={(checked) => {
-                                    setNotifications({
-                                      ...notifications,
-                                      events: {
-                                        ...notifications.events,
-                                        [key]: { ...notifications.events[key], [ch]: checked },
-                                      },
-                                    });
-                                    setHasUnsavedChanges(true);
-                                  }}
-                                />
+                          ['newSubmission',         'New timesheet submitted',       'Staff submitted their timesheet — usually goes to their manager for approval.'],
+                          ['emailOnFlag',           'Compliance flag raised',        'A break, overtime or anomaly was flagged — review needed by the approver.'],
+                          ['emailOnEscalation',     'Approval escalated',            'SLA breached or skipped tier — escalated to a higher approver.'],
+                          ['emailOnAutoApprove',    'Auto-approved',                 'System auto-approved a timesheet — typically a courtesy to the staff member.'],
+                          ['emailOnRejection',      'Timesheet rejected',            'An approver rejected the timesheet — the staff member needs to fix and resubmit.'],
+                          ['missedClockOut',        'Missed clock-out',              'Staff forgot to clock out — alert the staff member and their manager.'],
+                          ['unsubmittedNearCutoff', 'Unsubmitted near pay cut-off',  'Reminder before payroll close — sent to staff who haven\'t submitted.'],
+                          ['slaDueSoon',            'Approval SLA due soon',         'Reminder to approvers that pending timesheets are about to breach SLA.'],
+                          ['correction',            'Timesheet corrected',           'A manager edited an approved timesheet — notify staff and payroll.'],
+                          ['payAdjustment',         'Pay adjustment applied',        'Back-pay or retro adjustment posted — notify staff and payroll.'],
+                        ] as [NotifEventKey, string, string][]).map(([key, label, desc]) => {
+                          const ev = notifications.events[key];
+                          return (
+                            <tr key={key} className="border-t align-top">
+                              <td className="p-3">
+                                <div className="font-medium">{label}</div>
+                                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{desc}</p>
                               </td>
-                            ))}
-                          </tr>
-                        ))}
+                              <td className="p-3">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {NOTIF_ROLES.map((r) => {
+                                    const active = ev.recipients[r.key];
+                                    return (
+                                      <button
+                                        key={r.key}
+                                        type="button"
+                                        title={r.label}
+                                        onClick={() => {
+                                          setNotifications({
+                                            ...notifications,
+                                            events: {
+                                              ...notifications.events,
+                                              [key]: {
+                                                ...ev,
+                                                recipients: { ...ev.recipients, [r.key]: !active },
+                                              },
+                                            },
+                                          });
+                                          setHasUnsavedChanges(true);
+                                        }}
+                                        className={`px-2 py-0.5 rounded-full text-xs border transition-colors ${
+                                          active
+                                            ? 'bg-primary text-primary-foreground border-primary'
+                                            : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                                        }`}
+                                      >
+                                        {r.short}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </td>
+                              {(['inApp', 'email'] as (keyof NotifChannels)[]).map((ch) => (
+                                <td key={ch} className="p-3 text-center">
+                                  <Switch
+                                    checked={ev.channels[ch]}
+                                    onCheckedChange={(checked) => {
+                                      setNotifications({
+                                        ...notifications,
+                                        events: {
+                                          ...notifications.events,
+                                          [key]: {
+                                            ...ev,
+                                            channels: { ...ev.channels, [ch]: checked },
+                                          },
+                                        },
+                                      });
+                                      setHasUnsavedChanges(true);
+                                    }}
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Tap a role chip to add or remove it as a recipient. <strong>Staff</strong> = the
+                    timesheet owner. <strong>Manager</strong> = their assigned approver. Senior
+                    Manager, HR and Payroll receive escalations and audit-relevant events.
+                  </p>
 
                   <Separator />
 
