@@ -184,10 +184,11 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
     flagShiftTimeVariance: 'never',
     flagBreakDurationVariance: 'over_10m',
     flagMissingClockOut: 'critical',
-    operatingHoursMode: 'fixed_window',
-    operatingHoursStartMinutes: 6 * 60,   // 6:00 AM
-    operatingHoursEndMinutes: 22 * 60,    // 10:00 PM
-    flagOutsideOperatingHours: 'warning',
+    clockBoundaryReference: 'scheduled_shift',
+    earlyClockInToleranceMinutes: 30,
+    lateClockOutToleranceMinutes: 30,
+    flagClockBoundaryBreach: 'warning',
+
 
 
     flagExcessiveDailyHours: 'critical',
