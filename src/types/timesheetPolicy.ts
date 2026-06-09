@@ -88,11 +88,12 @@ export interface TimesheetIssuesSettings {
   flagBreakDurationVariance: VarianceFlag;
   // Missing / unusual entries
   flagMissingClockOut: AnomalySeverity;
-  // Operating hours window (replaces separate early-in / late-out rules)
-  operatingHoursMode: OperatingHoursMode;
-  operatingHoursStartMinutes: number; // 0-1439 minutes from midnight
-  operatingHoursEndMinutes: number;   // 0-1439 minutes from midnight; if end < start, window wraps midnight
-  flagOutsideOperatingHours: AnomalySeverity;
+  // Clock-event boundary tolerance (operating window & shift times are configured elsewhere)
+  clockBoundaryReference: ClockBoundaryReference;
+  earlyClockInToleranceMinutes: number;  // clock-in more than this many min before boundary → flag
+  lateClockOutToleranceMinutes: number;  // clock-out more than this many min after boundary → flag
+  flagClockBoundaryBreach: AnomalySeverity;
+
 
   // Excessive hours
   flagExcessiveDailyHours: AnomalySeverity;
