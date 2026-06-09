@@ -29,7 +29,7 @@ export interface TimesheetException {
 export interface ClockEntry {
   id: string;
   date: string;
-  clockIn: string | null;
+  clockIn: string;
   clockOut: string | null;
   breaks: BreakEntry[];
   totalBreakMinutes: number;
