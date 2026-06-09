@@ -78,16 +78,21 @@ export interface BreaksSettings {
 
 export type AnomalySeverity = 'off' | 'info' | 'warning' | 'critical';
 
+export type OperatingHoursMode = 'fixed_window' | 'always_open';
+
+
 export interface TimesheetIssuesSettings {
   // Time variance
   flagShiftTimeVariance: VarianceFlag;
   flagBreakDurationVariance: VarianceFlag;
   // Missing / unusual entries
   flagMissingClockOut: AnomalySeverity;
-  flagUnusualEarlyClockIn: AnomalySeverity;
-  unusualEarlyClockInBeforeHour: number; // 0-23, e.g. 5 = before 5am
-  flagUnusualLateClockOut: AnomalySeverity;
-  unusualLateClockOutAfterHour: number; // 0-23, e.g. 22 = after 10pm
+  // Operating hours window (replaces separate early-in / late-out rules)
+  operatingHoursMode: OperatingHoursMode;
+  operatingHoursStartMinutes: number; // 0-1439 minutes from midnight
+  operatingHoursEndMinutes: number;   // 0-1439 minutes from midnight; if end < start, window wraps midnight
+  flagOutsideOperatingHours: AnomalySeverity;
+
   // Excessive hours
   flagExcessiveDailyHours: AnomalySeverity;
   excessiveDailyHoursThreshold: number; // e.g. 12
@@ -177,10 +182,12 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
     flagShiftTimeVariance: 'never',
     flagBreakDurationVariance: 'over_10m',
     flagMissingClockOut: 'critical',
-    flagUnusualEarlyClockIn: 'warning',
-    unusualEarlyClockInBeforeHour: 5,
-    flagUnusualLateClockOut: 'warning',
-    unusualLateClockOutAfterHour: 22,
+    operatingHoursMode: 'fixed_window',
+    operatingHoursStartMinutes: 6 * 60,   // 6:00 AM
+    operatingHoursEndMinutes: 22 * 60,    // 10:00 PM
+    flagOutsideOperatingHours: 'warning',
+
+
     flagExcessiveDailyHours: 'critical',
     excessiveDailyHoursThreshold: 12,
     flagLongShiftWithoutBreak: 'warning',

@@ -662,36 +662,28 @@ export function PolicyIssues() {
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagMissingClockOut', v as TimesheetPolicy['issues']['flagMissingClockOut'])}
           />
-          <SelectRow
-            {...fieldProps('issues', 'flagUnusualEarlyClockIn', 'Unusual Early Clock-In',
-              'Flag clock-ins that occur before the "early hour" cutoff — useful for catching accidental overnight punches.',
-              <><p className="font-medium mb-1">Example</p><p>Cutoff = <em>5 AM</em>, severity = <em>Warning</em>. A clock-in at 4:12 AM is flagged for review. A clock-in at 6:30 AM is not.</p></>)}
-            value={resolved.issues.flagUnusualEarlyClockIn}
-            options={anomalySeverityOptions}
-            onChange={v => setField('issues', 'flagUnusualEarlyClockIn', v as TimesheetPolicy['issues']['flagUnusualEarlyClockIn'])}
+          <OperatingHoursRow
+            isTenant={fieldProps('issues', 'operatingHoursMode', '').isTenant}
+            modeOverridden={fieldProps('issues', 'operatingHoursMode', '').overridden}
+            startOverridden={fieldProps('issues', 'operatingHoursStartMinutes', '').overridden}
+            endOverridden={fieldProps('issues', 'operatingHoursEndMinutes', '').overridden}
+            sevOverridden={fieldProps('issues', 'flagOutsideOperatingHours', '').overridden}
+            onResetAll={() => {
+              fieldProps('issues', 'operatingHoursMode', '').onReset();
+              fieldProps('issues', 'operatingHoursStartMinutes', '').onReset();
+              fieldProps('issues', 'operatingHoursEndMinutes', '').onReset();
+              fieldProps('issues', 'flagOutsideOperatingHours', '').onReset();
+            }}
+            mode={resolved.issues.operatingHoursMode}
+            startMinutes={resolved.issues.operatingHoursStartMinutes}
+            endMinutes={resolved.issues.operatingHoursEndMinutes}
+            severity={resolved.issues.flagOutsideOperatingHours}
+            onModeChange={v => setField('issues', 'operatingHoursMode', v)}
+            onStartChange={v => setField('issues', 'operatingHoursStartMinutes', v)}
+            onEndChange={v => setField('issues', 'operatingHoursEndMinutes', v)}
+            onSeverityChange={v => setField('issues', 'flagOutsideOperatingHours', v)}
           />
-          <NumberRow
-            {...fieldProps('issues', 'unusualEarlyClockInBeforeHour', 'Early Clock-In Cutoff Hour',
-              'Hour of day (0–23) before which clock-ins are considered unusual.',
-              <><p className="font-medium mb-1">Example</p><p>Set to <em>5</em>. Any clock-in recorded between midnight and 4:59 AM triggers an "Unusual early start" anomaly.</p></>)}
-            value={resolved.issues.unusualEarlyClockInBeforeHour}
-            onChange={v => setField('issues', 'unusualEarlyClockInBeforeHour', Math.max(0, Math.min(23, v)))}
-          />
-          <SelectRow
-            {...fieldProps('issues', 'flagUnusualLateClockOut', 'Unusual Late Clock-Out',
-              'Flag clock-outs that occur after the "late hour" cutoff — catches forgotten end-of-day punches.',
-              <><p className="font-medium mb-1">Example</p><p>Cutoff = <em>22 (10 PM)</em>, severity = <em>Warning</em>. A clock-out at 23:40 is flagged so a manager can confirm staff weren't double-paid into the next day.</p></>)}
-            value={resolved.issues.flagUnusualLateClockOut}
-            options={anomalySeverityOptions}
-            onChange={v => setField('issues', 'flagUnusualLateClockOut', v as TimesheetPolicy['issues']['flagUnusualLateClockOut'])}
-          />
-          <NumberRow
-            {...fieldProps('issues', 'unusualLateClockOutAfterHour', 'Late Clock-Out Cutoff Hour',
-              'Hour of day (0–23) after which clock-outs are considered unusual.',
-              <><p className="font-medium mb-1">Example</p><p>Set to <em>22</em>. Any clock-out recorded at 22:00 or later raises the "Unusual late end" anomaly.</p></>)}
-            value={resolved.issues.unusualLateClockOutAfterHour}
-            onChange={v => setField('issues', 'unusualLateClockOutAfterHour', Math.max(0, Math.min(23, v)))}
-          />
+
         </PermissionGroup>
 
         <PermissionGroup title="Excessive Hours">
@@ -925,6 +917,143 @@ function SelectRow<T extends string>(props: BaseRowProps & {
     />
   );
 }
+
+// ---------- Operating Hours composite row ----------
+function formatTime12(totalMinutes: number): string {
+  const m = ((totalMinutes % 1440) + 1440) % 1440;
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  const ampm = h < 12 ? 'AM' : 'PM';
+  const h12 = ((h + 11) % 12) + 1;
+  return `${h12}:${min.toString().padStart(2, '0')} ${ampm}`;
+}
+
+const TIME_SLOTS: { value: string; label: string }[] = Array.from({ length: 48 }, (_, i) => {
+  const minutes = i * 30;
+  return { value: String(minutes), label: formatTime12(minutes) };
+});
+
+function OperatingHoursRow(props: {
+  isTenant: boolean;
+  modeOverridden: boolean;
+  startOverridden: boolean;
+  endOverridden: boolean;
+  sevOverridden: boolean;
+  onResetAll: () => void;
+  mode: 'fixed_window' | 'always_open';
+  startMinutes: number;
+  endMinutes: number;
+  severity: 'off' | 'info' | 'warning' | 'critical';
+  onModeChange: (v: 'fixed_window' | 'always_open') => void;
+  onStartChange: (v: number) => void;
+  onEndChange: (v: number) => void;
+  onSeverityChange: (v: 'off' | 'info' | 'warning' | 'critical') => void;
+}) {
+  const {
+    isTenant, modeOverridden, startOverridden, endOverridden, sevOverridden, onResetAll,
+    mode, startMinutes, endMinutes, severity,
+    onModeChange, onStartChange, onEndChange, onSeverityChange,
+  } = props;
+  const anyOverridden = modeOverridden || startOverridden || endOverridden || sevOverridden;
+  const wraps = mode === 'fixed_window' && endMinutes < startMinutes;
+
+  const preview = mode === 'always_open'
+    ? 'Time-of-day checks are disabled — clock events at any hour are accepted without flagging.'
+    : `Clock-ins or clock-outs outside ${formatTime12(startMinutes)} – ${formatTime12(endMinutes)}${wraps ? ' (wraps past midnight)' : ''} will be flagged as ${severity}.`;
+
+  return (
+    <div className="py-4 space-y-3">
+      <div className="flex items-start justify-between gap-6">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Label className="text-sm font-medium tracking-tight">Operating Hours Window</Label>
+            <HelpHint content={
+              <>
+                <p className="font-medium mb-1">What it does</p>
+                <p className="mb-2">Replaces the old "Unusual Early Clock-In" and "Unusual Late Clock-Out" rules with a single operating window. Any clock event recorded outside this window is flagged.</p>
+                <p className="font-medium mb-1">For 24/7 operations</p>
+                <p>Choose <em>"24/7 operations"</em> to disable the time-of-day check entirely. Other anomaly flags (missing clock-out, excessive hours, pattern drift) keep working.</p>
+              </>
+            } />
+            {!isTenant && (
+              anyOverridden ? (
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] h-5">Overridden</Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground gap-1">
+                  <Info className="h-3 w-3" /> Inherited
+                </Badge>
+              )
+            )}
+            {!isTenant && anyOverridden && (
+              <button type="button" onClick={onResetAll} className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2">
+                Reset to tenant
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
+            Define when your business operates. Clock events outside this window are flagged so managers can catch forgotten punches or overnight errors.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-0">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Operating model</Label>
+          <Select value={mode} onValueChange={v => onModeChange(v as 'fixed_window' | 'always_open')}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fixed_window">Fixed operating window</SelectItem>
+              <SelectItem value="always_open">24/7 operations (no time-of-day check)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Severity when outside window</Label>
+          <Select
+            value={severity}
+            onValueChange={v => onSeverityChange(v as 'off' | 'info' | 'warning' | 'critical')}
+            disabled={mode === 'always_open'}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {anomalySeverityOptions.map(o => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {mode === 'fixed_window' && (
+          <>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Opens at</Label>
+              <Select value={String(startMinutes)} onValueChange={v => onStartChange(Number(v))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {TIME_SLOTS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Closes at</Label>
+              <Select value={String(endMinutes)} onValueChange={v => onEndChange(Number(v))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {TIME_SLOTS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        {preview}
+      </div>
+    </div>
+  );
+}
+
 
 // ---------- Backward-compat default export (unused now, kept for safety) ----------
 export function TimesheetPolicySettings() {
