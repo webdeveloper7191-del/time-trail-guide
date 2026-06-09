@@ -559,16 +559,6 @@ export function PolicyBreaks() {
           )}
         </PermissionGroup>
 
-        <PermissionGroup title="Flagging">
-          <SelectRow
-            {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag Break Duration Variance',
-              'Alert managers when the actual break taken differs from the scheduled break duration. Replaces the legacy on/off "flag short or missed breaks" toggle.',
-              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Variance over 10 minutes"</em>. Scheduled 30-min break, actual 25 min → no flag. Actual 15 min → flagged: "Break 15 min short of schedule." Helps catch fatigue or compliance issues without alert noise.</p></>)}
-            value={resolved.issues.flagBreakDurationVariance}
-            options={varianceFlagOptions}
-            onChange={v => setField('issues', 'flagBreakDurationVariance', v as TimesheetPolicy['issues']['flagBreakDurationVariance'])}
-          />
-        </PermissionGroup>
 
         <PermissionGroup title="Rounding">
           <ToggleRow
