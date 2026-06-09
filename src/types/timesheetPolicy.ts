@@ -267,3 +267,9 @@ export const anomalySeverityOptions: { value: AnomalySeverity; label: string }[]
   { value: 'warning', label: 'Warning' },
   { value: 'critical', label: 'Critical' },
 ];
+
+export const clockBoundaryReferenceOptions: { value: ClockBoundaryReference; label: string }[] = [
+  { value: 'scheduled_shift', label: 'Scheduled shift (per staff roster)' },
+  { value: 'operating_window', label: 'Operating window (location hours)' },
+];
+
