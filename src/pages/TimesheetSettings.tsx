@@ -477,78 +477,102 @@ export default function TimesheetSettings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Channel matrix */}
+                  {/* Channel + recipients matrix */}
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50 text-xs text-muted-foreground">
                         <tr>
-                          <th className="text-left p-3 font-medium">Event</th>
-                          <th className="p-3 font-medium">In-App</th>
-                          <th className="p-3 font-medium">Email</th>
+                          <th className="text-left p-3 font-medium w-[34%]">Event</th>
+                          <th className="text-left p-3 font-medium">Recipients</th>
+                          <th className="p-3 font-medium w-[80px]">In-App</th>
+                          <th className="p-3 font-medium w-[80px]">Email</th>
                         </tr>
-
                       </thead>
                       <tbody>
                         {([
-                          ['newSubmission', 'New timesheet submitted'],
-                          ['emailOnFlag', 'Compliance flag raised'],
-                          ['emailOnEscalation', 'Approval escalated'],
-                          ['emailOnAutoApprove', 'Auto-approved'],
-                          ['emailOnRejection', 'Timesheet rejected'],
-                          ['missedClockOut', 'Missed clock-out'],
-                          ['unsubmittedNearCutoff', 'Unsubmitted near pay cut-off'],
-                          ['slaDueSoon', 'Approval SLA due soon'],
-                          ['correction', 'Timesheet corrected'],
-                          ['payAdjustment', 'Pay adjustment applied'],
-                        ] as [NotifEventKey, string][]).map(([key, label]) => (
-                          <tr key={key} className="border-t">
-                            <td className="p-3 font-medium">{label}</td>
-                            {(['inApp', 'email'] as (keyof NotifChannels)[]).map((ch) => (
-
-                              <td key={ch} className="p-3 text-center">
-                                <Switch
-                                  checked={notifications.events[key][ch]}
-                                  onCheckedChange={(checked) => {
-                                    setNotifications({
-                                      ...notifications,
-                                      events: {
-                                        ...notifications.events,
-                                        [key]: { ...notifications.events[key], [ch]: checked },
-                                      },
-                                    });
-                                    setHasUnsavedChanges(true);
-                                  }}
-                                />
+                          ['newSubmission',         'New timesheet submitted',       'Staff submitted their timesheet — usually goes to their manager for approval.'],
+                          ['emailOnFlag',           'Compliance flag raised',        'A break, overtime or anomaly was flagged — review needed by the approver.'],
+                          ['emailOnEscalation',     'Approval escalated',            'SLA breached or skipped tier — escalated to a higher approver.'],
+                          ['emailOnAutoApprove',    'Auto-approved',                 'System auto-approved a timesheet — typically a courtesy to the staff member.'],
+                          ['emailOnRejection',      'Timesheet rejected',            'An approver rejected the timesheet — the staff member needs to fix and resubmit.'],
+                          ['missedClockOut',        'Missed clock-out',              'Staff forgot to clock out — alert the staff member and their manager.'],
+                          ['unsubmittedNearCutoff', 'Unsubmitted near pay cut-off',  'Reminder before payroll close — sent to staff who haven\'t submitted.'],
+                          ['slaDueSoon',            'Approval SLA due soon',         'Reminder to approvers that pending timesheets are about to breach SLA.'],
+                          ['correction',            'Timesheet corrected',           'A manager edited an approved timesheet — notify staff and payroll.'],
+                          ['payAdjustment',         'Pay adjustment applied',        'Back-pay or retro adjustment posted — notify staff and payroll.'],
+                        ] as [NotifEventKey, string, string][]).map(([key, label, desc]) => {
+                          const ev = notifications.events[key];
+                          return (
+                            <tr key={key} className="border-t align-top">
+                              <td className="p-3">
+                                <div className="font-medium">{label}</div>
+                                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{desc}</p>
                               </td>
-                            ))}
-                          </tr>
-                        ))}
+                              <td className="p-3">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {NOTIF_ROLES.map((r) => {
+                                    const active = ev.recipients[r.key];
+                                    return (
+                                      <button
+                                        key={r.key}
+                                        type="button"
+                                        title={r.label}
+                                        onClick={() => {
+                                          setNotifications({
+                                            ...notifications,
+                                            events: {
+                                              ...notifications.events,
+                                              [key]: {
+                                                ...ev,
+                                                recipients: { ...ev.recipients, [r.key]: !active },
+                                              },
+                                            },
+                                          });
+                                          setHasUnsavedChanges(true);
+                                        }}
+                                        className={`px-2 py-0.5 rounded-full text-xs border transition-colors ${
+                                          active
+                                            ? 'bg-primary text-primary-foreground border-primary'
+                                            : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                                        }`}
+                                      >
+                                        {r.short}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </td>
+                              {(['inApp', 'email'] as (keyof NotifChannels)[]).map((ch) => (
+                                <td key={ch} className="p-3 text-center">
+                                  <Switch
+                                    checked={ev.channels[ch]}
+                                    onCheckedChange={(checked) => {
+                                      setNotifications({
+                                        ...notifications,
+                                        events: {
+                                          ...notifications.events,
+                                          [key]: {
+                                            ...ev,
+                                            channels: { ...ev.channels, [ch]: checked },
+                                          },
+                                        },
+                                      });
+                                      setHasUnsavedChanges(true);
+                                    }}
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
-
-                  <Separator />
-
-                  {/* Digests */}
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Digests</h4>
-                    <div className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <Calendar className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-medium">Enable Daily Digest</p>
-                          <p className="text-sm text-muted-foreground">Summary of pending approvals each morning</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications.dailyDigest}
-                        onCheckedChange={(checked) => {
-                          setNotifications({ ...notifications, dailyDigest: checked });
-                          setHasUnsavedChanges(true);
-                        }}
-                      />
-                    </div>
-                    {notifications.dailyDigest && (
+                  <p className="text-xs text-muted-foreground">
+                    Tap a role chip to add or remove it as a recipient. <strong>Staff</strong> = the
+                    timesheet owner. <strong>Manager</strong> = their assigned approver. Senior
+                    Manager, HR and Payroll receive escalations and audit-relevant events.
+                  </p>
                       <div className="grid gap-4 md:grid-cols-2 pl-4">
                         <div>
                           <Label className="text-xs text-muted-foreground mb-1.5 block">Staff digest time</Label>
